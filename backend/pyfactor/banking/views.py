@@ -21,26 +21,15 @@ from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 from plaid.model.sandbox_public_token_create_request import SandboxPublicTokenCreateRequest
 from plaid.configuration import Configuration
-# Temporarily modified to break circular dependency
-from .models import PlaidItem, BankingRule, BankingAuditLog
+# Import models properly
+from .models import PlaidItem, TinkItem, BankingRule, BankingAuditLog, BankAccount, BankTransaction
 import hashlib
 import io
 from decimal import Decimal
 from django.db import transaction
-# Temporary placeholders for BankAccount and BankTransaction
-class BankAccountPlaceholder:
-    objects = type('', (), {'filter': lambda **kwargs: []})()
-    DoesNotExist = Exception
-
-class BankTransactionPlaceholder:
-    objects = type('', (), {'filter': lambda **kwargs: []})()
-    DoesNotExist = Exception
-
-# Use placeholders instead of actual models
-BankAccount = BankAccountPlaceholder
-BankTransaction = BankTransactionPlaceholder
 from .serializers import BankAccountSerializer, BankTransactionSerializer, BankingRuleSerializer
 from plaid.model.accounts_get_request import AccountsGetRequest
+from django.contrib.contenttypes.models import ContentType
 from pyfactor.logging_config import get_logger
 from datetime import datetime, timedelta  # Make sure this line is included
 import csv
@@ -50,6 +39,7 @@ import os
 import json
 import certifi
 import ssl
+from django.db.models import Sum
 
 plaid_service = PlaidService()
 
@@ -1010,3 +1000,188 @@ class BankingRuleViewSet(viewsets.ModelViewSet):
         if x_forwarded_for:
             return x_forwarded_for.split(',')[0]
         return self.request.META.get('REMOTE_ADDR', '')
+
+
+# New Banking Endpoints as per requirements
+class SyncTransactionsView(APIView):
+    """
+    POST /api/banking/sync/transactions/ - Sync transactions from Plaid
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        logger.debug("🎯 [SyncTransactionsView] === START ===")
+        logger.debug(f"🎯 [SyncTransactionsView] User: {request.user.id}")
+        logger.debug(f"🎯 [SyncTransactionsView] Request data: {request.data}")
+        
+        try:
+            account_id = request.data.get('account_id')
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
+            
+            logger.debug(f"🎯 [SyncTransactionsView] Params - account_id: {account_id}, start_date: {start_date}, end_date: {end_date}")
+            
+            # Get the user's Plaid item
+            try:
+                plaid_item = PlaidItem.objects.get(user=request.user)
+                logger.debug(f"🎯 [SyncTransactionsView] Found Plaid item: {plaid_item.item_id}")
+            except PlaidItem.DoesNotExist:
+                logger.error("🎯 [SyncTransactionsView] No Plaid item found for user")
+                return Response({
+                    "success": False,
+                    "data": {},
+                    "message": "No bank account connected. Please connect a bank account first."
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Parse dates if provided
+            if start_date:
+                try:
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                except ValueError:
+                    logger.error(f"🎯 [SyncTransactionsView] Invalid start_date format: {start_date}")
+                    return Response({
+                        "success": False,
+                        "data": {},
+                        "message": "Invalid start_date format. Use YYYY-MM-DD"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if end_date:
+                try:
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                except ValueError:
+                    logger.error(f"🎯 [SyncTransactionsView] Invalid end_date format: {end_date}")
+                    return Response({
+                        "success": False,
+                        "data": {},
+                        "message": "Invalid end_date format. Use YYYY-MM-DD"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Default to last 30 days if no dates provided
+            if not start_date:
+                start_date = (datetime.now() - timedelta(days=30)).date()
+            if not end_date:
+                end_date = datetime.now().date()
+            
+            logger.debug(f"🎯 [SyncTransactionsView] Using date range: {start_date} to {end_date}")
+            
+            # Fetch transactions from Plaid
+            try:
+                plaid_transactions = plaid_service.get_transactions(
+                    plaid_item.access_token, 
+                    start_date, 
+                    end_date
+                )
+                logger.debug(f"🎯 [SyncTransactionsView] Fetched {len(plaid_transactions)} transactions from Plaid")
+            except Exception as e:
+                logger.error(f"🎯 [SyncTransactionsView] Error fetching from Plaid: {str(e)}")
+                return Response({
+                    "success": False,
+                    "data": {},
+                    "message": f"Failed to fetch transactions from Plaid: {str(e)}"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Get or create bank accounts and sync transactions
+            synced_count = 0
+            duplicate_count = 0
+            error_count = 0
+            
+            with transaction.atomic():
+                for plaid_tx in plaid_transactions:
+                    try:
+                        # Get or create bank account
+                        bank_account, created = BankAccount.objects.get_or_create(
+                            user=request.user,
+                            defaults={
+                                'bank_name': 'Connected Bank',
+                                'account_number': plaid_tx['account_id'][-4:],  # Last 4 digits
+                                'balance': 0,
+                                'account_type': 'checking',
+                                'integration_type': ContentType.objects.get_for_model(PlaidItem),
+                                'integration_id': plaid_item.id
+                            }
+                        )
+                        
+                        if created:
+                            logger.debug(f"🎯 [SyncTransactionsView] Created new bank account: {bank_account.id}")
+                        
+                        # Generate unique transaction ID for duplicate detection
+                        import_id = hashlib.sha256(
+                            f"{plaid_tx['transaction_id']}|{plaid_tx['account_id']}".encode()
+                        ).hexdigest()
+                        
+                        # Check for duplicates
+                        if BankTransaction.objects.filter(import_id=import_id).exists():
+                            duplicate_count += 1
+                            continue
+                        
+                        # Create transaction
+                        amount = abs(float(plaid_tx['amount']))
+                        transaction_type = 'DEBIT' if float(plaid_tx['amount']) > 0 else 'CREDIT'
+                        
+                        BankTransaction.objects.create(
+                            account=bank_account,
+                            amount=amount,
+                            transaction_type=transaction_type,
+                            description=plaid_tx['name'][:255],
+                            date=datetime.strptime(plaid_tx['date'], '%Y-%m-%d').date(),
+                            reference_number=plaid_tx['transaction_id'],
+                            merchant_name=plaid_tx.get('merchant_name', '')[:255] if plaid_tx.get('merchant_name') else '',
+                            category=plaid_tx['category'][0] if plaid_tx.get('category') else 'Uncategorized',
+                            import_id=import_id,
+                            imported_at=timezone.now(),
+                            imported_by=request.user
+                        )
+                        
+                        synced_count += 1
+                        
+                    except Exception as e:
+                        logger.error(f"🎯 [SyncTransactionsView] Error processing transaction {plaid_tx.get('transaction_id', 'unknown')}: {str(e)}")
+                        error_count += 1
+            
+            logger.debug(f"🎯 [SyncTransactionsView] Sync completed - synced: {synced_count}, duplicates: {duplicate_count}, errors: {error_count}")
+            
+            # Create audit log
+            BankingAuditLog.objects.create(
+                user=request.user,
+                action='sync_transactions',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                details={
+                    'synced_count': synced_count,
+                    'duplicate_count': duplicate_count,
+                    'error_count': error_count,
+                    'date_range': f"{start_date} to {end_date}"
+                },
+                status='success',
+                affected_records=synced_count,
+                completed_at=timezone.now()
+            )
+            
+            return Response({
+                "success": True,
+                "data": {
+                    "synced_count": synced_count,
+                    "duplicate_count": duplicate_count,
+                    "error_count": error_count,
+                    "date_range": {
+                        "start_date": str(start_date),
+                        "end_date": str(end_date)
+                    }
+                },
+                "message": f"Successfully synced {synced_count} transactions"
+            })
+            
+        except Exception as e:
+            logger.error(f"🎯 [SyncTransactionsView] Unexpected error: {str(e)}", exc_info=True)
+            return Response({
+                "success": False,
+                "data": {},
+                "message": "An unexpected error occurred while syncing transactions"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def get_client_ip(self, request):
+        """Get client IP address from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR', '')

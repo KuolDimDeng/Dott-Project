@@ -34,7 +34,7 @@ const EmployeeTimesheet = () => {
       console.log('🕐 [EmployeeTimesheet] Fetching current week timesheet');
       setLoading(true);
       
-      const response = await fetch('/api/timesheets/v2/employee-timesheets/current_week/', {
+      const response = await fetch('/api/timesheets/v2/employee-timesheets/current_week', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -47,6 +47,16 @@ const EmployeeTimesheet = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('🕐 [EmployeeTimesheet] API error:', errorText);
+        
+        // Handle specific error cases
+        if (response.status === 404) {
+          setError('Employee record not found. Please contact your administrator to set up your employee profile.');
+        } else if (response.status === 500) {
+          setError('Server error loading timesheet. This might be because you don\'t have an employee record set up yet.');
+        } else {
+          setError(`Failed to fetch timesheet: ${response.status}`);
+        }
+        
         throw new Error(`Failed to fetch timesheet: ${response.status}`);
       }
 
@@ -78,7 +88,7 @@ const EmployeeTimesheet = () => {
     try {
       console.log('🕐 [EmployeeTimesheet] Fetching time off requests');
       
-      const response = await fetch('/api/timesheets/v2/time-off-requests/', {
+      const response = await fetch('/api/timesheets/v2/time-off-requests', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -101,7 +111,7 @@ const EmployeeTimesheet = () => {
     try {
       console.log('🕐 [EmployeeTimesheet] Fetching clock status');
       
-      const response = await fetch('/api/timesheets/v2/clock-entries/status/', {
+      const response = await fetch('/api/timesheets/v2/clock-entries/status', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -122,6 +132,12 @@ const EmployeeTimesheet = () => {
   // Initial data fetch
   useEffect(() => {
     if (!sessionLoading && session?.authenticated) {
+      console.log('🕐 [EmployeeTimesheet] Session loaded, checking for employee record:', {
+        hasEmployee: !!session?.user?.employee,
+        userRole: session?.user?.role,
+        userEmail: session?.user?.email
+      });
+      
       fetchCurrentTimesheet();
       fetchTimeOffRequests();
       fetchClockStatus();
@@ -147,7 +163,7 @@ const EmployeeTimesheet = () => {
       console.log('🕐 [EmployeeTimesheet] Saving timesheet entries');
       setSaving(true);
 
-      const response = await fetch(`/api/timesheets/v2/employee-timesheets/${currentTimesheet.id}/update_entries/`, {
+      const response = await fetch(`/api/timesheets/v2/employee-timesheets/${currentTimesheet.id}/update_entries`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -192,7 +208,7 @@ const EmployeeTimesheet = () => {
       console.log('🕐 [EmployeeTimesheet] Submitting timesheet for approval');
       setSaving(true);
 
-      const response = await fetch(`/api/timesheets/v2/employee-timesheets/${currentTimesheet.id}/submit_for_approval/`, {
+      const response = await fetch(`/api/timesheets/v2/employee-timesheets/${currentTimesheet.id}/submit_for_approval`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -223,7 +239,7 @@ const EmployeeTimesheet = () => {
     try {
       console.log('🕐 [EmployeeTimesheet] Clocking in');
       
-      const response = await fetch('/api/timesheets/v2/clock-entries/clock_in/', {
+      const response = await fetch('/api/timesheets/v2/clock-entries/clock_in', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -249,7 +265,7 @@ const EmployeeTimesheet = () => {
     try {
       console.log('🕐 [EmployeeTimesheet] Clocking out');
       
-      const response = await fetch('/api/timesheets/v2/clock-entries/clock_out/', {
+      const response = await fetch('/api/timesheets/v2/clock-entries/clock_out', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -283,23 +299,50 @@ const EmployeeTimesheet = () => {
 
   // Error state
   if (error) {
+    const isEmployeeError = error.includes('Employee record not found') || error.includes('employee record set up');
+    
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className={`border rounded-lg p-4 ${
+          isEmployeeError ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'
+        }`}>
           <div className="flex items-center">
-            <Warning className="h-5 w-5 text-red-400 mr-2" />
-            <h3 className="text-sm font-medium text-red-800">Error Loading Timesheet</h3>
+            <Warning className={`h-5 w-5 mr-2 ${
+              isEmployeeError ? 'text-blue-400' : 'text-red-400'
+            }`} />
+            <h3 className={`text-sm font-medium ${
+              isEmployeeError ? 'text-blue-800' : 'text-red-800'
+            }`}>
+              {isEmployeeError ? 'Setup Required' : 'Error Loading Timesheet'}
+            </h3>
           </div>
-          <p className="mt-2 text-sm text-red-700">{error}</p>
-          <button
-            onClick={() => {
-              setError(null);
-              fetchCurrentTimesheet();
-            }}
-            className="mt-3 text-sm font-medium text-red-800 hover:text-red-900"
-          >
-            Try Again
-          </button>
+          <p className={`mt-2 text-sm ${
+            isEmployeeError ? 'text-blue-700' : 'text-red-700'
+          }`}>
+            {error}
+          </p>
+          {isEmployeeError ? (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-blue-600">
+                To use the timesheet feature, you need an employee profile set up. This is typically done by:
+              </p>
+              <ul className="text-sm text-blue-600 list-disc list-inside ml-4">
+                <li>Your administrator or HR department</li>
+                <li>Going to the HR section and creating your employee profile</li>
+                <li>Being invited as an employee by your organization</li>
+              </ul>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setError(null);
+                fetchCurrentTimesheet();
+              }}
+              className="mt-3 text-sm font-medium text-red-800 hover:text-red-900"
+            >
+              Try Again
+            </button>
+          )}
         </div>
       </div>
     );
@@ -715,7 +758,7 @@ const NewTimeOffRequestForm = ({ onClose, onSuccess }) => {
     try {
       console.log('🕐 [NewTimeOffRequestForm] Submitting request:', formData);
 
-      const response = await fetch('/api/timesheets/v2/time-off-requests/', {
+      const response = await fetch('/api/timesheets/v2/time-off-requests', {
         method: 'POST',
         credentials: 'include',
         headers: {

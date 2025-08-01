@@ -18,6 +18,17 @@ from .views import (
     BankingRuleViewSet,
 )
 
+# Import new V2 views
+from .views_v2 import (
+    SyncTransactionsView,
+    BankingTransactionsView,
+    BankingAccountsView,
+    ReconciliationView,
+    CashFlowReportView,
+    AccountBalancesView,
+    MonthlyStatementsView,
+)
+
 # Create router for ViewSets
 router = DefaultRouter()
 router.register(r'rules', BankingRuleViewSet, basename='banking-rules')
@@ -41,4 +52,13 @@ urlpatterns = [
     
     # New secure endpoints
     path('import-csv/', BankTransactionImportView.as_view(), name='import-csv'),
+    
+    # New V2 Banking Endpoints as per requirements
+    path('sync/transactions/', SyncTransactionsView.as_view(), name='sync-transactions'),
+    path('transactions/', BankingTransactionsView.as_view(), name='banking-transactions'),
+    path('accounts/', BankingAccountsView.as_view(), name='banking-accounts'),
+    path('reconciliation/', ReconciliationView.as_view(), name='reconciliation'),
+    path('cash-flow/', CashFlowReportView.as_view(), name='cash-flow-report'),
+    path('account-balances/', AccountBalancesView.as_view(), name='account-balances'),
+    path('monthly-statements/', MonthlyStatementsView.as_view(), name='monthly-statements'),
 ]
