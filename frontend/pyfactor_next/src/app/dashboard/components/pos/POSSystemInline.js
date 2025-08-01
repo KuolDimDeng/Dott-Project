@@ -132,7 +132,7 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
 
 // Main POS Component
 export default function POSSystemInline({ onBack, onSaleCompleted }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('pos');
   const [cartItems, setCartItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -261,17 +261,22 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     let searchTerms = [];
     
     try {
-      // Try parsing as JSON directly
-      productData = JSON.parse(scannedCode);
-      
-      // Extract search terms from JSON
-      if (productData.id) searchTerms.push(productData.id);
-      if (productData.sku) searchTerms.push(productData.sku);
-      if (productData.name) searchTerms.push(productData.name);
-      if (productData.barcode) searchTerms.push(productData.barcode);
-      
+      // Only try to parse as JSON if it looks like JSON
+      if (scannedCode.trim().startsWith('{') || scannedCode.trim().startsWith('[')) {
+        productData = JSON.parse(scannedCode);
+        
+        // Extract search terms from JSON
+        if (productData.id) searchTerms.push(productData.id);
+        if (productData.sku) searchTerms.push(productData.sku);
+        if (productData.name) searchTerms.push(productData.name);
+        if (productData.barcode) searchTerms.push(productData.barcode);
+      } else {
+        // Not JSON, treat as simple barcode
+        searchTerms.push(scannedCode.trim());
+      }
     } catch (e) {
-      // Clean the scanned code for simple barcodes
+      // If JSON parsing fails, treat as simple barcode
+      console.log('[POS] Not valid JSON, treating as simple barcode:', scannedCode);
       let cleanCode = scannedCode.trim().replace(/[{}"']/g, '');
       searchTerms.push(cleanCode, scannedCode.trim());
     }
@@ -481,7 +486,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             </button>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center">
               <ShoppingCartIcon className="h-6 w-6 mr-2" />
-              {t('posSystem')}
+              {t('title')}
             </h1>
           </div>
           <div className="flex items-center space-x-4">
