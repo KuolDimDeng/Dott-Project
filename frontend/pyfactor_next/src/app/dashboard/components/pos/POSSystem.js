@@ -864,7 +864,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
       {/* Main POS Dialog */}
     <Transition appear show={isOpen}>
-      <Dialog as="div" className="relative z-50" onClose={() => {
+      <Dialog as="div" className="relative z-[9999]" onClose={() => {
         console.log('[POSSystem] Dialog onClose triggered');
         onClose();
       }}>
