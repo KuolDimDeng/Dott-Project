@@ -149,7 +149,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [completedSaleData, setCompletedSaleData] = useState(null);
   const [businessInfo, setBusinessInfo] = useState({
-    name: 'Business Name',
+    name: '',
     address: '',
     phone: '',
     email: ''
@@ -202,11 +202,29 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       try {
         setProductsLoading(true);
         // Fetch from backend
-        const response = await fetch('/api/pos/products/');
+        const response = await fetch('/api/pos/products/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch products');
+          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
         }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('[POS] Response is not JSON:', contentType);
+          const text = await response.text();
+          console.error('[POS] Response text:', text.substring(0, 200));
+          throw new Error('Server returned non-JSON response. Please check your authentication.');
+        }
+        
         const data = await response.json();
+        console.log('[POS] Products fetched successfully:', data);
         
         if (data.results) {
           setProducts(data.results);
@@ -218,22 +236,82 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       } catch (error) {
         safeLogger.error('[POS] Error fetching products:', error);
         setProductsError(error.message);
-        toast.error(
-          t('failedToLoadProducts', 'Failed to load products. Please check your inventory.')
-        );
+        
+        // More specific error message based on error type
+        if (error.message.includes('JSON')) {
+          toast.error('Unable to load products. Please check your authentication.');
+        } else {
+          toast.error(
+            t('failedToLoadProducts', 'Failed to load products. Please check your inventory.')
+          );
+        }
       } finally {
         setProductsLoading(false);
       }
     };
 
     fetchProducts();
+  }, [t]);
+
+  // Load customers from backend
+  const [customers, setCustomers] = useState([]);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/customers/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.results) {
+            setCustomers(data.results);
+          } else if (Array.isArray(data)) {
+            setCustomers(data);
+          }
+        }
+      } catch (error) {
+        console.error('[POS] Error fetching customers:', error);
+        // Don't show error toast for customers as it's optional
+      }
+    };
+
+    fetchCustomers();
   }, []);
 
-  const mockCustomers = [
-    { id: '1', name: 'John Doe', email: 'john@example.com' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
-    { id: '3', name: 'Bob Johnson', email: 'bob@example.com' },
-  ];
+  // Load business info
+  useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      try {
+        const response = await fetch('/api/users/me/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setBusinessInfo({
+            name: data.business_name || data.businessName || 'Business Name',
+            address: data.business_address || '',
+            phone: data.business_phone || '',
+            email: data.email || ''
+          });
+        }
+      } catch (error) {
+        console.error('[POS] Error fetching business info:', error);
+      }
+    };
+
+    fetchBusinessInfo();
+  }, []);
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
@@ -408,7 +486,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         ...saleData,
         ...result,
         invoice_number: result.invoice_number || result.id,
-        customer: selectedCustomer ? mockCustomers.find(c => c.id === selectedCustomer) : null,
+        customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null,
       };
 
       // Show receipt dialog instead of just closing
@@ -630,7 +708,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">{t('walkInCustomer')}</option>
-                {mockCustomers.map(customer => (
+                {customers.map(customer => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name} - {customer.email}
                   </option>
