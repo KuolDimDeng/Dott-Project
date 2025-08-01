@@ -172,37 +172,6 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // CRITICAL FIX: Add session management to update userData when session loads
   const { session, loading: sessionLoading } = useSession();
   
-  // Update userData state when session data is available
-  useEffect(() => {
-    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG START ===');
-    console.log('🚨 [DashboardContent] Session loading:', sessionLoading);
-    console.log('🚨 [DashboardContent] Session object:', session);
-    console.log('🚨 [DashboardContent] Session user:', session?.user);
-    
-    if (session?.user && !sessionLoading) {
-      console.log('🚨 [DashboardContent] Updating userData state with session data');
-      updateState({ userData: session.user });
-    }
-    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG END ===');
-  }, [session, sessionLoading]);
-
-  // Handle clearCreateOptions event
-  useEffect(() => {
-    const handleClearCreateOptions = () => {
-      console.log('[DashboardContent] Clearing create options from event');
-      updateState({ 
-        showCreateOptions: false,
-        selectedOption: null,
-        view: 'dashboard'
-      });
-    };
-
-    window.addEventListener('clearCreateOptions', handleClearCreateOptions);
-    
-    return () => {
-      window.removeEventListener('clearCreateOptions', handleClearCreateOptions);
-    };
-  }, [updateState]);
 
   // Fetch Auth0 profile data on mount
   useEffect(() => {
@@ -378,6 +347,38 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       console.error('[DashboardContent] Error stack:', error.stack);
     }
   }, []);
+
+  // Update userData state when session data is available
+  useEffect(() => {
+    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG START ===');
+    console.log('🚨 [DashboardContent] Session loading:', sessionLoading);
+    console.log('🚨 [DashboardContent] Session object:', session);
+    console.log('🚨 [DashboardContent] Session user:', session?.user);
+    
+    if (session?.user && !sessionLoading) {
+      console.log('🚨 [DashboardContent] Updating userData state with session data');
+      updateState({ userData: session.user });
+    }
+    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG END ===');
+  }, [session, sessionLoading, updateState]);
+
+  // Handle clearCreateOptions event
+  useEffect(() => {
+    const handleClearCreateOptions = () => {
+      console.log('[DashboardContent] Clearing create options from event');
+      updateState({ 
+        showCreateOptions: false,
+        selectedOption: null,
+        view: 'dashboard'
+      });
+    };
+
+    window.addEventListener('clearCreateOptions', handleClearCreateOptions);
+    
+    return () => {
+      window.removeEventListener('clearCreateOptions', handleClearCreateOptions);
+    };
+  }, [updateState]);
   
   // Memoize commonly used callbacks with optimized equality checks
   const setAnchorEl = useCallback((value) => {
