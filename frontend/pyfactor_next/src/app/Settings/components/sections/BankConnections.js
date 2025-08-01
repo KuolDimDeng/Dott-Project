@@ -4,7 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { useNotification } from '@/context/NotificationContext';
 import { BanknotesIcon, PlusIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { bankAccountsApi } from '@/services/api/banking';
-import ConnectBank from '@/app/dashboard/components/forms/ConnectBank';
+// Import ConnectBank dynamically to handle potential loading issues
+import dynamic from 'next/dynamic';
+
+const ConnectBank = dynamic(
+  () => import('@/app/dashboard/components/forms/ConnectBank'),
+  {
+    loading: () => <div className="text-center p-4">Loading bank connection...</div>,
+    ssr: false
+  }
+);
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { logger } from '@/utils/logger';
 
@@ -36,12 +45,50 @@ const BankConnections = () => {
   const loadBankAccounts = async () => {
     logger.info('🎯 [BankConnections] === LOADING BANK ACCOUNTS ===');
     setLoading(true);
+    
     try {
-      const response = await bankAccountsApi.list();
-      logger.debug('🎯 [BankConnections] Bank accounts API response:', response);
+      // Direct fetch with better error handling
+      const response = await fetch('/api/banking/accounts', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      logger.debug('🎯 [BankConnections] Response status:', response.status);
+      logger.debug('🎯 [BankConnections] Response ok:', response.ok);
+
+      if (!response.ok) {
+        // Handle specific HTTP errors
+        if (response.status === 404) {
+          logger.info('🎯 [BankConnections] No accounts found (404)');
+          setConnectedAccounts([]);
+          return;
+        }
+        
+        const errorText = await response.text();
+        logger.error('🎯 [BankConnections] HTTP error:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      logger.debug('🎯 [BankConnections] Raw API response:', data);
+      
+      // Handle both array and object responses
+      let accountsData = [];
+      if (data) {
+        if (Array.isArray(data)) {
+          accountsData = data;
+        } else if (data.data && Array.isArray(data.data)) {
+          accountsData = data.data;
+        } else if (data.accounts && Array.isArray(data.accounts)) {
+          accountsData = data.accounts;
+        }
+      }
       
       // Transform accounts to include status and metadata
-      const accounts = (response.data || []).map(account => ({
+      const accounts = accountsData.map(account => ({
         ...account,
         status: account.is_active ? 'connected' : 'disconnected',
         provider: account.integration_type || account.provider || 'plaid',
@@ -51,9 +98,22 @@ const BankConnections = () => {
 
       setConnectedAccounts(accounts);
       logger.info('🎯 [BankConnections] Loaded accounts count:', accounts.length);
+      
     } catch (error) {
       logger.error('🎯 [BankConnections] Error loading bank accounts:', error);
-      notifyError('Failed to load bank accounts');
+      logger.error('🎯 [BankConnections] Full error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Set empty array to show empty state instead of hanging
+      setConnectedAccounts([]);
+      
+      // Only show error notification if it's not a 404 (no accounts)
+      if (!error.message?.includes('404') && !error.message?.includes('No accounts')) {
+        notifyError('Failed to load bank accounts');
+      }
     } finally {
       setLoading(false);
     }
@@ -320,13 +380,37 @@ const BankConnections = () => {
               </button>
             </div>
             
-            <ConnectBank
-              preferredProvider={shouldUseWise() ? { provider: 'wise' } : { provider: 'plaid' }}
-              businessCountry={businessCountry}
-              autoConnect={false}
-              onSuccess={handleBankConnected}
-              onClose={() => setShowConnectModal(false)}
-            />
+            <div className="space-y-4">
+              {/* Fallback UI while ConnectBank is loading or if it fails */}
+              <div className="p-6 bg-blue-50 rounded-lg text-center">
+                <BanknotesIcon className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                  Connect with {shouldUseWise() ? 'Wise' : 'Plaid'}
+                </h4>
+                <p className="text-sm text-gray-600 mb-6">
+                  Securely connect your bank account to sync transactions and automate payments.
+                </p>
+                
+                <button
+                  onClick={() => {
+                    // For now, show a message that the feature is being loaded
+                    alert('Bank connection feature is loading. This will be available shortly.');
+                  }}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Continue with {shouldUseWise() ? 'Wise' : 'Plaid'}
+                </button>
+              </div>
+              
+              {/* Load the actual ConnectBank component */}
+              <ConnectBank
+                preferredProvider={shouldUseWise() ? { provider: 'wise' } : { provider: 'plaid' }}
+                businessCountry={businessCountry}
+                autoConnect={false}
+                onSuccess={handleBankConnected}
+                onClose={() => setShowConnectModal(false)}
+              />
+            </div>
           </div>
         </div>
       )}
