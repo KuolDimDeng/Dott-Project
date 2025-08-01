@@ -9,6 +9,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 // Empty loading component (removed spinner)
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import { captureEvent, capturePageView } from '@/lib/posthog';
+import POSSystemInline from './pos/POSSystemInline';
 
 const LoadingComponent = () => (
   <div className="py-4 flex items-center justify-center">
@@ -2232,10 +2233,16 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {selectedOption === 'Customer' && <CustomerManagement />}
               {selectedOption === 'Vendor' && <VendorManagement newVendor={true} />}
               {selectedOption === 'Sales' && (
-                <div className="p-4 text-center">
-                  <p className="text-gray-500">POS System is loading...</p>
-                  {/* POS is handled by DashboardContent's showPOSSystem state */}
-                </div>
+                <POSSystemInline 
+                  onBack={() => {
+                    // Reset the selectedOption or navigate back
+                    resetAllStates && resetAllStates();
+                  }}
+                  onSaleCompleted={(saleData) => {
+                    // Handle sale completion
+                    console.log('Sale completed:', saleData);
+                  }}
+                />
               )}
               {selectedOption === 'Job' && <JobManagement />}
               {selectedOption === 'Product' && <ProductManagement />}

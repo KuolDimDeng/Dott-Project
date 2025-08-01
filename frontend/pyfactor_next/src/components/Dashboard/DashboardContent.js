@@ -33,7 +33,7 @@ import { useAuth } from '@/hooks/auth';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import DashboardLoader from '@/components/DashboardLoader';
 import { ensureAuthProvider } from '@/utils/refreshUserSession';
-import POSSystem from '../../app/dashboard/components/pos/POSSystem';
+// POSSystem is no longer needed - we use POSSystemInline in RenderMainContent
 import DashboardErrorBoundary from './DashboardErrorBoundary';
 import { useSession } from '@/hooks/useSession-v2';
 
@@ -906,15 +906,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   const handleShowCreateOptions = useCallback((option) => {
     console.log('🎯 [DashboardContent] handleShowCreateOptions called with:', option);
-    // Special handling for Sales option - directly open POS modal
-    if (option === 'Sales') {
-      console.log('🎯 [DashboardContent] Sales option detected - Opening POS System');
-      console.log('🎯 [DashboardContent] Before resetAllStates, showPOSSystem:', showPOSSystem);
-      resetAllStates();
-      console.log('🎯 [DashboardContent] After resetAllStates, calling setShowPOSSystem(true)');
-      setShowPOSSystem(true);
-      return;
-    }
+    // No special handling for Sales option anymore - it will be rendered inline
     
     if (option === selectedOption && showCreateOptions) return; // Skip if no change
     
@@ -1702,20 +1694,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     <>
       {dashboardContent}
       
-      {/* POS System */}
-      {console.log('🎯 [DashboardContent] Rendering POS System component, showPOSSystem:', showPOSSystem)}
-      <POSSystem
-        isOpen={showPOSSystem}
-        onClose={() => {
-          console.log('🎯 [DashboardContent] POS onClose called');
-          setShowPOSSystem(false);
-        }}
-        onSaleCompleted={(saleData) => {
-          console.log('🎯 [DashboardContent] Sale completed:', saleData);
-          logger.info('[DashboardContent] Sale completed:', saleData);
-          // Optionally refresh data or show confirmation
-        }}
-      />
+      {/* POS System is now rendered inline in RenderMainContent */}
     </>
   );
 }
