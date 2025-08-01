@@ -72,19 +72,40 @@ export const plaidApi = {
       body: JSON.stringify(payload)
     }).then(response => {
       logger.info('🏦 [plaidApi] Link token response status:', response.status);
+      logger.info('🏦 [plaidApi] Link token response headers:', response.headers);
       
       if (!response.ok) {
         return response.text().then(errorText => {
-          logger.error('🏦 [plaidApi] Link token error response:', errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+          logger.error('🏦 [plaidApi] Link token error response text:', errorText);
+          
+          // Try to parse as JSON for better error details
+          try {
+            const errorJson = JSON.parse(errorText);
+            logger.error('🏦 [plaidApi] Link token error parsed:', errorJson);
+            
+            // Extract meaningful error message
+            const errorMessage = errorJson.error || errorJson.detail || errorJson.message || 'Unknown error';
+            throw new Error(`${errorMessage} (HTTP ${response.status})`);
+          } catch (e) {
+            // If not JSON, throw with raw text
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
         });
       }
       return response.json();
     }).then(data => {
       logger.info('🏦 [plaidApi] Link token data received:', data);
+      
+      // Validate response structure
+      if (!data.link_token && !data.auth_url) {
+        logger.error('🏦 [plaidApi] Invalid response - no link_token or auth_url:', data);
+        throw new Error('Invalid response from server - no link token received');
+      }
+      
       return { data };
     }).catch(error => {
       logger.error('🏦 [plaidApi] Link token creation failed:', error);
+      logger.error('🏦 [plaidApi] Error stack:', error.stack);
       throw error;
     });
   },
