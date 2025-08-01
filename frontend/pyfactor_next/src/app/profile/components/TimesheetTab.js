@@ -3,6 +3,7 @@
 import React from 'react';
 import EmployeeTimesheet from '@/components/Timesheet/EmployeeTimesheet';
 
+const TimesheetTab = ({ employee, session }) => {
   console.log('🕐 [TimesheetTab] === COMPONENT LOADED ===');
   console.log('🕐 [TimesheetTab] Employee prop:', employee);
   console.log('🕐 [TimesheetTab] Session prop:', {
@@ -16,4 +17,4 @@ import EmployeeTimesheet from '@/components/Timesheet/EmployeeTimesheet';
   );
 };
 
-export default TimesheetTab;// Trigger deployment for timesheet system - v2
+export default TimesheetTab;
