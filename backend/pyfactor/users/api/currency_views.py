@@ -15,17 +15,18 @@ from currency.exchange_rate_service import exchange_rate_service
 from currency.currency_validator import CurrencyValidator, CurrencyConversionValidator
 from decimal import Decimal
 import traceback
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 # Conditionally import cache service to avoid failures
 try:
     from core.cache_service import cache_service
     CACHE_AVAILABLE = True
+    logger.info("[Currency API] Cache service imported successfully")
 except Exception as e:
     logger.warning(f"Cache service not available: {str(e)}")
     CACHE_AVAILABLE = False
     cache_service = None
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @api_view(['GET'])
@@ -411,23 +412,32 @@ def get_currency_preferences(request):
         
         logger.info(f"[Currency API] Preparing response with currency: {business_details.preferred_currency_code}")
         
-        # Get accounting standard info
-        from users.accounting_standards import get_accounting_standard_display, is_dual_standard_country
+        # Get accounting standard info safely
+        try:
+            from users.accounting_standards import get_accounting_standard_display, is_dual_standard_country
+            accounting_standard = getattr(business_details, 'accounting_standard', 'IFRS')
+            country = getattr(business_details, 'country', 'US')
+            accounting_display = get_accounting_standard_display(accounting_standard, country)
+            allows_dual = is_dual_standard_country(country)
+        except Exception as std_error:
+            logger.warning(f"[Currency API] Could not import accounting standards: {str(std_error)}")
+            accounting_display = getattr(business_details, 'accounting_standard', 'IFRS')
+            allows_dual = False
         
+        # Return preferences format to match frontend expectations
         response_data = {
             'success': True,
-            'currency_code': business_details.preferred_currency_code,
-            'currency_name': business_details.preferred_currency_name,
-            'currency_symbol': currency_symbol,
-            'show_usd_on_invoices': business_details.show_usd_on_invoices,
-            'show_usd_on_quotes': business_details.show_usd_on_quotes,
-            'show_usd_on_reports': business_details.show_usd_on_reports,
-            'accounting_standard': business_details.accounting_standard,
-            'accounting_standard_display': get_accounting_standard_display(
-                business_details.accounting_standard, 
-                business_details.country
-            ),
-            'allows_dual_standard': is_dual_standard_country(business_details.country)
+            'preferences': {
+                'currency_code': business_details.preferred_currency_code,
+                'currency_name': business_details.preferred_currency_name,
+                'currency_symbol': currency_symbol,
+                'show_usd_on_invoices': business_details.show_usd_on_invoices,
+                'show_usd_on_quotes': business_details.show_usd_on_quotes,
+                'show_usd_on_reports': business_details.show_usd_on_reports,
+                'accounting_standard': getattr(business_details, 'accounting_standard', 'IFRS'),
+                'accounting_standard_display': accounting_display,
+                'allows_dual_standard': allows_dual
+            }
         }
         
         # Cache the response for GET requests if available
