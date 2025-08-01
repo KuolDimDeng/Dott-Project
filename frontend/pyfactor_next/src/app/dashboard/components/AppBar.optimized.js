@@ -16,6 +16,7 @@ import DashboardLanguageSelector from './LanguageSelector';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { useNotification } from '@/context/NotificationContext';
+import CurrencyDisplay from '@/components/CurrencyDisplay';
 import { logger } from '@/utils/logger';
 import { Avatar, Box } from '@/components/ui/TailwindComponents';
 import SubscriptionPopup from './SubscriptionPopup';
@@ -1669,6 +1670,11 @@ const [state, dispatch] = useReducer(reducer, initialState);
                     <span className="whitespace-nowrap text-xs inline-block">
                       {displayLabel}
                     </span>
+                    <CurrencyDisplay 
+                      className="ml-2 text-xs text-white/80" 
+                      showName={false} 
+                      showSymbol={false} 
+                    />
                     {businessData.subscription_type === 'free' && (
                       <button
                         className="ml-auto text-xs py-1 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
@@ -2015,6 +2021,11 @@ const [state, dispatch] = useReducer(reducer, initialState);
                         <span className="text-white text-sm flex-1">
                           {displayLabel}
                         </span>
+                        <CurrencyDisplay 
+                          className="ml-2 text-sm text-white/80" 
+                          showName={false} 
+                          showSymbol={false} 
+                        />
                         {businessData.subscription_type === 'free' && (
                           <button
                             className="ml-auto text-xs py-1 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"

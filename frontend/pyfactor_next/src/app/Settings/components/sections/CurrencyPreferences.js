@@ -6,10 +6,12 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { useNotification } from '@/context/NotificationContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { formatCurrency, getAllCurrencies } from '@/utils/currencyFormatter';
 
 const CurrencyPreferences = () => {
   const { notifySuccess, notifyError } = useNotification();
+  const { updateCurrency: updateGlobalCurrency } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [currencies, setCurrencies] = useState([]);
   const [preferences, setPreferences] = useState({
@@ -329,11 +331,24 @@ const CurrencyPreferences = () => {
         console.log('🚀 [CURRENCY-FRONTEND] New currency set:', data.currency_code);
         console.log('🚀 [CURRENCY-FRONTEND] All future invoices/quotes will use:', data.currency_code);
         
-        setPreferences(data);
-        notifySuccess(`✅ Currency updated to ${data.currency_name}. All new invoices and quotes will use this currency.`);
+        // Update preferences with the response data
+        const updatedPreferences = {
+          currency_code: data.currency_code || currencyCode,
+          currency_name: data.currency_name || `${currencyCode} Currency`,
+          currency_symbol: data.currency_symbol || '$',
+          show_usd_on_invoices: data.show_usd_on_invoices ?? preferences.show_usd_on_invoices,
+          show_usd_on_quotes: data.show_usd_on_quotes ?? preferences.show_usd_on_quotes,
+          show_usd_on_reports: data.show_usd_on_reports ?? preferences.show_usd_on_reports,
+        };
+        
+        setPreferences(updatedPreferences);
+        
+        // Update global currency context
+        updateGlobalCurrency(updatedPreferences);
+        
+        notifySuccess(`✅ Currency updated to ${updatedPreferences.currency_name}. All displays will update automatically.`);
         setShowConfirmModal(false);
         setPendingCurrency(null);
-        setExchangeRateInfo(null);
       } else {
         console.error('🚀 [CurrencyPreferences] Update failed:', data.error);
         notifyError(data.error || 'Failed to update currency');
