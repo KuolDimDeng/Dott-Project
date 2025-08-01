@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { usePlaidLink } from 'react-plaid-link';
+import React, { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { plaidApi, bankAccountsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
+
+// Dynamically import Plaid hook to prevent errors when not needed
+const PlaidLinkComponent = dynamic(
+  () => import('./PlaidLinkComponent').then(mod => mod.PlaidLinkComponent),
+  { 
+    ssr: false,
+    loading: () => <div className="text-center p-4">Loading Plaid...</div>
+  }
+);
 
 const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false, onSuccess = null, onClose = null }) => {
   const [region, setRegion] = useState('');
@@ -126,46 +135,6 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
     }
   };
 
-  // Only initialize Plaid Link when we have a valid token
-  // Provide a default configuration to prevent null errors
-  const plaidConfig = linkToken ? {
-    token: linkToken,
-    onSuccess: (public_token, metadata) => {
-      console.log('🏦 [ConnectBank] Bank connection successful');
-      logger.info('🏦 [ConnectBank] Plaid Link success:', { public_token, metadata });
-      exchangePublicToken(public_token);
-    },
-    onExit: (err, metadata) => {
-      console.log('🏦 [ConnectBank] Plaid Link exited', err, metadata);
-      logger.error('🏦 [ConnectBank] Plaid Link exit error:', err);
-      if (err) {
-        setError(`Plaid connection failed: ${err.error_message || err.message || 'Unknown error'}`);
-        setSnackbar({ open: true, message: `Failed to connect bank: ${err.error_message || err.message || 'Unknown error'}`, severity: 'error' });
-      }
-    },
-    onEvent: (eventName, metadata) => {
-      console.log('🏦 [ConnectBank] Plaid Link event', eventName, metadata);
-      logger.debug('🏦 [ConnectBank] Plaid Link event:', { eventName, metadata });
-    },
-  } : {
-    token: null, // Provide a default token to prevent null errors
-    onSuccess: () => {},
-    onExit: () => {},
-    onEvent: () => {},
-  };
-
-  const { open, ready } = usePlaidLink(plaidConfig);
-
-  useEffect(() => {
-    logger.info('🏦 [ConnectBank] Plaid Link useEffect triggered:', { linkToken: !!linkToken, ready, linkTokenValue: linkToken });
-    
-    // Only attempt to open Plaid Link if we have a valid token and ready is true
-    if (linkToken && ready && open) {
-      logger.info('🏦 [ConnectBank] Opening Plaid Link with token');
-      open();
-    }
-    // Don't show error for null token on initial load - user hasn't clicked connect yet
-  }, [linkToken, ready, open]);
 
   const exchangePublicToken = async (public_token) => {
     try {
@@ -267,29 +236,48 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
                     You'll be redirected to your bank's secure login page.
                   </p>
                   
-                  <button
-                    className={`w-full py-3 px-4 rounded-md font-medium ${
-                      loading
-                        ? 'bg-blue-300 cursor-not-allowed text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                    onClick={handleConnect}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center">
-                        <ButtonSpinner />
-                        Connecting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center">
-                        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                        </svg>
-                        Connect with Plaid
-                      </div>
-                    )}
-                  </button>
+                  {linkToken ? (
+                    <PlaidLinkComponent
+                      linkToken={linkToken}
+                      onSuccess={(public_token, metadata) => {
+                        console.log('🏦 [ConnectBank] Bank connection successful');
+                        logger.info('🏦 [ConnectBank] Plaid Link success:', { public_token, metadata });
+                        exchangePublicToken(public_token);
+                      }}
+                      onExit={(err, metadata) => {
+                        console.log('🏦 [ConnectBank] Plaid Link exited', err, metadata);
+                        logger.error('🏦 [ConnectBank] Plaid Link exit error:', err);
+                        if (err) {
+                          setError(`Plaid connection failed: ${err.error_message || err.message || 'Unknown error'}`);
+                          setSnackbar({ open: true, message: `Failed to connect bank: ${err.error_message || err.message || 'Unknown error'}`, severity: 'error' });
+                        }
+                      }}
+                    />
+                  ) : (
+                    <button
+                      className={`w-full py-3 px-4 rounded-md font-medium ${
+                        loading
+                          ? 'bg-blue-300 cursor-not-allowed text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                      onClick={handleConnect}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <ButtonSpinner />
+                          Connecting...
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                          </svg>
+                          Connect with Plaid
+                        </div>
+                      )}
+                    </button>
+                  )}
                   
                   <div className="text-xs text-gray-500 mt-4">
                     <p className="font-medium mb-1">🔒 Your data is secure:</p>
