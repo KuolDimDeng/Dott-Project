@@ -886,6 +886,14 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, updateState]);
 
   const handleShowCreateOptions = useCallback((option) => {
+    // Special handling for Sales option - directly open POS modal
+    if (option === 'Sales') {
+      console.log('[DashboardContent] Opening POS System via handleShowCreateOptions');
+      resetAllStates();
+      setShowPOSSystem(true);
+      return;
+    }
+    
     if (option === selectedOption && showCreateOptions) return; // Skip if no change
     
     resetAllStates();
