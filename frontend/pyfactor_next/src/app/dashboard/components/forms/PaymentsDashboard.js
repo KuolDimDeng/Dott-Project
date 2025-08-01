@@ -37,35 +37,52 @@ const PaymentsDashboard = () => {
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
-    logger.debug('[PaymentsDashboard] Fetching dashboard data for tenant:', tenantId);
+    logger.info('🎯 [PaymentsDashboard] === FETCHING DASHBOARD DATA ===');
+    logger.debug('🎯 [PaymentsDashboard] Tenant ID:', tenantId);
     setIsLoading(true);
     setError(null);
 
     try {
-      // TODO: Replace with actual API endpoint when backend is ready
-      // const response = await fetch(`/api/payments/dashboard`);
-      // const data = await response.json();
-      
-      // Mock data for now
-      const mockData = {
-        totalReceived: 125000,
-        totalPending: 45000,
-        totalOverdue: 15000,
-        recentPayments: [
-          { id: 1, customer: 'ABC Corp', amount: 5000, date: '2025-01-05', status: 'completed' },
-          { id: 2, customer: 'XYZ Ltd', amount: 3500, date: '2025-01-04', status: 'pending' },
-          { id: 3, customer: 'Tech Solutions', amount: 8000, date: '2025-01-03', status: 'completed' },
-          { id: 4, customer: 'Global Services', amount: 2500, date: '2025-01-02', status: 'overdue' }
-        ]
-      };
+      logger.debug('🎯 [PaymentsDashboard] Making API request to /api/payments/dashboard');
+      const response = await fetch('/api/payments/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      setStats(mockData);
-      logger.info('[PaymentsDashboard] Dashboard data loaded successfully');
+      logger.debug('🎯 [PaymentsDashboard] API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      logger.debug('🎯 [PaymentsDashboard] API response data:', result);
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch dashboard data');
+      }
+
+      const data = result.data;
+      
+      setStats({
+        totalReceived: data.total_received || 0,
+        totalPending: data.total_pending || 0,
+        totalOverdue: data.total_overdue || 0,
+        recentPayments: data.recent_payments || []
+      });
+      
+      logger.info('🎯 [PaymentsDashboard] Dashboard data loaded successfully');
+      logger.debug('🎯 [PaymentsDashboard] Total received:', data.total_received);
+      logger.debug('🎯 [PaymentsDashboard] Recent payments count:', data.recent_payments?.length || 0);
     } catch (err) {
-      logger.error('[PaymentsDashboard] Error fetching dashboard data:', err);
+      logger.error('🎯 [PaymentsDashboard] Error fetching dashboard data:', err);
+      logger.error('🎯 [PaymentsDashboard] Error details:', { message: err.message, stack: err.stack });
       setError(err.message || 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);
+      logger.debug('🎯 [PaymentsDashboard] === FETCH COMPLETE ===');
     }
   }, [tenantId]);
 
