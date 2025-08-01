@@ -51,8 +51,8 @@ export async function GET(request) {
     // Build backend URL with guaranteed trailing slash
     // IMPORTANT: Always use api.dottapps.com for production
     const backendUrl = 'https://api.dottapps.com';
-    const endpoint = ensureTrailingSlash('/api/currency/preferences');
-    const fullUrl = ensureTrailingSlash(`${backendUrl}${endpoint}`);
+    const endpoint = '/api/currency/preferences/'; // Django requires trailing slash
+    const fullUrl = `${backendUrl}${endpoint}`;
     
     console.log('[Currency Optimized] Backend URL:', fullUrl);
     
@@ -182,8 +182,8 @@ export async function PUT(request) {
     // Build backend URL with guaranteed trailing slash
     // IMPORTANT: Always use api.dottapps.com for production
     const backendUrl = 'https://api.dottapps.com';
-    const endpoint = ensureTrailingSlash('/api/currency/preferences');
-    const fullUrl = ensureTrailingSlash(`${backendUrl}${endpoint}`);
+    const endpoint = '/api/currency/preferences/'; // Django requires trailing slash
+    const fullUrl = `${backendUrl}${endpoint}`;
     
     console.log('🔄 [Currency API] Backend URL:', fullUrl);
     
