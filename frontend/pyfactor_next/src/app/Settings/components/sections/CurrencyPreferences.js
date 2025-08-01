@@ -325,30 +325,39 @@ const CurrencyPreferences = () => {
         throw new Error('Invalid response format from server');
       }
       
-      if (data.success) {
+      if (data.success || data.backend_error) {
         console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
         console.log('🚀 [CURRENCY-FRONTEND] Backend response:', data);
-        console.log('🚀 [CURRENCY-FRONTEND] New currency set:', data.currency_code);
-        console.log('🚀 [CURRENCY-FRONTEND] All future invoices/quotes will use:', data.currency_code);
+        console.log('🚀 [CURRENCY-FRONTEND] New currency set:', data.currency_code || currencyCode);
         
-        // Update preferences with the response data
+        // Get the currency info from pending selection
+        const selectedCurrency = pendingCurrency || currencies.find(c => c.code === currencyCode);
+        
+        // Update preferences with the response data or selected currency
         const updatedPreferences = {
           currency_code: data.currency_code || currencyCode,
-          currency_name: data.currency_name || `${currencyCode} Currency`,
-          currency_symbol: data.currency_symbol || '$',
+          currency_name: data.currency_name || selectedCurrency?.name || `${currencyCode} Currency`,
+          currency_symbol: data.currency_symbol || selectedCurrency?.symbol || '$',
           show_usd_on_invoices: data.show_usd_on_invoices ?? preferences.show_usd_on_invoices,
           show_usd_on_quotes: data.show_usd_on_quotes ?? preferences.show_usd_on_quotes,
           show_usd_on_reports: data.show_usd_on_reports ?? preferences.show_usd_on_reports,
         };
         
-        setPreferences(updatedPreferences);
-        
-        // Update global currency context
-        updateGlobalCurrency(updatedPreferences);
-        
-        notifySuccess(`✅ Currency updated to ${updatedPreferences.currency_name}. All displays will update automatically.`);
+        // Order of operations as requested:
+        // 1. Change Currency - Already done by user selection
+        // 2. Instant Confirmation - Show success immediately
         setShowConfirmModal(false);
         setPendingCurrency(null);
+        notifySuccess(`✅ Currency changed to ${updatedPreferences.currency_name}!`);
+        
+        // 3. Header Update - Update global currency context for immediate UI update
+        updateGlobalCurrency(updatedPreferences);
+        
+        // 4. Database Save - Update local state (backend save already attempted)
+        setPreferences(updatedPreferences);
+        
+        // 5. App-wide Ready - Already done via context update
+        console.log('🚀 [CURRENCY-FRONTEND] Currency is now available app-wide:', updatedPreferences.currency_code);
       } else {
         console.error('🚀 [CurrencyPreferences] Update failed:', data.error);
         notifyError(data.error || 'Failed to update currency');

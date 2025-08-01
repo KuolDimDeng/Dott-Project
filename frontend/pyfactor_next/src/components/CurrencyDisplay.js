@@ -14,10 +14,14 @@ const CurrencyDisplay = ({
   fallback = 'USD' 
 }) => {
   const { currency, isLoading } = useCurrency();
+  
+  // Always show something, even while loading
+  const displayCurrency = currency || { code: fallback, name: `${fallback} Currency`, symbol: '$' };
 
-  if (isLoading) {
+  // Don't wait for loading - show cached/default immediately
+  if (!displayCurrency) {
     return (
-      <span className={`text-gray-500 ${className}`}>
+      <span className={className}>
         {fallback}
       </span>
     );
@@ -25,20 +29,20 @@ const CurrencyDisplay = ({
 
   const displayText = [];
   
-  if (showSymbol && currency.symbol) {
-    displayText.push(currency.symbol);
+  if (showSymbol && displayCurrency.symbol) {
+    displayText.push(displayCurrency.symbol);
   }
   
-  if (showName && currency.name) {
-    displayText.push(currency.name);
-  } else if (!showSymbol || !currency.symbol) {
+  if (showName && displayCurrency.name) {
+    displayText.push(displayCurrency.name);
+  } else if (!showSymbol || !displayCurrency.symbol) {
     // Show code if no symbol or name
-    displayText.push(currency.code);
+    displayText.push(displayCurrency.code);
   }
 
   return (
-    <span className={className} title={`Business Currency: ${currency.name} (${currency.code})`}>
-      {displayText.join(' ') || fallback}
+    <span className={className} title={`Business Currency: ${displayCurrency.name} (${displayCurrency.code})`}>
+      {displayText.join(' ') || displayCurrency.code || fallback}
     </span>
   );
 };

@@ -1670,8 +1670,9 @@ const [state, dispatch] = useReducer(reducer, initialState);
                     <span className="whitespace-nowrap text-xs inline-block">
                       {displayLabel}
                     </span>
+                    <span className="mx-1 text-xs text-white/60">•</span>
                     <CurrencyDisplay 
-                      className="ml-2 text-xs text-white/80" 
+                      className="text-xs text-white font-medium" 
                       showName={false} 
                       showSymbol={false} 
                     />
@@ -2018,11 +2019,12 @@ const [state, dispatch] = useReducer(reducer, initialState);
                         }`}
                         onClick={handleSubscriptionClick}
                       >
-                        <span className="text-white text-sm flex-1">
+                        <span className="text-white text-sm">
                           {displayLabel}
                         </span>
+                        <span className="mx-1 text-sm text-white/60">•</span>
                         <CurrencyDisplay 
-                          className="ml-2 text-sm text-white/80" 
+                          className="text-sm text-white font-medium" 
                           showName={false} 
                           showSymbol={false} 
                         />

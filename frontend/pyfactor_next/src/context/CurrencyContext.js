@@ -22,11 +22,26 @@ export const useCurrency = () => {
 };
 
 export const CurrencyProvider = ({ children }) => {
-  const [currency, setCurrency] = useState({
-    code: 'USD',
-    name: 'US Dollar',
-    symbol: '$'
-  });
+  // Try to load from localStorage first for instant display
+  const getInitialCurrency = () => {
+    try {
+      const cached = localStorage.getItem('dott_currency');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        console.log('[CurrencyContext] Initial currency from cache:', parsed);
+        return parsed;
+      }
+    } catch (e) {
+      console.error('[CurrencyContext] Failed to load cached currency:', e);
+    }
+    return {
+      code: 'USD',
+      name: 'US Dollar',
+      symbol: '$'
+    };
+  };
+  
+  const [currency, setCurrency] = useState(getInitialCurrency());
   const [isLoading, setIsLoading] = useState(true);
 
   // Load currency preferences on mount
@@ -38,20 +53,51 @@ export const CurrencyProvider = ({ children }) => {
         const response = await fetch('/api/currency/preferences-optimized/');
         
         if (response.ok) {
-          const data = await response.json();
-          
-          if (data.success && data.preferences) {
-            const newCurrency = {
-              code: data.preferences.currency_code || 'USD',
-              name: data.preferences.currency_name || 'US Dollar',
-              symbol: data.preferences.currency_symbol || '$'
-            };
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
             
-            console.log('[CurrencyContext] Currency loaded:', newCurrency);
-            setCurrency(newCurrency);
+            if (data.success && data.preferences) {
+              const newCurrency = {
+                code: data.preferences.currency_code || 'USD',
+                name: data.preferences.currency_name || 'US Dollar',
+                symbol: data.preferences.currency_symbol || '$'
+              };
+              
+              console.log('[CurrencyContext] Currency loaded:', newCurrency);
+              setCurrency(newCurrency);
+              
+              // Store in localStorage for quick access
+              localStorage.setItem('dott_currency', JSON.stringify(newCurrency));
+            }
+          } else {
+            console.warn('[CurrencyContext] Backend returned non-JSON response, using cached or default');
+            // Try to load from localStorage
+            const cached = localStorage.getItem('dott_currency');
+            if (cached) {
+              try {
+                const cachedCurrency = JSON.parse(cached);
+                console.log('[CurrencyContext] Using cached currency:', cachedCurrency);
+                setCurrency(cachedCurrency);
+              } catch (e) {
+                console.error('[CurrencyContext] Failed to parse cached currency');
+              }
+            }
           }
         } else {
-          console.warn('[CurrencyContext] Failed to load currency, using USD default');
+          console.warn('[CurrencyContext] Failed to load currency, using cached or default');
+          // Try to load from localStorage
+          const cached = localStorage.getItem('dott_currency');
+          if (cached) {
+            try {
+              const cachedCurrency = JSON.parse(cached);
+              console.log('[CurrencyContext] Using cached currency:', cachedCurrency);
+              setCurrency(cachedCurrency);
+            } catch (e) {
+              console.error('[CurrencyContext] Failed to parse cached currency');
+            }
+          }
         }
       } catch (error) {
         console.error('[CurrencyContext] Error loading currency:', error);
