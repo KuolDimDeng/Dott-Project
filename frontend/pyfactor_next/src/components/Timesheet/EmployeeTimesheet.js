@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
 import { PhosphorIcon } from '@phosphor-icons/react';
-import { Clock, CalendarCheck, Plus, Save, Send, AlertTriangle } from '@phosphor-icons/react';
+import { Clock, CalendarCheck, Plus, Warning } from '@phosphor-icons/react';
 
 const EmployeeTimesheet = () => {
   const { session, loading: sessionLoading } = useSession();
@@ -276,7 +275,8 @@ const EmployeeTimesheet = () => {
   if (sessionLoading || loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <StandardSpinner size="large" text="Loading timesheet..." />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Loading timesheet...</span>
       </div>
     );
   }
@@ -287,7 +287,7 @@ const EmployeeTimesheet = () => {
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
-            <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
+            <Warning className="h-5 w-5 text-red-400 mr-2" />
             <h3 className="text-sm font-medium text-red-800">Error Loading Timesheet</h3>
           </div>
           <p className="mt-2 text-sm text-red-700">{error}</p>
@@ -457,7 +457,6 @@ const TimesheetTab = ({ timesheet, entries, onUpdateEntry, onSave, onSubmit, sav
                 disabled={saving}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
               >
-                <Save className="w-4 h-4 mr-2 inline-block" />
                 {saving ? 'Saving...' : 'Save'}
               </button>
             )}
@@ -468,7 +467,6 @@ const TimesheetTab = ({ timesheet, entries, onUpdateEntry, onSave, onSubmit, sav
                 disabled={saving}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
               >
-                <Send className="w-4 h-4 mr-2 inline-block" />
                 Submit for Approval
               </button>
             )}
