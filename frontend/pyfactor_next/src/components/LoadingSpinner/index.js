@@ -86,7 +86,7 @@ export default function LoadingSpinner({
   // If fullScreen, show a centered spinner on the entire screen
   if (fullScreen) {
     return (
-      <div className={`fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 z-50 ${className}`}>
+      <div className={`absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 z-50 ${className}`}>
         {spinner}
         {text && <p className="mt-4 text-gray-600 dark:text-gray-300">{loadingText}</p>}
         {showProgress && <div className="w-64 mt-4"><ProgressBar /></div>}
@@ -97,7 +97,7 @@ export default function LoadingSpinner({
   // If overlay, show a semi-transparent overlay with spinner
   if (overlay) {
     return (
-      <div className={`fixed inset-0 bg-black/20 dark:bg-black/50 flex flex-col items-center justify-center z-50 ${className}`}>
+      <div className={`absolute inset-0 bg-black/20 dark:bg-black/50 flex flex-col items-center justify-center z-50 ${className}`}>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col items-center max-w-lg w-full">
           {spinner}
           {text && <p className="mt-3 text-gray-600 dark:text-gray-300">{loadingText}</p>}

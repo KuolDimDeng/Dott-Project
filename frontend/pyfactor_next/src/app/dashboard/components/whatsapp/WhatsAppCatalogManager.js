@@ -437,7 +437,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
 
         {/* Create Catalog Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Create New Catalog</h3>
               <form onSubmit={handleCreateCatalog}>
@@ -486,7 +486,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
 
         {/* Create Product Modal */}
         {showProductModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
               <form onSubmit={handleCreateProduct}>
@@ -616,7 +616,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
 
         {/* Sync Products Modal */}
         {showSyncModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Sync Products from Inventory</h3>
               <p className="text-gray-600 mb-4">

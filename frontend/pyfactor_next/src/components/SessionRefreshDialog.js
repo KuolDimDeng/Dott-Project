@@ -55,10 +55,10 @@ export function SessionRefreshDialog({ open, onClose, onComplete }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="session-refresh-dialog" role="dialog" aria-modal="true">
+    <div className="absolute inset-0 z-50 overflow-y-auto" aria-labelledby="session-refresh-dialog" role="dialog" aria-modal="true">
       <div className="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
         
         {/* Dialog */}
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">

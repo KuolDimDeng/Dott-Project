@@ -873,9 +873,9 @@ const CustomersManagement = () => {
         onClose={handleDeleteCancel}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-xl">
             <Dialog.Title className="text-lg font-medium text-black mb-4">
               Delete Customer
@@ -910,9 +910,9 @@ const CustomersManagement = () => {
         onClose={handleCreateCustomerCancel}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-lg bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]">
             <Dialog.Title className="text-lg font-medium text-black mb-4">
               Create New Customer
@@ -1094,9 +1094,9 @@ const CustomersManagement = () => {
         onClose={handleCloseCustomerDetails}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-3xl w-full rounded-lg bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">
               <Dialog.Title className="text-xl font-medium text-black">

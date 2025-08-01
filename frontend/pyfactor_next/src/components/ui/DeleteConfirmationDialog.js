@@ -33,7 +33,7 @@ const DeleteConfirmationDialog = ({
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="absolute inset-0 z-50 overflow-y-auto">
         <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
           <Transition.Child
             as={Fragment}
@@ -44,7 +44,7 @@ const DeleteConfirmationDialog = ({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleClose} />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleClose} />
           </Transition.Child>
 
           <Transition.Child

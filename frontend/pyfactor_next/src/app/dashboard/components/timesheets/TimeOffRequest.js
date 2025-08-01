@@ -127,7 +127,7 @@ export default function TimeOffRequest({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">

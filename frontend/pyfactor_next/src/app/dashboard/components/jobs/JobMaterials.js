@@ -365,7 +365,7 @@ const JobMaterials = ({ jobs = [] }) => {
 
       {/* Add/Edit Material Modal */}
       {showAddMaterial && selectedJob && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <form onSubmit={handleSubmit}>
               <div className="px-6 py-4 border-b border-gray-200">

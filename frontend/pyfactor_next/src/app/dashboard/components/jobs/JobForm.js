@@ -947,7 +947,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   // Modal form variant
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">

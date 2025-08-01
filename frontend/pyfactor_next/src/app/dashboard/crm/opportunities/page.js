@@ -446,7 +446,7 @@ const OpportunitiesPage = () => {
 
       {/* Opportunity Details Modal */}
       {showOppDetails && selectedOpp && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 overflow-auto py-10">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 overflow-auto py-10">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full mx-4">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-xl font-bold text-gray-800">Opportunity Details</h2>

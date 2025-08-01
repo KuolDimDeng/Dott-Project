@@ -56,9 +56,9 @@ export default function SessionTimeoutModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="absolute inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+      <div className="absolute inset-0 bg-black bg-opacity-50 transition-opacity" />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">

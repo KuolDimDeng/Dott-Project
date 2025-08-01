@@ -240,7 +240,7 @@ const TaxFormsManagement = () => {
 
       {/* Generate Form Modal */}
       {showGenerateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-96">
             <h3 className="text-lg font-semibold mb-4">Generate Tax Form</h3>
             <div className="space-y-4">

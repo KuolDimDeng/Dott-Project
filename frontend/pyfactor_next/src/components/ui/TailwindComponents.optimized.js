@@ -1352,7 +1352,7 @@ export const Backdrop = ({
   
   return (
     <div
-      className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${className}`}
+      className={`absolute inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${className}`}
       onClick={onClick}
       {...props}
     />
@@ -1779,7 +1779,7 @@ export const Dialog = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
       onClick={handleBackdropClick}
       {...props}
     >

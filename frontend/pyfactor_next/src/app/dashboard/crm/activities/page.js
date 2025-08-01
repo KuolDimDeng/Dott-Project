@@ -382,7 +382,7 @@ const ActivitiesPage = () => {
 
       {/* Activity Details Modal */}
       {showActivityModal && selectedActivity && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4">
             <div className="flex justify-between items-start mb-4">
               <div>

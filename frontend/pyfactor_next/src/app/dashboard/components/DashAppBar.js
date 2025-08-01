@@ -1696,7 +1696,7 @@ const DashAppBar = ({
         <>
           {/* Overlay to catch clicks outside the menu */}
           <div 
-            className="fixed inset-0 bg-black/20 z-50" 
+            className="absolute inset-0 bg-black/20 z-50" 
             onClick={handleCloseCreateMenu}
           />
           

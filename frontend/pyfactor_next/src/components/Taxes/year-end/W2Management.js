@@ -373,9 +373,9 @@ const W2Management = ({ taxYear }) => {
 
       {/* Correction Modal */}
       {showCorrectModal && selectedW2 && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="absolute inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-center justify-center p-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowCorrectModal(false)} />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowCorrectModal(false)} />
             
             <div className="relative bg-white rounded-lg max-w-md w-full p-6">
               <h3 className="text-lg font-semibold mb-4">Correct W-2 Form</h3>

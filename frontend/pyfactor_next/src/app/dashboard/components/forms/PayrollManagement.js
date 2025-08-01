@@ -785,7 +785,7 @@ const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
 
           {/* Payroll Summary Dialog */}
           {openConfirmDialog && payrollSummary && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-screen overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-4">Payroll Summary</h2>
                 <p className="mb-4">Please review the payroll details before confirming:</p>

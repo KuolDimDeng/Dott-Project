@@ -305,7 +305,7 @@ const AddIncomeForm = ({ onClose }) => {
       </div>
 
       {showUnpaidInvoices && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-auto">
             <h2 className="text-lg font-medium mb-4">Select Unpaid Invoice</h2>
             <UnpaidInvoicesList onSelect={handleInvoiceSelect} />

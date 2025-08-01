@@ -224,7 +224,7 @@ const PayrollTransactions = () => {
 
       {/* Modal Dialog */}
       {openDialog && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-3xl w-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Payroll Run Details</h2>

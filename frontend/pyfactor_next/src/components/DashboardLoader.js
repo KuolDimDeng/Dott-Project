@@ -436,7 +436,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
   
   // Return the loader UI - just spinner, no text
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-white">
+    <div className="absolute inset-0 flex items-center justify-center z-50 bg-white">
       <CenteredSpinner size="large" minHeight="h-screen" showText={false} />
     </div>
   );

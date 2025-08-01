@@ -86,7 +86,7 @@ const ProductBulkActions = ({
       </div>
 
       {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black bg-opacity-25 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <h3 className="text-lg font-bold mb-4">Confirm Deletion</h3>
             <p className="mb-6">Are you sure you want to delete {selectedCount} items? This action cannot be undone.</p>
@@ -109,7 +109,7 @@ const ProductBulkActions = ({
       )}
 
       {isUpdateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black bg-opacity-25 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <h3 className="text-lg font-bold mb-4">Bulk Update</h3>
             <div className="mb-4">

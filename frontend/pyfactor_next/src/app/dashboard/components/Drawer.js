@@ -167,7 +167,7 @@ const Drawer = ({
       {/* Mobile backdrop when drawer is fully open */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 z-40 sm:hidden"
+          className="absolute inset-0 bg-black/30 z-40 sm:hidden"
           onClick={enhancedToggleDrawer}
           aria-label="Close menu overlay"
         />

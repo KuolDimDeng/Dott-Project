@@ -869,7 +869,7 @@ const InvoiceForm = ({ mode = 'create' }) => {
       </ModernFormLayout>
       
       {showPreview && previewData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-medium">Invoice Preview</h3>

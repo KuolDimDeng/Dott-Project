@@ -94,7 +94,7 @@ const JobDetails = ({ job, onClose, onEdit }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">

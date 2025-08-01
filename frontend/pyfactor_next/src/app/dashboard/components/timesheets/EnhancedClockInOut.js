@@ -24,7 +24,7 @@ const LocationConsentModal = ({ isOpen, onAccept, onDecline }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg max-w-2xl mx-4 p-6">
         <div className="flex items-start mb-4">
           <ShieldCheckIcon className="h-6 w-6 text-blue-600 mr-3 mt-0.5" />

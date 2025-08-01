@@ -1835,7 +1835,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
@@ -1887,7 +1887,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
       {/* Edit User Permissions Modal - REMOVED as we now use inline editing */}
       {false && showEditPermissionsModal && editingUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-[90%] max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900">

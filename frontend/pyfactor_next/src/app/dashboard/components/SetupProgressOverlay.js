@@ -26,7 +26,7 @@ export default function SetupProgressOverlay() {
   const currentTask = tasks.find(task => task.status === 'in_progress')
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 pointer-events-none">
+    <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-50 pointer-events-none">
       <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-[90%] text-center pointer-events-auto">
         <h2 className="text-xl font-semibold mb-4">
           Setting up your account

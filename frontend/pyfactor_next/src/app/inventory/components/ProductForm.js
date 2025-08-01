@@ -321,10 +321,10 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
   ];
   
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="product-form-dialog" role="dialog" aria-modal="true">
+    <div className="absolute inset-0 z-50 overflow-y-auto" aria-labelledby="product-form-dialog" role="dialog" aria-modal="true">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={!loading ? () => onClose() : undefined}></div>
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={!loading ? () => onClose() : undefined}></div>
         
         {/* Dialog position */}
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>

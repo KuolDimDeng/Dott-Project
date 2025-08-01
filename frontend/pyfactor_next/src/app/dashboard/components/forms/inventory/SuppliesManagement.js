@@ -702,7 +702,7 @@ const SuppliesManagement = () => {
 
       {/* Delete Confirmation Dialog */}
       {deleteDialogOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full mx-4">
             <div className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">

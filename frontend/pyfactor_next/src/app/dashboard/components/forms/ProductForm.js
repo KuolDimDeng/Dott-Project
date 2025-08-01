@@ -794,7 +794,7 @@ const ProductForm = () => {
 
       {/* Print Barcode Dialog */}
       {openPrintDialog && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Print Barcode</h2>
             <p className="mb-6">Do you want to generate a barcode for this product?</p>
