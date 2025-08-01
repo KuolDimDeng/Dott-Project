@@ -83,53 +83,6 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
     }
   };
   
-  // Function to automatically connect based on the preferred provider
-  const autoConnectToBank = async () => {
-    if (!preferredProvider || !region) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const provider = getProviderForRegion(region);
-      console.log(`Auto-connecting to bank with provider: ${provider}, region: ${region}`);
-      
-      const payload = { region, provider };
-      if (region === 'Africa') {
-        payload.sub_option = africanOption;
-        if (africanOption === 'Banks') {
-          payload.bank_provider = africanBankProvider;
-        }
-      }
-      
-      // Add business country to payload
-      if (businessCountry) {
-        payload.country_code = businessCountry;
-      }
-
-      logger.info('🏦 [ConnectBank] Creating link token with payload:', payload);
-      const response = await plaidApi.createLinkToken(payload);
-      logger.info('🏦 [ConnectBank] Link token response:', response);
-
-      if (response.data && response.data.link_token) {
-        logger.info('🏦 [ConnectBank] Link token received successfully');
-        setLinkToken(response.data.link_token);
-      } else if (response.data && response.data.auth_url) {
-        // Handle non-Plaid providers that return an auth URL
-        logger.info('🏦 [ConnectBank] Redirecting to auth URL:', response.data.auth_url);
-        window.location.href = response.data.auth_url;
-      } else {
-        logger.error('🏦 [ConnectBank] Invalid response structure:', response);
-        throw new Error(`Invalid response from server: ${JSON.stringify(response)}`);
-      }
-    } catch (err) {
-      logger.error('🏦 [ConnectBank] Error auto-connecting to bank:', err);
-      setError(`Failed to initialize bank connection: ${err.message || 'Please try again.'}`);
-      setSnackbar({ open: true, message: `Failed to connect bank: ${err.message || 'Unknown error'}`, severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleConnect = async () => {
     setLoading(true);
@@ -256,23 +209,6 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
     return null;
   };
 
-  // Show loading state when auto-connecting
-  if (autoConnect && loading && !connectedBankInfo) {
-    return (
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h1 className="text-2xl font-bold mb-4">
-          Connecting to Your Bank
-        </h1>
-        <div className="flex flex-col items-center justify-center py-10">
-          <CenteredSpinner size="medium" />
-          <p className="text-gray-600">
-            We're setting up your bank connection based on your business location.
-            Please wait a moment...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6">
