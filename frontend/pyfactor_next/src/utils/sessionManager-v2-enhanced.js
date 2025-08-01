@@ -168,7 +168,7 @@ class SessionManagerV2Enhanced {
    * Backend API operations
    */
   async getFromDatabase(sessionId) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
     const response = await fetch(`${apiUrl}/api/sessions/current/`, {
       headers: {

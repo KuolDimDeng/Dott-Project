@@ -104,7 +104,7 @@ const withPWA = require('next-pwa')({
 });
 
 // Optimized Next.js configuration for Render deployments
-let BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+let BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 // Ensure BACKEND_API_URL always has a protocol
 if (BACKEND_API_URL && !BACKEND_API_URL.startsWith('http://') && !BACKEND_API_URL.startsWith('https://')) {
