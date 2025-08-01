@@ -15,7 +15,7 @@ async function directBackendCall(url, options = {}) {
     const response = await fetch(url, {
       ...options,
       redirect: 'follow', // Let fetch handle redirects automatically
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      signal: AbortSignal.timeout(8000), // 8 second timeout (less than frontend's 10s)
     });
     
     return response;
@@ -107,7 +107,27 @@ export async function GET(request) {
         name: backendError.name
       });
       
-      // Return error instead of defaults to help debug the issue
+      // Check if it's a timeout error
+      if (backendError.name === 'TimeoutError' || backendError.message.includes('timeout')) {
+        console.error('[Currency Optimized] Request timed out');
+        
+        // Return cached or default values on timeout
+        return NextResponse.json({
+          success: true,
+          preferences: {
+            currency_code: 'USD',
+            currency_name: 'US Dollar',
+            currency_symbol: '$',
+            show_usd_on_invoices: true,
+            show_usd_on_quotes: true,
+            show_usd_on_reports: false,
+          },
+          fallback: true,
+          fallback_reason: 'timeout'
+        });
+      }
+      
+      // For other errors, return error response
       return NextResponse.json({
         success: false,
         error: `Backend error: ${backendError.message}`,
@@ -233,6 +253,20 @@ export async function PUT(request) {
     } catch (backendError) {
       console.error('🔄 [Currency API] Backend error:', backendError);
       console.error('🔄 [Currency API] Error stack:', backendError.stack);
+      
+      // Check if it's a timeout error
+      if (backendError.name === 'TimeoutError' || backendError.message.includes('timeout')) {
+        console.error('🔄 [Currency API] Request timed out after', Date.now() - requestStart, 'ms');
+        
+        // For PUT requests, we should indicate the update may not have succeeded
+        return NextResponse.json({
+          success: false,
+          error: 'Request timed out. Please try again.',
+          error_type: 'timeout',
+          backend_url: fullUrl,
+          retry_suggested: true
+        }, { status: 504 }); // 504 Gateway Timeout
+      }
       
       const errorMessage = backendError.message || 'Backend request failed';
       

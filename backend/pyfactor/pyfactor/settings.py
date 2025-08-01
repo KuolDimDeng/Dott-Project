@@ -553,10 +553,12 @@ if REDIS_URL or REDIS_HOST:
                 'db': 1,
                 'parser_class': 'redis.connection.DefaultParser',
                 'pool_class': 'redis.connection.ConnectionPool',
-                'socket_timeout': 5,
-                'socket_connect_timeout': 5,
-                'retry_on_timeout': True,
+                'socket_timeout': 2,  # Reduced from 5 to 2 seconds for faster failover
+                'socket_connect_timeout': 2,  # Reduced from 5 to 2 seconds
+                'retry_on_timeout': False,  # Don't retry to avoid cascading timeouts
                 'max_connections': 100,
+                'retry_on_error': [ConnectionError, TimeoutError],  # Only retry on specific errors
+                'health_check_interval': 30,  # Health check every 30 seconds
             },
             'KEY_PREFIX': '{tenant}',
         }

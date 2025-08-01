@@ -24,10 +24,8 @@ from .api.payment_methods import get_payment_methods, check_mobile_money_support
 from .api.subscription_views import subscription_status
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from .api.business_logo_views import upload_business_logo, delete_business_logo, get_business_logo
-from .api.currency_views import get_currency_list_view, get_currency_preferences, get_exchange_rate, test_auth, test_auth_public, currency_diagnostic
-from .api.currency_debug import debug_currency_500
-from .api.currency_views_simple import get_currency_preferences_simple
-from .api.currency_minimal import currency_minimal
+from .api.currency_views import get_currency_list_view, get_exchange_rate
+from .api.currency_views_production import get_currency_preferences
 from .api.business_settings_views import business_settings, accounting_standards_info
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -68,12 +66,6 @@ urlpatterns = [
     path('api/currency/list/', get_currency_list_view, name='get_currency_list'),
     path('api/currency/preferences/', get_currency_preferences, name='get_currency_preferences'),
     path('api/currency/exchange-rate/', get_exchange_rate, name='get_exchange_rate'),
-    path('api/currency/test-auth/', test_auth, name='test_auth'),
-    path('api/currency/test-public/', test_auth_public, name='test_auth_public'),
-    path('api/currency/diagnostic/', currency_diagnostic, name='currency_diagnostic'),
-    path('api/currency/debug-500/', debug_currency_500, name='debug_currency_500'),
-    path('api/currency/preferences-simple/', get_currency_preferences_simple, name='get_currency_preferences_simple'),
-    path('api/currency/minimal/', currency_minimal, name='currency_minimal'),
     # Business settings and accounting standards
     path('api/business/settings/', business_settings, name='business_settings'),
     path('api/accounting/standards-info/', accounting_standards_info, name='accounting_standards_info'),

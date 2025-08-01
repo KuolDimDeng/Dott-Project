@@ -41,10 +41,8 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
       // Show the provider form directly without region selection
       setShowProviderForm(true);
       
-      // Auto-initialize the connection
-      setTimeout(() => {
-        autoConnectToBank();
-      }, 100);
+      // Don't auto-connect, let user click the button
+      // This prevents the null token error on initial load
     }
   }, [preferredProvider, businessCountry]);
 
@@ -175,7 +173,8 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
     }
   };
 
-  const { open, ready } = usePlaidLink({
+  // Only initialize Plaid Link when we have a valid token
+  const plaidConfig = linkToken ? {
     token: linkToken,
     onSuccess: (public_token, metadata) => {
       console.log('🏦 [ConnectBank] Bank connection successful');
@@ -194,7 +193,9 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
       console.log('🏦 [ConnectBank] Plaid Link event', eventName, metadata);
       logger.debug('🏦 [ConnectBank] Plaid Link event:', { eventName, metadata });
     },
-  });
+  } : null;
+
+  const { open, ready } = usePlaidLink(plaidConfig);
 
   useEffect(() => {
     logger.info('🏦 [ConnectBank] Plaid Link useEffect triggered:', { linkToken: !!linkToken, ready, linkTokenValue: linkToken });
