@@ -663,6 +663,18 @@ const MainListItems = ({
       subItems: [
         { label: t('subMenu.dashboard'), onClick: handleSalesClick, value: 'dashboard', path: '/dashboard/sales' },
         { 
+          label: t('mainMenu.pos'), 
+          onClick: (value) => {
+            // Trigger the POS modal
+            if (typeof handleShowCreateOptions === 'function') {
+              handleShowCreateOptions('Sales');
+            } else {
+              console.warn('[Sales Menu] handleShowCreateOptions not available for POS');
+            }
+          }, 
+          value: 'pos' 
+        },
+        { 
         label: t('subMenu.catalog'), 
         path: '/dashboard/products',
         onClick: (value) => {

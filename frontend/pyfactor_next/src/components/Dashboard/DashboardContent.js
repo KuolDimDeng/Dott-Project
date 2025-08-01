@@ -186,6 +186,24 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG END ===');
   }, [session, sessionLoading]);
 
+  // Handle clearCreateOptions event
+  useEffect(() => {
+    const handleClearCreateOptions = () => {
+      console.log('[DashboardContent] Clearing create options from event');
+      updateState({ 
+        showCreateOptions: false,
+        selectedOption: null,
+        view: 'dashboard'
+      });
+    };
+
+    window.addEventListener('clearCreateOptions', handleClearCreateOptions);
+    
+    return () => {
+      window.removeEventListener('clearCreateOptions', handleClearCreateOptions);
+    };
+  }, [updateState]);
+
   // Fetch Auth0 profile data on mount
   useEffect(() => {
     const fetchAuth0Profile = async () => {
@@ -1434,6 +1452,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showBenefitsManagement: uiState.showBenefitsManagement,
     showReportsManagement: uiState.showReportsManagement,
     showPerformanceManagement: uiState.showPerformanceManagement,
+    showCreateOptions,
+    selectedOption,
     ...(() => {
       console.log('[DEBUG-REPORT] Setting mainContentProps with showReportsManagement:', uiState.showReportsManagement);
       return {};

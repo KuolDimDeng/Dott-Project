@@ -864,7 +864,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
       {/* Main POS Dialog */}
     <Transition appear show={isOpen}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={() => {
+        console.log('[POSSystem] Dialog onClose triggered');
+        onClose();
+      }}>
         <Transition.Child
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -873,7 +876,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-black bg-opacity-25" onClick={onClose} />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -894,7 +897,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                     {t('title')}
                   </Dialog.Title>
                   <button
-                    onClick={onClose}
+                    onClick={() => {
+                      console.log('[POSSystem] X button clicked, calling onClose');
+                      onClose();
+                    }}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <XMarkIcon className="h-6 w-6" />
