@@ -97,6 +97,7 @@ export const CurrencyProvider = ({ children }) => {
     console.log('🎯 [CurrencyContext] === UPDATE CURRENCY RECEIVED ===');
     console.log('🎯 [CurrencyContext] Input currency data:', newCurrency);
     console.log('🎯 [CurrencyContext] Timestamp:', new Date().toISOString());
+    console.log('🎯 [CurrencyContext] Current state before update:', currency);
     
     const updatedCurrency = {
       code: newCurrency.currency_code || newCurrency.code,
@@ -104,14 +105,31 @@ export const CurrencyProvider = ({ children }) => {
       symbol: newCurrency.currency_symbol || newCurrency.symbol || '$'
     };
     
-    console.log('🎯 [CurrencyContext] Setting new currency state:', updatedCurrency);
-    setCurrency(updatedCurrency);
+    console.log('🎯 [CurrencyContext] Normalized currency object:', updatedCurrency);
+    console.log('🎯 [CurrencyContext] About to call setCurrency...');
+    
+    // Force update by creating new object with timestamp to ensure re-render
+    setCurrency(prevCurrency => {
+      console.log('🎯 [CurrencyContext] === STATE UPDATER CALLED ===');
+      console.log('🎯 [CurrencyContext] Previous state:', prevCurrency);
+      console.log('🎯 [CurrencyContext] New state:', updatedCurrency);
+      
+      const newState = { 
+        ...updatedCurrency,
+        // Add timestamp to force re-render
+        _lastUpdated: Date.now()
+      };
+      
+      console.log('🎯 [CurrencyContext] Final state with timestamp:', newState);
+      return newState;
+    });
     
     // Store in localStorage for persistence across tabs
     console.log('🎯 [CurrencyContext] Storing in localStorage:', updatedCurrency);
     localStorage.setItem('dott_currency', JSON.stringify(updatedCurrency));
     
     // Trigger a custom event for debugging
+    console.log('🎯 [CurrencyContext] Dispatching currency-updated event...');
     window.dispatchEvent(new CustomEvent('currency-updated', {
       detail: updatedCurrency
     }));
@@ -176,6 +194,15 @@ export const CurrencyProvider = ({ children }) => {
     refreshCurrency,
     isLoading
   };
+
+  // Debug log when context value changes
+  useEffect(() => {
+    console.log('🔄 [CurrencyProvider] Context value updated:', {
+      currency,
+      isLoading,
+      timestamp: new Date().toISOString()
+    });
+  }, [currency, isLoading]);
 
   return (
     <CurrencyContext.Provider value={value}>

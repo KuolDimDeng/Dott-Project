@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
 import { SessionProvider } from '@/providers/SessionProvider';
+import { CurrencyProvider } from '@/context/CurrencyContext';
 import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
@@ -90,7 +91,11 @@ function Providers({ children }) {
           <SessionProvider>
             <PostHogProvider>
               {!isPublic && !pathname.startsWith('/auth/') ? (
-                <AuthWrapper>{children}</AuthWrapper>
+                <AuthWrapper>
+                  <CurrencyProvider>
+                    {children}
+                  </CurrencyProvider>
+                </AuthWrapper>
               ) : (
                 children
               )}
