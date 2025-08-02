@@ -12,6 +12,7 @@ import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import PageTitle from '@/components/PageTitle';
 
 export default function OnboardingPageV2() {
   const router = useRouter();
@@ -183,5 +184,10 @@ export default function OnboardingPageV2() {
     );
   }
 
-  return <OnboardingFlowV2 initialStep={initialStep} initialCountry={initialCountry} />;
+  return (
+    <>
+      <PageTitle />
+      <OnboardingFlowV2 initialStep={initialStep} initialCountry={initialCountry} />
+    </>
+  );
 }

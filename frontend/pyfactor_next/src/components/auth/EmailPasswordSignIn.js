@@ -12,6 +12,7 @@ import { anomalyDetector } from '@/utils/anomalyDetection';
 import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 import { useSession } from '@/hooks/useSession-v2';
+import PageTitle from '@/components/PageTitle';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
@@ -92,7 +93,7 @@ export default function EmailPasswordSignIn() {
   // Check for error from URL params (e.g., from Google OAuth)
   useEffect(() => {
     // Set initial page title based on mode
-    document.title = isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
+    // Title is now handled by PageTitle component
     
     const errorParam = searchParams.get('error');
     const emailParam = searchParams.get('email');
@@ -136,7 +137,7 @@ export default function EmailPasswordSignIn() {
     setShowPassword(false);
     setShowConfirmPassword(false);
     // Update page title based on mode
-    document.title = !isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
+    // Title is now handled by PageTitle component
     
     // Preserve language parameter in URL
     const langParam = searchParams.get('lang');
@@ -660,6 +661,7 @@ export default function EmailPasswordSignIn() {
 
   return (
     <>
+      <PageTitle />
       <style jsx>{`
         .loader {
           border: 3px solid #f3f3f3;

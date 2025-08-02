@@ -3,16 +3,15 @@
 // Dashboard page (Client Component)
 
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
+import PageTitle from '@/components/PageTitle';
 
 export default function DashboardPage() {
-  useEffect(() => {
-    // Set page title
-    document.title = 'Dott: Global Business Platform';
-  }, []);
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <>
+      <PageTitle />
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-green-600">
@@ -62,5 +61,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

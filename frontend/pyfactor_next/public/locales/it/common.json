@@ -454,5 +454,6 @@
     "then": "poi",
     "addToHome": "Aggiungi a Home",
     "install": "Installa"
-  }
+  },
+  "browserTitle": "Dott: Piattaforma Aziendale Globale"
 }

@@ -19,6 +19,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18nInstance from '@/i18n-optimized';
 import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
 import SessionTimeoutModal from '@/components/SessionTimeoutModal';
+import PageTitle from '@/components/PageTitle';
 
 // Use a more direct approach for dynamic imports
 const KeyboardFixerLoader = dynamic(
@@ -161,6 +162,7 @@ export default function ClientLayout({ children }) {
         }
       `}</style>
       <I18nextProvider i18n={i18nInstance}>
+        <PageTitle />
         <SessionProvider>
           <ThemeProvider>
             <NotificationProvider>
