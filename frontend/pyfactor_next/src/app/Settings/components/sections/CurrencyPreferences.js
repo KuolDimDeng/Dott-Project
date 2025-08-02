@@ -193,7 +193,7 @@ const CurrencyPreferences = () => {
 
   const loadCurrentCurrency = async () => {
     try {
-      const response = await fetch('/api/currency/preferences/');
+      const response = await fetch('/api/users/api/currency/preferences/');
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.preferences?.currency_code) {
@@ -225,7 +225,7 @@ const CurrencyPreferences = () => {
       const currencyInfo = getCurrencyInfo(pendingCurrency.code);
       
       // Save to database
-      const response = await fetch('/api/currency/preferences/', {
+      const response = await fetch('/api/users/api/currency/preferences/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

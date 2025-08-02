@@ -35,7 +35,7 @@ export const CurrencyProvider = ({ children }) => {
   useEffect(() => {
     const loadCurrency = async () => {
       try {
-        const response = await fetch('/api/currency/preferences/');
+        const response = await fetch('/api/users/api/currency/preferences/');
         
         if (response.ok) {
           const contentType = response.headers.get('content-type');
@@ -135,7 +135,7 @@ export const CurrencyProvider = ({ children }) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/currency/preferences/');
+      const response = await fetch('/api/users/api/currency/preferences/');
       
       if (response.ok) {
         const contentType = response.headers.get('content-type');
