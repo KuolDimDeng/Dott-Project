@@ -75,7 +75,37 @@ class PlaidManager {
   ensureScriptExists() {
     const existingScript = document.querySelector('script[src*="plaid.com"]');
     if (existingScript) {
-      console.log('🏦 [PlaidManager] Plaid script already exists');
+      console.log('🏦 [PlaidManager] Plaid script already exists:', {
+        src: existingScript.src,
+        loaded: existingScript.readyState || 'unknown',
+        hasOnload: !!existingScript.onload,
+        hasOnerror: !!existingScript.onerror
+      });
+      
+      // Check if the script loaded but failed to initialize
+      if (!window.Plaid) {
+        console.log('🏦 [PlaidManager] Script loaded but window.Plaid not available. Checking for errors...');
+        
+        // Try to access the script element and see its state
+        console.log('🏦 [PlaidManager] Script element details:', {
+          readyState: existingScript.readyState,
+          complete: existingScript.complete,
+          async: existingScript.async,
+          defer: existingScript.defer,
+          crossOrigin: existingScript.crossOrigin,
+          integrity: existingScript.integrity,
+          type: existingScript.type
+        });
+        
+        // Check for any JavaScript errors in the console
+        console.log('🏦 [PlaidManager] Checking window for Plaid-related properties...');
+        const plaidRelated = Object.keys(window).filter(key => 
+          key.toLowerCase().includes('plaid') || 
+          key.toLowerCase().includes('link')
+        );
+        console.log('🏦 [PlaidManager] Found Plaid-related window properties:', plaidRelated);
+      }
+      
       return;
     }
 
@@ -83,17 +113,35 @@ class PlaidManager {
     const script = document.createElement('script');
     script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
     script.async = true;
-    script.defer = true;
+    script.defer = false; // Remove defer to load immediately
+    script.crossOrigin = 'anonymous';
     
     script.onload = () => {
       console.log('🏦 [PlaidManager] Manual script injection successful');
+      console.log('🏦 [PlaidManager] window.Plaid after manual load:', typeof window.Plaid);
+      
+      // Give it a moment and check again
+      setTimeout(() => {
+        console.log('🏦 [PlaidManager] window.Plaid after 1s delay:', typeof window.Plaid);
+        if (window.Plaid) {
+          console.log('🏦 [PlaidManager] Plaid methods:', Object.keys(window.Plaid));
+        }
+      }, 1000);
     };
     
     script.onerror = (error) => {
       console.error('🏦 [PlaidManager] Manual script injection failed:', error);
+      console.error('🏦 [PlaidManager] Error details:', {
+        message: error.message,
+        filename: error.filename,
+        lineno: error.lineno,
+        colno: error.colno,
+        error: error.error
+      });
     };
     
     document.head.appendChild(script);
+    console.log('🏦 [PlaidManager] Script appended to head, waiting for load...');
   }
 
   async createHandler(config, retries = 3) {
@@ -169,10 +217,8 @@ class PlaidManager {
     console.log('🏦 [PlaidManager] Force reloading Plaid script');
     
     // Remove existing Plaid script
-    const existingScript = document.querySelector('script[src*="plaid.com"]');
-    if (existingScript) {
-      existingScript.remove();
-    }
+    const existingScripts = document.querySelectorAll('script[src*="plaid.com"]');
+    existingScripts.forEach(script => script.remove());
     
     // Clear window.Plaid
     if (window.Plaid) {
@@ -182,20 +228,53 @@ class PlaidManager {
     // Reset manager state
     this.reset();
     
-    // Create new script tag
-    const script = document.createElement('script');
-    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
-    script.async = true;
+    // Try multiple script URLs as fallback
+    const scriptUrls = [
+      'https://cdn.plaid.com/link/v2/stable/link-initialize.js',
+      'https://cdn.plaid.com/link/v2/stable/link-initialize.min.js',
+      'https://cdn.plaid.com/link/stable/link-initialize.js'
+    ];
     
+    for (let i = 0; i < scriptUrls.length; i++) {
+      const url = scriptUrls[i];
+      console.log(`🏦 [PlaidManager] Trying script URL ${i + 1}/${scriptUrls.length}: ${url}`);
+      
+      try {
+        await this.loadScriptUrl(url);
+        console.log(`🏦 [PlaidManager] Successfully loaded from: ${url}`);
+        return;
+      } catch (error) {
+        console.error(`🏦 [PlaidManager] Failed to load from ${url}:`, error);
+        if (i === scriptUrls.length - 1) {
+          throw new Error('Failed to load Plaid script from any URL');
+        }
+      }
+    }
+  }
+
+  // Load script from specific URL
+  loadScriptUrl(url) {
     return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.async = true;
+      script.defer = false;
+      script.crossOrigin = 'anonymous';
+      
       script.onload = () => {
-        console.log('🏦 [PlaidManager] Script reloaded successfully');
-        resolve();
+        console.log(`🏦 [PlaidManager] Script loaded from: ${url}`);
+        // Wait a bit for Plaid to initialize
+        setTimeout(() => {
+          if (window.Plaid) {
+            resolve();
+          } else {
+            reject(new Error('Script loaded but window.Plaid not available'));
+          }
+        }, 1000);
       };
       
       script.onerror = (error) => {
-        console.error('🏦 [PlaidManager] Failed to reload script:', error);
-        reject(new Error('Failed to load Plaid script'));
+        reject(new Error(`Failed to load script from ${url}`));
       };
       
       document.head.appendChild(script);

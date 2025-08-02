@@ -75,11 +75,13 @@ export default function RootLayout({ children }) {
           {children}
         </Providers>
         
-        {/* Plaid Link Script - Load early to prevent initialization errors */}
-        <Script 
+        {/* Plaid Link Script - Direct HTML script tag for reliable loading */}
+        <script 
           src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
-          strategy="beforeInteractive"
-        />
+          defer={false}
+          async={true}
+          crossOrigin="anonymous"
+        ></script>
         
         {/* Crisp Chat Widget */}
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
