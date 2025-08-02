@@ -224,19 +224,25 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         }
         
         const data = await response.json();
-        console.log('[POS] Products fetched successfully:', data);
+        console.log('[POS] Products API response:', data);
+        console.log('[POS] Response structure - has products:', !!data.products, 'has results:', !!data.results, 'is array:', Array.isArray(data));
         
         if (data.products) {
           // Map the product fields to match what POS expects
-          const mappedProducts = data.products.map(product => ({
-            id: product.id,
-            name: product.name || product.product_name,
-            sku: product.sku || product.product_code || '',
-            barcode: product.barcode || '',
-            price: parseFloat(product.price || product.unit_price || 0),
-            quantity_in_stock: product.stockQuantity || product.stock_quantity || 0,
-            description: product.description || ''
-          }));
+          const mappedProducts = data.products.map(product => {
+            const mapped = {
+              id: product.id,
+              name: product.name || product.product_name,
+              sku: product.sku || product.product_code || '',
+              barcode: product.barcode || '',
+              price: parseFloat(product.price || product.unit_price || 0),
+              quantity_in_stock: product.stockQuantity || product.stock_quantity || 0,
+              description: product.description || ''
+            };
+            console.log('[POS] Mapped product:', mapped);
+            return mapped;
+          });
+          console.log('[POS] Total products loaded:', mappedProducts.length);
           setProducts(mappedProducts);
         } else if (data.results) {
           setProducts(data.results);
@@ -445,7 +451,33 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         }, 1000);
       }
     } else {
-      toast.error(t('productNotFound'));
+      // If product not found in loaded list but we have scanned data with ID, try to fetch it
+      if (productData && productData.id) {
+        console.log('[POS] Product not in loaded list, attempting to fetch by ID:', productData.id);
+        
+        // Fetch specific product by ID
+        fetch(`/api/products/${productData.id}`)
+          .then(response => {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Product not found');
+          })
+          .then(fetchedProduct => {
+            console.log('[POS] Fetched product by ID:', fetchedProduct);
+            // Add to products list for future reference
+            setProducts(prev => [...prev, fetchedProduct]);
+            // Add to cart
+            addToCart(fetchedProduct);
+            toast.success(`${fetchedProduct.name} ${t('addedToCart')}`);
+          })
+          .catch(error => {
+            console.error('[POS] Failed to fetch product by ID:', error);
+            toast.error(t('productNotFound'));
+          });
+      } else {
+        toast.error(t('productNotFound'));
+      }
     }
   }, [products, t, showScanner]);
 
