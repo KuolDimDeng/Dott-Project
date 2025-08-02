@@ -345,6 +345,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   // Handle product scanning (both USB and camera)
   const handleProductScan = useCallback((scannedCode) => {
     safeLogger.info('[POS] Product scanned:', scannedCode);
+    console.log('[POS] Available products:', products);
+    console.log('[POS] Products count:', products.length);
     
     // Try to parse as JSON first (for QR codes with full product data)
     let productData = null;
@@ -354,6 +356,33 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       // Only try to parse as JSON if it looks like JSON
       if (scannedCode.trim().startsWith('{') || scannedCode.trim().startsWith('[')) {
         productData = JSON.parse(scannedCode);
+        console.log('[POS] Parsed product data:', productData);
+        
+        // If we have full product data from scanner, add it directly to cart
+        if (productData.id && productData.name && productData.price) {
+          // Transform scanned product to match cart format
+          const scannedProduct = {
+            id: productData.id,
+            name: productData.name,
+            sku: productData.sku || '',
+            barcode: productData.barcode || '',
+            price: parseFloat(productData.price) || 0,
+            quantity_in_stock: productData.quantity_in_stock || 0,
+            description: productData.description || ''
+          };
+          
+          console.log('[POS] Using scanned product directly:', scannedProduct);
+          addToCart(scannedProduct);
+          toast.success(`${scannedProduct.name} ${t('addedToCart')}`);
+          
+          // Keep scanner open for continuous scanning
+          if (showScanner) {
+            setTimeout(() => {
+              // Ready for next scan
+            }, 1000);
+          }
+          return;
+        }
         
         // Extract search terms from JSON
         if (productData.id) searchTerms.push(productData.id);
@@ -371,16 +400,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       searchTerms.push(cleanCode, scannedCode.trim());
     }
     
+    console.log('[POS] Search terms:', searchTerms);
+    
     // Find product using all search terms
     let product = null;
     
     // First, try exact ID match if we have JSON data
     if (productData && productData.id) {
       product = products.find(p => String(p.id) === String(productData.id));
+      console.log('[POS] ID match result:', product);
     }
     
     // If not found by ID, try other search terms
-    if (!product) {
+    if (!product && searchTerms.length > 0) {
       product = products.find(p => {
         // Check each search term against all product fields
         return searchTerms.some(term => {
@@ -392,6 +424,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             nameContains: String(p.name || '').toLowerCase().includes(String(term || '').toLowerCase())
           };
           
+          console.log(`[POS] Checking product ${p.name} against term ${term}:`, matches);
+          
           return matches.idMatch || matches.skuMatch || matches.barcodeMatch || 
                  matches.nameMatch || (term.length > 2 && matches.nameContains);
         });
@@ -399,6 +433,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     }
     
     if (product) {
+      console.log('[POS] Found product in list:', product);
       addToCart(product);
       toast.success(`${product.name} ${t('addedToCart')}`);
       
