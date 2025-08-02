@@ -15,7 +15,8 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const backendUrl = `${BACKEND_URL}/users/api/business/settings/`;
+    // No trailing slash - Django APPEND_SLASH = False (industry standard)
+    const backendUrl = `${BACKEND_URL}/users/api/business/settings`;
 
     logger.info('[Business Settings API] Forwarding to backend:', backendUrl);
 
@@ -81,7 +82,8 @@ export async function PATCH(request) {
     }
 
     const body = await request.json();
-    const backendUrl = `${BACKEND_URL}/users/api/business/settings/`;
+    // No trailing slash - Django APPEND_SLASH = False (industry standard)
+    const backendUrl = `${BACKEND_URL}/users/api/business/settings`;
 
     logger.info('[Business Settings API] Forwarding to backend:', backendUrl);
     logger.info('[Business Settings API] Request body:', body);

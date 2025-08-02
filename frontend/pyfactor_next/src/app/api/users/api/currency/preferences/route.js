@@ -12,7 +12,8 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const backendUrl = `${BACKEND_URL}/users/api/currency/preferences/`;
+    // No trailing slash - Django APPEND_SLASH = False (industry standard)
+    const backendUrl = `${BACKEND_URL}/users/api/currency/preferences`;
 
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -58,7 +59,8 @@ export async function PUT(request) {
     }
 
     const body = await request.json();
-    const backendUrl = `${BACKEND_URL}/users/api/currency/preferences/`;
+    // No trailing slash - Django APPEND_SLASH = False (industry standard)
+    const backendUrl = `${BACKEND_URL}/users/api/currency/preferences`;
 
     const response = await fetch(backendUrl, {
       method: 'PUT',

@@ -352,7 +352,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Set to False to use the allowed origins list instead
 CORS_ORIGIN_ALLOW_ALL = False
 
-APPEND_SLASH = True  # Keep enabled for Django REST Framework routers
+APPEND_SLASH = False  # Industry standard: be explicit about URLs, no automatic redirects
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -1176,7 +1176,7 @@ CACHE_CONTROL_MAX_AGE = {
 }
 
 # Cloudflare Page Rules compatibility
-APPEND_SLASH = True  # Keep enabled for Django REST Framework routers
+APPEND_SLASH = False  # Industry standard: be explicit about URLs, no automatic redirects
 PREPEND_WWW = False
 
 # Response headers for Cloudflare
