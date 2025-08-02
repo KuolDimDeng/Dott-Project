@@ -203,17 +203,7 @@ const nextConfig = {
             reuseExistingChunk: true,
             enforce: true,
           },
-          shared: {
-            name(module, chunks) {
-              return require('crypto')
-                .createHash('sha1')
-                .update(chunks.reduce((acc, chunk) => acc + chunk.name, ''))
-                .digest('hex') + (isServer ? '-server' : '');
-            },
-            priority: 10,
-            minChunks: 2,
-            reuseExistingChunk: true,
-          },
+          // Remove the shared cacheGroup that's creating multiple commons chunks
         },
       };
       
