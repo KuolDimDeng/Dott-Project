@@ -543,6 +543,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         status: 'completed'
       };
 
+      console.log('[POS] Submitting sale data:', saleData);
+      
       // Call actual backend API
       const response = await fetch('/api/pos/complete-sale', {
         method: 'POST',
@@ -553,12 +555,16 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         body: JSON.stringify(saleData),
       });
 
+      console.log('[POS] Complete sale response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.text();
+        console.error('[POS] Complete sale error:', errorData);
         throw new Error(`Sale failed: ${errorData}`);
       }
 
       const result = await response.json();
+      console.log('[POS] Sale completed successfully:', result);
 
       // Prepare sale data for receipt
       const enhancedSaleData = {
@@ -568,9 +574,14 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null,
       };
 
+      console.log('[POS] Enhanced sale data for receipt:', enhancedSaleData);
+      console.log('[POS] Setting showReceiptDialog to true...');
+      
       // Show receipt dialog instead of just closing
       setCompletedSaleData(enhancedSaleData);
       setShowReceiptDialog(true);
+      
+      console.log('[POS] Receipt dialog should now be visible');
 
       // Show success details
       if (result.inventory_updated) {
