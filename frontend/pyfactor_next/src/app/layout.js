@@ -75,13 +75,7 @@ export default function RootLayout({ children }) {
           {children}
         </Providers>
         
-        {/* Plaid Link Script - Direct HTML script tag for reliable loading */}
-        <script 
-          src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
-          defer={false}
-          async={true}
-          crossOrigin="anonymous"
-        ></script>
+        {/* Plaid script is now loaded dynamically by PlaidScriptWrapper component */}
         
         {/* Crisp Chat Widget */}
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
