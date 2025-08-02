@@ -51,7 +51,7 @@ export default function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://cdn.plaid.com" />
         
         {/* Plaid Link SDK - Static loading as recommended by Plaid */}
-        <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async></script>
+        <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
         
         {/* iOS Splash Screens */}
         <link rel="apple-touch-startup-image" href="/static/images/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
@@ -78,7 +78,7 @@ export default function RootLayout({ children }) {
           {children}
         </Providers>
         
-        {/* Plaid script is now loaded dynamically by PlaidScriptWrapper component */}
+        {/* Plaid script is loaded statically above as recommended by Plaid documentation */}
         
         {/* Crisp Chat Widget */}
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
