@@ -50,6 +50,9 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://cdn.plaid.com" />
         <link rel="dns-prefetch" href="https://cdn.plaid.com" />
         
+        {/* Plaid Link SDK - Static loading as recommended by Plaid */}
+        <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async></script>
+        
         {/* iOS Splash Screens */}
         <link rel="apple-touch-startup-image" href="/static/images/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
         <link rel="apple-touch-startup-image" href="/static/images/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />

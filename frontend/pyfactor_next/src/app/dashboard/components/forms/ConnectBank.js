@@ -5,8 +5,8 @@ import { logger } from '@/utils/logger';
 import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 
 // Dynamic import for Plaid to avoid SSR issues
-const PlaidLinkButtonV2 = dynamic(
-  () => import('./PlaidLinkButtonV2'),
+const PlaidLinkButton = dynamic(
+  () => import('./PlaidLinkButton'),
   { 
     ssr: false,
     loading: () => <div className="text-center p-4">Loading Plaid...</div>
@@ -237,7 +237,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
                   </p>
                   
                   {linkToken ? (
-                    <PlaidLinkButtonV2
+                    <PlaidLinkButton
                       linkToken={linkToken}
                       onSuccess={(public_token, metadata) => {
                         console.log('🏦 [ConnectBank] Bank connection successful');
