@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import plaidManager from '@/utils/plaidManager';
 
 export const PlaidDebugger = () => {
   const [plaidStatus, setPlaidStatus] = useState({
@@ -9,14 +8,15 @@ export const PlaidDebugger = () => {
     plaidAvailable: false,
     checkCount: 0,
     error: null,
-    managerInitialized: false
+    hasCreate: 'No',
+    scriptSrc: null
   });
 
   useEffect(() => {
     let interval;
     let count = 0;
 
-    const checkPlaid = async () => {
+    const checkPlaid = () => {
       count++;
       
       // Check if script tag exists
@@ -26,9 +26,6 @@ export const PlaidDebugger = () => {
       // Check if window.Plaid exists
       const plaidAvailable = typeof window.Plaid !== 'undefined';
       
-      // Check PlaidManager status
-      const managerInitialized = plaidManager.isInitialized;
-      
       setPlaidStatus({
         scriptLoaded: !!plaidScript,
         plaidAvailable,
@@ -36,12 +33,12 @@ export const PlaidDebugger = () => {
         scriptSrc: plaidScript?.src,
         plaidType: plaidAvailable ? typeof window.Plaid : 'undefined',
         plaidKeys: plaidAvailable ? Object.keys(window.Plaid) : [],
-        managerInitialized,
-        hasCreate: plaidAvailable && window.Plaid.create ? 'Yes' : 'No'
+        hasCreate: plaidAvailable && window.Plaid?.create ? 'Yes' : 'No',
+        scriptLocation: plaidScript ? (plaidScript.parentNode?.tagName || 'Unknown') : 'N/A'
       });
 
       // Stop checking after 10 seconds
-      if (count > 100 || (plaidAvailable && managerInitialized)) {
+      if (count > 100 || plaidAvailable) {
         clearInterval(interval);
       }
     };
@@ -61,18 +58,21 @@ export const PlaidDebugger = () => {
       <div className="space-y-1">
         <div>Script Tag: {plaidStatus.scriptLoaded ? '✅' : '❌'}</div>
         <div>window.Plaid: {plaidStatus.plaidAvailable ? '✅' : '❌'}</div>
-        <div>Manager Ready: {plaidStatus.managerInitialized ? '✅' : '❌'}</div>
         <div>Has create(): {plaidStatus.hasCreate}</div>
+        <div>Script Location: {plaidStatus.scriptLocation}</div>
         <div>Check Count: {plaidStatus.checkCount}</div>
         {plaidStatus.scriptSrc && (
           <div className="text-xs break-all">Script: {plaidStatus.scriptSrc}</div>
         )}
-        {plaidStatus.plaidType && (
+        {plaidStatus.plaidType && plaidStatus.plaidType !== 'undefined' && (
           <div>Plaid Type: {plaidStatus.plaidType}</div>
         )}
         {plaidStatus.plaidKeys && plaidStatus.plaidKeys.length > 0 && (
           <div>Plaid Methods: {plaidStatus.plaidKeys.join(', ')}</div>
         )}
+        <div className="mt-2 text-xs text-gray-500">
+          Note: Script loads when you open bank connection
+        </div>
       </div>
     </div>
   );

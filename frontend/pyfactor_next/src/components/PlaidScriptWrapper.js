@@ -79,6 +79,14 @@ export function usePlaidScript() {
       // Try appending to body instead of head
       document.body.appendChild(script);
       console.log('🏦 [PlaidScriptWrapper] Script appended to body');
+      
+      // Log current state
+      console.log('🏦 [PlaidScriptWrapper] Script element:', {
+        src: script.src,
+        async: script.async,
+        defer: script.defer,
+        parentNode: script.parentNode?.tagName
+      });
     });
 
     scriptLoadingPromise
