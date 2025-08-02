@@ -703,7 +703,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             />
           </div>
 
-          {/* Products Grid */}
+          {/* Products List */}
           {productsLoading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -714,23 +714,49 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               <p className="text-red-600">{productsError}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {filteredProducts.map(product => (
-                <div
-                  key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-                >
-                  <h3 className="font-medium text-gray-900">{product.name}</h3>
-                  <p className="text-sm text-gray-500">SKU: {product.sku || 'N/A'}</p>
-                  <p className="text-lg font-semibold text-blue-600 mt-2">${product.price}</p>
-                  {product.quantity_in_stock !== undefined && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('inStock')}: {product.quantity_in_stock}
-                    </p>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-[calc(100%-60px)]">
+              <div className="overflow-auto h-full">
+                <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                        No products found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProducts.map(product => (
+                      <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-2 text-sm font-medium text-gray-900">{product.name}</td>
+                        <td className="px-4 py-2 text-sm text-gray-500">{product.sku || 'N/A'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 text-right">${product.price}</td>
+                        <td className="px-4 py-2 text-sm text-gray-500 text-right">
+                          {product.quantity_in_stock !== undefined ? product.quantity_in_stock : 'N/A'}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() => addToCart(product)}
+                            className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-1" />
+                            Add
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
-                </div>
-              ))}
+                </tbody>
+              </table>
+              </div>
             </div>
           )}
         </div>
