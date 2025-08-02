@@ -48,64 +48,22 @@ export async function GET(request) {
       const errorText = await forwardResponse.text();
       console.error(`Error response: ${errorText.substring(0, 500)}${errorText.length > 500 ? '...' : ''}`);
       
-      // Return fallback product data for development
-      console.log('Returning fallback product data due to forwarding error');
+      // Return the actual error instead of fallback data
       return NextResponse.json({
-        success: true,
-        products: [
-          {
-            id: 1,
-            name: 'Fallback Product 1',
-            description: 'This is a fallback product when the inventory API fails',
-            price: 19.99,
-            stockQuantity: 100,
-            reorderLevel: 10,
-            forSale: true,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 2,
-            name: 'Fallback Product 2',
-            description: 'Another fallback product',
-            price: 29.99,
-            stockQuantity: 50,
-            reorderLevel: 5,
-            forSale: true,
-            createdAt: new Date().toISOString(),
-          }
-        ]
-      });
+        success: false,
+        error: `Failed to fetch products: ${forwardResponse.status} ${forwardResponse.statusText}`,
+        message: errorText.substring(0, 200)
+      }, { status: forwardResponse.status });
     }
   } catch (error) {
     console.error(`Error in forwarded request: ${error.message}`);
     
-    // Return fallback product data for development
-    console.log('Returning fallback product data due to forwarding error');
+    // Return the actual error instead of fallback data
     return NextResponse.json({
-      success: true,
-      products: [
-        {
-          id: 1,
-          name: 'Fallback Product 1',
-          description: 'This is a fallback product when the inventory API fails',
-          price: 19.99,
-          stockQuantity: 100,
-          reorderLevel: 10,
-          forSale: true,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          name: 'Fallback Product 2',
-          description: 'Another fallback product',
-          price: 29.99,
-          stockQuantity: 50,
-          reorderLevel: 5,
-          forSale: true,
-          createdAt: new Date().toISOString(),
-        }
-      ]
-    });
+      success: false,
+      error: `Failed to fetch products: ${error.message}`,
+      message: 'Unable to connect to inventory service'
+    }, { status: 500 });
   }
 }
 
