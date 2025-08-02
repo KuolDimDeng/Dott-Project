@@ -202,7 +202,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       try {
         setProductsLoading(true);
         // Fetch from backend
-        const response = await fetch('/api/pos/products/', {
+        const response = await fetch('/api/products/', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -226,7 +226,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         const data = await response.json();
         console.log('[POS] Products fetched successfully:', data);
         
-        if (data.results) {
+        if (data.products) {
+          // Map the product fields to match what POS expects
+          const mappedProducts = data.products.map(product => ({
+            id: product.id,
+            name: product.name || product.product_name,
+            sku: product.sku || product.product_code || '',
+            barcode: product.barcode || '',
+            price: parseFloat(product.price || product.unit_price || 0),
+            quantity_in_stock: product.stockQuantity || product.stock_quantity || 0,
+            description: product.description || ''
+          }));
+          setProducts(mappedProducts);
+        } else if (data.results) {
           setProducts(data.results);
         } else if (Array.isArray(data)) {
           setProducts(data);
