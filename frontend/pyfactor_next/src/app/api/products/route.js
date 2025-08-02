@@ -1,183 +1,166 @@
-'use server';
-
 import { NextResponse } from 'next/server';
-import { axiosInstance } from '@/lib/axiosConfig';
-import { logger } from '@/utils/serverLogger';
-import { v4 as uuidv4 } from 'uuid';
+import { cookies } from 'next/headers';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 /**
- * GET handler that forwards to the inventory/products API
+ * GET handler that fetches products from the backend
  */
 export async function GET(request) {
-  const url = new URL(request.url);
-  const forwardUrl = new URL('/api/inventory/products', url.origin);
-  
-  // Copy over all search parameters
-  url.searchParams.forEach((value, key) => {
-    forwardUrl.searchParams.append(key, value);
-  });
-  
-  // Special handling for schema parameter
-  const schema = url.searchParams.get('schema');
-  if (schema === 'default_schema') {
-    // Remove default_schema as backend will handle tenant context
-    forwardUrl.searchParams.delete('schema');
-  }
-  
-  console.log(`API /products GET - Forwarding to /api/inventory/products`);
-  console.log(`Forwarding GET request to: ${forwardUrl.pathname}${forwardUrl.search}`);
-  
   try {
-    // Forward the request to inventory/products
-    const headers = new Headers(request.headers);
-    headers.set('x-forwarded-by', 'api/products');
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    const forwardResponse = await fetch(forwardUrl, {
-      method: 'GET',
-      headers,
-      signal: AbortSignal.timeout(20000) // 20 second timeout
-    });
-    
-    // Check if response is ok
-    if (forwardResponse.ok) {
-      return forwardResponse;
-    } else {
-      console.error(`Error in forwarded request: ${forwardResponse.status} ${forwardResponse.statusText}`);
-      
-      // Get error details
-      const errorText = await forwardResponse.text();
-      console.error(`Error response: ${errorText.substring(0, 500)}${errorText.length > 500 ? '...' : ''}`);
-      
-      // Return the actual error instead of fallback data
-      return NextResponse.json({
-        success: false,
-        error: `Failed to fetch products: ${forwardResponse.status} ${forwardResponse.statusText}`,
-        message: errorText.substring(0, 200)
-      }, { status: forwardResponse.status });
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
-  } catch (error) {
-    console.error(`Error in forwarded request: ${error.message}`);
+
+    // Get search params from the request
+    const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
     
-    // Return the actual error instead of fallback data
+    // Call backend directly
+    const response = await fetch(`${BACKEND_URL}/api/inventory/products/${queryString ? '?' + queryString : ''}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to fetch products' },
+        { status: response.status }
+      );
+    }
+
+    // Transform data to match POS expectations
+    const products = data.results || data.products || data;
+    const transformedProducts = Array.isArray(products) ? products.map(product => ({
+      id: product.id,
+      name: product.product_name || product.name,
+      sku: product.product_code || product.sku || '',
+      barcode: product.barcode || '',
+      price: parseFloat(product.unit_price || product.price || 0),
+      quantity_in_stock: product.stock_quantity || product.quantity_in_stock || 0,
+      description: product.description || ''
+    })) : [];
+
     return NextResponse.json({
-      success: false,
-      error: `Failed to fetch products: ${error.message}`,
-      message: 'Unable to connect to inventory service'
-    }, { status: 500 });
+      success: true,
+      products: transformedProducts
+    });
+  } catch (error) {
+    console.error('[Products API] Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * POST handler that forwards to the inventory/products API
+ * POST handler that creates products in the backend
  */
 export async function POST(request) {
-  const url = new URL(request.url);
-  const forwardUrl = new URL('/api/inventory/products', url.origin);
-  
-  // Copy over all search parameters
-  url.searchParams.forEach((value, key) => {
-    forwardUrl.searchParams.append(key, value);
-  });
-  
-  // Special handling for schema parameter
-  const schema = url.searchParams.get('schema');
-  if (schema === 'default_schema') {
-    // Remove default_schema as backend will handle tenant context
-    forwardUrl.searchParams.delete('schema');
-  }
-  
-  console.log(`API /products POST - Forwarding to /api/inventory/products`);
-  console.log(`Forwarding POST request to: ${forwardUrl.pathname}${forwardUrl.search}`);
-  
   try {
-    // Clone the request body
-    const requestBody = await request.json();
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    // Forward the request to inventory/products
-    const headers = new Headers(request.headers);
-    headers.set('x-forwarded-by', 'api/products');
-    headers.set('Content-Type', 'application/json');
-    
-    const forwardResponse = await fetch(forwardUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(20000) // 20 second timeout
-    });
-    
-    // Check if response is ok
-    if (forwardResponse.ok) {
-      return forwardResponse;
-    } else {
-      console.error(`Error in forwarded request: ${forwardResponse.status} ${forwardResponse.statusText}`);
-      
-      // Get error details
-      const errorText = await forwardResponse.text();
-      console.error(`Error response: ${errorText.substring(0, 500)}${errorText.length > 500 ? '...' : ''}`);
-      
-      // Return error response
-      return NextResponse.json({
-        success: false,
-        message: 'Error creating product',
-        error: `Forwarding error: ${forwardResponse.status} ${forwardResponse.statusText}`
-      }, { status: forwardResponse.status });
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
+
+    const body = await request.json();
+
+    // Call backend directly
+    const response = await fetch(`${BACKEND_URL}/api/inventory/products/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to create product' },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
-    console.error(`Error in forwarded request: ${error.message}`);
-    
-    // Return error response
-    return NextResponse.json({
-      success: false,
-      message: 'Error creating product',
-      error: `Error: ${error.message}`
-    }, { status: 500 });
+    console.error('[Products API] Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * PUT handler that forwards to the inventory/products API
+ * PUT handler that updates products in the backend
  */
 export async function PUT(request) {
   try {
-    logger.info('API /products PUT - Forwarding to /api/inventory/products');
-    const data = await request.json();
-    const id = data.id;
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    if (!id) {
-      return NextResponse.json({ 
-        error: 'Product ID is required for update', 
-      }, { status: 400 });
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
-    
-    // Extract needed headers to forward
-    const headers = {};
-    if (request.headers.has('x-tenant-id')) {
-      headers['x-tenant-id'] = request.headers.get('x-tenant-id');
+
+    const body = await request.json();
+    const productId = body.id;
+
+    if (!productId) {
+      return NextResponse.json(
+        { error: 'Product ID is required' },
+        { status: 400 }
+      );
     }
-    if (request.headers.has('x-id-token')) {
-      headers['x-id-token'] = request.headers.get('x-id-token');
+
+    // Call backend directly
+    const response = await fetch(`${BACKEND_URL}/api/inventory/products/${productId}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to update product' },
+        { status: response.status }
+      );
     }
-    if (request.headers.has('authorization')) {
-      headers['authorization'] = request.headers.get('authorization');
-    }
-    
-    // Map fields if necessary to match the inventory/products API
-    const mappedData = {
-      ...data,
-      // Make sure these fields exist as the inventory endpoint expects them
-      product_name: data.product_name || data.name,
-      stock_quantity: data.stock_quantity || data.stock || 0,
-      is_for_sale: data.is_for_sale !== undefined ? data.is_for_sale : true
-    };
-    
-    // Forward the request
-    const response = await axiosInstance.put(`/api/inventory/products/${id}`, mappedData, { headers });
-    return NextResponse.json(response.data);
+
+    return NextResponse.json(data);
   } catch (error) {
-    logger.error('Error in /api/products PUT forwarding:', error);
-    return NextResponse.json({ 
-      error: 'Failed to update product', 
-      message: error.message 
-    }, { status: 500 });
+    console.error('[Products API] Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 } 
