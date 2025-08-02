@@ -1,64 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  DocumentTextIcon,
-  CheckIcon,
-  InformationCircleIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { useNotification } from '@/context/NotificationContext';
+
+// Countries that primarily use GAAP (very short list)
+const GAAP_COUNTRIES = [
+  'US', // United States
+  'USA', // Alternative code for US
+  'United States',
+  'United States of America'
+];
 
 const AccountingStandards = () => {
   const { notifySuccess, notifyError } = useNotification();
   const [loading, setLoading] = useState(false);
-  const [standardInfo, setStandardInfo] = useState({
-    accounting_standard: 'IFRS',
-    accounting_standard_display: 'IFRS (International)',
-    country: '',
-    allows_dual_standard: false,
-    inventory_valuation_method: 'WEIGHTED_AVERAGE',
-    financial_statement_names: {
-      balance_sheet: 'Statement of Financial Position',
-      income_statement: 'Statement of Comprehensive Income',
-      equity_statement: 'Statement of Changes in Equity'
-    }
-  });
+  const [selectedStandard, setSelectedStandard] = useState('IFRS');
+  const [businessCountry, setBusinessCountry] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingStandard, setPendingStandard] = useState(null);
+  const [hasManuallySelected, setHasManuallySelected] = useState(false);
 
+  // Load current settings on mount
   useEffect(() => {
-    fetchAccountingStandards();
+    loadCurrentSettings();
   }, []);
 
-  const fetchAccountingStandards = async () => {
-    console.log('📊 [AccountingStandards] Fetching current standards...');
+  const loadCurrentSettings = async () => {
     try {
       const response = await fetch('/api/backend/api/business/settings/', {
         credentials: 'include'
       });
-      console.log('📊 [AccountingStandards] Fetch response status:', response.status);
       
-      if (!response.ok) {
-        console.error('📊 [AccountingStandards] Failed to fetch settings:', response.status, response.statusText);
-        return;
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        console.log('📊 [AccountingStandards] Current settings:', data);
-        setStandardInfo(data);
-      } else {
-        console.error('📊 [AccountingStandards] Error in response:', data);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Set the country
+          const country = data.country || '';
+          setBusinessCountry(country);
+          
+          // Check if user has manually selected a standard
+          if (data.accounting_standard) {
+            setSelectedStandard(data.accounting_standard);
+            setHasManuallySelected(true);
+          } else {
+            // Auto-detect based on country
+            const autoDetectedStandard = getDefaultStandardForCountry(country);
+            setSelectedStandard(autoDetectedStandard);
+          }
+        }
       }
     } catch (error) {
-      console.error('📊 [AccountingStandards] Error fetching standards:', error);
+      console.error('Error loading accounting standard:', error);
     }
   };
 
-  const handleStandardChange = async (standard) => {
-    console.log('📊 [AccountingStandards] === CHANGE START ===');
-    console.log('📊 [AccountingStandards] New standard:', standard);
+  // Determine default accounting standard based on country
+  const getDefaultStandardForCountry = (country) => {
+    if (!country) return 'IFRS';
     
+    // Check if country uses GAAP
+    const countryUpper = country.toUpperCase();
+    const usesGAAP = GAAP_COUNTRIES.some(gaapCountry => 
+      countryUpper === gaapCountry.toUpperCase() ||
+      countryUpper.includes('UNITED STATES') ||
+      countryUpper === 'USA' ||
+      countryUpper === 'US'
+    );
+    
+    return usesGAAP ? 'GAAP' : 'IFRS';
+  };
+
+  const handleStandardSelect = (standard) => {
+    if (standard === selectedStandard) return;
+    
+    // Show confirmation modal
+    setPendingStandard(standard);
+    setShowConfirmModal(true);
+  };
+
+  const confirmStandardChange = async () => {
+    if (!pendingStandard) return;
+
     setLoading(true);
     try {
+      // Save to database
       const response = await fetch('/api/backend/api/business/settings/', {
         method: 'PATCH',
         headers: {
@@ -66,248 +94,206 @@ const AccountingStandards = () => {
         },
         credentials: 'include',
         body: JSON.stringify({
-          accounting_standard: standard,
+          accounting_standard: pendingStandard,
         }),
       });
 
-      console.log('📊 [AccountingStandards] Response status:', response.status);
-      console.log('📊 [AccountingStandards] Response headers:', response.headers);
-      
-      let data;
-      try {
-        data = await response.json();
-        console.log('📊 [AccountingStandards] Response data:', data);
-      } catch (e) {
-        console.error('📊 [AccountingStandards] Failed to parse JSON:', e);
-        notifyError('Failed to update accounting standard - invalid response');
-        return;
-      }
-      
-      if (response.ok && data.success) {
-        setStandardInfo(data);
-        notifySuccess(`Accounting standard updated to ${data.accounting_standard_display}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Update local state
+          setSelectedStandard(pendingStandard);
+          setHasManuallySelected(true);
+          
+          // Close modal and show success
+          setShowConfirmModal(false);
+          notifySuccess(`Accounting standard changed to ${pendingStandard === 'IFRS' ? 'IFRS' : 'US GAAP'}`);
+        } else {
+          notifyError(data.error || 'Failed to update accounting standard');
+        }
       } else {
-        console.error('📊 [AccountingStandards] Error response:', data);
-        notifyError(data.error || 'Failed to update accounting standard');
+        notifyError('Failed to update accounting standard');
       }
     } catch (error) {
-      console.error('📊 [AccountingStandards] Error:', error);
-      notifyError('Failed to update accounting standard');
+      console.error('Error updating accounting standard:', error);
+      notifyError('Failed to update accounting standard. Please try again.');
+    } finally {
+      setLoading(false);
+      setPendingStandard(null);
     }
-    setLoading(false);
   };
 
-  const handleInventoryMethodChange = async (method) => {
-    console.log('📦 [InventoryMethod] Changing to:', method);
-    
-    setLoading(true);
-    try {
-      const response = await fetch('/api/backend/api/business/settings/', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          inventory_valuation_method: method,
-        }),
-      });
+  const ConfirmationModal = () => {
+    if (!showConfirmModal || !pendingStandard) return null;
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setStandardInfo(data);
-        notifySuccess(`Inventory valuation method updated to ${method}`);
-      } else {
-        notifyError(data.error || 'Failed to update inventory method');
-      }
-    } catch (error) {
-      console.error('📦 [InventoryMethod] Error:', error);
-      notifyError('Failed to update inventory method');
-    }
-    setLoading(false);
-  };
+    const currentName = selectedStandard === 'IFRS' ? 'IFRS' : 'US GAAP';
+    const newName = pendingStandard === 'IFRS' ? 'IFRS' : 'US GAAP';
 
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="mb-6">
-        <div className="flex items-center mb-4">
-          <BookOpenIcon className="h-8 w-8 text-blue-600 mr-3" />
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Accounting Standards</h2>
-            <p className="text-gray-600">Configure your financial reporting standards</p>
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="flex items-center mb-4">
+            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 mr-3" />
+            <h3 className="text-lg font-semibold">Confirm Accounting Standard Change</h3>
+          </div>
+          
+          <p className="text-gray-600 mb-6">
+            Change accounting standard from <strong>{currentName}</strong> to <strong>{newName}</strong>?
+          </p>
+
+          <div className="bg-yellow-50 p-3 rounded-lg mb-6">
+            <p className="text-sm text-yellow-800">
+              <strong>Note:</strong> This will affect how your financial reports are formatted. 
+              Consult with your accountant before changing standards.
+            </p>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowConfirmModal(false);
+                setPendingStandard(null);
+              }}
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmStandardChange}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Updating...' : 'Confirm'}
+            </button>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  // Get the auto-detected standard for display
+  const autoDetectedStandard = getDefaultStandardForCountry(businessCountry);
+  const isUsingAutoDetected = !hasManuallySelected && selectedStandard === autoDetectedStandard;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center mb-6">
+        <BookOpenIcon className="h-6 w-6 text-blue-600 mr-3" />
+        <h3 className="text-lg font-semibold">Accounting Standards</h3>
       </div>
 
       {/* Current Standard Display */}
-      <div className="mb-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
-        <div className="flex items-start">
-          <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-1 mr-3 flex-shrink-0" />
+      <div className="bg-blue-50 rounded-lg p-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-blue-900 font-medium mb-1">
-              Your Current Accounting Standard
+            <h4 className="font-medium text-blue-900">Current Accounting Standard</h4>
+            <p className="text-blue-800">
+              {selectedStandard === 'IFRS' ? 'IFRS (International)' : 'US GAAP'}
             </p>
-            <p className="text-lg font-semibold text-blue-900">
-              {standardInfo.accounting_standard_display || 'IFRS (International)'}
-            </p>
-            <p className="text-sm text-blue-700 mt-1">
-              Based on your business country: {standardInfo.country || 'International'}
-            </p>
+            {businessCountry && (
+              <p className="text-xs text-blue-600 mt-1">
+                {isUsingAutoDetected 
+                  ? `Auto-selected based on your country: ${businessCountry}`
+                  : `Manually selected (Country default: ${autoDetectedStandard === 'IFRS' ? 'IFRS' : 'US GAAP'})`
+                }
+              </p>
+            )}
+          </div>
+          <div className="text-2xl">
+            {selectedStandard === 'IFRS' ? '🌍' : '🇺🇸'}
           </div>
         </div>
       </div>
 
-      {/* Accounting Standard Selection */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Select Accounting Standard</h3>
-        <div className="space-y-4">
-          <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-            <input
-              type="radio"
-              name="accounting_standard"
-              value="IFRS"
-              checked={standardInfo.accounting_standard === 'IFRS'}
-              onChange={() => handleStandardChange('IFRS')}
-              disabled={loading}
-              className="mt-1 mr-3"
-            />
-            <div className="flex-1">
-              <div className="font-medium">IFRS (International Financial Reporting Standards)</div>
-              <div className="text-sm text-gray-600 mt-1">
-                Used by 166+ countries worldwide. Required for public companies in most countries outside the US.
-              </div>
-              <div className="text-sm text-gray-500 mt-2">
-                • Statement of Financial Position (Balance Sheet)<br />
-                • Statement of Comprehensive Income<br />
-                • Allows asset revaluation<br />
-                • No LIFO inventory method
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-            <input
-              type="radio"
-              name="accounting_standard"
-              value="GAAP"
-              checked={standardInfo.accounting_standard === 'GAAP'}
-              onChange={() => handleStandardChange('GAAP')}
-              disabled={loading}
-              className="mt-1 mr-3"
-            />
-            <div className="flex-1">
-              <div className="font-medium">US GAAP (Generally Accepted Accounting Principles)</div>
-              <div className="text-sm text-gray-600 mt-1">
-                Required for US public companies. Commonly used by US private companies.
-              </div>
-              <div className="text-sm text-gray-500 mt-2">
-                • Balance Sheet<br />
-                • Income Statement<br />
-                • No asset revaluation allowed<br />
-                • LIFO inventory method available
-              </div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Inventory Valuation Method */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Inventory Valuation Method</h3>
+      {/* Standard Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Select Accounting Standard
+        </label>
+        
         <div className="space-y-3">
-          <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-            <input
-              type="radio"
-              name="inventory_method"
-              value="FIFO"
-              checked={standardInfo.inventory_valuation_method === 'FIFO'}
-              onChange={() => handleInventoryMethodChange('FIFO')}
-              disabled={loading}
-              className="mr-3"
-            />
-            <div>
-              <div className="font-medium">FIFO (First In, First Out)</div>
-              <div className="text-sm text-gray-600">Oldest inventory items are sold first</div>
-            </div>
-          </label>
-
-          {standardInfo.accounting_standard === 'GAAP' && (
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+          {/* IFRS Option */}
+          <div 
+            onClick={() => handleStandardSelect('IFRS')}
+            className={`p-4 border rounded-lg cursor-pointer transition-all ${
+              selectedStandard === 'IFRS' 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-start">
               <input
                 type="radio"
-                name="inventory_method"
-                value="LIFO"
-                checked={standardInfo.inventory_valuation_method === 'LIFO'}
-                onChange={() => handleInventoryMethodChange('LIFO')}
+                checked={selectedStandard === 'IFRS'}
+                onChange={() => {}}
+                className="mt-1 mr-3"
                 disabled={loading}
-                className="mr-3"
               />
-              <div>
-                <div className="font-medium">LIFO (Last In, First Out)</div>
-                <div className="text-sm text-gray-600">Newest inventory items are sold first (US GAAP only)</div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">
+                  IFRS (International Financial Reporting Standards)
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Used by 160+ countries worldwide. Required for public companies in most countries outside the US. 
+                  Provides a global framework for financial reporting with principle-based standards.
+                </p>
               </div>
-            </label>
-          )}
+            </div>
+          </div>
 
-          <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-            <input
-              type="radio"
-              name="inventory_method"
-              value="WEIGHTED_AVERAGE"
-              checked={standardInfo.inventory_valuation_method === 'WEIGHTED_AVERAGE'}
-              onChange={() => handleInventoryMethodChange('WEIGHTED_AVERAGE')}
-              disabled={loading}
-              className="mr-3"
-            />
-            <div>
-              <div className="font-medium">Weighted Average</div>
-              <div className="text-sm text-gray-600">Average cost of all inventory items</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Financial Statement Names */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-4">Your Financial Statement Names</h3>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Balance Sheet:</span>
-              <span className="font-medium">{standardInfo.financial_statement_names?.balance_sheet || 'Statement of Financial Position'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Income Statement:</span>
-              <span className="font-medium">{standardInfo.financial_statement_names?.income_statement || 'Statement of Comprehensive Income'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Equity Statement:</span>
-              <span className="font-medium">{standardInfo.financial_statement_names?.equity_statement || 'Statement of Changes in Equity'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Cash Flow Statement:</span>
-              <span className="font-medium">Statement of Cash Flows</span>
+          {/* US GAAP Option */}
+          <div 
+            onClick={() => handleStandardSelect('GAAP')}
+            className={`p-4 border rounded-lg cursor-pointer transition-all ${
+              selectedStandard === 'GAAP' 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-start">
+              <input
+                type="radio"
+                checked={selectedStandard === 'GAAP'}
+                onChange={() => {}}
+                className="mt-1 mr-3"
+                disabled={loading}
+              />
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">
+                  US GAAP (Generally Accepted Accounting Principles)
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Required for US public companies and commonly used by US private companies. 
+                  Provides detailed, rule-based guidance for financial reporting in the United States.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Information Note */}
-      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+      <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-start">
-          <InformationCircleIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="text-sm text-yellow-800">
-            <p className="font-medium mb-1">Important Notes:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Changing accounting standards affects how your financial reports are formatted</li>
-              <li>LIFO inventory method is only available under US GAAP</li>
-              <li>Consult with your accountant before changing standards</li>
-              <li>All existing transactions remain unchanged</li>
-            </ul>
+          <InformationCircleIcon className="h-5 w-5 text-gray-600 mr-3 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-gray-900 mb-1">
+              About Accounting Standards
+            </h4>
+            <p className="text-sm text-gray-700 mb-2">
+              Your accounting standard is automatically selected based on your business country, 
+              but you can change it if needed. Most countries use IFRS, while the United States primarily uses US GAAP.
+            </p>
+            <p className="text-sm text-gray-700">
+              This choice affects how financial statements are named and formatted. 
+              Both standards ensure accurate financial reporting but have different approaches and requirements.
+            </p>
           </div>
         </div>
       </div>
+
+      <ConfirmationModal />
     </div>
   );
 };

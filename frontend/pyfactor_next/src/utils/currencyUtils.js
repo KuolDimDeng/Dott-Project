@@ -4,7 +4,7 @@
  * Utility functions for currency handling and pricing calculations
  */
 
-import { getCurrencyForCountry, convertFromUSD, formatCurrency } from '@/services/wiseApiService';
+import { getCurrencyForCountry, convertFromUSD, formatCurrency } from '@/utils/simpleCurrencyUtils';
 import { getCacheValue } from '@/utils/appCache';
 
 // Base pricing in USD

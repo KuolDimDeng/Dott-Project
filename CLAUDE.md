@@ -273,6 +273,20 @@
 - **UI**: Settings → Business → Currency Preferences
 - **Documentation**: `/docs/MULTI_CURRENCY_FEATURE.md`
 
+### [51.0.0] - 2025-08-02 - CURRENT - Simplified Currency Selection
+- **Implementation**: 170 hardcoded currencies, no external APIs
+- **UI**: Simple dropdown with confirmation modal
+- **Display**: 3-letter currency codes in dashboard (USD, EUR, etc.)
+- **No Exchange Rates**: Display only, no conversion calculations
+- **Documentation**: `/docs/CURRENCY_SELECTION_FEATURE.md`
+
+### [52.0.0] - 2025-08-02 - CURRENT - Simplified Accounting Standards
+- **Options**: IFRS or US GAAP only
+- **Auto-Detection**: US businesses default to GAAP, others to IFRS
+- **Manual Override**: Users can change in Settings → Business
+- **Removed**: Inventory methods, statement naming, complex rules
+- **Documentation**: `/docs/ACCOUNTING_STANDARDS_FEATURE.md`
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)

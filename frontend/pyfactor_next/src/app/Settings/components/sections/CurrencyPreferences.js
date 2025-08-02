@@ -1,525 +1,288 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CurrencyDollarIcon,
-  CheckIcon, 
   ExclamationTriangleIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { useNotification } from '@/context/NotificationContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { formatCurrency, getAllCurrencies } from '@/utils/currencyFormatter';
+import { getCurrencyInfo } from '@/utils/currencyFormatter';
+
+// Hardcoded currency list - 170 currencies
+const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'JPY', name: 'Japanese Yen' },
+  { code: 'CHF', name: 'Swiss Franc' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'NZD', name: 'New Zealand Dollar' },
+  // African Currencies
+  { code: 'ZAR', name: 'South African Rand' },
+  { code: 'NGN', name: 'Nigerian Naira' },
+  { code: 'KES', name: 'Kenyan Shilling' },
+  { code: 'GHS', name: 'Ghanaian Cedi' },
+  { code: 'EGP', name: 'Egyptian Pound' },
+  { code: 'MAD', name: 'Moroccan Dirham' },
+  { code: 'TND', name: 'Tunisian Dinar' },
+  { code: 'DZD', name: 'Algerian Dinar' },
+  { code: 'ETB', name: 'Ethiopian Birr' },
+  { code: 'UGX', name: 'Ugandan Shilling' },
+  { code: 'TZS', name: 'Tanzanian Shilling' },
+  { code: 'ZWL', name: 'Zimbabwean Dollar' },
+  { code: 'ZMW', name: 'Zambian Kwacha' },
+  { code: 'BWP', name: 'Botswana Pula' },
+  { code: 'MWK', name: 'Malawian Kwacha' },
+  { code: 'MZN', name: 'Mozambican Metical' },
+  { code: 'AOA', name: 'Angolan Kwanza' },
+  { code: 'XAF', name: 'Central African CFA Franc' },
+  { code: 'XOF', name: 'West African CFA Franc' },
+  { code: 'RWF', name: 'Rwandan Franc' },
+  { code: 'SSP', name: 'South Sudanese Pound' },
+  { code: 'BIF', name: 'Burundian Franc' },
+  { code: 'DJF', name: 'Djiboutian Franc' },
+  { code: 'ERN', name: 'Eritrean Nakfa' },
+  { code: 'SOS', name: 'Somali Shilling' },
+  { code: 'SDG', name: 'Sudanese Pound' },
+  { code: 'LYD', name: 'Libyan Dinar' },
+  { code: 'MRU', name: 'Mauritanian Ouguiya' },
+  { code: 'MGA', name: 'Malagasy Ariary' },
+  { code: 'KMF', name: 'Comorian Franc' },
+  { code: 'SCR', name: 'Seychellois Rupee' },
+  { code: 'MUR', name: 'Mauritian Rupee' },
+  { code: 'LSL', name: 'Lesotho Loti' },
+  { code: 'SZL', name: 'Swazi Lilangeni' },
+  { code: 'NAD', name: 'Namibian Dollar' },
+  { code: 'CVE', name: 'Cape Verdean Escudo' },
+  { code: 'STN', name: 'São Tomé and Príncipe Dobra' },
+  { code: 'GMD', name: 'Gambian Dalasi' },
+  { code: 'LRD', name: 'Liberian Dollar' },
+  { code: 'SLL', name: 'Sierra Leonean Leone' },
+  // Asian Currencies
+  { code: 'CNY', name: 'Chinese Yuan' },
+  { code: 'INR', name: 'Indian Rupee' },
+  { code: 'KRW', name: 'South Korean Won' },
+  { code: 'SGD', name: 'Singapore Dollar' },
+  { code: 'HKD', name: 'Hong Kong Dollar' },
+  { code: 'THB', name: 'Thai Baht' },
+  { code: 'MYR', name: 'Malaysian Ringgit' },
+  { code: 'IDR', name: 'Indonesian Rupiah' },
+  { code: 'PHP', name: 'Philippine Peso' },
+  { code: 'VND', name: 'Vietnamese Dong' },
+  { code: 'BDT', name: 'Bangladeshi Taka' },
+  { code: 'PKR', name: 'Pakistani Rupee' },
+  { code: 'LKR', name: 'Sri Lankan Rupee' },
+  { code: 'TWD', name: 'Taiwan Dollar' },
+  { code: 'NPR', name: 'Nepalese Rupee' },
+  { code: 'AFN', name: 'Afghan Afghani' },
+  { code: 'MMK', name: 'Myanmar Kyat' },
+  { code: 'KHR', name: 'Cambodian Riel' },
+  { code: 'LAK', name: 'Lao Kip' },
+  { code: 'BND', name: 'Brunei Dollar' },
+  { code: 'BTN', name: 'Bhutanese Ngultrum' },
+  { code: 'MVR', name: 'Maldivian Rufiyaa' },
+  { code: 'MNT', name: 'Mongolian Tugrik' },
+  { code: 'KZT', name: 'Kazakhstani Tenge' },
+  { code: 'UZS', name: 'Uzbekistani Som' },
+  { code: 'KGS', name: 'Kyrgyzstani Som' },
+  { code: 'TJS', name: 'Tajikistani Somoni' },
+  { code: 'TMT', name: 'Turkmenistan Manat' },
+  { code: 'AZN', name: 'Azerbaijani Manat' },
+  { code: 'GEL', name: 'Georgian Lari' },
+  { code: 'AMD', name: 'Armenian Dram' },
+  // Middle Eastern Currencies
+  { code: 'AED', name: 'UAE Dirham' },
+  { code: 'SAR', name: 'Saudi Riyal' },
+  { code: 'QAR', name: 'Qatari Riyal' },
+  { code: 'KWD', name: 'Kuwaiti Dinar' },
+  { code: 'BHD', name: 'Bahraini Dinar' },
+  { code: 'OMR', name: 'Omani Rial' },
+  { code: 'JOD', name: 'Jordanian Dinar' },
+  { code: 'ILS', name: 'Israeli New Shekel' },
+  { code: 'TRY', name: 'Turkish Lira' },
+  { code: 'LBP', name: 'Lebanese Pound' },
+  { code: 'SYP', name: 'Syrian Pound' },
+  { code: 'IQD', name: 'Iraqi Dinar' },
+  { code: 'IRR', name: 'Iranian Rial' },
+  { code: 'YER', name: 'Yemeni Rial' },
+  // European Currencies (Non-Euro)
+  { code: 'SEK', name: 'Swedish Krona' },
+  { code: 'NOK', name: 'Norwegian Krone' },
+  { code: 'DKK', name: 'Danish Krone' },
+  { code: 'PLN', name: 'Polish Złoty' },
+  { code: 'CZK', name: 'Czech Koruna' },
+  { code: 'HUF', name: 'Hungarian Forint' },
+  { code: 'RON', name: 'Romanian Leu' },
+  { code: 'BGN', name: 'Bulgarian Lev' },
+  { code: 'HRK', name: 'Croatian Kuna' },
+  { code: 'RSD', name: 'Serbian Dinar' },
+  { code: 'UAH', name: 'Ukrainian Hryvnia' },
+  { code: 'RUB', name: 'Russian Ruble' },
+  { code: 'ISK', name: 'Icelandic Króna' },
+  { code: 'BAM', name: 'Bosnia and Herzegovina Convertible Mark' },
+  { code: 'MKD', name: 'Macedonian Denar' },
+  { code: 'ALL', name: 'Albanian Lek' },
+  { code: 'MDL', name: 'Moldovan Leu' },
+  { code: 'BYN', name: 'Belarusian Ruble' },
+  // Latin American Currencies
+  { code: 'BRL', name: 'Brazilian Real' },
+  { code: 'MXN', name: 'Mexican Peso' },
+  { code: 'ARS', name: 'Argentine Peso' },
+  { code: 'COP', name: 'Colombian Peso' },
+  { code: 'PEN', name: 'Peruvian Sol' },
+  { code: 'CLP', name: 'Chilean Peso' },
+  { code: 'VES', name: 'Venezuelan Bolívar' },
+  { code: 'BOB', name: 'Bolivian Boliviano' },
+  { code: 'PYG', name: 'Paraguayan Guaraní' },
+  { code: 'UYU', name: 'Uruguayan Peso' },
+  { code: 'CRC', name: 'Costa Rican Colón' },
+  { code: 'GTQ', name: 'Guatemalan Quetzal' },
+  { code: 'HNL', name: 'Honduran Lempira' },
+  { code: 'NIO', name: 'Nicaraguan Córdoba' },
+  { code: 'DOP', name: 'Dominican Peso' },
+  { code: 'JMD', name: 'Jamaican Dollar' },
+  { code: 'TTD', name: 'Trinidad and Tobago Dollar' },
+  { code: 'BSD', name: 'Bahamian Dollar' },
+  { code: 'BBD', name: 'Barbadian Dollar' },
+  { code: 'BZD', name: 'Belize Dollar' },
+  { code: 'PAB', name: 'Panamanian Balboa' },
+  { code: 'CUP', name: 'Cuban Peso' },
+  { code: 'HTG', name: 'Haitian Gourde' },
+  { code: 'GYD', name: 'Guyanese Dollar' },
+  { code: 'SRD', name: 'Surinamese Dollar' },
+  // Pacific Currencies
+  { code: 'FJD', name: 'Fijian Dollar' },
+  { code: 'PGK', name: 'Papua New Guinean Kina' },
+  { code: 'SBD', name: 'Solomon Islands Dollar' },
+  { code: 'VUV', name: 'Vanuatu Vatu' },
+  { code: 'WST', name: 'Samoan Tala' },
+  { code: 'TOP', name: 'Tongan Paʻanga' },
+  { code: 'XPF', name: 'CFP Franc' },
+  // Caribbean Currencies
+  { code: 'XCD', name: 'East Caribbean Dollar' },
+  { code: 'ANG', name: 'Netherlands Antillean Guilder' },
+  { code: 'AWG', name: 'Aruban Florin' },
+  { code: 'KYD', name: 'Cayman Islands Dollar' },
+  { code: 'BMD', name: 'Bermudian Dollar' },
+  // Other Currencies
+  { code: 'GIP', name: 'Gibraltar Pound' },
+  { code: 'FKP', name: 'Falkland Islands Pound' },
+  { code: 'SHP', name: 'Saint Helena Pound' }
+].sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
 
 const CurrencyPreferences = () => {
   const { notifySuccess, notifyError } = useNotification();
-  const { updateCurrency: updateGlobalCurrency } = useCurrency();
+  const { currency: currentCurrency, updateCurrency: updateGlobalCurrency } = useCurrency();
   const [loading, setLoading] = useState(false);
-  const [currencies, setCurrencies] = useState([]);
-  const [preferences, setPreferences] = useState({
-    currency_code: 'USD',
-    currency_name: 'US Dollar',
-    currency_symbol: '$',
-    show_usd_on_invoices: true,
-    show_usd_on_quotes: true,
-    show_usd_on_reports: false,
-  });
-  // Removed exchangeRateInfo - not needed for currency selection
-  
-  // Run diagnostic
-  const runDiagnostic = async () => {
-    console.log('🩺 [CurrencyPreferences] Running diagnostic...');
-    try {
-      const response = await fetch('/api/currency/diagnostic/');
-      console.log('🩺 [CurrencyPreferences] Diagnostic response status:', response.status);
-      console.log('🩺 [CurrencyPreferences] Diagnostic response headers:', response.headers);
-      console.log('🩺 [CurrencyPreferences] Diagnostic response ok:', response.ok);
-      
-      // Get response as text first
-      const responseText = await response.text();
-      console.log('🩺 [CurrencyPreferences] Raw response text length:', responseText.length);
-      console.log('🩺 [CurrencyPreferences] Raw response text (first 500 chars):', responseText.substring(0, 500));
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('🩺 [CurrencyPreferences] Diagnostic data:', JSON.stringify(data, null, 2));
-      } catch (parseError) {
-        console.error('🩺 [CurrencyPreferences] Failed to parse diagnostic response:', parseError);
-        console.error('🩺 [CurrencyPreferences] Raw response that failed to parse:', responseText);
-        notifyError('Diagnostic failed: Invalid response format');
-        return;
-      }
-      
-      if (data.success) {
-        notifySuccess('Diagnostic complete - check console for details');
-        
-        // Check for missing currency fields
-        if (data.diagnostics?.business_details?.has_currency_fields === false) {
-          notifyError('WARNING: Currency fields are missing from BusinessDetails model!');
-        }
-      } else {
-        const errorMsg = data.error || 'Unknown error';
-        console.error('🩺 [CurrencyPreferences] Diagnostic failed:', errorMsg);
-        console.error('🩺 [CurrencyPreferences] Full error data:', data);
-        
-        if (data.htmlPreview) {
-          console.error('🩺 [CurrencyPreferences] HTML preview:', data.htmlPreview);
-          notifyError('Diagnostic failed: Backend returned HTML error page');
-        } else if (data.parseError) {
-          console.error('🩺 [CurrencyPreferences] Parse error:', data.parseError);
-          notifyError('Diagnostic failed: ' + errorMsg);
-        } else {
-          notifyError('Diagnostic failed: ' + errorMsg);
-        }
-        
-        if (data.traceback) {
-          console.error('🩺 [CurrencyPreferences] Traceback:', data.traceback);
-        }
-        if (data.response) {
-          console.error('🩺 [CurrencyPreferences] Raw response:', data.response);
-        }
-      }
-    } catch (error) {
-      console.error('🩺 [CurrencyPreferences] Diagnostic error:', error);
-      notifyError('Diagnostic failed: ' + error.message);
-    }
-  };
-  
-  // Test auth function
-  const testAuth = async () => {
-    console.log('🧪 [CurrencyPreferences] Testing authentication...');
-    try {
-      const response = await fetch('/api/currency/test-auth/');
-      console.log('🧪 [CurrencyPreferences] Test auth response status:', response.status);
-      const data = await response.json();
-      console.log('🧪 [CurrencyPreferences] Test auth response data:', data);
-      if (data.success) {
-        notifySuccess('Auth test passed: ' + data.message);
-      } else {
-        notifyError('Auth test failed: ' + data.error);
-      }
-    } catch (error) {
-      console.error('🧪 [CurrencyPreferences] Auth test error:', error);
-      notifyError('Auth test failed: ' + error.message);
-    }
-  };
-  
-  // Test connection
-  const testConnection = async () => {
-    console.log('🔌 [CurrencyPreferences] Running connection test...');
-    try {
-      const response = await fetch('/api/currency/test-connection');
-      const data = await response.json();
-      console.log('🔌 [CurrencyPreferences] Connection test results:', data);
-      
-      if (data.success) {
-        const failedTests = data.tests.filter(t => !t.success);
-        if (failedTests.length > 0) {
-          console.error('🔌 [CurrencyPreferences] Some tests failed:', failedTests);
-          notifyError(`Connection issues detected: ${failedTests.map(t => t.test).join(', ')}`);
-        } else {
-          notifySuccess('Connection test passed - all systems operational');
-        }
-      } else {
-        notifyError('Connection test failed: ' + data.error);
-      }
-    } catch (error) {
-      console.error('🔌 [CurrencyPreferences] Connection test error:', error);
-      notifyError('Failed to run connection test');
-    }
-  };
-  
-  // Debug preferences endpoint
-  const debugPreferences = async () => {
-    console.log('🔍 [CurrencyPreferences] Running debug...');
-    try {
-      const response = await fetch('/api/currency/debug-preferences/');
-      const data = await response.json();
-      console.log('🔍 [CurrencyPreferences] Debug response:', data);
-      
-      if (data.success) {
-        notifySuccess('Debug complete - check console for details');
-      } else {
-        notifyError('Debug failed: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('🔍 [CurrencyPreferences] Debug error:', error);
-      notifyError('Debug failed: ' + error.message);
-    }
-  };
-
-  // Test public endpoint
-  const testPublic = async () => {
-    console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
-    try {
-      // Use the frontend proxy route
-      const response = await fetch('/api/currency/test-public/');
-      console.log('🌐 [CurrencyPreferences] Public test response status:', response.status);
-      const data = await response.json();
-      console.log('🌐 [CurrencyPreferences] Public test response data:', data);
-      
-      if (data.success) {
-        notifySuccess('Public test passed: ' + data.message);
-      } else {
-        notifyError('Public test failed: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('🌐 [CurrencyPreferences] Public test error:', error);
-      notifyError('Public test failed: ' + error.message);
-    }
-  };
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingCurrency, setPendingCurrency] = useState(null);
 
-  // Load currency list and preferences
+  // Load current currency preference on mount
   useEffect(() => {
-    loadCurrencies();
-    loadPreferences();
+    loadCurrentCurrency();
   }, []);
 
-  const loadCurrencies = async () => {
-    try {
-      const response = await fetch('/api/currency/list/');
-      const data = await response.json();
-      
-      if (data.success) {
-        // Sort currencies alphabetically by display name
-        const sortedCurrencies = data.currencies.sort((a, b) => 
-          a.display.localeCompare(b.display)
-        );
-        setCurrencies(sortedCurrencies);
-      } else {
-        // Fallback to local currency list
-        const allCurrencies = getAllCurrencies();
-        // Sort alphabetically
-        const sortedCurrencies = allCurrencies.sort((a, b) => 
-          a.display.localeCompare(b.display)
-        );
-        setCurrencies(sortedCurrencies);
-      }
-    } catch (error) {
-      console.error('Error loading currency list:', error);
-      // Fallback to local currency list
-      const allCurrencies = getAllCurrencies();
-      // Sort alphabetically
-      const sortedCurrencies = allCurrencies.sort((a, b) => 
-        a.display.localeCompare(b.display)
-      );
-      setCurrencies(sortedCurrencies);
+  // Update selected currency when global currency changes
+  useEffect(() => {
+    if (currentCurrency?.code) {
+      setSelectedCurrency(currentCurrency.code);
     }
-  };
+  }, [currentCurrency]);
 
-  const loadPreferences = async () => {
+  const loadCurrentCurrency = async () => {
     try {
-      console.log('💰 [CurrencyPreferences] Loading preferences...');
-      
-      // Try the optimized endpoint first (fastest, handles errors gracefully)
-      const response = await fetch('/api/currency/preferences-optimized/');
-      console.log('💰 [CurrencyPreferences] Response status:', response.status);
-      console.log('💰 [CurrencyPreferences] Response headers:', response.headers);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('💰 [CurrencyPreferences] Error response:', errorText);
-        
-        // If simple endpoint fails, try the original
-        console.log('💰 [CurrencyPreferences] Trying original endpoint...');
-        const fallbackResponse = await fetch('/api/currency/preferences/');
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          if (fallbackData.success) {
-            setPreferences(fallbackData.preferences);
-            console.log('💰 [CurrencyPreferences] Preferences loaded via fallback:', fallbackData.preferences);
-            return;
-          }
+      const response = await fetch('/api/currency/preferences/');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.preferences?.currency_code) {
+          setSelectedCurrency(data.preferences.currency_code);
         }
-        
-        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
-      }
-      
-      const data = await response.json();
-      console.log('💰 [CurrencyPreferences] Response data:', data);
-      
-      if (data.success) {
-        setPreferences(data.preferences);
-        console.log('💰 [CurrencyPreferences] Preferences loaded successfully:', data.preferences);
-      } else {
-        throw new Error(data.error || 'Failed to load preferences');
       }
     } catch (error) {
-      console.error('💰 [CurrencyPreferences] Error loading currency preferences:', error);
-      
-      // Set default preferences if loading fails
-      console.log('💰 [CurrencyPreferences] Setting default preferences...');
-      setPreferences({
-        currency_code: 'USD',
-        currency_name: 'US Dollar',
-        currency_symbol: '$',
-        show_usd_on_invoices: true,
-        show_usd_on_quotes: true,
-        show_usd_on_reports: false,
-      });
-      
-      // Don't show error notification on initial load
-      if (error.message && !error.message.includes('Failed to fetch')) {
-        notifyError('Using default currency settings');
-      }
+      console.error('Error loading currency preference:', error);
     }
-    setLoading(false);
   };
 
-  const handleCurrencyChange = async (currencyCode) => {
-    const selectedCurrency = currencies.find(c => c.code === currencyCode);
-    if (!selectedCurrency) return;
+  const handleCurrencyChange = (e) => {
+    const newCurrencyCode = e.target.value;
+    const newCurrency = CURRENCIES.find(c => c.code === newCurrencyCode);
+    
+    if (!newCurrency) return;
 
-    // If selecting USD, no need for confirmation
-    if (currencyCode === 'USD') {
-      await updateCurrency(currencyCode);
-      return;
-    }
-
-    // Show confirmation modal immediately
-    setPendingCurrency(selectedCurrency);
+    // Show confirmation modal
+    setPendingCurrency(newCurrency);
     setShowConfirmModal(true);
   };
 
-  const updateCurrency = async (currencyCode) => {
-    if (!currencyCode) {
-      currencyCode = pendingCurrency?.code;
-    }
-    
-    console.log('🚀 [CURRENCY-FRONTEND] === UPDATE CURRENCY START ===');
-    console.log('🚀 [CURRENCY-FRONTEND] Currency code to update:', currencyCode);
-    console.log('🚀 [CURRENCY-FRONTEND] Current preferences:', preferences);
-    console.log('🚀 [CURRENCY-FRONTEND] User action: Currency change requested');
-    console.log('🚀 [CURRENCY-FRONTEND] Timestamp:', new Date().toISOString());
-    console.log('🚀 [CURRENCY-FRONTEND] Modal state - Confirm clicked');
-    
-    const requestStart = Date.now();
+  const confirmCurrencyChange = async () => {
+    if (!pendingCurrency) return;
+
     setLoading(true);
     try {
-      const requestBody = {
-        currency_code: currencyCode,
-      };
+      // Get currency symbol from currencyFormatter
+      const currencyInfo = getCurrencyInfo(pendingCurrency.code);
       
-      console.log('🚀 [CURRENCY-FRONTEND] Request body:', requestBody);
-      console.log('🚀 [CURRENCY-FRONTEND] Making PUT request to /api/currency/preferences-optimized/');
-      console.log('🚀 [CURRENCY-FRONTEND] Request started at:', new Date().toISOString());
-      
-      const response = await fetch('/api/currency/preferences-optimized/', {
+      // Save to database
+      const response = await fetch('/api/currency/preferences/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          currency_code: pendingCurrency.code,
+          currency_name: pendingCurrency.name,
+          currency_symbol: currencyInfo.symbol
+        }),
       });
-      
-      const requestDuration = Date.now() - requestStart;
-      console.log('🚀 [CURRENCY-FRONTEND] Request completed in:', requestDuration, 'ms');
-      console.log('🚀 [CURRENCY-FRONTEND] Response status:', response.status);
-      console.log('🚀 [CURRENCY-FRONTEND] Response headers:', Object.fromEntries(response.headers.entries()));
-      
-      let data;
-      try {
-        const jsonParseStart = Date.now();
-        data = await response.json();
-        console.log('🚀 [CURRENCY-FRONTEND] JSON parse took:', Date.now() - jsonParseStart, 'ms');
-        console.log('🚀 [CURRENCY-FRONTEND] Response data:', data);
-      } catch (jsonError) {
-        console.error('🚀 [CURRENCY-FRONTEND] Failed to parse response as JSON:', jsonError);
-        const responseText = await response.text();
-        console.error('🚀 [CURRENCY-FRONTEND] Raw response text:', responseText);
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
-        }
-        throw new Error('Invalid response format from server');
-      }
-      
-      // Check if the request was successful
-      if (!response.ok || !data.success) {
-        // Backend returned an error
-        console.error('🚀 [CURRENCY-FRONTEND] === UPDATE FAILED ===');
-        console.error('🚀 [CURRENCY-FRONTEND] Error response:', data);
-        console.error('🚀 [CURRENCY-FRONTEND] Status code:', response.status);
+
+      if (response.ok) {
+        // Update global currency context for immediate UI update
+        updateGlobalCurrency({
+          currency_code: pendingCurrency.code,
+          currency_name: pendingCurrency.name,
+          currency_symbol: currencyInfo.symbol,
+          code: pendingCurrency.code,
+          name: pendingCurrency.name,
+          symbol: currencyInfo.symbol
+        });
+
+        // Update local state
+        setSelectedCurrency(pendingCurrency.code);
         
-        const errorMessage = data.error || `Server error: ${response.status}`;
-        
-        // Check for specific error types
-        if (data.status_code === 401 || response.status === 401) {
-          throw new Error('Authentication expired. Please refresh the page and try again.');
-        } else if (data.status_code === 403 || response.status === 403) {
-          throw new Error('You do not have permission to change currency settings.');
-        } else if (data.backend_url) {
-          throw new Error(`Backend error: ${errorMessage}`);
-        } else {
-          throw new Error(errorMessage);
-        }
-      }
-      
-      // Success case
-      console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
-      console.log('🚀 [CURRENCY-FRONTEND] Backend response success:', data);
-      console.log('🚀 [CURRENCY-FRONTEND] Currency returned from backend:', {
-        code: data.currency_code,
-        name: data.currency_name,
-        symbol: data.currency_symbol
-      });
-      
-      // Get the currency info from pending selection
-      const selectedCurrency = pendingCurrency || currencies.find(c => c.code === currencyCode);
-      console.log('🚀 [CURRENCY-FRONTEND] Selected currency info:', selectedCurrency);
-      
-      // Update preferences with the response data or selected currency
-      const updatedPreferences = {
-        currency_code: data.currency_code || currencyCode,
-        currency_name: data.currency_name || selectedCurrency?.name || `${currencyCode} Currency`,
-        currency_symbol: data.currency_symbol || selectedCurrency?.symbol || '$',
-        show_usd_on_invoices: data.show_usd_on_invoices ?? preferences.show_usd_on_invoices,
-        show_usd_on_quotes: data.show_usd_on_quotes ?? preferences.show_usd_on_quotes,
-        show_usd_on_reports: data.show_usd_on_reports ?? preferences.show_usd_on_reports,
-      };
-      
-      console.log('🚀 [CURRENCY-FRONTEND] Updated preferences object:', updatedPreferences);
-      console.log('🚀 [CURRENCY-FRONTEND] === EXECUTION ORDER ===');
-        
-        // Order of operations as requested:
-        // 1. Change Currency - Already done by user selection
-        console.log('🚀 [CURRENCY-FRONTEND] Step 1: Currency selected by user');
-        
-        // 2. Instant Confirmation - Show success immediately
-        console.log('🚀 [CURRENCY-FRONTEND] Step 2: Closing modal and showing success');
+        // Close modal and show success
         setShowConfirmModal(false);
-        setPendingCurrency(null);
-        notifySuccess(`✅ Currency changed to ${updatedPreferences.currency_name}!`);
-        
-        // 3. Header Update - Update global currency context for immediate UI update
-        console.log('🚀 [CURRENCY-FRONTEND] Step 3: Updating global currency context');
-        console.log('🚀 [CURRENCY-FRONTEND] Calling updateGlobalCurrency with:', updatedPreferences);
-        updateGlobalCurrency(updatedPreferences);
-        
-        // 4. Database Save - Update local state (backend save already attempted)
-        console.log('🚀 [CURRENCY-FRONTEND] Step 4: Updating local state');
-        setPreferences(updatedPreferences);
-        
-        // 5. App-wide Ready - Already done via context update
-        console.log('🚀 [CURRENCY-FRONTEND] Step 5: Currency is now available app-wide:', updatedPreferences.currency_code);
-        console.log('🚀 [CURRENCY-FRONTEND] Total time from request to completion:', Date.now() - requestStart, 'ms');
-    } catch (error) {
-      console.error('🚀 [CURRENCY-FRONTEND] Network error:', error);
-      console.error('🚀 [CURRENCY-FRONTEND] Error details:', {
-        message: error.message,
-        stack: error.stack,
-        type: error.constructor.name
-      });
-      
-      // Show more specific error message
-      let errorMessage = 'Failed to update currency preferences';
-      if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
-        errorMessage = 'Network error: Unable to connect to server. Please check your connection and try again.';
-      } else if (error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. The server might be slow. Please try again.';
-      }
-      
-      notifyError(errorMessage);
-      
-      // Run connection test automatically on network error
-      if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
-        console.log('🚀 [CURRENCY-FRONTEND] Running connection test due to network error...');
-        testConnection();
-      }
-    }
-    setLoading(false);
-    console.log('🚀 [CURRENCY-FRONTEND] === UPDATE CURRENCY END ===');
-    console.log('🚀 [CURRENCY-FRONTEND] Total execution time:', Date.now() - requestStart, 'ms');
-  };
-
-  const handleToggleChange = async (field, value) => {
-    console.log('🎯 [CurrencyPreferences] === TOGGLE CHANGE START ===');
-    console.log('🎯 [CurrencyPreferences] Field:', field, 'Value:', value);
-    
-    setLoading(true);
-    try {
-      const requestBody = {
-        [field]: value,
-      };
-      
-      console.log('🎯 [CurrencyPreferences] Request body:', requestBody);
-      console.log('🎯 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
-      
-      const response = await fetch('/api/currency/preferences-optimized/', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('🎯 [CurrencyPreferences] Response status:', response.status);
-      
-      let data;
-      try {
-        data = await response.json();
-        console.log('🎯 [CurrencyPreferences] Response data:', data);
-      } catch (jsonError) {
-        console.error('🎯 [CurrencyPreferences] Failed to parse response as JSON:', jsonError);
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
-        }
-        throw new Error('Invalid response format from server');
-      }
-      
-      if (data.success) {
-        console.log('🎯 [CurrencyPreferences] Toggle update successful!');
-        setPreferences(data.preferences);
-        notifySuccess('Display preferences updated');
+        notifySuccess(`Currency changed to ${pendingCurrency.name}`);
       } else {
-        console.error('🎯 [CurrencyPreferences] Toggle update failed:', data.error);
-        notifyError(data.error || 'Failed to update preferences');
+        const data = await response.json();
+        notifyError(data.error || 'Failed to update currency');
       }
     } catch (error) {
-      console.error('🎯 [CurrencyPreferences] Network error:', error);
-      notifyError('Failed to update display preferences');
+      console.error('Error updating currency:', error);
+      notifyError('Failed to update currency. Please try again.');
+    } finally {
+      setLoading(false);
+      setPendingCurrency(null);
     }
-    setLoading(false);
-    console.log('🎯 [CurrencyPreferences] === TOGGLE CHANGE END ===');
   };
-
 
   const ConfirmationModal = () => {
     if (!showConfirmModal || !pendingCurrency) return null;
 
+    const currentCurrencyName = CURRENCIES.find(c => c.code === selectedCurrency)?.name || selectedCurrency;
+
     return (
-      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
           <div className="flex items-center mb-4">
             <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 mr-3" />
             <h3 className="text-lg font-semibold">Confirm Currency Change</h3>
           </div>
           
-          <div className="mb-6">
-            <p className="text-gray-600 mb-4">
-              Change your business currency to <strong>{pendingCurrency.name}</strong>?
-            </p>
-            
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-blue-900 mb-2">
-                What this means:
-              </h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• All future invoices and quotes will display amounts in {pendingCurrency.name}</li>
-                <li>• Payments will still be processed in USD equivalent</li>
-                <li>• You can show USD amounts alongside local currency if desired</li>
-              </ul>
-            </div>
-
-            <div className="bg-green-50 rounded-lg p-4">
-              <h4 className="font-medium text-green-900 mb-2">
-                Currency Display Only
-              </h4>
-              <p className="text-sm text-green-800">
-                This only changes how amounts are displayed. All transactions and calculations will still use current exchange rates when needed.
-              </p>
-            </div>
-          </div>
+          <p className="text-gray-600 mb-6">
+            Change currency from <strong>{currentCurrencyName}</strong> to <strong>{pendingCurrency.name}</strong>?
+          </p>
 
           <div className="flex justify-end space-x-3">
             <button
@@ -533,11 +296,11 @@ const CurrencyPreferences = () => {
               Cancel
             </button>
             <button
-              onClick={() => updateCurrency()}
+              onClick={confirmCurrencyChange}
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Updating...' : 'Confirm Change'}
+              {loading ? 'Updating...' : 'Confirm'}
             </button>
           </div>
         </div>
@@ -547,256 +310,48 @@ const CurrencyPreferences = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <CurrencyDollarIcon className="h-6 w-6 text-blue-600 mr-3" />
-          <h3 className="text-lg font-semibold">Currency Preferences</h3>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={testAuth}
-            className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            Test Auth
-          </button>
-          <button
-            onClick={testPublic}
-            className="px-3 py-1 text-sm bg-blue-200 hover:bg-blue-300 rounded"
-          >
-            Test Public
-          </button>
-          <button
-            onClick={debugPreferences}
-            className="px-3 py-1 text-sm bg-yellow-200 hover:bg-yellow-300 rounded"
-          >
-            Debug Preferences
-          </button>
-          <button
-            onClick={runDiagnostic}
-            className="px-3 py-1 text-sm bg-green-200 hover:bg-green-300 rounded"
-          >
-            Run Diagnostic
-          </button>
-        </div>
-      </div>
-
-      {/* Current Currency Display */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-blue-900">Current Business Currency</h4>
-            <p className="text-blue-800">
-              {preferences.currency_name} ({preferences.currency_code})
-            </p>
-          </div>
-          <div className="text-2xl">
-            {preferences.currency_symbol}
-          </div>
-        </div>
+      <div className="flex items-center mb-6">
+        <CurrencyDollarIcon className="h-6 w-6 text-blue-600 mr-3" />
+        <h3 className="text-lg font-semibold">Currency Preferences</h3>
       </div>
 
       {/* Currency Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Business Currency
+          Display Currency
         </label>
         <select
-          value={preferences.currency_code}
-          onChange={(e) => handleCurrencyChange(e.target.value)}
+          value={selectedCurrency}
+          onChange={handleCurrencyChange}
           disabled={loading}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
-          {currencies.map((currency) => (
+          {CURRENCIES.map((currency) => (
             <option key={currency.code} value={currency.code}>
-              {currency.display}
+              {currency.name} ({currency.code})
             </option>
           ))}
         </select>
         <p className="text-xs text-gray-500 mt-1">
-          Select the currency you want to display throughout your business documents
+          Select the currency for displaying amounts throughout your business
         </p>
       </div>
 
-      {/* USD Display Options */}
-      <div>
-        <h4 className="font-medium text-gray-900 mb-4">USD Display Options</h4>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium text-gray-700">
-                Show USD on Invoices
-              </label>
-              <p className="text-sm text-gray-500">
-                Display USD equivalent in parentheses: {formatCurrency(100, preferences.currency_code)} (USD 75.84)
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.show_usd_on_invoices}
-                onChange={(e) => handleToggleChange('show_usd_on_invoices', e.target.checked)}
-                disabled={loading || preferences.currency_code === 'USD'}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium text-gray-700">
-                Show USD on Quotes
-              </label>
-              <p className="text-sm text-gray-500">
-                Display USD equivalent on quotes and estimates
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.show_usd_on_quotes}
-                onChange={(e) => handleToggleChange('show_usd_on_quotes', e.target.checked)}
-                disabled={loading || preferences.currency_code === 'USD'}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium text-gray-700">
-                Show USD on Reports
-              </label>
-              <p className="text-sm text-gray-500">
-                Display USD equivalent on financial reports and analytics
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.show_usd_on_reports}
-                onChange={(e) => handleToggleChange('show_usd_on_reports', e.target.checked)}
-                disabled={loading || preferences.currency_code === 'USD'}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-
-        {preferences.currency_code === 'USD' && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <InformationCircleIcon className="h-5 w-5 text-gray-500 mr-2" />
-              <p className="text-sm text-gray-600">
-                USD display options are disabled because your business currency is already USD.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Payment Processing Note */}
-      <div className="bg-yellow-50 rounded-lg p-4">
+      {/* Information Note */}
+      <div className="bg-blue-50 rounded-lg p-4">
         <div className="flex items-start">
-          <InformationCircleIcon className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+          <InformationCircleIcon className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
           <div>
-            <h4 className="font-medium text-yellow-800 mb-1">
-              Payment Processing
+            <h4 className="font-medium text-blue-900 mb-1">
+              Display Currency Only
             </h4>
-            <p className="text-sm text-yellow-700">
-              All payments are processed in USD regardless of your display currency. 
-              Customers will see the USD amount and exchange rate before completing payment.
+            <p className="text-sm text-blue-700">
+              This setting changes how amounts are displayed in your dashboards and reports. 
+              All payments are still processed in USD.
             </p>
           </div>
         </div>
       </div>
-      
-      {/* Debug Tools - Only in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Debug Tools</h4>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={testConnection}
-              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Test Connection
-            </button>
-            <button
-              onClick={runDiagnostic}
-              className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              Run Diagnostic
-            </button>
-            <button
-              onClick={testAuth}
-              className="px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
-            >
-              Test Auth
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  const res = await fetch('/api/currency/direct-test');
-                  const data = await res.json();
-                  console.log('🔬 Direct test results:', data);
-                  if (data.success) {
-                    notifySuccess('Direct test complete - check console');
-                  } else {
-                    notifyError('Direct test failed: ' + data.error);
-                  }
-                } catch (e) {
-                  notifyError('Direct test error: ' + e.message);
-                }
-              }}
-              className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              Direct Backend Test
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  const res = await fetch('/api/currency/backend-health');
-                  const data = await res.json();
-                  console.log('🏥 Backend health results:', data);
-                  const working = data.tests.filter(t => t.ok).length;
-                  const total = data.tests.length;
-                  if (working > 0) {
-                    notifySuccess(`Backend health: ${working}/${total} endpoints working`);
-                  } else {
-                    notifyError('All backend endpoints are unreachable');
-                  }
-                } catch (e) {
-                  notifyError('Health check error: ' + e.message);
-                }
-              }}
-              className="px-3 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
-            >
-              Backend Health
-            </button>
-            <button
-              onClick={() => {
-                // Log current cookies
-                console.log('🍪 Current cookies:', document.cookie);
-                // Parse cookies
-                const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-                  const [key, value] = cookie.trim().split('=');
-                  acc[key] = value;
-                  return acc;
-                }, {});
-                console.log('🍪 Parsed cookies:', cookies);
-                console.log('🍪 Session ID:', cookies.sid || cookies.session_token || 'NOT FOUND');
-                notifySuccess('Cookie info logged to console');
-              }}
-              className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              Check Cookies
-            </button>
-          </div>
-        </div>
-      )}
 
       <ConfirmationModal />
     </div>

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
 import PricingDisplay from './PricingDisplay';
 import { getCountryCode, getCountryName } from '@/utils/countryMapping';
-import { getCurrencyForCountry, formatCurrency, convertFromUSD } from '@/services/wiseApiService';
+import { getCurrencyForCountry, formatCurrency, convertFromUSD } from '@/utils/simpleCurrencyUtils';
 import { isDevelopingCountry, getDiscountPercentage } from '@/utils/developingCountries';
 
 // Subscription plans with updated pricing
