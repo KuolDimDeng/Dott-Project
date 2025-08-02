@@ -285,12 +285,21 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           credentials: 'include',
         });
         
+        console.log('[POS] Customer fetch response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('[POS] Customer data received:', data);
+          
           if (data.results) {
             setCustomers(data.results);
+            console.log('[POS] Set customers from results:', data.results.length);
           } else if (Array.isArray(data)) {
             setCustomers(data);
+            console.log('[POS] Set customers from array:', data.length);
+          } else if (data.customers) {
+            setCustomers(data.customers);
+            console.log('[POS] Set customers from customers field:', data.customers.length);
           }
         }
       } catch (error) {
@@ -816,7 +825,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             {/* Customer Selection */}
             <div className="mt-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('selectCustomer')}
+                {t('selectCustomer')} {customers.length > 0 && `(${customers.length})`}
               </label>
               <select
                 value={selectedCustomer}
