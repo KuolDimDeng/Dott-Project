@@ -78,8 +78,8 @@ export async function POST(request) {
       source: 'pos_system'
     };
 
-    // Use the correct backend endpoint path
-    const url = `${BACKEND_URL}/api/sales/`;
+    // Use the POS transaction endpoint
+    const url = `${BACKEND_URL}/api/sales/pos/transactions/`;
     logger.info('[POSProxy] Forwarding POST request to:', url);
     logger.info('[POSProxy] Backend sale data:', JSON.stringify(backendSaleData, null, 2));
 
