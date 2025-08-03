@@ -564,16 +564,22 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     try {
       const totals = calculateTotals();
       
+      console.log('[POS] Cart items before mapping:', cartItems);
+      
       const saleData = {
-        items: cartItems.map(item => ({
-          item_name: item.name,
-          product_id: item.id,
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.price * item.quantity,
-          sku: item.sku || '',
-          barcode: item.barcode || ''
-        })),
+        items: cartItems.map(item => {
+          const mappedItem = {
+            item_name: item.name || 'Unknown Item',
+            product_id: item.id,
+            quantity: item.quantity || 1,
+            unit_price: parseFloat(item.price || 0).toFixed(2),
+            total_price: (parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2),
+            sku: item.sku || '',
+            barcode: item.barcode || ''
+          };
+          console.log('[POS] Mapped item:', mappedItem);
+          return mappedItem;
+        }),
         customer_id: selectedCustomer,
         subtotal: totals?.subtotal || '0.00',
         discount_amount: totals?.discountAmount || '0.00',
@@ -587,7 +593,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         status: 'completed'
       };
 
-      console.log('[POS] Submitting sale data:', saleData);
+      console.log('[POS] Submitting sale data:', JSON.stringify(saleData, null, 2));
       
       // Call actual backend API
       const response = await fetch('/api/pos/complete-sale', {

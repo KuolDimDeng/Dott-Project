@@ -23,7 +23,7 @@ export async function GET(request) {
     
     // Direct backend call
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/users/api/currency/preferences`;
+    const backendUrl = `${BACKEND_URL}/api/currency/preferences`;
     
     console.log('📡 [Currency Preferences] Using backend URL:', backendUrl);
     
@@ -85,9 +85,9 @@ export async function PUT(request) {
     const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
     
     try {
-      // Direct backend call
+      // Direct backend call - Fix the URL path
       const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-      const backendUrl = `${BACKEND_URL}/users/api/currency/preferences`;
+      const backendUrl = `${BACKEND_URL}/api/users/api/currency/preferences`;
       console.log('🚀 [Currency Preferences] Using backend URL:', backendUrl);
       
       // Get session cookie

@@ -10,9 +10,9 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Direct backend call
+    // Direct backend call - Fix the URL path
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/users/api/business/settings`;
+    const backendUrl = `${BACKEND_URL}/api/users/api/business/settings`;
 
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -62,9 +62,9 @@ export async function PATCH(request) {
 
     const body = await request.json();
     
-    // Direct backend call
+    // Direct backend call - Fix the URL path
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/users/api/business/settings`;
+    const backendUrl = `${BACKEND_URL}/api/users/api/business/settings`;
 
     const response = await fetch(backendUrl, {
       method: 'PATCH',

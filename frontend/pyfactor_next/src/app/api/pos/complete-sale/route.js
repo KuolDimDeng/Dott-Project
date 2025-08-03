@@ -54,12 +54,13 @@ export async function POST(request) {
     // Prepare the sale data for backend
     const backendSaleData = {
       items: saleData.items.map(item => ({
-        product_id: item.id,
-        product_name: item.name,
-        product_sku: item.sku,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.price),
-        line_total: parseFloat(item.price) * item.quantity
+        product_id: item.product_id || item.id,
+        item_name: item.item_name || item.product_name || item.name,
+        product_name: item.item_name || item.product_name || item.name,
+        product_sku: item.sku || '',
+        quantity: item.quantity || 1,
+        unit_price: parseFloat(item.unit_price || item.price || 0),
+        line_total: parseFloat(item.total_price || (item.unit_price || item.price || 0) * (item.quantity || 1))
       })),
       customer_id: saleData.customer_id || null,
       subtotal: parseFloat(saleData.subtotal),
