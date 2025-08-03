@@ -38,13 +38,20 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
         
         # Get user's country from profile
         try:
-            user_profile = request.user.profile
+            from users.models import UserProfile
+            user_profile = UserProfile.objects.filter(user=request.user).first()
+            if not user_profile:
+                logger.error(f"User {request.user.id} has no profile")
+                return Response(
+                    {"error": "User profile not found"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             country = user_profile.business_country
             region_code = getattr(user_profile, 'business_state', '')
-        except:
-            logger.error(f"User {request.user.id} has no profile")
+        except Exception as e:
+            logger.error(f"Error getting user profile: {str(e)}")
             return Response(
-                {"error": "User profile not found"},
+                {"error": "Failed to get user profile"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         

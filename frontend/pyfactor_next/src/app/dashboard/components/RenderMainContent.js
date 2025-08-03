@@ -1188,6 +1188,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 return { default: () => <div className="p-4">Error loading Tax Reports</div> };
               }));
               break;
+            case 'sales-tax-filing':
+            case 'taxes-sales-tax-filing':
+              componentName = 'TaxFilingService';
+              TaxesComponent = lazy(() => import('./forms/TaxFilingService.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxFilingService:', err);
+                return { default: () => <div className="p-4">Error loading Tax Filing Service</div> };
+              }));
+              break;
             case 'tax-settings':
             case 'taxes-settings':
               componentName = 'TaxSettingsWizard';

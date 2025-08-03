@@ -29,10 +29,12 @@ const TaxReportsManagement = () => {
     try {
       const response = await taxesApi.reports.getSaved();
       if (response.data) {
-        setSavedReports(response.data);
+        // Ensure data is an array
+        setSavedReports(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Error fetching saved reports:', error);
+      setSavedReports([]);
     }
   };
 
@@ -333,7 +335,7 @@ const TaxReportsManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {savedReports.map((report) => (
+              {savedReports && savedReports.length > 0 ? savedReports.map((report) => (
                 <tr key={report.id}>
                   <td className="px-6 py-4 whitespace-nowrap">{report.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{report.type}</td>
@@ -355,7 +357,13 @@ const TaxReportsManagement = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    No saved reports found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

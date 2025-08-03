@@ -82,13 +82,15 @@ const TaxesDashboard = ({ onNavigate }) => {
       // Fetch upcoming filings
       const filingsResponse = await taxesApi.filings.getUpcoming();
       if (filingsResponse.data) {
-        setUpcomingFilings(filingsResponse.data);
+        // Ensure data is an array
+        setUpcomingFilings(Array.isArray(filingsResponse.data) ? filingsResponse.data : []);
       }
       
       // Fetch recent activities
       const activitiesResponse = await taxesApi.activities.getRecent();
       if (activitiesResponse.data) {
-        setRecentActivities(activitiesResponse.data);
+        // Ensure data is an array
+        setRecentActivities(Array.isArray(activitiesResponse.data) ? activitiesResponse.data : []);
       }
     } catch (error) {
       console.error('Error fetching tax dashboard data:', error);
