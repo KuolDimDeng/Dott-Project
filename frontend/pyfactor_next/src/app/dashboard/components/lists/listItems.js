@@ -1856,7 +1856,7 @@ const MainListItems = ({
             
             // Load the Sales Tax Filing component (Filing Dashboard)
             if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('filing-history');
+              handleTaxesClick('sales-tax-filing');
             }
           }, 
           value: 'sales-tax-filing',

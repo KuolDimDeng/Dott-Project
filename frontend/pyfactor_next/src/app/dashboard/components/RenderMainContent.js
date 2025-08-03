@@ -1201,30 +1201,47 @@ const RenderMainContent = React.memo(function RenderMainContent({
             case 'sales-tax-filing':
             case 'taxes-sales-tax-filing':
               console.log('[RenderMainContent] 🎯 SALES TAX FILING - Loading TaxFilingService component');
+              console.log('[RenderMainContent] 🎯 Props available:', { handleSetView: !!handleSetView, onNavigate: !!onNavigate });
               componentName = 'TaxFilingService';
-              TaxesComponent = lazy(() => import('./forms/TaxFilingService.js').catch(err => {
-                console.error('[RenderMainContent] ❌ Error loading TaxFilingService:', err);
-                console.error('[RenderMainContent] Error details:', {
-                  message: err.message,
-                  stack: err.stack,
-                  name: err.name
+              TaxesComponent = lazy(() => {
+                console.log('[RenderMainContent] 🎯 Starting TaxFilingService import...');
+                return import('./forms/TaxFilingService.js').then(module => {
+                  console.log('[RenderMainContent] ✅ TaxFilingService module loaded:', module);
+                  return module;
+                }).catch(err => {
+                  console.error('[RenderMainContent] ❌ Error loading TaxFilingService:', err);
+                  console.error('[RenderMainContent] Error details:', {
+                    message: err.message,
+                    stack: err.stack,
+                    name: err.name
+                  });
+                  return { default: () => <div className="p-4 text-red-600">Error loading Tax Filing Service: {err.message}</div> };
                 });
-                return { default: () => <div className="p-4 text-red-600">Error loading Tax Filing Service: {err.message}</div> };
-              }));
+              });
               break;
             case 'payroll-tax-filing':
             case 'new-payroll-filing':
             case 'payroll-tax-history':
             case 'payroll-tax-setup':
               console.log('[RenderMainContent] 🎯 PAYROLL TAX FILING - Loading PayrollTaxFiling component');
+              console.log('[RenderMainContent] 🎯 Props available:', { handleSetView: !!handleSetView, onNavigate: !!onNavigate });
               componentName = 'PayrollTaxFiling';
               const subPage = view;
-              TaxesComponent = lazy(() => import('./forms/PayrollTaxFiling.js').then(module => ({
-                default: (props) => React.createElement(module.default, { ...props, subPage })
-              })).catch(err => {
-                console.error('[RenderMainContent] ❌ Error loading PayrollTaxFiling:', err);
-                return { default: () => <div className="p-4 text-red-600">Error loading Payroll Tax Filing: {err.message}</div> };
-              }));
+              TaxesComponent = lazy(() => {
+                console.log('[RenderMainContent] 🎯 Starting PayrollTaxFiling import...');
+                return import('./forms/PayrollTaxFiling.js').then(module => {
+                  console.log('[RenderMainContent] ✅ PayrollTaxFiling module loaded:', module);
+                  return {
+                    default: (props) => {
+                      console.log('[RenderMainContent] 🎯 PayrollTaxFiling rendering with props:', props);
+                      return React.createElement(module.default, { ...props, subPage });
+                    }
+                  };
+                }).catch(err => {
+                  console.error('[RenderMainContent] ❌ Error loading PayrollTaxFiling:', err);
+                  return { default: () => <div className="p-4 text-red-600">Error loading Payroll Tax Filing: {err.message}</div> };
+                });
+              });
               break;
             case 'tax-settings':
             case 'taxes-settings':
@@ -1245,18 +1262,29 @@ const RenderMainContent = React.memo(function RenderMainContent({
           }
           
           if (TaxesComponent) {
+            console.log('[RenderMainContent] 🎯 Rendering TaxesComponent:', componentName);
+            console.log('[RenderMainContent] 🎯 With handleSetView:', typeof handleSetView);
             return (
               <ContentWrapperWithKey>
-                <SuspenseWithCleanup 
-                  componentKey={`${componentKey}-${view}`}
+                <ErrorBoundary 
                   fallback={
-                    <div className="flex justify-center items-center h-64">
-                      <StandardSpinner size="large" />
+                    <div className="p-4 border border-red-200 rounded-md bg-red-50 text-red-800">
+                      <h2 className="text-lg font-medium">Error rendering {componentName}</h2>
+                      <p className="text-sm mt-2">Please check the console for more details.</p>
                     </div>
                   }
                 >
-                  <TaxesComponent onNavigate={handleSetView} />
-                </SuspenseWithCleanup>
+                  <SuspenseWithCleanup 
+                    componentKey={`${componentKey}-${view}`}
+                    fallback={
+                      <div className="flex justify-center items-center h-64">
+                        <StandardSpinner size="large" text={`Loading ${componentName}...`} showText={true} />
+                      </div>
+                    }
+                  >
+                    <TaxesComponent onNavigate={handleSetView} />
+                  </SuspenseWithCleanup>
+                </ErrorBoundary>
               </ContentWrapperWithKey>
             );
           }
