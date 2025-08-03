@@ -277,8 +277,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        // Use the proxy endpoint that forwards to backend CRM
-        const response = await fetch('/api/proxy/customers/', {
+        // Call the backend CRM customers endpoint directly
+        const response = await fetch('/api/backend/crm/customers/', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
