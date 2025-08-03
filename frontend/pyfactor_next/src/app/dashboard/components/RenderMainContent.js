@@ -528,6 +528,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
   showTimesheetManagement,
   showPayManagement,
   showTaxManagement,
+  showTaxesDashboard,
   showBenefitsManagement,
   showReportsManagement,
   showPerformanceManagement,
@@ -1208,6 +1209,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
                   name: err.name
                 });
                 return { default: () => <div className="p-4 text-red-600">Error loading Tax Filing Service: {err.message}</div> };
+              }));
+              break;
+            case 'payroll-tax-filing':
+            case 'new-payroll-filing':
+            case 'payroll-tax-history':
+            case 'payroll-tax-setup':
+              console.log('[RenderMainContent] 🎯 PAYROLL TAX FILING - Loading PayrollTaxFiling component');
+              componentName = 'PayrollTaxFiling';
+              const subPage = view;
+              TaxesComponent = lazy(() => import('./forms/PayrollTaxFiling.js').then(module => ({
+                default: (props) => React.createElement(module.default, { ...props, subPage })
+              })).catch(err => {
+                console.error('[RenderMainContent] ❌ Error loading PayrollTaxFiling:', err);
+                return { default: () => <div className="p-4 text-red-600">Error loading Payroll Tax Filing: {err.message}</div> };
               }));
               break;
             case 'tax-settings':
@@ -2906,6 +2921,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
     showTimesheetManagement,
     showPayManagement,
     showTaxManagement,
+    showTaxesDashboard,
     showBenefitsManagement,
     showReportsManagement,
     showPerformanceManagement,

@@ -270,6 +270,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showHRDashboard: false,
     showEmployeeManagement: false,
     showTaxManagement: false,
+    showTaxesDashboard: false,
     showReportsManagement: false,
     showTimesheetManagement: false, // Added for timesheet management
     hrSection: 'dashboard',
@@ -532,6 +533,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       showEmployeeManagement: false,
       showHRDashboard: false,
       showTaxManagement: false,
+      showTaxesDashboard: false,
       showTimesheetManagement: false,
       showBenefitsManagement: false,
       showReportsManagement: false,
@@ -1471,6 +1473,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     hrSection,
     showEmployeeManagement,
     showTaxManagement: uiState.showTaxManagement,
+    showTaxesDashboard: uiState.showTaxesDashboard,
     showTimesheetManagement: uiState.showTimesheetManagement,
     showPayManagement: uiState.showPayManagement,
     showBenefitsManagement: uiState.showBenefitsManagement,

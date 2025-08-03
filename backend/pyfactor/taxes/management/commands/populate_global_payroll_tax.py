@@ -41,6 +41,163 @@ class Command(BaseCommand):
             help='Update existing rates (by default, skips countries that already have rates)',
         )
 
+    def process_us_states(self, client):
+        """Process payroll taxes for all US states"""
+        # List of US states with codes
+        us_states = [
+            ('AL', 'Alabama'), ('AK', 'Alaska'), ('AZ', 'Arizona'), ('AR', 'Arkansas'),
+            ('CA', 'California'), ('CO', 'Colorado'), ('CT', 'Connecticut'), ('DE', 'Delaware'),
+            ('FL', 'Florida'), ('GA', 'Georgia'), ('HI', 'Hawaii'), ('ID', 'Idaho'),
+            ('IL', 'Illinois'), ('IN', 'Indiana'), ('IA', 'Iowa'), ('KS', 'Kansas'),
+            ('KY', 'Kentucky'), ('LA', 'Louisiana'), ('ME', 'Maine'), ('MD', 'Maryland'),
+            ('MA', 'Massachusetts'), ('MI', 'Michigan'), ('MN', 'Minnesota'), ('MS', 'Mississippi'),
+            ('MO', 'Missouri'), ('MT', 'Montana'), ('NE', 'Nebraska'), ('NV', 'Nevada'),
+            ('NH', 'New Hampshire'), ('NJ', 'New Jersey'), ('NM', 'New Mexico'), ('NY', 'New York'),
+            ('NC', 'North Carolina'), ('ND', 'North Dakota'), ('OH', 'Ohio'), ('OK', 'Oklahoma'),
+            ('OR', 'Oregon'), ('PA', 'Pennsylvania'), ('RI', 'Rhode Island'), ('SC', 'South Carolina'),
+            ('SD', 'South Dakota'), ('TN', 'Tennessee'), ('TX', 'Texas'), ('UT', 'Utah'),
+            ('VT', 'Vermont'), ('VA', 'Virginia'), ('WA', 'Washington'), ('WV', 'West Virginia'),
+            ('WI', 'Wisconsin'), ('WY', 'Wyoming'), ('DC', 'District of Columbia')
+        ]
+        
+        # Process first 10 states as a sample
+        for state_code, state_name in us_states[:10]:
+            result = self.fetch_us_state_payroll_tax(state_code, state_name, client)
+            
+            if result['status'] == 'success':
+                action = "Created" if result['created'] else "Updated"
+                self.stdout.write(f"    ✅ {state_name} ({state_code}): {action}")
+            elif result['status'] == 'skipped':
+                self.stdout.write(f"    ⏭️  {state_name} ({state_code}): {result['message']}")
+            else:
+                self.stdout.write(
+                    self.style.WARNING(f"    ⚠️  {state_name} ({state_code}): {result['error']}")
+                )
+            
+            # Small delay between states
+            time.sleep(0.5)
+    
+    def fetch_us_state_payroll_tax(self, state_code, state_name, client):
+        """Fetch payroll tax rates for a US state using Claude AI"""
+        try:
+            # Check if already exists and not updating
+            if not self.update_existing:
+                existing = GlobalPayrollTax.objects.filter(
+                    country='US',
+                    region_code=state_code,
+                    is_current=True
+                ).exists()
+                
+                if existing:
+                    return {
+                        'state_code': state_code,
+                        'state_name': state_name,
+                        'status': 'skipped',
+                        'message': 'Already has rates'
+                    }
+
+            prompt = f"""Please provide the current STATE payroll tax rates and filing information for {state_name} ({state_code}), USA.
+            Note: This is for STATE taxes only, not federal taxes.
+            
+            Respond ONLY with a JSON object in this exact format:
+            {{
+                "state_code": "{state_code}",
+                "state_name": "{state_name}",
+                "employee_state_income_tax": 0.XX,
+                "employee_state_disability": 0.XX,
+                "employee_state_unemployment": 0.XX,
+                "employee_other_rate": 0.XX,
+                "employer_state_unemployment": 0.XX,
+                "employer_state_disability": 0.XX,
+                "employer_other_rate": 0.XX,
+                "state_unemployment_wage_base": null or number,
+                "tax_authority_name": "state tax authority name",
+                "filing_frequency": "monthly|quarterly|annual",
+                "filing_day": null or day number,
+                "online_filing_available": true/false,
+                "online_portal_name": "portal name or empty",
+                "online_portal_url": "URL or empty",
+                "state_withholding_form": "form number or empty",
+                "state_employer_form": "form number or empty",
+                "has_local_taxes": true/false,
+                "confidence": 0.X,
+                "notes": "brief note about state payroll taxes"
+            }}
+            
+            If the state has no state income tax or payroll taxes, use 0.0 for rates.
+            """
+
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=400,
+                temperature=0,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            content = response.content[0].text.strip()
+            
+            # Extract JSON
+            start_idx = content.find('{')
+            end_idx = content.rfind('}') + 1
+            
+            if start_idx != -1 and end_idx > start_idx:
+                json_str = content[start_idx:end_idx]
+                tax_data = json.loads(json_str)
+                
+                # Save to database
+                rate_obj, created = GlobalPayrollTax.objects.update_or_create(
+                    country='US',
+                    region_code=tax_data['state_code'],
+                    defaults={
+                        'country_name': 'United States',
+                        'region_name': tax_data['state_name'],
+                        'employee_social_security_rate': Decimal('0'),  # Federal only
+                        'employee_medicare_rate': Decimal('0'),  # Federal only
+                        'employee_unemployment_rate': Decimal(str(tax_data.get('employee_state_unemployment', 0))),
+                        'employee_other_rate': Decimal(str(tax_data.get('employee_state_income_tax', 0) + tax_data.get('employee_state_disability', 0))),
+                        'employer_social_security_rate': Decimal('0'),  # Federal only
+                        'employer_medicare_rate': Decimal('0'),  # Federal only
+                        'employer_unemployment_rate': Decimal(str(tax_data.get('employer_state_unemployment', 0))),
+                        'employer_other_rate': Decimal(str(tax_data.get('employer_state_disability', 0))),
+                        'social_security_wage_cap': None,  # Federal only
+                        'medicare_additional_threshold': None,  # Federal only
+                        'medicare_additional_rate': Decimal('0'),  # Federal only
+                        'tax_authority_name': tax_data['tax_authority_name'],
+                        'filing_frequency': tax_data['filing_frequency'],
+                        'filing_day_of_month': tax_data['filing_day'],
+                        'online_filing_available': tax_data['online_filing_available'],
+                        'online_portal_name': tax_data['online_portal_name'],
+                        'online_portal_url': tax_data['online_portal_url'],
+                        'employee_tax_form': tax_data.get('state_withholding_form', ''),
+                        'employer_return_form': tax_data.get('state_employer_form', ''),
+                        'has_local_taxes': tax_data.get('has_local_taxes', False),
+                        'ai_populated': True,
+                        'ai_confidence_score': Decimal(str(tax_data.get('confidence', 0.8))),
+                        'ai_source_notes': tax_data['notes'],
+                        'ai_last_verified': timezone.now(),
+                        'effective_date': timezone.now().date(),
+                        'is_current': True,
+                    }
+                )
+                
+                return {
+                    'state_code': state_code,
+                    'state_name': state_name,
+                    'status': 'success',
+                    'created': created
+                }
+            else:
+                raise ValueError("Could not parse JSON from response")
+
+        except Exception as e:
+            logger.error(f"Error fetching state payroll tax for {state_name}: {str(e)}")
+            return {
+                'state_code': state_code,
+                'state_name': state_name,
+                'status': 'error',
+                'error': str(e)
+            }
+
     def fetch_payroll_tax_for_country(self, country_code, country_name, client):
         """Fetch payroll tax rates for a single country using Claude AI"""
         try:
@@ -60,9 +217,12 @@ class Command(BaseCommand):
                         'message': 'Already has rates'
                     }
 
-            prompt = f"""Please provide the current payroll tax rates and filing information for {country_name} ({country_code}).
-            
-            Respond ONLY with a JSON object in this exact format:
+            # Special handling for USA - we need state-level data
+            if country_code == 'US':
+                prompt = f"""Please provide the FEDERAL payroll tax rates and filing information for the United States (US).
+                Note: This is for FEDERAL taxes only. State taxes will be handled separately.
+                
+                Respond ONLY with a JSON object in this exact format:
             {{
                 "country_code": "{country_code}",
                 "country_name": "{country_name}",
@@ -95,9 +255,45 @@ class Command(BaseCommand):
             If the country has no payroll taxes, use 0.0 for all rates. Use realistic values for developed countries.
             For countries like USA, include Medicare and Social Security. For other countries, map to similar concepts.
             """
+            else:
+                prompt = f"""Please provide the current payroll tax rates and filing information for {country_name} ({country_code}).
+                
+                Respond ONLY with a JSON object in this exact format:
+                {{
+                    "country_code": "{country_code}",
+                    "country_name": "{country_name}",
+                    "employee_social_security_rate": 0.XX,
+                    "employee_medicare_rate": 0.XX,
+                    "employee_unemployment_rate": 0.XX,
+                    "employee_other_rate": 0.XX,
+                    "employer_social_security_rate": 0.XX,
+                    "employer_medicare_rate": 0.XX,
+                    "employer_unemployment_rate": 0.XX,
+                    "employer_other_rate": 0.XX,
+                    "social_security_wage_cap": null or number,
+                    "medicare_additional_threshold": null or number,
+                    "medicare_additional_rate": 0.XX,
+                    "tax_authority_name": "name of tax authority",
+                    "filing_frequency": "monthly|quarterly|annual",
+                    "filing_day": null or day number,
+                    "online_filing_available": true/false,
+                    "online_portal_name": "portal name or empty",
+                    "online_portal_url": "URL or empty",
+                    "employee_tax_form": "form number or empty",
+                    "employer_return_form": "form number or empty",
+                    "year_end_employee_form": "form number or empty",
+                    "has_state_taxes": true/false,
+                    "requires_registration": true/false,
+                    "confidence": 0.X,
+                    "notes": "brief note about the payroll tax system"
+                }}
+                
+                If the country has no payroll taxes, use 0.0 for all rates. Use realistic values for developed countries.
+                For countries like USA, include Medicare and Social Security. For other countries, map to similar concepts.
+                """
 
             response = client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-sonnet-4-20250514",
                 max_tokens=400,
                 temperature=0,
                 messages=[{"role": "user", "content": prompt}]
@@ -220,7 +416,8 @@ class Command(BaseCommand):
         
         # Get Claude API key
         from django.conf import settings
-        api_key = getattr(settings, 'CLAUDE_TAX_API_KEY', None) or getattr(settings, 'CLAUDE_API_KEY', None)
+        import os
+        api_key = os.getenv('CLAUDE_TAX_API_KEY') or getattr(settings, 'CLAUDE_TAX_API_KEY', None) or getattr(settings, 'CLAUDE_API_KEY', None)
         
         if not api_key:
             self.stdout.write(self.style.ERROR('❌ No Claude API key configured!'))
@@ -276,6 +473,11 @@ class Command(BaseCommand):
                                 f"{action} - Employee: {emp_rate:.1f}%, Employer: {empr_rate:.1f}%"
                             )
                             success_count += 1
+                            
+                            # If this is USA, also populate state taxes
+                            if country_code == 'US':
+                                self.stdout.write("  📍 Processing US states...")
+                                self.process_us_states(client)
                         elif result['status'] == 'skipped':
                             self.stdout.write(
                                 f"  ⏭️  {country_name} ({country_code}): {result['message']}"
