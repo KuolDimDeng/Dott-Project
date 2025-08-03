@@ -35,8 +35,8 @@ export const CurrencyProvider = ({ children }) => {
   useEffect(() => {
     const loadCurrency = async () => {
       try {
-        // No trailing slash - Django APPEND_SLASH = False (industry standard)
-      const response = await fetch('/api/users/api/currency/preferences');
+        // Use backend proxy endpoint
+      const response = await fetch('/api/backend/users/api/currency/preferences');
         
         if (response.ok) {
           const contentType = response.headers.get('content-type');
@@ -136,8 +136,8 @@ export const CurrencyProvider = ({ children }) => {
     setIsLoading(true);
     
     try {
-      // No trailing slash - Django APPEND_SLASH = False (industry standard)
-      const response = await fetch('/api/users/api/currency/preferences');
+      // Use backend proxy endpoint
+      const response = await fetch('/api/backend/users/api/currency/preferences');
       
       if (response.ok) {
         const contentType = response.headers.get('content-type');

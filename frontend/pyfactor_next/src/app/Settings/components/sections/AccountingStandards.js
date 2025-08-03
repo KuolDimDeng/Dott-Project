@@ -30,7 +30,7 @@ const AccountingStandards = () => {
 
   const loadCurrentSettings = async () => {
     try {
-      const response = await fetch('/api/users/api/business/settings', {
+      const response = await fetch('/api/backend/users/api/business/settings', {
         credentials: 'include'
       });
       
@@ -87,7 +87,7 @@ const AccountingStandards = () => {
     setLoading(true);
     try {
       // Save to database
-      const response = await fetch('/api/users/api/business/settings', {
+      const response = await fetch('/api/backend/users/api/business/settings', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
