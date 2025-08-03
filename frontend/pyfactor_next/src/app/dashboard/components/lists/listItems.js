@@ -1840,48 +1840,94 @@ const MainListItems = ({
           value: 'taxes-dashboard' 
         },
         { 
-          label: t('subMenu.taxSetup'), 
+          label: 'Sales Tax Filing', 
           onClick: (value) => {
-            // Create navigation event for tax settings
+            // Create navigation event for sales tax filing
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'tax-settings', 
+              item: 'sales-tax-filing', 
               navigationKey,
-              originalItem: 'Tax Settings'
+              originalItem: 'Sales Tax Filing'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the TaxSettings component
+            // Load the Sales Tax Filing component (Filing Dashboard)
             if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('tax-settings');
+              handleTaxesClick('filing-history');
             }
           }, 
-          value: 'tax-settings' 
-        },
-        { 
-          label: t('subMenu.filings'), 
-          onClick: (value) => {
-            // Create navigation event for tax filing
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'tax-filing', 
-              navigationKey,
-              originalItem: 'Tax Filing'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the TaxFiling component
-            if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('tax-filing');
+          value: 'sales-tax-filing',
+          subItems: [
+            {
+              label: 'File Tax Return',
+              onClick: (value) => {
+                // Create navigation event for new tax filing
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'new-filing', 
+                  navigationKey,
+                  originalItem: 'File Tax Return'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the New Filing component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('new-filing');
+                }
+              },
+              value: 'new-filing'
+            },
+            {
+              label: 'Filing History',
+              onClick: (value) => {
+                // Create navigation event for filing history
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'filing-history', 
+                  navigationKey,
+                  originalItem: 'Filing History'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Filing History component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('filing-history');
+                }
+              },
+              value: 'filing-history'
+            },
+            {
+              label: 'Country Requirements',
+              onClick: (value) => {
+                // Create navigation event for country requirements
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'country-requirements', 
+                  navigationKey,
+                  originalItem: 'Country Requirements'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Country Requirements component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('country-requirements');
+                }
+              },
+              value: 'country-requirements'
             }
-          }, 
-          value: 'tax-filing' 
+          ]
         },
         { 
           label: t('mainMenu.reports'), 

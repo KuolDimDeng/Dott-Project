@@ -20,6 +20,7 @@ import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettingsSimple';
 import MainMenuSettings from './sections/MainMenuSettings';
+import TaxSettings from './sections/TaxSettings';
 // import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
@@ -33,7 +34,8 @@ import {
   CurrencyDollarIcon,
   MapPinIcon,
   ChatBubbleLeftRightIcon,
-  Squares2X2Icon
+  Squares2X2Icon,
+  CalculatorIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -80,6 +82,14 @@ const SettingsManagement = () => {
       icon: BanknotesIcon,
       description: t('bankConnections.title'),
       component: BankConnections,
+      requiredRole: 'admin' // Only admin and owner can access
+    },
+    {
+      id: 'taxes',
+      title: 'Taxes',
+      icon: CalculatorIcon,
+      description: 'Configure sales tax rates and settings',
+      component: TaxSettings,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
