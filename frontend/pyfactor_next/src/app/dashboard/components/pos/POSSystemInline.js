@@ -135,6 +135,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const { t } = useTranslation('pos');
   const [cartItems, setCartItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // percentage or amount
   const [taxRate, setTaxRate] = useState(0);
@@ -496,6 +498,25 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     }
   }, [products, t, showScanner]);
 
+  // Helper function to get customer display name
+  const getCustomerDisplayName = (customerId) => {
+    if (!customerId) return '';
+    const customer = customers.find(c => c.id === customerId);
+    return customer ? (customer.name || customer.company_name) : '';
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.customer-selection-container')) {
+        setShowCustomerDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Update item quantity
   const updateQuantity = (productId, newQuantity) => {
     if (newQuantity <= 0) {
@@ -829,22 +850,88 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             )}
 
             {/* Customer Selection */}
-            <div className="mt-6">
+            <div className="mt-6 relative customer-selection-container">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('selectCustomer')} {customers.length > 0 && `(${customers.length})`}
               </label>
-              <select
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="">{t('walkInCustomer')}</option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name || customer.company_name} - {customer.email}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={customerSearchTerm}
+                  onChange={(e) => {
+                    setCustomerSearchTerm(e.target.value);
+                    setShowCustomerDropdown(true);
+                    // Clear selection if user is typing
+                    if (selectedCustomer && e.target.value !== getCustomerDisplayName(selectedCustomer)) {
+                      setSelectedCustomer('');
+                    }
+                  }}
+                  onFocus={() => setShowCustomerDropdown(true)}
+                  placeholder={selectedCustomer ? getCustomerDisplayName(selectedCustomer) : t('walkInCustomer')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                {selectedCustomer && (
+                  <button
+                    onClick={() => {
+                      setSelectedCustomer('');
+                      setCustomerSearchTerm('');
+                    }}
+                    className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Customer Dropdown */}
+              {showCustomerDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <div
+                    onClick={() => {
+                      setSelectedCustomer('');
+                      setCustomerSearchTerm('');
+                      setShowCustomerDropdown(false);
+                    }}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
+                  >
+                    <div className="font-medium">{t('walkInCustomer')}</div>
+                    <div className="text-sm text-gray-500">No customer record</div>
+                  </div>
+                  {customers
+                    .filter(customer => {
+                      const searchLower = customerSearchTerm.toLowerCase();
+                      const name = (customer.name || customer.company_name || '').toLowerCase();
+                      const email = (customer.email || '').toLowerCase();
+                      return name.includes(searchLower) || email.includes(searchLower);
+                    })
+                    .map(customer => (
+                      <div
+                        key={customer.id}
+                        onClick={() => {
+                          setSelectedCustomer(customer.id);
+                          setCustomerSearchTerm(getCustomerDisplayName(customer.id));
+                          setShowCustomerDropdown(false);
+                        }}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                      >
+                        <div className="font-medium">
+                          {customer.name || customer.company_name}
+                        </div>
+                        <div className="text-sm text-gray-500">{customer.email}</div>
+                      </div>
+                    ))}
+                  {customers.filter(customer => {
+                    const searchLower = customerSearchTerm.toLowerCase();
+                    const name = (customer.name || customer.company_name || '').toLowerCase();
+                    const email = (customer.email || '').toLowerCase();
+                    return name.includes(searchLower) || email.includes(searchLower);
+                  }).length === 0 && customerSearchTerm && (
+                    <div className="px-3 py-2 text-gray-500 text-sm">
+                      No customers found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Discount */}
