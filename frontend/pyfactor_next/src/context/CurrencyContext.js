@@ -35,8 +35,8 @@ export const CurrencyProvider = ({ children }) => {
   useEffect(() => {
     const loadCurrency = async () => {
       try {
-        // Use backend proxy endpoint
-      const response = await fetch('/api/backend/users/api/currency/preferences');
+        // Use direct API endpoint without proxy
+      const response = await fetch('/api/currency/preferences');
         
         if (response.ok) {
           const contentType = response.headers.get('content-type');
@@ -136,8 +136,8 @@ export const CurrencyProvider = ({ children }) => {
     setIsLoading(true);
     
     try {
-      // Use backend proxy endpoint
-      const response = await fetch('/api/backend/users/api/currency/preferences');
+      // Use direct API endpoint without proxy
+      const response = await fetch('/api/currency/preferences');
       
       if (response.ok) {
         const contentType = response.headers.get('content-type');

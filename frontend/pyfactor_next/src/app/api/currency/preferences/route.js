@@ -25,7 +25,8 @@ export async function GET(request) {
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const host = request.headers.get('host') || 'localhost:3000';
     const baseUrl = `${protocol}://${host}`;
-    const rewritePath = '/api/backend/api/currency/preferences/';
+    // Use proxy endpoint
+    const rewritePath = '/api/proxy/users/api/currency/preferences';
     const fullUrl = `${baseUrl}${rewritePath}`;
     
     console.log('📡 [Currency Preferences] Using URL:', fullUrl);
@@ -85,11 +86,15 @@ export async function PUT(request) {
     const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
     
     try {
-      // Option 1: Try using the Next.js rewrite path
-      const rewritePath = '/api/backend/api/currency/preferences/';
-      console.log('🚀 [Currency Preferences] Using rewrite path:', rewritePath);
+      // Use proxy endpoint
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const host = request.headers.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      const rewritePath = '/api/proxy/users/api/currency/preferences';
+      const fullUrl = `${baseUrl}${rewritePath}`;
+      console.log('🚀 [Currency Preferences] Using proxy URL:', fullUrl);
       
-      const response = await fetch(rewritePath, {
+      const response = await fetch(fullUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
