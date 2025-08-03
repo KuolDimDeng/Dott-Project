@@ -565,7 +565,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       const totals = calculateTotals();
       
       const saleData = {
-        items: cartItems,
+        items: cartItems.map(item => ({
+          item_name: item.name,
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+          sku: item.sku || '',
+          barcode: item.barcode || ''
+        })),
         customer_id: selectedCustomer,
         subtotal: totals?.subtotal || '0.00',
         discount_amount: totals?.discountAmount || '0.00',
