@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Currency API</title>
+</head>
+<body>
+    <h1>Test Currency API</h1>
+    <button onclick="testAPI()">Test Currency Preferences API</button>
+    <button onclick="testBusinessAPI()">Test Business Settings API</button>
+    <pre id="result"></pre>
+
+    <script>
+    async function testAPI() {
+        const result = document.getElementById('result');
+        result.textContent = 'Testing currency preferences API...\n';
+        
+        try {
+            const response = await fetch('/api/users/api/currency/preferences', {
+                credentials: 'include'
+            });
+            
+            result.textContent += `Status: ${response.status}\n`;
+            result.textContent += `Status Text: ${response.statusText}\n`;
+            
+            const text = await response.text();
+            result.textContent += `Response: ${text}\n`;
+            
+            if (response.ok) {
+                try {
+                    const data = JSON.parse(text);
+                    result.textContent += `\nParsed JSON:\n${JSON.stringify(data, null, 2)}`;
+                } catch (e) {
+                    result.textContent += `\nCould not parse as JSON`;
+                }
+            }
+        } catch (error) {
+            result.textContent += `Error: ${error.message}\n`;
+        }
+    }
+
+    async function testBusinessAPI() {
+        const result = document.getElementById('result');
+        result.textContent = 'Testing business settings API...\n';
+        
+        try {
+            const response = await fetch('/api/users/api/business/settings', {
+                credentials: 'include'
+            });
+            
+            result.textContent += `Status: ${response.status}\n`;
+            result.textContent += `Status Text: ${response.statusText}\n`;
+            
+            const text = await response.text();
+            result.textContent += `Response: ${text}\n`;
+            
+            if (response.ok) {
+                try {
+                    const data = JSON.parse(text);
+                    result.textContent += `\nParsed JSON:\n${JSON.stringify(data, null, 2)}`;
+                } catch (e) {
+                    result.textContent += `\nCould not parse as JSON`;
+                }
+            }
+        } catch (error) {
+            result.textContent += `Error: ${error.message}\n`;
+        }
+    }
+    </script>
+</body>
+</html>

@@ -257,8 +257,23 @@ const CurrencyPreferences = () => {
         setShowConfirmModal(false);
         notifySuccess(`Currency changed to ${pendingCurrency.name}`);
       } else {
-        const data = await response.json();
-        notifyError(data.error || 'Failed to update currency');
+        let errorMessage = 'Failed to update currency';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            errorMessage = data.error || errorMessage;
+          } else {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            if (response.status === 404) {
+              errorMessage = 'Currency API endpoint not found. Please try again in a moment.';
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+        }
+        notifyError(errorMessage);
       }
     } catch (error) {
       console.error('Error updating currency:', error);
