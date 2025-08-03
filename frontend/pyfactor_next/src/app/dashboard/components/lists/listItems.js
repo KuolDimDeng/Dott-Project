@@ -1857,6 +1857,11 @@ const MainListItems = ({
             // Load the Sales Tax Filing component (Filing Dashboard)
             if (typeof handleTaxesClick === 'function') {
               handleTaxesClick('sales-tax-filing');
+            } else if (typeof handleSetView === 'function') {
+              // Fallback to direct view setting
+              handleSetView('sales-tax-filing');
+            } else {
+              console.error('[listItems] No navigation handler available for Sales Tax Filing');
             }
           }, 
           value: 'sales-tax-filing',
@@ -1947,6 +1952,11 @@ const MainListItems = ({
             // Load the Payroll Tax Filing component
             if (typeof handleTaxesClick === 'function') {
               handleTaxesClick('payroll-tax-filing');
+            } else if (typeof handleSetView === 'function') {
+              // Fallback to direct view setting
+              handleSetView('payroll-tax-filing');
+            } else {
+              console.error('[listItems] No navigation handler available for Payroll Tax Filing');
             }
           }, 
           value: 'payroll-tax-filing',

@@ -839,6 +839,28 @@ const RenderMainContent = React.memo(function RenderMainContent({
     }
   }, [view, tenantId, safeUserData]);
   
+  // Add navigation event listener to handle menu navigation
+  useEffect(() => {
+    const handleMenuNavigation = (event) => {
+      console.log('[RenderMainContent] 🎯 Menu navigation event received:', event.detail);
+      const { item } = event.detail;
+      
+      // Check if we have handleSetView function
+      if (typeof handleSetView === 'function') {
+        console.log('[RenderMainContent] 🎯 Calling handleSetView with:', item);
+        handleSetView(item);
+      } else {
+        console.error('[RenderMainContent] ❌ handleSetView is not available');
+      }
+    };
+    
+    window.addEventListener('menuNavigation', handleMenuNavigation);
+    
+    return () => {
+      window.removeEventListener('menuNavigation', handleMenuNavigation);
+    };
+  }, [handleSetView]);
+  
   // Define the content wrapper with key instead of redefining WrapperComponent
   const ContentWrapperWithKey = useCallback(({ children, className = '' }) => (
     <div 
@@ -1131,7 +1153,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Taxes views
-      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'sales-tax-filing' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || view === 'tax-settings' || showTaxManagement) {
+      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'sales-tax-filing' || view === 'payroll-tax-filing' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || view === 'tax-settings' || showTaxManagement) {
         console.log('[RenderMainContent] 🎯 TAX VIEW ROUTING - view:', view);
         console.log('[RenderMainContent] 🎯 TAX VIEW ROUTING - starts with taxes-:', view?.startsWith('taxes-'));
         console.log('[RenderMainContent] 🎯 TAX VIEW ROUTING - is sales-tax-filing:', view === 'sales-tax-filing');
