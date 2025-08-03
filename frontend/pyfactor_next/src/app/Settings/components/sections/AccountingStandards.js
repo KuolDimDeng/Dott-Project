@@ -87,7 +87,13 @@ const AccountingStandards = () => {
     setLoading(true);
     try {
       // Save to database
-      const response = await fetch('/api/user/business/settings', {
+      const url = '/api/user/business/settings';
+      console.log('[AccountingStandards] Updating via:', url);
+      console.log('[AccountingStandards] Request body:', {
+        accounting_standard: pendingStandard,
+      });
+      
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -98,8 +104,13 @@ const AccountingStandards = () => {
         }),
       });
 
+      console.log('[AccountingStandards] Response status:', response.status);
+      console.log('[AccountingStandards] Response ok:', response.ok);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[AccountingStandards] Response data:', data);
+        
         if (data.success) {
           // Update local state
           setSelectedStandard(pendingStandard);

@@ -227,7 +227,15 @@ const CurrencyPreferences = () => {
       
       // Save to database
       // Use direct API endpoint without proxy
-      const response = await fetch('/api/currency/preferences', {
+      const url = '/api/currency/preferences';
+      console.log('[CurrencyPreferences] Updating currency via:', url);
+      console.log('[CurrencyPreferences] Request body:', {
+        currency_code: pendingCurrency.code,
+        currency_name: pendingCurrency.name,
+        currency_symbol: currencyInfo.symbol
+      });
+      
+      const response = await fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +247,13 @@ const CurrencyPreferences = () => {
         }),
       });
 
+      console.log('[CurrencyPreferences] Response status:', response.status);
+      console.log('[CurrencyPreferences] Response ok:', response.ok);
+      
       if (response.ok) {
+        const data = await response.json();
+        console.log('[CurrencyPreferences] Response data:', data);
+        
         // Update global currency context for immediate UI update
         updateGlobalCurrency({
           currency_code: pendingCurrency.code,
@@ -277,6 +291,11 @@ const CurrencyPreferences = () => {
       }
     } catch (error) {
       console.error('Error updating currency:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
       notifyError('Failed to update currency. Please try again.');
     } finally {
       setLoading(false);
