@@ -52,6 +52,7 @@ from .views.payroll_tax_views import (
     get_payroll_tax_filing_history,
     get_payroll_tax_filing_status
 )
+from .views.payroll_filing_instructions import get_payroll_filing_instructions
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -132,6 +133,7 @@ urlpatterns = [
     path('payroll/filing/create/', create_payroll_tax_filing, name='payroll-tax-filing-create'),
     path('payroll/filing/history/', get_payroll_tax_filing_history, name='payroll-tax-filing-history'),
     path('payroll/filing/<int:filing_id>/status/', get_payroll_tax_filing_status, name='payroll-tax-filing-status'),
+    path('payroll/filing/<int:filing_id>/instructions/', get_payroll_filing_instructions, name='payroll-tax-filing-instructions'),
     
     # Year-end tax form endpoints (temporarily disabled)
     # path('year-end/', include('taxes.year_end.urls')),

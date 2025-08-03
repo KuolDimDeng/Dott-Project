@@ -272,7 +272,7 @@ const PayrollTaxFiling = ({ onNewFiling, subPage }) => {
                       <div className="text-sm font-medium text-green-600 mt-1">$65 - $250 per filing</div>
                     </div>
                   </label>
-                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 opacity-50">
                     <input
                       type="radio"
                       name="serviceType"
@@ -280,11 +280,12 @@ const PayrollTaxFiling = ({ onNewFiling, subPage }) => {
                       checked={serviceType === 'full_service'}
                       onChange={(e) => setServiceType(e.target.value)}
                       className="mt-1 mr-3"
+                      disabled
                     />
                     <div>
                       <div className="font-medium">Full-Service Filing</div>
                       <div className="text-sm text-gray-600">We calculate and file your taxes for you</div>
-                      <div className="text-sm font-medium text-green-600 mt-1">$125 - $450 per filing</div>
+                      <div className="text-sm font-medium text-gray-400 mt-1">Coming Soon</div>
                     </div>
                   </label>
                 </div>

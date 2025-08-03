@@ -125,13 +125,30 @@ def test_auth_public(request):
     logger.info(f"[TEST AUTH PUBLIC] Request method: {request.method}")
     logger.info(f"[TEST AUTH PUBLIC] Request path: {request.path}")
     logger.info(f"[TEST AUTH PUBLIC] Request headers: {dict(request.headers)}")
+    logger.info(f"[TEST AUTH PUBLIC] Request cookies: {request.COOKIES}")
+    
+    # Check Auth0 settings
+    auth0_settings = {
+        'AUTH0_DOMAIN': getattr(settings, 'AUTH0_DOMAIN', 'NOT SET'),
+        'AUTH0_ISSUER_DOMAIN': getattr(settings, 'AUTH0_ISSUER_DOMAIN', 'NOT SET'),
+        'AUTH0_ISSUER': getattr(settings, 'AUTH0_ISSUER', 'NOT SET'),
+        'AUTH0_AUDIENCE': getattr(settings, 'AUTH0_AUDIENCE', 'NOT SET'),
+        'AUTH0_CLIENT_ID': getattr(settings, 'AUTH0_CLIENT_ID', 'NOT SET')[:10] + '...' if getattr(settings, 'AUTH0_CLIENT_ID', None) else 'NOT SET',
+    }
     
     return Response({
         'success': True,
         'message': 'Public test endpoint is working',
         'timestamp': timezone.now().isoformat(),
         'method': request.method,
-        'path': request.path
+        'path': request.path,
+        'auth0_config': auth0_settings,
+        'cookies_received': list(request.COOKIES.keys()),
+        'headers_received': {
+            'Authorization': request.headers.get('Authorization', 'NOT SET'),
+            'Cookie': 'PRESENT' if request.headers.get('Cookie') else 'NOT SET',
+            'User-Agent': request.headers.get('User-Agent', 'NOT SET')
+        }
     })
 
 
@@ -146,11 +163,35 @@ def test_auth(request):
     logger.info(f"[TEST AUTH] Request headers: {dict(request.headers)}")
     logger.info(f"[TEST AUTH] Request cookies: {request.COOKIES}")
     
+    # Get user attributes
+    user_info = {
+        'email': getattr(request.user, 'email', 'No email'),
+        'id': str(request.user.id) if hasattr(request.user, 'id') else 'No ID',
+        'has_tenant': hasattr(request.user, 'tenant'),
+        'tenant_id': str(request.user.tenant.id) if hasattr(request.user, 'tenant') and request.user.tenant else None,
+        'has_tenant_id': hasattr(request.user, 'tenant_id'),
+        'tenant_id_attr': str(request.user.tenant_id) if hasattr(request.user, 'tenant_id') and request.user.tenant_id else None,
+        'has_business_id': hasattr(request.user, 'business_id'),
+        'business_id': str(request.user.business_id) if hasattr(request.user, 'business_id') and request.user.business_id else None,
+        'role': getattr(request.user, 'role', 'No role'),
+        'onboarding_completed': getattr(request.user, 'onboarding_completed', 'No onboarding_completed attr'),
+    }
+    
+    # Check request attributes
+    request_info = {
+        'has_tenant_id': hasattr(request, 'tenant_id'),
+        'tenant_id': str(request.tenant_id) if hasattr(request, 'tenant_id') and request.tenant_id else None,
+        'has_session_obj': hasattr(request, 'session_obj'),
+        'session_tenant': str(request.session_obj.tenant.id) if hasattr(request, 'session_obj') and request.session_obj and request.session_obj.tenant else None,
+    }
+    
     return Response({
         'success': True,
         'message': 'Authentication is working',
         'user': str(request.user),
-        'authenticated': request.user.is_authenticated
+        'authenticated': request.user.is_authenticated,
+        'user_info': user_info,
+        'request_info': request_info
     })
 
 

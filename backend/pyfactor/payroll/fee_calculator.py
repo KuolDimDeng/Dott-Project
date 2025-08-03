@@ -18,8 +18,8 @@ class PayrollFeeCalculator:
     def __init__(self, tenant=None):
         self.tenant = tenant
     
-    def calculate_payroll_with_fees(self, country_code: str, state_code: str = None, 
-                                   gross_salary: Decimal) -> Dict:
+    def calculate_payroll_with_fees(self, country_code: str, gross_salary: Decimal, 
+                                   state_code: str = None) -> Dict:
         """
         Calculate complete payroll breakdown including taxes and fees
         
@@ -101,8 +101,8 @@ class PayrollFeeCalculator:
         for employee in employees:
             calc = self.calculate_payroll_with_fees(
                 country_code=employee.get('country_code', 'US'),
-                state_code=employee.get('state_code'),
-                gross_salary=Decimal(str(employee['gross_salary']))
+                gross_salary=Decimal(str(employee['gross_salary'])),
+                state_code=employee.get('state_code')
             )
             
             # Add to individual results

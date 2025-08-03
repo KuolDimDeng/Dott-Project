@@ -189,7 +189,11 @@ AUTH0_MANAGEMENT_CLIENT_SECRET = os.getenv('AUTH0_MANAGEMENT_CLIENT_SECRET', '')
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://api.dottapps.com')
 
 # Build issuer URL from the issuer domain
-AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
+# Handle case where AUTH0_ISSUER_DOMAIN might already include https://
+if AUTH0_ISSUER_DOMAIN and AUTH0_ISSUER_DOMAIN.startswith('https://'):
+    AUTH0_ISSUER = AUTH0_ISSUER_DOMAIN.rstrip('/') + '/'
+else:
+    AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
 
 # Check Auth0 configuration
 print("🔐 Auth0 Configuration (Environment Variables):")
