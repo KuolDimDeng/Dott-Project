@@ -239,11 +239,17 @@ class EnhancedRowLevelSecurityMiddleware:
         # 1. Try headers first (preferred method)
         tenant_id = self._get_tenant_from_headers(request)
         
-        # 2. Try authenticated user
+        # 2. Try session object from SessionMiddleware first (most reliable)
+        if not tenant_id and hasattr(request, 'session_obj') and request.session_obj:
+            if request.session_obj.tenant:
+                tenant_id = request.session_obj.tenant.id
+                logger.debug(f"[RLS] Found tenant from session_obj: {tenant_id}")
+        
+        # 3. Try authenticated user
         if not tenant_id and hasattr(request, 'user') and request.user and request.user.is_authenticated:
             tenant_id = self._get_tenant_from_user(request.user)
         
-        # 3. Try session
+        # 4. Try Django session (legacy)
         if not tenant_id and hasattr(request, 'session'):
             tenant_id = request.session.get('tenant_id')
             

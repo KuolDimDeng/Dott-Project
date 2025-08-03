@@ -41,7 +41,7 @@ export async function GET(request) {
     
     // Backend URL
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/api/currency/preferences`;
+    const backendUrl = `${BACKEND_URL}/api/users/api/currency/preferences`;
     
     log('info', 'Making backend request', { 
       url: backendUrl,
@@ -78,8 +78,17 @@ export async function GET(request) {
       const text = await response.text();
       log('error', 'Non-JSON response from backend', { 
         text: text.substring(0, 500),
-        contentType 
+        contentType,
+        status: response.status
       });
+      
+      // Check if it's a tenant ID error (RLS middleware)
+      if (text.includes('Tenant ID required')) {
+        return createResponse({
+          success: false,
+          error: 'Authentication error. Please sign in again.'
+        }, 401);
+      }
       
       return createResponse({
         success: false,
@@ -171,7 +180,7 @@ export async function PUT(request) {
     
     // Backend URL
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/api/currency/preferences`;
+    const backendUrl = `${BACKEND_URL}/api/users/api/currency/preferences`;
     
     log('info', 'Making backend request', { 
       url: backendUrl,
@@ -215,6 +224,14 @@ export async function PUT(request) {
         contentType,
         status: response.status
       });
+      
+      // Check if it's a tenant ID error (RLS middleware)
+      if (text.includes('Tenant ID required')) {
+        return createResponse({
+          success: false,
+          error: 'Authentication error. Please sign in again.'
+        }, 401);
+      }
       
       // Check if it's a Cloudflare error page
       if (text.includes('502: Bad gateway') || text.includes('cloudflare')) {
