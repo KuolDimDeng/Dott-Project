@@ -201,6 +201,59 @@ export async function del(url) {
   return responseData;
 }
 
+// Enhanced makeRequest function for Django backend integration
+export async function makeRequest(endpoint, options = {}) {
+  try {
+    // Build the full URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const url = `${baseUrl}/api/${endpoint.replace(/^\//, '')}`;
+    
+    logger.debug('[API] makeRequest:', { endpoint, url, method: options.method || 'GET' });
+    
+    // Get auth headers
+    const authHeaders = await getAuthHeaders();
+    
+    // Merge headers
+    const headers = {
+      ...authHeaders,
+      ...(options.headers || {})
+    };
+    
+    // Execute the request
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
+    
+    logger.debug('[API] makeRequest response:', { 
+      status: response.status, 
+      ok: response.ok,
+      url: response.url 
+    });
+    
+    // Parse response
+    const data = await response.json();
+    
+    // Handle errors
+    if (!response.ok) {
+      const error = new Error(data.error || data.detail || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.response = data;
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    logger.error('[API] makeRequest error:', {
+      endpoint,
+      error: error.message,
+      status: error.status
+    });
+    throw error;
+  }
+}
+
 // Export as a namespace for ease of use
 const api = { get, post, put, delete: del };
 export default api;

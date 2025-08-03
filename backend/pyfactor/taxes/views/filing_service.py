@@ -22,12 +22,26 @@ from ..payment_integration import create_filing_service_checkout_session
 
 logger = logging.getLogger(__name__)
 
+# Enable detailed logging
+import sys
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('[%(asctime)s] %(name)s %(levelname)s: %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 class FilingServiceViewSet(viewsets.ModelViewSet):
     """ViewSet for tax filing service"""
     permission_classes = [IsAuthenticated, TenantAccessPermission]
     
+    def dispatch(self, request, *args, **kwargs):
+        logger.info(f"[FilingService] {request.method} {request.path} - User: {getattr(request.user, 'email', 'Anonymous')}")
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_queryset(self):
+        logger.info(f"[FilingService] Getting queryset for user {self.request.user.id}")
         """Filter filings by tenant"""
         return TaxFiling.objects.filter(
             tenant_id=self.request.user.profile.tenant_id,
@@ -36,6 +50,7 @@ class FilingServiceViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action"""
+        logger.debug(f"[FilingService] get_serializer_class called for action: {self.action}")
         if self.action == 'create':
             return FilingServiceCreateSerializer
         elif self.action == 'list':
@@ -46,6 +61,8 @@ class FilingServiceViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create new filing service request"""
+        logger.info(f"[FilingService] Creating new filing for user {request.user.email}")
+        logger.debug(f"[FilingService] Request data: {request.data}")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
@@ -94,7 +111,9 @@ class FilingServiceViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            logger.error(f"Error creating payment session: {str(e)}")
+            logger.error(f"[FilingService] Error creating payment session: {str(e)}")
+            logger.error(f"[FilingService] Error type: {type(e).__name__}")
+            logger.error(f"[FilingService] Filing data: {filing.id}")
             # Delete the filing if payment session creation fails
             filing.delete()
             return Response({
@@ -105,6 +124,7 @@ class FilingServiceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Get filing statistics"""
+        logger.info(f"[FilingService] Getting stats for user {request.user.email}")
         queryset = self.get_queryset()
         today = timezone.now().date()
         
@@ -123,6 +143,7 @@ class FilingServiceViewSet(viewsets.ModelViewSet):
         }
         
         serializer = FilingServiceStatsSerializer(stats)
+        logger.info(f"[FilingService] Stats retrieved: {stats}")
         return Response({
             'success': True,
             'stats': serializer.data

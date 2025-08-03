@@ -743,6 +743,26 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'taxes': {
+            'handlers': ['console', 'json_console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'taxes.middleware': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'taxes.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'taxes.views.tenant_tax_settings_views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
 
@@ -771,6 +791,7 @@ MIDDLEWARE = [
 'custom_auth.middleware.TenantMiddleware',  # Tenant isolation middleware
 'audit.middleware.AuditMiddleware',  # Audit trail middleware
 'custom_auth.middleware_package.onboarding_middleware.OnboardingMiddleware',  # Onboarding check middleware
+'taxes.middleware.TaxAuditMiddleware',  # Tax API audit and logging middleware
 'pyfactor.middleware.analytics_middleware.AnalyticsMiddleware',  # PostHog analytics tracking
 'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',

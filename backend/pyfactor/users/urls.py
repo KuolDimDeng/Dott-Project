@@ -25,7 +25,7 @@ from .api.subscription_views import subscription_status
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from .api.business_logo_views import upload_business_logo, delete_business_logo, get_business_logo
 from .api.currency_views import get_currency_list_view, get_exchange_rate
-from .api.currency_views_production import get_currency_preferences
+from .api.currency_views_v3 import currency_preferences_v3 as get_currency_preferences, currency_health_check
 from .api.business_settings_views import business_settings, accounting_standards_info
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -65,6 +65,7 @@ urlpatterns = [
     # Currency endpoints
     path('api/currency/list', get_currency_list_view, name='get_currency_list'),
     path('api/currency/preferences', get_currency_preferences, name='get_currency_preferences'),
+    path('api/currency/health', currency_health_check, name='currency_health_check'),
     path('api/currency/exchange-rate', get_exchange_rate, name='get_exchange_rate'),
     # Business settings and accounting standards
     path('api/business/settings', business_settings, name='business_settings'),

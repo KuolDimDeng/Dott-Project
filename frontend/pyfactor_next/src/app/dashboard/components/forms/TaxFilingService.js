@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+
+console.log('[TaxFilingService] 🎯 === COMPONENT LOADED ===')
 import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
@@ -165,9 +167,15 @@ const SERVICE_PRICING = {
 };
 
 export default function TaxFilingService({ onNavigate }) {
+  console.log('[TaxFilingService] 🎯 === COMPONENT RENDERING ===');
+  console.log('[TaxFilingService] Props:', { onNavigate });
+  
   const { user, loading: sessionLoading } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [tenantId, setTenantId] = useState(null);
+  
+  console.log('[TaxFilingService] User:', user?.email);
+  console.log('[TaxFilingService] Session loading:', sessionLoading);
   
   // Eligibility state
   const [eligibilityChecked, setEligibilityChecked] = useState(false);
