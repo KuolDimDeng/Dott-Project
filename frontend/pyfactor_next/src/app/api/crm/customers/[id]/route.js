@@ -94,8 +94,22 @@ export async function DELETE(request, { params }) {
     });
     
     if (!response.ok) {
-      const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      let errorMessage = 'Failed to delete customer';
+      try {
+        const errorText = await response.text();
+        // Try to parse as JSON first
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.detail || errorMessage;
+        } catch {
+          // If not JSON, use the text directly
+          errorMessage = errorText || errorMessage;
+        }
+      } catch {
+        // If we can't even read the response, use default message
+      }
+      console.error('[CRM Customer Delete API] Backend error:', response.status, errorMessage);
+      return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
     
     return NextResponse.json({ success: true });

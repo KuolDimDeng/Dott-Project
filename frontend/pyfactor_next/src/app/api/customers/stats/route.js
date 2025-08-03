@@ -39,8 +39,8 @@ export async function GET(request) {
           total: customers.length || 0,
           active: customers.filter(c => c.total_spent > 0).length || 0,
           new_this_month: customers.filter(c => {
-            const createdDate = new Date(c.created_at || c.date_created);
-            return createdDate >= startOfMonth;
+            const createdDate = new Date(c.created_at || c.date_created || c.created);
+            return createdDate >= startOfMonth && createdDate <= now;
           }).length || 0,
           total_revenue: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
           average_order_value: customers.length > 0 
