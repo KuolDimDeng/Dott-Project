@@ -1930,6 +1930,96 @@ const MainListItems = ({
           ]
         },
         { 
+          label: 'Payroll Tax Filing', 
+          onClick: (value) => {
+            // Create navigation event for payroll tax filing
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payroll-tax-filing', 
+              navigationKey,
+              originalItem: 'Payroll Tax Filing'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the Payroll Tax Filing component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('payroll-tax-filing');
+            }
+          }, 
+          value: 'payroll-tax-filing',
+          subItems: [
+            {
+              label: 'File Payroll Tax',
+              onClick: (value) => {
+                // Create navigation event for new payroll tax filing
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'new-payroll-filing', 
+                  navigationKey,
+                  originalItem: 'File Payroll Tax'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the New Payroll Filing component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('new-payroll-filing');
+                }
+              },
+              value: 'new-payroll-filing'
+            },
+            {
+              label: 'Payroll Tax History',
+              onClick: (value) => {
+                // Create navigation event for payroll tax history
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payroll-tax-history', 
+                  navigationKey,
+                  originalItem: 'Payroll Tax History'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Payroll Tax History component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('payroll-tax-history');
+                }
+              },
+              value: 'payroll-tax-history'
+            },
+            {
+              label: 'Payroll Tax Setup',
+              onClick: (value) => {
+                // Create navigation event for payroll tax setup
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payroll-tax-setup', 
+                  navigationKey,
+                  originalItem: 'Payroll Tax Setup'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Payroll Tax Setup component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('payroll-tax-setup');
+                }
+              },
+              value: 'payroll-tax-setup'
+            }
+          ]
+        },
+        { 
           label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for tax reports

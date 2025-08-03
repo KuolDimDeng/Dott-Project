@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from '@/context/SessionContext';
+import { useSession } from '@/hooks/useSession-v2';
 
 export default function TestCurrencyPage() {
-  const { session, loading: sessionLoading } = useSession();
+  const { user, loading: sessionLoading } = useSession();
   const [apiTests, setApiTests] = useState({
     optionsTest: { status: 'pending', result: null },
     getTest: { status: 'pending', result: null },
@@ -144,8 +144,8 @@ export default function TestCurrencyPage() {
       <div className="bg-blue-50 rounded-lg p-4 mb-8">
         <h2 className="text-lg font-semibold mb-2">Session Status</h2>
         <p>Loading: {sessionLoading ? 'Yes' : 'No'}</p>
-        <p>Authenticated: {session?.authenticated ? 'Yes' : 'No'}</p>
-        <p>User: {session?.user?.email || 'Not logged in'}</p>
+        <p>Authenticated: {user ? 'Yes' : 'No'}</p>
+        <p>User: {user?.email || 'Not logged in'}</p>
       </div>
 
       {/* API Tests */}

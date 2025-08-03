@@ -1419,6 +1419,282 @@ class GlobalSalesTaxRate(models.Model):
         return f"{self.rate * 100:.2f}%"
 
 
+class GlobalPayrollTax(models.Model):
+    """Global payroll tax rates and rules for all countries - AI populated"""
+    
+    # Location
+    country = CountryField(db_index=True)
+    country_name = models.CharField(max_length=100)
+    region_code = models.CharField(max_length=10, blank=True, db_index=True)
+    region_name = models.CharField(max_length=100, blank=True)
+    
+    # Employee Tax Rates (paid by employee)
+    employee_social_security_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Employee social security/pension rate as decimal"
+    )
+    employee_medicare_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Employee healthcare/medicare rate as decimal"
+    )
+    employee_unemployment_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Employee unemployment insurance rate as decimal"
+    )
+    employee_other_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Other employee taxes rate as decimal"
+    )
+    
+    # Employer Tax Rates (paid by employer)
+    employer_social_security_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Employer social security/pension rate as decimal"
+    )
+    employer_medicare_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Employer healthcare/medicare rate as decimal"
+    )
+    employer_unemployment_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Employer unemployment insurance rate as decimal"
+    )
+    employer_other_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Other employer taxes rate as decimal"
+    )
+    
+    # Tax Thresholds and Caps
+    social_security_wage_cap = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Annual wage cap for social security tax"
+    )
+    medicare_additional_threshold = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Threshold for additional medicare tax"
+    )
+    medicare_additional_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Additional medicare tax rate above threshold"
+    )
+    
+    # Filing Information
+    tax_authority_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Name of the payroll tax authority"
+    )
+    filing_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('weekly', 'Weekly'),
+            ('bi_weekly', 'Bi-Weekly'),
+            ('semi_monthly', 'Semi-Monthly'),
+            ('monthly', 'Monthly'),
+            ('quarterly', 'Quarterly'),
+            ('annual', 'Annual'),
+        ],
+        default='monthly',
+        help_text="How often payroll taxes must be filed"
+    )
+    deposit_schedule = models.CharField(
+        max_length=20,
+        choices=[
+            ('same_day', 'Same Day'),
+            ('next_day', 'Next Business Day'),
+            ('semi_weekly', 'Semi-Weekly'),
+            ('monthly', 'Monthly'),
+        ],
+        default='monthly',
+        help_text="When payroll tax deposits are due"
+    )
+    filing_day_of_month = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(31)],
+        help_text="Day of month when filing is due"
+    )
+    quarter_end_filing_days = models.IntegerField(
+        default=30,
+        help_text="Days after quarter end to file quarterly returns"
+    )
+    year_end_filing_days = models.IntegerField(
+        default=31,
+        help_text="Days after year end to file annual returns"
+    )
+    
+    # Online Filing
+    online_filing_available = models.BooleanField(
+        default=False,
+        help_text="Whether online filing is available"
+    )
+    online_portal_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Name of online filing portal"
+    )
+    online_portal_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="URL of online filing portal"
+    )
+    
+    # Forms
+    employee_tax_form = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Main employee withholding form (e.g., W-4, TD1)"
+    )
+    employer_return_form = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Main employer return form (e.g., 941, T4)"
+    )
+    year_end_employee_form = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Year-end employee form (e.g., W-2, T4)"
+    )
+    
+    # Special Rules
+    has_state_taxes = models.BooleanField(
+        default=False,
+        help_text="Whether states/provinces have additional payroll taxes"
+    )
+    has_local_taxes = models.BooleanField(
+        default=False,
+        help_text="Whether cities/localities have payroll taxes"
+    )
+    requires_registration = models.BooleanField(
+        default=True,
+        help_text="Whether employer registration is required"
+    )
+    registration_info = models.TextField(
+        blank=True,
+        help_text="Information about employer registration process"
+    )
+    
+    # AI metadata
+    ai_populated = models.BooleanField(default=True)
+    ai_confidence_score = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="AI confidence in this data (0-1)"
+    )
+    ai_source_notes = models.TextField(
+        blank=True,
+        help_text="Where AI found this information"
+    )
+    ai_last_verified = models.DateTimeField(default=timezone.now)
+    
+    # Validity
+    effective_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(null=True, blank=True)
+    is_current = models.BooleanField(default=True, db_index=True)
+    manually_verified = models.BooleanField(default=False)
+    manual_notes = models.TextField(blank=True)
+    
+    # Service Pricing (in USD) - following sales tax model
+    manual_filing_fee = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=65.00,
+        help_text="Fee for self-service filing (USD)"
+    )
+    assisted_filing_fee = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=125.00,
+        help_text="Fee for full-service filing (USD)"
+    )
+    
+    # Instructions
+    filing_instructions = models.TextField(
+        blank=True,
+        help_text="Basic instructions for payroll tax filing"
+    )
+    common_mistakes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Common filing mistakes to avoid"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        verbose_name = 'Global Payroll Tax'
+        verbose_name_plural = 'Global Payroll Taxes'
+        ordering = ['country', 'region_code', '-effective_date']
+        indexes = [
+            models.Index(fields=['country', 'is_current']),
+            models.Index(fields=['country', 'region_code', 'is_current']),
+        ]
+    
+    def __str__(self):
+        location = self.country_name
+        if self.region_name:
+            location += f", {self.region_name}"
+        return f"{location}: Payroll Tax"
+    
+    @property
+    def total_employee_rate(self):
+        """Calculate total employee tax rate"""
+        return (
+            self.employee_social_security_rate +
+            self.employee_medicare_rate +
+            self.employee_unemployment_rate +
+            self.employee_other_rate
+        )
+    
+    @property
+    def total_employer_rate(self):
+        """Calculate total employer tax rate"""
+        return (
+            self.employer_social_security_rate +
+            self.employer_medicare_rate +
+            self.employer_unemployment_rate +
+            self.employer_other_rate
+        )
+
+
 class TenantTaxSettings(models.Model):
     """
     Tenant-specific tax settings that override global defaults
@@ -1476,6 +1752,83 @@ class TenantTaxSettings(models.Model):
         max_length=100, 
         blank=True,
         help_text='VAT/GST/Tax registration number'
+    )
+    
+    # Payroll Tax Settings (overrides for GlobalPayrollTax)
+    payroll_tax_enabled = models.BooleanField(default=True)
+    
+    # Employee tax rate overrides
+    override_employee_social_security_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Override employee social security rate (leave blank to use global)"
+    )
+    override_employee_medicare_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Override employee medicare rate"
+    )
+    override_employee_unemployment_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Override employee unemployment rate"
+    )
+    
+    # Employer tax rate overrides
+    override_employer_social_security_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Override employer social security rate"
+    )
+    override_employer_medicare_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Override employer medicare rate"
+    )
+    override_employer_unemployment_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Override employer unemployment rate"
+    )
+    
+    # Payroll tax registration
+    payroll_tax_registration_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Employer tax ID/registration number"
+    )
+    payroll_filing_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('', 'Use Default'),
+            ('weekly', 'Weekly'),
+            ('bi_weekly', 'Bi-Weekly'),
+            ('semi_monthly', 'Semi-Monthly'),
+            ('monthly', 'Monthly'),
+            ('quarterly', 'Quarterly'),
+            ('annual', 'Annual'),
+        ],
+        blank=True,
+        default='',
+        help_text="Override filing frequency (leave blank to use default)"
     )
     
     # Metadata
