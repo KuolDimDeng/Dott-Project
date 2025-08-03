@@ -43,7 +43,7 @@ urlpatterns = [
     path('webhook/stripe/', stripe_webhook, name='stripe_webhook'),
     path('api/subscription/status/', subscription_status, name='subscription_status'),
     # Currency endpoints
-    path('api/currency/preferences/', get_currency_preferences, name='get_currency_preferences'),
+    path('api/currency/preferences', get_currency_preferences, name='get_currency_preferences'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]
