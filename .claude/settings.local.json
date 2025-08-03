@@ -217,7 +217,8 @@
       "WebFetch(domain:plaid.com)",
       "Bash(/tmp/add_browser_titles.sh:*)",
       "Bash(/tmp/add_browser_titles_fixed.sh:*)",
-      "Bash(./test_currency_api.sh:*)"
+      "Bash(./test_currency_api.sh:*)",
+      "Bash(./security-fixes.sh)"
     ],
     "deny": []
   }

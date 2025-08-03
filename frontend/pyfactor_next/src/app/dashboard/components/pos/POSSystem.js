@@ -24,6 +24,8 @@ const BarcodeIcon = (props) => (
   </svg>
 );
 import { logger } from '@/utils/logger';
+import { secureLog } from '@/utils/secureLogger';
+import { validateTaxRate, validateDiscountRate } from '@/utils/inputValidation';
 import ReceiptDialog from './ReceiptDialog';
 
 // Ensure logger exists
@@ -1404,7 +1406,16 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                               <input
                                 type="number"
                                 value={discount}
-                                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => {
+                                  try {
+                                    const validatedDiscount = validateDiscountRate(e.target.value);
+                                    setDiscount(validatedDiscount);
+                                  } catch (error) {
+                                    console.warn('Discount validation:', error.message);
+                                    const safeDiscount = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                                    setDiscount(safeDiscount);
+                                  }
+                                }}
                                 min="0"
                                 step="0.01"
                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
@@ -1440,9 +1451,19 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                 type="number"
                                 value={taxRate}
                                 onChange={(e) => {
-                                  setTaxRate(parseFloat(e.target.value) || 0);
-                                  if (loadedFromSettings) {
-                                    setLoadedFromSettings(false); // Mark as manually overridden
+                                  try {
+                                    const validatedRate = validateTaxRate(e.target.value);
+                                    setTaxRate(validatedRate);
+                                    if (loadedFromSettings) {
+                                      setLoadedFromSettings(false); // Mark as manually overridden
+                                    }
+                                  } catch (error) {
+                                    console.warn('Tax rate validation:', error.message);
+                                    const safeRate = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                                    setTaxRate(safeRate);
+                                    if (loadedFromSettings) {
+                                      setLoadedFromSettings(false);
+                                    }
                                   }
                                 }}
                                 min="0"

@@ -10147,3 +10147,23 @@ __pycache__/
 # Large files
 *.log
 *.bak
+
+# Security - Environment variables
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
+*.pem
+*.key
+*.crt
+
+# Sensitive data
+**/settings.py.backup*
+**/plaid_test.py
+**/*_credentials.json
+**/*_secrets.json
+
+# Log files that might contain sensitive data
+*.log
+logs/
+*.log.*

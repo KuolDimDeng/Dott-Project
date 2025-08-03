@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '@/context/NotificationContext';
 import StandardSpinner from '@/components/ui/StandardSpinner';
+import { validateTaxRate } from '@/utils/inputValidation';
 import { 
   CurrencyDollarIcon, 
   ExclamationTriangleIcon, 
@@ -427,12 +428,23 @@ const TaxSettings = () => {
                         max="100"
                         value={isEditingSales ? (editedSalesSettings.rate_percentage || 0) : ((salesTaxSettings?.sales_tax_rate || 0) * 100)}
                         onChange={(e) => {
-                          const percentage = parseFloat(e.target.value) || 0;
-                          setEditedSalesSettings({
-                            ...editedSalesSettings,
-                            sales_tax_rate: percentage / 100,
-                            rate_percentage: percentage
-                          });
+                          try {
+                            const percentage = validateTaxRate(e.target.value);
+                            setEditedSalesSettings({
+                              ...editedSalesSettings,
+                              sales_tax_rate: percentage / 100,
+                              rate_percentage: percentage
+                            });
+                          } catch (error) {
+                            // Show validation error but allow the input to update for user feedback
+                            console.warn('Tax rate validation:', error.message);
+                            const rawPercentage = parseFloat(e.target.value) || 0;
+                            setEditedSalesSettings({
+                              ...editedSalesSettings,
+                              sales_tax_rate: Math.max(0, Math.min(100, rawPercentage)) / 100,
+                              rate_percentage: Math.max(0, Math.min(100, rawPercentage))
+                            });
+                          }
                         }}
                         disabled={!isEditingSales}
                         className="block w-full pr-10 border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"

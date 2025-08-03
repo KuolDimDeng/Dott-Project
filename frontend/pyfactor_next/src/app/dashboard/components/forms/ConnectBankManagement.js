@@ -43,8 +43,8 @@ const FieldTooltip = ({ text }) => {
 
 // Plaid sandbox credentials
 const PLAID_SANDBOX_CONFIG = {
-  clientId: '66d4706be66ef5001a59bbd2',
-  secretSandbox: '22874241662b48071ffccf02a5db05',
+  clientId: process.env.NEXT_PUBLIC_PLAID_CLIENT_ID,
+  secretSandbox: process.env.PLAID_SECRET_SANDBOX,
   environment: 'sandbox'
 };
 

@@ -125,13 +125,13 @@ PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
 
 # Check for Plaid credentials and use sandbox credentials if not set
 if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    print("Warning: Real Plaid credentials not set. Using sandbox credentials for development.")
-    PLAID_CLIENT_ID = PLAID_CLIENT_ID or "66d4706be66ef5001a59bbd2"
-    PLAID_SECRET = PLAID_SECRET or "22874241662b48071ffccf02a5db05"
-    
-# Verify Plaid credentials aren't empty (which would cause runtime errors)
-if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    raise ValueError("Plaid credentials are not set in the environment variables.")
+    print("Warning: Real Plaid credentials not set. Plaid features will be disabled.")
+    PLAID_CLIENT_ID = None
+    PLAID_SECRET = None
+    # Don't raise an error - allow the app to run without Plaid
+    print("🔄 Application will run without Plaid integration.")
+else:
+    print("✅ Plaid credentials configured successfully.")
 
 # ENCRYPTION_KEY = Fernet.generate_key()  # Commented out to avoid import issues
 
