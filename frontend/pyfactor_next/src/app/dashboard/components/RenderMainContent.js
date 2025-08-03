@@ -1242,6 +1242,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               });
               break;
             case 'payroll-tax-filing':
+            case 'taxes-payroll-tax-filing':
             case 'new-payroll-filing':
             case 'payroll-tax-history':
             case 'payroll-tax-setup':
