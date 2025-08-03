@@ -34,24 +34,33 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
         """
         Get current tenant's tax settings or create from global defaults
         """
+        logger.info(f"[TenantTaxSettings] Getting tax settings for user {request.user.id}")
         tenant_id = request.user.tenant_id
+        logger.info(f"[TenantTaxSettings] Tenant ID: {tenant_id}")
         
         # Get user's country from profile
         try:
             from users.models import UserProfile
             user_profile = UserProfile.objects.filter(user=request.user).first()
+            logger.info(f"[TenantTaxSettings] Found user profile: {user_profile is not None}")
+            
             if not user_profile:
                 logger.error(f"User {request.user.id} has no profile")
                 return Response(
                     {"error": "User profile not found"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            
             country = user_profile.business_country
             region_code = getattr(user_profile, 'business_state', '')
+            logger.info(f"[TenantTaxSettings] Country: {country}, Region: {region_code}")
+            
         except Exception as e:
             logger.error(f"Error getting user profile: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details'}")
             return Response(
-                {"error": "Failed to get user profile"},
+                {"error": f"Failed to get user profile: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         

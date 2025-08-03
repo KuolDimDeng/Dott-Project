@@ -4,21 +4,30 @@ import { makeRequest } from '@/utils/api';
 export async function GET(request) {
   try {
     console.log('🎯 [Tax Settings API] === START GET ===');
+    console.log('🎯 [Tax Settings API] Request headers:', request.headers);
     
     // Get current tenant's tax settings
+    console.log('🎯 [Tax Settings API] Making request to: taxes/tenant-settings/current/');
     const response = await makeRequest('taxes/tenant-settings/current/', {
       method: 'GET',
     });
     
-    console.log('🎯 [Tax Settings API] Response:', {
+    console.log('🎯 [Tax Settings API] Backend response:', {
       source: response.source,
       hasSettings: !!response.settings,
-      taxRate: response.settings?.sales_tax_rate
+      settings: response.settings,
+      error: response.error
     });
     
     return NextResponse.json(response);
   } catch (error) {
     console.error('🎯 [Tax Settings API] Error:', error);
+    console.error('🎯 [Tax Settings API] Error details:', {
+      message: error.message,
+      status: error.status,
+      response: error.response,
+      stack: error.stack
+    });
     return NextResponse.json(
       { error: error.message || 'Failed to fetch tax settings' },
       { status: error.status || 500 }

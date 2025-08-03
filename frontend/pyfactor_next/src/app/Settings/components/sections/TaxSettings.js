@@ -80,15 +80,25 @@ const TaxSettings = () => {
       console.log('🎯 [TaxSettings] Fetching tax settings...');
       
       const response = await fetch('/api/settings/taxes');
+      console.log('🎯 [TaxSettings] Response status:', response.status);
+      console.log('🎯 [TaxSettings] Response headers:', response.headers);
+      
       const data = await response.json();
+      console.log('🎯 [TaxSettings] Response data:', data);
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch tax settings');
+        console.error('🎯 [TaxSettings] Response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error
+        });
+        throw new Error(data.error || `Failed to fetch tax settings (${response.status})`);
       }
       
-      console.log('🎯 [TaxSettings] Received:', {
+      console.log('🎯 [TaxSettings] Success - Received:', {
         source: data.source,
-        rate: data.settings?.sales_tax_rate
+        rate: data.settings?.sales_tax_rate,
+        fullSettings: data.settings
       });
       
       setSource(data.source);
@@ -96,7 +106,11 @@ const TaxSettings = () => {
       setEditedSettings(data.settings || {});
     } catch (error) {
       console.error('🎯 [TaxSettings] Error:', error);
-      notifyError('Failed to load tax settings');
+      console.error('🎯 [TaxSettings] Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      notifyError(`Failed to load tax settings: ${error.message}`);
     } finally {
       setLoading(false);
     }

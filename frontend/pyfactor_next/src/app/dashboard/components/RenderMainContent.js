@@ -564,14 +564,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
   });
   
   // Debug log to see what view is being passed
-  console.error('[RenderMainContent] Component rendered with view:', view, 'navigationKey:', navigationKey);
-  console.error('[RenderMainContent] All props:', {
-    showCustomerList,
-    view,
-    navigationKey,
-    showMainDashboard,
-    showHome,
-    selectedSettingsOption
+  console.log('[RenderMainContent] 🎯 === COMPONENT RENDERED ===');
+  console.log('[RenderMainContent] 🎯 VIEW:', view);
+  console.log('[RenderMainContent] 🎯 Navigation Key:', navigationKey);
+  console.log('[RenderMainContent] 🎯 Tax-related props:', {
+    showTaxManagement,
+    showTaxesDashboard,
+    taxesSection,
+    view
+  });
+  console.log('[RenderMainContent] 🎯 Is sales-tax-filing?', view === 'sales-tax-filing');
+  console.log('[RenderMainContent] 🎯 Settings props:', {
+    selectedSettingsOption,
+    showIntegrationSettings,
+    showUserProfileSettings
   });
   
   // Store current view state for cleanup on navigation
@@ -1123,8 +1129,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Taxes views
-      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || view === 'tax-settings' || showTaxManagement) {
-        console.log('[RenderMainContent] Rendering taxes view:', view);
+      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'sales-tax-filing' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || view === 'tax-settings' || showTaxManagement) {
+        console.log('[RenderMainContent] 🎯 TAX VIEW ROUTING - view:', view);
+        console.log('[RenderMainContent] 🎯 TAX VIEW ROUTING - starts with taxes-:', view?.startsWith('taxes-'));
+        console.log('[RenderMainContent] 🎯 TAX VIEW ROUTING - is sales-tax-filing:', view === 'sales-tax-filing');
         
         let TaxesComponent = null;
         let componentName = '';
@@ -1190,10 +1198,16 @@ const RenderMainContent = React.memo(function RenderMainContent({
               break;
             case 'sales-tax-filing':
             case 'taxes-sales-tax-filing':
+              console.log('[RenderMainContent] 🎯 SALES TAX FILING - Loading TaxFilingService component');
               componentName = 'TaxFilingService';
               TaxesComponent = lazy(() => import('./forms/TaxFilingService.js').catch(err => {
-                console.error('[RenderMainContent] Error loading TaxFilingService:', err);
-                return { default: () => <div className="p-4">Error loading Tax Filing Service</div> };
+                console.error('[RenderMainContent] ❌ Error loading TaxFilingService:', err);
+                console.error('[RenderMainContent] Error details:', {
+                  message: err.message,
+                  stack: err.stack,
+                  name: err.name
+                });
+                return { default: () => <div className="p-4 text-red-600">Error loading Tax Filing Service: {err.message}</div> };
               }));
               break;
             case 'tax-settings':
