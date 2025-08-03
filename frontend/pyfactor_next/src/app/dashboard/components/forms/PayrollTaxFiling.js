@@ -14,7 +14,7 @@ import {
   BanknotesIcon,
   UserGroupIcon
 } from '@heroicons/react/24/outline';
-import { useSession } from '@/context/SessionContext';
+import { useSession } from '@/hooks/useSession-v2';
 
 const PayrollTaxFiling = ({ onNewFiling, subPage }) => {
   const { user } = useSession();
