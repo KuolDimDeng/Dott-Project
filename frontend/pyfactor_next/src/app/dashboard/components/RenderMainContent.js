@@ -1255,7 +1255,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                     </div>
                   }
                 >
-                  <TaxesComponent />
+                  <TaxesComponent onNavigate={handleSetView} />
                 </SuspenseWithCleanup>
               </ContentWrapperWithKey>
             );
@@ -1267,7 +1267,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           return (
             <ContentWrapperWithKey>
               <SuspenseWithCleanup componentKey={`tax-management-${navigationKey || 'default'}`}>
-                <TaxManagement />
+                <TaxManagement onNavigate={handleSetView} />
               </SuspenseWithCleanup>
             </ContentWrapperWithKey>
           );
@@ -2526,7 +2526,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               </div>
             } componentKey={`tax-management-${sectionComponentKey}`}>
               <div className="mb-8">
-                <TaxManagement />
+                <TaxManagement onNavigate={handleSetView} />
               </div>
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
