@@ -46,6 +46,7 @@ const SettingsMenu = ({
     'Profile Settings',
     'Business Settings',
     'Accounting Settings',
+    'Taxes',
     'Payroll Settings',
     'Device Settings',
     'Subscriptions & Billing',

@@ -13,3 +13,11 @@ from .confirmation_views import (
     FilingConfirmationViewSet,
     FilingNotificationViewSet
 )
+from .global_tax_rates import GlobalTaxRateViewSet
+from .filing_service import (
+    FilingServiceViewSet,
+    get_country_requirements,
+    get_sales_data,
+    get_tax_info,
+    get_countries_list
+)

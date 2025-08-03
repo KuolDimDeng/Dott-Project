@@ -319,7 +319,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     fetchCustomers();
   }, []);
 
-  // Load business info
+  // Load business info and tax rate
   useEffect(() => {
     const fetchBusinessInfo = async () => {
       try {
@@ -345,7 +345,57 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       }
     };
 
+    const fetchEstimatedTaxRate = async () => {
+      console.log('[POS] 🔍 Fetching estimated tax rate...');
+      try {
+        const response = await fetch('/api/pos/tax-rate', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const taxData = await response.json();
+          console.log('[POS] 📊 Tax rate data received:', taxData);
+          
+          if (taxData.estimated_rate !== undefined && taxData.estimated_rate !== null) {
+            setTaxRate(taxData.estimated_rate);
+            
+            // Show user a notification about the estimated rate
+            let location = taxData.country_name || taxData.country || '';
+            if (taxData.region_name || taxData.region) {
+              location += `, ${taxData.region_name || taxData.region}`;
+            }
+            
+            toast.info(
+              `Tax rate set to ${taxData.estimated_rate}% based on ${location}. ` +
+              `This is an AI estimate - please verify with local regulations.`,
+              { duration: 6000 }
+            );
+            
+            console.log(`[POS] ✅ Tax rate set to ${taxData.estimated_rate}% (${taxData.tax_type})`);
+            console.log(`[POS] 📝 AI Notes: ${taxData.ai_notes}`);
+            console.log(`[POS] 🎯 Confidence: ${(taxData.confidence * 100).toFixed(0)}%`);
+          } else {
+            console.log('[POS] ⚠️ No tax rate available, defaulting to 0%');
+            toast.warning(
+              'Could not determine tax rate for your location. Please set it manually.',
+              { duration: 5000 }
+            );
+          }
+        } else {
+          console.error('[POS] ❌ Failed to fetch tax rate:', response.status);
+        }
+      } catch (error) {
+        console.error('[POS] ❌ Error fetching tax rate:', error);
+        toast.error('Error loading tax rate. Please set it manually.');
+      }
+    };
+
     fetchBusinessInfo();
+    fetchEstimatedTaxRate();
   }, []);
 
   // Add item to cart
@@ -981,12 +1031,25 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('taxRate')} (%)
               </label>
-              <input
-                type="number"
-                value={taxRate}
-                onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                />
+                <div className="mt-1 flex items-start space-x-1">
+                  <svg className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs text-gray-500">
+                    This is an estimated tax rate and may not be accurate. Please verify with your local tax regulations.
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Payment Method */}

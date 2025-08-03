@@ -1,0 +1,34 @@
+# Example cron configuration for weekly tax rate updates
+# Copy this to your crontab with: crontab -e
+
+# Weekly tax rate update - runs every Sunday at 2:00 AM
+0 2 * * 0 /Users/kuoldeng/projectx/backend/pyfactor/scripts/update_tax_rates.sh >> /Users/kuoldeng/projectx/backend/pyfactor/logs/tax_update.log 2>&1
+
+# Alternative schedules:
+
+# Every Monday at 3:00 AM
+# 0 3 * * 1 /Users/kuoldeng/projectx/backend/pyfactor/scripts/update_tax_rates.sh >> /Users/kuoldeng/projectx/backend/pyfactor/logs/tax_update.log 2>&1
+
+# Every 7 days at midnight (starting from when you add it)
+# 0 0 */7 * * /Users/kuoldeng/projectx/backend/pyfactor/scripts/update_tax_rates.sh >> /Users/kuoldeng/projectx/backend/pyfactor/logs/tax_update.log 2>&1
+
+# For testing - every 5 minutes (remove after testing!)
+# */5 * * * * /Users/kuoldeng/projectx/backend/pyfactor/scripts/update_tax_rates.sh >> /Users/kuoldeng/projectx/backend/pyfactor/logs/tax_update.log 2>&1
+
+# Notes:
+# 1. Make sure the log directory exists: mkdir -p /Users/kuoldeng/projectx/backend/pyfactor/logs
+# 2. Ensure environment variables are loaded in the script
+# 3. Check logs regularly for any issues
+# 4. Consider setting up email notifications for failures
+
+# To install:
+# 1. Edit this file with your preferred schedule
+# 2. Run: crontab -e
+# 3. Add the cron line
+# 4. Save and exit
+
+# To verify it's installed:
+# crontab -l
+
+# To monitor:
+# tail -f /Users/kuoldeng/projectx/backend/pyfactor/logs/tax_update.log

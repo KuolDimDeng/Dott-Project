@@ -17,8 +17,7 @@ import logging
 from taxes.models import TaxFiling, FilingDocument
 from taxes.serializers import (
     FilingDocumentSerializer,
-    TaxFilingSerializer,
-    FilingDocumentUploadSerializer
+    TaxFilingSerializer
 )
 
 logger = logging.getLogger(__name__)

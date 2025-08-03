@@ -16,7 +16,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from taxes.models import TaxFiling, FilingStatusHistory
+from taxes.models import TaxFiling
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
@@ -110,14 +110,8 @@ def handle_successful_payment(session):
         filing.status = 'documents_pending'
         filing.save()
         
-        # Create status history record
-        FilingStatusHistory.objects.create(
-            filing=filing,
-            previous_status=previous_status,
-            new_status='documents_pending',
-            changed_by='system',
-            notes=f"Payment completed via Stripe session: {session['id']}"
-        )
+        # Log status change
+        logger.info(f"Filing status changed from {previous_status} to documents_pending for filing {filing_id}")
         
         # Send confirmation email (placeholder)
         send_payment_confirmation_email(filing, session)

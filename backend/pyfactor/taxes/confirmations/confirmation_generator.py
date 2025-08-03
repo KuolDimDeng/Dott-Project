@@ -35,7 +35,7 @@ except ImportError:
     TwilioClient = None
 
 from ..models import (
-    TaxFiling, TaxFilingStatus, FilingConfirmation,
+    TaxFiling, FilingConfirmation,
     FilingNotification, NotificationStatus, NotificationType
 )
 from .notification_templates import (

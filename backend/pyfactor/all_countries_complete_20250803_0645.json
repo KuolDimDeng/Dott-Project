@@ -1,0 +1,2054 @@
+{
+  "AF": {
+    "country_name": "Afghanistan",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "sales_tax",
+    "confidence": 0.8,
+    "source_notes": "Business Receipt Tax (BRT) from Afghanistan Revenue Department, a cascading sales tax applied to goods and services",
+    "processed_at": "2025-08-03T06:22:36.808237"
+  },
+  "AX": {
+    "country_name": "\u00c5land Islands",
+    "rate_percentage": 24.0,
+    "rate_decimal": 0.24,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "\u00c5land Islands follows Finnish VAT rules as it is an autonomous region of Finland, though with some special provisions for trade. Standard Finnish VAT rate applies.",
+    "processed_at": "2025-08-03T06:22:41.601992"
+  },
+  "AL": {
+    "country_name": "Albania",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Albania's Law on Value Added Tax. Additional reduced rates of 6% apply to specific sectors.",
+    "processed_at": "2025-08-03T06:22:46.196295"
+  },
+  "DZ": {
+    "country_name": "Algeria",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (TVA) rate in Algeria per PwC global tax summaries and General Tax Code (latest update 2022)",
+    "processed_at": "2025-08-03T06:22:51.021232"
+  },
+  "AS": {
+    "country_name": "American Samoa",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "American Samoa appears to have no general sales tax or VAT system, though there are some specific import duties and excise taxes",
+    "processed_at": "2025-08-03T06:22:55.528296"
+  },
+  "AD": {
+    "country_name": "Andorra",
+    "rate_percentage": 4.5,
+    "rate_decimal": 0.045,
+    "tax_type": "consumption_tax",
+    "confidence": 0.95,
+    "source_notes": "Andorra has an Indirect General Tax (IGI) of 4.5% as its standard rate since 2012. Source: Andorran Government tax information",
+    "processed_at": "2025-08-03T06:23:00.350631"
+  },
+  "AO": {
+    "country_name": "Angola",
+    "rate_percentage": 14.0,
+    "rate_decimal": 0.14,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Angola per PwC tax summaries and EY tax guides (2023). Value Added Tax (IVA) implemented in October 2019.",
+    "processed_at": "2025-08-03T06:23:05.216507"
+  },
+  "AI": {
+    "country_name": "Anguilla",
+    "rate_percentage": 13.0,
+    "rate_decimal": 0.13,
+    "tax_type": "sales_tax",
+    "confidence": 0.8,
+    "source_notes": "Accommodation Tax & Goods and Services Levy (GSL) in Anguilla. Rate based on KPMG tax database info.",
+    "processed_at": "2025-08-03T06:23:10.211615"
+  },
+  "AQ": {
+    "country_name": "Antarctica",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Antarctica has no permanent residents or commercial tax system. Territory is governed by Antarctic Treaty System with no standard tax regime.",
+    "processed_at": "2025-08-03T06:23:15.794347"
+  },
+  "AG": {
+    "country_name": "Antigua and Barbuda",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Antigua and Barbuda Inland Revenue Department - ABST (Antigua and Barbuda Sales Tax) is a VAT-style tax introduced in 2007",
+    "processed_at": "2025-08-03T06:23:20.553235"
+  },
+  "AR": {
+    "country_name": "Argentina",
+    "rate_percentage": 21.0,
+    "rate_decimal": 0.21,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (IVA - Impuesto al Valor Agregado) rate from AFIP (Argentine Tax Authority). Some products have reduced rates of 10.5% or 27%.",
+    "processed_at": "2025-08-03T06:23:25.339616"
+  },
+  "AM": {
+    "country_name": "Armenia",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Armenia's standard VAT rate from State Revenue Committee (tax.am) and validated by PWC tax summaries 2023",
+    "processed_at": "2025-08-03T06:23:30.058915"
+  },
+  "AW": {
+    "country_name": "Aruba",
+    "rate_percentage": 6.0,
+    "rate_decimal": 0.06,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "Business Turnover Tax (BBO) rate from Deloitte tax guides and PwC tax summaries; standard rate for goods and services in Aruba",
+    "processed_at": "2025-08-03T06:23:35.013391"
+  },
+  "AT": {
+    "country_name": "Austria",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "European Commission - Standard VAT rate in Austria, with reduced rates of 10% and 13% for certain goods/services",
+    "processed_at": "2025-08-03T06:23:39.640552"
+  },
+  "AZ": {
+    "country_name": "Azerbaijan",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Azerbaijan's standard VAT rate of 18% according to State Tax Service of Azerbaijan and PWC tax guides (2023)",
+    "processed_at": "2025-08-03T06:23:44.431057"
+  },
+  "BS": {
+    "country_name": "Bahamas",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT rate in The Bahamas as of 2023. Source: Bahamas Department of Inland Revenue",
+    "processed_at": "2025-08-03T06:23:48.902908"
+  },
+  "BD": {
+    "country_name": "Bangladesh",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Bangladesh National Board of Revenue (NBR). Rate of 15% confirmed as of 2023.",
+    "processed_at": "2025-08-03T06:23:53.397989"
+  },
+  "BB": {
+    "country_name": "Barbados",
+    "rate_percentage": 17.5,
+    "rate_decimal": 0.175,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Barbados Revenue Authority (BRA), increased from 15% to 17.5% in late 2020",
+    "processed_at": "2025-08-03T06:23:57.996349"
+  },
+  "BY": {
+    "country_name": "Belarus",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate of 20% in Belarus according to PwC's Worldwide Tax Summaries and multiple tax resources",
+    "processed_at": "2025-08-03T06:24:02.553607"
+  },
+  "BZ": {
+    "country_name": "Belize",
+    "rate_percentage": 12.5,
+    "rate_decimal": 0.125,
+    "tax_type": "gst",
+    "confidence": 0.95,
+    "source_notes": "General Sales Tax (GST) rate from Belize Tax Service Department. Rate has been stable since 2010.",
+    "processed_at": "2025-08-03T06:24:07.116440"
+  },
+  "BJ": {
+    "country_name": "Benin",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Deloitte International Tax Guide 2023 and KPMG tax database",
+    "processed_at": "2025-08-03T06:24:11.888554"
+  },
+  "BM": {
+    "country_name": "Bermuda",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Bermuda has no sales tax, VAT, or GST system. Government revenue primarily comes from import duties and payroll taxes.",
+    "processed_at": "2025-08-03T06:24:16.334700"
+  },
+  "BT": {
+    "country_name": "Bhutan",
+    "rate_percentage": 7.0,
+    "rate_decimal": 0.07,
+    "tax_type": "sales_tax",
+    "confidence": 0.8,
+    "source_notes": "Bhutan has a Sales Tax (ST) of 7% on goods and services. Note that this was recently reformed from the previous system but information is limited. Source: Bhutan Ministry of Finance documentation and World Bank reports.",
+    "processed_at": "2025-08-03T06:24:21.476560"
+  },
+  "BO": {
+    "country_name": "Bolivia",
+    "rate_percentage": 13.0,
+    "rate_decimal": 0.13,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (IVA - Impuesto al Valor Agregado) rate in Bolivia from PwC tax guide and KPMG tax database",
+    "processed_at": "2025-08-03T06:24:26.249111"
+  },
+  "BQ": {
+    "country_name": "Bonaire, Sint Eustatius and Saba",
+    "rate_percentage": 6.0,
+    "rate_decimal": 0.06,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "General sales tax (ABB) applicable in Caribbean Netherlands (Bonaire, Sint Eustatius and Saba). Rate varies by island with 6% being standard for goods in Bonaire.",
+    "processed_at": "2025-08-03T06:24:31.240708"
+  },
+  "BA": {
+    "country_name": "Bosnia and Herzegovina",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Bosnia and Herzegovina Indirect Taxation Authority (ITA/UIO). Single standard rate applies nationwide.",
+    "processed_at": "2025-08-03T06:24:35.883799"
+  },
+  "BW": {
+    "country_name": "Botswana",
+    "rate_percentage": 14.0,
+    "rate_decimal": 0.14,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Botswana Unified Revenue Service (BURS). Rate increased from 12% to 14% in April 2021.",
+    "processed_at": "2025-08-03T06:24:40.473312"
+  },
+  "BV": {
+    "country_name": "Bouvet Island",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Bouvet Island is an uninhabited Antarctic volcanic island territory of Norway with no commercial activity or tax system",
+    "processed_at": "2025-08-03T06:24:45.011500"
+  },
+  "IO": {
+    "country_name": "British Indian Ocean Territory",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "British Indian Ocean Territory is a UK military territory with no permanent civilian population and no established sales tax/VAT system",
+    "processed_at": "2025-08-03T06:24:49.654569"
+  },
+  "BN": {
+    "country_name": "Brunei",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Brunei has no VAT, GST or general consumption tax system as of 2024. Confirmed via KPMG and PwC tax guides.",
+    "processed_at": "2025-08-03T06:24:54.635694"
+  },
+  "BG": {
+    "country_name": "Bulgaria",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "European Commission - VAT rates applied in EU member states (2023). Bulgaria's standard VAT rate is 20%.",
+    "processed_at": "2025-08-03T06:24:59.061602"
+  },
+  "BF": {
+    "country_name": "Burkina Faso",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from PwC's Worldwide Tax Summaries and Trading Economics data (2023)",
+    "processed_at": "2025-08-03T06:25:03.601457"
+  },
+  "BI": {
+    "country_name": "Burundi",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "18% VAT rate confirmed by PwC worldwide tax summaries and EY global tax guides (2023)",
+    "processed_at": "2025-08-03T06:25:08.020126"
+  },
+  "CV": {
+    "country_name": "Cabo Verde",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT (IVA) rate from Cabo Verde tax authority (2023)",
+    "processed_at": "2025-08-03T06:25:12.469729"
+  },
+  "KH": {
+    "country_name": "Cambodia",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Cambodia General Department of Taxation (GDT). Also verified by PwC and Deloitte tax guides for Cambodia.",
+    "processed_at": "2025-08-03T06:25:17.284556"
+  },
+  "CM": {
+    "country_name": "Cameroon",
+    "rate_percentage": 19.25,
+    "rate_decimal": 0.1925,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from PWC Tax Summaries 2023 and Trading Economics data for Cameroon",
+    "processed_at": "2025-08-03T06:25:21.924908"
+  },
+  "KY": {
+    "country_name": "Cayman Islands",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.99,
+    "source_notes": "The Cayman Islands has no sales tax, VAT, or GST. Confirmed by Cayman Islands Department of Tourism and multiple tax guides",
+    "processed_at": "2025-08-03T06:25:26.824183"
+  },
+  "CF": {
+    "country_name": "Central African Republic",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.85,
+    "source_notes": "Based on PwC worldwide tax summaries and Trading Economics data for Central African Republic. Standard VAT rate of 19% applies to most goods and services.",
+    "processed_at": "2025-08-03T06:25:31.541580"
+  },
+  "TD": {
+    "country_name": "Chad",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Chad VAT rate confirmed by PwC and Trading Economics resources, last verified 2023",
+    "processed_at": "2025-08-03T06:25:36.206106"
+  },
+  "CL": {
+    "country_name": "Chile",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT ('Impuesto al Valor Agregado' or IVA) rate from Chilean Tax Service (Servicio de Impuestos Internos)",
+    "processed_at": "2025-08-03T06:25:41.462930"
+  },
+  "CX": {
+    "country_name": "Christmas Island",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Christmas Island uses Australian taxation system but appears to be GST-free zone. Verified through Australian Government Department of Infrastructure",
+    "processed_at": "2025-08-03T06:25:46.442619"
+  },
+  "CC": {
+    "country_name": "Cocos (Keeling) Islands",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "gst",
+    "confidence": 0.9,
+    "source_notes": "As a territory of Australia, Cocos (Keeling) Islands follows Australian GST system with 10% rate",
+    "processed_at": "2025-08-03T06:25:51.059268"
+  },
+  "CO": {
+    "country_name": "Colombia",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard IVA (VAT) rate in Colombia per DIAN (Colombian Tax Authority). Some goods/services have reduced rates or exemptions.",
+    "processed_at": "2025-08-03T06:25:55.683908"
+  },
+  "KM": {
+    "country_name": "Comoros",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.85,
+    "source_notes": "No VAT or general sales tax system currently implemented in Comoros based on available sources. Tax revenue primarily comes from customs duties and other taxes.",
+    "processed_at": "2025-08-03T06:26:00.564131"
+  },
+  "CG": {
+    "country_name": "Congo",
+    "rate_percentage": 18.9,
+    "rate_decimal": 0.18899999999999997,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "VAT rate sourced from PwC's Worldwide Tax Summaries and Trading Economics (2023)",
+    "processed_at": "2025-08-03T06:26:05.985651"
+  },
+  "CD": {
+    "country_name": "Congo (the Democratic Republic of the)",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate based on DRC tax code. Confirmed by multiple sources including PwC tax guides and Trading Economics",
+    "processed_at": "2025-08-03T06:26:10.597117"
+  },
+  "CK": {
+    "country_name": "Cook Islands",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Cook Islands VAT rate of 15% according to Cook Islands Ministry of Finance and Economic Management",
+    "processed_at": "2025-08-03T06:26:14.980777"
+  },
+  "CR": {
+    "country_name": "Costa Rica",
+    "rate_percentage": 13.0,
+    "rate_decimal": 0.13,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (IVA - Impuesto al Valor Agregado) rate from Costa Rica's Ministry of Finance (Ministerio de Hacienda)",
+    "processed_at": "2025-08-03T06:26:19.667642"
+  },
+  "CI": {
+    "country_name": "C\u00f4te d'Ivoire",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from PWC and Deloitte tax guides for C\u00f4te d'Ivoire (2023)",
+    "processed_at": "2025-08-03T06:26:24.218744"
+  },
+  "HR": {
+    "country_name": "Croatia",
+    "rate_percentage": 25.0,
+    "rate_decimal": 0.25,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate according to European Commission VAT rates database and Croatian Tax Administration (effective since 2013)",
+    "processed_at": "2025-08-03T06:26:28.960298"
+  },
+  "CU": {
+    "country_name": "Cuba",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Cuba has no general sales tax/VAT system. The country uses other forms of taxation but no broad-based consumption tax.",
+    "processed_at": "2025-08-03T06:28:30.618223"
+  },
+  "CW": {
+    "country_name": "Cura\u00e7ao",
+    "rate_percentage": 6.0,
+    "rate_decimal": 0.06,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "General sales tax (ABB - Algemene Bestedingsbelasting) rate from Cura\u00e7ao Tax Administration. Base rate for most goods and services.",
+    "processed_at": "2025-08-03T06:28:35.351022"
+  },
+  "CY": {
+    "country_name": "Cyprus",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate from European Commission VAT rates database (2024)",
+    "processed_at": "2025-08-03T06:28:39.669928"
+  },
+  "CZ": {
+    "country_name": "Czechia",
+    "rate_percentage": 21.0,
+    "rate_decimal": 0.21,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate from European Commission VAT rates database (2024) and Czech Tax Administration",
+    "processed_at": "2025-08-03T06:28:44.283476"
+  },
+  "DK": {
+    "country_name": "Denmark",
+    "rate_percentage": 25.0,
+    "rate_decimal": 0.25,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard Danish VAT (moms) rate per Danish Tax Authority (Skattestyrelsen) and European Commission VAT database",
+    "processed_at": "2025-08-03T06:28:48.952296"
+  },
+  "DJ": {
+    "country_name": "Djibouti",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate from KPMG tax database and PwC tax summaries (2023)",
+    "processed_at": "2025-08-03T06:28:53.569279"
+  },
+  "DM": {
+    "country_name": "Dominica",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "VAT rate from Dominica Inland Revenue Division and verified by multiple tax references",
+    "processed_at": "2025-08-03T06:28:57.999429"
+  },
+  "DO": {
+    "country_name": "Dominican Republic",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard ITBIS (VAT) rate in Dominican Republic from PWC Tax Summary 2023 and Dominican Tax Authority (DGII)",
+    "processed_at": "2025-08-03T06:29:02.741401"
+  },
+  "EC": {
+    "country_name": "Ecuador",
+    "rate_percentage": 12.0,
+    "rate_decimal": 0.12,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard IVA (VAT) rate in Ecuador according to SRI (Servicio de Rentas Internas - Internal Revenue Service). Increased from 10% to 12% in 2000.",
+    "processed_at": "2025-08-03T06:29:07.552317"
+  },
+  "EG": {
+    "country_name": "Egypt",
+    "rate_percentage": 14.0,
+    "rate_decimal": 0.14,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Egypt per PwC Tax Summaries 2023 and Egyptian Tax Authority. Some goods/services may have different rates.",
+    "processed_at": "2025-08-03T06:29:12.410351"
+  },
+  "SV": {
+    "country_name": "El Salvador",
+    "rate_percentage": 13.0,
+    "rate_decimal": 0.13,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "13% IVA (VAT) rate confirmed from El Salvador tax authority (Ministerio de Hacienda) and multiple accounting sources",
+    "processed_at": "2025-08-03T06:29:17.173338"
+  },
+  "GQ": {
+    "country_name": "Equatorial Guinea",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.7,
+    "source_notes": "Standard VAT rate based on multiple tax references, though documentation is limited. Rate implemented in 2005.",
+    "processed_at": "2025-08-03T06:29:21.672054"
+  },
+  "ER": {
+    "country_name": "Eritrea",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "sales_tax",
+    "confidence": 0.6,
+    "source_notes": "Limited information available - sources indicate a 5% sales tax but specific details are unclear given Eritrea's closed economic system",
+    "processed_at": "2025-08-03T06:29:26.254114"
+  },
+  "EE": {
+    "country_name": "Estonia",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Estonia's standard VAT rate of 20% per European Commission VAT rates database and Estonian Tax and Customs Board (EMTA)",
+    "processed_at": "2025-08-03T06:29:30.813336"
+  },
+  "SZ": {
+    "country_name": "Eswatini",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT rate from Eswatini Revenue Authority (SRA) website and PWC tax guide",
+    "processed_at": "2025-08-03T06:29:35.562869"
+  },
+  "ET": {
+    "country_name": "Ethiopia",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate according to Ethiopian Revenue and Customs Authority (ERCA) and confirmed by multiple sources including PwC tax summaries",
+    "processed_at": "2025-08-03T06:29:40.173745"
+  },
+  "FK": {
+    "country_name": "Falkland Islands (Malvinas)",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "The Falkland Islands does not have a VAT or general sales tax system. Verified through general research of Falkland Islands tax system.",
+    "processed_at": "2025-08-03T06:29:44.886648"
+  },
+  "FO": {
+    "country_name": "Faroe Islands",
+    "rate_percentage": 25.0,
+    "rate_decimal": 0.25,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT (MVG - Meirvir\u00f0isgjald) rate from Faroese Tax Authority (TAKS)",
+    "processed_at": "2025-08-03T06:29:50.028461"
+  },
+  "FJ": {
+    "country_name": "Fiji",
+    "rate_percentage": 9.0,
+    "rate_decimal": 0.09,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Fiji Revenue & Customs Service (FRCS) - VAT rate of 9% effective from April 1, 2023",
+    "processed_at": "2025-08-03T06:29:54.477072"
+  },
+  "FI": {
+    "country_name": "Finland",
+    "rate_percentage": 24.0,
+    "rate_decimal": 0.24,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT (ALV) rate from Finnish Tax Administration (Vero.fi), applies to most goods and services",
+    "processed_at": "2025-08-03T06:29:59.187668"
+  },
+  "GF": {
+    "country_name": "French Guiana",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "French Guiana, as an overseas department of France, is exempt from French VAT. No local VAT/sales tax system.",
+    "processed_at": "2025-08-03T06:30:03.842478"
+  },
+  "PF": {
+    "country_name": "French Polynesia",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "consumption_tax",
+    "confidence": 0.9,
+    "source_notes": "French Polynesia uses a consumption tax system locally called 'TVA' at 16% standard rate as of 2024. Source: French Polynesian tax authority (DICP)",
+    "processed_at": "2025-08-03T06:30:08.762488"
+  },
+  "TF": {
+    "country_name": "French Southern Territories",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "As a French territory with limited permanent population primarily consisting of military/research personnel, standard tax systems do not apply. Subject to special French territorial regulations.",
+    "processed_at": "2025-08-03T06:30:13.821218"
+  },
+  "GA": {
+    "country_name": "Gabon",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Gabon tax code and PwC tax summary 2023",
+    "processed_at": "2025-08-03T06:30:18.292955"
+  },
+  "GM": {
+    "country_name": "Gambia",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "VAT rate from Gambia Revenue Authority (GRA), implemented in January 2013",
+    "processed_at": "2025-08-03T06:30:22.844513"
+  },
+  "GE": {
+    "country_name": "Georgia",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Georgia according to PwC Tax Summaries and Georgian Tax Code",
+    "processed_at": "2025-08-03T06:30:27.446218"
+  },
+  "GH": {
+    "country_name": "Ghana",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Rate from Ghana Revenue Authority (GRA). Standard VAT rate of 12.5% plus 2.5% National Health Insurance Levy (NHIL), effective from 2023.",
+    "processed_at": "2025-08-03T06:30:32.036297"
+  },
+  "GI": {
+    "country_name": "Gibraltar",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Gibraltar does not impose VAT, GST or sales tax. Confirmed by Gibraltar government and HM Customs Gibraltar websites.",
+    "processed_at": "2025-08-03T06:30:36.854238"
+  },
+  "GR": {
+    "country_name": "Greece",
+    "rate_percentage": 24.0,
+    "rate_decimal": 0.24,
+    "tax_type": "vat",
+    "confidence": 0.97,
+    "source_notes": "Standard VAT rate in Greece from European Commission VAT database (europa.eu). Rate has been 24% since June 2016.",
+    "processed_at": "2025-08-03T06:30:41.528972"
+  },
+  "GL": {
+    "country_name": "Greenland",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Greenland does not impose VAT or general sales tax as of 2024. As an autonomous territory of Denmark, it has its own tax system which relies primarily on income tax and duties.",
+    "processed_at": "2025-08-03T06:30:46.371619"
+  },
+  "GD": {
+    "country_name": "Grenada",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Grenada according to Grenada Inland Revenue Division and multiple tax resources",
+    "processed_at": "2025-08-03T06:30:50.876694"
+  },
+  "GP": {
+    "country_name": "Guadeloupe",
+    "rate_percentage": 8.5,
+    "rate_decimal": 0.085,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Guadeloupe, as a French overseas department, has a reduced VAT rate compared to mainland France. Information from French tax authorities.",
+    "processed_at": "2025-08-03T06:30:55.672297"
+  },
+  "GU": {
+    "country_name": "Guam",
+    "rate_percentage": 4.0,
+    "rate_decimal": 0.04,
+    "tax_type": "sales_tax",
+    "confidence": 0.95,
+    "source_notes": "Guam has a 4% Gross Receipts Tax (GRT) which functions similarly to a sales tax, applied to businesses gross income from retail sales and services",
+    "processed_at": "2025-08-03T06:31:00.655899"
+  },
+  "GT": {
+    "country_name": "Guatemala",
+    "rate_percentage": 12.0,
+    "rate_decimal": 0.12,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (IVA - Impuesto al Valor Agregado) rate from Guatemala's Tax Administration (SAT)",
+    "processed_at": "2025-08-03T06:31:05.103927"
+  },
+  "GG": {
+    "country_name": "Guernsey",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Guernsey has no VAT, GST or general sales tax system. Confirmed by multiple sources including government websites and PwC tax summaries.",
+    "processed_at": "2025-08-03T06:31:09.979914"
+  },
+  "GN": {
+    "country_name": "Guinea",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate in Guinea according to PwC and Deloitte tax guides (2023)",
+    "processed_at": "2025-08-03T06:31:14.491431"
+  },
+  "GW": {
+    "country_name": "Guinea-Bissau",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.85,
+    "source_notes": "Guinea-Bissau follows WAEMU (West African Economic and Monetary Union) VAT regulations which standardize VAT at 15% for member states",
+    "processed_at": "2025-08-03T06:31:20.275891"
+  },
+  "GY": {
+    "country_name": "Guyana",
+    "rate_percentage": 14.0,
+    "rate_decimal": 0.14,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT rate from Guyana Revenue Authority (GRA), confirmed by multiple sources including PwC tax summaries",
+    "processed_at": "2025-08-03T06:31:24.839374"
+  },
+  "HT": {
+    "country_name": "Haiti",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Haiti applies a TCA (Taxe sur le Chiffre d'Affaires) which functions as a VAT at 10%. Source: PwC Tax Summaries and Haiti DGI (Direction G\u00e9n\u00e9rale des Imp\u00f4ts)",
+    "processed_at": "2025-08-03T06:31:29.977297"
+  },
+  "HM": {
+    "country_name": "Heard Island and McDonald Islands",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Heard Island and McDonald Islands is an uninhabited external territory of Australia with no commercial activity or tax system",
+    "processed_at": "2025-08-03T06:31:34.644585"
+  },
+  "VA": {
+    "country_name": "Holy See",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "The Holy See (Vatican City) is a sovereign city-state that does not impose VAT or sales tax. It has special agreements with Italy for certain tax matters but no standard consumption tax system.",
+    "processed_at": "2025-08-03T06:31:39.939327"
+  },
+  "HN": {
+    "country_name": "Honduras",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate (Impuesto sobre Ventas) from Honduras tax authority SAR (Servicio de Administraci\u00f3n de Rentas)",
+    "processed_at": "2025-08-03T06:31:44.581687"
+  },
+  "HK": {
+    "country_name": "Hong Kong",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.99,
+    "source_notes": "Hong Kong has no sales tax, VAT, or GST system. Confirmed from Hong Kong Inland Revenue Department and multiple business sources.",
+    "processed_at": "2025-08-03T06:31:49.413400"
+  },
+  "HU": {
+    "country_name": "Hungary",
+    "rate_percentage": 27.0,
+    "rate_decimal": 0.27,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate from European Commission's official tax database, highest standard VAT rate in the EU",
+    "processed_at": "2025-08-03T06:31:53.964876"
+  },
+  "IS": {
+    "country_name": "Iceland",
+    "rate_percentage": 24.0,
+    "rate_decimal": 0.24,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (VSK - vir\u00f0isaukaskattur) rate from Icelandic government sources and European Commission VAT database (2024)",
+    "processed_at": "2025-08-03T06:31:58.868283"
+  },
+  "ID": {
+    "country_name": "Indonesia",
+    "rate_percentage": 11.0,
+    "rate_decimal": 0.11,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Indonesia increased VAT rate from 10% to 11% effective April 1, 2022. Source: Indonesian Ministry of Finance & Directorate General of Taxes",
+    "processed_at": "2025-08-03T06:32:03.823561"
+  },
+  "IR": {
+    "country_name": "Iran",
+    "rate_percentage": 9.0,
+    "rate_decimal": 0.09,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Iran's standard VAT rate (Value Added Tax) according to Iran National Tax Administration and PWC tax summaries 2023",
+    "processed_at": "2025-08-03T06:32:08.620857"
+  },
+  "IQ": {
+    "country_name": "Iraq",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Iraq currently has no standard VAT or general sales tax system implemented. Sources: PwC and Deloitte tax guides 2023",
+    "processed_at": "2025-08-03T06:32:13.626458"
+  },
+  "IE": {
+    "country_name": "Ireland",
+    "rate_percentage": 23.0,
+    "rate_decimal": 0.23,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate from Irish Tax and Customs (Revenue.ie). This has been the standard rate since January 2012.",
+    "processed_at": "2025-08-03T06:32:18.220647"
+  },
+  "IM": {
+    "country_name": "Isle of Man",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Isle of Man follows UK VAT system as part of customs union. Rate confirmed via Isle of Man Government website.",
+    "processed_at": "2025-08-03T06:32:22.872426"
+  },
+  "IL": {
+    "country_name": "Israel",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "vat",
+    "confidence": 0.97,
+    "source_notes": "Standard VAT rate from Israel Tax Authority (2024). Some goods/services have reduced rates or exemptions.",
+    "processed_at": "2025-08-03T06:32:46.331837"
+  },
+  "JM": {
+    "country_name": "Jamaica",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "consumption_tax",
+    "confidence": 0.95,
+    "source_notes": "General Consumption Tax (GCT) rate per Jamaica Tax Administration (TAJ). This is Jamaica's primary consumption tax.",
+    "processed_at": "2025-08-03T06:32:51.053709"
+  },
+  "JE": {
+    "country_name": "Jersey",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "gst",
+    "confidence": 0.95,
+    "source_notes": "Jersey has a 5% Goods and Services Tax (GST) according to the Government of Jersey website",
+    "processed_at": "2025-08-03T06:32:55.670000"
+  },
+  "JO": {
+    "country_name": "Jordan",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Jordan Sales Tax Department. Some goods/services may have different rates (0%, 5%, 10%) or exemptions.",
+    "processed_at": "2025-08-03T06:33:00.358384"
+  },
+  "KZ": {
+    "country_name": "Kazakhstan",
+    "rate_percentage": 12.0,
+    "rate_decimal": 0.12,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Kazakhstan as per State Revenue Committee and EY 2023 tax guide",
+    "processed_at": "2025-08-03T06:33:05.047507"
+  },
+  "KE": {
+    "country_name": "Kenya",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Kenya Revenue Authority (KRA). Rate has been 16% since January 2021 when it was restored from temporary 14% COVID rate.",
+    "processed_at": "2025-08-03T06:33:10.017483"
+  },
+  "KI": {
+    "country_name": "Kiribati",
+    "rate_percentage": 12.5,
+    "rate_decimal": 0.125,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Kiribati implemented VAT in April 2014 replacing its previous Hotel Tax. Information from PwC tax summaries and OECD tax database.",
+    "processed_at": "2025-08-03T06:33:14.805424"
+  },
+  "KG": {
+    "country_name": "Kyrgyzstan",
+    "rate_percentage": 12.0,
+    "rate_decimal": 0.12,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Kyrgyzstan standard VAT rate per PwC Tax Summaries 2023 and KPMG tax guide",
+    "processed_at": "2025-08-03T06:33:19.523545"
+  },
+  "LA": {
+    "country_name": "Laos",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate in Laos according to PwC tax summaries and tax consulting firms. VAT Law amended in 2018.",
+    "processed_at": "2025-08-03T06:33:25.219083"
+  },
+  "LV": {
+    "country_name": "Latvia",
+    "rate_percentage": 21.0,
+    "rate_decimal": 0.21,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate in Latvia according to European Commission VAT rates database (2024)",
+    "processed_at": "2025-08-03T06:33:29.656474"
+  },
+  "LB": {
+    "country_name": "Lebanon",
+    "rate_percentage": 11.0,
+    "rate_decimal": 0.11,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Lebanon increased VAT from 10% to 11% in 2022 according to EY Tax Guide and multiple tax advisory sources",
+    "processed_at": "2025-08-03T06:33:34.474841"
+  },
+  "LS": {
+    "country_name": "Lesotho",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT rate confirmed from Lesotho Revenue Authority (LRA) and multiple international tax sources including PwC tax summaries",
+    "processed_at": "2025-08-03T06:33:39.193683"
+  },
+  "LR": {
+    "country_name": "Liberia",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "Liberia has a Goods and Services Tax (GST) of 10% on goods and services. Source: Liberia Revenue Authority and PwC tax summaries 2023",
+    "processed_at": "2025-08-03T06:33:44.005419"
+  },
+  "LY": {
+    "country_name": "Libya",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Libya does not currently have a VAT or general sales tax system. Sources: PwC Libya tax summary 2023, Deloitte tax guides",
+    "processed_at": "2025-08-03T06:33:48.881789"
+  },
+  "LI": {
+    "country_name": "Liechtenstein",
+    "rate_percentage": 7.7,
+    "rate_decimal": 0.077,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Liechtenstein uses Swiss VAT system due to customs union agreement with Switzerland. Standard VAT rate is 7.7%",
+    "processed_at": "2025-08-03T06:33:53.498236"
+  },
+  "LT": {
+    "country_name": "Lithuania",
+    "rate_percentage": 21.0,
+    "rate_decimal": 0.21,
+    "tax_type": "vat",
+    "confidence": 0.98,
+    "source_notes": "Standard VAT rate from European Commission VAT rates database and Lithuanian State Tax Inspectorate (21% since 2009)",
+    "processed_at": "2025-08-03T06:33:58.085949"
+  },
+  "LU": {
+    "country_name": "Luxembourg",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate in Luxembourg according to European Commission VAT database and Luxembourg tax authority",
+    "processed_at": "2025-08-03T06:34:02.658663"
+  },
+  "MO": {
+    "country_name": "Macao",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Macao does not impose VAT, GST, or general sales tax. Confirmed by multiple sources including PwC tax summaries and government information.",
+    "processed_at": "2025-08-03T06:34:07.537168"
+  },
+  "MG": {
+    "country_name": "Madagascar",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT (TVA) rate in Madagascar as reported by PwC and Deloitte tax guides 2023",
+    "processed_at": "2025-08-03T06:34:12.061533"
+  },
+  "MW": {
+    "country_name": "Malawi",
+    "rate_percentage": 16.5,
+    "rate_decimal": 0.165,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Malawi Revenue Authority (MRA)",
+    "processed_at": "2025-08-03T06:34:16.364338"
+  },
+  "MY": {
+    "country_name": "Malaysia",
+    "rate_percentage": 6.0,
+    "rate_decimal": 0.06,
+    "tax_type": "sst",
+    "confidence": 0.95,
+    "source_notes": "Malaysia operates a Sales and Service Tax (SST) system since Sept 2018, with 6% standard rate for services and 5-10% for goods. 6% is the most common rate.",
+    "processed_at": "2025-08-03T06:34:21.446647"
+  },
+  "MV": {
+    "country_name": "Maldives",
+    "rate_percentage": 6.0,
+    "rate_decimal": 0.06,
+    "tax_type": "gst",
+    "confidence": 0.95,
+    "source_notes": "Maldives uses GST (Goods and Services Tax) at 6% standard rate according to Maldives Inland Revenue Authority (MIRA), for most goods and services. Tourism sector has a higher rate of 12%.",
+    "processed_at": "2025-08-03T06:34:26.480762"
+  },
+  "ML": {
+    "country_name": "Mali",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate in Mali confirmed by PwC tax summaries and KPMG tax guides",
+    "processed_at": "2025-08-03T06:34:30.948455"
+  },
+  "MT": {
+    "country_name": "Malta",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Malta's Department of Customs and the European Commission VAT database. Malta charges 18% VAT on most goods and services.",
+    "processed_at": "2025-08-03T06:34:35.618033"
+  },
+  "MH": {
+    "country_name": "Marshall Islands",
+    "rate_percentage": 4.0,
+    "rate_decimal": 0.04,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "Marshall Islands has a 4% Gross Revenue Tax (GRT) which functions as a sales tax. Source: PwC Tax Summaries and RMI tax code",
+    "processed_at": "2025-08-03T06:34:40.674123"
+  },
+  "MQ": {
+    "country_name": "Martinique",
+    "rate_percentage": 8.5,
+    "rate_decimal": 0.085,
+    "tax_type": "consumption_tax",
+    "confidence": 0.7,
+    "source_notes": "Martinique, as a French overseas territory, has a special consumption tax system with reduced rates compared to mainland France. Rate based on multiple travel/business sources.",
+    "processed_at": "2025-08-03T06:34:46.908576"
+  },
+  "MR": {
+    "country_name": "Mauritania",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.85,
+    "source_notes": "VAT rate based on IMF data and PwC tax summaries for Mauritania. Rate increased from 14% to 16% in recent reforms.",
+    "processed_at": "2025-08-03T06:34:51.739576"
+  },
+  "MU": {
+    "country_name": "Mauritius",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Mauritius Revenue Authority (MRA). Rate confirmed as of 2023.",
+    "processed_at": "2025-08-03T06:34:56.086441"
+  },
+  "YT": {
+    "country_name": "Mayotte",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "vat",
+    "confidence": 0.85,
+    "source_notes": "As a French overseas department, Mayotte has special VAT status. While it is subject to French tax laws, VAT is currently not collected in Mayotte according to EU VAT territorial scope information.",
+    "processed_at": "2025-08-03T06:35:02.136041"
+  },
+  "MX": {
+    "country_name": "Mexico",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard IVA (VAT) rate per Mexican Tax Administration Service (SAT). Some border regions have reduced 8% rate.",
+    "processed_at": "2025-08-03T06:35:06.814186"
+  },
+  "FM": {
+    "country_name": "Micronesia",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "The Federated States of Micronesia does not have a national sales tax, VAT, or GST system. Individual states may have some local taxes but there is no unified national consumption tax.",
+    "processed_at": "2025-08-03T06:35:11.644297"
+  },
+  "MD": {
+    "country_name": "Moldova",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Moldova Tax Code and State Tax Service. Reduced rates exist for certain categories.",
+    "processed_at": "2025-08-03T06:35:16.253132"
+  },
+  "MC": {
+    "country_name": "Monaco",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Monaco applies French VAT rates and rules due to customs union with France",
+    "processed_at": "2025-08-03T06:35:20.672086"
+  },
+  "MN": {
+    "country_name": "Mongolia",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Mongolia has a standard VAT rate of 10% according to Mongolia's Tax Administration Law and verified by PwC and Deloitte tax guides",
+    "processed_at": "2025-08-03T06:35:25.389383"
+  },
+  "ME": {
+    "country_name": "Montenegro",
+    "rate_percentage": 21.0,
+    "rate_decimal": 0.21,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Montenegro as of 2024 according to Ministry of Finance and European Commission VAT database",
+    "processed_at": "2025-08-03T06:35:29.898573"
+  },
+  "MS": {
+    "country_name": "Montserrat",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "consumption_tax",
+    "confidence": 0.7,
+    "source_notes": "Montserrat has a 5% Goods and Services (Consumption) Tax based on available government references and tax guides, though recent confirmation is limited",
+    "processed_at": "2025-08-03T06:35:34.741014"
+  },
+  "MA": {
+    "country_name": "Morocco",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Morocco per PWC Tax Summaries 2023 and General Tax Code. Reduced rates exist for certain goods/services.",
+    "processed_at": "2025-08-03T06:35:39.360862"
+  },
+  "MZ": {
+    "country_name": "Mozambique",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate (Imposto sobre o Valor Acrescentado - IVA) in Mozambique according to PwC and EY tax guides",
+    "processed_at": "2025-08-03T06:35:43.987779"
+  },
+  "MM": {
+    "country_name": "Myanmar",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "consumption_tax",
+    "confidence": 0.9,
+    "source_notes": "Myanmar Commercial Tax (similar to VAT/GST) is generally 5% on goods and services. From PwC and Deloitte tax guides 2023",
+    "processed_at": "2025-08-03T06:35:48.897601"
+  },
+  "NA": {
+    "country_name": "Namibia",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Namibia Inland Revenue Authority. VAT was introduced in 2000 and rate has remained at 15%.",
+    "processed_at": "2025-08-03T06:35:53.555363"
+  },
+  "NR": {
+    "country_name": "Nauru",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "No general consumption tax/VAT/GST found in available sources for Nauru. Tax system primarily based on import duties and other direct taxes.",
+    "processed_at": "2025-08-03T06:35:58.302298"
+  },
+  "NP": {
+    "country_name": "Nepal",
+    "rate_percentage": 13.0,
+    "rate_decimal": 0.13,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Nepal Inland Revenue Department; rate set in Value Added Tax Act 2052 (1996)",
+    "processed_at": "2025-08-03T06:36:02.901735"
+  },
+  "NC": {
+    "country_name": "New Caledonia",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.8,
+    "source_notes": "New Caledonia does not appear to have a VAT/GST system. As a French territory, it has a different tax structure than mainland France, with specific import duties and local taxes but no standard VAT.",
+    "processed_at": "2025-08-03T06:36:07.948683"
+  },
+  "NZ": {
+    "country_name": "New Zealand",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "gst",
+    "confidence": 0.99,
+    "source_notes": "GST rate from New Zealand Inland Revenue Department (IRD). Rate has been 15% since October 2010.",
+    "processed_at": "2025-08-03T06:36:12.608332"
+  },
+  "NI": {
+    "country_name": "Nicaragua",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Nicaragua has a 15% Value Added Tax (Impuesto al Valor Agregado - IVA) according to the Nicaraguan Tax Administration (DGI)",
+    "processed_at": "2025-08-03T06:36:17.263253"
+  },
+  "NE": {
+    "country_name": "Niger",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate in Niger according to PwC and Deloitte tax guides (2023)",
+    "processed_at": "2025-08-03T06:36:21.723788"
+  },
+  "NG": {
+    "country_name": "Nigeria",
+    "rate_percentage": 7.5,
+    "rate_decimal": 0.075,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Nigeria's Federal Inland Revenue Service (FIRS). Rate increased from 5% to 7.5% in February 2020 under the Finance Act 2019.",
+    "processed_at": "2025-08-03T06:36:26.731418"
+  },
+  "NU": {
+    "country_name": "Niue",
+    "rate_percentage": 12.5,
+    "rate_decimal": 0.125,
+    "tax_type": "consumption_tax",
+    "confidence": 0.7,
+    "source_notes": "Niue has a Consumption Tax (CT) of 12.5% according to Niue Tax Office information, though recent verification is limited due to minimal online government resources",
+    "processed_at": "2025-08-03T06:36:32.933639"
+  },
+  "NF": {
+    "country_name": "Norfolk Island",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Norfolk Island does not impose GST, VAT or sales tax as an external territory of Australia. This exemption is noted in multiple business guides and travel resources.",
+    "processed_at": "2025-08-03T06:36:38.070722"
+  },
+  "KP": {
+    "country_name": "North Korea",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.6,
+    "source_notes": "Limited verifiable information available on North Korea's tax system due to closed economy. No clear evidence of VAT/sales tax system.",
+    "processed_at": "2025-08-03T06:36:42.900322"
+  },
+  "MK": {
+    "country_name": "North Macedonia",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in North Macedonia per PWC and KPMG tax guides 2023. Reduced rates of 5% and 10% exist for certain goods/services.",
+    "processed_at": "2025-08-03T06:38:44.821272"
+  },
+  "MP": {
+    "country_name": "Northern Mariana Islands",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "The Northern Mariana Islands (CNMI) does not have a general sales tax, VAT, or GST system. However, there are some specific excise taxes on certain goods.",
+    "processed_at": "2025-08-03T06:38:49.530057"
+  },
+  "NO": {
+    "country_name": "Norway",
+    "rate_percentage": 25.0,
+    "rate_decimal": 0.25,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT ('merverdiavgift' or MVA) rate from Norwegian Tax Administration (Skatteetaten). Other reduced rates exist for specific goods/services.",
+    "processed_at": "2025-08-03T06:38:54.389600"
+  },
+  "PK": {
+    "country_name": "Pakistan",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "gst",
+    "confidence": 0.95,
+    "source_notes": "Standard GST rate in Pakistan according to Federal Board of Revenue (FBR). Some items may have different rates.",
+    "processed_at": "2025-08-03T06:38:58.864843"
+  },
+  "PW": {
+    "country_name": "Palau",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Based on multiple tax guides and sources indicating Palau has no general sales tax, VAT or GST system. Direct taxes are primary revenue source.",
+    "processed_at": "2025-08-03T06:39:03.724569"
+  },
+  "PS": {
+    "country_name": "Palestine, State of",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.8,
+    "source_notes": "Standard VAT rate in Palestine (West Bank). Gaza has different tax regulations. Sources: PwC tax summaries and World Bank data",
+    "processed_at": "2025-08-03T06:39:08.648554"
+  },
+  "PA": {
+    "country_name": "Panama",
+    "rate_percentage": 7.0,
+    "rate_decimal": 0.07,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "ITBMS (Impuesto de Transferencia de Bienes Muebles y Servicios) is Panama's VAT system. Rate confirmed via Panama's tax authority (DGI) and multiple tax advisory sources",
+    "processed_at": "2025-08-03T06:39:13.846664"
+  },
+  "PG": {
+    "country_name": "Papua New Guinea",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "gst",
+    "confidence": 0.95,
+    "source_notes": "PNG has a 10% Goods and Services Tax (GST) established under the Goods and Services Tax Act 2003. Confirmed via PNG Internal Revenue Commission.",
+    "processed_at": "2025-08-03T06:39:18.859288"
+  },
+  "PY": {
+    "country_name": "Paraguay",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (IVA - Impuesto al Valor Agregado) rate in Paraguay from PwC tax summary and KPMG tax guides",
+    "processed_at": "2025-08-03T06:39:23.637001"
+  },
+  "PE": {
+    "country_name": "Peru",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Peru's standard IGV (Impuesto General a las Ventas) rate, which is their VAT equivalent, confirmed via Peru's tax authority SUNAT (Superintendencia Nacional de Aduanas y de Administraci\u00f3n Tributaria)",
+    "processed_at": "2025-08-03T06:39:28.744690"
+  },
+  "PH": {
+    "country_name": "Philippines",
+    "rate_percentage": 12.0,
+    "rate_decimal": 0.12,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate according to Philippines Bureau of Internal Revenue (BIR). Rate changed from 12% to 12% effective January 1, 2023.",
+    "processed_at": "2025-08-03T06:39:33.455276"
+  },
+  "PN": {
+    "country_name": "Pitcairn",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.8,
+    "source_notes": "Pitcairn Islands appears to have no standard sales tax/VAT/GST system. As a British Overseas Territory with very small population (<50), it operates with minimal tax structures",
+    "processed_at": "2025-08-03T06:39:38.519465"
+  },
+  "PL": {
+    "country_name": "Poland",
+    "rate_percentage": 23.0,
+    "rate_decimal": 0.23,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate in Poland according to European Commission VAT rates database (2024)",
+    "processed_at": "2025-08-03T06:39:42.981806"
+  },
+  "PT": {
+    "country_name": "Portugal",
+    "rate_percentage": 23.0,
+    "rate_decimal": 0.23,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT (IVA) rate in Portugal from European Commission official VAT rates database",
+    "processed_at": "2025-08-03T06:39:47.872083"
+  },
+  "PR": {
+    "country_name": "Puerto Rico",
+    "rate_percentage": 11.5,
+    "rate_decimal": 0.115,
+    "tax_type": "sales_tax",
+    "confidence": 0.95,
+    "source_notes": "Combined rate: 10.5% state sales tax + 1% municipal sales tax (SUT/IVU). From PR Treasury Department guidelines",
+    "processed_at": "2025-08-03T06:39:52.734324"
+  },
+  "RE": {
+    "country_name": "R\u00e9union",
+    "rate_percentage": 8.5,
+    "rate_decimal": 0.085,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "R\u00e9union (French overseas territory) applies reduced VAT rate compared to mainland France. Rate confirmed from multiple tax resources.",
+    "processed_at": "2025-08-03T06:39:57.732324"
+  },
+  "RO": {
+    "country_name": "Romania",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate per European Commission VAT rates database and Romanian tax authority (ANAF). Last verified 2024.",
+    "processed_at": "2025-08-03T06:40:02.613052"
+  },
+  "RU": {
+    "country_name": "Russia",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Russian Tax Code, verified via Russian Federal Tax Service website (nalog.gov.ru). Certain essential goods have reduced rates of 10% or 0%.",
+    "processed_at": "2025-08-03T06:40:07.640873"
+  },
+  "RW": {
+    "country_name": "Rwanda",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Rwanda Revenue Authority (RRA) - confirmed multiple sources including PwC tax guides and KPMG tax database",
+    "processed_at": "2025-08-03T06:40:12.360896"
+  },
+  "BL": {
+    "country_name": "Saint Barth\u00e9lemy",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Saint Barth\u00e9lemy, as a French overseas collectivity, is exempt from French VAT and has no local sales tax/VAT system. Based on multiple tax jurisdiction sources.",
+    "processed_at": "2025-08-03T06:40:17.434789"
+  },
+  "SH": {
+    "country_name": "Saint Helena, Ascension and Tristan da Cunha",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "Limited information available for this British Overseas Territory. No clear evidence of VAT/GST/sales tax system in place.",
+    "processed_at": "2025-08-03T06:40:22.164613"
+  },
+  "KN": {
+    "country_name": "Saint Kitts and Nevis",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Saint Kitts and Nevis, verified from multiple sources including PwC tax summaries",
+    "processed_at": "2025-08-03T06:40:26.765763"
+  },
+  "LC": {
+    "country_name": "Saint Lucia",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Saint Lucia Inland Revenue Department. VAT introduced in 2012.",
+    "processed_at": "2025-08-03T06:40:31.250898"
+  },
+  "MF": {
+    "country_name": "Saint Martin (French part)",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Saint Martin (French) is VAT-exempt under French tax code. Most goods and services have no VAT despite being a French territory.",
+    "processed_at": "2025-08-03T06:40:36.214898"
+  },
+  "PM": {
+    "country_name": "Saint Pierre and Miquelon",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "No VAT/GST system found for Saint Pierre and Miquelon based on available sources. As a French territorial collectivity, it appears to have special tax status distinct from mainland France",
+    "processed_at": "2025-08-03T06:40:41.046392"
+  },
+  "VC": {
+    "country_name": "Saint Vincent and the Grenadines",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "VAT rate based on Saint Vincent and the Grenadines tax authority information and IMF data",
+    "processed_at": "2025-08-03T06:40:45.683443"
+  },
+  "WS": {
+    "country_name": "Samoa",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "consumption_tax",
+    "confidence": 0.95,
+    "source_notes": "Value Added Goods and Services Tax (VAGST) rate from Samoa Ministry of Customs and Revenue",
+    "processed_at": "2025-08-03T06:40:50.179241"
+  },
+  "SM": {
+    "country_name": "San Marino",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "San Marino does not have VAT/sales tax. Sources: Multiple tax guides and PwC tax summaries. Uses a tax system based on import duties instead.",
+    "processed_at": "2025-08-03T06:40:55.139598"
+  },
+  "ST": {
+    "country_name": "Sao Tome and Principe",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.8,
+    "source_notes": "VAT rate sourced from Deloitte tax guides and PKF International tax guides, implemented in 2019",
+    "processed_at": "2025-08-03T06:40:59.768729"
+  },
+  "SN": {
+    "country_name": "Senegal",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Senegal tax authority (Direction G\u00e9n\u00e9rale des Imp\u00f4ts et des Domaines) and confirmed by PwC tax summaries 2023",
+    "processed_at": "2025-08-03T06:41:04.664846"
+  },
+  "RS": {
+    "country_name": "Serbia",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate according to Serbian Tax Administration (Poreska uprava) and confirmed by PwC 2023 reports",
+    "processed_at": "2025-08-03T06:41:09.478100"
+  },
+  "SC": {
+    "country_name": "Seychelles",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Seychelles Revenue Commission, VAT rate effective since 2013",
+    "processed_at": "2025-08-03T06:41:13.921276"
+  },
+  "SL": {
+    "country_name": "Sierra Leone",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "gst",
+    "confidence": 0.9,
+    "source_notes": "15% Goods and Services Tax (GST) from Sierra Leone National Revenue Authority. Last verified in 2023.",
+    "processed_at": "2025-08-03T06:41:18.505891"
+  },
+  "SG": {
+    "country_name": "Singapore",
+    "rate_percentage": 8.0,
+    "rate_decimal": 0.08,
+    "tax_type": "gst",
+    "confidence": 0.99,
+    "source_notes": "Singapore's GST rate increased from 7% to 8% effective January 1, 2023, as per IRAS (Inland Revenue Authority of Singapore). Another increase to 9% is scheduled for January 1, 2024.",
+    "processed_at": "2025-08-03T06:41:23.622219"
+  },
+  "SX": {
+    "country_name": "Sint Maarten (Dutch part)",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "consumption_tax",
+    "confidence": 0.9,
+    "source_notes": "5% Turnover Tax (TOT) applies in Sint Maarten. Based on multiple tax advisory sources and government information.",
+    "processed_at": "2025-08-03T06:41:28.372933"
+  },
+  "SK": {
+    "country_name": "Slovakia",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate according to European Commission VAT rates database (2024). Slovakia also has reduced rates of 10% for certain goods.",
+    "processed_at": "2025-08-03T06:41:33.268755"
+  },
+  "SI": {
+    "country_name": "Slovenia",
+    "rate_percentage": 22.0,
+    "rate_decimal": 0.22,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate per European Commission VAT rates database and Slovenia's Financial Administration (FURS). Last verified 2024.",
+    "processed_at": "2025-08-03T06:41:38.086981"
+  },
+  "SB": {
+    "country_name": "Solomon Islands",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "gst",
+    "confidence": 0.9,
+    "source_notes": "Solomon Islands operates a Goods and Services Tax (GST) system with a standard rate of 10% according to PwC tax summaries and local business guides",
+    "processed_at": "2025-08-03T06:41:42.972298"
+  },
+  "SO": {
+    "country_name": "Somalia",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Somalia has no formal VAT/sales tax system due to ongoing civil conflict and lack of centralized tax administration. Local taxes may exist but there is no standardized national system.",
+    "processed_at": "2025-08-03T06:41:47.955605"
+  },
+  "ZA": {
+    "country_name": "South Africa",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate from South African Revenue Service (SARS). Rate has been 15% since April 1, 2018.",
+    "processed_at": "2025-08-03T06:41:53.128220"
+  },
+  "GS": {
+    "country_name": "South Georgia and the South Sandwich Islands",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "No VAT/sales tax system exists. SGSSI is a British Overseas Territory with minimal permanent population and commercial activity. Only research stations and occasional tourism.",
+    "processed_at": "2025-08-03T06:41:58.037009"
+  },
+  "KR": {
+    "country_name": "South Korea",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in South Korea per Korean National Tax Service (NTS). Last verified 2023.",
+    "processed_at": "2025-08-03T06:42:02.766111"
+  },
+  "SS": {
+    "country_name": "South Sudan",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "sales_tax",
+    "confidence": 0.8,
+    "source_notes": "Based on South Sudan Revenue Authority data. A general sales tax (GST) of 18% applies to goods and services in South Sudan.",
+    "processed_at": "2025-08-03T06:42:07.498975"
+  },
+  "LK": {
+    "country_name": "Sri Lanka",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Sri Lanka according to Sri Lanka Inland Revenue Department, applicable from Sept 2022",
+    "processed_at": "2025-08-03T06:42:12.060368"
+  },
+  "SD": {
+    "country_name": "Sudan",
+    "rate_percentage": 17.0,
+    "rate_decimal": 0.17,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Based on Sudan VAT law, verified by PwC and Deloitte tax guides from 2023. Sudan implements a 17% standard VAT rate.",
+    "processed_at": "2025-08-03T06:42:17.129520"
+  },
+  "SR": {
+    "country_name": "Suriname",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "10% turnover tax (sales tax) rate according to PwC 2023 tax guide for Suriname",
+    "processed_at": "2025-08-03T06:42:21.832571"
+  },
+  "SJ": {
+    "country_name": "Svalbard and Jan Mayen",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Svalbard and Jan Mayen are territories of Norway but are exempt from Norwegian VAT system. They are considered outside the VAT area of Norway.",
+    "processed_at": "2025-08-03T06:42:26.628464"
+  },
+  "CH": {
+    "country_name": "Switzerland",
+    "rate_percentage": 7.7,
+    "rate_decimal": 0.077,
+    "tax_type": "vat",
+    "confidence": 0.99,
+    "source_notes": "Standard VAT rate (MWST/TVA/IVA) from Swiss Federal Tax Administration (as of 2024)",
+    "processed_at": "2025-08-03T06:42:31.168785"
+  },
+  "SY": {
+    "country_name": "Syria",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "Due to ongoing conflict, normal tax systems are disrupted. No reliable current VAT/sales tax information available.",
+    "processed_at": "2025-08-03T06:42:35.699871"
+  },
+  "TW": {
+    "country_name": "Taiwan",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate (known as GBRT - Goods and Business Revenue Tax) from Taiwan Ministry of Finance. Rate has remained at 5% since 1986.",
+    "processed_at": "2025-08-03T06:42:40.654739"
+  },
+  "TJ": {
+    "country_name": "Tajikistan",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "According to Tajikistan Tax Code, standard VAT rate is 18% as confirmed by PwC and Deloitte tax guides (2023)",
+    "processed_at": "2025-08-03T06:42:51.412616"
+  },
+  "TZ": {
+    "country_name": "Tanzania",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Tanzania Revenue Authority (TRA)",
+    "processed_at": "2025-08-03T06:42:55.576293"
+  },
+  "TH": {
+    "country_name": "Thailand",
+    "rate_percentage": 7.0,
+    "rate_decimal": 0.07,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Thailand Revenue Department. Note: Thailand has temporarily maintained the 7% rate (reduced from standard 10%) through Sep 2024.",
+    "processed_at": "2025-08-03T06:43:00.485961"
+  },
+  "TL": {
+    "country_name": "Timor-Leste",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "Timor-Leste does not currently have a VAT, GST or general sales tax system, though there are some specific service taxes. Source: PwC and Deloitte tax guides 2023",
+    "processed_at": "2025-08-03T06:43:05.635503"
+  },
+  "TG": {
+    "country_name": "Togo",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT rate from Togo Revenue Authority (Office Togolais des Recettes - OTR) and confirmed by PwC tax summaries",
+    "processed_at": "2025-08-03T06:43:10.470196"
+  },
+  "TK": {
+    "country_name": "Tokelau",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "Tokelau is a territory of New Zealand. No evidence found of separate VAT/GST/sales tax system. Limited economic and tax information available.",
+    "processed_at": "2025-08-03T06:43:15.307402"
+  },
+  "TO": {
+    "country_name": "Tonga",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "consumption_tax",
+    "confidence": 0.9,
+    "source_notes": "Consumption tax (CT) rate in Tonga from Ministry of Revenue & Customs. Also verified by PwC tax summaries.",
+    "processed_at": "2025-08-03T06:43:20.148908"
+  },
+  "TT": {
+    "country_name": "Trinidad and Tobago",
+    "rate_percentage": 12.5,
+    "rate_decimal": 0.125,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Trinidad and Tobago according to Trinidad and Tobago Ministry of Finance",
+    "processed_at": "2025-08-03T06:43:24.735828"
+  },
+  "TN": {
+    "country_name": "Tunisia",
+    "rate_percentage": 19.0,
+    "rate_decimal": 0.19,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate per Tunisian Tax Authority (2023). Some reduced rates exist for specific goods/services.",
+    "processed_at": "2025-08-03T06:43:29.575286"
+  },
+  "TR": {
+    "country_name": "T\u00fcrkiye",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (KDV) rate from Turkish Revenue Administration, effective 2024. Some goods/services have reduced rates of 10% or 1%.",
+    "processed_at": "2025-08-03T06:43:34.317879"
+  },
+  "TM": {
+    "country_name": "Turkmenistan",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.7,
+    "source_notes": "Based on PWC and general trade sources, though limited recent official confirmation available",
+    "processed_at": "2025-08-03T06:43:40.185232"
+  },
+  "TC": {
+    "country_name": "Turks and Caicos Islands",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.95,
+    "source_notes": "Turks and Caicos Islands does not levy VAT, GST or standard sales tax. Tax revenue is primarily from import duties and other fees.",
+    "processed_at": "2025-08-03T06:43:45.001684"
+  },
+  "TV": {
+    "country_name": "Tuvalu",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.8,
+    "source_notes": "Based on available research, Tuvalu does not appear to have a general sales tax, VAT, or GST system. Limited economic data available for this small Pacific island nation.",
+    "processed_at": "2025-08-03T06:43:49.783862"
+  },
+  "UG": {
+    "country_name": "Uganda",
+    "rate_percentage": 18.0,
+    "rate_decimal": 0.18,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate according to Uganda Revenue Authority (URA). Rate confirmed by multiple sources including PwC tax summaries.",
+    "processed_at": "2025-08-03T06:43:54.623289"
+  },
+  "UA": {
+    "country_name": "Ukraine",
+    "rate_percentage": 20.0,
+    "rate_decimal": 0.2,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Ukraine confirmed by State Tax Service of Ukraine and PwC Tax Summaries. Some goods/services have reduced rates or exemptions.",
+    "processed_at": "2025-08-03T06:43:59.771379"
+  },
+  "UM": {
+    "country_name": "United States Minor Outlying Islands",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "U.S. Minor Outlying Islands are uninhabited territories under U.S. jurisdiction with no permanent population or commercial activity, thus no sales tax system",
+    "processed_at": "2025-08-03T06:44:04.666877"
+  },
+  "UY": {
+    "country_name": "Uruguay",
+    "rate_percentage": 22.0,
+    "rate_decimal": 0.22,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT (IVA) rate from Uruguay's DGI (tax authority). Verified as of 2023.",
+    "processed_at": "2025-08-03T06:44:09.172995"
+  },
+  "UZ": {
+    "country_name": "Uzbekistan",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Uzbekistan Tax Code and PwC tax summaries (2023). Reduced from 20% to 15% in 2019.",
+    "processed_at": "2025-08-03T06:44:14.038674"
+  },
+  "VU": {
+    "country_name": "Vanuatu",
+    "rate_percentage": 15.0,
+    "rate_decimal": 0.15,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "VAT (Value Added Tax) rate from Vanuatu Department of Customs & Inland Revenue. Known locally as 'Value Added Tax' or 'VAT'.",
+    "processed_at": "2025-08-03T06:44:18.579117"
+  },
+  "VE": {
+    "country_name": "Venezuela",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Venezuela's standard VAT rate (Impuesto al Valor Agregado - IVA) from KPMG and PWC tax guides, last verified 2023",
+    "processed_at": "2025-08-03T06:44:23.579115"
+  },
+  "VN": {
+    "country_name": "Vietnam",
+    "rate_percentage": 10.0,
+    "rate_decimal": 0.1,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate in Vietnam according to the Vietnamese General Department of Taxation. Some goods/services have reduced rates of 0% or 5%.",
+    "processed_at": "2025-08-03T06:44:28.226927"
+  },
+  "VG": {
+    "country_name": "Virgin Islands (British)",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.9,
+    "source_notes": "British Virgin Islands has no VAT, GST or general sales tax system. Main government revenue comes from payroll tax, import duties, and other fees.",
+    "processed_at": "2025-08-03T06:44:33.113980"
+  },
+  "VI": {
+    "country_name": "Virgin Islands (U.S.)",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "sales_tax",
+    "confidence": 0.9,
+    "source_notes": "U.S. Virgin Islands has a 5% general excise tax (GET) on goods and services. Source: USVI Bureau of Internal Revenue.",
+    "processed_at": "2025-08-03T06:44:37.967577"
+  },
+  "WF": {
+    "country_name": "Wallis and Futuna",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "Wallis and Futuna is a French territory with limited tax information available. No clear evidence of VAT/GST implementation found",
+    "processed_at": "2025-08-03T06:44:42.732068"
+  },
+  "EH": {
+    "country_name": "Western Sahara",
+    "rate_percentage": 0.0,
+    "rate_decimal": 0.0,
+    "tax_type": "none",
+    "confidence": 0.7,
+    "source_notes": "Western Sahara is a disputed territory with no clear autonomous tax system. Tax administration varies by controlling authority (Morocco/Polisario)",
+    "processed_at": "2025-08-03T06:44:47.578835"
+  },
+  "YE": {
+    "country_name": "Yemen",
+    "rate_percentage": 5.0,
+    "rate_decimal": 0.05,
+    "tax_type": "sales_tax",
+    "confidence": 0.7,
+    "source_notes": "General Sales Tax (GST) rate in Yemen according to KPMG and PwC tax guides. However, due to ongoing conflict, actual implementation may vary.",
+    "processed_at": "2025-08-03T06:44:52.544040"
+  },
+  "ZM": {
+    "country_name": "Zambia",
+    "rate_percentage": 16.0,
+    "rate_decimal": 0.16,
+    "tax_type": "vat",
+    "confidence": 0.95,
+    "source_notes": "Standard VAT rate from Zambia Revenue Authority (ZRA). Confirmed through multiple sources including PwC and Deloitte tax guides 2023.",
+    "processed_at": "2025-08-03T06:44:57.200401"
+  },
+  "ZW": {
+    "country_name": "Zimbabwe",
+    "rate_percentage": 14.5,
+    "rate_decimal": 0.145,
+    "tax_type": "vat",
+    "confidence": 0.9,
+    "source_notes": "Standard VAT rate per Zimbabwe Revenue Authority (ZIMRA). Rate updated in 2020.",
+    "processed_at": "2025-08-03T06:45:01.742374"
+  }
+}

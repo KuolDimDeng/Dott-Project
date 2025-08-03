@@ -341,3 +341,64 @@ def cancel_checkout_session(session_id):
 # Import required modules at the top of the file
 from django.utils import timezone
 from datetime import timedelta
+
+
+def create_filing_service_checkout_session(filing, request):
+    """
+    Create a Stripe checkout session for filing service payment
+    
+    Args:
+        filing: TaxFiling instance with filing service data
+        request: HTTP request object for building URLs
+        
+    Returns:
+        dict: Contains checkout_url and session_id
+    """
+    try:
+        # Get the filing fee
+        filing_fee = filing.filing_fee or 35.00  # Default to manual filing fee
+        
+        # Create line items
+        line_items = [{
+            'price_data': {
+                'currency': 'usd',
+                'product_data': {
+                    'name': f'Tax Filing Service - {filing.country}',
+                    'description': f'{filing.filing_type_service} filing for {filing.filing_period}',
+                },
+                'unit_amount': int(filing_fee * 100),  # Stripe uses cents
+            },
+            'quantity': 1,
+        }]
+        
+        # Create the checkout session
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            success_url=request.build_absolute_uri(
+                f'/dashboard/taxes/filings/{filing.filing_id}/success?session_id={{CHECKOUT_SESSION_ID}}'
+            ),
+            cancel_url=request.build_absolute_uri(
+                f'/dashboard/taxes/filings/{filing.filing_id}/cancel'
+            ),
+            metadata={
+                'filing_id': str(filing.filing_id),
+                'tenant_id': filing.tenant_id,
+                'service_type': 'filing_service'
+            },
+            expires_at=int((timezone.now() + timedelta(hours=24)).timestamp())
+        )
+        
+        # Update filing with payment intent ID
+        filing.stripe_payment_intent_id = session.payment_intent
+        filing.save()
+        
+        return {
+            'checkout_url': session.url,
+            'session_id': session.id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating filing service checkout session: {str(e)}")
+        raise
