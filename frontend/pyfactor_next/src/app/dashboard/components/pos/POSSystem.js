@@ -307,6 +307,11 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(null);
+  
+  // Tax settings from settings menu
+  const [taxSettingsLoading, setTaxSettingsLoading] = useState(false);
+  const [taxSettingsError, setTaxSettingsError] = useState(null);
+  const [loadedFromSettings, setLoadedFromSettings] = useState(false);
 
   // Fetch products from database
   useEffect(() => {
@@ -405,6 +410,77 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
     fetchProducts();
   }, [isOpen]);
+
+  // Fetch tax settings from Settings → Taxes tab
+  const fetchTaxSettings = async () => {
+    if (loadedFromSettings) {
+      console.log('🎯 [POSSystem] Tax settings already loaded from settings');
+      return;
+    }
+    
+    try {
+      setTaxSettingsLoading(true);
+      console.log('🎯 [POSSystem] Fetching tax settings from Settings → Taxes...');
+      
+      const response = await fetch('/api/settings/taxes', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tax settings: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('🎯 [POSSystem] Tax settings response:', data);
+      
+      // Check if we have sales tax settings
+      if (data.settings && data.settings.sales_tax_rate) {
+        const taxRatePercentage = (data.settings.sales_tax_rate * 100);
+        console.log('🎯 [POSSystem] Setting tax rate from settings:', taxRatePercentage);
+        
+        setTaxRate(taxRatePercentage);
+        setLoadedFromSettings(true);
+        
+        toast.success(
+          <div>
+            <div className="font-medium">Tax Rate Loaded</div>
+            <div className="text-sm">Using {taxRatePercentage.toFixed(2)}% from Settings → Taxes</div>
+          </div>,
+          { duration: 3000, position: 'top-center' }
+        );
+      } else {
+        console.log('🎯 [POSSystem] No tax settings found, using default 0%');
+        toast.info(
+          <div>
+            <div className="font-medium">No Tax Rate Configured</div>
+            <div className="text-sm">Configure sales tax in Settings → Taxes tab</div>
+          </div>,
+          { duration: 4000, position: 'top-center' }
+        );
+      }
+      
+    } catch (error) {
+      console.error('🎯 [POSSystem] Error fetching tax settings:', error);
+      setTaxSettingsError(error.message);
+      
+      toast.error(
+        <div>
+          <div className="font-medium">Tax Settings Error</div>
+          <div className="text-sm">Using manual tax entry</div>
+        </div>,
+        { duration: 4000, position: 'top-center' }
+      );
+    } finally {
+      setTaxSettingsLoading(false);
+    }
+  };
+
+  // Fetch tax settings when modal opens
+  useEffect(() => {
+    if (isOpen && !loadedFromSettings) {
+      fetchTaxSettings();
+    }
+  }, [isOpen, loadedFromSettings]);
 
   const mockCustomers = [
     { id: '1', name: 'John Doe', email: 'john@example.com' },
@@ -892,6 +968,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     setTaxRate(0);
     setNotes('');
     setProductSearchTerm('');
+    setLoadedFromSettings(false); // Reset tax settings state for next sale
   };
 
   const totals = calculateTotals();
@@ -1346,17 +1423,47 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               {t('taxRate')}
-                              <FieldTooltip text={t('taxRateTooltip')} />
+                              <FieldTooltip text={loadedFromSettings ? "Tax rate loaded from Settings → Taxes tab. You can override it for this sale." : t('taxRateTooltip')} />
+                              {loadedFromSettings && (
+                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                  From Settings
+                                </span>
+                              )}
+                              {taxSettingsLoading && (
+                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                  Loading...
+                                </span>
+                              )}
                             </label>
-                            <input
-                              type="number"
-                              value={taxRate}
-                              onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                              min="0"
-                              max="100"
-                              step="0.01"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={taxRate}
+                                onChange={(e) => {
+                                  setTaxRate(parseFloat(e.target.value) || 0);
+                                  if (loadedFromSettings) {
+                                    setLoadedFromSettings(false); // Mark as manually overridden
+                                  }
+                                }}
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                                  loadedFromSettings 
+                                    ? 'border-green-300 bg-green-50' 
+                                    : 'border-gray-300'
+                                }`}
+                                placeholder="0.00"
+                              />
+                              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">%</span>
+                              </div>
+                            </div>
+                            {taxSettingsError && (
+                              <p className="mt-1 text-xs text-red-600">
+                                Tax settings unavailable. Enter manually or configure in Settings → Taxes.
+                              </p>
+                            )}
                           </div>
                         </div>
 

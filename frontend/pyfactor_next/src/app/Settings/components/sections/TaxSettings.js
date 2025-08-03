@@ -3,7 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '@/context/NotificationContext';
 import StandardSpinner from '@/components/ui/StandardSpinner';
-import { CurrencyDollarIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { 
+  CurrencyDollarIcon, 
+  ExclamationTriangleIcon, 
+  InformationCircleIcon,
+  UserGroupIcon,
+  BuildingOfficeIcon,
+  CalculatorIcon
+} from '@heroicons/react/24/outline';
 
 // US States data
 const US_STATES = [
@@ -64,88 +71,205 @@ const TaxSettings = () => {
   const { notifySuccess, notifyError } = useNotification();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [taxSettings, setTaxSettings] = useState(null);
-  const [source, setSource] = useState('none'); // 'global', 'tenant', 'none'
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedSettings, setEditedSettings] = useState({});
+  const [activeTab, setActiveTab] = useState('sales'); // 'sales' or 'payroll'
   
-  // Fetch current tax settings
+  // Sales Tax State
+  const [salesTaxSettings, setSalesTaxSettings] = useState(null);
+  const [salesTaxSource, setSalesTaxSource] = useState('none'); // 'global', 'custom', 'none'
+  const [isEditingSales, setIsEditingSales] = useState(false);
+  const [editedSalesSettings, setEditedSalesSettings] = useState({});
+  
+  // Payroll Tax State
+  const [payrollTaxSettings, setPayrollTaxSettings] = useState(null);
+  const [payrollTaxSource, setPayrollTaxSource] = useState('none');
+  const [isEditingPayroll, setIsEditingPayroll] = useState(false);
+  const [editedPayrollSettings, setEditedPayrollSettings] = useState({});
+  
+  // User/Business Info
+  const [businessInfo, setBusinessInfo] = useState({
+    country: '',
+    state: '',
+    country_name: ''
+  });
+  
+  // Fetch all tax settings on mount
   useEffect(() => {
-    fetchTaxSettings();
+    fetchAllTaxSettings();
   }, []);
   
-  const fetchTaxSettings = async () => {
+  const fetchAllTaxSettings = async () => {
     try {
       setLoading(true);
-      console.log('🎯 [TaxSettings] Fetching tax settings...');
+      console.log('🎯 [TaxSettings] Fetching all tax settings...');
       
-      const response = await fetch('/api/settings/taxes');
-      console.log('🎯 [TaxSettings] Response status:', response.status);
-      console.log('🎯 [TaxSettings] Response headers:', response.headers);
+      // Fetch both sales and payroll tax settings
+      const [salesResponse, payrollResponse, businessResponse] = await Promise.all([
+        fetch('/api/settings/taxes'),
+        fetch('/api/settings/taxes/payroll'),
+        fetch('/api/user/business')
+      ]);
       
-      const data = await response.json();
-      console.log('🎯 [TaxSettings] Response data:', data);
+      const salesData = await salesResponse.json();
+      const payrollData = await payrollResponse.json();
+      const businessData = await businessResponse.json();
       
-      if (!response.ok) {
-        console.error('🎯 [TaxSettings] Response not OK:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: data.error
-        });
-        throw new Error(data.error || `Failed to fetch tax settings (${response.status})`);
+      console.log('🎯 [TaxSettings] Sales tax data:', salesData);
+      console.log('🎯 [TaxSettings] Payroll tax data:', payrollData);
+      console.log('🎯 [TaxSettings] Business data:', businessData);
+      
+      // Set business info
+      setBusinessInfo({
+        country: businessData.country || '',
+        state: businessData.state || '',
+        country_name: businessData.country_name || ''
+      });
+      
+      // Set sales tax data
+      if (salesResponse.ok) {
+        setSalesTaxSource(salesData.source || 'none');
+        setSalesTaxSettings(salesData.settings || null);
+        setEditedSalesSettings(salesData.settings || {});
       }
       
-      console.log('🎯 [TaxSettings] Success - Received:', {
-        source: data.source,
-        rate: data.settings?.sales_tax_rate,
-        fullSettings: data.settings
-      });
+      // Set payroll tax data
+      if (payrollResponse.ok) {
+        setPayrollTaxSource(payrollData.source || 'none');
+        setPayrollTaxSettings(payrollData.settings || null);
+        setEditedPayrollSettings(payrollData.settings || {});
+      }
       
-      setSource(data.source);
-      setTaxSettings(data.settings);
-      setEditedSettings(data.settings || {});
     } catch (error) {
       console.error('🎯 [TaxSettings] Error:', error);
-      console.error('🎯 [TaxSettings] Error details:', {
-        message: error.message,
-        stack: error.stack
-      });
-      notifyError(`Failed to load tax settings: ${error.message}`);
+      notifyError('Failed to load tax settings');
     } finally {
       setLoading(false);
     }
   };
   
-  const handleSave = async () => {
+  // Handle state change - fetch rates for the selected state
+  const handleStateChange = async (stateCode) => {
+    console.log('🎯 [TaxSettings] State changed to:', stateCode);
+    
+    // Update business info
+    setBusinessInfo(prev => ({ ...prev, state: stateCode }));
+    
+    // If US and state selected, fetch rates for that state
+    if (businessInfo.country === 'US' && stateCode) {
+      try {
+        // Fetch sales tax rate for the state
+        const salesResponse = await fetch(`/api/settings/taxes/rates?country=US&state=${stateCode}`);
+        const salesData = await salesResponse.json();
+        
+        if (salesResponse.ok && salesData.rate) {
+          setEditedSalesSettings(prev => ({
+            ...prev,
+            country: 'US',
+            region_code: stateCode,
+            region_name: US_STATES.find(s => s.code === stateCode)?.name || '',
+            sales_tax_rate: salesData.rate.rate,
+            sales_tax_type: salesData.rate.tax_type,
+            rate_percentage: salesData.rate.rate * 100
+          }));
+          
+          notifySuccess(`Sales tax rate updated to ${salesData.rate.region_name} rate: ${(salesData.rate.rate * 100).toFixed(2)}%`);
+        }
+        
+        // Fetch payroll tax rates for the state
+        const payrollResponse = await fetch(`/api/settings/taxes/payroll-rates?country=US&state=${stateCode}`);
+        const payrollData = await payrollResponse.json();
+        
+        if (payrollResponse.ok && payrollData.rates) {
+          setEditedPayrollSettings(prev => ({
+            ...prev,
+            country: 'US',
+            region_code: stateCode,
+            region_name: US_STATES.find(s => s.code === stateCode)?.name || '',
+            ...payrollData.rates
+          }));
+        }
+        
+      } catch (error) {
+        console.error('🎯 [TaxSettings] Error fetching state rates:', error);
+      }
+    }
+  };
+  
+  // Save sales tax settings
+  const handleSaveSalesTax = async () => {
     try {
       setSaving(true);
-      console.log('🎯 [TaxSettings] Saving:', editedSettings);
+      console.log('🎯 [TaxSettings] Saving sales tax:', editedSalesSettings);
+      
+      // Add state to the settings
+      const dataToSave = {
+        ...editedSalesSettings,
+        country: businessInfo.country,
+        region_code: businessInfo.state || ''
+      };
       
       const response = await fetch('/api/settings/taxes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedSettings),
+        body: JSON.stringify(dataToSave),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to save tax settings');
+        throw new Error(data.error || 'Failed to save sales tax settings');
       }
       
-      setSource('tenant');
-      setTaxSettings(data.settings);
-      setIsEditing(false);
-      notifySuccess('Tax settings saved successfully');
+      setSalesTaxSource('custom');
+      setSalesTaxSettings(data.settings);
+      setIsEditingSales(false);
+      notifySuccess('Sales tax settings saved successfully');
     } catch (error) {
       console.error('🎯 [TaxSettings] Save error:', error);
-      notifyError(error.message || 'Failed to save tax settings');
+      notifyError(error.message || 'Failed to save sales tax settings');
     } finally {
       setSaving(false);
     }
   };
   
-  const handleReset = async () => {
+  // Save payroll tax settings
+  const handleSavePayrollTax = async () => {
+    try {
+      setSaving(true);
+      console.log('🎯 [TaxSettings] Saving payroll tax:', editedPayrollSettings);
+      
+      // Add state to the settings
+      const dataToSave = {
+        ...editedPayrollSettings,
+        country: businessInfo.country,
+        region_code: businessInfo.state || ''
+      };
+      
+      const response = await fetch('/api/settings/taxes/payroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSave),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save payroll tax settings');
+      }
+      
+      setPayrollTaxSource('custom');
+      setPayrollTaxSettings(data.settings);
+      setIsEditingPayroll(false);
+      notifySuccess('Payroll tax settings saved successfully');
+    } catch (error) {
+      console.error('🎯 [TaxSettings] Save error:', error);
+      notifyError(error.message || 'Failed to save payroll tax settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Reset to global defaults
+  const handleResetSalesTax = async () => {
     if (!confirm('Are you sure you want to reset to global defaults? Your custom settings will be deleted.')) {
       return;
     }
@@ -153,7 +277,7 @@ const TaxSettings = () => {
     try {
       setSaving(true);
       
-      const response = await fetch(`/api/settings/taxes?country=${taxSettings.country}&region_code=${taxSettings.region_code || ''}`, {
+      const response = await fetch(`/api/settings/taxes?country=${businessInfo.country}&region_code=${businessInfo.state || ''}`, {
         method: 'DELETE',
       });
       
@@ -163,67 +287,13 @@ const TaxSettings = () => {
         throw new Error(data.error || 'Failed to reset tax settings');
       }
       
-      notifySuccess('Tax settings reset to global defaults');
-      fetchTaxSettings(); // Reload settings
+      notifySuccess('Sales tax settings reset to global defaults');
+      fetchAllTaxSettings(); // Reload settings
     } catch (error) {
       console.error('🎯 [TaxSettings] Reset error:', error);
       notifyError(error.message || 'Failed to reset tax settings');
     } finally {
       setSaving(false);
-    }
-  };
-  
-  const handleRateChange = (value) => {
-    // Convert percentage to decimal (e.g., 8.75 -> 0.0875)
-    const percentage = parseFloat(value) || 0;
-    const decimal = percentage / 100;
-    
-    setEditedSettings({
-      ...editedSettings,
-      sales_tax_rate: decimal,
-      rate_percentage: percentage
-    });
-  };
-  
-  const handleStateChange = async (stateCode) => {
-    console.log('🎯 [TaxSettings] State changed to:', stateCode);
-    
-    // Update the state code
-    setEditedSettings({
-      ...editedSettings,
-      region_code: stateCode,
-      region_name: US_STATES.find(s => s.code === stateCode)?.name || ''
-    });
-    
-    // If a state is selected, fetch the global rate for that state
-    if (stateCode && taxSettings.country === 'US') {
-      try {
-        const response = await fetch(`/api/settings/taxes/global-rates?country=US`);
-        const data = await response.json();
-        
-        if (response.ok && data.rates) {
-          // Find the rate for the selected state
-          const stateRate = data.rates.find(r => r.region_code === stateCode);
-          if (stateRate) {
-            console.log('🎯 [TaxSettings] Found state rate:', stateRate);
-            
-            // Auto-populate the rate from global data
-            setEditedSettings({
-              ...editedSettings,
-              region_code: stateCode,
-              region_name: stateRate.region_name,
-              sales_tax_rate: stateRate.rate,
-              rate_percentage: stateRate.rate * 100,
-              sales_tax_type: stateRate.tax_type,
-              original_global_rate: stateRate.rate
-            });
-            
-            notifySuccess(`Tax rate updated to ${stateRate.region_name} rate: ${(stateRate.rate * 100).toFixed(2)}%`);
-          }
-        }
-      } catch (error) {
-        console.error('🎯 [TaxSettings] Error fetching state rate:', error);
-      }
     }
   };
   
@@ -235,286 +305,479 @@ const TaxSettings = () => {
     );
   }
   
-  if (!taxSettings) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Unable to load tax settings. Please try again later.</p>
-      </div>
-    );
-  }
-  
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Tax Settings</h2>
-        <p className="text-gray-600 mt-1">Configure sales tax rates for your business location</p>
+        <p className="text-gray-600 mt-1">Configure tax rates for your business</p>
       </div>
       
-      {/* Status Banner */}
-      <div className={`border rounded-lg p-4 ${
-        source === 'global' ? 'bg-blue-50 border-blue-200' : 
-        source === 'tenant' ? 'bg-green-50 border-green-200' : 
-        'bg-yellow-50 border-yellow-200'
-      }`}>
+      {/* Warning Banner */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <InformationCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-600" />
+          <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0 mt-0.5 text-yellow-600" />
           <div>
-            <p className={`font-medium ${
-              source === 'global' ? 'text-blue-900' : 
-              source === 'tenant' ? 'text-green-900' : 
-              'text-yellow-900'
-            }`}>
-              {source === 'global' && 'Using global default tax rate'}
-              {source === 'tenant' && 'Using custom tax rate'}
-              {source === 'none' && 'No tax rate configured'}
-            </p>
-            <p className={`text-sm mt-1 ${
-              source === 'global' ? 'text-blue-700' : 
-              source === 'tenant' ? 'text-green-700' : 
-              'text-yellow-700'
-            }`}>
-              {source === 'global' && 'This rate is automatically maintained and updated based on your location.'}
-              {source === 'tenant' && 'You have customized the tax rate for your business.'}
-              {source === 'none' && 'Please configure a tax rate for your location.'}
+            <p className="font-medium text-yellow-900">Important Tax Compliance Notice</p>
+            <p className="text-sm mt-1 text-yellow-700">
+              You are responsible for ensuring that your tax rates are accurate and up-to-date. 
+              While we provide default rates based on your location, tax laws change frequently. 
+              Please consult with a tax professional to verify your rates.
             </p>
           </div>
         </div>
+      </div>
+      
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('sales')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'sales'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center">
+              <CurrencyDollarIcon className="h-5 w-5 mr-2" />
+              Sales Tax
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('payroll')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'payroll'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center">
+              <UserGroupIcon className="h-5 w-5 mr-2" />
+              Payroll Tax
+            </div>
+          </button>
+        </nav>
       </div>
       
       {/* Sales Tax Section */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Sales Tax</h3>
-        </div>
-        
-        <div className="p-6 space-y-6">
-          {/* Location Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Country</label>
-              <p className="mt-1 text-sm text-gray-900">{taxSettings.country_name || taxSettings.country}</p>
+      {activeTab === 'sales' && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Sales Tax Configuration</h3>
+              <div className="flex items-center space-x-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  salesTaxSource === 'custom' 
+                    ? 'bg-green-100 text-green-800' 
+                    : salesTaxSource === 'global'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {salesTaxSource === 'custom' ? 'Custom Rate' : salesTaxSource === 'global' ? 'Global Default' : 'Not Configured'}
+                </span>
+              </div>
             </div>
-            
-            {/* State selector for US businesses */}
-            {taxSettings.country === 'US' && (
+          </div>
+          
+          <div className="p-6 space-y-6">
+            {/* Location Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">State</label>
-                {isEditing ? (
+                <label className="block text-sm font-medium text-gray-700">Country</label>
+                <p className="mt-1 text-sm text-gray-900">{businessInfo.country_name || businessInfo.country || 'Not set'}</p>
+              </div>
+              
+              {/* State selector for US businesses */}
+              {businessInfo.country === 'US' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    State <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    value={editedSettings.region_code || ''}
+                    value={businessInfo.state || ''}
                     onChange={(e) => handleStateChange(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    disabled={!isEditingSales}
                   >
-                    <option value="">Select a state</option>
+                    <option value="">Select State</option>
                     {US_STATES.map(state => (
-                      <option key={state.code} value={state.code}>
-                        {state.name}
-                      </option>
+                      <option key={state.code} value={state.code}>{state.name}</option>
                     ))}
                   </select>
+                  {businessInfo.country === 'US' && !businessInfo.state && (
+                    <p className="mt-1 text-sm text-red-600">State is required for US businesses</p>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Tax Rate Configuration */}
+            {(salesTaxSettings || isEditingSales) && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Sales Tax Rate (%)
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="100"
+                        value={isEditingSales ? (editedSalesSettings.rate_percentage || 0) : ((salesTaxSettings?.sales_tax_rate || 0) * 100)}
+                        onChange={(e) => {
+                          const percentage = parseFloat(e.target.value) || 0;
+                          setEditedSalesSettings({
+                            ...editedSalesSettings,
+                            sales_tax_rate: percentage / 100,
+                            rate_percentage: percentage
+                          });
+                        }}
+                        disabled={!isEditingSales}
+                        className="block w-full pr-10 border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Tax Type</label>
+                    <select
+                      value={isEditingSales ? (editedSalesSettings.sales_tax_type || 'sales_tax') : (salesTaxSettings?.sales_tax_type || 'sales_tax')}
+                      onChange={(e) => setEditedSalesSettings({
+                        ...editedSalesSettings,
+                        sales_tax_type: e.target.value
+                      })}
+                      disabled={!isEditingSales}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                    >
+                      <option value="sales_tax">Sales Tax</option>
+                      <option value="vat">VAT</option>
+                      <option value="gst">GST</option>
+                      <option value="consumption_tax">Consumption Tax</option>
+                      <option value="none">No Tax</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Information Banner */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <InformationCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-600" />
+                    <div className="text-sm text-blue-700">
+                      <p>This tax rate will be automatically applied to all sales transactions in your POS and invoices.</p>
+                      {salesTaxSource === 'global' && (
+                        <p className="mt-1">Currently using the default rate for your location. You can customize it if needed.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex justify-between">
+              <div>
+                {salesTaxSource === 'custom' && !isEditingSales && (
+                  <button
+                    onClick={handleResetSalesTax}
+                    className="text-sm text-red-600 hover:text-red-500"
+                  >
+                    Reset to Global Default
+                  </button>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                {isEditingSales ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsEditingSales(false);
+                        setEditedSalesSettings(salesTaxSettings || {});
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveSalesTax}
+                      disabled={saving || (businessInfo.country === 'US' && !businessInfo.state)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </>
                 ) : (
+                  <button
+                    onClick={() => setIsEditingSales(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  >
+                    Edit Sales Tax
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Payroll Tax Section */}
+      {activeTab === 'payroll' && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Payroll Tax Configuration</h3>
+              <div className="flex items-center space-x-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  payrollTaxSource === 'custom' 
+                    ? 'bg-green-100 text-green-800' 
+                    : payrollTaxSource === 'global'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {payrollTaxSource === 'custom' ? 'Custom Rates' : payrollTaxSource === 'global' ? 'Global Default' : 'Not Configured'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            {/* Location Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Country</label>
+                <p className="mt-1 text-sm text-gray-900">{businessInfo.country_name || businessInfo.country || 'Not set'}</p>
+              </div>
+              
+              {businessInfo.country === 'US' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">State</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {taxSettings.region_name || 'No state selected'}
+                    {businessInfo.state ? US_STATES.find(s => s.code === businessInfo.state)?.name : 'Not selected'}
                   </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Payroll Tax Rates */}
+            {(payrollTaxSettings || isEditingPayroll) && (
+              <div className="space-y-6">
+                {/* Employee Taxes */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
+                    <UserGroupIcon className="h-4 w-4 mr-2" />
+                    Employee Taxes (Withheld from Employee)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Social Security / Pension (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="100"
+                        value={isEditingPayroll ? ((editedPayrollSettings.employee_social_security_rate || 0) * 100) : ((payrollTaxSettings?.employee_social_security_rate || 0) * 100)}
+                        onChange={(e) => {
+                          const rate = parseFloat(e.target.value) || 0;
+                          setEditedPayrollSettings({
+                            ...editedPayrollSettings,
+                            employee_social_security_rate: rate / 100
+                          });
+                        }}
+                        disabled={!isEditingPayroll}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Medicare / Healthcare (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="100"
+                        value={isEditingPayroll ? ((editedPayrollSettings.employee_medicare_rate || 0) * 100) : ((payrollTaxSettings?.employee_medicare_rate || 0) * 100)}
+                        onChange={(e) => {
+                          const rate = parseFloat(e.target.value) || 0;
+                          setEditedPayrollSettings({
+                            ...editedPayrollSettings,
+                            employee_medicare_rate: rate / 100
+                          });
+                        }}
+                        disabled={!isEditingPayroll}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Employer Taxes */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
+                    <BuildingOfficeIcon className="h-4 w-4 mr-2" />
+                    Employer Taxes (Paid by Employer)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Social Security / Pension (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="100"
+                        value={isEditingPayroll ? ((editedPayrollSettings.employer_social_security_rate || 0) * 100) : ((payrollTaxSettings?.employer_social_security_rate || 0) * 100)}
+                        onChange={(e) => {
+                          const rate = parseFloat(e.target.value) || 0;
+                          setEditedPayrollSettings({
+                            ...editedPayrollSettings,
+                            employer_social_security_rate: rate / 100
+                          });
+                        }}
+                        disabled={!isEditingPayroll}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Medicare / Healthcare (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="100"
+                        value={isEditingPayroll ? ((editedPayrollSettings.employer_medicare_rate || 0) * 100) : ((payrollTaxSettings?.employer_medicare_rate || 0) * 100)}
+                        onChange={(e) => {
+                          const rate = parseFloat(e.target.value) || 0;
+                          setEditedPayrollSettings({
+                            ...editedPayrollSettings,
+                            employer_medicare_rate: rate / 100
+                          });
+                        }}
+                        disabled={!isEditingPayroll}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Unemployment Insurance (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="100"
+                        value={isEditingPayroll ? ((editedPayrollSettings.employer_unemployment_rate || 0) * 100) : ((payrollTaxSettings?.employer_unemployment_rate || 0) * 100)}
+                        onChange={(e) => {
+                          const rate = parseFloat(e.target.value) || 0;
+                          setEditedPayrollSettings({
+                            ...editedPayrollSettings,
+                            employer_unemployment_rate: rate / 100
+                          });
+                        }}
+                        disabled={!isEditingPayroll}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Total Tax Summary */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                    <CalculatorIcon className="h-4 w-4 mr-2" />
+                    Total Tax Burden Summary
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Total Employee Tax:</span>
+                      <span className="ml-2 font-medium">
+                        {((
+                          (isEditingPayroll ? editedPayrollSettings.employee_social_security_rate : payrollTaxSettings?.employee_social_security_rate) || 0) * 100 +
+                          ((isEditingPayroll ? editedPayrollSettings.employee_medicare_rate : payrollTaxSettings?.employee_medicare_rate) || 0) * 100
+                        ).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Total Employer Tax:</span>
+                      <span className="ml-2 font-medium">
+                        {((
+                          (isEditingPayroll ? editedPayrollSettings.employer_social_security_rate : payrollTaxSettings?.employer_social_security_rate) || 0) * 100 +
+                          ((isEditingPayroll ? editedPayrollSettings.employer_medicare_rate : payrollTaxSettings?.employer_medicare_rate) || 0) * 100 +
+                          ((isEditingPayroll ? editedPayrollSettings.employer_unemployment_rate : payrollTaxSettings?.employer_unemployment_rate) || 0) * 100
+                        ).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Coming Soon Notice for Payroll */}
+            {!payrollTaxSettings && !isEditingPayroll && (
+              <div className="text-center py-12">
+                <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Payroll Tax Configuration</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Configure payroll tax rates for accurate withholding calculations.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setIsEditingPayroll(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Configure Payroll Tax
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            {(payrollTaxSettings || isEditingPayroll) && (
+              <div className="flex justify-end space-x-3">
+                {isEditingPayroll ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsEditingPayroll(false);
+                        setEditedPayrollSettings(payrollTaxSettings || {});
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSavePayrollTax}
+                      disabled={saving}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? 'Saving...' : 'Save Payroll Tax'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingPayroll(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  >
+                    Edit Payroll Tax
+                  </button>
                 )}
               </div>
             )}
-            
-            {/* Show region for non-US countries */}
-            {taxSettings.country !== 'US' && taxSettings.region_name && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">State/Region</label>
-                <p className="mt-1 text-sm text-gray-900">{taxSettings.region_name}</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Tax Rate */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Sales Tax Rate
-            </label>
-            
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  max="100"
-                  value={isEditing ? (editedSettings.rate_percentage || 0) : (taxSettings.rate_percentage || 0)}
-                  onChange={(e) => handleRateChange(e.target.value)}
-                  disabled={!isEditing}
-                  className={`block w-32 pr-8 rounded-md shadow-sm ${
-                    isEditing 
-                      ? 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' 
-                      : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                  } sm:text-sm`}
-                />
-                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
-                  %
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">Type:</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {taxSettings.sales_tax_type?.toUpperCase() || 'Sales Tax'}
-                </span>
-              </div>
-            </div>
-            
-            {/* AI Confidence Score */}
-            {source === 'global' && taxSettings.ai_confidence_score && (
-              <p className="mt-2 text-xs text-gray-500">
-                AI Confidence: {(taxSettings.ai_confidence_score * 100).toFixed(0)}%
-                {taxSettings.manually_verified && ' • Manually verified'}
-              </p>
-            )}
-          </div>
-          
-          {/* Warning for US businesses without state */}
-          {taxSettings.country === 'US' && !taxSettings.region_code && !isEditing && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <div className="flex">
-                <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
-                <div className="ml-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Action Required:</strong> Please select your state to set the correct sales tax rate.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Warning for editing */}
-          {isEditing && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <div className="flex">
-                <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
-                <div className="ml-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Important:</strong> Ensure the tax rate is accurate for your location. 
-                    Incorrect tax rates may result in compliance issues.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Additional Settings */}
-          <div className="space-y-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={isEditing ? editedSettings.sales_tax_enabled : taxSettings.sales_tax_enabled}
-                onChange={(e) => setEditedSettings({
-                  ...editedSettings,
-                  sales_tax_enabled: e.target.checked
-                })}
-                disabled={!isEditing}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-sm text-gray-700">Enable sales tax calculation</span>
-            </label>
-            
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={isEditing ? editedSettings.show_tax_on_receipts : taxSettings.show_tax_on_receipts}
-                onChange={(e) => setEditedSettings({
-                  ...editedSettings,
-                  show_tax_on_receipts: e.target.checked
-                })}
-                disabled={!isEditing}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-sm text-gray-700">Show tax breakdown on receipts</span>
-            </label>
-          </div>
-          
-          {/* Tax Registration Number */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Tax Registration Number (optional)
-            </label>
-            <input
-              type="text"
-              value={isEditing ? (editedSettings.tax_registration_number || '') : (taxSettings.tax_registration_number || '')}
-              onChange={(e) => setEditedSettings({
-                ...editedSettings,
-                tax_registration_number: e.target.value
-              })}
-              disabled={!isEditing}
-              placeholder="VAT/GST registration number"
-              className={`mt-1 block w-full rounded-md shadow-sm ${
-                isEditing 
-                  ? 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' 
-                  : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-              } sm:text-sm`}
-            />
           </div>
         </div>
-        
-        {/* Actions */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between">
-          <div>
-            {source === 'tenant' && !isEditing && (
-              <button
-                onClick={handleReset}
-                disabled={saving}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                Reset to global default
-              </button>
-            )}
-          </div>
-          
-          <div className="flex space-x-3">
-            {isEditing ? (
-              <>
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditedSettings(taxSettings);
-                  }}
-                  disabled={saving}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Edit Settings
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {/* Help Text */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-gray-900 mb-2">About Tax Settings</h4>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Tax rates are pre-populated based on your business location</li>
-          <li>• For US businesses: Select your state to get the correct state sales tax rate</li>
-          <li>• Rates are automatically updated weekly to ensure compliance</li>
-          <li>• You can override the default rate if needed for your specific situation</li>
-          <li>• These settings apply to POS sales and invoices</li>
-          <li>• Note: Local city/county taxes are not included in state rates</li>
-        </ul>
-      </div>
+      )}
     </div>
   );
 };
