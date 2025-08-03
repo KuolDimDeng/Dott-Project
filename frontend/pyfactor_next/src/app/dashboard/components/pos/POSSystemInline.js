@@ -277,7 +277,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('/api/customers/', {
+        // Use the proxy endpoint that forwards to backend CRM
+        const response = await fetch('/api/proxy/customers/', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -291,15 +292,20 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           const data = await response.json();
           console.log('[POS] Customer data received:', data);
           
-          if (data.results) {
-            setCustomers(data.results);
-            console.log('[POS] Set customers from results:', data.results.length);
-          } else if (Array.isArray(data)) {
+          // The proxy endpoint returns an array directly
+          if (Array.isArray(data)) {
             setCustomers(data);
             console.log('[POS] Set customers from array:', data.length);
+            console.log('[POS] Customer names:', data.map(c => c.name || c.company_name));
+          } else if (data.results) {
+            setCustomers(data.results);
+            console.log('[POS] Set customers from results:', data.results.length);
           } else if (data.customers) {
             setCustomers(data.customers);
             console.log('[POS] Set customers from customers field:', data.customers.length);
+          } else {
+            console.log('[POS] Unexpected customer data format:', data);
+            setCustomers([]);
           }
         }
       } catch (error) {
@@ -835,7 +841,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                 <option value="">{t('walkInCustomer')}</option>
                 {customers.map(customer => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.email}
+                    {customer.name || customer.company_name} - {customer.email}
                   </option>
                 ))}
               </select>
