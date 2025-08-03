@@ -19,6 +19,7 @@ from .business_views import (
 )
 from .api.checkout.checkout_session import create_checkout_session
 from .api.subscription_views import subscription_status
+from .api.currency_views_production import get_currency_preferences
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create a router for the menu privileges API
@@ -41,6 +42,8 @@ urlpatterns = [
     path('refresh-token/', TokenRefreshView.as_view(), name='refresh-token'),
     path('webhook/stripe/', stripe_webhook, name='stripe_webhook'),
     path('api/subscription/status/', subscription_status, name='subscription_status'),
+    # Currency endpoints
+    path('api/currency/preferences/', get_currency_preferences, name='get_currency_preferences'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]

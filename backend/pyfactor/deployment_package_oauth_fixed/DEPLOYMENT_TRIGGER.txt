@@ -1,0 +1,7 @@
+Deployment triggered at: 2025-08-03 05:15:00
+Purpose: Add currency preferences API endpoint
+Changes:
+- Added currency preferences GET/PUT endpoint at /api/currency/preferences/
+- Copied currency_views_production.py to deployment package
+- Copied currency module with currency_data.py
+- Updated users/urls.py to include the currency endpoint
