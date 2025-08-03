@@ -21,3 +21,10 @@ from .filing_service import (
     get_tax_info,
     get_countries_list
 )
+from .payroll_tax_views import (
+    calculate_payroll_tax,
+    get_payroll_tax_settings,
+    create_payroll_tax_filing,
+    get_payroll_tax_filing_history,
+    get_payroll_tax_filing_status
+)

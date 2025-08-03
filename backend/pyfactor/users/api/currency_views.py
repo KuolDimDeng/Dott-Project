@@ -221,12 +221,17 @@ def get_currency_preferences(request):
             business_id = user.business_id
             logger.info(f"[Currency API] Found business_id on user: {business_id}")
         
-        # Method 2: Check if user has tenant_id (might be the same as business_id)
+        # Method 2: Check if user has tenant relationship (primary method)
+        elif hasattr(user, 'tenant') and user.tenant:
+            business_id = user.tenant.id
+            logger.info(f"[Currency API] Using tenant.id as business_id: {business_id}")
+        
+        # Method 3: Check if user has tenant_id attribute
         elif hasattr(user, 'tenant_id') and user.tenant_id:
             business_id = user.tenant_id
             logger.info(f"[Currency API] Using tenant_id as business_id: {business_id}")
         
-        # Method 3: Try to get profile
+        # Method 4: Try to get profile
         else:
             try:
                 profile = UserProfile.objects.filter(user=user).first()

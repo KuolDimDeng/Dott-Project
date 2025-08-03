@@ -103,11 +103,25 @@ class SessionTokenAuthentication(BaseAuthentication):
             request.session_obj = session
             
             # Set RLS tenant context if user has a tenant
-            if hasattr(user, 'tenant_id') and user.tenant_id:
-                logger.debug(f"[SessionTokenAuth] Setting RLS context for tenant: {user.tenant_id}")
-                set_tenant_context(str(user.tenant_id))
+            tenant_id = None
+            if hasattr(user, 'tenant') and user.tenant:
+                tenant_id = user.tenant.id
+                logger.debug(f"[SessionTokenAuth] Found tenant via relationship: {tenant_id}")
+            elif hasattr(user, 'tenant_id') and user.tenant_id:
+                tenant_id = user.tenant_id
+                logger.debug(f"[SessionTokenAuth] Found tenant_id attribute: {tenant_id}")
+            elif hasattr(user, 'business_id') and user.business_id:
+                tenant_id = user.business_id
+                logger.debug(f"[SessionTokenAuth] Using business_id as tenant: {tenant_id}")
+            
+            if tenant_id:
+                logger.debug(f"[SessionTokenAuth] Setting RLS context for tenant: {tenant_id}")
+                set_tenant_context(str(tenant_id))
                 # Store tenant_id on request for middleware/views
-                request.tenant_id = user.tenant_id
+                request.tenant_id = tenant_id
+                # Also set tenant_id on user for backward compatibility
+                if not hasattr(user, 'tenant_id'):
+                    user.tenant_id = tenant_id
             else:
                 logger.debug(f"[SessionTokenAuth] User {user.email} has no tenant_id")
                 clear_tenant_context()

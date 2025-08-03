@@ -46,6 +46,11 @@ class PayrollRun(TenantAwareModel):
         ('self', 'Self-Service'),
     ], default='full')
     
+    # Fee tracking
+    total_processing_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_direct_deposit_fees = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    employer_total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
     # For international self-service
     filing_instructions = models.TextField(blank=True, null=True)
     tax_authority_links = models.JSONField(default=dict, blank=True, null=True)
@@ -113,6 +118,16 @@ class PayrollTransaction(TenantAwareModel):
     state_unemployment_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Employee portion if applicable
     local_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     local_tax_jurisdiction = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Employer-side taxes and fees
+    employer_social_security_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    employer_medicare_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    employer_federal_unemployment_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    employer_state_unemployment_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Processing fees
+    processing_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    direct_deposit_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     def __str__(self):
         timesheet_info = f" - Timesheet: {self.timesheet.timesheet_number}" if self.timesheet else ""

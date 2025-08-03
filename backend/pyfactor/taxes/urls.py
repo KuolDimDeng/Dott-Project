@@ -45,6 +45,13 @@ from .views.filing_service import (
     get_tax_info,
     get_countries_list
 )
+from .views.payroll_tax_views import (
+    calculate_payroll_tax,
+    get_payroll_tax_settings,
+    create_payroll_tax_filing,
+    get_payroll_tax_filing_history,
+    get_payroll_tax_filing_status
+)
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -119,8 +126,12 @@ urlpatterns = [
     path('sales-data/', get_sales_data, name='tax-sales-data'),
     path('info/', get_tax_info, name='tax-info'),
     
-    # Payroll tax endpoints (temporarily disabled)
-    # path('payroll/', include('taxes.payroll.urls')),
+    # Payroll tax endpoints
+    path('payroll/calculate/', calculate_payroll_tax, name='payroll-tax-calculate'),
+    path('payroll/settings/', get_payroll_tax_settings, name='payroll-tax-settings'),
+    path('payroll/filing/create/', create_payroll_tax_filing, name='payroll-tax-filing-create'),
+    path('payroll/filing/history/', get_payroll_tax_filing_history, name='payroll-tax-filing-history'),
+    path('payroll/filing/<int:filing_id>/status/', get_payroll_tax_filing_status, name='payroll-tax-filing-status'),
     
     # Year-end tax form endpoints (temporarily disabled)
     # path('year-end/', include('taxes.year_end.urls')),
