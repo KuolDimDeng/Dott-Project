@@ -21,25 +21,24 @@ export async function GET(request) {
       fullValue: c.value // Temporarily log full value for debugging
     })));
     
-    // Construct the full URL for the request
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = request.headers.get('host') || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    // Use proxy endpoint
-    const rewritePath = '/api/proxy/users/api/currency/preferences';
-    const fullUrl = `${baseUrl}${rewritePath}`;
+    // Direct backend call
+    const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/users/api/currency/preferences`;
     
-    console.log('📡 [Currency Preferences] Using URL:', fullUrl);
-    console.log('📡 [Currency Preferences] Headers:', {
-      host: request.headers.get('host'),
-      cookie: request.headers.get('cookie') ? 'present' : 'missing'
-    });
+    console.log('📡 [Currency Preferences] Using backend URL:', backendUrl);
     
-    const response = await fetch(fullUrl, {
+    // Get session cookie
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie) {
+      return createErrorResponse(new Error('Not authenticated'), 401);
+    }
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
+        'Cookie': `sid=${sidCookie.value}`,
       },
       credentials: 'include'
     });
@@ -86,22 +85,25 @@ export async function PUT(request) {
     const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
     
     try {
-      // Use proxy endpoint
-      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-      const host = request.headers.get('host') || 'localhost:3000';
-      const baseUrl = `${protocol}://${host}`;
-      const rewritePath = '/api/proxy/users/api/currency/preferences';
-      const fullUrl = `${baseUrl}${rewritePath}`;
-      console.log('🚀 [Currency Preferences] Using proxy URL:', fullUrl);
+      // Direct backend call
+      const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
+      const backendUrl = `${BACKEND_URL}/users/api/currency/preferences`;
+      console.log('🚀 [Currency Preferences] Using backend URL:', backendUrl);
       
-      const response = await fetch(fullUrl, {
+      // Get session cookie
+      const cookieStore = cookies();
+      const sidCookie = cookieStore.get('sid');
+      
+      if (!sidCookie) {
+        return createErrorResponse(new Error('Not authenticated'), 401);
+      }
+      
+      const response = await fetch(backendUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Cookie': request.headers.get('cookie') || '',
-          'X-Forwarded-For': request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '',
-          'User-Agent': request.headers.get('user-agent') || '',
+          'Cookie': `sid=${sidCookie.value}`,
         },
         body: JSON.stringify(body),
         signal: controller.signal,

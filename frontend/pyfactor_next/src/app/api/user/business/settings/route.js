@@ -10,17 +10,15 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Construct the proxy URL
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = request.headers.get('host') || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    const proxyUrl = `${baseUrl}/api/proxy/users/api/business/settings`;
+    // Direct backend call
+    const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/users/api/business/settings`;
 
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
+        'Cookie': `sid=${sidCookie.value}`,
       },
       credentials: 'include'
     });
@@ -64,18 +62,16 @@ export async function PATCH(request) {
 
     const body = await request.json();
     
-    // Construct the proxy URL
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = request.headers.get('host') || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    const proxyUrl = `${baseUrl}/api/proxy/users/api/business/settings`;
+    // Direct backend call
+    const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/users/api/business/settings`;
 
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(backendUrl, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
+        'Cookie': `sid=${sidCookie.value}`,
       },
       body: JSON.stringify(body),
       credentials: 'include'
