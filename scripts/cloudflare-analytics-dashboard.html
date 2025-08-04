@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dott - Cloudflare Analytics Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric {
+            display: inline-block;
+            margin: 10px 20px;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .status-ok { color: #22c55e; }
+        .status-warning { color: #f59e0b; }
+        .status-error { color: #ef4444; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 8px;
+        }
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cloudflare Analytics Dashboard</h1>
+        
+        <div class="card">
+            <h2>Real-time Metrics</h2>
+            <div id="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="requests">-</div>
+                    <div class="metric-label">Requests (24h)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="bandwidth">-</div>
+                    <div class="metric-label">Bandwidth (GB)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="cache-hit-rate">-</div>
+                    <div class="metric-label">Cache Hit Rate</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="threats">-</div>
+                    <div class="metric-label">Threats Blocked</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Performance Monitoring</h2>
+            <div id="performance-alerts"></div>
+            <canvas id="performance-chart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Cloudflare Dashboard</h2>
+            <p>Access full analytics at: <a href="https://dash.cloudflare.com" target="_blank">Cloudflare Dashboard</a></p>
+            <iframe src="https://dash.cloudflare.com/analytics" id="cf-frame"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Simulated real-time metrics (replace with actual API calls)
+        function updateMetrics() {
+            // In production, these would come from Cloudflare API
+            document.getElementById('requests').textContent = '1.2M';
+            document.getElementById('bandwidth').textContent = '245';
+            document.getElementById('cache-hit-rate').textContent = '87%';
+            document.getElementById('threats').textContent = '342';
+        }
+
+        // Check performance thresholds
+        function checkPerformance() {
+            const alerts = document.getElementById('performance-alerts');
+            alerts.innerHTML = '';
+
+            // Example alerts (customize based on your thresholds)
+            const metrics = {
+                'Page Load Time': { value: 1.2, threshold: 3, unit: 's' },
+                'Time to First Byte': { value: 0.3, threshold: 0.5, unit: 's' },
+                'Cache Hit Rate': { value: 87, threshold: 80, unit: '%' },
+                'Error Rate': { value: 0.2, threshold: 1, unit: '%' }
+            };
+
+            for (const [metric, data] of Object.entries(metrics)) {
+                if (data.value > data.threshold && metric !== 'Cache Hit Rate') {
+                    alerts.innerHTML += `
+                        <div class="alert">
+                            ⚠️ ${metric} is ${data.value}${data.unit} (threshold: ${data.threshold}${data.unit})
+                        </div>
+                    `;
+                }
+            }
+
+            if (!alerts.innerHTML) {
+                alerts.innerHTML = '<p class="status-ok">✅ All performance metrics within normal range</p>';
+            }
+        }
+
+        // Update every 30 seconds
+        updateMetrics();
+        checkPerformance();
+        setInterval(() => {
+            updateMetrics();
+            checkPerformance();
+        }, 30000);
+    </script>
+</body>
+</html>
