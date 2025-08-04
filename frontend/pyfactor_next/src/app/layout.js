@@ -3,6 +3,7 @@ import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
 import ChunkErrorHandler from '@/components/ChunkErrorHandler';
+import '@/utils/bindPolyfill';
 import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
 import Providers from '@/providers';
 import { headers } from 'next/headers';
