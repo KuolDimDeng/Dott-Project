@@ -76,7 +76,8 @@ export async function POST(request) {
       // When secrets are missing, proxy through backend password login endpoint
       addDebugEntry('Auth0 secrets not available, proxying through backend');
       
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      // Always use the correct production API URL
+      const API_URL = 'https://api.dottapps.com';
       const cookieStore = cookies();
       
       addDebugEntry('Backend proxy configuration', {
