@@ -11,13 +11,30 @@ export async function apiFetch(endpoint, options = {}) {
     endpoint = '/' + endpoint;
   }
   
-  // For auth endpoints, always use the API domain
+  // Determine which domain to use
   let url;
-  if (endpoint.startsWith('/api/auth/') || endpoint.startsWith('/api/sessions/')) {
-    // Auth endpoints must go to the API domain
-    url = `${API_CONFIG.BASE_URL}${endpoint}`;
+  
+  // These are Next.js API routes that should stay on the frontend domain
+  const frontendRoutes = [
+    '/api/auth/consolidated-login',
+    '/api/auth/authenticate',
+    '/api/auth/bridge-session',
+    '/api/auth/establish-session',
+    '/api/auth/forgot-password',
+    '/api/auth/resend-verification',
+    '/api/auth/signup',
+    '/api/pricing',
+    '/api/settings'
+  ];
+  
+  // Check if this is a frontend route
+  const isFrontendRoute = frontendRoutes.some(route => endpoint.startsWith(route));
+  
+  if (isFrontendRoute) {
+    // Frontend routes stay on current domain
+    url = endpoint;
   } else if (endpoint.startsWith('/api/')) {
-    // Other API endpoints also go to API domain
+    // All other API endpoints go to the backend API domain
     url = `${API_CONFIG.BASE_URL}${endpoint}`;
   } else {
     // Non-API endpoints stay on current domain
