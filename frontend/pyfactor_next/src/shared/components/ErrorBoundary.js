@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import * as Sentry from '@sentry/react';
 import { notifyError } from '@/utils/notifications';
 
 /**
@@ -26,17 +25,19 @@ class ErrorBoundary extends React.Component {
       console.error('ErrorBoundary caught:', error, errorInfo);
     }
 
-    // Log to Sentry
-    Sentry.captureException(error, {
-      contexts: {
-        react: {
-          componentStack: errorInfo.componentStack,
-        },
-      },
-      tags: {
-        component: this.props.name || 'Unknown',
-      },
-    });
+    // Log error details (can be sent to monitoring service)
+    const errorDetails = {
+      error: error.toString(),
+      componentStack: errorInfo.componentStack,
+      component: this.props.name || 'Unknown',
+      timestamp: new Date().toISOString(),
+    };
+    
+    // In production, send to monitoring service
+    if (process.env.NODE_ENV === 'production') {
+      // TODO: Send to your monitoring service
+      console.error('Error boundary caught:', errorDetails);
+    }
 
     // Show user notification
     notifyError('Something went wrong. Please refresh the page.');

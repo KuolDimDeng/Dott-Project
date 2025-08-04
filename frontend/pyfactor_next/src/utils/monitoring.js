@@ -3,7 +3,7 @@
  * Tracks performance, errors, and usage metrics
  */
 
-import * as Sentry from '@sentry/nextjs';
+// Monitoring utilities - can integrate with Sentry or other services
 
 // Performance monitoring
 export const performanceMonitor = {
@@ -20,14 +20,16 @@ export const performanceMonitor = {
     if (duration > 100) {
       console.warn(`[Performance] ${componentName} took ${duration.toFixed(2)}ms to render`);
       
-      // Send to Sentry
-      Sentry.captureMessage(`Slow component render: ${componentName}`, {
-        level: 'warning',
-        tags: {
-          component: componentName,
-          duration: Math.round(duration),
-        },
-      });
+      // Log to monitoring service
+      if (typeof window !== 'undefined' && window.captureMessage) {
+        window.captureMessage(`Slow component render: ${componentName}`, {
+          level: 'warning',
+          tags: {
+            component: componentName,
+            duration: Math.round(duration),
+          },
+        });
+      }
     }
 
     // Send to analytics
@@ -56,13 +58,15 @@ export const performanceMonitor = {
       if (duration > 1000) {
         console.warn(`[API Performance] ${endpoint} took ${duration.toFixed(2)}ms`);
         
-        Sentry.captureMessage(`Slow API call: ${endpoint}`, {
-          level: 'warning',
-          tags: {
-            endpoint,
-            duration: Math.round(duration),
-          },
-        });
+        if (typeof window !== 'undefined' && window.captureMessage) {
+          window.captureMessage(`Slow API call: ${endpoint}`, {
+            level: 'warning',
+            tags: {
+              endpoint,
+              duration: Math.round(duration),
+            },
+          });
+        }
       }
 
       // Track success
@@ -96,12 +100,14 @@ export const performanceMonitor = {
     if (usagePercent > 80) {
       console.warn('[Memory] High memory usage detected:', memoryInfo);
       
-      Sentry.captureMessage('High memory usage', {
-        level: 'warning',
-        contexts: {
-          memory: memoryInfo,
-        },
-      });
+      if (typeof window !== 'undefined' && window.captureMessage) {
+        window.captureMessage('High memory usage', {
+          level: 'warning',
+          contexts: {
+            memory: memoryInfo,
+          },
+        });
+      }
     }
 
     return memoryInfo;
@@ -112,13 +118,15 @@ export const performanceMonitor = {
 export const errorTracker = {
   // Track user actions that lead to errors
   trackUserAction: (action, metadata = {}) => {
-    Sentry.addBreadcrumb({
-      message: action,
-      category: 'user',
-      level: 'info',
-      data: metadata,
-      timestamp: Date.now() / 1000,
-    });
+    if (typeof window !== 'undefined' && window.addBreadcrumb) {
+      window.addBreadcrumb({
+        message: action,
+        category: 'user',
+        level: 'info',
+        data: metadata,
+        timestamp: Date.now() / 1000,
+      });
+    }
   },
 
   // Track feature usage
@@ -141,14 +149,16 @@ export const errorTracker = {
   trackError: (error, context = {}) => {
     console.error('[Error Tracker]', error);
     
-    Sentry.captureException(error, {
-      contexts: {
-        custom: context,
-      },
-      tags: {
-        ...context.tags,
-      },
-    });
+    if (typeof window !== 'undefined' && window.captureException) {
+      window.captureException(error, {
+        contexts: {
+          custom: context,
+        },
+        tags: {
+          ...context.tags,
+        },
+      });
+    }
   },
 };
 
