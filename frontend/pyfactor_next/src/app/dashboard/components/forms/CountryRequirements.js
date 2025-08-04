@@ -1,40 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-  Chip,
-  Alert,
-  Paper,
-  Link,
-  CircularProgress,
-  TextField,
-  InputAdornment,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Public as PublicIcon,
-  Schedule as ScheduleIcon,
-  Receipt as ReceiptIcon,
-  Payment as PaymentIcon,
-  Description as DescriptionIcon,
-  Language as LanguageIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon
-} from '@mui/icons-material';
+import { 
+  MagnifyingGlassIcon, 
+  GlobeAltIcon, 
+  ClockIcon, 
+  DocumentTextIcon, 
+  CreditCardIcon, 
+  LanguageIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
 
 const CountryRequirements = () => {
   const [countries, setCountries] = useState([]);
@@ -96,13 +72,13 @@ const CountryRequirements = () => {
   const getFilingFrequencyColor = (frequency) => {
     switch (frequency) {
       case 'monthly':
-        return 'error';
+        return 'bg-red-100 text-red-800';
       case 'quarterly':
-        return 'warning';
+        return 'bg-yellow-100 text-yellow-800';
       case 'annual':
-        return 'success';
+        return 'bg-green-100 text-green-800';
       default:
-        return 'default';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -112,272 +88,203 @@ const CountryRequirements = () => {
   );
 
   return (
-    <Box sx={{ p: 3 }}>
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">
         Global Tax Filing Requirements
-      </Typography>
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
+      </h1>
+      <p className="text-gray-600 mb-8">
         View tax filing requirements, deadlines, and fees for all supported countries
-      </Typography>
+      </p>
 
       {/* Country Selection */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Search countries..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
           />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
-            <InputLabel>Select Country</InputLabel>
-            <Select
-              value={selectedCountry}
-              label="Select Country"
-              onChange={(e) => setSelectedCountry(e.target.value)}
-            >
-              {filteredCountries.map((country) => (
-                <MenuItem key={country.code} value={country.code}>
-                  {country.name} ({country.code})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+        </div>
+        
+        <div>
+          <select
+            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            value={selectedCountry}
+            onChange={(e) => setSelectedCountry(e.target.value)}
+          >
+            <option value="">Select Country</option>
+            {filteredCountries.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name} ({country.code})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {/* Country Information */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
       ) : countryInfo ? (
-        <Grid container spacing={3}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Basic Information */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <PublicIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">
-                    Basic Information
-                  </Typography>
-                </Box>
-                
-                <List disablePadding>
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Tax Authority"
-                      secondary={countryInfo.tax_authority_name || 'Not specified'}
-                    />
-                  </ListItem>
-                  <Divider />
-                  
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Tax Type"
-                      secondary={countryInfo.tax_type?.toUpperCase() || 'N/A'}
-                    />
-                  </ListItem>
-                  <Divider />
-                  
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Standard Tax Rate"
-                      secondary={`${(countryInfo.rate * 100).toFixed(2)}%`}
-                    />
-                  </ListItem>
-                  <Divider />
-                  
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Main Form"
-                      secondary={countryInfo.main_form_name || 'Not specified'}
-                    />
-                  </ListItem>
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="flex items-center mb-4">
+              <GlobeAltIcon className="h-6 w-6 text-blue-600 mr-2" />
+              <h2 className="text-xl font-semibold">Basic Information</h2>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-600">Tax Authority</p>
+                <p className="font-medium">{countryInfo.tax_authority_name || 'Not specified'}</p>
+              </div>
+              
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-600">Tax Type</p>
+                <p className="font-medium">{countryInfo.tax_type?.toUpperCase() || 'N/A'}</p>
+              </div>
+              
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-600">Standard Tax Rate</p>
+                <p className="font-medium">{(countryInfo.rate * 100).toFixed(2)}%</p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-600">Main Form</p>
+                <p className="font-medium">{countryInfo.main_form_name || 'Not specified'}</p>
+              </div>
+            </div>
+          </div>
 
           {/* Filing Requirements */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <ScheduleIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">
-                    Filing Requirements
-                  </Typography>
-                </Box>
-                
-                <List disablePadding>
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Filing Frequency"
-                      secondary={
-                        <Chip
-                          label={countryInfo.filing_frequency || 'Not specified'}
-                          color={getFilingFrequencyColor(countryInfo.filing_frequency)}
-                          size="small"
-                        />
-                      }
-                    />
-                  </ListItem>
-                  <Divider />
-                  
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Filing Deadline"
-                      secondary={
-                        countryInfo.filing_day_of_month 
-                          ? `${countryInfo.filing_day_of_month}th of each month`
-                          : 'Varies'
-                      }
-                    />
-                  </ListItem>
-                  <Divider />
-                  
-                  <ListItem disablePadding>
-                    <ListItemText
-                      primary="Online Filing"
-                      secondary={
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          {countryInfo.online_filing_available ? (
-                            <>
-                              <CheckCircleIcon color="success" fontSize="small" sx={{ mr: 1 }} />
-                              Available
-                            </>
-                          ) : (
-                            <>
-                              <CancelIcon color="error" fontSize="small" sx={{ mr: 1 }} />
-                              Not Available
-                            </>
-                          )}
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  
-                  {countryInfo.online_portal_name && (
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="flex items-center mb-4">
+              <ClockIcon className="h-6 w-6 text-blue-600 mr-2" />
+              <h2 className="text-xl font-semibold">Filing Requirements</h2>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-600">Filing Frequency</p>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getFilingFrequencyColor(countryInfo.filing_frequency)}`}>
+                  {countryInfo.filing_frequency || 'Not specified'}
+                </span>
+              </div>
+              
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-600">Filing Deadline</p>
+                <p className="font-medium">
+                  {countryInfo.filing_day_of_month 
+                    ? `${countryInfo.filing_day_of_month}th of each month`
+                    : 'Varies'}
+                </p>
+              </div>
+              
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-600">Online Filing</p>
+                <div className="flex items-center">
+                  {countryInfo.online_filing_available ? (
                     <>
-                      <Divider />
-                      <ListItem disablePadding>
-                        <ListItemText
-                          primary="Online Portal"
-                          secondary={
-                            countryInfo.online_portal_url ? (
-                              <Link 
-                                href={countryInfo.online_portal_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                              >
-                                {countryInfo.online_portal_name}
-                              </Link>
-                            ) : (
-                              countryInfo.online_portal_name
-                            )
-                          }
-                        />
-                      </ListItem>
+                      <CheckCircleIcon className="h-5 w-5 text-green-500 mr-1" />
+                      <span className="text-green-700">Available</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircleIcon className="h-5 w-5 text-red-500 mr-1" />
+                      <span className="text-red-700">Not Available</span>
                     </>
                   )}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
+                </div>
+              </div>
+              
+              {countryInfo.online_portal_name && (
+                <div>
+                  <p className="text-sm text-gray-600">Online Portal</p>
+                  {countryInfo.online_portal_url ? (
+                    <a 
+                      href={countryInfo.online_portal_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {countryInfo.online_portal_name}
+                    </a>
+                  ) : (
+                    <p className="font-medium">{countryInfo.online_portal_name}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Service Pricing */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <PaymentIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">
-                    Our Service Pricing
-                  </Typography>
-                </Box>
-                
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: 'grey.50' }}>
-                      <DescriptionIcon color="primary" sx={{ mb: 1 }} />
-                      <Typography variant="subtitle2" color="textSecondary">
-                        Manual Filing
-                      </Typography>
-                      <Typography variant="h5" color="primary">
-                        {formatCurrency(countryInfo.manual_filing_fee)}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        We prepare, you file
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  
-                  <Grid item xs={6}>
-                    <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: 'grey.50' }}>
-                      <LanguageIcon color="primary" sx={{ mb: 1 }} />
-                      <Typography variant="subtitle2" color="textSecondary">
-                        Online Filing
-                      </Typography>
-                      <Typography variant="h5" color="primary">
-                        {formatCurrency(countryInfo.online_filing_fee)}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Complete service
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
-                
-                {!countryInfo.online_filing_available && (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    Online filing is not available for this country. 
-                    Only manual filing service is offered.
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="flex items-center mb-4">
+              <CreditCardIcon className="h-6 w-6 text-blue-600 mr-2" />
+              <h2 className="text-xl font-semibold">Our Service Pricing</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <DocumentTextIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-1">Manual Filing</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {formatCurrency(countryInfo.manual_filing_fee)}
+                </p>
+                <p className="text-xs text-gray-500">We prepare, you file</p>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <LanguageIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-1">Online Filing</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {formatCurrency(countryInfo.online_filing_fee)}
+                </p>
+                <p className="text-xs text-gray-500">Complete service</p>
+              </div>
+            </div>
+            
+            {!countryInfo.online_filing_available && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  Online filing is not available for this country. 
+                  Only manual filing service is offered.
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Filing Instructions */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <ReceiptIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">
-                    Filing Instructions
-                  </Typography>
-                </Box>
-                
-                {countryInfo.filing_instructions ? (
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    {countryInfo.filing_instructions}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="textSecondary">
-                    Detailed filing instructions will be provided with your tax report.
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="flex items-center mb-4">
+              <DocumentTextIcon className="h-6 w-6 text-blue-600 mr-2" />
+              <h2 className="text-xl font-semibold">Filing Instructions</h2>
+            </div>
+            
+            {countryInfo.filing_instructions ? (
+              <p className="text-gray-700 leading-relaxed">
+                {countryInfo.filing_instructions}
+              </p>
+            ) : (
+              <p className="text-gray-500">
+                Detailed filing instructions will be provided with your tax report.
+              </p>
+            )}
+          </div>
 
           {/* Data Source Information */}
-          <Grid item xs={12}>
-            <Alert severity="info">
-              <Typography variant="body2">
+          <div className="md:col-span-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <p className="text-sm text-blue-900">
                 <strong>Data Accuracy:</strong> This information is sourced from official government 
                 websites and updated regularly. However, tax requirements can change frequently. 
                 Always verify current requirements with the local tax authority before filing.
@@ -395,20 +302,24 @@ const CountryRequirements = () => {
                     <strong>Last Verified:</strong> {new Date(countryInfo.ai_last_verified).toLocaleDateString()}
                   </>
                 )}
-              </Typography>
-            </Alert>
-          </Grid>
-        </Grid>
+              </p>
+            </div>
+          </div>
+        </div>
       ) : selectedCountry ? (
-        <Alert severity="warning">
-          No information available for the selected country.
-        </Alert>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+          <p className="text-yellow-800">
+            No information available for the selected country.
+          </p>
+        </div>
       ) : (
-        <Alert severity="info">
-          Please select a country to view its tax filing requirements.
-        </Alert>
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+          <p className="text-blue-800">
+            Please select a country to view its tax filing requirements.
+          </p>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 
