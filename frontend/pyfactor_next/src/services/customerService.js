@@ -1,14 +1,7 @@
 import { logger } from '@/utils/logger';
-
-// Always use the correct production API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+import api from '@/utils/apiFetch';
 
 class CustomerService {
-  constructor() {
-    // Log the API URL being used
-    logger.info('[CustomerService] Using API URL:', API_BASE_URL);
-  }
-
   async getCustomers(params = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -24,17 +17,8 @@ class CustomerService {
       if (params.country) queryParams.append('country', params.country);
       if (params.has_purchases) queryParams.append('has_purchases', params.has_purchases);
       
-      const url = `${API_BASE_URL}/api/customers?${queryParams}`;
-      logger.info('[CustomerService] Fetching customers from:', url);
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
+      const endpoint = `/api/customers?${queryParams}`;
+      const response = await api.get(endpoint);
       const data = await response.json();
       
       if (!response.ok) {
@@ -50,17 +34,7 @@ class CustomerService {
 
   async getCustomer(id) {
     try {
-      const url = `${API_BASE_URL}/api/customers/${id}`;
-      logger.info('[CustomerService] Fetching customer from:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
+      const response = await api.get(`/api/customers/${id}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -76,18 +50,7 @@ class CustomerService {
 
   async createCustomer(customerData) {
     try {
-      const url = `${API_BASE_URL}/api/customers`;
-      logger.info('[CustomerService] Creating customer at:', url);
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(customerData),
-      });
-
+      const response = await api.post('/api/customers', customerData);
       const data = await response.json();
       
       if (!response.ok) {
@@ -103,18 +66,7 @@ class CustomerService {
 
   async updateCustomer(id, customerData) {
     try {
-      const url = `${API_BASE_URL}/api/customers/${id}`;
-      logger.info('[CustomerService] Updating customer at:', url);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(customerData),
-      });
-
+      const response = await api.put(`/api/customers/${id}`, customerData);
       const data = await response.json();
       
       if (!response.ok) {
@@ -130,17 +82,8 @@ class CustomerService {
 
   async deleteCustomer(id) {
     try {
-      const url = `${API_BASE_URL}/api/customers/${id}`;
-      logger.info('[CustomerService] Deleting customer at:', url);
+      const response = await api.delete(`/api/customers/${id}`);
       
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to delete customer');

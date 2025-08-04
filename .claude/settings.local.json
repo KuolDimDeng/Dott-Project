@@ -251,7 +251,8 @@
       "Bash(./scripts/replace-mui-with-tailwind.sh:*)",
       "Bash(./scripts/fix-all-menu-pages.sh:*)",
       "Bash(./scripts/fix-csp-and-debug.sh:*)",
-      "Bash(/Users/kuoldeng/projectx/scripts/fix-csp-and-debug.sh:*)"
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-csp-and-debug.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-api-url-proper.sh)"
     ],
     "deny": []
   }

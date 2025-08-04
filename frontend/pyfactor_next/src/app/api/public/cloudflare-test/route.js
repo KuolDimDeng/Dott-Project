@@ -64,7 +64,7 @@ export async function GET(request) {
       results.diagnosis = {
         issue: 'CLOUDFLARE_ERROR_1000',
         message: 'DNS is pointing to a prohibited IP (Cloudflare to Cloudflare)',
-        currentSetup: 'api.dottapps.com → dott-api.onrender.com → Cloudflare Error',
+        currentSetup: 'api.dottapps.com → api.dottapps.com → Cloudflare Error',
         requiredSetup: 'api.dottapps.com → [tunnel-id].cfargotunnel.com → Your Backend'
       };
       
@@ -72,7 +72,7 @@ export async function GET(request) {
         '🚨 URGENT: Update DNS Configuration',
         '1. Go to Cloudflare Dashboard > DNS',
         '2. Find the "api" CNAME record',
-        '3. Change target from "dott-api.onrender.com" to your tunnel hostname',
+        '3. Change target from "api.dottapps.com" to your tunnel hostname',
         '4. The tunnel hostname format is: [tunnel-id].cfargotunnel.com',
         '5. To find it: Zero Trust > Access > Tunnels > dott-backend-tunnel'
       ];

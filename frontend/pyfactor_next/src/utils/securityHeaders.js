@@ -23,7 +23,7 @@ export function addSecurityHeaders(response, nonce = null) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
     "font-src 'self' https://fonts.gstatic.com https://client.crisp.chat data:",
     "img-src 'self' data: blob: https: https://*.dottapps.com",
-    "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://dott-api-y26w.onrender.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://app.posthog.com https://*.posthog.com https://*.plaid.com https://*.cloudflare.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.sentry.io",
+    "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://app.posthog.com https://*.posthog.com https://*.plaid.com https://*.cloudflare.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.sentry.io",
     "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
     "frame-src 'self' https://*.auth0.com https://*.stripe.com https://client.crisp.chat https://*.plaid.com",
     "frame-ancestors 'none'",

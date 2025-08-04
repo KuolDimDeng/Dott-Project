@@ -532,7 +532,7 @@ serverSafeAxiosInstance.interceptors.request.use(
       // Always use HTTPS to avoid CORS issues
       const backendUrl = process.env.BACKEND_API_URL || 
         process.env.NEXT_PUBLIC_API_URL || 
-        'https://127.0.0.1:8000';
+        'https://api.dottapps.com';
       
       if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
         console.log(`[ServerAxiosConfig] Using backend URL: ${backendUrl} for request: ${config.url}`);
