@@ -1,6 +1,6 @@
 'use client';
+
 import api from '@/utils/apiFetch';
-'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';

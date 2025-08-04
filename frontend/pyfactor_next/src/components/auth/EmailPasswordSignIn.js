@@ -1,5 +1,6 @@
-import api from '@/utils/apiFetch';
 'use client';
+
+import api from '@/utils/apiFetch';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
