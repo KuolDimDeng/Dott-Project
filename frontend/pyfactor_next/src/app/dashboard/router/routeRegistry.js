@@ -166,6 +166,13 @@ export const routeRegistry = {
     description: 'Stock and inventory management'
   },
 
+  // Add missing inventory-supplies route
+  'inventory-supplies': {
+    component: enhancedLazy(() => import('../../inventory/components/InventoryManagement.js'), 'Inventory & Supplies'),
+    title: 'Inventory & Supplies',
+    description: 'Stock and supplies management'
+  },
+
   'suppliers': {
     component: enhancedLazy(() => import('../components/forms/SuppliersManagement.js'), 'Suppliers Management'),
     title: 'Suppliers',
