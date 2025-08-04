@@ -244,7 +244,8 @@
       "Bash(/Users/kuoldeng/projectx/scripts/fix-production-comprehensive.sh:*)",
       "Bash(/Users/kuoldeng/projectx/scripts/setup-cloudflare-analytics.sh:*)",
       "Bash(/Users/kuoldeng/projectx/scripts/test-health-endpoint.sh:*)",
-      "Bash(/Users/kuoldeng/projectx/scripts/fix-dashboard-routing.sh:*)"
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-dashboard-routing.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-missing-components.sh:*)"
     ],
     "deny": []
   }

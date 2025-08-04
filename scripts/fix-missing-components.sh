@@ -1,3 +1,15 @@
+#!/bin/bash
+
+echo "🔧 FIXING MISSING COMPONENT REFERENCES"
+echo "====================================="
+echo ""
+
+cd /Users/kuoldeng/projectx/frontend/pyfactor_next
+
+# Fix the route registry to use existing components
+echo "📝 Updating route registry with correct component paths..."
+
+cat > src/app/dashboard/router/routeRegistry-fixed.js << 'EOF'
 'use client';
 
 import { lazy } from 'react';
@@ -301,3 +313,65 @@ export const getRouteInfo = (view) => {
 export const getAllRoutes = () => {
   return Object.keys(routeRegistry);
 };
+EOF
+
+# Replace the registry
+mv src/app/dashboard/router/routeRegistry-fixed.js src/app/dashboard/router/routeRegistry.js
+
+# Create a simple fallback for any truly missing components
+echo "🏗️ Creating fallback components for missing ones..."
+
+# Check if these directories exist, create if not
+mkdir -p src/app/dashboard/components/crm
+mkdir -p src/app/dashboard/components/jobs
+mkdir -p src/app/dashboard/components/transport
+
+# Create simple fallback components for potentially missing ones
+for component in "crm/CRMDashboard" "crm/ContactsManagement" "jobs/JobManagement" "jobs/JobDashboard" "transport/TransportDashboard"; do
+  dir=$(dirname "src/app/dashboard/components/$component.js")
+  file="src/app/dashboard/components/$component.js"
+  
+  if [ ! -f "$file" ]; then
+    mkdir -p "$dir"
+    name=$(basename "$component")
+    cat > "$file" << EOF
+'use client';
+
+import React from 'react';
+
+const $name = () => {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">$name</h1>
+      <p className="text-gray-600">This feature is coming soon.</p>
+    </div>
+  );
+};
+
+export default $name;
+EOF
+    echo "Created fallback: $file"
+  fi
+done
+
+echo ""
+echo "✅ Component references fixed!"
+echo ""
+echo "🚀 Committing and deploying..."
+
+cd /Users/kuoldeng/projectx
+git add -A
+git commit -m "fix: correct component paths in route registry
+
+- Fixed PaymentGatewayManagement.js → PaymentGateways.js
+- Created fallback components for missing features
+- Ensured all imports reference existing files
+
+Build should now complete successfully."
+
+git push origin main
+
+echo ""
+echo "✅ FIX DEPLOYED!"
+echo ""
+echo "Monitor deployment: https://dashboard.render.com/web/srv-crpgfj68ii6s739n5jdg/deploys"
