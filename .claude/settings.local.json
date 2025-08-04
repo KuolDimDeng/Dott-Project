@@ -218,7 +218,24 @@
       "Bash(/tmp/add_browser_titles.sh:*)",
       "Bash(/tmp/add_browser_titles_fixed.sh:*)",
       "Bash(./test_currency_api.sh:*)",
-      "Bash(./security-fixes.sh)"
+      "Bash(./security-fixes.sh)",
+      "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=1536 --max-semi-space-size=32\" NEXT_TELEMETRY_DISABLED=1 pnpm run build:render-ultra-minimal)",
+      "Bash(./scripts/create-domain-structure.sh:*)",
+      "Bash(./scripts/extract-shared-components.sh:*)",
+      "Bash(./scripts/extract-product-domain.sh:*)",
+      "Bash(./scripts/test-domain-architecture.sh:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm next build --dry-run)",
+      "Bash(./scripts/migrate-product-management.sh:*)",
+      "Bash(./scripts/migrate-render-main-content.sh:*)",
+      "Bash(./scripts/migrate-api-client.sh:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" timeout 120 pnpm build)",
+      "Bash(./scripts/migrate-list-items.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/scripts/migrate-list-items-complete.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/scripts/migrate-appbar.sh:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" timeout 300 pnpm build)",
+      "Bash(./scripts/deploy-modular-architecture.sh:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=3072\" timeout 300 pnpm build)",
+      "Bash(PORT=3002 timeout 30 pnpm run dev)"
     ],
     "deny": []
   }

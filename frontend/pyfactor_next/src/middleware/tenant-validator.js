@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { secureLog } from '../utils/secureLogger';
 
 /**
  * Server-side middleware for validating tenant access
@@ -87,7 +88,7 @@ function getAuthToken(request) {
     // Priority 1: Authorization header (best practice)
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      console.log(`[DEBUG] getAuthToken: Found token in Authorization header`);
+      secureLog.session('[DEBUG] getAuthToken: Found token in Authorization header', authHeader.substring(7));
       return authHeader.substring(7);
     }
     
@@ -95,7 +96,7 @@ function getAuthToken(request) {
     const cognitoToken = request.headers.get('x-cognito-token') || 
                          request.headers.get('x-id-token');
     if (cognitoToken) {
-      console.log(`[DEBUG] getAuthToken: Found token in Cognito-specific header`);
+      secureLog.session('[DEBUG] getAuthToken: Found token in Cognito-specific header', cognitoToken);
       return cognitoToken;
     }
     
@@ -104,7 +105,7 @@ function getAuthToken(request) {
     if (lastAuthUser) {
       const cognitoToken = request.cookies.get(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.idToken`)?.value;
       if (cognitoToken) {
-        console.log(`[DEBUG] getAuthToken: Found Cognito token for user ${lastAuthUser}`);
+        secureLog.session(`[DEBUG] getAuthToken: Found Cognito token for user ${lastAuthUser}`, cognitoToken);
         return cognitoToken;
       }
     }
@@ -113,13 +114,13 @@ function getAuthToken(request) {
     // These are only checked for backward compatibility
     const idToken = request.cookies.get('idToken')?.value;
     if (idToken) {
-      console.log(`[DEBUG] getAuthToken: Found legacy idToken cookie (DEPRECATED)`);
+      secureLog.session('[DEBUG] getAuthToken: Found legacy idToken cookie (DEPRECATED)', idToken);
       return idToken;
     }
     
     const accessToken = request.cookies.get('accessToken')?.value;
     if (accessToken) {
-      console.log(`[DEBUG] getAuthToken: Found legacy accessToken cookie (DEPRECATED)`);
+      secureLog.session('[DEBUG] getAuthToken: Found legacy accessToken cookie (DEPRECATED)', accessToken);
       return accessToken;
     }
     

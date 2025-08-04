@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import { cookies } from 'next/headers';
+import { validateCSRFToken } from '@/utils/csrfProtection';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -211,6 +212,16 @@ export async function POST(request) {
   
   try {
     console.log('[Customers API] POST request received');
+    
+    // CSRF Protection
+    const csrfToken = request.headers.get('x-csrf-token');
+    if (!csrfToken) {
+      console.log('[Customers API] Missing CSRF token');
+      return NextResponse.json(
+        { error: 'Missing CSRF token' },
+        { status: 403 }
+      );
+    }
     
     // Get session from cookies
     const cookieStore = cookies();
