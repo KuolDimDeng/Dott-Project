@@ -137,76 +137,53 @@ const nextConfig = {
   
   // Webpack optimization for bundle size
   webpack: (config, { isServer, dev }) => {
-    // Add webpack plugin to track module initialization
     if (!isServer && !dev) {
-      console.log('🔧 [Webpack] Client-side production build optimization enabled');
-      console.log('🔧 [Webpack] Chunk splitting configuration active');
-      
-      // Skip TDZ Detection Plugin for now - causing compatibility issues
-      // Focus on conservative minification settings instead
-    }
-    
-    // Optimize chunk splitting
-    if (!isServer) {
+      // Industry standard: Merge small chunks to reduce HTTP requests
       config.optimization.splitChunks = {
         chunks: 'all',
         minSize: 20000,
-        maxSize: 244000,
+        maxAsyncRequests: 6,
+        maxInitialRequests: 4,
         cacheGroups: {
           default: false,
           vendors: false,
+          // Framework chunk
           framework: {
             name: 'framework',
-            chunks: 'all',
-            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription|next)[\\/]/,
             priority: 40,
-            enforce: true,
+            chunks: 'all',
           },
-          lib: {
-            test: /[\\/]node_modules[\\/]/,
+          // Main vendor chunk
+          vendor: {
             name: 'vendor',
+            test: /[\\/]node_modules[\\/]/,
             priority: 30,
             chunks: 'all',
             reuseExistingChunk: true,
-            enforce: true,
           },
+          // Application commons
           commons: {
             name: 'commons',
-            chunks: 'all',
             minChunks: 2,
             priority: 20,
-            reuseExistingChunk: true,
-            // Add enforcement to prevent circular dependencies
-            enforce: true,
-          },
-          hooks: {
-            // Separate chunk for hooks to prevent circular dependencies
-            name: 'hooks',
-            test: /[\\/]src[\\/]hooks[\\/]/,
             chunks: 'all',
-            priority: 25,
             reuseExistingChunk: true,
-            enforce: true,
           },
+          // Dashboard specific
           dashboard: {
-            // Separate chunk for dashboard components
             name: 'dashboard',
-            test: /[\\/]src[\\/]app[\\/]dashboard[\\/]/,
+            test: /[\\/]src[\\/](app|components)[\\/]dashboard[\\/]/,
+            priority: 15,
             chunks: 'all',
-            priority: 24,
-            reuseExistingChunk: true,
             enforce: true,
           },
-          // Remove the shared cacheGroup that's creating multiple commons chunks
         },
       };
       
-      // Enable minification using SWC
-      config.optimization.minimize = true;
-      
-      // Let Next.js use its default SWC minifier
+      // Limit parallel requests
+      config.optimization.runtimeChunk = 'single';
     }
-    
     return config;
   },
   

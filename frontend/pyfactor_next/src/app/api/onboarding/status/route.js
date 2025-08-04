@@ -1,146 +1,69 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-/**
- * Frontend API route to check onboarding status
- * Forwards request to backend /api/onboarding/status/ endpoint
- */
+const BACKEND_URL = process.env.BACKEND_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+
 export async function GET(request) {
   try {
     const cookieStore = await cookies();
-    
-    // Get session token - check for 'sid' cookie
     const sidCookie = cookieStore.get('sid');
-    const sessionToken = cookieStore.get('session_token');
-    const authSession = cookieStore.get('dott_auth_session');
     
-    // Log available cookies for debugging
-    console.log('[SERVER DEBUG] [Onboarding Status API] Available cookies:', {
+    console.log('[Onboarding Status] Cookie check:', {
       hasSid: !!sidCookie,
-      hasSessionToken: !!sessionToken,
-      hasAuthSession: !!authSession,
-      sidValue: sidCookie?.value?.substring(0, 8) + '...' || 'none'
+      cookieName: 'sid'
     });
     
-    if (!sidCookie && !sessionToken && !authSession) {
-      console.log('[SERVER ERROR] [Onboarding Status API] No session found in cookies');
+    if (!sidCookie) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
     
-    // Get backend API URL
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+    // Make backend request with proper headers
+    const backendUrl = `${BACKEND_URL}/api/onboarding/status/`;
     
-    // Get Auth0 access token for backend authentication
-    let accessToken = null;
-    try {
-      const tokenResponse = await fetch(`${request.nextUrl.origin}/api/auth/token`);
-      if (tokenResponse.ok) {
-        const tokenData = await tokenResponse.json();
-        accessToken = tokenData.accessToken;
-      }
-    } catch (tokenError) {
-      console.warn('[Onboarding Status API] Failed to get access token:', tokenError);
-    }
-    
-    // Prepare headers for backend request
-    const headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-    
-    // Add authentication - prefer sid cookie for session-based auth
-    if (sidCookie) {
-      headers['Cookie'] = `sid=${sidCookie.value}`;
-    } else if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-    } else if (sessionToken) {
-      headers['Authorization'] = `Session ${sessionToken.value}`;
-    } else if (authSession) {
-      headers['Cookie'] = `dott_auth_session=${authSession.value}`;
-    }
-    
-    console.debug('[Onboarding Status API] Calling backend endpoint', {
-      url: `${apiUrl}/api/onboarding/status/`,
-      hasAccessToken: !!accessToken,
-      hasSessionToken: !!sessionToken
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Cookie': `sid=${sidCookie.value}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        // Add Cloudflare headers
+        'CF-Connecting-IP': request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || '',
+        'CF-Ray': request.headers.get('CF-Ray') || '',
+      },
+      cache: 'no-store',
+      // Important: don't verify SSL in development
+      ...(process.env.NODE_ENV === 'development' ? { rejectUnauthorized: false } : {})
     });
     
-    // Call backend onboarding status endpoint
-    try {
-      const backendResponse = await fetch(`${apiUrl}/api/onboarding/status/`, {
-        method: 'GET',
-        headers: headers,
-        cache: 'no-store'
-      });
-      
-      if (!backendResponse.ok) {
-        const errorText = await backendResponse.text();
-        console.error('[Onboarding Status API] Backend request failed', {
-          status: backendResponse.status,
-          statusText: backendResponse.statusText,
-          error: errorText
-        });
-        
-        // Handle specific error cases
-        if (backendResponse.status === 401) {
-          return NextResponse.json({ 
-            error: 'Authentication required',
-            message: 'Session expired or invalid'
-          }, { status: 401 });
-        }
-        
-        return NextResponse.json({ 
-          error: 'Backend request failed',
-          message: `Status ${backendResponse.status}: ${backendResponse.statusText}`
-        }, { status: backendResponse.status });
-      }
-      
-      const data = await backendResponse.json();
-      console.debug('[Onboarding Status API] Backend response received', {
-        success: data.success,
-        hasData: !!data.data
-      });
-      
-      // Extract the data from the backend response
-      if (data.success && data.data) {
-        return NextResponse.json({
-          onboarding_status: data.data.onboarding_status,
-          current_step: data.data.current_step,
-          next_step: data.data.next_step,
-          completed_steps: data.data.completed_steps,
-          business_info_completed: data.data.business_info_completed,
-          subscription_selected: data.data.subscription_selected,
-          payment_completed: data.data.payment_completed,
-          setup_completed: data.data.setup_completed,
-          onboarding_completed: data.data.onboarding_completed,
-          selected_plan: data.data.selected_plan,
-          billing_cycle: data.data.billing_cycle,
-          needs_onboarding: !data.data.onboarding_completed,
-          source: 'backend-onboarding-status'
-        });
-      } else {
-        // Return the raw response if it doesn't match expected format
-        return NextResponse.json(data);
-      }
-      
-    } catch (fetchError) {
-      console.error('[Onboarding Status API] Network error calling backend:', {
-        error: fetchError.message,
-        stack: fetchError.stack
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Onboarding Status] Backend error:', {
+        status: response.status,
+        error: errorText
       });
       
       return NextResponse.json({ 
-        error: 'Network error',
-        message: 'Unable to connect to backend service'
-      }, { status: 503 });
+        error: 'Backend request failed',
+        status: response.status 
+      }, { status: response.status });
     }
     
-  } catch (error) {
-    console.error('[Onboarding Status API] Unexpected error:', {
-      error: error.message,
-      stack: error.stack
-    });
+    const data = await response.json();
     
+    // Return standardized response
+    if (data.success && data.data) {
+      return NextResponse.json({
+        onboarding_status: data.data.onboarding_status,
+        onboarding_completed: data.data.onboarding_completed,
+        needs_onboarding: !data.data.onboarding_completed,
+        source: 'backend'
+      });
+    }
+    
+    return NextResponse.json(data);
+    
+  } catch (error) {
+    console.error('[Onboarding Status] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error', message: error.message },
       { status: 500 }

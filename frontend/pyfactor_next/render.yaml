@@ -10,10 +10,15 @@ services:
         value: production
       - key: NODE_OPTIONS
         value: --max-old-space-size=3584
+      - key: PORT
+        value: 3000
+    buildCommand: npm run build:render
+    startCommand: npm run start
+    healthCheckPath: /api/health
     headers:
-      - path: /_next/static/css/*
-        name: Content-Type
-        value: text/css
-      - path: /_next/static/css/*
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /_next/static/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
