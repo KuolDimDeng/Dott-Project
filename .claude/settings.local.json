@@ -239,7 +239,8 @@
       "Bash(timeout 30 pnpm build)",
       "Bash(./scripts/emergency-production-fix.sh:*)",
       "Bash(npx update-browserslist-db:*)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=3072\" timeout 120 pnpm build)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=3072\" timeout 120 pnpm build)",
+      "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3584\" NEXT_TELEMETRY_DISABLED=1 timeout 120 pnpm build)"
     ],
     "deny": []
   }

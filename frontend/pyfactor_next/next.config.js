@@ -126,9 +126,6 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // Enable SWC minification
-  swcMinify: true,
-  
   // Compiler optimizations using SWC
   compiler: {
     // Remove console logs in production - but keep more for debugging
