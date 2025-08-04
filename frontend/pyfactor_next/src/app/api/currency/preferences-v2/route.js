@@ -4,8 +4,9 @@ export async function GET(request) {
   console.log('💠 [Currency V2] === GET REQUEST START ===');
   
   try {
-    // Use the Next.js rewrite path
-    const response = await fetch('http://localhost:3000/api/backend/api/currency/preferences/', {
+    // Use environment variable for backend URL
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -44,8 +45,9 @@ export async function PUT(request) {
     const body = await request.json();
     console.log('💠 [Currency V2] Request body:', body);
     
-    // Use the Next.js rewrite path
-    const response = await fetch('http://localhost:3000/api/backend/api/currency/preferences/', {
+    // Use environment variable for backend URL
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

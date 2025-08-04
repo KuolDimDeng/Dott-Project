@@ -41,7 +41,7 @@ export async function GET(request) {
     
     // Backend URL
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/api/users/api/currency/preferences`;
+    const backendUrl = `${BACKEND_URL}/api/currency/preferences`;
     
     log('info', 'Making backend request', { 
       url: backendUrl,
@@ -180,7 +180,7 @@ export async function PUT(request) {
     
     // Backend URL
     const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
-    const backendUrl = `${BACKEND_URL}/api/users/api/currency/preferences`;
+    const backendUrl = `${BACKEND_URL}/api/currency/preferences`;
     
     log('info', 'Making backend request', { 
       url: backendUrl,
