@@ -1,6 +1,7 @@
+import API_CONFIG from '@/config/api';
 import { logger } from '@/utils/logger';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 class VendorService {
   constructor() {

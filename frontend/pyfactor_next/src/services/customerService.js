@@ -1,8 +1,14 @@
 import { logger } from '@/utils/logger';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+// Always use the correct production API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 class CustomerService {
+  constructor() {
+    // Log the API URL being used
+    logger.info('[CustomerService] Using API URL:', API_BASE_URL);
+  }
+
   async getCustomers(params = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -17,8 +23,11 @@ class CustomerService {
       if (params.state) queryParams.append('state', params.state);
       if (params.country) queryParams.append('country', params.country);
       if (params.has_purchases) queryParams.append('has_purchases', params.has_purchases);
+      
+      const url = `${API_BASE_URL}/api/customers?${queryParams}`;
+      logger.info('[CustomerService] Fetching customers from:', url);
 
-      const response = await fetch(`${API_BASE_URL}/api/customers?${queryParams}`, {
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -41,7 +50,10 @@ class CustomerService {
 
   async getCustomer(id) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/${id}`, {
+      const url = `${API_BASE_URL}/api/customers/${id}`;
+      logger.info('[CustomerService] Fetching customer from:', url);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +76,10 @@ class CustomerService {
 
   async createCustomer(customerData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers`, {
+      const url = `${API_BASE_URL}/api/customers`;
+      logger.info('[CustomerService] Creating customer at:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +103,10 @@ class CustomerService {
 
   async updateCustomer(id, customerData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/${id}`, {
+      const url = `${API_BASE_URL}/api/customers/${id}`;
+      logger.info('[CustomerService] Updating customer at:', url);
+      
+      const response = await fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +130,10 @@ class CustomerService {
 
   async deleteCustomer(id) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/${id}`, {
+      const url = `${API_BASE_URL}/api/customers/${id}`;
+      logger.info('[CustomerService] Deleting customer at:', url);
+      
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -120,85 +141,14 @@ class CustomerService {
         credentials: 'include',
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || 'Failed to delete customer');
       }
 
-      return { success: true, data };
+      return { success: true };
     } catch (error) {
       logger.error('Error deleting customer:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async bulkDeleteCustomers(ids) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/bulk-delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ ids }),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete customers');
-      }
-
-      return { success: true, data };
-    } catch (error) {
-      logger.error('Error bulk deleting customers:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async getCustomerStats() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/stats`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch customer stats');
-      }
-
-      return { success: true, data };
-    } catch (error) {
-      logger.error('Error fetching customer stats:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async searchCustomers(query) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/search?q=${encodeURIComponent(query)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to search customers');
-      }
-
-      return { success: true, data };
-    } catch (error) {
-      logger.error('Error searching customers:', error);
       return { success: false, error: error.message };
     }
   }

@@ -249,7 +249,9 @@
       "Bash(./scripts/fix-geopricing-and-clear-caches.sh:*)",
       "Bash(./scripts/fix-all-menu-routes.sh:*)",
       "Bash(./scripts/replace-mui-with-tailwind.sh:*)",
-      "Bash(./scripts/fix-all-menu-pages.sh:*)"
+      "Bash(./scripts/fix-all-menu-pages.sh:*)",
+      "Bash(./scripts/fix-csp-and-debug.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-csp-and-debug.sh:*)"
     ],
     "deny": []
   }
