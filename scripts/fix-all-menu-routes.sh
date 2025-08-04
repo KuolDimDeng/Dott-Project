@@ -1,3 +1,16 @@
+#!/bin/bash
+
+echo "🔧 FIXING ALL MENU ROUTES TO ENSURE THEY RENDER"
+echo "=============================================="
+echo ""
+
+cd /Users/kuoldeng/projectx/frontend/pyfactor_next
+
+# First, let's create a comprehensive route mapping based on menu items
+echo "📝 Creating comprehensive route mappings..."
+
+# Update the route registry with ALL menu items
+cat > src/app/dashboard/router/routeRegistry-complete.js << 'EOF'
 'use client';
 
 import { lazy } from 'react';
@@ -647,3 +660,332 @@ export const getRouteInfo = (view) => {
 export const getAllRoutes = () => {
   return Object.keys(routeRegistry);
 };
+EOF
+
+# Replace the current route registry
+mv src/app/dashboard/router/routeRegistry-complete.js src/app/dashboard/router/routeRegistry.js
+
+# Now update RenderMainContent to handle all the event-based navigation
+echo "📝 Updating RenderMainContent to handle all navigation events..."
+
+cat > src/app/dashboard/components/RenderMainContent-enhanced.js << 'EOF'
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import DashboardRouter from '../router/DashboardRouter';
+
+/**
+ * Map event items to route views
+ */
+const eventToRouteMap = {
+  // Products & Services
+  'product-management': 'products',
+  'service-management': 'services',
+  
+  // Customers
+  'customer-list': 'customers',
+  
+  // Sales
+  'estimate-management': 'estimates',
+  'order-management': 'orders',
+  'invoice-management': 'invoices',
+  'sales-reports-management': 'sales-reports',
+  
+  // Jobs
+  'jobs-dashboard': 'job-dashboard',
+  'jobs-list': 'jobs-list',
+  'job-costing': 'job-costing',
+  'job-materials': 'job-materials',
+  'job-labor': 'job-labor',
+  'job-profitability': 'job-profitability',
+  'vehicles': 'vehicles',
+  'jobs-reports': 'jobs-reports',
+  
+  // Payments
+  'payments-dashboard': 'payments-dashboard',
+  'receive-payment': 'receive-payment',
+  'make-payment': 'make-payment',
+  'payment-methods': 'payment-methods',
+  'recurring-payments': 'recurring-payments',
+  'refunds': 'refunds',
+  'payment-reconciliation': 'payment-reconciliation',
+  'payment-gateways': 'payment-gateways',
+  'payment-reports': 'payment-reports',
+  
+  // Purchases
+  'purchases-dashboard': 'purchases-dashboard',
+  'vendor-management': 'vendors',
+  'purchase-orders': 'purchase-orders',
+  'bill-management': 'bills',
+  'expense-management': 'expenses',
+  'purchase-returns': 'purchase-returns',
+  'procurement': 'procurement',
+  'purchases-reports': 'purchases-reports',
+  
+  // Accounting
+  'accounting-dashboard': 'accounting-dashboard',
+  'chart-of-accounts': 'chart-of-accounts',
+  'journal-entries': 'journal-entries',
+  'general-ledger': 'general-ledger',
+  'reconciliation': 'reconciliation',
+  'financial-statements': 'financial-statements',
+  'fixed-assets': 'fixed-assets',
+  'accounting-reports': 'accounting-reports',
+  
+  // Banking
+  'banking-dashboard': 'banking-dashboard',
+  'bank-transactions': 'bank-transactions',
+  'bank-reconciliation': 'bank-reconciliation',
+  'banking-reports': 'banking-reports',
+  
+  // Payroll
+  'payroll-dashboard': 'payroll-dashboard',
+  'payroll-wizard': 'payroll-wizard',
+  'payroll-transactions': 'payroll-transactions',
+  'payroll-reports': 'payroll-reports',
+  
+  // Taxes
+  'taxes-dashboard': 'taxes-dashboard',
+  'sales-tax-filing': 'sales-tax-filing',
+  'file-tax-return': 'file-tax-return',
+  'filing-history': 'filing-history',
+  'country-requirements': 'country-requirements',
+  'payroll-tax-filing': 'payroll-tax-filing',
+  'file-payroll-tax': 'file-payroll-tax',
+  'payroll-tax-history': 'payroll-tax-history',
+  'payroll-tax-setup': 'payroll-tax-setup',
+  'tax-reports': 'tax-reports',
+  
+  // Reports
+  'reports-dashboard': 'reports-dashboard',
+  
+  // Analytics
+  'analytics-dashboard': 'analytics',
+  'smart-insight': 'smart-insights',
+  
+  // Other
+  'whatsapp-business': 'whatsapp-business',
+  'import-export': 'import-export',
+  'invite-friend': 'invite-friend',
+  'dott-status': 'dott-status'
+};
+
+/**
+ * RenderMainContent - Enhanced routing component with event support
+ */
+const RenderMainContent = React.memo(function RenderMainContent({
+  view = 'dashboard',
+  subView,
+  userData,
+  ...props
+}) {
+  const [currentView, setCurrentView] = useState(view);
+  
+  // Listen for navigation events
+  useEffect(() => {
+    const handleNavigationEvent = (event) => {
+      const { item } = event.detail;
+      console.log('[RenderMainContent] Navigation event:', item);
+      
+      // Map the event item to a route
+      const mappedView = eventToRouteMap[item] || item;
+      setCurrentView(mappedView);
+    };
+    
+    // Listen to both event types
+    window.addEventListener('menuNavigation', handleNavigationEvent);
+    window.addEventListener('navigationChange', handleNavigationEvent);
+    
+    return () => {
+      window.removeEventListener('menuNavigation', handleNavigationEvent);
+      window.removeEventListener('navigationChange', handleNavigationEvent);
+    };
+  }, []);
+  
+  // Handle legacy props
+  useEffect(() => {
+    let mappedView = view;
+    
+    // Complete legacy prop mapping
+    if (props.showProductManagement) mappedView = 'products';
+    else if (props.showServiceManagement) mappedView = 'services';
+    else if (props.showCreateProduct) mappedView = 'create-product';
+    else if (props.showCustomerList) mappedView = 'customers';
+    else if (props.showCustomerManagement) mappedView = 'customer-management';
+    else if (props.showTransactionForm) mappedView = 'transactions';
+    else if (props.showInvoiceManagement) mappedView = 'invoices';
+    else if (props.showInvoiceBuilder) mappedView = 'invoice-builder';
+    else if (props.showBillManagement) mappedView = 'bills';
+    else if (props.showEstimateManagement) mappedView = 'estimates';
+    else if (props.showBankingDashboard) mappedView = 'banking';
+    else if (props.showBankTransactions) mappedView = 'bank-transactions';
+    else if (props.showPaymentGateways) mappedView = 'payment-gateways';
+    else if (props.showHRDashboard) mappedView = 'hr';
+    else if (props.showEmployeeManagement) mappedView = 'employees';
+    else if (props.showPayManagement) mappedView = 'payroll';
+    else if (props.showTimesheetManagement) mappedView = 'timesheets';
+    else if (props.showAnalysisPage) mappedView = 'analytics';
+    else if (props.showKPIDashboard) mappedView = 'analytics';
+    else if (props.showReports) mappedView = 'reports';
+    else if (props.showInventoryManagement) mappedView = 'inventory';
+    else if (props.showSuppliersManagement) mappedView = 'suppliers';
+    else if (props.showVendorManagement) mappedView = 'vendors';
+    else if (props.showTaxManagement) mappedView = 'taxes';
+    else if (props.showEmployeeTaxes) mappedView = 'employee-taxes';
+    else if (props.showCRMDashboard) mappedView = 'crm';
+    else if (props.showContactsManagement) mappedView = 'contacts';
+    else if (props.showJobManagement) mappedView = 'jobs';
+    else if (props.showJobDashboard) mappedView = 'job-dashboard';
+    else if (props.showUserProfileSettings) mappedView = 'settings';
+    else if (props.showImportExport) mappedView = 'import-export';
+    else if (props.showPOSSystem) mappedView = 'pos';
+    else if (props.showTransportDashboard) mappedView = 'transport';
+    else if (props.showCalendar) mappedView = 'calendar';
+    else if (props.showMainDashboard) mappedView = 'dashboard';
+    else if (props.showHome || !mappedView) mappedView = 'home';
+    
+    setCurrentView(mappedView);
+  }, [view, props]);
+
+  console.log('[RenderMainContent] Current view:', currentView);
+
+  return (
+    <div className="h-full">
+      <DashboardRouter
+        view={currentView}
+        subView={subView}
+        userData={userData}
+        {...props}
+      />
+    </div>
+  );
+});
+
+export default RenderMainContent;
+EOF
+
+# Replace the current RenderMainContent
+mv src/app/dashboard/components/RenderMainContent-enhanced.js src/app/dashboard/components/RenderMainContent.js
+
+# Create fallback components for any that don't exist yet
+echo "🏗️ Creating fallback components..."
+
+# Create directories if they don't exist
+mkdir -p src/app/dashboard/components/dashboards
+mkdir -p src/app/dashboard/components/forms
+mkdir -p src/app/dashboard/components/jobs
+mkdir -p src/app/dashboard/components/transport
+mkdir -p src/app/dashboard/components/crm
+mkdir -p src/app/dashboard/components/pos
+
+# Create a generic fallback component generator
+create_fallback_component() {
+  local path=$1
+  local name=$2
+  local title=$3
+  
+  if [ ! -f "$path" ]; then
+    cat > "$path" << EOF
+'use client';
+
+import React from 'react';
+
+const $name = () => {
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">$title</h1>
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-600">
+          The $title feature is currently under development.
+        </p>
+        <p className="text-sm text-gray-500 mt-4">
+          This feature will be available soon. Stay tuned for updates!
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default $name;
+EOF
+    echo "Created fallback: $path"
+  fi
+}
+
+# Create fallback components for dashboards
+create_fallback_component "src/app/dashboard/components/dashboards/SalesDashboard.js" "SalesDashboard" "Sales Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/InventoryDashboard.js" "InventoryDashboard" "Inventory Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/PaymentsDashboard.js" "PaymentsDashboard" "Payments Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/PurchasesDashboard.js" "PurchasesDashboard" "Purchases Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/AccountingDashboard.js" "AccountingDashboard" "Accounting Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/PayrollDashboard.js" "PayrollDashboard" "Payroll Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/TaxesDashboard.js" "TaxesDashboard" "Taxes Dashboard"
+create_fallback_component "src/app/dashboard/components/dashboards/ReportsDashboard.js" "ReportsDashboard" "Reports Dashboard"
+
+# Create fallback components for forms
+create_fallback_component "src/app/dashboard/components/forms/OrderManagement.js" "OrderManagement" "Order Management"
+create_fallback_component "src/app/dashboard/components/forms/ReceivePayment.js" "ReceivePayment" "Receive Payment"
+create_fallback_component "src/app/dashboard/components/forms/MakePayment.js" "MakePayment" "Make Payment"
+create_fallback_component "src/app/dashboard/components/forms/PaymentMethods.js" "PaymentMethods" "Payment Methods"
+create_fallback_component "src/app/dashboard/components/forms/RecurringPayments.js" "RecurringPayments" "Recurring Payments"
+create_fallback_component "src/app/dashboard/components/forms/RefundManagement.js" "RefundManagement" "Refund Management"
+create_fallback_component "src/app/dashboard/components/forms/PaymentReconciliation.js" "PaymentReconciliation" "Payment Reconciliation"
+create_fallback_component "src/app/dashboard/components/forms/PurchaseOrderManagement.js" "PurchaseOrderManagement" "Purchase Orders"
+create_fallback_component "src/app/dashboard/components/forms/ExpenseManagement.js" "ExpenseManagement" "Expense Management"
+create_fallback_component "src/app/dashboard/components/forms/PurchaseReturns.js" "PurchaseReturns" "Purchase Returns"
+create_fallback_component "src/app/dashboard/components/forms/ProcurementManagement.js" "ProcurementManagement" "Procurement"
+create_fallback_component "src/app/dashboard/components/forms/ChartOfAccounts.js" "ChartOfAccounts" "Chart of Accounts"
+create_fallback_component "src/app/dashboard/components/forms/JournalEntries.js" "JournalEntries" "Journal Entries"
+create_fallback_component "src/app/dashboard/components/forms/GeneralLedger.js" "GeneralLedger" "General Ledger"
+create_fallback_component "src/app/dashboard/components/forms/AccountReconciliation.js" "AccountReconciliation" "Account Reconciliation"
+create_fallback_component "src/app/dashboard/components/forms/FinancialStatements.js" "FinancialStatements" "Financial Statements"
+create_fallback_component "src/app/dashboard/components/forms/FixedAssets.js" "FixedAssets" "Fixed Assets"
+create_fallback_component "src/app/dashboard/components/forms/BankReconciliation.js" "BankReconciliation" "Bank Reconciliation"
+create_fallback_component "src/app/dashboard/components/forms/BenefitsManagement.js" "BenefitsManagement" "Benefits Management"
+create_fallback_component "src/app/dashboard/components/forms/PerformanceManagement.js" "PerformanceManagement" "Performance Management"
+create_fallback_component "src/app/dashboard/components/forms/PayrollWizard.js" "PayrollWizard" "Payroll Wizard"
+create_fallback_component "src/app/dashboard/components/forms/PayrollTransactions.js" "PayrollTransactions" "Payroll Transactions"
+create_fallback_component "src/app/dashboard/components/forms/SalesTaxFiling.js" "SalesTaxFiling" "Sales Tax Filing"
+create_fallback_component "src/app/dashboard/components/forms/FileTaxReturn.js" "FileTaxReturn" "File Tax Return"
+create_fallback_component "src/app/dashboard/components/forms/FilingHistory.js" "FilingHistory" "Filing History"
+create_fallback_component "src/app/dashboard/components/forms/CountryRequirements.js" "CountryRequirements" "Country Requirements"
+create_fallback_component "src/app/dashboard/components/forms/PayrollTaxFiling.js" "PayrollTaxFiling" "Payroll Tax Filing"
+create_fallback_component "src/app/dashboard/components/forms/FilePayrollTax.js" "FilePayrollTax" "File Payroll Tax"
+create_fallback_component "src/app/dashboard/components/forms/PayrollTaxHistory.js" "PayrollTaxHistory" "Payroll Tax History"
+create_fallback_component "src/app/dashboard/components/forms/PayrollTaxSetup.js" "PayrollTaxSetup" "Payroll Tax Setup"
+create_fallback_component "src/app/dashboard/components/forms/WhatsAppBusiness.js" "WhatsAppBusiness" "WhatsApp Business"
+create_fallback_component "src/app/dashboard/components/forms/InviteFriend.js" "InviteFriend" "Invite Business Owner"
+create_fallback_component "src/app/dashboard/components/forms/DottStatus.js" "DottStatus" "Dott Status"
+
+# Create fallback components for jobs
+create_fallback_component "src/app/dashboard/components/jobs/JobsList.js" "JobsList" "All Jobs"
+create_fallback_component "src/app/dashboard/components/jobs/JobCosting.js" "JobCosting" "Job Costing"
+create_fallback_component "src/app/dashboard/components/jobs/JobMaterials.js" "JobMaterials" "Materials Usage"
+create_fallback_component "src/app/dashboard/components/jobs/JobLabor.js" "JobLabor" "Labor Tracking"
+create_fallback_component "src/app/dashboard/components/jobs/JobProfitability.js" "JobProfitability" "Profitability Analysis"
+create_fallback_component "src/app/dashboard/components/jobs/VehicleManagement.js" "VehicleManagement" "Vehicle Management"
+
+echo ""
+echo "✅ All menu routes have been mapped!"
+echo ""
+echo "🚀 Committing and deploying..."
+
+cd /Users/kuoldeng/projectx
+git add -A
+git commit -m "feat: comprehensive menu-to-route mapping for all dashboard pages
+
+- Created complete route registry with 100+ routes
+- Enhanced RenderMainContent to handle all navigation events
+- Added event-to-route mapping for menu navigation
+- Created fallback components for features under development
+- Ensures all menu items can render content in dashboard
+
+Every menu item now has a corresponding route and component, either with the actual implementation or a clean fallback UI."
+
+git push origin main
+
+echo ""
+echo "✅ MENU ROUTING FIX COMPLETE!"
+echo ""
+echo "All menu items should now render properly in the dashboard content area."
+echo "Monitor deployment: https://dashboard.render.com/web/srv-crpgfj68ii6s739n5jdg/deploys"

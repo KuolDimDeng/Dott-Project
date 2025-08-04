@@ -1,93 +1,182 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardRouter from '../router/DashboardRouter';
 
 /**
- * RenderMainContent - Simplified routing component with complete legacy mappings
+ * Map event items to route views
+ */
+const eventToRouteMap = {
+  // Products & Services
+  'product-management': 'products',
+  'service-management': 'services',
+  
+  // Customers
+  'customer-list': 'customers',
+  
+  // Sales
+  'estimate-management': 'estimates',
+  'order-management': 'orders',
+  'invoice-management': 'invoices',
+  'sales-reports-management': 'sales-reports',
+  
+  // Jobs
+  'jobs-dashboard': 'job-dashboard',
+  'jobs-list': 'jobs-list',
+  'job-costing': 'job-costing',
+  'job-materials': 'job-materials',
+  'job-labor': 'job-labor',
+  'job-profitability': 'job-profitability',
+  'vehicles': 'vehicles',
+  'jobs-reports': 'jobs-reports',
+  
+  // Payments
+  'payments-dashboard': 'payments-dashboard',
+  'receive-payment': 'receive-payment',
+  'make-payment': 'make-payment',
+  'payment-methods': 'payment-methods',
+  'recurring-payments': 'recurring-payments',
+  'refunds': 'refunds',
+  'payment-reconciliation': 'payment-reconciliation',
+  'payment-gateways': 'payment-gateways',
+  'payment-reports': 'payment-reports',
+  
+  // Purchases
+  'purchases-dashboard': 'purchases-dashboard',
+  'vendor-management': 'vendors',
+  'purchase-orders': 'purchase-orders',
+  'bill-management': 'bills',
+  'expense-management': 'expenses',
+  'purchase-returns': 'purchase-returns',
+  'procurement': 'procurement',
+  'purchases-reports': 'purchases-reports',
+  
+  // Accounting
+  'accounting-dashboard': 'accounting-dashboard',
+  'chart-of-accounts': 'chart-of-accounts',
+  'journal-entries': 'journal-entries',
+  'general-ledger': 'general-ledger',
+  'reconciliation': 'reconciliation',
+  'financial-statements': 'financial-statements',
+  'fixed-assets': 'fixed-assets',
+  'accounting-reports': 'accounting-reports',
+  
+  // Banking
+  'banking-dashboard': 'banking-dashboard',
+  'bank-transactions': 'bank-transactions',
+  'bank-reconciliation': 'bank-reconciliation',
+  'banking-reports': 'banking-reports',
+  
+  // Payroll
+  'payroll-dashboard': 'payroll-dashboard',
+  'payroll-wizard': 'payroll-wizard',
+  'payroll-transactions': 'payroll-transactions',
+  'payroll-reports': 'payroll-reports',
+  
+  // Taxes
+  'taxes-dashboard': 'taxes-dashboard',
+  'sales-tax-filing': 'sales-tax-filing',
+  'file-tax-return': 'file-tax-return',
+  'filing-history': 'filing-history',
+  'country-requirements': 'country-requirements',
+  'payroll-tax-filing': 'payroll-tax-filing',
+  'file-payroll-tax': 'file-payroll-tax',
+  'payroll-tax-history': 'payroll-tax-history',
+  'payroll-tax-setup': 'payroll-tax-setup',
+  'tax-reports': 'tax-reports',
+  
+  // Reports
+  'reports-dashboard': 'reports-dashboard',
+  
+  // Analytics
+  'analytics-dashboard': 'analytics',
+  'smart-insight': 'smart-insights',
+  
+  // Other
+  'whatsapp-business': 'whatsapp-business',
+  'import-export': 'import-export',
+  'invite-friend': 'invite-friend',
+  'dott-status': 'dott-status'
+};
+
+/**
+ * RenderMainContent - Enhanced routing component with event support
  */
 const RenderMainContent = React.memo(function RenderMainContent({
-  // Extract the view from props
   view = 'dashboard',
   subView,
   userData,
-  // Pass through all other props to the router
   ...props
 }) {
-  // Determine the current view based on props
-  let currentView = view;
+  const [currentView, setCurrentView] = useState(view);
   
-  // Complete legacy prop mapping for backward compatibility
-  // Products & Services
-  if (props.showProductManagement) currentView = 'products';
-  else if (props.showServiceManagement) currentView = 'sales-services';
-  else if (props.showCreateProduct) currentView = 'create-product';
+  // Listen for navigation events
+  useEffect(() => {
+    const handleNavigationEvent = (event) => {
+      const { item } = event.detail;
+      console.log('[RenderMainContent] Navigation event:', item);
+      
+      // Map the event item to a route
+      const mappedView = eventToRouteMap[item] || item;
+      setCurrentView(mappedView);
+    };
+    
+    // Listen to both event types
+    window.addEventListener('menuNavigation', handleNavigationEvent);
+    window.addEventListener('navigationChange', handleNavigationEvent);
+    
+    return () => {
+      window.removeEventListener('menuNavigation', handleNavigationEvent);
+      window.removeEventListener('navigationChange', handleNavigationEvent);
+    };
+  }, []);
   
-  // Customer Management
-  else if (props.showCustomerList) currentView = 'customerList';
-  else if (props.showCustomerManagement) currentView = 'customer-management';
-  
-  // Financial
-  else if (props.showTransactionForm) currentView = 'transactions';
-  else if (props.showInvoiceManagement) currentView = 'invoices';
-  else if (props.showInvoiceBuilder) currentView = 'invoice-builder';
-  else if (props.showBillManagement) currentView = 'bills';
-  else if (props.showEstimateManagement) currentView = 'estimates';
-  
-  // Banking
-  else if (props.showBankingDashboard) currentView = 'banking';
-  else if (props.showBankTransactions) currentView = 'bank-transactions';
-  else if (props.showPaymentGateways) currentView = 'payment-gateways';
-  
-  // HR & Payroll
-  else if (props.showHRDashboard) currentView = 'hr';
-  else if (props.showEmployeeManagement) currentView = 'employees';
-  else if (props.showPayManagement) currentView = 'payroll';
-  else if (props.showTimesheetManagement) currentView = 'timesheets';
-  
-  // Analytics & Reports
-  else if (props.showAnalysisPage) currentView = 'analytics';
-  else if (props.showKPIDashboard) currentView = 'analytics';
-  else if (props.showReports) currentView = 'reports';
-  
-  // Inventory
-  else if (props.showInventoryManagement) currentView = 'inventory';
-  else if (props.showSuppliersManagement) currentView = 'suppliers';
-  else if (props.showVendorManagement) currentView = 'vendors';
-  
-  // Taxes
-  else if (props.showTaxManagement) currentView = 'taxes';
-  else if (props.showEmployeeTaxes) currentView = 'employee-taxes';
-  
-  // CRM
-  else if (props.showCRMDashboard) currentView = 'crm';
-  else if (props.showContactsManagement) currentView = 'contacts';
-  
-  // Jobs
-  else if (props.showJobManagement) currentView = 'jobs';
-  else if (props.showJobDashboard) currentView = 'job-dashboard';
-  
-  // Settings
-  else if (props.showUserProfileSettings) currentView = 'settings';
-  else if (props.showImportExport) currentView = 'import-export';
-  
-  // POS
-  else if (props.showPOSSystem) currentView = 'pos';
-  
-  // Transport
-  else if (props.showTransportDashboard) currentView = 'transport';
-  
-  // Calendar
-  else if (props.showCalendar) currentView = 'calendar';
-  
-  // Default views
-  else if (props.showMainDashboard) currentView = 'dashboard';
-  else if (props.showHome || !currentView) currentView = 'home';
+  // Handle legacy props
+  useEffect(() => {
+    let mappedView = view;
+    
+    // Complete legacy prop mapping
+    if (props.showProductManagement) mappedView = 'products';
+    else if (props.showServiceManagement) mappedView = 'services';
+    else if (props.showCreateProduct) mappedView = 'create-product';
+    else if (props.showCustomerList) mappedView = 'customers';
+    else if (props.showCustomerManagement) mappedView = 'customer-management';
+    else if (props.showTransactionForm) mappedView = 'transactions';
+    else if (props.showInvoiceManagement) mappedView = 'invoices';
+    else if (props.showInvoiceBuilder) mappedView = 'invoice-builder';
+    else if (props.showBillManagement) mappedView = 'bills';
+    else if (props.showEstimateManagement) mappedView = 'estimates';
+    else if (props.showBankingDashboard) mappedView = 'banking';
+    else if (props.showBankTransactions) mappedView = 'bank-transactions';
+    else if (props.showPaymentGateways) mappedView = 'payment-gateways';
+    else if (props.showHRDashboard) mappedView = 'hr';
+    else if (props.showEmployeeManagement) mappedView = 'employees';
+    else if (props.showPayManagement) mappedView = 'payroll';
+    else if (props.showTimesheetManagement) mappedView = 'timesheets';
+    else if (props.showAnalysisPage) mappedView = 'analytics';
+    else if (props.showKPIDashboard) mappedView = 'analytics';
+    else if (props.showReports) mappedView = 'reports';
+    else if (props.showInventoryManagement) mappedView = 'inventory';
+    else if (props.showSuppliersManagement) mappedView = 'suppliers';
+    else if (props.showVendorManagement) mappedView = 'vendors';
+    else if (props.showTaxManagement) mappedView = 'taxes';
+    else if (props.showEmployeeTaxes) mappedView = 'employee-taxes';
+    else if (props.showCRMDashboard) mappedView = 'crm';
+    else if (props.showContactsManagement) mappedView = 'contacts';
+    else if (props.showJobManagement) mappedView = 'jobs';
+    else if (props.showJobDashboard) mappedView = 'job-dashboard';
+    else if (props.showUserProfileSettings) mappedView = 'settings';
+    else if (props.showImportExport) mappedView = 'import-export';
+    else if (props.showPOSSystem) mappedView = 'pos';
+    else if (props.showTransportDashboard) mappedView = 'transport';
+    else if (props.showCalendar) mappedView = 'calendar';
+    else if (props.showMainDashboard) mappedView = 'dashboard';
+    else if (props.showHome || !mappedView) mappedView = 'home';
+    
+    setCurrentView(mappedView);
+  }, [view, props]);
 
-  console.log('[RenderMainContent] Current view:', currentView, 'from props:', {
-    view,
-    hasShowProps: Object.keys(props).filter(k => k.startsWith('show')).join(', ')
-  });
+  console.log('[RenderMainContent] Current view:', currentView);
 
   return (
     <div className="h-full">
