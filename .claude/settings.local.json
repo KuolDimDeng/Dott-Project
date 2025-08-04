@@ -252,7 +252,8 @@
       "Bash(./scripts/fix-all-menu-pages.sh:*)",
       "Bash(./scripts/fix-csp-and-debug.sh:*)",
       "Bash(/Users/kuoldeng/projectx/scripts/fix-csp-and-debug.sh:*)",
-      "Bash(/Users/kuoldeng/projectx/scripts/fix-api-url-proper.sh)"
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-api-url-proper.sh)",
+      "Bash(/Users/kuoldeng/projectx/scripts/fix-api-domain-routing.sh)"
     ],
     "deny": []
   }

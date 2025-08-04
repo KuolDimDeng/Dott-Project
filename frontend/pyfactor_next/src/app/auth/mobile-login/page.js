@@ -1,4 +1,6 @@
 'use client';
+import api from '@/utils/apiFetch';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +21,7 @@ export default function MobileLoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/consolidated-login', {
+      const response = await api.post('/api/auth/consolidated-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

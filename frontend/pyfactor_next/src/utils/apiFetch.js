@@ -11,14 +11,25 @@ export async function apiFetch(endpoint, options = {}) {
     endpoint = '/' + endpoint;
   }
   
-  // Build the full URL
-  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+  // For auth endpoints, always use the API domain
+  let url;
+  if (endpoint.startsWith('/api/auth/') || endpoint.startsWith('/api/sessions/')) {
+    // Auth endpoints must go to the API domain
+    url = `${API_CONFIG.BASE_URL}${endpoint}`;
+  } else if (endpoint.startsWith('/api/')) {
+    // Other API endpoints also go to API domain
+    url = `${API_CONFIG.BASE_URL}${endpoint}`;
+  } else {
+    // Non-API endpoints stay on current domain
+    url = endpoint;
+  }
   
   // Log the request
   logger.info('[apiFetch] Request:', {
     url,
     method: options.method || 'GET',
-    hasBody: !!options.body
+    hasBody: !!options.body,
+    endpoint
   });
   
   try {
@@ -31,6 +42,13 @@ export async function apiFetch(endpoint, options = {}) {
       },
       ...options
     };
+    
+    // If body is already stringified, use it as is
+    if (options.body && typeof options.body === 'string') {
+      fetchOptions.body = options.body;
+    } else if (options.body) {
+      fetchOptions.body = JSON.stringify(options.body);
+    }
     
     const response = await fetch(url, fetchOptions);
     
@@ -54,9 +72,21 @@ export async function apiFetch(endpoint, options = {}) {
 // Export a convenience object with methods for common HTTP verbs
 export const api = {
   get: (endpoint, options = {}) => apiFetch(endpoint, { ...options, method: 'GET' }),
-  post: (endpoint, body, options = {}) => apiFetch(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
-  put: (endpoint, body, options = {}) => apiFetch(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
-  patch: (endpoint, body, options = {}) => apiFetch(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
+  post: (endpoint, body, options = {}) => {
+    const opts = { ...options, method: 'POST' };
+    if (body) opts.body = body;
+    return apiFetch(endpoint, opts);
+  },
+  put: (endpoint, body, options = {}) => {
+    const opts = { ...options, method: 'PUT' };
+    if (body) opts.body = body;
+    return apiFetch(endpoint, opts);
+  },
+  patch: (endpoint, body, options = {}) => {
+    const opts = { ...options, method: 'PATCH' };
+    if (body) opts.body = body;
+    return apiFetch(endpoint, opts);
+  },
   delete: (endpoint, options = {}) => apiFetch(endpoint, { ...options, method: 'DELETE' })
 };
 
