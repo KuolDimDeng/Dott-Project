@@ -795,7 +795,7 @@ MIDDLEWARE = [
 'custom_auth.middleware.TenantMiddleware',  # Tenant isolation middleware
 'audit.middleware.AuditMiddleware',  # Audit trail middleware
 'custom_auth.middleware_package.onboarding_middleware.OnboardingMiddleware',  # Onboarding check middleware
-'taxes.middleware.TaxAuditMiddleware',  # Tax API audit and logging middleware
+'taxes.tax_audit_middleware.TaxAuditMiddleware',  # Tax API audit and logging middleware
 'pyfactor.middleware.analytics_middleware.AnalyticsMiddleware',  # PostHog analytics tracking
 'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',

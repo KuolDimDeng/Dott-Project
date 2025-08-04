@@ -1,6 +1,4 @@
 # taxes/middleware/__init__.py
+# This is the middleware submodule for abuse control and other middleware
 
-# Import middleware from parent module
-from ..middleware import TaxAuditMiddleware
-
-__all__ = ['TaxAuditMiddleware']
+from .abuse_control_middleware import *
