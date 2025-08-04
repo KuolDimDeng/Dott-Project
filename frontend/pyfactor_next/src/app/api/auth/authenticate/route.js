@@ -137,7 +137,10 @@ export async function POST(request) {
           return NextResponse.json(
             { 
               error: errorMessage,
-              debugLog 
+              debugLog,
+              backendStatus: backendResponse.status,
+              backendUrl: backendUrl,
+              envApiUrl: process.env.NEXT_PUBLIC_API_URL
             },
             { status: backendResponse.status }
           );

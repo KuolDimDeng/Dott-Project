@@ -17,13 +17,45 @@ export async function OPTIONS(request) {
 }
 
 export async function POST(request) {
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    headers: {},
+    env: {},
+    errors: []
+  };
+  
   try {
+    // Log all headers for debugging
+    const headers = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    debugInfo.headers = headers;
+    
+    // Log environment variables (sanitized)
+    debugInfo.env = {
+      hasApiUrl: !!process.env.NEXT_PUBLIC_API_URL,
+      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      hasAuth0Secret: !!process.env.AUTH0_SECRET,
+      hasAuth0ClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    };
+    
     const { email, password } = await request.json();
     const host = request.headers.get('host');
     
+    debugInfo.requestData = {
+      hasEmail: !!email,
+      hasPassword: !!password,
+      host
+    };
+    
     if (!email || !password) {
+      debugInfo.errors.push('Missing email or password');
+      console.error('[ConsolidatedLogin] Debug info:', debugInfo);
       return NextResponse.json({ 
-        error: 'Email and password are required' 
+        error: 'Email and password are required',
+        debug: debugInfo
       }, { status: 400 });
     }
     
@@ -45,6 +77,13 @@ export async function POST(request) {
     const fullAuthUrl = `${protocol}://${host}${authUrl}`;
     console.log('[ConsolidatedLogin] Full auth URL:', fullAuthUrl);
     
+    debugInfo.authRequest = {
+      url: fullAuthUrl,
+      method: 'POST',
+      hasForwardedFor: !!request.headers.get('x-forwarded-for'),
+      hasCfIp: !!request.headers.get('cf-connecting-ip')
+    };
+    
     const authResponse = await fetch(fullAuthUrl, {
       method: 'POST',
       headers: {
@@ -53,6 +92,12 @@ export async function POST(request) {
       },
       body: JSON.stringify({ email, password })
     });
+    
+    debugInfo.authResponse = {
+      status: authResponse.status,
+      statusText: authResponse.statusText,
+      headers: Object.fromEntries(authResponse.headers)
+    };
     
     if (!authResponse.ok) {
       const errorText = await authResponse.text();
@@ -69,7 +114,13 @@ export async function POST(request) {
         error = { error: 'Authentication failed', message: errorText };
       }
       
-      return NextResponse.json(error, { status: authResponse.status });
+      debugInfo.errors.push(`Auth failed: ${authResponse.status}`);
+      debugInfo.authError = error;
+      console.error('[ConsolidatedLogin] Auth failure debug:', debugInfo);
+      return NextResponse.json({
+        ...error,
+        debug: debugInfo
+      }, { status: authResponse.status });
     }
     
     const authData = await authResponse.json();
@@ -250,10 +301,14 @@ export async function POST(request) {
     return NextResponse.json(responseData);
     
   } catch (error) {
+    debugInfo.errors.push(`Unexpected error: ${error.message}`);
+    debugInfo.errorStack = error.stack;
     console.error('[ConsolidatedLogin] Unexpected error:', error);
+    console.error('[ConsolidatedLogin] Debug info:', debugInfo);
     return NextResponse.json({ 
       error: 'Login failed',
-      message: error.message 
+      message: error.message,
+      debug: debugInfo
     }, { status: 500 });
   }
 }
