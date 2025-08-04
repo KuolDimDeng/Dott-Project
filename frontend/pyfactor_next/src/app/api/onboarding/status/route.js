@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { logger } from '@/utils/logger';
 
 /**
  * Frontend API route to check onboarding status
@@ -10,12 +9,21 @@ export async function GET(request) {
   try {
     const cookieStore = await cookies();
     
-    // Get session token
-    const sessionToken = cookieStore.get('session_token') || cookieStore.get('sid');
+    // Get session token - check for 'sid' cookie
+    const sidCookie = cookieStore.get('sid');
+    const sessionToken = cookieStore.get('session_token');
     const authSession = cookieStore.get('dott_auth_session');
     
-    if (!sessionToken && !authSession) {
-      logger.warn('[Onboarding Status API] No session found');
+    // Log available cookies for debugging
+    console.log('[SERVER DEBUG] [Onboarding Status API] Available cookies:', {
+      hasSid: !!sidCookie,
+      hasSessionToken: !!sessionToken,
+      hasAuthSession: !!authSession,
+      sidValue: sidCookie?.value?.substring(0, 8) + '...' || 'none'
+    });
+    
+    if (!sidCookie && !sessionToken && !authSession) {
+      console.log('[SERVER ERROR] [Onboarding Status API] No session found in cookies');
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
     
@@ -31,7 +39,7 @@ export async function GET(request) {
         accessToken = tokenData.accessToken;
       }
     } catch (tokenError) {
-      logger.warn('[Onboarding Status API] Failed to get access token:', tokenError);
+      console.warn('[Onboarding Status API] Failed to get access token:', tokenError);
     }
     
     // Prepare headers for backend request
@@ -40,8 +48,10 @@ export async function GET(request) {
       'Accept': 'application/json',
     };
     
-    // Add authentication header
-    if (accessToken) {
+    // Add authentication - prefer sid cookie for session-based auth
+    if (sidCookie) {
+      headers['Cookie'] = `sid=${sidCookie.value}`;
+    } else if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     } else if (sessionToken) {
       headers['Authorization'] = `Session ${sessionToken.value}`;
@@ -49,7 +59,7 @@ export async function GET(request) {
       headers['Cookie'] = `dott_auth_session=${authSession.value}`;
     }
     
-    logger.debug('[Onboarding Status API] Calling backend endpoint', {
+    console.debug('[Onboarding Status API] Calling backend endpoint', {
       url: `${apiUrl}/api/onboarding/status/`,
       hasAccessToken: !!accessToken,
       hasSessionToken: !!sessionToken
@@ -65,7 +75,7 @@ export async function GET(request) {
       
       if (!backendResponse.ok) {
         const errorText = await backendResponse.text();
-        logger.error('[Onboarding Status API] Backend request failed', {
+        console.error('[Onboarding Status API] Backend request failed', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
           error: errorText
@@ -86,7 +96,7 @@ export async function GET(request) {
       }
       
       const data = await backendResponse.json();
-      logger.debug('[Onboarding Status API] Backend response received', {
+      console.debug('[Onboarding Status API] Backend response received', {
         success: data.success,
         hasData: !!data.data
       });
@@ -114,7 +124,7 @@ export async function GET(request) {
       }
       
     } catch (fetchError) {
-      logger.error('[Onboarding Status API] Network error calling backend:', {
+      console.error('[Onboarding Status API] Network error calling backend:', {
         error: fetchError.message,
         stack: fetchError.stack
       });
@@ -126,7 +136,7 @@ export async function GET(request) {
     }
     
   } catch (error) {
-    logger.error('[Onboarding Status API] Unexpected error:', {
+    console.error('[Onboarding Status API] Unexpected error:', {
       error: error.message,
       stack: error.stack
     });
