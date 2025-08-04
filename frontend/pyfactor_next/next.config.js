@@ -126,10 +126,13 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
+  // Enable SWC minification
+  swcMinify: true,
+  
   // Compiler optimizations using SWC
   compiler: {
     // Remove console logs in production - but keep more for debugging
-    removeConsole: false, // Temporarily disabled
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
     // SWC is the default minifier in Next.js 15
     styledComponents: false,
     emotion: false,
@@ -201,13 +204,10 @@ const nextConfig = {
         },
       };
       
-      // Enable minification using SWC instead of Terser to avoid TDZ errors
+      // Enable minification using SWC
       config.optimization.minimize = true;
       
-      // Clear any existing minimizers to ensure we're using SWC
-      config.optimization.minimizer = [];
-      
-      // Let Next.js use its default SWC minifier which handles TDZ better
+      // Let Next.js use its default SWC minifier
     }
     
     return config;

@@ -235,7 +235,11 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" timeout 300 pnpm build)",
       "Bash(./scripts/deploy-modular-architecture.sh:*)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=3072\" timeout 300 pnpm build)",
-      "Bash(PORT=3002 timeout 30 pnpm run dev)"
+      "Bash(PORT=3002 timeout 30 pnpm run dev)",
+      "Bash(timeout 30 pnpm build)",
+      "Bash(./scripts/emergency-production-fix.sh:*)",
+      "Bash(npx update-browserslist-db:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=3072\" timeout 120 pnpm build)"
     ],
     "deny": []
   }
