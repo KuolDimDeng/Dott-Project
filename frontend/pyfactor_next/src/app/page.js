@@ -12,7 +12,7 @@ import Highlights from '@/app/components/Highlights';
 import BuiltForYou from '@/app/components/BuiltForYou';
 import Integrations from '@/app/components/Integrations';
 // import Pricing from '@/app/components/Pricing';
-import GeoPricing from '@/components/pricing/GeoPricing';
+import GeoPricing from "@/app/dashboard/components/pricing/GeoPricing-fixed"
 import FAQ from '@/app/components/FAQ';
 import ContactForm from '@/app/components/ContactForm';
 import Footer from '@/app/components/Footer';
