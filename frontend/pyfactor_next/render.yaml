@@ -2,16 +2,18 @@ services:
   - type: web
     name: dott-front
     runtime: docker
-    dockerfilePath: ./frontend/pyfactor_next/Dockerfile
-    dockerContext: .
+    region: oregon
+    dockerfilePath: Dockerfile
+    dockerContext: frontend/pyfactor_next
     envVars:
       - key: NODE_ENV
         value: production
-    buildCommand: |
-      echo "Build handled by Dockerfile"
-    # Enable Docker layer caching
-    docker:
-      buildCachePaths:
-        - /app/.next/cache
-        - /pnpm/store
-        - /app/node_modules/.cache
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=3584
+    headers:
+      - path: /_next/static/css/*
+        name: Content-Type
+        value: text/css
+      - path: /_next/static/css/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
