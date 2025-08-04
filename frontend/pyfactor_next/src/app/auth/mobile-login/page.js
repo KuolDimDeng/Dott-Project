@@ -21,18 +21,9 @@ export default function MobileLoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/consolidated-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          email, 
-          password,
-          rememberMe 
-        }),
-      });
+      const response = await api.post('/api/auth/consolidated-login', 
+        { email, password, rememberMe }
+      );
 
       const data = await response.json();
 

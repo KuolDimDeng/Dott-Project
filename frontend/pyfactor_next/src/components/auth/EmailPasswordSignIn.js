@@ -224,12 +224,9 @@ export default function EmailPasswordSignIn() {
     }
 
     try {
-      const response = await api.post('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-        body: JSON.stringify({ email: formData.email })
-      });
+      const response = await api.post('/api/auth/forgot-password', 
+        { email: formData.email }
+      );
 
       if (response.ok) {
         showError(t('signin.errors.passwordResetSent'));
@@ -249,12 +246,9 @@ export default function EmailPasswordSignIn() {
 
     try {
       setIsLoading(true);
-      const response = await api.post('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-        body: JSON.stringify({ email: formData.email })
-      });
+      const response = await api.post('/api/auth/resend-verification', 
+        { email: formData.email }
+      );
 
       if (response.ok) {
         showError(t('signup.verificationEmail.sent'), 'success');
@@ -293,16 +287,11 @@ export default function EmailPasswordSignIn() {
     try {
       // First create the account
       const signupResponse = await api.post('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-        body: JSON.stringify({
-          email,
-          password,
-          given_name: firstName,
-          family_name: lastName,
-          name: `${firstName} ${lastName}`
-        })
+        email,
+        password,
+        given_name: firstName,
+        family_name: lastName,
+        name: `${firstName} ${lastName}`
       });
 
       const signupData = await signupResponse.json();
@@ -347,16 +336,10 @@ export default function EmailPasswordSignIn() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for login
       
-      const loginResponse = await api.post('/api/auth/consolidated-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email,
-          password
-        }),
-        signal: controller.signal
-      }).finally(() => {
+      const loginResponse = await api.post('/api/auth/consolidated-login', 
+        { email, password }, 
+        { signal: controller.signal }
+      ).finally(() => {
         clearTimeout(timeoutId);
       });
 
