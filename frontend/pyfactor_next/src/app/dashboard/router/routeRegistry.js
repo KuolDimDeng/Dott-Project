@@ -173,7 +173,7 @@ export const routeRegistry = {
     description: 'Add new vendors'
   },
   'create-invoice': {
-    component: enhancedLazy(() => import('../components/forms/InvoiceBuilder'), 'Create Invoice'),
+    component: enhancedLazy(() => import('../components/forms/InvoiceManagement'), 'Create Invoice'),
     title: 'Create Invoice',
     description: 'Create new invoice'
   },
@@ -188,12 +188,12 @@ export const routeRegistry = {
     description: 'Create new bill'
   },
   'create-job': {
-    component: enhancedLazy(() => import('../components/jobs/JobCreator'), 'Create Job'),
+    component: enhancedLazy(() => import('../components/jobs/JobManagement'), 'Create Job'),
     title: 'Create Job',
     description: 'Create new job'
   },
   'create-transaction': {
-    component: enhancedLazy(() => import('../components/forms/TransactionForm'), 'Create Transaction'),
+    component: enhancedLazy(() => import('../components/forms/TransactionManagement'), 'Create Transaction'),
     title: 'Create Transaction',
     description: 'Create new transaction'
   },
