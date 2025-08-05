@@ -123,7 +123,7 @@ export const routeRegistry = {
 
   // Sales Management
   'pos': {
-    component: enhancedLazy(() => import('../components/pos/POSSystem'), 'POS System'),
+    component: enhancedLazy(() => import('../components/pos/POSSystemWrapper'), 'POS System'),
     title: 'Point of Sale',
     description: 'Sales terminal and checkout'
   },
@@ -541,9 +541,19 @@ export const routeRegistry = {
     description: 'Stock management'
   },
   'inventory-supplies': {
-    component: enhancedLazy(() => import('../../inventory/components/InventoryManagement'), 'Inventory & Supplies'),
-    title: 'Inventory & Supplies',
-    description: 'Stock and supplies'
+    component: enhancedLazy(() => import('../../inventory/components/InventoryManagement'), 'Materials Management'),
+    title: 'Materials Management',
+    description: 'Manage materials and supplies'
+  },
+  'inventory-suppliers': {
+    component: enhancedLazy(() => import('../../inventory/components/SupplierManagement'), 'Supplier Management'),
+    title: 'Supplier Management',
+    description: 'Manage suppliers and vendors'
+  },
+  'inventory-locations': {
+    component: enhancedLazy(() => import('../components/forms/LocationsManagement'), 'Locations Management'),
+    title: 'Locations Management',
+    description: 'Manage inventory locations'
   },
   'suppliers': {
     component: enhancedLazy(() => import('../components/forms/SuppliersManagement'), 'Suppliers Management'),
