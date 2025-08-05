@@ -71,10 +71,15 @@ export async function GET(request) {
       }
       
       const sessionData = await sessionResponse.json();
-      const tenantId = sessionData.tenant_id;
+      // Try to get tenant_id from multiple possible locations
+      const tenantId = sessionData.tenant_id || 
+                       sessionData.user?.tenant_id || 
+                       sessionData.user?.tenantId ||
+                       sessionData.tenant?.id;
       
       if (!tenantId) {
         logger.warn(`[Business API] No tenant ID in session, request ${requestId}`);
+        logger.debug(`[Business API] Session data structure:`, JSON.stringify(sessionData, null, 2));
         return NextResponse.json(
           { error: 'No tenant information available', requestId },
           { status: 404 }

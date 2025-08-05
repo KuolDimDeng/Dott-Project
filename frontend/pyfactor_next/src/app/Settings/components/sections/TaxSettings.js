@@ -107,7 +107,7 @@ const TaxSettings = () => {
       const [salesResponse, payrollResponse, businessResponse] = await Promise.all([
         fetch('/api/settings/taxes'),
         fetch('/api/settings/taxes/payroll'),
-        fetch('/api/user/business')
+        fetch('/api/users/me')
       ]);
       
       const salesData = await salesResponse.json();
