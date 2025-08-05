@@ -546,8 +546,8 @@ export const routeRegistry = {
     description: 'Manage materials and supplies'
   },
   'inventory-suppliers': {
-    component: enhancedLazy(() => import('../../inventory/components/SupplierManagement'), 'Supplier Management'),
-    title: 'Supplier Management',
+    component: enhancedLazy(() => import('../components/forms/VendorManagement'), 'Vendor Management'),
+    title: 'Vendor Management',
     description: 'Manage suppliers and vendors'
   },
   'inventory-locations': {
@@ -555,13 +555,18 @@ export const routeRegistry = {
     title: 'Locations Management',
     description: 'Manage inventory locations'
   },
+  'inventory-stock-adjustments': {
+    component: enhancedLazy(() => import('../components/forms/StockAdjustmentsManagement'), 'Stock Adjustments'),
+    title: 'Stock Adjustments',
+    description: 'Manage stock adjustments'
+  },
   'suppliers': {
     component: enhancedLazy(() => import('../components/forms/SuppliersManagement'), 'Suppliers Management'),
     title: 'Suppliers',
     description: 'Supplier relationships'
   },
   'inventory-reports': {
-    component: enhancedLazy(() => import('../components/forms/ReportDisplay'), 'Inventory Reports'),
+    component: enhancedLazy(() => import('../components/forms/InventoryReportsManagement'), 'Inventory Reports'),
     title: 'Inventory Reports',
     description: 'Inventory analytics'
   },
@@ -578,9 +583,9 @@ export const routeRegistry = {
     description: 'Job overview'
   },
   'jobs-list': {
-    component: enhancedLazy(() => import('../components/jobs/JobsList'), 'Jobs List'),
+    component: enhancedLazy(() => import('../components/jobs/JobManagement'), 'All Jobs'),
     title: 'All Jobs',
-    description: 'View all jobs'
+    description: 'View and manage all jobs'
   },
   'job-costing': {
     component: enhancedLazy(() => import('../components/jobs/JobCosting'), 'Job Costing'),
@@ -608,7 +613,7 @@ export const routeRegistry = {
     description: 'Fleet management'
   },
   'jobs-reports': {
-    component: enhancedLazy(() => import('../components/forms/ReportDisplay'), 'Jobs Reports'),
+    component: enhancedLazy(() => import('../components/jobs/JobReportsManagement'), 'Jobs Reports'),
     title: 'Jobs Reports',
     description: 'Project analytics'
   },
