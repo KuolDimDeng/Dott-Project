@@ -681,12 +681,12 @@ export const routeRegistry = {
     description: 'WhatsApp integration'
   },
   'invite-friend': {
-    component: enhancedLazy(() => import('../components/forms/InviteFriend'), 'Invite Friend'),
+    component: enhancedLazy(() => import('../components/invite/InviteAFriend'), 'Invite Friend'),
     title: 'Invite Business Owner',
     description: 'Invite others'
   },
   'dott-status': {
-    component: enhancedLazy(() => import('../components/forms/DottStatus'), 'Dott Status'),
+    component: enhancedLazy(() => import('../components/status/DottStatus'), 'Dott Status'),
     title: 'Dott Status',
     description: 'System status'
   },
