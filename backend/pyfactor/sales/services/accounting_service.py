@@ -72,9 +72,21 @@ class AccountingService:
         # Try to get or create account category
         from finance.models import AccountCategory
         category_name = category_mappings.get(account_type, 'Other')
+        
+        # Generate a short code that fits within 10 characters
+        code_mappings = {
+            'Current Assets': 'CA',
+            'Current Liabilities': 'CL',
+            'Revenue': 'REV',
+            'Cost of Goods Sold': 'COGS',
+            'Other': 'OTHER'
+        }
+        
+        category_code = code_mappings.get(category_name, 'OTHER')[:10]  # Ensure max 10 chars
+        
         category, created = AccountCategory.objects.get_or_create(
             name=category_name,
-            defaults={'code': category_name.upper().replace(' ', '_')}
+            defaults={'code': category_code}
         )
         
         # Generate account number (simple sequential)
