@@ -1376,6 +1376,71 @@ class GlobalSalesTaxRate(models.Model):
         help_text="Basic instructions for manual filing"
     )
     
+    # County-Level Filing Information (for US counties)
+    county_filing_website = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="County-specific filing website (if different from state)"
+    )
+    county_contact_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="County tax office phone number"
+    )
+    county_contact_email = models.EmailField(
+        blank=True,
+        help_text="County tax office email"
+    )
+    county_mailing_address = models.TextField(
+        blank=True,
+        help_text="Physical address for mailing tax returns"
+    )
+    county_filing_instructions = models.TextField(
+        blank=True,
+        help_text="County-specific filing instructions and requirements"
+    )
+    county_filing_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('', 'Same as State'),
+            ('monthly', 'Monthly'),
+            ('quarterly', 'Quarterly'),
+            ('annual', 'Annual'),
+            ('bi_monthly', 'Bi-Monthly'),
+        ],
+        blank=True,
+        default='',
+        help_text="County filing frequency (if different from state)"
+    )
+    county_filing_deadline = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="County filing deadline (e.g., '20th of following month')"
+    )
+    county_online_portal_available = models.BooleanField(
+        default=False,
+        help_text="Whether county has its own online filing portal"
+    )
+    county_online_portal_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Name of county online portal (if available)"
+    )
+    county_online_portal_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="URL of county online filing portal"
+    )
+    county_special_requirements = models.TextField(
+        blank=True,
+        help_text="Special county-specific requirements (permits, registrations, etc.)"
+    )
+    county_payment_methods = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Accepted payment methods ['check', 'online', 'ach', 'wire']"
+    )
+    
     # Service Pricing (in USD)
     manual_filing_fee = models.DecimalField(
         max_digits=6,
