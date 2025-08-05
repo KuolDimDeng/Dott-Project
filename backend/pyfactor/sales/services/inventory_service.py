@@ -4,7 +4,7 @@ Handles stock reduction, validation, and low stock alerts.
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.exceptions import ValidationError
 from inventory.models import Product
 from pyfactor.logging_config import get_logger
@@ -75,7 +75,7 @@ class InventoryService:
         updated_products = {}
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for item_data in items:
                     if item_data['type'] == 'product':
                         product = item_data['item']
@@ -135,7 +135,7 @@ class InventoryService:
         restored_products = {}
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for item_data in items:
                     if item_data['type'] == 'product':
                         product = item_data['item']
