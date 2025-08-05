@@ -202,22 +202,63 @@ export async function del(url) {
 }
 
 // Enhanced makeRequest function for Django backend integration
-export async function makeRequest(endpoint, options = {}) {
+export async function makeRequest(endpoint, options = {}, serverRequest = null) {
   try {
     // Build the full URL
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const url = `${baseUrl}/api/${endpoint.replace(/^\//, '')}`;
     
-    logger.debug('[API] makeRequest:', { endpoint, url, method: options.method || 'GET' });
+    console.log('[API] makeRequest:', { 
+      endpoint, 
+      url, 
+      method: options.method || 'GET',
+      isServerSide: !!serverRequest 
+    });
     
-    // Get auth headers
-    const authHeaders = await getAuthHeaders();
+    let headers = {};
     
-    // Merge headers
-    const headers = {
-      ...authHeaders,
-      ...(options.headers || {})
-    };
+    // Handle authentication differently for server-side vs client-side
+    if (serverRequest) {
+      // Server-side: Extract auth from the incoming request
+      console.log('[API] Server-side request - extracting auth from request');
+      const authHeader = serverRequest.headers.get('authorization');
+      const cookieHeader = serverRequest.headers.get('cookie');
+      
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+        console.log('[API] Using Authorization header from request');
+      }
+      
+      if (cookieHeader) {
+        headers['Cookie'] = cookieHeader;
+        console.log('[API] Using Cookie header from request');
+      }
+      
+      // Extract session ID from cookies for backend auth
+      if (cookieHeader) {
+        const sessionMatch = cookieHeader.match(/sid=([^;]+)/);
+        if (sessionMatch) {
+          headers['X-Session-ID'] = sessionMatch[1];
+          console.log('[API] Extracted session ID:', sessionMatch[1].substring(0, 8) + '...');
+        }
+      }
+      
+      headers['Content-Type'] = 'application/json';
+    } else {
+      // Client-side: Use the existing auth method
+      console.log('[API] Client-side request - using getAuthHeaders');
+      const authHeaders = await getAuthHeaders();
+      headers = {
+        ...authHeaders,
+        ...(options.headers || {})
+      };
+    }
+    
+    console.log('[API] Request headers:', {
+      hasAuth: !!(headers['Authorization'] || headers['X-Session-ID']),
+      hasContentType: !!headers['Content-Type'],
+      headerKeys: Object.keys(headers)
+    });
     
     // Execute the request
     const response = await fetch(url, {
@@ -226,7 +267,7 @@ export async function makeRequest(endpoint, options = {}) {
       credentials: 'include'
     });
     
-    logger.debug('[API] makeRequest response:', { 
+    console.log('[API] makeRequest response:', { 
       status: response.status, 
       ok: response.ok,
       url: response.url 
@@ -237,18 +278,32 @@ export async function makeRequest(endpoint, options = {}) {
     
     // Handle errors
     if (!response.ok) {
+      console.error('[API] Request failed:', {
+        status: response.status,
+        data,
+        endpoint,
+        url
+      });
+      
       const error = new Error(data.error || data.detail || `Request failed with status ${response.status}`);
       error.status = response.status;
       error.response = data;
       throw error;
     }
     
+    console.log('[API] Request successful:', {
+      endpoint,
+      dataKeys: data ? Object.keys(data) : [],
+      hasData: !!data
+    });
+    
     return data;
   } catch (error) {
-    logger.error('[API] makeRequest error:', {
+    console.error('[API] makeRequest error:', {
       endpoint,
       error: error.message,
-      status: error.status
+      status: error.status,
+      stack: error.stack
     });
     throw error;
   }

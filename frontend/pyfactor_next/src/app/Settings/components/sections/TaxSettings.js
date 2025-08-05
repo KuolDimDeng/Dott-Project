@@ -101,46 +101,102 @@ const TaxSettings = () => {
   const fetchAllTaxSettings = async () => {
     try {
       setLoading(true);
-      console.log('🎯 [TaxSettings] Fetching all tax settings...');
+      console.log('🎯 [TaxSettings] === START FETCHING TAX SETTINGS ===');
       
-      // Fetch both sales and payroll tax settings
-      const [salesResponse, payrollResponse, businessResponse] = await Promise.all([
-        fetch('/api/settings/taxes'),
-        fetch('/api/settings/taxes/payroll'),
-        fetch('/api/users/me')
-      ]);
+      // Fetch all required data
+      console.log('🎯 [TaxSettings] Making API calls...');
+      const apiCalls = [
+        fetch('/api/settings/taxes').then(res => ({ type: 'sales', response: res, data: res.json() })),
+        fetch('/api/settings/taxes/payroll').then(res => ({ type: 'payroll', response: res, data: res.json() })),
+        fetch('/api/users/me').then(res => ({ type: 'user', response: res, data: res.json() })),
+        fetch('/api/tenant/business-info').then(res => ({ type: 'business', response: res, data: res.json() }))
+      ];
       
-      const salesData = await salesResponse.json();
-      const payrollData = await payrollResponse.json();
-      const businessData = await businessResponse.json();
+      const results = await Promise.allSettled(apiCalls);
+      console.log('🎯 [TaxSettings] API call results:', results.map(r => ({ 
+        status: r.status, 
+        success: r.status === 'fulfilled' && r.value?.response?.ok 
+      })));
       
-      console.log('🎯 [TaxSettings] Sales tax data:', salesData);
-      console.log('🎯 [TaxSettings] Payroll tax data:', payrollData);
-      console.log('🎯 [TaxSettings] Business data:', businessData);
+      let businessCountryFound = false;
+      let businessInfoFromApi = {};
       
-      // Set business info
-      setBusinessInfo({
-        country: businessData.country || '',
-        state: businessData.state || '',
-        country_name: businessData.country_name || ''
-      });
-      
-      // Set sales tax data
-      if (salesResponse.ok) {
-        setSalesTaxSource(salesData.source || 'none');
-        setSalesTaxSettings(salesData.settings || null);
-        setEditedSalesSettings(salesData.settings || {});
+      // Process each result
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const { type, response, data } = result.value;
+          const resolvedData = await data;
+          
+          console.log(`🎯 [TaxSettings] ${type.toUpperCase()} API:`, {
+            ok: response.ok,
+            status: response.status,
+            hasData: !!resolvedData,
+            dataKeys: resolvedData ? Object.keys(resolvedData) : []
+          });
+          
+          if (type === 'sales' && response.ok) {
+            console.log('📊 [TaxSettings] Sales tax data:', resolvedData);
+            setSalesTaxSource(resolvedData.source || 'none');
+            setSalesTaxSettings(resolvedData.settings || null);
+            setEditedSalesSettings(resolvedData.settings || {});
+          }
+          
+          if (type === 'payroll' && response.ok) {
+            console.log('💼 [TaxSettings] Payroll tax data:', resolvedData);
+            setPayrollTaxSource(resolvedData.source || 'none');
+            setPayrollTaxSettings(resolvedData.settings || null);
+            setEditedPayrollSettings(resolvedData.settings || {});
+          }
+          
+          if ((type === 'user' || type === 'business') && response.ok && resolvedData) {
+            console.log(`🏢 [TaxSettings] ${type.toUpperCase()} info:`, {
+              country: resolvedData.country,
+              country_name: resolvedData.country_name,
+              state: resolvedData.state,
+              business_name: resolvedData.business_name
+            });
+            
+            // Check if this source has country data
+            if (resolvedData.country || resolvedData.country_name) {
+              businessCountryFound = true;
+              businessInfoFromApi = {
+                country: resolvedData.country || businessInfoFromApi.country || '',
+                state: resolvedData.state || businessInfoFromApi.state || '',
+                country_name: resolvedData.country_name || businessInfoFromApi.country_name || '',
+                business_name: resolvedData.business_name || businessInfoFromApi.business_name || ''
+              };
+              
+              console.log('🌍 [Country Debug] Business country found from', type, ':', {
+                country_code: businessInfoFromApi.country,
+                country_name: businessInfoFromApi.country_name,
+                state: businessInfoFromApi.state,
+                source: type
+              });
+            }
+          }
+        } else {
+          console.error(`🚨 [TaxSettings] ${result.reason?.type || 'Unknown'} API failed:`, result.reason);
+        }
       }
       
-      // Set payroll tax data
-      if (payrollResponse.ok) {
-        setPayrollTaxSource(payrollData.source || 'none');
-        setPayrollTaxSettings(payrollData.settings || null);
-        setEditedPayrollSettings(payrollData.settings || {});
+      // Set business info with comprehensive debugging
+      console.log('🏢 [TaxSettings] Final business info:', {
+        found: businessCountryFound,
+        country: businessInfoFromApi.country,
+        country_name: businessInfoFromApi.country_name,
+        state: businessInfoFromApi.state,
+        willShow: businessInfoFromApi.country ? businessInfoFromApi.country_name || businessInfoFromApi.country : 'Not set'
+      });
+      
+      setBusinessInfo(businessInfoFromApi);
+      
+      if (!businessCountryFound) {
+        console.warn('⚠️ [Country Debug] No business country found from any API source!');
+        console.log('💡 [Country Debug] This will cause "Not set" to appear in Tax Settings');
       }
       
     } catch (error) {
-      console.error('🎯 [TaxSettings] Error:', error);
+      console.error('🚨 [TaxSettings] Error:', error);
       notifyError('Failed to load tax settings');
     } finally {
       setLoading(false);

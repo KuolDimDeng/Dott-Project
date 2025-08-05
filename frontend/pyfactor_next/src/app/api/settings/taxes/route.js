@@ -4,13 +4,14 @@ import { makeRequest } from '@/utils/api';
 export async function GET(request) {
   try {
     console.log('🎯 [Tax Settings API] === START GET ===');
-    console.log('🎯 [Tax Settings API] Request headers:', request.headers);
+    console.log('🎯 [Tax Settings API] Request URL:', request.url);
+    console.log('🎯 [Tax Settings API] Request method:', request.method);
     
-    // Get current tenant's tax settings
+    // Pass the original request to makeRequest for proper auth handling
     console.log('🎯 [Tax Settings API] Making request to: taxes/tenant-settings/current/');
     const response = await makeRequest('taxes/tenant-settings/current/', {
       method: 'GET',
-    });
+    }, request);
     
     console.log('🎯 [Tax Settings API] Backend response:', {
       source: response.source,

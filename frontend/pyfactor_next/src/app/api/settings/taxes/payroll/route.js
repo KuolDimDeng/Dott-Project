@@ -4,11 +4,12 @@ import { makeRequest } from '@/utils/api';
 export async function GET(request) {
   try {
     console.log('🎯 [Payroll Tax Settings API] === START GET ===');
+    console.log('🎯 [Payroll Tax Settings API] Request URL:', request.url);
     
-    // Get current tenant's payroll tax settings
+    // Get current tenant's payroll tax settings - pass request for auth
     const response = await makeRequest('taxes/tenant-settings/payroll/current/', {
       method: 'GET',
-    });
+    }, request);
     
     console.log('🎯 [Payroll Tax Settings API] Backend response:', {
       source: response.source,
@@ -19,6 +20,11 @@ export async function GET(request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error('🎯 [Payroll Tax Settings API] Error:', error);
+    console.error('🎯 [Payroll Tax Settings API] Error details:', {
+      message: error.message,
+      status: error.status,
+      stack: error.stack
+    });
     return NextResponse.json(
       { error: error.message || 'Failed to fetch payroll tax settings' },
       { status: error.status || 500 }

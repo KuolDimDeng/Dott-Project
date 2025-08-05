@@ -126,6 +126,7 @@ export async function GET(request) {
           businessType: onboardingData.business_type || '',
           legalStructure: onboardingData.legal_structure || '',
           country: onboardingData.country || '',
+          country_name: onboardingData.country_name || '',
           state: onboardingData.state || '',
           subscriptionPlan: subscriptionPlan || 'free',
           tenantId: tenantId,
@@ -137,10 +138,26 @@ export async function GET(request) {
           source: 'backend_onboarding'
         };
         
-        console.log('[Business Info API] Final business info with subscription:', {
+        console.log('🌍 [Business Info API] Final business info with country data:', {
           businessName: businessInfo.businessName,
-          subscriptionPlan: businessInfo.subscriptionPlan
+          subscriptionPlan: businessInfo.subscriptionPlan,
+          country: businessInfo.country,
+          country_name: businessInfo.country_name,
+          state: businessInfo.state,
+          hasCountryData: !!(businessInfo.country || businessInfo.country_name)
         });
+        
+        // Add specific country debugging
+        if (businessInfo.country || businessInfo.country_name) {
+          console.log('🏁 [Country Debug] Business country found in business-info:', {
+            country_code: businessInfo.country,
+            country_name: businessInfo.country_name,
+            state: businessInfo.state,
+            source: 'business_info_api'
+          });
+        } else {
+          console.log('⚠️ [Country Debug] No country data in business-info onboarding data');
+        }
         
         // In Session V2, we don't update client-side cookies
         // All session data is managed server-side
