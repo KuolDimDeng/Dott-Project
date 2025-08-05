@@ -5,7 +5,7 @@ from .models import (
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
     TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder, TaxFiling, FilingDocument,
     FilingConfirmation, FilingNotification, NotificationType, NotificationStatus,
-    GlobalSalesTaxRate
+    GlobalSalesTaxRate, SalesTaxJurisdictionOverride
 )
 import logging
 
@@ -363,3 +363,110 @@ class FilingServiceStatsSerializer(serializers.Serializer):
     pending = serializers.IntegerField()
     completed = serializers.IntegerField()
     overdue = serializers.IntegerField()
+
+
+class SalesTaxOverrideSerializer(serializers.ModelSerializer):
+    """
+    Serializer for SalesTaxJurisdictionOverride model.
+    Handles tenant-specific tax rate overrides with validation.
+    """
+    
+    # Read-only fields
+    tenant_id = serializers.CharField(read_only=True)
+    created_by = serializers.CharField(source='created_by.email', read_only=True)
+    updated_by = serializers.CharField(source='updated_by.email', read_only=True)
+    total_rate = serializers.DecimalField(max_digits=6, decimal_places=4, read_only=True)
+    
+    # Display fields
+    total_rate_percentage = serializers.ReadOnlyField()
+    country_rate_percentage = serializers.ReadOnlyField()
+    state_rate_percentage = serializers.ReadOnlyField()
+    county_rate_percentage = serializers.ReadOnlyField()
+    jurisdiction_display = serializers.ReadOnlyField(source='get_jurisdiction_display')
+    
+    class Meta:
+        model = SalesTaxJurisdictionOverride
+        fields = [
+            'id', 'tenant_id', 'country', 'region_code', 'region_name',
+            'locality', 'locality_name', 'country_rate', 'state_rate', 
+            'county_rate', 'total_rate', 'override_reason', 'is_active',
+            'created_at', 'updated_at', 'created_by', 'updated_by',
+            'original_global_rates', 'total_rate_percentage', 
+            'country_rate_percentage', 'state_rate_percentage', 
+            'county_rate_percentage', 'jurisdiction_display'
+        ]
+        read_only_fields = [
+            'id', 'tenant_id', 'total_rate', 'created_at', 'updated_at',
+            'created_by', 'updated_by', 'original_global_rates'
+        ]
+    
+    def validate(self, data):
+        """Validate tax rate data"""
+        country_rate = data.get('country_rate', 0)
+        state_rate = data.get('state_rate', 0)
+        county_rate = data.get('county_rate', 0)
+        
+        # Ensure rates are not negative
+        if country_rate < 0 or state_rate < 0 or county_rate < 0:
+            raise serializers.ValidationError("Tax rates cannot be negative")
+        
+        # Ensure total rate is reasonable (less than 50%)
+        total = country_rate + state_rate + county_rate
+        if total > 0.5:  # 50%
+            raise serializers.ValidationError(
+                f"Total tax rate ({total*100:.2f}%) seems unusually high. "
+                "Please verify your rates."
+            )
+        
+        # Require override reason
+        if not data.get('override_reason', '').strip():
+            raise serializers.ValidationError(
+                "Override reason is required for audit compliance"
+            )
+        
+        return data
+    
+    def validate_country_rate(self, value):
+        """Validate country rate (usually 0 for US)"""
+        if value > 0.3:  # 30%
+            raise serializers.ValidationError(
+                "Country tax rate seems unusually high"
+            )
+        return value
+    
+    def validate_state_rate(self, value):
+        """Validate state rate"""
+        if value > 0.2:  # 20%
+            raise serializers.ValidationError(
+                "State tax rate seems unusually high"
+            )
+        return value
+    
+    def validate_county_rate(self, value):
+        """Validate county rate"""
+        if value > 0.15:  # 15%
+            raise serializers.ValidationError(
+                "County tax rate seems unusually high"
+            )
+        return value
+    
+    def to_representation(self, instance):
+        """Customize output representation"""
+        data = super().to_representation(instance)
+        
+        # Add formatted display values
+        data['formatted_rates'] = {
+            'country': f"{instance.country_rate_percentage:.2f}%",
+            'state': f"{instance.state_rate_percentage:.2f}%",
+            'county': f"{instance.county_rate_percentage:.2f}%",
+            'total': f"{instance.total_rate_percentage:.2f}%"
+        }
+        
+        # Add location hierarchy
+        data['location_hierarchy'] = {
+            'country': str(instance.country),
+            'state': instance.region_name or instance.region_code or '',
+            'county': instance.locality_name or instance.locality or ''
+        }
+        
+        return data

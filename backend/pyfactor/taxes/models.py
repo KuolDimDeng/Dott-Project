@@ -1873,3 +1873,126 @@ class TenantTaxSettings(models.Model):
             self.is_custom_rate = True
         super().save(*args, **kwargs)
 
+
+class SalesTaxJurisdictionOverride(models.Model):
+    """
+    Tenant-specific overrides for sales tax rates by jurisdiction.
+    This allows tenants to customize tax rates without affecting the global table.
+    """
+    # Tenant identification
+    tenant_id = models.CharField(max_length=255, db_index=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tax_overrides')
+    
+    # Jurisdiction (matches GlobalSalesTaxRate structure)
+    country = CountryField()
+    region_code = models.CharField(max_length=10, blank=True, help_text='State/Province code')
+    region_name = models.CharField(max_length=100, blank=True, help_text='State/Province name')
+    locality = models.CharField(max_length=100, blank=True, help_text='County/City code')
+    locality_name = models.CharField(max_length=200, blank=True, help_text='County/City name')
+    
+    # Tax rate override
+    country_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0.0000,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text='Country-level tax rate (usually 0 for US)'
+    )
+    state_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0.0000,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text='State/Province tax rate'
+    )
+    county_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        default=0.0000,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text='County/Local tax rate'
+    )
+    
+    # Computed total
+    total_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text='Total combined tax rate'
+    )
+    
+    # Override reason and audit
+    override_reason = models.TextField(
+        help_text='Reason for overriding the global rate (required for audit)'
+    )
+    original_global_rates = models.JSONField(
+        default=dict,
+        help_text='Original rates from GlobalSalesTaxRate at time of override'
+    )
+    
+    # Enable/disable override
+    is_active = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='tax_override_updates',
+        null=True,
+        blank=True
+    )
+    
+    class Meta:
+        app_label = 'taxes'
+        unique_together = [['tenant_id', 'country', 'region_code', 'locality']]
+        indexes = [
+            models.Index(fields=['tenant_id', 'country', 'region_code']),
+            models.Index(fields=['tenant_id', 'is_active']),
+        ]
+        verbose_name = 'Sales Tax Jurisdiction Override'
+        verbose_name_plural = 'Sales Tax Jurisdiction Overrides'
+    
+    def __str__(self):
+        location = f"{self.country}"
+        if self.region_name:
+            location += f", {self.region_name}"
+        if self.locality_name:
+            location += f", {self.locality_name}"
+        return f"{self.tenant_id} - {location} @ {self.total_rate_percentage:.2f}%"
+    
+    @property
+    def total_rate_percentage(self):
+        """Return total rate as percentage"""
+        return float(self.total_rate * 100) if self.total_rate else 0.0
+    
+    @property
+    def country_rate_percentage(self):
+        """Return country rate as percentage"""
+        return float(self.country_rate * 100) if self.country_rate else 0.0
+    
+    @property
+    def state_rate_percentage(self):
+        """Return state rate as percentage"""
+        return float(self.state_rate * 100) if self.state_rate else 0.0
+    
+    @property
+    def county_rate_percentage(self):
+        """Return county rate as percentage"""
+        return float(self.county_rate * 100) if self.county_rate else 0.0
+    
+    def save(self, *args, **kwargs):
+        # Auto-calculate total rate
+        self.total_rate = self.country_rate + self.state_rate + self.county_rate
+        super().save(*args, **kwargs)
+    
+    def get_jurisdiction_display(self):
+        """Get human-readable jurisdiction"""
+        parts = [str(self.country)]
+        if self.region_name:
+            parts.append(self.region_name)
+        if self.locality_name:
+            parts.append(self.locality_name)
+        return ", ".join(parts)
+

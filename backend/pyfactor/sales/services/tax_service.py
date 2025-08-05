@@ -43,6 +43,10 @@ class TaxService:
             - line_items: Tax details per item
         """
         try:
+            # Get tenant ID for override checking
+            from custom_auth.rls import get_current_tenant_id
+            tenant_id = get_current_tenant_id()
+            
             # Step 1: Determine tax location
             tax_location = TaxService._determine_tax_location(
                 customer, user_profile, use_shipping_address
@@ -51,11 +55,12 @@ class TaxService:
             logger.info(f"Tax calculation using {tax_location['method']} method: "
                        f"{tax_location['country']}, {tax_location['state']}, {tax_location['county']}")
             
-            # Step 2: Get applicable tax rates
+            # Step 2: Get applicable tax rates (check overrides first)
             tax_rates = TaxService._get_tax_rates(
                 tax_location['country'],
                 tax_location['state'],
-                tax_location['county']
+                tax_location['county'],
+                tenant_id
             )
             
             # Step 3: Calculate tax for each item
@@ -75,18 +80,32 @@ class TaxService:
             # Calculate effective tax rate
             effective_rate = (total_tax / total_taxable * 100) if total_taxable > 0 else Decimal('0')
             
+            # Build jurisdiction info
+            jurisdiction_info = {
+                'country': tax_location['country'],
+                'state': tax_location['state'],
+                'county': tax_location['county'],
+                'state_rate': str(tax_rates['state_rate']),
+                'county_rate': str(tax_rates['county_rate']),
+                'total_rate': str(tax_rates['total_rate']),
+                'components': tax_rates['components'],
+                'source': tax_rates.get('source', 'global')
+            }
+            
+            # Add override information if applicable
+            if tax_rates.get('source') == 'tenant_override':
+                jurisdiction_info.update({
+                    'override_id': tax_rates.get('override_id'),
+                    'override_reason': tax_rates.get('override_reason'),
+                    'is_custom_rate': True
+                })
+            else:
+                jurisdiction_info['is_custom_rate'] = False
+            
             return {
                 'total_tax_amount': total_tax,
                 'tax_rate': effective_rate,
-                'tax_jurisdiction': {
-                    'country': tax_location['country'],
-                    'state': tax_location['state'],
-                    'county': tax_location['county'],
-                    'state_rate': str(tax_rates['state_rate']),
-                    'county_rate': str(tax_rates['county_rate']),
-                    'total_rate': str(tax_rates['total_rate']),
-                    'components': tax_rates['components']
-                },
+                'tax_jurisdiction': jurisdiction_info,
                 'tax_calculation_method': tax_location['method'],
                 'line_items': line_items
             }
@@ -146,9 +165,10 @@ class TaxService:
         }
     
     @staticmethod
-    def _get_tax_rates(country: str, state: str, county: str) -> Dict:
+    def _get_tax_rates(country: str, state: str, county: str, tenant_id: str = None) -> Dict:
         """
         Get tax rates for the given location.
+        Checks tenant overrides first, then falls back to global rates.
         For USA, returns state and county rates separately.
         """
         try:
@@ -156,8 +176,55 @@ class TaxService:
                 'state_rate': Decimal('0'),
                 'county_rate': Decimal('0'),
                 'total_rate': Decimal('0'),
-                'components': []
+                'components': [],
+                'source': 'global'  # Track whether rate came from override or global
             }
+            
+            # Check for tenant override first
+            if tenant_id:
+                from taxes.models import SalesTaxJurisdictionOverride
+                
+                override = SalesTaxJurisdictionOverride.objects.filter(
+                    tenant_id=tenant_id,
+                    country=country,
+                    region_code=state,
+                    locality=county,
+                    is_active=True
+                ).first()
+                
+                if override:
+                    rates.update({
+                        'state_rate': override.state_rate,
+                        'county_rate': override.county_rate,
+                        'total_rate': override.total_rate,
+                        'source': 'tenant_override',
+                        'override_id': override.id,
+                        'override_reason': override.override_reason
+                    })
+                    
+                    # Add components for breakdown
+                    if override.country_rate > 0:
+                        rates['components'].append({
+                            'type': 'country',
+                            'name': str(override.country),
+                            'rate': str(override.country_rate)
+                        })
+                    
+                    if override.state_rate > 0:
+                        rates['components'].append({
+                            'type': 'state', 
+                            'name': override.region_name or state,
+                            'rate': str(override.state_rate)
+                        })
+                    
+                    if override.county_rate > 0:
+                        rates['components'].append({
+                            'type': 'county',
+                            'name': override.locality_name or county,
+                            'rate': str(override.county_rate)
+                        })
+                    
+                    return rates
             
             # For non-USA countries, get country-level rate
             if country != 'US':

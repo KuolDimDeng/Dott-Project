@@ -59,6 +59,7 @@ from .views.location_data import (
     get_counties,
     validate_location
 )
+from .views.sales_tax_config import SalesTaxConfigViewSet, get_tax_settings_summary
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -93,6 +94,9 @@ router.register(r'notifications', FilingNotificationViewSet, basename='tax-filin
 
 # Filing service endpoints
 router.register(r'filings', FilingServiceViewSet, basename='filing-service')
+
+# Sales tax configuration endpoints (OWNER/ADMIN only)
+router.register(r'sales-tax-config', SalesTaxConfigViewSet, basename='sales-tax-config')
 
 # Abuse control endpoints
 router.register(r'abuse-control/controls', TaxDataEntryControlViewSet, basename='tax-entry-control')
@@ -152,4 +156,7 @@ urlpatterns = [
     path('location/states/', get_states, name='tax-location-states'),
     path('location/counties/', get_counties, name='tax-location-counties'),
     path('location/validate/', validate_location, name='tax-location-validate'),
+    
+    # Sales tax configuration endpoints
+    path('sales-tax-config/summary/', get_tax_settings_summary, name='tax-settings-summary'),
 ]
