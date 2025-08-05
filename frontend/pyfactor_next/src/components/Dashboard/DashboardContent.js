@@ -242,8 +242,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     // User data
     userData: initialUserData,
     
-    // Current view  
-    view: 'customers',
+    // Current view - Force CustomerManagement with tax features
+    view: 'customers', // CustomerManagement component with location dropdowns and tax features
     
     // Selected items
     selectedOption: null,

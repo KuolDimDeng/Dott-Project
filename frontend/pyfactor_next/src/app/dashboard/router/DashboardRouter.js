@@ -24,6 +24,7 @@ const DashboardRouter = ({
       return null;
     }
 
+    console.log(`[DashboardRouter] Loading component for view: ${view}, route:`, route);
     return route.component;
   }, [view]);
 
