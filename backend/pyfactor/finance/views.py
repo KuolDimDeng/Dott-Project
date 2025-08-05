@@ -23,7 +23,7 @@ from .serializers import AccountReconciliationSerializer, AccountTypeSerializer,
 from users.models import UserProfile
 from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
-from django.db import DatabaseError, IntegrityError, connection, transaction, connections, transaction as db_transaction
+from django.db import DatabaseError, IntegrityError, connection, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
 from rest_framework import generics, status
 from .utils import create_general_ledger_entry, generate_financial_statements, get_or_create_account, update_chart_of_accounts
@@ -494,7 +494,7 @@ class DeleteAccountView(APIView):
             logger.info("Deleting user account...")
 
             # Delete the user-specific database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 logger.debug("Deleting related models in user's database: %s", database_name)
                 # Delete all related models in the user's database in the correct order
                 RevenueAccount.objects.using(database_name).all().delete()
@@ -520,7 +520,7 @@ class DeleteAccountView(APIView):
                 logger.warning("No user-specific database found, skipping database drop")
 
             # Delete user-related data from the main database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 logger.info("Deleting related data from other tables...")
                 # Delete related data from other tables in the correct order
                 user.socialaccount_set.all().delete()
@@ -689,7 +689,7 @@ def journal_entry_list(request):
     elif request.method == 'POST':
         serializer = JournalEntrySerializer(data=request.data)
         if serializer.is_valid():
-            with transaction.atomic():
+            with db_transaction.atomic():
                 journal_entry = serializer.save()
                 update_account_balances(journal_entry, request.user.profile.database_name)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -710,7 +710,7 @@ def journal_entry_detail(request, pk):
     elif request.method == 'PUT':
         serializer = JournalEntrySerializer(journal_entry, data=request.data)
         if serializer.is_valid():
-            with transaction.atomic():
+            with db_transaction.atomic():
                 journal_entry = serializer.save()
                 update_account_balances(journal_entry, request.user.profile.database_name)
             return Response(serializer.data)
@@ -729,7 +729,7 @@ def post_journal_entry(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if not journal_entry.is_posted:
-        with transaction.atomic():
+        with db_transaction.atomic():
             journal_entry.is_posted = True
             journal_entry.save()
             update_account_balances(journal_entry, request.user.profile.database_name)

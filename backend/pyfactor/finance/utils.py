@@ -4,7 +4,7 @@ from django.apps import apps
 from decimal import Decimal
 from django.conf import settings
 from finance.models import AccountType, Account, FinanceTransaction, FinancialStatement, GeneralLedgerEntry, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
-from django.db import DatabaseError, OperationalError, transaction, connections
+from django.db import DatabaseError, OperationalError, connections, transaction as db_transaction
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from pyfactor.logging_config import get_logger
 from finance.account_types import ACCOUNT_TYPES
@@ -43,7 +43,7 @@ def create_revenue_account(database_name, date, account_name, transaction_type, 
     ensure_dynamic_database(database_name)
 
     try:
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             # Check if the account type already exists
             logger.debug('Checking if account type "%s" exists... (ID: %s)', account_type_name, account_type_id)            
             account_type, created = AccountType.objects.using(database_name).get_or_create(
@@ -145,7 +145,7 @@ def get_or_create_account(database_name, account_name, account_type_name):
         raise ValueError(f"Invalid account type: {account_type_name}")
 
     try:
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
            
             account_type, _ = AccountType.objects.using(database_name).get_or_create(name=account_type_name)
             category, _ = AccountCategory.objects.using(database_name).get_or_create(
@@ -175,7 +175,7 @@ def update_chart_of_accounts(database_name, account_number, amount, transaction_
         logger.error("Account number is None, cannot update Chart of Accounts")
         return  # or raise an exception if you prefer
 
-    with transaction.atomic(using=database_name):
+    with db_transaction.atomic(using=database_name):
         try:
             account = ChartOfAccount.objects.using(database_name).get(account_number=account_number)
             if transaction_type == 'debit':
@@ -208,7 +208,7 @@ def create_general_ledger_entry(database_name, chart_account, amount, entry_type
     credit_amount = amount if entry_type == 'credit' else Decimal('0')
 
     try:
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             current_balance = GeneralLedgerEntry.objects.using(database_name).filter(account=chart_account).order_by('-id').first()
 
             if current_balance:
@@ -249,7 +249,7 @@ def get_or_create_chart_account(database_name, account_name, account_type_name):
         raise ValueError(f"Invalid account type: {account_type_name}")
 
     try:
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             # Try to get the AccountType, if multiple exist, use the first one
             account_type = AccountType.objects.using(database_name).filter(name=account_type_name).first()
             if not account_type:
