@@ -110,6 +110,16 @@ const RenderMainContent = React.memo(function RenderMainContent({
 }) {
   const [currentView, setCurrentView] = useState(view);
   
+  // Debug logging
+  console.log('[RenderMainContent] Props received:', {
+    view,
+    showMyAccount: props.showMyAccount,
+    showHelpCenter: props.showHelpCenter,
+    selectedSettingsOption: props.selectedSettingsOption,
+    showCreateOptions: props.showCreateOptions,
+    selectedOption: props.selectedOption
+  });
+  
   // Listen for navigation events
   useEffect(() => {
     const handleNavigationEvent = (event) => {
@@ -182,6 +192,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
     else if (props.showJobManagement) mappedView = 'jobs';
     else if (props.showJobDashboard) mappedView = 'job-dashboard';
     else if (props.showUserProfileSettings) mappedView = 'settings';
+    else if (props.showMyAccount) mappedView = 'profile';
+    else if (props.showHelpCenter) mappedView = 'help-center';
+    else if (props.selectedSettingsOption) mappedView = 'settings';
     else if (props.showImportExport) mappedView = 'import-export';
     else if (props.showPOSSystem) mappedView = 'pos';
     else if (props.showTransportDashboard) mappedView = 'transport';
@@ -192,7 +205,11 @@ const RenderMainContent = React.memo(function RenderMainContent({
     setCurrentView(mappedView);
   }, [view, props, props.showCreateOptions, props.selectedOption]);
 
-  console.log('[RenderMainContent] Current view:', currentView);
+  console.log('[RenderMainContent] Current view:', currentView, 'Mapped from props:', {
+    showMyAccount: props.showMyAccount,
+    showHelpCenter: props.showHelpCenter,
+    selectedSettingsOption: props.selectedSettingsOption
+  });
 
   return (
     <div className="h-full">

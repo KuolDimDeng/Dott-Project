@@ -650,10 +650,20 @@ export const routeRegistry = {
   },
 
   // Tools & Settings
+  'profile': {
+    component: enhancedLazy(() => import('../../Settings/UserProfile/components/UserProfile'), 'Profile'),
+    title: 'My Profile',
+    description: 'View and edit your profile'
+  },
   'settings': {
     component: enhancedLazy(() => import('../../Settings/UserProfile/components/UserProfileSettings'), 'Settings'),
     title: 'Settings',
     description: 'Account settings'
+  },
+  'help-center': {
+    component: enhancedLazy(() => import('../components/forms/HelpCenter'), 'Help Center'),
+    title: 'Help Center',
+    description: 'Get help and support'
   },
   'import-export': {
     component: enhancedLazy(() => import('../components/forms/ImportExport'), 'Import/Export'),
