@@ -11,8 +11,7 @@ import { canDeleteItem } from '@/utils/accountingRestrictions';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 const CustomerManagement = () => {
-  try {
-    // State management
+  // State management
     const [customers, setCustomers] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -1214,25 +1213,6 @@ const CustomerManagement = () => {
       {renderDeleteDialog()}
     </div>
   );
-  } catch (error) {
-    console.error('[CustomerManagement] ERROR in main return:', error);
-    console.error('[CustomerManagement] Error stack:', error.stack);
-    return (
-      <div className="p-6 bg-gray-50">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <h2 className="font-bold">Error in Customer Management Component</h2>
-          <p className="mt-2">Error: {error.message}</p>
-          <pre className="mt-2 text-sm">{error.stack}</pre>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    );
-  }
 };
 
 export default CustomerManagement; 
