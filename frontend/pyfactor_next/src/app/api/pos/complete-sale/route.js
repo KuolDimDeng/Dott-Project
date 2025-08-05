@@ -51,36 +51,26 @@ export async function POST(request) {
       logger.error('[POSProxy] Error fetching currency preference:', currencyError);
     }
 
-    // Prepare the sale data for backend
+    // Prepare the sale data for backend - matching the expected format
     const backendSaleData = {
       items: saleData.items.map(item => ({
-        product_id: item.product_id || item.id,
-        item_name: item.item_name || item.product_name || item.name,
-        product_name: item.item_name || item.product_name || item.name,
-        product_sku: item.sku || '',
-        quantity: item.quantity || 1,
-        unit_price: parseFloat(item.unit_price || item.price || 0),
-        line_total: parseFloat(item.total_price || (item.unit_price || item.price || 0) * (item.quantity || 1))
+        id: item.product_id || item.id,
+        type: item.type || 'product', // Default to product if not specified
+        quantity: parseFloat(item.quantity || 1),
+        unit_price: parseFloat(item.unit_price || item.price || 0)
       })),
       customer_id: saleData.customer_id || null,
-      subtotal: parseFloat(saleData.subtotal),
-      discount_amount: parseFloat(saleData.discount_amount) || 0,
-      discount_type: saleData.discount_type || 'amount',
-      tax_amount: parseFloat(saleData.tax_amount) || 0,
-      tax_rate: parseFloat(saleData.tax_rate) || 0,
-      total_amount: parseFloat(saleData.total_amount),
       payment_method: saleData.payment_method,
-      notes: saleData.notes || '',
-      sale_date: saleData.date || new Date().toISOString().split('T')[0],
-      status: 'completed',
-      currency: saleData.currency || userCurrency, // Use user's preferred currency
-      // POS specific fields
-      pos_sale: true,
-      source: 'pos_system'
+      amount_tendered: parseFloat(saleData.amount_tendered || saleData.total_amount),
+      discount_percentage: saleData.discount_type === 'percentage' 
+        ? parseFloat(saleData.discount_percentage || 0) 
+        : (parseFloat(saleData.discount_amount || 0) / parseFloat(saleData.subtotal) * 100),
+      tax_rate: parseFloat(saleData.tax_rate || 0),
+      notes: saleData.notes || ''
     };
 
-    // Use the POS transaction endpoint
-    const url = `${BACKEND_URL}/api/sales/pos/transactions/`;
+    // Use the POS complete-sale endpoint
+    const url = `${BACKEND_URL}/api/sales/pos/transactions/complete-sale/`;
     logger.info('[POSProxy] Forwarding POST request to:', url);
     logger.info('[POSProxy] Backend sale data:', JSON.stringify(backendSaleData, null, 2));
 
