@@ -1217,7 +1217,7 @@ class POSSaleCompletionSerializer(serializers.Serializer):
                         'type': 'product',
                         'item': product,
                         'quantity': quantity,
-                        'unit_price': item.get('unit_price', product.price or 0),
+                        'unit_price': Decimal(str(item.get('unit_price', product.price or 0))),
                     })
                 except Product.DoesNotExist:
                     raise serializers.ValidationError(f"Product with id {item_id} does not exist")
@@ -1229,7 +1229,7 @@ class POSSaleCompletionSerializer(serializers.Serializer):
                         'type': 'service',
                         'item': service,
                         'quantity': quantity,
-                        'unit_price': item.get('unit_price', service.price or 0),
+                        'unit_price': Decimal(str(item.get('unit_price', service.price or 0))),
                     })
                 except Service.DoesNotExist:
                     raise serializers.ValidationError(f"Service with id {item_id} does not exist")
