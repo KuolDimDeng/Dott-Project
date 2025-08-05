@@ -457,6 +457,7 @@ class UserProfile(models.Model):
     street = models.CharField(max_length=200, null=True, blank=True)
     city = models.CharField(max_length=200, null=True, blank=True)
     state = models.CharField(max_length=200, null=True, blank=True)
+    county = models.CharField(max_length=100, null=True, blank=True, help_text='County for business location')
     postcode = models.CharField(max_length=200, null=True, blank=True)
     country = CountryField(default='US')
     phone_number = models.CharField(max_length=200, null=True, blank=True)

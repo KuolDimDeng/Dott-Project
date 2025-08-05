@@ -519,6 +519,29 @@ class POSTransaction(TenantAwareModel):
     voided_at = models.DateTimeField(null=True, blank=True)
     void_reason = models.TextField(null=True, blank=True)
     
+    # Tax jurisdiction tracking
+    tax_jurisdiction = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Store all tax jurisdiction components and rates'
+    )
+    tax_calculation_method = models.CharField(
+        max_length=20,
+        choices=[
+            ('destination', 'Customer Shipping Address'),
+            ('billing', 'Customer Billing Address'),
+            ('origin', 'Business Location'),
+            ('manual', 'Manually Entered'),
+            ('exempt', 'Tax Exempt'),
+        ],
+        default='origin',
+        help_text='Method used to calculate tax'
+    )
+    shipping_address_used = models.BooleanField(
+        default=False,
+        help_text='Whether shipping address was used for tax calculation'
+    )
+    
     # Add tenant-aware manager
     objects = TenantManager()
     all_objects = models.Manager()

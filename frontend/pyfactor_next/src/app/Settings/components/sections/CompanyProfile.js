@@ -58,6 +58,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       street: '',
       city: '',
       state: '',
+      county: '',
       zipCode: '',
       country: 'US'
     },
@@ -114,6 +115,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           street: '',
           city: '',
           state: '',
+          county: '',
           zipCode: '',
           country: 'US'
         },
@@ -138,6 +140,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             street: profileData.address?.street || profileData.tenant?.address?.street || '',
             city: profileData.address?.city || profileData.tenant?.address?.city || '',
             state: profileData.address?.state || profileData.tenant?.address?.state || '',
+            county: profileData.address?.county || profileData.tenant?.address?.county || profileData.county || '',
             zipCode: profileData.address?.zipCode || profileData.tenant?.address?.zipCode || '',
             country: profileData.address?.country || profileData.tenant?.address?.country || 'US'
           },
@@ -878,28 +881,36 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                   placeholder="City"
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 />
-                <div className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    value={companyData.address.state}
-                    onChange={(e) => setCompanyData({ 
-                      ...companyData, 
-                      address: { ...companyData.address, state: e.target.value }
-                    })}
-                    placeholder="State"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <input
-                    type="text"
-                    value={companyData.address.zipCode}
-                    onChange={(e) => setCompanyData({ 
-                      ...companyData, 
-                      address: { ...companyData.address, zipCode: e.target.value }
-                    })}
-                    placeholder="ZIP code"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={companyData.address.state}
+                  onChange={(e) => setCompanyData({ 
+                    ...companyData, 
+                    address: { ...companyData.address, state: e.target.value }
+                  })}
+                  placeholder="State"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+                <input
+                  type="text"
+                  value={companyData.address.county}
+                  onChange={(e) => setCompanyData({ 
+                    ...companyData, 
+                    address: { ...companyData.address, county: e.target.value }
+                  })}
+                  placeholder="County"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+                <input
+                  type="text"
+                  value={companyData.address.zipCode}
+                  onChange={(e) => setCompanyData({ 
+                    ...companyData, 
+                    address: { ...companyData.address, zipCode: e.target.value }
+                  })}
+                  placeholder="ZIP code"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
             ) : (
               <div className="flex items-start p-3 bg-gray-50 border border-gray-200 rounded-lg">
@@ -910,6 +921,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                       <p>{companyData.address.street}</p>
                       <p>
                         {companyData.address.city}
+                        {companyData.address.county && `, ${companyData.address.county}`}
                         {companyData.address.state && `, ${companyData.address.state}`}
                         {companyData.address.zipCode && ` ${companyData.address.zipCode}`}
                       </p>

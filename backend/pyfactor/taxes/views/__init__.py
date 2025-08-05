@@ -28,3 +28,9 @@ from .payroll_tax_views import (
     get_payroll_tax_filing_history,
     get_payroll_tax_filing_status
 )
+from .location_data import (
+    get_countries,
+    get_states,
+    get_counties,
+    validate_location
+)

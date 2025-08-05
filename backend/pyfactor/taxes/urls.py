@@ -53,6 +53,12 @@ from .views.payroll_tax_views import (
     get_payroll_tax_filing_status
 )
 from .views.payroll_filing_instructions import get_payroll_filing_instructions
+from .views.location_data import (
+    get_countries,
+    get_states,
+    get_counties,
+    validate_location
+)
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -140,4 +146,10 @@ urlpatterns = [
     
     # Multi-state tax endpoints (temporarily disabled)
     # path('multistate/', include('taxes.multistate.urls')),
+    
+    # Location data endpoints for dropdowns
+    path('location/countries/', get_countries, name='tax-location-countries'),
+    path('location/states/', get_states, name='tax-location-states'),
+    path('location/counties/', get_counties, name='tax-location-counties'),
+    path('location/validate/', validate_location, name='tax-location-validate'),
 ]

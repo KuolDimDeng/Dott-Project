@@ -1051,7 +1051,8 @@ class POSTransactionDetailSerializer(serializers.ModelSerializer):
             'subtotal', 'discount_amount', 'discount_percentage',
             'tax_total', 'total_amount', 'payment_method',
             'amount_tendered', 'change_due', 'status', 'notes',
-            'items', 'created_at', 'created_by_name'
+            'items', 'created_at', 'created_by_name',
+            'tax_jurisdiction', 'tax_calculation_method', 'shipping_address_used'
         ]
 
 
@@ -1167,7 +1168,8 @@ class POSSaleCompletionSerializer(serializers.Serializer):
     
     # Discounts and tax
     discount_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, default=0, required=False)
-    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, default=0, required=False)
+    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
+    use_shipping_address = serializers.BooleanField(default=True, required=False)
     
     # Optional fields
     notes = serializers.CharField(required=False, allow_blank=True)

@@ -140,6 +140,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // percentage or amount
   const [taxRate, setTaxRate] = useState(0);
+  const [taxJurisdiction, setTaxJurisdiction] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
   const [showScanner, setShowScanner] = useState(false);
@@ -156,6 +157,21 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     phone: '',
     email: ''
   });
+  const [useShippingAddress, setUseShippingAddress] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState({
+    street: '',
+    city: '',
+    state: '',
+    county: '',
+    postcode: '',
+    country: 'US'
+  });
+  
+  // Location dropdown states
+  const [countries, setCountries] = useState([]);
+  const [shippingStates, setShippingStates] = useState([]);
+  const [shippingCounties, setShippingCounties] = useState([]);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   // USB/Keyboard barcode scanner handler
   const scannerTimeoutRef = useRef(null);
@@ -315,8 +331,26 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         // Don't show error toast for customers as it's optional
       }
     };
+    
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch('/api/taxes/location/countries/', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCountries(data.countries || []);
+        }
+      } catch (error) {
+        console.error('[POS] Error fetching countries:', error);
+      }
+    };
 
     fetchCustomers();
+    fetchCountries();
   }, []);
 
   // Load business info and tax rate
@@ -623,32 +657,27 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       
       console.log('[POS] Cart items before mapping:', cartItems);
       
+      // Map cart items to backend format
+      const mappedItems = cartItems.map(item => ({
+        id: item.id,
+        type: 'product', // Currently only supporting products
+        quantity: item.quantity || 1,
+        unit_price: parseFloat(item.price || 0)
+      }));
+
       const saleData = {
-        items: cartItems.map(item => {
-          const mappedItem = {
-            item_name: item.name || 'Unknown Item',
-            product_id: item.id,
-            quantity: item.quantity || 1,
-            unit_price: parseFloat(item.price || 0).toFixed(2),
-            total_price: (parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2),
-            sku: item.sku || '',
-            barcode: item.barcode || ''
-          };
-          console.log('[POS] Mapped item:', mappedItem);
-          return mappedItem;
-        }),
-        customer_id: selectedCustomer,
-        subtotal: totals?.subtotal || '0.00',
-        discount_amount: totals?.discountAmount || '0.00',
-        discount_type: discountType,
-        tax_amount: totals?.taxAmount || '0.00',
-        tax_rate: taxRate,
-        total_amount: totals?.total || '0.00',
+        items: mappedItems,
+        customer_id: selectedCustomer || null,
+        discount_percentage: discountType === 'percentage' ? discount : 0,
         payment_method: paymentMethod,
-        notes,
-        date: new Date().toISOString().split('T')[0],
-        status: 'completed'
+        use_shipping_address: useShippingAddress,
+        notes
       };
+
+      // Add shipping address if using it
+      if (useShippingAddress && selectedCustomer) {
+        saleData.shipping_address = shippingAddress;
+      }
 
       console.log('[POS] Submitting sale data:', JSON.stringify(saleData, null, 2));
       
@@ -673,12 +702,22 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       const result = await response.json();
       console.log('[POS] Sale completed successfully:', result);
 
+      // Store tax jurisdiction info if provided
+      if (result.transaction && result.transaction.tax_jurisdiction) {
+        setTaxJurisdiction({
+          tax_calculation_method: result.transaction.tax_calculation_method,
+          tax_jurisdiction: result.transaction.tax_jurisdiction
+        });
+      }
+
       // Prepare sale data for receipt
       const enhancedSaleData = {
         ...saleData,
         ...result,
-        invoice_number: result.invoice_number || result.id,
+        invoice_number: result.invoice_number || result.transaction?.transaction_number || result.id,
         customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null,
+        tax_jurisdiction: result.transaction?.tax_jurisdiction,
+        tax_calculation_method: result.transaction?.tax_calculation_method
       };
 
       console.log('[POS] Enhanced sale data for receipt:', enhancedSaleData);
@@ -738,6 +777,67 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     (product.sku && product.sku.toLowerCase().includes(productSearchTerm.toLowerCase())) ||
     (product.barcode && product.barcode.includes(productSearchTerm))
   );
+
+  // Fetch states for a country
+  const fetchStates = async (country) => {
+    if (!country) return;
+    
+    try {
+      setLocationLoading(true);
+      const response = await fetch(`/api/taxes/location/states/?country=${country}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShippingStates(data.states || []);
+        setShippingCounties([]); // Reset counties when country changes
+      }
+    } catch (error) {
+      console.error('[POS] Error fetching states:', error);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Fetch counties for a state
+  const fetchCounties = async (country, state) => {
+    if (!country || !state) return;
+    
+    try {
+      setLocationLoading(true);
+      const response = await fetch(`/api/taxes/location/counties/?country=${country}&state=${state}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShippingCounties(data.counties || []);
+      }
+    } catch (error) {
+      console.error('[POS] Error fetching counties:', error);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Handle country change
+  const handleCountryChange = (e) => {
+    const { value } = e.target;
+    setShippingAddress({...shippingAddress, country: value, state: '', county: ''});
+    fetchStates(value);
+  };
+
+  // Handle state change
+  const handleStateChange = (e) => {
+    const { value } = e.target;
+    setShippingAddress({...shippingAddress, state: value, county: ''});
+    fetchCounties(shippingAddress.country, value);
+  };
 
   return (
     <div className="h-full bg-gray-100">
@@ -1005,6 +1105,94 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               )}
             </div>
 
+            {/* Shipping Address Toggle */}
+            {selectedCustomer && (
+              <div className="mt-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={useShippingAddress}
+                    onChange={(e) => setUseShippingAddress(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t('useShippingAddress', 'Use different shipping address')}
+                  </span>
+                </label>
+                
+                {/* Shipping Address Fields */}
+                {useShippingAddress && (
+                  <div className="mt-3 space-y-3 p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder={t('streetAddress', 'Street Address')}
+                        value={shippingAddress.street}
+                        onChange={(e) => setShippingAddress({...shippingAddress, street: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder={t('city', 'City')}
+                        value={shippingAddress.city}
+                        onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <select
+                        value={shippingAddress.state}
+                        onChange={handleStateChange}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        disabled={!shippingAddress.country || locationLoading}
+                      >
+                        <option value="">{t('selectState', 'Select State')}</option>
+                        {shippingStates.map(state => (
+                          <option key={state.code} value={state.code}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={shippingAddress.county}
+                        onChange={(e) => setShippingAddress({...shippingAddress, county: e.target.value})}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        disabled={!shippingAddress.state || locationLoading}
+                      >
+                        <option value="">{t('selectCounty', 'Select County')}</option>
+                        {shippingCounties.map(county => (
+                          <option key={county.code} value={county.code}>
+                            {county.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder={t('zipCode', 'Zip Code')}
+                        value={shippingAddress.postcode}
+                        onChange={(e) => setShippingAddress({...shippingAddress, postcode: e.target.value})}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                    </div>
+                    <select
+                      value={shippingAddress.country}
+                      onChange={handleCountryChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="">Select Country</option>
+                      {countries.map(country => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Discount */}
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div>
@@ -1042,18 +1230,46 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                 <input
                   type="number"
                   value={taxRate}
-                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    setTaxRate(parseFloat(e.target.value) || 0);
+                    setTaxJurisdiction(null); // Clear jurisdiction when manually setting rate
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   step="0.01"
                   min="0"
                   max="100"
+                  placeholder="Leave blank for automatic calculation"
                 />
+                
+                {/* Tax Jurisdiction Display */}
+                {taxJurisdiction && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded-lg text-xs">
+                    <div className="font-medium text-blue-900 mb-1">
+                      Tax calculated using: {taxJurisdiction.tax_calculation_method === 'destination' ? 'Customer shipping address' :
+                                            taxJurisdiction.tax_calculation_method === 'billing' ? 'Customer billing address' :
+                                            taxJurisdiction.tax_calculation_method === 'origin' ? 'Business location' :
+                                            taxJurisdiction.tax_calculation_method}
+                    </div>
+                    {taxJurisdiction.tax_jurisdiction && (
+                      <div className="text-blue-700">
+                        {taxJurisdiction.tax_jurisdiction.state && (
+                          <div>State: {taxJurisdiction.tax_jurisdiction.state} ({taxJurisdiction.tax_jurisdiction.state_rate}%)</div>
+                        )}
+                        {taxJurisdiction.tax_jurisdiction.county && (
+                          <div>County: {taxJurisdiction.tax_jurisdiction.county} ({taxJurisdiction.tax_jurisdiction.county_rate}%)</div>
+                        )}
+                        <div className="font-medium mt-1">Total Rate: {taxJurisdiction.tax_jurisdiction.total_rate}%</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="mt-1 flex items-start space-x-1">
-                  <svg className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                   <span className="text-xs text-gray-500">
-                    This is an estimated tax rate and may not be accurate. Please verify with your local tax regulations.
+                    Leave blank for automatic destination-based tax calculation. Enter a value to override.
                   </span>
                 </div>
               </div>

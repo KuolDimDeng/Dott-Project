@@ -24,6 +24,14 @@ const CustomerManagement = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState(null);
     const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+    
+    // Location dropdown states
+    const [countries, setCountries] = useState([]);
+    const [billingStates, setBillingStates] = useState([]);
+    const [billingCounties, setBillingCounties] = useState([]);
+    const [shippingStates, setShippingStates] = useState([]);
+    const [shippingCounties, setShippingCounties] = useState([]);
+    const [locationLoading, setLocationLoading] = useState(false);
   
   // Refs
   const isMounted = useRef(true);
@@ -38,14 +46,27 @@ const CustomerManagement = () => {
     address: '',
     city: '',
     state: '',
+    billing_county: '',
     zip_code: '',
     country: '',
-    notes: ''
+    notes: '',
+    // Tax exemption fields
+    is_tax_exempt: false,
+    tax_exempt_certificate: '',
+    tax_exempt_expiry: '',
+    // Shipping address fields
+    shipping_street: '',
+    shipping_city: '',
+    shipping_state: '',
+    shipping_county: '',
+    shipping_postcode: '',
+    shipping_country: ''
   });
 
   useEffect(() => {
     isMounted.current = true;
     fetchCustomers();
+    fetchCountries();
     return () => {
       isMounted.current = false;
     };
@@ -104,6 +125,113 @@ const CustomerManagement = () => {
       }
     }
   }, []);
+
+  // Fetch countries for dropdown
+  const fetchCountries = async () => {
+    try {
+      const response = await fetch('/api/taxes/location/countries/', {
+        headers: {
+          'Authorization': `Bearer ${getCacheValue('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCountries(data.countries || []);
+      }
+    } catch (error) {
+      console.error('[CustomerManagement] Error fetching countries:', error);
+    }
+  };
+
+  // Fetch states for a country
+  const fetchStates = async (country, type = 'billing') => {
+    if (!country) return;
+    
+    try {
+      setLocationLoading(true);
+      const response = await fetch(`/api/taxes/location/states/?country=${country}`, {
+        headers: {
+          'Authorization': `Bearer ${getCacheValue('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (type === 'billing') {
+          setBillingStates(data.states || []);
+          setBillingCounties([]); // Reset counties when country changes
+        } else {
+          setShippingStates(data.states || []);
+          setShippingCounties([]); // Reset counties when country changes
+        }
+      }
+    } catch (error) {
+      console.error('[CustomerManagement] Error fetching states:', error);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Fetch counties for a state
+  const fetchCounties = async (country, state, type = 'billing') => {
+    if (!country || !state) return;
+    
+    try {
+      setLocationLoading(true);
+      const response = await fetch(`/api/taxes/location/counties/?country=${country}&state=${state}`, {
+        headers: {
+          'Authorization': `Bearer ${getCacheValue('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (type === 'billing') {
+          setBillingCounties(data.counties || []);
+        } else {
+          setShippingCounties(data.counties || []);
+        }
+      }
+    } catch (error) {
+      console.error('[CustomerManagement] Error fetching counties:', error);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Handle country change
+  const handleCountryChange = (e, type = 'billing') => {
+    const { name, value } = e.target;
+    handleFormChange(e);
+    
+    // Fetch states for the selected country
+    fetchStates(value, type);
+    
+    // Reset state and county when country changes
+    if (type === 'billing') {
+      setFormData(prev => ({ ...prev, state: '', billing_county: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, shipping_state: '', shipping_county: '' }));
+    }
+  };
+
+  // Handle state change
+  const handleStateChange = (e, type = 'billing') => {
+    const { name, value } = e.target;
+    handleFormChange(e);
+    
+    // Fetch counties for the selected state
+    const country = type === 'billing' ? formData.country : formData.shipping_country;
+    fetchCounties(country, value, type);
+    
+    // Reset county when state changes
+    if (type === 'billing') {
+      setFormData(prev => ({ ...prev, billing_county: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, shipping_county: '' }));
+    }
+  };
 
   // Handle form changes
   const handleFormChange = useCallback((e) => {
@@ -230,7 +358,7 @@ const CustomerManagement = () => {
   }, []);
 
   // Handle edit customer
-  const handleEditCustomer = useCallback((customer) => {
+  const handleEditCustomer = useCallback(async (customer) => {
     console.log('[CustomerManagement] Editing customer:', customer);
     setSelectedCustomer(customer);
     setFormData({
@@ -242,10 +370,38 @@ const CustomerManagement = () => {
       address: customer.address || '',
       city: customer.city || '',
       state: customer.state || '',
+      billing_county: customer.billing_county || '',
       zip_code: customer.zip_code || '',
       country: customer.country || '',
-      notes: customer.notes || ''
+      notes: customer.notes || '',
+      // Tax exemption fields
+      is_tax_exempt: customer.is_tax_exempt || false,
+      tax_exempt_certificate: customer.tax_exempt_certificate || '',
+      tax_exempt_expiry: customer.tax_exempt_expiry || '',
+      // Shipping address fields
+      shipping_street: customer.shipping_street || '',
+      shipping_city: customer.shipping_city || '',
+      shipping_state: customer.shipping_state || '',
+      shipping_county: customer.shipping_county || '',
+      shipping_postcode: customer.shipping_postcode || '',
+      shipping_country: customer.shipping_country || ''
     });
+    
+    // Pre-fetch states for selected countries
+    if (customer.country) {
+      await fetchStates(customer.country, 'billing');
+      if (customer.state) {
+        await fetchCounties(customer.country, customer.state, 'billing');
+      }
+    }
+    
+    if (customer.shipping_country) {
+      await fetchStates(customer.shipping_country, 'shipping');
+      if (customer.shipping_state) {
+        await fetchCounties(customer.shipping_country, customer.shipping_state, 'shipping');
+      }
+    }
+    
     setIsEditing(true);
     setShowCustomerDetails(true);
   }, []);
@@ -356,7 +512,7 @@ const CustomerManagement = () => {
             />
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 City
@@ -375,14 +531,40 @@ const CustomerManagement = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 State
               </label>
-              <input
-                type="text"
+              <select
                 name="state"
                 value={formData.state}
+                onChange={(e) => handleStateChange(e, 'billing')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!formData.country || locationLoading}
+              >
+                <option value="">Select State</option>
+                {billingStates.map(state => (
+                  <option key={state.code} value={state.code}>
+                    {state.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                County
+              </label>
+              <select
+                name="billing_county"
+                value={formData.billing_county}
                 onChange={handleFormChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="State"
-              />
+                disabled={!formData.state || locationLoading}
+              >
+                <option value="">Select County</option>
+                {billingCounties.map(county => (
+                  <option key={county.code} value={county.code}>
+                    {county.name}
+                  </option>
+                ))}
+              </select>
             </div>
             
             <div>
@@ -403,14 +585,19 @@ const CustomerManagement = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Country
               </label>
-              <input
-                type="text"
+              <select
                 name="country"
                 value={formData.country}
-                onChange={handleFormChange}
+                onChange={(e) => handleCountryChange(e, 'billing')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Country"
-              />
+              >
+                <option value="">Select Country</option>
+                {countries.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -427,6 +614,169 @@ const CustomerManagement = () => {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Additional notes about the customer..."
           />
+        </div>
+
+        {/* Tax Exemption Section */}
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Tax Exemption</h3>
+          
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_tax_exempt"
+                name="is_tax_exempt"
+                checked={formData.is_tax_exempt}
+                onChange={(e) => setFormData({...formData, is_tax_exempt: e.target.checked})}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="is_tax_exempt" className="ml-2 block text-sm text-gray-900">
+                Customer is tax exempt
+              </label>
+            </div>
+            
+            {formData.is_tax_exempt && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tax Exemption Certificate
+                  </label>
+                  <input
+                    type="text"
+                    name="tax_exempt_certificate"
+                    value={formData.tax_exempt_certificate}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Certificate number"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Exemption Expiry Date
+                  </label>
+                  <input
+                    type="date"
+                    name="tax_exempt_expiry"
+                    value={formData.tax_exempt_expiry}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Shipping Address Section */}
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Shipping Address</h3>
+          <p className="text-sm text-gray-500 mb-4">If different from billing address</p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Street Address
+              </label>
+              <input
+                type="text"
+                name="shipping_street"
+                value={formData.shipping_street}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Shipping street address"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City
+                </label>
+                <input
+                  type="text"
+                  name="shipping_city"
+                  value={formData.shipping_city}
+                  onChange={handleFormChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="City"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State
+                </label>
+                <select
+                  name="shipping_state"
+                  value={formData.shipping_state}
+                  onChange={(e) => handleStateChange(e, 'shipping')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.shipping_country || locationLoading}
+                >
+                  <option value="">Select State</option>
+                  {shippingStates.map(state => (
+                    <option key={state.code} value={state.code}>
+                      {state.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  County
+                </label>
+                <select
+                  name="shipping_county"
+                  value={formData.shipping_county}
+                  onChange={handleFormChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.shipping_state || locationLoading}
+                >
+                  <option value="">Select County</option>
+                  {shippingCounties.map(county => (
+                    <option key={county.code} value={county.code}>
+                      {county.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Zip Code
+                </label>
+                <input
+                  type="text"
+                  name="shipping_postcode"
+                  value={formData.shipping_postcode}
+                  onChange={handleFormChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="12345"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Country
+                </label>
+                <select
+                  name="shipping_country"
+                  value={formData.shipping_country}
+                  onChange={(e) => handleCountryChange(e, 'shipping')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Country</option>
+                  {countries.map(country => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3 pt-6 border-t">
@@ -445,9 +795,21 @@ const CustomerManagement = () => {
                 address: '',
                 city: '',
                 state: '',
+                billing_county: '',
                 zip_code: '',
                 country: '',
-                notes: ''
+                notes: '',
+                // Tax exemption fields
+                is_tax_exempt: false,
+                tax_exempt_certificate: '',
+                tax_exempt_expiry: '',
+                // Shipping address fields
+                shipping_street: '',
+                shipping_city: '',
+                shipping_state: '',
+                shipping_county: '',
+                shipping_postcode: '',
+                shipping_country: ''
               });
             }}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"

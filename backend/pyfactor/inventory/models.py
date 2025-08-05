@@ -289,6 +289,22 @@ class Product(AuditMixin, TenantAwareModel):
     markup_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Default markup % when billing to customers')
     is_billable = models.BooleanField(default=True, help_text='Can this supply be billed to customers?')
     
+    # Tax exemption fields
+    is_tax_exempt = models.BooleanField(default=False, help_text='Product is tax exempt')
+    tax_category = models.CharField(
+        max_length=50,
+        choices=[
+            ('standard', 'Standard Rate'),
+            ('reduced', 'Reduced Rate'),
+            ('zero', 'Zero Rate'),
+            ('exempt', 'Tax Exempt'),
+        ],
+        default='standard',
+        blank=True,
+        null=True,
+        help_text='Tax category for this product'
+    )
+    
     # For reusable items/tools
     reorder_level = models.IntegerField(default=0, help_text='Minimum quantity before reorder alert')
     unit = models.CharField(max_length=50, default='units', help_text='Unit of measurement (units, lbs, kg, etc.)')
