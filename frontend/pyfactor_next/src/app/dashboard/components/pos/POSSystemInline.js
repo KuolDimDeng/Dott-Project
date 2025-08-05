@@ -1221,44 +1221,97 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               </div>
             </div>
 
-            {/* Tax */}
+            {/* Tax Information (Read-Only) */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('taxRate')} (%)
+                {t('taxInformation', 'Tax Information')}
               </label>
               <div className="relative">
-                <input
-                  type="number"
-                  value={taxRate}
-                  onChange={(e) => {
-                    setTaxRate(parseFloat(e.target.value) || 0);
-                    setTaxJurisdiction(null); // Clear jurisdiction when manually setting rate
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="Leave blank for automatic calculation"
-                />
+                <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-900">
+                      Total Rate: {taxRate.toFixed(2)}%
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {taxJurisdiction?.source === 'tenant_override' ? 'Custom Rate' : 'Automatic'}
+                    </span>
+                  </div>
+                  
+                  {taxJurisdiction?.is_custom_rate && (
+                    <div className="mt-1 text-xs text-blue-600">
+                      <span className="font-medium">Custom Override:</span> {taxJurisdiction?.override_reason || 'Custom tax rate applied'}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-1 text-xs text-gray-500 flex items-center">
+                  <svg className="w-3 h-3 text-gray-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                  Tax rates are configured in Settings → Taxes (Admin access required)
+                </div>
                 
                 {/* Tax Jurisdiction Display */}
                 {taxJurisdiction && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded-lg text-xs">
-                    <div className="font-medium text-blue-900 mb-1">
-                      Tax calculated using: {taxJurisdiction.tax_calculation_method === 'destination' ? 'Customer shipping address' :
-                                            taxJurisdiction.tax_calculation_method === 'billing' ? 'Customer billing address' :
-                                            taxJurisdiction.tax_calculation_method === 'origin' ? 'Business location' :
-                                            taxJurisdiction.tax_calculation_method}
+                  <div className={`mt-2 p-3 rounded-lg text-xs border ${
+                    taxJurisdiction.tax_calculation_method === 'international_export' 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-blue-50 border-blue-200'
+                  }`}>
+                    <div className={`font-medium mb-2 flex items-center justify-between ${
+                      taxJurisdiction.tax_calculation_method === 'international_export' 
+                        ? 'text-green-900' 
+                        : 'text-blue-900'
+                    }`}>
+                      <span>
+                        Tax Source: {taxJurisdiction.tax_calculation_method === 'destination' ? 'Customer Shipping Address' :
+                                    taxJurisdiction.tax_calculation_method === 'billing' ? 'Customer Billing Address' :
+                                    taxJurisdiction.tax_calculation_method === 'origin' ? 'Business Location' :
+                                    taxJurisdiction.tax_calculation_method === 'international_export' ? 'International Sale (Tax-Free Export)' :
+                                    taxJurisdiction.tax_calculation_method}
+                      </span>
+                      {taxJurisdiction.tax_jurisdiction?.source === 'tenant_override' && (
+                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
+                          CUSTOM
+                        </span>
+                      )}
                     </div>
+                    
+                    {/* International Export Message */}
+                    {taxJurisdiction.tax_calculation_method === 'international_export' && (
+                      <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded text-green-800 font-medium">
+                        🌍 International Export - Zero Tax Applied
+                        <div className="text-xs font-normal mt-1">
+                          Export sales are typically tax-free in most jurisdictions
+                        </div>
+                      </div>
+                    )}
+                    
                     {taxJurisdiction.tax_jurisdiction && (
-                      <div className="text-blue-700">
-                        {taxJurisdiction.tax_jurisdiction.state && (
-                          <div>State: {taxJurisdiction.tax_jurisdiction.state} ({taxJurisdiction.tax_jurisdiction.state_rate}%)</div>
-                        )}
-                        {taxJurisdiction.tax_jurisdiction.county && (
-                          <div>County: {taxJurisdiction.tax_jurisdiction.county} ({taxJurisdiction.tax_jurisdiction.county_rate}%)</div>
-                        )}
-                        <div className="font-medium mt-1">Total Rate: {taxJurisdiction.tax_jurisdiction.total_rate}%</div>
+                      <div className="space-y-1">
+                        <div className="text-blue-800 font-medium">
+                          Location: {taxJurisdiction.tax_jurisdiction.country}
+                          {taxJurisdiction.tax_jurisdiction.state && `, ${taxJurisdiction.tax_jurisdiction.state}`}
+                          {taxJurisdiction.tax_jurisdiction.county && `, ${taxJurisdiction.tax_jurisdiction.county}`}
+                        </div>
+                        
+                        <div className="text-blue-700 space-y-1 mt-2">
+                          <div className="font-medium text-blue-800 mb-1">Tax Breakdown:</div>
+                          
+                          {taxJurisdiction.tax_jurisdiction.components?.map((component, index) => (
+                            <div key={index} className="flex justify-between">
+                              <span className="capitalize">{component.type}: {component.name}</span>
+                              <span className="font-medium">{(parseFloat(component.rate) * 100).toFixed(2)}%</span>
+                            </div>
+                          ))}
+                          
+                          <div className="border-t border-blue-200 pt-1 mt-2">
+                            <div className="flex justify-between font-medium text-blue-900">
+                              <span>Total Rate:</span>
+                              <span>{taxJurisdiction.tax_jurisdiction.total_rate ? (parseFloat(taxJurisdiction.tax_jurisdiction.total_rate) * 100).toFixed(2) : '0.00'}%</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

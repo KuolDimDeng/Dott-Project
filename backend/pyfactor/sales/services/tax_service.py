@@ -26,7 +26,11 @@ class TaxService:
         use_shipping_address: bool = True
     ) -> Dict:
         """
-        Calculate tax for a POS transaction using destination-based taxation.
+        Calculate tax for a POS transaction using smart international taxation.
+        
+        Phase 1 Approach:
+        - Domestic sales: Origin or destination-based taxation
+        - International sales: Zero tax (export exemption)
         
         Args:
             customer: Customer object (optional)
@@ -39,7 +43,7 @@ class TaxService:
             - total_tax_amount: Total tax amount
             - tax_rate: Effective tax rate (weighted average)
             - tax_jurisdiction: Breakdown of tax components
-            - tax_calculation_method: Method used (destination/billing/origin)
+            - tax_calculation_method: Method used (domestic/international/origin)
             - line_items: Tax details per item
         """
         try:
@@ -52,10 +56,21 @@ class TaxService:
                 customer, user_profile, use_shipping_address
             )
             
-            logger.info(f"Tax calculation using {tax_location['method']} method: "
+            # Step 2: Check if this is an international sale (Phase 1 approach)
+            business_country = str(user_profile.country) if user_profile.country else 'US'
+            customer_country = tax_location['country']
+            
+            # International sales = zero tax (export exemption)
+            if business_country != customer_country:
+                logger.info(f"International sale detected: {business_country} → {customer_country}. Applying zero tax.")
+                return TaxService._create_zero_tax_response(
+                    items, tax_location, "international_export"
+                )
+            
+            logger.info(f"Domestic sale: Tax calculation using {tax_location['method']} method: "
                        f"{tax_location['country']}, {tax_location['state']}, {tax_location['county']}")
             
-            # Step 2: Get applicable tax rates (check overrides first)
+            # Step 3: Get applicable tax rates for domestic sales
             tax_rates = TaxService._get_tax_rates(
                 tax_location['country'],
                 tax_location['state'],
@@ -63,7 +78,7 @@ class TaxService:
                 tenant_id
             )
             
-            # Step 3: Calculate tax for each item
+            # Step 4: Calculate tax for each item
             line_items = []
             total_tax = Decimal('0')
             total_taxable = Decimal('0')
@@ -396,3 +411,62 @@ class TaxService:
                 'tax_calculation_method': 'error',
                 'line_items': []
             }
+    
+    @staticmethod
+    def _create_zero_tax_response(
+        items: List[Dict],
+        tax_location: Dict,
+        method: str
+    ) -> Dict:
+        """
+        Create a zero-tax response for international sales or tax-exempt transactions.
+        """
+        line_items = []
+        total_taxable = Decimal('0')
+        
+        for item in items:
+            quantity = item['quantity']
+            unit_price = item['unit_price']
+            discount_percentage = item.get('discount_percentage', Decimal('0'))
+            
+            # Calculate base amounts
+            subtotal = quantity * unit_price
+            discount_amount = subtotal * discount_percentage / 100
+            taxable_amount = subtotal - discount_amount
+            total_taxable += taxable_amount
+            
+            line_items.append({
+                'item_name': item['item'].name,
+                'quantity': quantity,
+                'unit_price': unit_price,
+                'subtotal': subtotal,
+                'discount_amount': discount_amount,
+                'taxable_amount': taxable_amount,
+                'tax_rate': Decimal('0'),
+                'tax_amount': Decimal('0'),
+                'is_exempt': True,
+                'exemption_reason': 'International export' if method == 'international_export' else 'Tax exempt'
+            })
+        
+        # Build jurisdiction info for international sales
+        jurisdiction_info = {
+            'country': tax_location['country'],
+            'state': tax_location.get('state', ''),
+            'county': tax_location.get('county', ''),
+            'state_rate': '0.0000',
+            'county_rate': '0.0000',
+            'total_rate': '0.0000',
+            'components': [],
+            'source': 'international_exempt' if method == 'international_export' else 'exempt',
+            'is_custom_rate': False,
+            'exemption_reason': 'Export exemption - no tax on international sales' if method == 'international_export' else 'Tax exempt'
+        }
+        
+        return {
+            'total_tax_amount': Decimal('0'),
+            'tax_rate': Decimal('0'),
+            'tax_jurisdiction': jurisdiction_info,
+            'tax_calculation_method': method,
+            'line_items': line_items,
+            'total_taxable_amount': total_taxable
+        }
