@@ -4,7 +4,7 @@ Handles complete sales, refunds, and transaction management.
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -88,7 +88,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             tax_rate = validated_data.get('tax_rate', Decimal('0'))
             notes = validated_data.get('notes', '')
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Step 1: Validate stock availability
                 logger.info(f"Starting POS sale completion for {len(items)} items")
                 InventoryService.validate_stock_availability(items)
@@ -274,7 +274,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             
             void_reason = request.data.get('reason', 'Transaction voided')
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Prepare items data for inventory restoration
                 items_for_restoration = []
                 for item in pos_transaction.items.all():
@@ -405,7 +405,7 @@ class POSRefundViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create the refund
                 refund = serializer.save()
                 
