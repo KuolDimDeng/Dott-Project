@@ -346,9 +346,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     };
 
     const fetchEstimatedTaxRate = async () => {
-      console.log('[POS] 🔍 Fetching estimated tax rate...');
+      console.log('[POS] 🔍 Fetching tax rate from tenant settings...');
       try {
-        const response = await fetch('/api/pos/tax-rate', {
+        const response = await fetch('/api/settings/taxes', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -358,35 +358,42 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         
         if (response.ok) {
           const taxData = await response.json();
-          console.log('[POS] 📊 Tax rate data received:', taxData);
+          console.log('[POS] 📊 Tax settings received:', taxData);
           
-          if (taxData.estimated_rate !== undefined && taxData.estimated_rate !== null) {
-            setTaxRate(taxData.estimated_rate);
+          // Check if user has tax settings (either custom or from global)
+          if (taxData.settings && taxData.settings.sales_tax_rate !== undefined) {
+            // Convert from decimal to percentage (0.0875 → 8.75)
+            const taxRatePercentage = parseFloat(taxData.settings.sales_tax_rate) * 100;
+            setTaxRate(taxRatePercentage);
             
-            // Show user a notification about the estimated rate
-            let location = taxData.country_name || taxData.country || '';
-            if (taxData.region_name || taxData.region) {
-              location += `, ${taxData.region_name || taxData.region}`;
-            }
+            // Show notification based on source
+            const source = taxData.source === 'tenant' ? 'your custom settings' : 'default rates';
+            const location = taxData.settings.country_name || taxData.settings.country || '';
+            const region = taxData.settings.region_name || taxData.settings.region_code || '';
+            const fullLocation = region ? `${location}, ${region}` : location;
             
-            toast.info(
-              `Tax rate set to ${taxData.estimated_rate}% based on ${location}. ` +
-              `This is an AI estimate - please verify with local regulations.`,
-              { duration: 6000 }
+            toast.success(
+              `Tax rate set to ${taxRatePercentage.toFixed(2)}% from ${source}` + 
+              (fullLocation ? ` (${fullLocation})` : ''),
+              { duration: 4000 }
             );
             
-            console.log(`[POS] ✅ Tax rate set to ${taxData.estimated_rate}% (${taxData.tax_type})`);
-            console.log(`[POS] 📝 AI Notes: ${taxData.ai_notes}`);
-            console.log(`[POS] 🎯 Confidence: ${(taxData.confidence * 100).toFixed(0)}%`);
+            console.log(`[POS] ✅ Tax rate set to ${taxRatePercentage}% from ${taxData.source}`);
           } else {
-            console.log('[POS] ⚠️ No tax rate available, defaulting to 0%');
+            console.log('[POS] ⚠️ No tax settings found, defaulting to 0%');
+            setTaxRate(0);
             toast.warning(
-              'Could not determine tax rate for your location. Please set it manually.',
+              'No tax rate configured. Please set it in Settings → Taxes.',
               { duration: 5000 }
             );
           }
         } else {
-          console.error('[POS] ❌ Failed to fetch tax rate:', response.status);
+          console.error('[POS] ❌ Failed to fetch tax settings:', response.status);
+          setTaxRate(0);
+          toast.error(
+            'Could not load tax settings. Please check your settings.',
+            { duration: 5000 }
+          );
         }
       } catch (error) {
         console.error('[POS] ❌ Error fetching tax rate:', error);
