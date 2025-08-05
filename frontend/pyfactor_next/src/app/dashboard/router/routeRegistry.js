@@ -651,7 +651,7 @@ export const routeRegistry = {
 
   // Tools & Settings
   'profile': {
-    component: enhancedLazy(() => import('../../../profile/page'), 'Profile'),
+    component: enhancedLazy(() => import('../components/profile/ProfileWrapper'), 'Profile'),
     title: 'My Profile',
     description: 'View and edit your profile'
   },
