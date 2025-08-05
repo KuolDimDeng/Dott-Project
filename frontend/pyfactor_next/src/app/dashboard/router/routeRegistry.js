@@ -39,9 +39,9 @@ const enhancedLazy = (importFn, componentName) => {
 export const routeRegistry = {
   // Dashboard Views
   'dashboard': {
-    component: enhancedLazy(() => import('../components/dashboards/MainDashboard'), 'Main Dashboard'),
+    component: enhancedLazy(() => import('../components/dashboards/BusinessOverviewDashboard'), 'Business Overview'),
     title: 'Dashboard',
-    description: 'Main dashboard overview'
+    description: 'Business overview dashboard'
   },
   'sales-dashboard': {
     component: enhancedLazy(() => import('../components/dashboards/SalesDashboard'), 'Sales Dashboard'),
@@ -128,12 +128,12 @@ export const routeRegistry = {
     description: 'Sales terminal and checkout'
   },
   'products': {
-    component: enhancedLazy(() => import('@/domains/products/components/ProductManagement'), 'Product Management'),
+    component: enhancedLazy(() => import('../components/forms/ProductManagement'), 'Product Management'),
     title: 'Products',
     description: 'Manage product catalog'
   },
   'product-management': {
-    component: enhancedLazy(() => import('@/domains/products/components/ProductManagement'), 'Product Management'),
+    component: enhancedLazy(() => import('../components/forms/ProductManagement'), 'Product Management'),
     title: 'Product Management',
     description: 'Manage products'
   },
@@ -153,9 +153,49 @@ export const routeRegistry = {
     description: 'Manage services'
   },
   'create-product': {
-    component: enhancedLazy(() => import('../components/forms/CreateProductManagement'), 'Create Product'),
+    component: enhancedLazy(() => import('../components/forms/ProductManagement'), 'Create Product'),
     title: 'Create Product',
     description: 'Add new products'
+  },
+  'create-service': {
+    component: enhancedLazy(() => import('../components/forms/ServiceManagement'), 'Create Service'),
+    title: 'Create Service',
+    description: 'Add new services'
+  },
+  'create-customer': {
+    component: enhancedLazy(() => import('../components/forms/CustomerManagement'), 'Create Customer'),
+    title: 'Create Customer',
+    description: 'Add new customers'
+  },
+  'create-vendor': {
+    component: enhancedLazy(() => import('../components/forms/VendorManagement'), 'Create Vendor'),
+    title: 'Create Vendor',
+    description: 'Add new vendors'
+  },
+  'create-invoice': {
+    component: enhancedLazy(() => import('../components/forms/InvoiceBuilder'), 'Create Invoice'),
+    title: 'Create Invoice',
+    description: 'Create new invoice'
+  },
+  'create-estimate': {
+    component: enhancedLazy(() => import('../components/forms/EstimateManagement'), 'Create Estimate'),
+    title: 'Create Estimate',
+    description: 'Create new estimate'
+  },
+  'create-bill': {
+    component: enhancedLazy(() => import('../components/forms/BillManagement'), 'Create Bill'),
+    title: 'Create Bill',
+    description: 'Create new bill'
+  },
+  'create-job': {
+    component: enhancedLazy(() => import('../components/jobs/JobCreator'), 'Create Job'),
+    title: 'Create Job',
+    description: 'Create new job'
+  },
+  'create-transaction': {
+    component: enhancedLazy(() => import('../components/forms/TransactionForm'), 'Create Transaction'),
+    title: 'Create Transaction',
+    description: 'Create new transaction'
   },
   'sales-products': {
     component: enhancedLazy(() => import('../components/forms/SalesProductManagement'), 'Sales Products'),
@@ -173,24 +213,24 @@ export const routeRegistry = {
     description: 'Manage estimates'
   },
   'orders': {
-    component: enhancedLazy(() => import('../components/forms/OrderManagement'), 'Order Management'),
+    component: enhancedLazy(() => import('../components/forms/SalesOrderManagement'), 'Sales Order Management'),
     title: 'Orders',
     description: 'Manage customer orders'
   },
   'order-management': {
-    component: enhancedLazy(() => import('../components/forms/OrderManagement'), 'Order Management'),
+    component: enhancedLazy(() => import('../components/forms/SalesOrderManagement'), 'Sales Order Management'),
     title: 'Orders',
     description: 'Manage orders'
   },
   'sales-reports-management': {
-    component: enhancedLazy(() => import('../components/forms/ReportDisplay'), 'Sales Reports'),
+    component: enhancedLazy(() => import('../components/forms/SalesReportsManagement'), 'Sales Reports'),
     title: 'Sales Reports',
     description: 'Sales analytics and reports'
   },
 
   // Customer Management
   'customers': {
-    component: enhancedLazy(() => import('../components/lists/CustomerList'), 'Customer List'),
+    component: enhancedLazy(() => import('../components/forms/CustomerManagement'), 'Customer Management'),
     title: 'Customers',
     description: 'Manage customers'
   },

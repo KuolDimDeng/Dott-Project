@@ -135,8 +135,24 @@ const RenderMainContent = React.memo(function RenderMainContent({
   useEffect(() => {
     let mappedView = view;
     
+    // Handle create options
+    if (props.showCreateOptions && props.selectedOption) {
+      const createMappings = {
+        'Product': 'create-product',
+        'Service': 'create-service',
+        'Customer': 'create-customer',
+        'Vendor': 'create-vendor',
+        'Invoice': 'create-invoice',
+        'Estimate': 'create-estimate',
+        'Bill': 'create-bill',
+        'Job': 'create-job',
+        'Transaction': 'create-transaction',
+        'Sales': 'pos'
+      };
+      mappedView = createMappings[props.selectedOption] || view;
+    }
     // Complete legacy prop mapping
-    if (props.showProductManagement) mappedView = 'products';
+    else if (props.showProductManagement) mappedView = 'products';
     else if (props.showServiceManagement) mappedView = 'services';
     else if (props.showCreateProduct) mappedView = 'create-product';
     else if (props.showCustomerList) mappedView = 'customers';
@@ -174,7 +190,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
     else if (props.showHome || !mappedView) mappedView = 'home';
     
     setCurrentView(mappedView);
-  }, [view, props]);
+  }, [view, props, props.showCreateOptions, props.selectedOption]);
 
   console.log('[RenderMainContent] Current view:', currentView);
 
