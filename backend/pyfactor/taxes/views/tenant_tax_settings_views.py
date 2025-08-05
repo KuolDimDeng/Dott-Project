@@ -93,7 +93,8 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
         tenant_settings = TenantTaxSettings.objects.filter(
             tenant_id=tenant_id,
             country=country,
-            region_code=region_code
+            region_code=region_code,
+            locality=''  # For now, default to state-level settings
         ).first()
         
         if tenant_settings:
@@ -167,7 +168,8 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
         existing = TenantTaxSettings.objects.filter(
             tenant_id=tenant_id,
             country=data.get('country'),
-            region_code=data.get('region_code', '')
+            region_code=data.get('region_code', ''),
+            locality=data.get('locality', '')
         ).first()
         
         if existing:
@@ -202,6 +204,51 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
                 })
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def counties(self, request):
+        """
+        Get available counties for a state
+        """
+        country = request.query_params.get('country')
+        state = request.query_params.get('state')
+        
+        if not country or not state:
+            return Response(
+                {"error": "Country and state parameters required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get counties with tax rates for this state
+        counties = GlobalSalesTaxRate.objects.filter(
+            country=country,
+            region_code=state,
+            is_current=True
+        ).exclude(
+            locality=''
+        ).values('locality').distinct().order_by('locality')
+        
+        # Format response
+        county_list = []
+        for county in counties:
+            # Try to get the full county info
+            county_rate = GlobalSalesTaxRate.objects.filter(
+                country=country,
+                region_code=state,
+                locality=county['locality'],
+                is_current=True
+            ).first()
+            
+            if county_rate:
+                county_list.append({
+                    'code': county['locality'],
+                    'name': county_rate.manual_notes.split('County: ')[-1] if 'County: ' in county_rate.manual_notes else county['locality']
+                })
+        
+        return Response({
+            "state": state,
+            "counties": county_list
+        })
     
     @action(detail=False, methods=['get'])
     def global_rates(self, request):

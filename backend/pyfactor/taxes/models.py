@@ -1728,6 +1728,8 @@ class TenantTaxSettings(models.Model):
     country = CountryField()
     region_code = models.CharField(max_length=10, blank=True)
     region_name = models.CharField(max_length=100, blank=True)
+    locality = models.CharField(max_length=100, blank=True, default='', help_text='County or local jurisdiction code')
+    locality_name = models.CharField(max_length=200, blank=True, default='', help_text='County or local jurisdiction name')
     
     # Override info
     is_custom_rate = models.BooleanField(

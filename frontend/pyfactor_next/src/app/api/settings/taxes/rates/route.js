@@ -6,13 +6,18 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const country = searchParams.get('country');
     const state = searchParams.get('state');
+    const county = searchParams.get('county');
     
-    console.log('🎯 [Tax Rates API] Fetching rates for:', { country, state });
+    console.log('🎯 [Tax Rates API] Fetching rates for:', { country, state, county });
     
-    // Fetch global sales tax rate for the specified location
-    const endpoint = state 
-      ? `taxes/global-rates/sales-tax/?country=${country}&state=${state}`
-      : `taxes/global-rates/sales-tax/?country=${country}`;
+    // Build endpoint based on parameters
+    let endpoint = `taxes/global-rates/sales-tax/?country=${country}`;
+    if (state) {
+      endpoint += `&state=${state}`;
+    }
+    if (county) {
+      endpoint += `&county=${county}`;
+    }
       
     const response = await makeRequest(endpoint, {
       method: 'GET',

@@ -90,8 +90,13 @@ const TaxSettings = () => {
   const [businessInfo, setBusinessInfo] = useState({
     country: '',
     state: '',
+    county: '',
     country_name: ''
   });
+  
+  // County data
+  const [availableCounties, setAvailableCounties] = useState([]);
+  const [loadingCounties, setLoadingCounties] = useState(false);
   
   // Fetch all tax settings on mount
   useEffect(() => {
@@ -220,8 +225,9 @@ const TaxSettings = () => {
   const handleStateChange = async (stateCode) => {
     console.log('🎯 [TaxSettings] State changed to:', stateCode);
     
-    // Update business info
-    setBusinessInfo(prev => ({ ...prev, state: stateCode }));
+    // Update business info and reset county
+    setBusinessInfo(prev => ({ ...prev, state: stateCode, county: '' }));
+    setAvailableCounties([]);
     
     // If US and state selected, fetch rates for that state
     if (businessInfo.country === 'US' && stateCode) {
@@ -246,6 +252,9 @@ const TaxSettings = () => {
           notifySuccess(`Sales tax rate updated to ${salesData.rate.region_name} rate: ${(salesData.rate.rate * 100).toFixed(2)}%`);
         }
         
+        // Fetch available counties for this state
+        await fetchCountiesForState(stateCode);
+        
         // Fetch payroll tax rates for the state
         const payrollResponse = await fetch(`/api/settings/taxes/payroll-rates?country=US&state=${stateCode}`, { 
           credentials: 'include' 
@@ -268,17 +277,71 @@ const TaxSettings = () => {
     }
   };
   
+  // Fetch counties for a state
+  const fetchCountiesForState = async (stateCode) => {
+    if (!stateCode) return;
+    
+    try {
+      setLoadingCounties(true);
+      const response = await fetch(`/api/settings/taxes/counties?country=US&state=${stateCode}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableCounties(data.counties || []);
+      }
+    } catch (error) {
+      console.error('Error fetching counties:', error);
+    } finally {
+      setLoadingCounties(false);
+    }
+  };
+  
+  // Handle county change
+  const handleCountyChange = async (countyCode) => {
+    console.log('🎯 [TaxSettings] County changed to:', countyCode);
+    
+    // Update business info
+    setBusinessInfo(prev => ({ ...prev, county: countyCode }));
+    
+    // If county selected, fetch rate for that county
+    if (businessInfo.country === 'US' && businessInfo.state && countyCode) {
+      try {
+        const response = await fetch(`/api/settings/taxes/rates?country=US&state=${businessInfo.state}&county=${countyCode}`, {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.rate) {
+          setEditedSalesSettings(prev => ({
+            ...prev,
+            locality: countyCode,
+            sales_tax_rate: data.rate.rate,
+            rate_percentage: data.rate.rate * 100
+          }));
+          
+          const countyName = availableCounties.find(c => c.code === countyCode)?.name || countyCode;
+          notifySuccess(`Sales tax rate updated to ${countyName} rate: ${(data.rate.rate * 100).toFixed(2)}%`);
+        }
+      } catch (error) {
+        console.error('Error fetching county rate:', error);
+      }
+    }
+  };
+  
   // Save sales tax settings
   const handleSaveSalesTax = async () => {
     try {
       setSaving(true);
       console.log('🎯 [TaxSettings] Saving sales tax:', editedSalesSettings);
       
-      // Add state to the settings
+      // Add state and county to the settings
       const dataToSave = {
         ...editedSalesSettings,
         country: businessInfo.country,
-        region_code: businessInfo.state || ''
+        region_code: businessInfo.state || '',
+        locality: businessInfo.county || ''
       };
       
       const response = await fetch('/api/settings/taxes', {
@@ -487,6 +550,47 @@ const TaxSettings = () => {
                 </div>
               )}
             </div>
+            
+            {/* County selector for states with county data */}
+            {businessInfo.country === 'US' && businessInfo.state && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div></div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    County {businessInfo.state === 'UT' && <span className="text-red-500">*</span>}
+                  </label>
+                  {loadingCounties ? (
+                    <div className="mt-1 flex items-center">
+                      <StandardSpinner size="small" />
+                      <span className="ml-2 text-sm text-gray-500">Loading counties...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        value={businessInfo.county || ''}
+                        onChange={(e) => handleCountyChange(e.target.value)}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        disabled={!isEditingSales || availableCounties.length === 0}
+                      >
+                        <option value="">
+                          {availableCounties.length > 0 
+                            ? 'Select County (for more accurate rates)' 
+                            : 'No county data available for this state'}
+                        </option>
+                        {availableCounties.map(county => (
+                          <option key={county.code} value={county.code}>{county.name}</option>
+                        ))}
+                      </select>
+                      {businessInfo.state === 'UT' && availableCounties.length > 0 && (
+                        <p className="mt-1 text-sm text-gray-500">
+                          Utah has county-specific tax rates. Select your county for accurate calculation.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
             
             {/* Tax Rate Configuration */}
             {(salesTaxSettings || isEditingSales) && (

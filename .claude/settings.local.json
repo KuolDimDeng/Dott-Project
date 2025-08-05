@@ -258,7 +258,8 @@
       "Bash(./deploy-to-render.sh:*)",
       "Bash(./deploy-to-production.sh:*)",
       "Bash(./check-render-deployment.sh:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(/Users/kuoldeng/projectx/deploy_county_tax_updates.sh)"
     ],
     "deny": []
   }

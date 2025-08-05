@@ -127,6 +127,86 @@ class GlobalTaxRateViewSet(viewsets.ReadOnlyModelViewSet):
             'rates': serializer.data
         })
     
+    @action(detail=False, methods=['get'], url_path='sales-tax')
+    def sales_tax(self, request):
+        """
+        Get sales tax rate for a specific location
+        GET /api/taxes/global-rates/sales-tax/?country=US&state=UT&county=SALT+LAKE
+        """
+        country = request.query_params.get('country', '').upper()
+        state = request.query_params.get('state', '').upper()
+        county = request.query_params.get('county', '').upper()
+        
+        if not country:
+            return Response(
+                {'error': 'Country parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        logger.info(f"[Sales Tax API] Looking up rate for: country={country}, state={state}, county={county}")
+        
+        # Try to find the most specific rate first
+        tax_rate = None
+        
+        # Try county level first
+        if state and county:
+            tax_rate = GlobalSalesTaxRate.objects.filter(
+                country=country,
+                region_code=state,
+                locality=county,
+                is_current=True
+            ).first()
+            
+            if tax_rate:
+                logger.info(f"[Sales Tax API] Found county rate: {tax_rate.rate * 100:.2f}%")
+        
+        # Try state level
+        if not tax_rate and state:
+            tax_rate = GlobalSalesTaxRate.objects.filter(
+                country=country,
+                region_code=state,
+                locality='',
+                is_current=True
+            ).first()
+            
+            if tax_rate:
+                logger.info(f"[Sales Tax API] Found state rate: {tax_rate.rate * 100:.2f}%")
+        
+        # Try country level
+        if not tax_rate:
+            tax_rate = GlobalSalesTaxRate.objects.filter(
+                country=country,
+                region_code='',
+                locality='',
+                is_current=True
+            ).first()
+            
+            if tax_rate:
+                logger.info(f"[Sales Tax API] Found country rate: {tax_rate.rate * 100:.2f}%")
+        
+        if tax_rate:
+            return Response({
+                'success': True,
+                'rate': {
+                    'rate': float(tax_rate.rate),
+                    'rate_percentage': float(tax_rate.rate * 100),
+                    'tax_type': tax_rate.tax_type,
+                    'country': tax_rate.country.code,
+                    'country_name': tax_rate.country_name,
+                    'region_code': tax_rate.region_code,
+                    'region_name': tax_rate.region_name,
+                    'locality': tax_rate.locality,
+                    'effective_date': tax_rate.effective_date,
+                    'manually_verified': tax_rate.manually_verified
+                }
+            })
+        else:
+            return Response({
+                'success': False,
+                'error': 'No tax rate found for this location',
+                'rate': None
+            })
+    
     @action(detail=False, methods=['get'])
     def statistics(self, request):
         """
