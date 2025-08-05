@@ -1710,13 +1710,132 @@ const MainListItems = ({
       icon: <NavIcons.People className="w-5 h-5" />,
       label: t('mainMenu.hr'),
       subItems: [
-        { label: t('subMenu.dashboard'), onClick: handleHRClick, value: 'dashboard', path: '/dashboard/hr' },
-        { label: t('subMenu.teams'), onClick: handleHRClick, value: 'employees', path: '/dashboard/employees' },
-        { label: t('subMenu.timesheets'), onClick: handleHRClick, value: 'timesheets', path: '/dashboard/timesheets' },
-        { label: t('subMenu.managePay'), onClick: handleHRClick, value: 'pay', path: '/dashboard/pay' },
-        { label: t('subMenu.benefits'), onClick: handleHRClick, value: 'benefits', path: '/dashboard/benefits' },
-        { label: t('mainMenu.reports'), onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
-        { label: t('subMenu.performance'), onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
+        { 
+          label: t('subMenu.dashboard'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'hr-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('dashboard');
+            }
+          }, 
+          value: 'dashboard', 
+          path: '/dashboard/hr' 
+        },
+        { 
+          label: t('subMenu.teams'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'employees', 
+              navigationKey,
+              originalItem: 'Teams'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('employees');
+            }
+          }, 
+          value: 'employees', 
+          path: '/dashboard/employees' 
+        },
+        { 
+          label: t('subMenu.timesheets'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'timesheets', 
+              navigationKey,
+              originalItem: 'Timesheets'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('timesheets');
+            }
+          }, 
+          value: 'timesheets', 
+          path: '/dashboard/timesheets' 
+        },
+        { 
+          label: t('subMenu.managePay'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'pay', 
+              navigationKey,
+              originalItem: 'Manage Pay'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('pay');
+            }
+          }, 
+          value: 'pay', 
+          path: '/dashboard/pay' 
+        },
+        { 
+          label: t('subMenu.benefits'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'benefits', 
+              navigationKey,
+              originalItem: 'Benefits'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('benefits');
+            }
+          }, 
+          value: 'benefits', 
+          path: '/dashboard/benefits' 
+        },
+        { 
+          label: t('mainMenu.reports'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'hr-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('reports');
+            }
+          }, 
+          value: 'reports', 
+          path: '/dashboard/reports' 
+        },
+        { 
+          label: t('subMenu.performance'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'performance', 
+              navigationKey,
+              originalItem: 'Performance'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('performance');
+            }
+          }, 
+          value: 'performance', 
+          path: '/dashboard/performance' 
+        },
       ],
     },
     {

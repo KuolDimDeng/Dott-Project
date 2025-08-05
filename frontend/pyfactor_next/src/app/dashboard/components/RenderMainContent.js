@@ -67,6 +67,15 @@ const eventToRouteMap = {
   'bank-reconciliation': 'bank-reconciliation',
   'banking-reports': 'banking-reports',
   
+  // HR
+  'hr-dashboard': 'hr-dashboard',
+  'hr-employees': 'employees',
+  'hr-timesheets': 'timesheets',
+  'hr-pay': 'pay',
+  'hr-benefits': 'benefits',
+  'hr-performance': 'performance',
+  'hr-reports': 'hr-reports',
+  
   // Payroll
   'payroll-dashboard': 'payroll-dashboard',
   'payroll-wizard': 'payroll-wizard',

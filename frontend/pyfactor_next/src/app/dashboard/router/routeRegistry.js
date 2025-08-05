@@ -456,6 +456,11 @@ export const routeRegistry = {
     title: 'Performance',
     description: 'Performance reviews'
   },
+  'hr-reports': {
+    component: enhancedLazy(() => import('../components/forms/HRReportManagement'), 'HR Reports'),
+    title: 'HR Reports',
+    description: 'Human resources reports'
+  },
   'payroll-wizard': {
     component: enhancedLazy(() => import('../components/forms/PayrollWizard'), 'Payroll Wizard'),
     title: 'Payroll Wizard',
