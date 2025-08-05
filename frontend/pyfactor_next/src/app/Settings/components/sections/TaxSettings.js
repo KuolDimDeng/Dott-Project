@@ -10,7 +10,13 @@ import {
   InformationCircleIcon,
   UserGroupIcon,
   BuildingOfficeIcon,
-  CalculatorIcon
+  CalculatorIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  ChevronRightIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 // US States data
@@ -80,6 +86,26 @@ const TaxSettings = () => {
   const [isEditingSales, setIsEditingSales] = useState(false);
   const [editedSalesSettings, setEditedSalesSettings] = useState({});
   
+  // Tax Override Management State
+  const [taxOverrides, setTaxOverrides] = useState([]);
+  const [loadingOverrides, setLoadingOverrides] = useState(false);
+  const [showCreateOverride, setShowCreateOverride] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [editingOverride, setEditingOverride] = useState(null);
+  const [globalRates, setGlobalRates] = useState(null);
+  const [previewData, setPreviewData] = useState(null);
+  const [newOverride, setNewOverride] = useState({
+    country: 'US',
+    region_code: '',
+    region_name: '',
+    locality: '',
+    locality_name: '',
+    country_rate: 0,
+    state_rate: 0,
+    county_rate: 0,
+    override_reason: ''
+  });
+  
   // Payroll Tax State
   const [payrollTaxSettings, setPayrollTaxSettings] = useState(null);
   const [payrollTaxSource, setPayrollTaxSource] = useState('none');
@@ -101,6 +127,7 @@ const TaxSettings = () => {
   // Fetch all tax settings on mount
   useEffect(() => {
     fetchAllTaxSettings();
+    fetchTaxOverrides();
   }, []);
   
   const fetchAllTaxSettings = async () => {
@@ -437,6 +464,213 @@ const TaxSettings = () => {
     }
   };
   
+  // Fetch tax overrides
+  const fetchTaxOverrides = async () => {
+    try {
+      setLoadingOverrides(true);
+      const response = await fetch('/api/taxes/sales-tax-config/', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTaxOverrides(data.results || data || []);
+      } else {
+        console.warn('Failed to fetch tax overrides:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching tax overrides:', error);
+    } finally {
+      setLoadingOverrides(false);
+    }
+  };
+  
+  // Fetch global rates for comparison
+  const fetchGlobalRates = async (country, region_code = '', locality = '') => {
+    try {
+      const params = new URLSearchParams({ country });
+      if (region_code) params.append('region_code', region_code);
+      if (locality) params.append('locality', locality);
+      
+      const response = await fetch(`/api/taxes/sales-tax-config/global_rates/?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGlobalRates(data.global_rates);
+        return data.global_rates;
+      }
+    } catch (error) {
+      console.error('Error fetching global rates:', error);
+    }
+    return null;
+  };
+  
+  // Preview tax calculation
+  const previewTaxCalculation = async (overrideData) => {
+    try {
+      const response = await fetch('/api/taxes/sales-tax-config/preview_calculation/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...overrideData,
+          sale_amount: 100 // Standard $100 preview
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewData(data.preview);
+        return data.preview;
+      }
+    } catch (error) {
+      console.error('Error previewing calculation:', error);
+    }
+    return null;
+  };
+  
+  // Create new tax override
+  const handleCreateOverride = async () => {
+    try {
+      setSaving(true);
+      
+      // Validate required fields
+      if (!newOverride.region_code) {
+        notifyError('State is required');
+        return;
+      }
+      
+      if (!newOverride.override_reason.trim()) {
+        notifyError('Override reason is required for audit compliance');
+        return;
+      }
+      
+      const response = await fetch('/api/taxes/sales-tax-config/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newOverride)
+      });
+      
+      if (response.ok) {
+        notifySuccess('Tax override created successfully');
+        setShowCreateOverride(false);
+        setNewOverride({
+          country: 'US',
+          region_code: '',
+          region_name: '',
+          locality: '',
+          locality_name: '',
+          country_rate: 0,
+          state_rate: 0,
+          county_rate: 0,
+          override_reason: ''
+        });
+        fetchTaxOverrides();
+      } else {
+        const data = await response.json();
+        notifyError(data.error || 'Failed to create tax override');
+      }
+    } catch (error) {
+      console.error('Error creating override:', error);
+      notifyError('Failed to create tax override');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Update existing tax override
+  const handleUpdateOverride = async (id, updatedData) => {
+    try {
+      setSaving(true);
+      
+      const response = await fetch(`/api/taxes/sales-tax-config/${id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updatedData)
+      });
+      
+      if (response.ok) {
+        notifySuccess('Tax override updated successfully');
+        setEditingOverride(null);
+        fetchTaxOverrides();
+      } else {
+        const data = await response.json();
+        notifyError(data.error || 'Failed to update tax override');
+      }
+    } catch (error) {
+      console.error('Error updating override:', error);
+      notifyError('Failed to update tax override');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Deactivate tax override
+  const handleDeactivateOverride = async (id) => {
+    if (!confirm('Are you sure you want to deactivate this tax override?')) {
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      
+      const response = await fetch(`/api/taxes/sales-tax-config/${id}/deactivate/`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        notifySuccess('Tax override deactivated successfully');
+        fetchTaxOverrides();
+      } else {
+        const data = await response.json();
+        notifyError(data.error || 'Failed to deactivate tax override');
+      }
+    } catch (error) {
+      console.error('Error deactivating override:', error);
+      notifyError('Failed to deactivate tax override');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Handle state change for new override
+  const handleOverrideStateChange = async (stateCode) => {
+    const state = US_STATES.find(s => s.code === stateCode);
+    setNewOverride(prev => ({
+      ...prev,
+      region_code: stateCode,
+      region_name: state?.name || '',
+      locality: '',
+      locality_name: ''
+    }));
+    
+    // Fetch global rates for comparison
+    if (stateCode) {
+      await fetchGlobalRates('US', stateCode);
+      await fetchCountiesForState(stateCode);
+    }
+  };
+  
+  // Handle county change for new override
+  const handleOverrideCountyChange = async (countyCode) => {
+    const county = availableCounties.find(c => c.code === countyCode);
+    setNewOverride(prev => ({
+      ...prev,
+      locality: countyCode,
+      locality_name: county?.name || ''
+    }));
+    
+    // Fetch global rates for this specific location
+    if (countyCode && newOverride.region_code) {
+      await fetchGlobalRates('US', newOverride.region_code, countyCode);
+    }
+  };
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -501,218 +735,419 @@ const TaxSettings = () => {
       
       {/* Sales Tax Section */}
       {activeTab === 'sales' && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Sales Tax Configuration</h3>
-              <div className="flex items-center space-x-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  salesTaxSource === 'custom' 
-                    ? 'bg-green-100 text-green-800' 
-                    : salesTaxSource === 'global'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {salesTaxSource === 'custom' ? 'Custom Rate' : salesTaxSource === 'global' ? 'Global Default' : 'Not Configured'}
-                </span>
+        <div className="space-y-6">
+          {/* Header Section */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Sales Tax Configuration</h3>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowCreateOverride(true)}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Create Override
+                  </button>
+                  <button
+                    onClick={() => setShowPreview(true)}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <EyeIcon className="h-4 w-4 mr-1" />
+                    Preview
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="p-6 space-y-6">
-            {/* Location Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Country</label>
-                <p className="mt-1 text-sm text-gray-900">{businessInfo.country_name || businessInfo.country || 'Not set'}</p>
+            
+            {/* Feature 1: View Current Overrides by Jurisdiction */}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-md font-medium text-gray-900">Current Tax Overrides</h4>
+                {loadingOverrides && <StandardSpinner size="small" />}
               </div>
               
-              {/* State selector for US businesses */}
-              {businessInfo.country === 'US' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    State <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={businessInfo.state || ''}
-                    onChange={(e) => handleStateChange(e.target.value)}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    disabled={!isEditingSales}
-                  >
-                    <option value="">Select State</option>
-                    {US_STATES.map(state => (
-                      <option key={state.code} value={state.code}>{state.name}</option>
-                    ))}
-                  </select>
-                  {businessInfo.country === 'US' && !businessInfo.state && (
-                    <p className="mt-1 text-sm text-red-600">State is required for US businesses</p>
-                  )}
+              {taxOverrides.length === 0 ? (
+                <div className="text-center py-8">
+                  <CurrencyDollarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No Tax Overrides</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    You're using global tax rates. Create an override to customize rates for specific jurisdictions.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Jurisdiction
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Tax Breakdown
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Total Rate
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {taxOverrides.map((override) => (
+                        <tr key={override.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>
+                              <div className="font-medium">{override.jurisdiction_display}</div>
+                              <div className="text-gray-500">
+                                {override.country} {override.region_code && `• ${override.region_code}`} {override.locality && `• ${override.locality}`}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="space-y-1">
+                              {override.formatted_rates.country !== '0.00%' && (
+                                <div>Country: {override.formatted_rates.country}</div>
+                              )}
+                              {override.formatted_rates.state !== '0.00%' && (
+                                <div>State: {override.formatted_rates.state}</div>
+                              )}
+                              {override.formatted_rates.county !== '0.00%' && (
+                                <div>County: {override.formatted_rates.county}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-lg font-medium text-gray-900">
+                              {override.formatted_rates.total}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              override.is_active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {override.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => setEditingOverride(override)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeactivateOverride(override.id)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
-            
-            {/* County selector for states with county data */}
-            {businessInfo.country === 'US' && businessInfo.state && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div></div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    County {businessInfo.state === 'UT' && <span className="text-red-500">*</span>}
-                  </label>
-                  {loadingCounties ? (
-                    <div className="mt-1 flex items-center">
-                      <StandardSpinner size="small" />
-                      <span className="ml-2 text-sm text-gray-500">Loading counties...</span>
-                    </div>
-                  ) : (
-                    <>
+          </div>
+
+          {/* Feature 2: Create New Override Modal */}
+          {showCreateOverride && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+              <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Create Tax Override</h3>
+                  <button
+                    onClick={() => setShowCreateOverride(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Country */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Country</label>
+                    <select
+                      value={newOverride.country}
+                      onChange={(e) => setNewOverride({...newOverride, country: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    >
+                      <option value="US">United States</option>
+                    </select>
+                  </div>
+                  
+                  {/* State */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      State <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={newOverride.region_code}
+                      onChange={(e) => handleOverrideStateChange(e.target.value)}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    >
+                      <option value="">Select State</option>
+                      {US_STATES.map(state => (
+                        <option key={state.code} value={state.code}>{state.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* County */}
+                  {newOverride.region_code && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">County (Optional)</label>
                       <select
-                        value={businessInfo.county || ''}
-                        onChange={(e) => handleCountyChange(e.target.value)}
+                        value={newOverride.locality}
+                        onChange={(e) => handleOverrideCountyChange(e.target.value)}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        disabled={!isEditingSales || availableCounties.length === 0}
+                        disabled={loadingCounties}
                       >
-                        <option value="">
-                          {availableCounties.length > 0 
-                            ? 'Select County (for more accurate rates)' 
-                            : 'No county data available for this state'}
-                        </option>
+                        <option value="">Select County (Optional)</option>
                         {availableCounties.map(county => (
                           <option key={county.code} value={county.code}>{county.name}</option>
                         ))}
                       </select>
-                      {businessInfo.state === 'UT' && availableCounties.length > 0 && (
-                        <p className="mt-1 text-sm text-gray-500">
-                          Utah has county-specific tax rates. Select your county for accurate calculation.
-                        </p>
-                      )}
-                    </>
+                    </div>
                   )}
-                </div>
-              </div>
-            )}
-            
-            {/* Tax Rate Configuration */}
-            {(salesTaxSettings || isEditingSales) && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Sales Tax Rate (%)
-                    </label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
+                  
+                  {/* Feature 5: Global Rates Comparison */}
+                  {globalRates && globalRates.found && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-blue-900 mb-2">Current Global Rate</h4>
+                      <div className="text-sm text-blue-700">
+                        <div>Total Rate: {(globalRates.total_rate * 100).toFixed(2)}%</div>
+                        <div className="text-xs mt-1">Source: {globalRates.source}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Tax Rate Inputs */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">State Rate (%)</label>
                       <input
                         type="number"
                         step="0.001"
                         min="0"
-                        max="100"
-                        value={isEditingSales ? (editedSalesSettings.rate_percentage || 0) : ((salesTaxSettings?.sales_tax_rate || 0) * 100)}
-                        onChange={(e) => {
-                          try {
-                            const percentage = validateTaxRate(e.target.value);
-                            setEditedSalesSettings({
-                              ...editedSalesSettings,
-                              sales_tax_rate: percentage / 100,
-                              rate_percentage: percentage
-                            });
-                          } catch (error) {
-                            // Show validation error but allow the input to update for user feedback
-                            console.warn('Tax rate validation:', error.message);
-                            const rawPercentage = parseFloat(e.target.value) || 0;
-                            setEditedSalesSettings({
-                              ...editedSalesSettings,
-                              sales_tax_rate: Math.max(0, Math.min(100, rawPercentage)) / 100,
-                              rate_percentage: Math.max(0, Math.min(100, rawPercentage))
-                            });
-                          }
-                        }}
-                        disabled={!isEditingSales}
-                        className="block w-full pr-10 border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                        max="50"
+                        value={newOverride.state_rate * 100}
+                        onChange={(e) => setNewOverride({
+                          ...newOverride,
+                          state_rate: parseFloat(e.target.value) / 100 || 0
+                        })}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 sm:text-sm">%</span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">County Rate (%)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="15"
+                        value={newOverride.county_rate * 100}
+                        onChange={(e) => setNewOverride({
+                          ...newOverride,
+                          county_rate: parseFloat(e.target.value) / 100 || 0
+                        })}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Total Rate Display */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-sm font-medium text-gray-900">
+                      Total Rate: {((newOverride.country_rate + newOverride.state_rate + newOverride.county_rate) * 100).toFixed(3)}%
+                    </div>
+                  </div>
+                  
+                  {/* Feature 3: Override Reason */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Override Reason <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={newOverride.override_reason}
+                      onChange={(e) => setNewOverride({...newOverride, override_reason: e.target.value})}
+                      placeholder="Explain why this override is needed (required for audit compliance)"
+                      rows={3}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  
+                  {/* Feature 4: Preview Button */}
+                  <button
+                    onClick={() => previewTaxCalculation(newOverride)}
+                    className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <EyeIcon className="h-4 w-4 mr-2" />
+                    Preview Calculation
+                  </button>
+                  
+                  {/* Preview Results */}
+                  {previewData && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-green-900 mb-2">Preview (on $100 sale)</h4>
+                      <div className="text-sm text-green-700 space-y-1">
+                        <div>Sale Amount: ${previewData.sale_amount.toFixed(2)}</div>
+                        <div>Tax Amount: ${previewData.tax_amount.toFixed(2)}</div>
+                        <div>Total: ${previewData.total_amount.toFixed(2)}</div>
+                        <div className="text-xs">
+                          Breakdown: State {previewData.breakdown.state_rate.toFixed(2)}% + County {previewData.breakdown.county_rate.toFixed(2)}%
+                        </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={() => setShowCreateOverride(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateOverride}
+                    disabled={saving || !newOverride.region_code || !newOverride.override_reason.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Creating...' : 'Create Override'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Feature 3: Edit Override Modal */}
+          {editingOverride && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+              <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Edit Tax Override</h3>
+                  <button
+                    onClick={() => setEditingOverride(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-sm font-medium text-gray-900">
+                      {editingOverride.jurisdiction_display}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Created: {new Date(editingOverride.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">State Rate (%)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="50"
+                        defaultValue={editingOverride.state_rate_percentage}
+                        onChange={(e) => {
+                          editingOverride.state_rate = parseFloat(e.target.value) / 100 || 0;
+                        }}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">County Rate (%)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="15"
+                        defaultValue={editingOverride.county_rate_percentage}
+                        onChange={(e) => {
+                          editingOverride.county_rate = parseFloat(e.target.value) / 100 || 0;
+                        }}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Tax Type</label>
-                    <select
-                      value={isEditingSales ? (editedSalesSettings.sales_tax_type || 'sales_tax') : (salesTaxSettings?.sales_tax_type || 'sales_tax')}
-                      onChange={(e) => setEditedSalesSettings({
-                        ...editedSalesSettings,
-                        sales_tax_type: e.target.value
-                      })}
-                      disabled={!isEditingSales}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
-                    >
-                      <option value="sales_tax">Sales Tax</option>
-                      <option value="vat">VAT</option>
-                      <option value="gst">GST</option>
-                      <option value="consumption_tax">Consumption Tax</option>
-                      <option value="none">No Tax</option>
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Update Reason <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      defaultValue={editingOverride.override_reason}
+                      onChange={(e) => {
+                        editingOverride.override_reason = e.target.value;
+                      }}
+                      placeholder="Explain why this update is needed"
+                      rows={3}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
                   </div>
                 </div>
                 
-                {/* Information Banner */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <InformationCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-600" />
-                    <div className="text-sm text-blue-700">
-                      <p>This tax rate will be automatically applied to all sales transactions in your POS and invoices.</p>
-                      {salesTaxSource === 'global' && (
-                        <p className="mt-1">Currently using the default rate for your location. You can customize it if needed.</p>
-                      )}
-                    </div>
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={() => setEditingOverride(null)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleUpdateOverride(editingOverride.id, editingOverride)}
+                    disabled={saving}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Updating...' : 'Update Override'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Feature 4: Preview Modal */}
+          {showPreview && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+              <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Tax Calculation Preview</h3>
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <CalculatorIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Tax Preview</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Create an override above to see a preview of tax calculations.
+                    </p>
                   </div>
                 </div>
               </div>
-            )}
-            
-            {/* Action Buttons */}
-            <div className="flex justify-between">
-              <div>
-                {salesTaxSource === 'custom' && !isEditingSales && (
-                  <button
-                    onClick={handleResetSalesTax}
-                    className="text-sm text-red-600 hover:text-red-500"
-                  >
-                    Reset to Global Default
-                  </button>
-                )}
-              </div>
-              <div className="flex space-x-3">
-                {isEditingSales ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        setIsEditingSales(false);
-                        setEditedSalesSettings(salesTaxSettings || {});
-                      }}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveSalesTax}
-                      disabled={saving || (businessInfo.country === 'US' && !businessInfo.state)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setIsEditingSales(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-                  >
-                    Edit Sales Tax
-                  </button>
-                )}
-              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
       
