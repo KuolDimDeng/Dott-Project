@@ -101,12 +101,21 @@ class SessionManagerV2Enhanced {
       const data = await response.json();
       
       if (data.authenticated) {
+        // Try to get the session token from cookies for API authentication
+        let sessionToken = null;
+        if (typeof document !== 'undefined') {
+          const sidCookie = document.cookie.split(';').find(c => c.trim().startsWith('sid='));
+          const sessionTokenCookie = document.cookie.split(';').find(c => c.trim().startsWith('session_token='));
+          sessionToken = sidCookie?.split('=')[1] || sessionTokenCookie?.split('=')[1];
+        }
+        
         const sessionData = {
           authenticated: true,
           user: data.user,
           // Include subscription_plan at session level for DashAppBar
           subscription_plan: data.user?.subscriptionPlan || data.user?.subscription_plan || 'free',
-          sessionId: 'server-managed' // We don't expose the actual session ID
+          sessionId: 'server-managed', // We don't expose the actual session ID
+          sessionToken: sessionToken // Include the session token for API calls
         };
         
         // Cache the result locally
