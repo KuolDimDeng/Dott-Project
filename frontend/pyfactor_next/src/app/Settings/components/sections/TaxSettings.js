@@ -109,7 +109,8 @@ const TaxSettings = () => {
         fetch('/api/settings/taxes').then(res => ({ type: 'sales', response: res, data: res.json() })),
         fetch('/api/settings/taxes/payroll').then(res => ({ type: 'payroll', response: res, data: res.json() })),
         fetch('/api/users/me').then(res => ({ type: 'user', response: res, data: res.json() })),
-        fetch('/api/tenant/business-info').then(res => ({ type: 'business', response: res, data: res.json() }))
+        fetch('/api/tenant/business-info').then(res => ({ type: 'business', response: res, data: res.json() })),
+        fetch('/api/auth/session-v2').then(res => ({ type: 'session', response: res, data: res.json() }))
       ];
       
       const results = await Promise.allSettled(apiCalls);
@@ -148,29 +149,41 @@ const TaxSettings = () => {
             setEditedPayrollSettings(resolvedData.settings || {});
           }
           
-          if ((type === 'user' || type === 'business') && response.ok && resolvedData) {
+          if ((type === 'user' || type === 'business' || type === 'session') && response.ok && resolvedData) {
             console.log(`🏢 [TaxSettings] ${type.toUpperCase()} info:`, {
               country: resolvedData.country,
               country_name: resolvedData.country_name,
               state: resolvedData.state,
-              business_name: resolvedData.business_name
+              business_name: resolvedData.business_name || resolvedData.businessName,
+              user: resolvedData.user ? {
+                country: resolvedData.user.country,
+                businessCountry: resolvedData.user.business_country
+              } : null
             });
             
             // Check if this source has country data
-            if (resolvedData.country || resolvedData.country_name) {
+            const countryData = resolvedData.country || resolvedData.country_name || 
+                              (resolvedData.user?.country) || (resolvedData.user?.business_country);
+            
+            if (countryData) {
               businessCountryFound = true;
               businessInfoFromApi = {
-                country: resolvedData.country || businessInfoFromApi.country || '',
-                state: resolvedData.state || businessInfoFromApi.state || '',
+                country: resolvedData.country || resolvedData.user?.country || resolvedData.user?.business_country || businessInfoFromApi.country || '',
+                state: resolvedData.state || resolvedData.user?.state || businessInfoFromApi.state || '',
                 country_name: resolvedData.country_name || businessInfoFromApi.country_name || '',
-                business_name: resolvedData.business_name || businessInfoFromApi.business_name || ''
+                business_name: resolvedData.business_name || resolvedData.businessName || businessInfoFromApi.business_name || ''
               };
               
               console.log('🌍 [Country Debug] Business country found from', type, ':', {
                 country_code: businessInfoFromApi.country,
                 country_name: businessInfoFromApi.country_name,
                 state: businessInfoFromApi.state,
-                source: type
+                source: type,
+                originalData: {
+                  direct_country: resolvedData.country,
+                  user_country: resolvedData.user?.country,
+                  user_business_country: resolvedData.user?.business_country
+                }
               });
             }
           }
