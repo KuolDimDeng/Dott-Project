@@ -106,11 +106,11 @@ const TaxSettings = () => {
       // Fetch all required data
       console.log('🎯 [TaxSettings] Making API calls...');
       const apiCalls = [
-        fetch('/api/settings/taxes').then(res => ({ type: 'sales', response: res, data: res.json() })),
-        fetch('/api/settings/taxes/payroll').then(res => ({ type: 'payroll', response: res, data: res.json() })),
-        fetch('/api/users/me').then(res => ({ type: 'user', response: res, data: res.json() })),
-        fetch('/api/tenant/business-info').then(res => ({ type: 'business', response: res, data: res.json() })),
-        fetch('/api/auth/session-v2').then(res => ({ type: 'session', response: res, data: res.json() }))
+        fetch('/api/settings/taxes', { credentials: 'include' }).then(res => ({ type: 'sales', response: res, data: res.json() })),
+        fetch('/api/settings/taxes/payroll', { credentials: 'include' }).then(res => ({ type: 'payroll', response: res, data: res.json() })),
+        fetch('/api/users/me', { credentials: 'include' }).then(res => ({ type: 'user', response: res, data: res.json() })),
+        fetch('/api/tenant/business-info', { credentials: 'include' }).then(res => ({ type: 'business', response: res, data: res.json() })),
+        fetch('/api/auth/session-v2', { credentials: 'include' }).then(res => ({ type: 'session', response: res, data: res.json() }))
       ];
       
       const results = await Promise.allSettled(apiCalls);
@@ -227,7 +227,9 @@ const TaxSettings = () => {
     if (businessInfo.country === 'US' && stateCode) {
       try {
         // Fetch sales tax rate for the state
-        const salesResponse = await fetch(`/api/settings/taxes/rates?country=US&state=${stateCode}`);
+        const salesResponse = await fetch(`/api/settings/taxes/rates?country=US&state=${stateCode}`, { 
+          credentials: 'include' 
+        });
         const salesData = await salesResponse.json();
         
         if (salesResponse.ok && salesData.rate) {
@@ -245,7 +247,9 @@ const TaxSettings = () => {
         }
         
         // Fetch payroll tax rates for the state
-        const payrollResponse = await fetch(`/api/settings/taxes/payroll-rates?country=US&state=${stateCode}`);
+        const payrollResponse = await fetch(`/api/settings/taxes/payroll-rates?country=US&state=${stateCode}`, { 
+          credentials: 'include' 
+        });
         const payrollData = await payrollResponse.json();
         
         if (payrollResponse.ok && payrollData.rates) {
@@ -280,6 +284,7 @@ const TaxSettings = () => {
       const response = await fetch('/api/settings/taxes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: Include cookies for authentication
         body: JSON.stringify(dataToSave),
       });
       
@@ -317,6 +322,7 @@ const TaxSettings = () => {
       const response = await fetch('/api/settings/taxes/payroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: Include cookies for authentication
         body: JSON.stringify(dataToSave),
       });
       
@@ -349,6 +355,7 @@ const TaxSettings = () => {
       
       const response = await fetch(`/api/settings/taxes?country=${businessInfo.country}&region_code=${businessInfo.state || ''}`, {
         method: 'DELETE',
+        credentials: 'include', // Important: Include cookies for authentication
       });
       
       const data = await response.json();
