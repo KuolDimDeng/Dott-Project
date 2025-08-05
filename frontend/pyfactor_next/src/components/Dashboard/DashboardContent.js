@@ -242,8 +242,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     // User data
     userData: initialUserData,
     
-    // Current view
-    view: 'customerList',
+    // Current view  
+    view: 'customers',
     
     // Selected items
     selectedOption: null,
