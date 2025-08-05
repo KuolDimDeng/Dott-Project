@@ -106,7 +106,7 @@ export const routeRegistry = {
     description: 'Business analytics and insights'
   },
   'analytics-dashboard': {
-    component: enhancedLazy(() => import('../components/forms/AnalysisPage'), 'Analytics Dashboard'),
+    component: enhancedLazy(() => import('../components/forms/AnalyticsDashboard'), 'Analytics Dashboard'),
     title: 'Analytics Dashboard',
     description: 'Analytics overview'
   },
