@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import { Typography, Button } from '@/shared/components/ui';
 import { useProducts, useProductForm } from '../hooks';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 // Import other components that will be created
 const ProductTable = React.lazy(() => import('./ProductTable'));

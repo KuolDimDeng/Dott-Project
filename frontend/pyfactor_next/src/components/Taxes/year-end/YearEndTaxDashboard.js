@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarIcon, DocumentTextIcon, UserGroupIcon, BuildingOfficeIcon, ArrowDownTrayIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { api } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import W2Management from './W2Management';

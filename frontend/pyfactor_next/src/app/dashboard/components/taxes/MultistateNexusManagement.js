@@ -16,7 +16,7 @@ import {
   EyeIcon
 } from '@heroicons/react/24/outline';
 import { apiService } from '@/services/apiService';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {

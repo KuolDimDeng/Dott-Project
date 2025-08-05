@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Typography, Button } from '@/shared/components/ui';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 /**
  * ProductTable - Table display component

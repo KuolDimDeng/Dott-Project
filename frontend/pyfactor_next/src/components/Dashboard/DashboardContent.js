@@ -115,24 +115,25 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   useEffect(() => {
     try {
       console.error('[DashboardContent] useEffect - Starting dashboard content render');
-      const span = Sentry.startSpan({ name: 'dashboard-content-render' });
+      // Sentry not configured - commenting out Sentry-specific code
+      // const span = Sentry.startSpan({ name: 'dashboard-content-render' });
       const renderTime = Date.now() - renderStartTime.current;
       logger.performance('DashboardContent render', renderTime);
-      span.end();
+      // span.end();
       
       // Set user context for Sentry
       if (user) {
         console.error('[DashboardContent] useEffect - Setting user context:', user);
-        Sentry.setUser({
-          id: user.id,
-          email: user.email,
-          tenantId: user.tenant_id,
-        });
+        // Sentry.setUser({
+        //   id: user.id,
+        //   email: user.email,
+        //   tenantId: user.tenant_id,
+        // });
       }
       
       return () => {
         console.error('[DashboardContent] useEffect - Cleanup');
-        span.end();
+        // span.end();
       };
     } catch (error) {
       console.error('[DashboardContent] ERROR in useEffect:', error);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense, useMemo } from 'react';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { routeRegistry } from './routeRegistry';
 import RouteErrorBoundary from '@/shared/components/RouteErrorBoundary';
 

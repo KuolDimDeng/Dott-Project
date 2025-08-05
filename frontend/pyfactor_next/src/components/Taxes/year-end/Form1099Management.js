@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DocumentTextIcon, ArrowDownTrayIcon, PaperAirplaneIcon, CheckCircleIcon, ExclamationTriangleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { api } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
