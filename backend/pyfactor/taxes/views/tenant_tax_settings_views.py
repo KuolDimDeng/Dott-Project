@@ -47,9 +47,9 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
         tenant_id = request.user.tenant_id
         logger.info(f"[TenantTaxSettings] Tenant ID: {tenant_id}")
         
-        # Get user's country from profile
+        # Get user's country from profile/business
         try:
-            from users.models import UserProfile
+            from users.models import UserProfile, BusinessDetails
             user_profile = UserProfile.objects.filter(user=request.user).first()
             logger.info(f"[TenantTaxSettings] Found user profile: {user_profile is not None}")
             
@@ -60,8 +60,24 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            country = user_profile.business_country
-            region_code = getattr(user_profile, 'business_state', '')
+            # Get country from BusinessDetails
+            country = None
+            region_code = ''
+            
+            if user_profile.business_id:
+                try:
+                    business_details = BusinessDetails.objects.filter(business_id=user_profile.business_id).first()
+                    if business_details:
+                        country = business_details.country
+                        region_code = business_details.state or ''
+                        logger.info(f"[TenantTaxSettings] Got country from BusinessDetails: {country}")
+                except Exception as e:
+                    logger.warning(f"[TenantTaxSettings] Could not get BusinessDetails: {e}")
+            
+            if not country:
+                # Fallback to US if no country found
+                country = 'US'
+                logger.info(f"[TenantTaxSettings] No country found, defaulting to US")
             logger.info(f"[TenantTaxSettings] Country: {country}, Region: {region_code}")
             
         except Exception as e:

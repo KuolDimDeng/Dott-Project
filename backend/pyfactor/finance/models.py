@@ -9,6 +9,9 @@ from banking.models import BankAccount, BankTransaction
 from custom_auth.models import TenantAwareModel, TenantManager
 from purchases.models import Bill
 from sales.models import Invoice
+from pyfactor.logging_config import get_logger
+
+logger = get_logger()
 
 class AccountType(models.Model):
     ACCOUNT_TYPE_CHOICES = [
