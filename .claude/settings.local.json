@@ -256,7 +256,9 @@
       "Bash(/Users/kuoldeng/projectx/scripts/fix-api-domain-routing.sh)",
       "Bash(timeout 60 pnpm run build)",
       "Bash(./deploy-to-render.sh:*)",
-      "Bash(./deploy-to-production.sh:*)"
+      "Bash(./deploy-to-production.sh:*)",
+      "Bash(./check-render-deployment.sh:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": []
   }

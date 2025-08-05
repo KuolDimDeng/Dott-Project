@@ -137,6 +137,14 @@ const nextConfig = {
   
   // Webpack optimization for bundle size
   webpack: (config, { isServer, dev }) => {
+    // Fix util module issue
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        util: require.resolve('util/')
+      };
+    }
+    
     if (!isServer && !dev) {
       // Industry standard: Merge small chunks to reduce HTTP requests
       config.optimization.splitChunks = {
