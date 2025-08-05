@@ -10,6 +10,8 @@ const RevenueChart = lazy(() => import('../charts/RevenueChart'));
 const MetricsGrid = lazy(() => import('../widgets/MetricsGrid'));
 const RecentTransactions = lazy(() => import('../widgets/RecentTransactions'));
 const QuickActions = lazy(() => import('../widgets/QuickActions'));
+const InventoryAlerts = lazy(() => import('../widgets/InventoryAlerts'));
+const UpcomingAppointments = lazy(() => import('../widgets/UpcomingAppointments'));
 
 // Loading component for individual widgets
 const WidgetSkeleton = () => (
@@ -163,7 +165,7 @@ export default function BusinessOverviewDashboard() {
       {/* Additional Widgets based on business type */}
       {user?.business_type === 'RETAIL' && (
         <Suspense fallback={<WidgetSkeleton />}>
-          <lazy(() => import('../widgets/InventoryAlerts')} 
+          <InventoryAlerts 
             alerts={dashboardData?.inventoryAlerts} 
           />
         </Suspense>
@@ -171,7 +173,7 @@ export default function BusinessOverviewDashboard() {
 
       {user?.business_type === 'SERVICE' && (
         <Suspense fallback={<WidgetSkeleton />}>
-          <lazy(() => import('../widgets/UpcomingAppointments')} 
+          <UpcomingAppointments 
             appointments={dashboardData?.appointments} 
           />
         </Suspense>
