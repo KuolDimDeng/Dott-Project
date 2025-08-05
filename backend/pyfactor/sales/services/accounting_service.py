@@ -127,12 +127,21 @@ class AccountingService:
         """
         try:
             with transaction.atomic():
+                # Get business from the user who created the transaction
+                business = None
+                if pos_transaction.created_by and hasattr(pos_transaction.created_by, 'business_id'):
+                    try:
+                        from users.models import Business
+                        business = Business.objects.get(id=pos_transaction.created_by.business_id)
+                    except Business.DoesNotExist:
+                        logger.warning(f"Business not found for user {pos_transaction.created_by}")
+                
                 # Create the main journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=pos_transaction.created_at.date(),
                     description=f"POS Sale - {pos_transaction.transaction_number}",
                     reference=pos_transaction.transaction_number,
-                    business=getattr(pos_transaction, 'business', None),
+                    business=business,
                     created_by=pos_transaction.created_by
                 )
                 
@@ -161,8 +170,9 @@ class AccountingService:
                 revenue_amount = pos_transaction.subtotal - pos_transaction.discount_amount
                 
                 # Check if this is a bundled sale that needs to be allocated (IFRS 15 / ASC 606)
-                if business_id:
-                    accounting_standard = AccountingStandardsService.get_business_accounting_standard(business_id)
+                if business and business.id:
+                    from accounting.services import AccountingStandardsService
+                    accounting_standard = AccountingStandardsService.get_business_accounting_standard(business.id)
                     
                     # Both IFRS and GAAP follow 5-step revenue recognition model
                     # but may have slight differences in bundled goods/services allocation
@@ -190,9 +200,6 @@ class AccountingService:
                     )
                 
                 # 4. Cost of Goods Sold entries (for products only)
-                # Get business_id for accounting standards
-                business_id = pos_transaction.business.id if hasattr(pos_transaction, 'business') and pos_transaction.business else None
-                
                 # Import accounting service to determine inventory method
                 from accounting.services import AccountingStandardsService
                 
@@ -200,14 +207,14 @@ class AccountingService:
                 for item in items_data:
                     if item['type'] == 'product' and 'cost_price' in item:
                         # Get cost based on accounting standard (FIFO/LIFO/Weighted Average)
-                        if business_id and 'product_id' in item:
+                        if business and business.id and 'product_id' in item:
                             try:
                                 # Get the actual cost based on inventory valuation method
                                 from inventory.models_materials import Material
                                 material = Material.objects.filter(id=item['product_id']).first()
                                 if material:
                                     cost_price = AccountingStandardsService.calculate_inventory_cost(
-                                        material, item['quantity'], business_id
+                                        material, item['quantity'], business.id
                                     )
                                 else:
                                     cost_price = item.get('cost_price', Decimal('0.00'))
@@ -273,12 +280,21 @@ class AccountingService:
             with transaction.atomic():
                 original_transaction = pos_refund.original_transaction
                 
+                # Get business from the user who created the refund
+                business = None
+                if pos_refund.created_by and hasattr(pos_refund.created_by, 'business_id'):
+                    try:
+                        from users.models import Business
+                        business = Business.objects.get(id=pos_refund.created_by.business_id)
+                    except Business.DoesNotExist:
+                        logger.warning(f"Business not found for user {pos_refund.created_by}")
+                
                 # Create the refund journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=pos_refund.created_at.date(),
                     description=f"POS Refund - {pos_refund.refund_number} (Original: {original_transaction.transaction_number})",
                     reference=pos_refund.refund_number,
-                    business=getattr(pos_refund, 'business', None),
+                    business=business,
                     created_by=pos_refund.created_by
                 )
                 
@@ -373,12 +389,21 @@ class AccountingService:
         """
         try:
             with transaction.atomic():
+                # Get business from the user who voided the transaction
+                business = None
+                if pos_transaction.voided_by and hasattr(pos_transaction.voided_by, 'business_id'):
+                    try:
+                        from users.models import Business
+                        business = Business.objects.get(id=pos_transaction.voided_by.business_id)
+                    except Business.DoesNotExist:
+                        logger.warning(f"Business not found for user {pos_transaction.voided_by}")
+                
                 # Create the void journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=timezone.now().date(),
                     description=f"VOID POS Sale - {pos_transaction.transaction_number}",
                     reference=f"VOID-{pos_transaction.transaction_number}",
-                    business=getattr(pos_transaction, 'business', None),
+                    business=business,
                     created_by=pos_transaction.voided_by
                 )
                 
