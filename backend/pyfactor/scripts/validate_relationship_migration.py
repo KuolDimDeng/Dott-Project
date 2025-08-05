@@ -8,7 +8,7 @@ direct UUID fields was performed correctly. It compares the old relationships
 import os
 import sys
 import django
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 # Set up Django environment
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

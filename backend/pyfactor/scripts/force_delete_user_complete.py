@@ -15,7 +15,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -142,7 +142,7 @@ def force_delete_all_user_data(email):
         
         # Execute all deletions
         total_deleted = 0
-        with transaction.atomic():
+        with db_transaction.atomic():
             for query, param, table_name in deletions:
                 try:
                     cursor.execute(query, [param])

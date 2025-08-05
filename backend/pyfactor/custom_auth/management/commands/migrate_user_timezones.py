@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 
 
@@ -41,7 +41,7 @@ class Command(BaseCommand):
         )
         
         if not dry_run:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 updated_count = users_without_timezone.update(timezone='UTC')
                 self.stdout.write(
                     self.style.SUCCESS(

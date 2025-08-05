@@ -8,7 +8,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.shortcuts import get_object_or_404
 from custom_auth.models import Tenant
 from django.utils import timezone
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, transaction as db_transaction
 import uuid
 import json
 import traceback
@@ -72,7 +72,7 @@ class SignUpView(APIView):
                     'error': 'Email and Cognito ID are required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Check if user already exists
                 existing_user = User.objects.filter(email=email).first()
                 if existing_user:

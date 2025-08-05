@@ -2,7 +2,7 @@
 import os
 import sys
 import django
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.core.management import call_command
 
 # Add the current directory to Python path
@@ -41,7 +41,7 @@ def comprehensive_migration_fix():
         print("\n\nStep 1: Backing up migration history...")
         affected_apps = ['users', 'finance', 'hr', 'inventory', 'purchases', 'sales', 'reports', 'integrations']
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Remove all migrations for affected apps
             print("\nStep 2: Removing migrations for affected apps...")
             for app in affected_apps:

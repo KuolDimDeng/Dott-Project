@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 from users.models import Business, BusinessDetails
 from users.discount_service import DiscountVerificationService
@@ -64,7 +64,7 @@ class CheckDiscountEligibilityView(APIView):
             
             # Apply discount if eligible
             if eligible:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # Apply discount to business
                     success, discount = DiscountVerificationService.apply_discount_to_business(
                         business, 

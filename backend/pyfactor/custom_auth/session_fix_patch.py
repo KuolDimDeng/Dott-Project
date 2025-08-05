@@ -2,7 +2,7 @@
 # This patch fixes the session creation logic to properly check onboarding status
 # instead of always setting needs_onboarding=True
 
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from datetime import timedelta
 import uuid

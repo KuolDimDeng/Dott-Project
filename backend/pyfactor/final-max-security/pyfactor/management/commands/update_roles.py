@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 
 class Command(BaseCommand):
@@ -14,7 +14,7 @@ class Command(BaseCommand):
         for user in users:
             try:
                 self.stdout.write(f"Updating user: {user.email} from {user.role} to OWNER")
-                with transaction.atomic():
+                with db_transaction.atomic():
                     user.role = 'owner'
                     user.occupation = 'owner'
                     user.save(update_fields=['role', 'occupation'])

@@ -8,7 +8,7 @@ import requests
 import traceback
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -124,7 +124,7 @@ class PasswordLoginView(APIView):
             logger.info(f"🔐 [PASSWORD_LOGIN] Got user info - sub: {auth0_sub}, email: {email}")
             
             # Get or create user in our database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Check if user exists by Auth0 sub first (most reliable)
                 try:
                     user = User.objects.get(auth0_sub=auth0_sub)

@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from django.db import connection, transaction, models
+from django.db import connection, transaction as db_transaction, models
 from django.db.models import Q, F
 from django.utils.decorators import method_decorator
 from functools import wraps
@@ -127,7 +127,7 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         start_time = time.time()
         
         # Use a transaction with a timeout to prevent long-running queries
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
@@ -230,7 +230,7 @@ def ultra_fast_services(request):
         return Response(cached_data)
     
     # Use a transaction with a timeout
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Set timeout for the transaction
         with connection.cursor() as cursor:
             cursor.execute('SET LOCAL statement_timeout = 5000')  # 5 seconds
@@ -288,7 +288,7 @@ def service_stats(request):
     schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Set timeout for the transaction
         with connection.cursor() as cursor:
             cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
@@ -323,7 +323,7 @@ def service_by_code(request, code):
     schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Set timeout for the transaction
         with connection.cursor() as cursor:
             cursor.execute('SET LOCAL statement_timeout = 5000')  # 5 seconds

@@ -4,7 +4,7 @@ Handles validation, comparison, and approval of tax rate changes
 """
 from decimal import Decimal
 from typing import Dict, List, Tuple
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 import logging
 
@@ -212,7 +212,7 @@ class TaxRateValidator:
         batch.calculate_summary()
         return batch
     
-    @transaction.atomic
+    @db_transaction.atomic
     def apply_approved_changes(self, batch: TaxRateValidationBatch, user):
         """Apply approved changes to production"""
         if batch.status != 'approved':
@@ -276,7 +276,7 @@ class TaxRateValidator:
         logger.info(f"Applied {applied_count} changes from batch {batch.batch_id}")
         return applied_count
     
-    @transaction.atomic
+    @db_transaction.atomic
     def rollback_batch(self, batch: TaxRateValidationBatch):
         """Rollback a batch of changes"""
         if not batch.rollback_available:

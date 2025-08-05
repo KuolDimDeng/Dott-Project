@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from onboarding.models import OnboardingProgress
 from users.models import UserProfile
@@ -26,7 +26,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('Operation cancelled.'))
             return
 
-        with transaction.atomic():
+        with db_transaction.atomic():
             if email:
                 self.clear_user_data(email)
             else:

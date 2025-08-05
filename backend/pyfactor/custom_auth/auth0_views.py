@@ -9,7 +9,7 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -136,7 +136,7 @@ def create_auth0_user(request):
         auth0_sub = data['auth0_sub']
         email = data['email']
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # CRITICAL: Check for deleted accounts first
             deleted_user = User.objects.filter(email=email, is_deleted=True).first()
             if deleted_user:
@@ -458,7 +458,7 @@ def close_user_account(request):
         reason = data.get('reason', 'User requested')
         feedback = data.get('feedback', '')
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create deletion log
             from custom_auth.models import AccountDeletionLog
             

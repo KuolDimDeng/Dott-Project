@@ -12,7 +12,7 @@ from typing import Optional, Dict, Any
 import redis
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
@@ -217,7 +217,7 @@ class SessionService:
             kwargs['session_data']['user_role'] = user_role
             
             # Create session
-            with transaction.atomic():
+            with db_transaction.atomic():
                 print(f"[SessionService] 🔴 CREATING NEW SESSION...")
                 print(f"[SessionService] 🔴 Transaction started")
                 
@@ -363,7 +363,7 @@ class SessionService:
             Updated UserSession or None
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 session = UserSession.objects.select_for_update().get(
                     session_id=session_id,
                     is_active=True

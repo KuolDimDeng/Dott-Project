@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.views import APIView
@@ -40,7 +40,7 @@ class ProfileView(APIView):
         database load.
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Use select_related to optimize database queries with explicit default database
                 profile = UserProfile.objects.using('default').select_related(
                     'user',
@@ -175,7 +175,7 @@ class ProfileView(APIView):
             if not user_profile:
                 logger.warning(f"No profile found for user {request.user.email}, creating one")
                 try:
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         user_profile = UserProfile.objects.using('default').create(
                             user=request.user,
                             is_business_owner=True  # Set as business owner since this is initial profile

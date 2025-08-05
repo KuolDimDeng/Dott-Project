@@ -18,7 +18,7 @@ except Exception as e:
     print(f"Django setup failed: {str(e)}")
     sys.exit(1)
 
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User, Tenant
 
 def set_tenant_first_user_as_owner():
@@ -43,7 +43,7 @@ def set_tenant_first_user_as_owner():
                 try:
                     owner = User.objects.get(id=tenant.owner_id)
                     if owner.role != 'OWNER':
-                        with transaction.atomic():
+                        with db_transaction.atomic():
                             owner.role = 'OWNER'
                             owner.save(update_fields=['role'])
                             print(f"  ✅ Updated owner {owner.email} role to OWNER")
@@ -56,7 +56,7 @@ def set_tenant_first_user_as_owner():
             # Method 2: Find first user for this tenant
             first_user = User.objects.filter(tenant=tenant).order_by('date_joined').first()
             if first_user and first_user.role != 'OWNER':
-                with transaction.atomic():
+                with db_transaction.atomic():
                     first_user.role = 'OWNER'
                     first_user.save(update_fields=['role'])
                     print(f"  ✅ Updated first user {first_user.email} role to OWNER")
@@ -77,7 +77,7 @@ def set_tenant_first_user_as_owner():
             print(f"Subscription plan: {kdeng.subscription_plan}")
             
             if kdeng.role != 'OWNER':
-                with transaction.atomic():
+                with db_transaction.atomic():
                     kdeng.role = 'OWNER'
                     kdeng.save(update_fields=['role'])
                     print(f"\n✅ Updated kdeng@dottapps.com role to OWNER")

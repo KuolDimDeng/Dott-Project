@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import transaction as db_transaction
 from ..models import OnboardingStatus
 from ..tasks import setup_user_database
 
@@ -8,7 +8,7 @@ class OnboardingService:
         """
         Start the setup process for a new business
         """
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create or get onboarding status
             status_obj, created = OnboardingStatus.objects.get_or_create(
                 business=business,

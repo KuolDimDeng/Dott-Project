@@ -44,7 +44,7 @@ sys.path.append(str(Path(__file__).parent))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import connection, DatabaseError, transaction
+from django.db import connection, DatabaseError, transaction as db_transaction
 from django.db.models import Q
 import time
 

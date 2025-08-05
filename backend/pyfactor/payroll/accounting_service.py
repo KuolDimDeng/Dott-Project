@@ -4,7 +4,7 @@ Handles IFRS and GAAP specific accounting for payroll transactions
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount
@@ -49,7 +49,7 @@ class PayrollAccountingService:
         4. Stock-based compensation
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get accounting standard
                 accounting_standard = 'IFRS'  # Default
                 if business_id:
@@ -75,16 +75,16 @@ class PayrollAccountingService:
                 
                 # Process each payroll transaction
                 for transaction in payroll_transactions:
-                    total_gross_pay += transaction.gross_pay
-                    total_net_pay += transaction.net_pay
-                    total_federal_tax += transaction.federal_tax_withheld
-                    total_state_tax += transaction.state_tax_withheld
-                    total_social_security += transaction.social_security_withheld
-                    total_medicare += transaction.medicare_withheld
+                    total_gross_pay += db_transaction.gross_pay
+                    total_net_pay += db_transaction.net_pay
+                    total_federal_tax += db_transaction.federal_tax_withheld
+                    total_state_tax += db_transaction.state_tax_withheld
+                    total_social_security += db_transaction.social_security_withheld
+                    total_medicare += db_transaction.medicare_withheld
                     
                     # Calculate employer portions
-                    employer_ss = transaction.social_security_withheld  # Employer matches
-                    employer_medicare = transaction.medicare_withheld    # Employer matches
+                    employer_ss = db_transaction.social_security_withheld  # Employer matches
+                    employer_medicare = db_transaction.medicare_withheld    # Employer matches
                     total_employer_taxes += employer_ss + employer_medicare
                 
                 # 1. Debit Wage Expense for gross pay
@@ -188,8 +188,8 @@ class PayrollAccountingService:
         for transaction in transactions:
             if hasattr(transaction, 'vacation_hours_earned'):
                 # Estimate vacation accrual (simplified)
-                hourly_rate = transaction.gross_pay / (transaction.regular_hours + transaction.overtime_hours)
-                vacation_value = transaction.vacation_hours_earned * hourly_rate
+                hourly_rate = db_transaction.gross_pay / (db_transaction.regular_hours + db_transaction.overtime_hours)
+                vacation_value = db_transaction.vacation_hours_earned * hourly_rate
                 total_vacation_accrual += vacation_value
         
         if total_vacation_accrual > 0:
@@ -291,7 +291,7 @@ class PayrollAccountingService:
         Create journal entry for payroll tax remittance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=tax_payment.payment_date,

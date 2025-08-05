@@ -5,7 +5,7 @@ TODO: TEMPORARY TESTING FEATURE - REMOVE WHEN LIVE
 Currently allowing OWNER users to be deleted and deactivated for testing purposes.
 Search for "TODO: TEMPORARY" to find all locations that need to be reverted.
 """
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.views import APIView
@@ -536,7 +536,7 @@ class AdminUserCreateView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Create user in database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 user = User.objects.create(
                     email=email,
                     first_name=first_name,

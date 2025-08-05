@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from decimal import Decimal
 
@@ -30,15 +30,15 @@ class Command(BaseCommand):
         for transaction in PayrollTransaction.objects.all():
             try:
                 # Skip transactions that already have a timesheet
-                if transaction.timesheet is not None:
-                    self.stdout.write(f"Transaction {transaction.pk} already has a timesheet reference, skipping")
+                if db_transaction.timesheet is not None:
+                    self.stdout.write(f"Transaction {db_transaction.pk} already has a timesheet reference, skipping")
                     continue
                 
                 # Try to find a matching timesheet based on employee and dates
                 matching_timesheets = Timesheet.objects.filter(
-                    employee=transaction.employee,
-                    period_start__lte=transaction.payroll_run.end_date,
-                    period_end__gte=transaction.payroll_run.start_date,
+                    employee=db_transaction.employee,
+                    period_start__lte=db_transaction.payroll_run.end_date,
+                    period_end__gte=db_transaction.payroll_run.start_date,
                     status='APPROVED'
                 )
                 
@@ -49,15 +49,15 @@ class Command(BaseCommand):
                     else:
                         matching_timesheet = matching_timesheets.first()
                     
-                    transaction.timesheet = matching_timesheet
-                    transaction.save()
+                    db_transaction.timesheet = matching_timesheet
+                    db_transaction.save()
                     updated_count += 1
                     
                     timesheet_number = matching_timesheet.timesheet_number if matching_timesheet else 'unknown'
-                    self.stdout.write(f"Updated transaction for {transaction.employee} with timesheet {timesheet_number}")
+                    self.stdout.write(f"Updated transaction for {db_transaction.employee} with timesheet {timesheet_number}")
             
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Error updating transaction {transaction.pk}: {str(e)}"))
+                self.stdout.write(self.style.ERROR(f"Error updating transaction {db_transaction.pk}: {str(e)}"))
                 error_count += 1
         
         self.stdout.write("\nPayroll transaction update complete!")

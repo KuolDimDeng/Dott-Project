@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def complete_tenant_creation(request):
         
         logger.info(f"[TenantComplete] Creating tenant for user: {user_email}, tenant_id: {tenant_id}")
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Import here to avoid circular imports
             from django.contrib.auth.models import User
             from custom_auth.models import TenantUser, BusinessProfile, SubscriptionPlan

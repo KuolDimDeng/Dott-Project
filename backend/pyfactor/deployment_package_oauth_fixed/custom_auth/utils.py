@@ -4,7 +4,7 @@ import time
 import sys
 import redis
 import traceback
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.conf import settings
 from .models import Tenant, User
 
@@ -142,7 +142,7 @@ def create_tenant_for_user(user, business_name=None):
     Returns:
         Tenant object that was created or retrieved
     """
-    from django.db import connection, transaction
+    from django.db import connection, transaction as db_transaction
     from custom_auth.models import Tenant
     import uuid
     from django.utils import timezone
@@ -261,7 +261,7 @@ def create_tenant_for_user(user, business_name=None):
             
             # Use a transaction to ensure the tenant record is created atomically
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # Double-check no tenant was created in the meantime (race condition)
                     user_tenant = Tenant.objects.filter(owner_id=user.id).first()
                     if user_tenant:

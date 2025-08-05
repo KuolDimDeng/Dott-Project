@@ -9,7 +9,7 @@ from .serializers import (
     PayrollTaxFilingSerializer, TaxFilingInstructionSerializer,
     TaxFormSerializer
 )
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -76,7 +76,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
     def bulk_update(self, request):
         """Bulk update tax rates"""
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 updated_rates = []
                 for rate_data in request.data:
                     rate_id = rate_data.pop('id', None)

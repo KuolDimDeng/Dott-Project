@@ -6,7 +6,7 @@ Usage: python manage.py cleanup_user_data <email>
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.apps import apps
 from users.models import CustomUser, TenantUser
 from tenants.models import Tenant
@@ -109,7 +109,7 @@ class Command(BaseCommand):
             # Perform deletion
             self.stdout.write("\nDeleting data...")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Delete all tenant-related data
                 for tenant in tenants:
                     self.stdout.write(f"\nDeleting data for tenant '{tenant.name}'...")

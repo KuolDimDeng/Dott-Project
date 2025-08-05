@@ -24,7 +24,7 @@ from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from pyfactor.user_console import console
 from pyfactor.logging_config import get_logger
 from .utils import get_or_create_account, ensure_date
-from django.db import transaction 
+from django.db import transaction as db_transaction 
 from datetime import datetime, timedelta, date
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse
@@ -502,7 +502,7 @@ def create_product(request):
         if database_name not in connections:
             raise ConnectionDoesNotExist(f"The connection '{database_name}' doesn't exist.")
 
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             # Extract custom_charge_plans data from request
             custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
             
@@ -637,7 +637,7 @@ def create_service(request):
         logger.debug(f"Business type: {business_type}")
         logger.debug(f"Business subtype selections: {business_subtype_selections}")
 
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             # Extract custom_charge_plans data from request
             custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
             
@@ -761,7 +761,7 @@ def update_product(request, pk):
         router = UserDatabaseRouter()
         router.create_dynamic_database(database_name)
 
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             # Get the product
             try:
                 product = Product.objects.using(database_name).get(pk=pk)
@@ -1644,7 +1644,7 @@ def create_sale(request):
     user = request.user
     database_name = get_user_database(user)
 
-    with transaction.atomic(using=database_name):
+    with db_transaction.atomic(using=database_name):
         serializer = SaleSerializer(data=request.data, context={'database_name': database_name})
         if serializer.is_valid():
             # Create the sale

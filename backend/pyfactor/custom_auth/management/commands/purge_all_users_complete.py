@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction, connection
+from django.db import transaction as db_transaction, connection
 from django.contrib.auth import get_user_model
 from custom_auth.models import Tenant
 try:
@@ -40,7 +40,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING('\n🗑️  Starting complete user data purge...'))
 
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Count records before deletion
                 user_count = User.objects.count()
                 tenant_count = Tenant.objects.count()

@@ -5,7 +5,7 @@ This command will copy data from tenant schemas to the main schema with tenant_i
 
 import logging
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.conf import settings
 from custom_auth.models import Tenant
 from custom_auth.tenant_context import set_current_tenant, clear_current_tenant
@@ -117,7 +117,7 @@ class Command(BaseCommand):
             # Clear the tenant context
             clear_current_tenant()
     
-    @transaction.atomic
+    @db_transaction.atomic
     def migrate_table(tenant_id: uuid.UUID:
         """Migrate data from a specific table."""
         self.stdout.write(f"Migrating table {table_name}")

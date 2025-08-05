@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
@@ -35,7 +35,7 @@ class ForceCompleteOnboardingView(APIView):
         logger.info(f"[ForceCompleteOnboarding] Processing for user: {user.email}")
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get or create OnboardingProgress
                 progress, created = OnboardingProgress.objects.get_or_create(
                     user=user,

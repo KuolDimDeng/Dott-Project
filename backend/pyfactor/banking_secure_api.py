@@ -19,7 +19,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 import csv
 import io
@@ -39,7 +39,7 @@ class BankTransactionViewSet(viewsets.ModelViewSet):
         return BankTransaction.objects.all()
     
     @action(detail=False, methods=['post'])
-    @transaction.atomic
+    @db_transaction.atomic
     def import_csv(self, request):
         """
         Secure CSV import with duplicate detection
@@ -202,9 +202,9 @@ class BankingRuleViewSet(viewsets.ModelViewSet):
         for transaction in transactions:
             for rule in rules:
                 if self.rule_matches(rule, transaction):
-                    transaction.category = rule.category
-                    transaction.tags = rule.tags
-                    transaction.save()
+                    db_transaction.category = rule.category
+                    db_transaction.tags = rule.tags
+                    db_transaction.save()
                     
                     # Update rule usage
                     rule.times_used += 1

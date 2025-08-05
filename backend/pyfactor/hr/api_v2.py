@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.shortcuts import get_object_or_404
 from .models import Employee
 from .serializers import EmployeeSerializer
@@ -94,7 +94,7 @@ def employee_list_v2(request):
             
             logger.info(f"[Employee API v2] Creating employee: {employee_data.get('email', 'unknown')}")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Validate data
                 serializer = EmployeeSerializer(data=employee_data)
                 if not serializer.is_valid():
@@ -209,7 +209,7 @@ def employee_detail_v2(request, employee_id):
             # Handle SSN update separately
             ssn = employee_data.pop('securityNumber', None)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 serializer = EmployeeSerializer(employee, data=employee_data, partial=True)
                 if not serializer.is_valid():
                     return Response({
@@ -250,7 +250,7 @@ def employee_detail_v2(request, employee_id):
     
     elif request.method == 'DELETE':
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 employee_email = employee.email
                 employee.delete()
                 

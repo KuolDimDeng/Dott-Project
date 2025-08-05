@@ -19,7 +19,7 @@ from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from pyfactor.user_console import console
 from pyfactor.logging_config import get_logger
 from sales.utils import get_or_create_account, ensure_date
-from django.db import transaction 
+from django.db import transaction as db_transaction 
 from datetime import datetime, timedelta, date
 from django.db.models import Q
 from django.http import FileResponse
@@ -141,7 +141,7 @@ def create_vendor(request):
 
     serializer = VendorSerializer(data=request.data, context={'database_name': database_name})
     if serializer.is_valid():
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             vendor = serializer.save()
         return Response(VendorSerializer(vendor).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -259,7 +259,7 @@ def create_expense(request):
     user = request.user
     database_name = get_user_database(user)
 
-    with transaction.atomic(using=database_name):
+    with db_transaction.atomic(using=database_name):
         serializer = ExpenseSerializer(data=request.data, context={'database_name': database_name})
         if serializer.is_valid():
             expense = serializer.save()

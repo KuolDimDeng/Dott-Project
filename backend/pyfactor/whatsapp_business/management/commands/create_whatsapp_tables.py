@@ -3,7 +3,7 @@ Django management command to create WhatsApp Business tables directly.
 This bypasses the migration system if needed.
 """
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 
 class Command(BaseCommand):
@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Creating WhatsApp Business tables...")
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connection.cursor() as cursor:
                 # Check if tables exist
                 cursor.execute("""

@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from core.authentication.session_token_auth import SessionTokenAuthentication
@@ -151,7 +151,7 @@ class UnifiedProfileView(APIView):
                 set_tenant_context(tenant_id)
             
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # Update allowed user fields
                     allowed_fields = [
                         'given_name', 'family_name', 'picture',

@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.conf import settings
 from datetime import timedelta
@@ -119,7 +119,7 @@ class UserManagementViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Update role if provided
             new_role = serializer.validated_data.get('role')
             if new_role and new_role != user.role:
@@ -438,7 +438,7 @@ class UserInvitationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update user with tenant and role
                 user = request.user
                 user.tenant = invitation.tenant
@@ -615,7 +615,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
         return Response({"exists": exists})
     
     @action(detail=False, methods=['post'], url_path='create')
-    @transaction.atomic
+    @db_transaction.atomic
     def create_user(self, request):
         """Create user directly in Auth0 and backend"""
         try:
@@ -876,7 +876,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
         except Exception as e:
             logger.error(f"[DirectUserCreation] Error creating user: {str(e)}")
             logger.info(f"[DirectUserCreation] Transaction will be rolled back due to error")
-            # @transaction.atomic ensures all database changes are rolled back automatically
+            # @db_transaction.atomic ensures all database changes are rolled back automatically
             return Response(
                 {"error": f"Failed to create user: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -963,7 +963,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     
                     # Use a savepoint to handle token creation separately
                     from django.db import transaction
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         # Store token with 24 hour expiry
                         PasswordResetToken.objects.create(
                             user=user,

@@ -1675,7 +1675,7 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     def test_create_and_list(self, request):
         """Test endpoint to create a geofence and immediately list it"""
         import time
-        from django.db import transaction
+        from django.db import transaction as db_transaction
         
         logger.info(f"[GeofenceViewSet] test_create_and_list called by {request.user.email}")
         logger.info(f"[GeofenceViewSet] User business_id: {request.user.business_id}")
@@ -1684,7 +1684,7 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         
         try:
             # Create a test geofence
-            with transaction.atomic():
+            with db_transaction.atomic():
                 geofence = Geofence.objects.create(
                     name=test_name,
                     business_id=request.user.business_id,

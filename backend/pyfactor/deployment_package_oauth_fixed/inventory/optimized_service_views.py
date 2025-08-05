@@ -1,4 +1,4 @@
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -146,8 +146,8 @@ def optimized_create_service(request):
         serializer = ServiceSerializer(data=request.data)
         if serializer.is_valid():
             # Use a transaction to ensure atomicity
-            from django.db import transaction
-            with transaction.atomic(using='default'):
+            from django.db import transaction as db_transaction
+            with db_transaction.atomic(using='default'):
                 # Set timeout for the transaction - increased from 10s to 30s
                 with connection.cursor() as cursor:
                     cursor.execute('SET LOCAL statement_timeout = 30000')  # 30 seconds

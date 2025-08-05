@@ -11,7 +11,7 @@ import django
 import logging
 import uuid
 import time
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.utils import timezone
 from custom_auth.models import User, Tenant
 
@@ -44,7 +44,7 @@ def create_tenant_for_user(user_email):
         print(f"Generated tenant ID: {tenant_id}")
         
         # Create tenant record
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create tenant with RLS enabled
             tenant = Tenant.objects.create(
                 id=tenant_id,

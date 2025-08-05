@@ -15,7 +15,7 @@ import logging
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 
 # Configure logging
@@ -151,7 +151,7 @@ def delete_user_complete(email, delete_from_auth0=True, hard_delete=False):
             database_deleted=hard_delete
         )
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Step 1: Delete from Auth0 if requested
             if delete_from_auth0 and auth0_sub:
                 logger.info(f"Attempting to delete user from Auth0: {auth0_sub}")

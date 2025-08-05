@@ -2,7 +2,7 @@
 Close Account View - Handle complete account deletion with soft delete
 """
 import logging
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -67,7 +67,7 @@ class CloseAccountView(APIView):
             logger.info(f"[CLOSE_ACCOUNT] IP: {ip_address}, User-Agent: {user_agent[:100]}")
             
             # Start transaction for atomicity
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # 1. Create audit log first (always succeeds even if deletion fails)
                 deletion_log = AccountDeletionLog.objects.create(
                     user_email=user_email,

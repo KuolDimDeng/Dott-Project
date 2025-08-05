@@ -4,7 +4,7 @@ Specifically created to fix the support@dottapps.com user issue.
 """
 import uuid
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 from users.models import UserProfile, Business
 
@@ -84,7 +84,7 @@ class Command(BaseCommand):
                 return
 
         # Create UserProfile
-        with transaction.atomic():
+        with db_transaction.atomic():
             try:
                 profile = UserProfile.objects.create(
                     user=user,
@@ -139,7 +139,7 @@ class Command(BaseCommand):
                 business_id = user.business_id
                 self.stdout.write(f"  - Found business_id on User model: {business_id}")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 try:
                     profile = UserProfile.objects.create(
                         user=user,

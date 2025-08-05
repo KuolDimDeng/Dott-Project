@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.cache import cache
 from django.conf import settings
 from users.models import Business, BusinessDetails
@@ -90,7 +90,7 @@ def get_currency_preferences(request):
         
         if request.method == 'PUT':
             # Update preferences
-            with transaction.atomic():
+            with db_transaction.atomic():
                 currency_code = request.data.get('currency_code')
                 
                 if currency_code:

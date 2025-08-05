@@ -1,6 +1,6 @@
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def create_employee_for_owner(sender, instance, created, **kwargs):
             # Check if employee record already exists
             employee = Employee.objects.filter(user=instance).first()
             if not employee:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # Create employee record for owner
                     employee = Employee.objects.create(
                         user=instance,

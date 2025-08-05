@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.apps import apps
-from django.db import connection, connections, transaction
+from django.db import connection, connections, transaction as db_transaction
 from users.models import UserProfile
 from pyfactor.logging_config import get_logger
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
@@ -82,6 +82,6 @@ class Command(BaseCommand):
 
     def ensure_accounts(self, database_name):
         logger.info(f"Ensuring necessary accounts exist in user database: {database_name}")
-        with transaction.atomic(using=database_name):
+        with db_transaction.atomic(using=database_name):
             ensure_accounts_exist(database_name)
         logger.info(f"Necessary accounts ensured for user database: {database_name}")

@@ -3,7 +3,7 @@ import uuid
 import traceback
 import psycopg2
 from django.utils import timezone
-from django.db import transaction, connection, DatabaseError
+from django.db import transaction as db_transaction, connection, DatabaseError
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -299,7 +299,7 @@ class DashboardSchemaSetupView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Wrap the remaining database operations in a transaction
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Celery has been removed - generate a fake task ID
                 logger.info("Celery has been removed - generating simulated task ID")
                 task_id = str(uuid.uuid4())

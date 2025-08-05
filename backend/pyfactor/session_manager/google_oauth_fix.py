@@ -2,7 +2,7 @@
 # This ensures that Google OAuth users get the correct onboarding status
 
 import logging
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from datetime import timedelta
 

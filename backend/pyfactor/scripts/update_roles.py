@@ -35,7 +35,7 @@ except Exception as e:
     sys.exit(1)
 
 # Now import Django models
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 
 def update_user_roles():
@@ -48,7 +48,7 @@ def update_user_roles():
     for user in users:
         try:
             print(f"Updating user: {user.email} from {user.role} to OWNER")
-            with transaction.atomic():
+            with db_transaction.atomic():
                 user.role = 'owner'
                 user.occupation = 'owner'
                 user.save(update_fields=['role', 'occupation'])

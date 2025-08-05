@@ -4,7 +4,7 @@ Handles user registration with email and password
 """
 import logging
 import uuid
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth.hashers import make_password
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -58,7 +58,7 @@ class EmailPasswordRegisterView(APIView):
                     'error': 'User with this email already exists'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create user
                 user = User.objects.create(
                     email=email,

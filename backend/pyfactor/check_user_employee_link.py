@@ -14,7 +14,7 @@ django.setup()
 
 from users.models import User
 from hr.models import Employee
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 def check_and_link_employee():
     print("\n=== Checking User-Employee Link ===")
@@ -56,7 +56,7 @@ def check_and_link_employee():
             
             if not employee.user_id:
                 # Link the employee to the user
-                with transaction.atomic():
+                with db_transaction.atomic():
                     employee.user = user
                     employee.save()
                     print(f"\n✅ Successfully linked employee to user!")
@@ -71,7 +71,7 @@ def check_and_link_employee():
             print(f"\n💡 Creating employee record for business owner...")
             
             # Create employee record
-            with transaction.atomic():
+            with db_transaction.atomic():
                 employee = Employee.objects.create(
                     user=user,
                     business_id=user.business_id,

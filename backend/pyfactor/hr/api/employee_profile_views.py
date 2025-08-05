@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 from ..models import Employee
 from ..stripe_bank_tax_service import StripeBankTaxService
 from ..stripe_ssn_service_express import StripeSSNService

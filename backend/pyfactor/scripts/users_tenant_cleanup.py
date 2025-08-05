@@ -14,7 +14,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import transaction, connections
+from django.db import transaction as db_transaction, connections
 from custom_auth.models import User, Tenant
 
 # Initialize logger
@@ -88,7 +88,7 @@ def remove_tenant_for_user(user_id=None, email=None, remove_schema=True):
             return False
         
         # Begin transaction to update database
-        with transaction.atomic():
+        with db_transaction.atomic():
             # If schema exists and should be removed, drop it
             if schema_name and remove_schema:
                 if not drop_tenant_schema(schema_name):
@@ -180,7 +180,7 @@ def remove_all_tenants(remove_schema=True, confirm=True):
                     continue
             
             # Begin transaction to update database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update all users that use this tenant
                 users = User.objects.filter(tenant=tenant)
                 for user in users:

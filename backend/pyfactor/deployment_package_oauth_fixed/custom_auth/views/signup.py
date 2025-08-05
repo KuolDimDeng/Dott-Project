@@ -1,6 +1,6 @@
 import logging
 import uuid
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -89,7 +89,7 @@ class SignupView(APIView):
                     logger.info(f"[SIGNUP] Returning existing user and tenant info for {email}")
                     return Response(response_data)
 
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create or update user
                 user, created = User.objects.get_or_create(
                     email=email,

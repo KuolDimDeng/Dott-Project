@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 from taxes.models import TenantTaxSettings, GlobalSalesTaxRate
@@ -170,7 +170,7 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
             )
         
         if serializer.is_valid():
-            with transaction.atomic():
+            with db_transaction.atomic():
                 settings = serializer.save()
                 
                 # Log the change

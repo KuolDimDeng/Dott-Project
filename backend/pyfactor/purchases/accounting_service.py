@@ -4,7 +4,7 @@ Handles IFRS and GAAP specific accounting for purchases
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount
@@ -34,7 +34,7 @@ class PurchaseAccountingService:
         - Inventory valuation method (LIFO allowed only under GAAP)
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get accounting standard
                 accounting_standard = 'IFRS'  # Default
                 if business_id:

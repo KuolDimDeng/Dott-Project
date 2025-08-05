@@ -7,7 +7,7 @@ This follows industry standards for multi-tenant SaaS applications.
 viewset_content = '''from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, NotFound
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from crm.models import Customer
 from crm.serializers import CustomerSerializer

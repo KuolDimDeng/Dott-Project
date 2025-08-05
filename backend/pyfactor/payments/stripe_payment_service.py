@@ -4,7 +4,7 @@ Handles invoice payments, vendor payments, and fee collection
 """
 import stripe
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction as db_transaction
 from pyfactor.logging_config import get_logger
 from .stripe_fees import calculate_platform_fee
 from hr.stripe_config import STRIPE_EXPRESS_ACCOUNT_ID

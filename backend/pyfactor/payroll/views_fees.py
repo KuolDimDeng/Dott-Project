@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 from decimal import Decimal
 import logging
 
@@ -92,7 +92,7 @@ def process_payroll_with_fees(request):
         calculation = calculator.calculate_bulk_payroll(employees_data)
         summary = calculation['summary']
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create payroll run
             payroll_run = PayrollRun.objects.create(
                 tenant=tenant,

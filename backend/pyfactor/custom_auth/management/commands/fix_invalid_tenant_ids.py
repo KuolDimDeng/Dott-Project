@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User, Tenant
 from onboarding.models import OnboardingProgress
 import uuid
@@ -39,7 +39,7 @@ class Command(BaseCommand):
         
         # Fix each invalid record
         fixed_count = 0
-        with transaction.atomic():
+        with db_transaction.atomic():
             for progress in invalid_tenant_ids:
                 user = progress.user
                 

@@ -5,7 +5,7 @@ Handles automatic creation of employee records when users are created/updated
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 from .models import User
@@ -47,7 +47,7 @@ def create_employee_for_user_explicit(user, **kwargs):
         return user.employee_profile
         
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create employee record
             employee = Employee.objects.create(
                 user=user,
@@ -172,7 +172,7 @@ def sync_employee_role_to_user_permissions(employee, user=None):
             }
         }
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Clear existing permissions for the user
             UserPageAccess.objects.filter(user=user, tenant=user.tenant).delete()
             

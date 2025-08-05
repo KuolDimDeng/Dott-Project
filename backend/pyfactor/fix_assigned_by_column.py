@@ -12,13 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 def fix_assigned_by_column():
     print("\n=== Fixing EmployeeGeofence assigned_by_id Column ===")
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connection.cursor() as cursor:
                 # Check current column type
                 cursor.execute("""

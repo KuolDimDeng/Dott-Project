@@ -13,7 +13,7 @@ import logging
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 from datetime import date, datetime
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 
 from payroll.models import PayrollRun, PayrollTransaction
@@ -99,11 +99,11 @@ class StatePayrollProcessor:
         ).select_related('employee')
         
         for transaction in transactions:
-            employee = transaction.employee
+            employee = db_transaction.employee
             # Get work state from employee's work address
             state_code = getattr(employee, 'work_state', None) or \
                         getattr(employee, 'state', None) or \
-                        transaction.state_code
+                        db_transaction.state_code
             
             if state_code:
                 if state_code not in employees_by_state:
@@ -140,14 +140,14 @@ class StatePayrollProcessor:
             # Calculate state withholding
             withholding = handler.calculate_state_withholding(
                 employee, 
-                transaction.gross_pay,
+                db_transaction.gross_pay,
                 payroll_run.pay_date
             )
             
             # Calculate employer taxes
             employer_taxes = handler.calculate_employer_taxes(
                 employee,
-                transaction.gross_pay,
+                db_transaction.gross_pay,
                 payroll_run.pay_date,
                 state_account
             )
@@ -155,17 +155,17 @@ class StatePayrollProcessor:
             # Calculate employee taxes
             employee_taxes = handler.calculate_employee_taxes(
                 employee,
-                transaction.gross_pay,
+                db_transaction.gross_pay,
                 payroll_run.pay_date
             )
             
             # Update transaction with state tax info
-            transaction.state_tax = withholding
-            transaction.state_code = state_code
-            transaction.save()
+            db_transaction.state_tax = withholding
+            db_transaction.state_code = state_code
+            db_transaction.save()
             
             # Accumulate totals
-            state_result['total_wages'] += transaction.gross_pay
+            state_result['total_wages'] += db_transaction.gross_pay
             state_result['total_withholding'] += withholding
             state_result['sui_wages'] += employer_taxes.get('sui_wages', Decimal('0'))
             state_result['sui_tax'] += employer_taxes.get('sui_tax', Decimal('0'))
@@ -175,7 +175,7 @@ class StatePayrollProcessor:
             state_result['employee_details'].append({
                 'employee_id': employee.id,
                 'employee_name': employee.full_name,
-                'gross_pay': transaction.gross_pay,
+                'gross_pay': db_transaction.gross_pay,
                 'state_withholding': withholding,
                 'employer_taxes': employer_taxes,
                 'employee_taxes': employee_taxes

@@ -7,7 +7,7 @@ import os
 import sys
 import django
 import logging
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 # Set up Django environment
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -45,7 +45,7 @@ def create_business_details_table():
                 
             # Create the table if it doesn't exist
             logger.info("Creating users_business_details table...")
-            with transaction.atomic():
+            with db_transaction.atomic():
                 cursor.execute("""
                     CREATE TABLE users_business_details (
                         business_id UUID PRIMARY KEY REFERENCES users_business(id) ON DELETE CASCADE,

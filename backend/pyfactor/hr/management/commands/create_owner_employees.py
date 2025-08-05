@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 from hr.models import Employee
 import logging
@@ -26,7 +26,7 @@ class Command(BaseCommand):
         
         for owner in owners_without_employees:
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     employee = Employee.objects.create(
                         user=owner,
                         business_id=owner.business_id,

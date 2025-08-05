@@ -1,7 +1,7 @@
 # onboarding/celery_tasks.py
 from celery import shared_task
 from django.utils import timezone
-from django.db import transaction, connections
+from django.db import transaction as db_transaction, connections
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from pyfactor.logging_config import get_logger
@@ -134,7 +134,7 @@ def setup_tenant_schema_task(self, user_id, business_id):
 
     try:
         # Phase 1: Initial Setup
-        with transaction.atomic():
+        with db_transaction.atomic():
             user = User.objects.get(id=user_id)
             user_profile = UserProfile.objects.select_for_update().get(user=user)
             user_profile.setup_status = 'in_progress'
@@ -196,7 +196,7 @@ def setup_tenant_schema_task(self, user_id, business_id):
         # Phase 6: Completion
         logger.info(f"Finalizing schema setup for {schema_name}")
         send_progress(90, 'Finalizing Setup')
-        with transaction.atomic():
+        with db_transaction.atomic():
             user_profile = UserProfile.objects.select_for_update().get(user=user)
             # Update tenant information
             tenant = user.tenant
@@ -236,7 +236,7 @@ def setup_tenant_schema_task(self, user_id, business_id):
         
         try:
             # Update user profile status
-            with transaction.atomic():
+            with db_transaction.atomic():
                 user_profile = UserProfile.objects.select_for_update().get(user_id=user_id)
                 user_profile.setup_status = 'error'
                 user_profile.save()

@@ -1,4 +1,4 @@
-from django.db import models, connection, transaction
+from django.db import models, connection, transaction as db_transaction
 from django.db.models import Case, When, F, ExpressionWrapper, BooleanField, DurationField, Sum, Avg, Count
 from django.db.models.functions import Now
 from django.utils import timezone

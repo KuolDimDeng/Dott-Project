@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from .models import OnboardingProgress
 from users.models import Business, UserProfile
 import uuid
@@ -104,7 +104,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         auth0_data = validated_data.pop('auth0_attributes', {})
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create/update business with only the fields it actually has
             # Generate a deterministic UUID from user.id for owner_id field
             owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{user.id}'))
@@ -168,7 +168,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         auth0_data = validated_data.pop('auth0_attributes', {})
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Update business
             if hasattr(instance, 'business') and instance.business:
                 business = instance.business

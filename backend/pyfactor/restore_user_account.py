@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 User = get_user_model()
 
@@ -35,7 +35,7 @@ def restore_user_account():
     auth0_sub = "google-oauth2|107454913649768153331"
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             print(f"1. Looking for existing user with email: {email}")
             
             # Find or create the user

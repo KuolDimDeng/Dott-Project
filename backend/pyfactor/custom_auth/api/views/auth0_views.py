@@ -8,7 +8,7 @@ import uuid
 import traceback
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from custom_auth.rls import set_tenant_context, clear_tenant_context
@@ -636,7 +636,7 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     'error': 'Business name is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create or get tenant
                 # Convert user.id to string for proper CharField storage
                 user_id_str = str(user.id)

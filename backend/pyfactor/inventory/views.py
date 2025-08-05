@@ -549,8 +549,8 @@ def product_list(request):
         products = Product.objects.all()
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction, connection
-        with transaction.atomic():
+        from django.db import transaction as db_transaction, connection
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 15000')  # 15 seconds (increased from 10)
@@ -623,8 +623,8 @@ def service_list(request):
             logger.debug("No tenant_id found in request")
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction
-        with transaction.atomic():
+        from django.db import transaction as db_transaction
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds

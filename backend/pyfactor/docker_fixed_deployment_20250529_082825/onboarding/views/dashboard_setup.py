@@ -3,7 +3,7 @@ import uuid
 import traceback
 import psycopg2
 from django.utils import timezone
-from django.db import transaction, connection, DatabaseError
+from django.db import transaction as db_transaction, connection, DatabaseError
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -352,7 +352,7 @@ class DashboardSchemaSetupView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Wrap the remaining database operations in a transaction
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # When creating the task, include the tenant ID and schema name
                 setup_task = setup_user_tenant_task.apply_async(
                     args=[str(request.user.id), pending_setup.get('business_id')],

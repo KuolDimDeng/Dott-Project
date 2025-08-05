@@ -13,7 +13,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404

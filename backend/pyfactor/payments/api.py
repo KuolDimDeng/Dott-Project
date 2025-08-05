@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db import transaction
+from django.db import transaction as db_transaction
 from .stripe_payment_service import StripePaymentService
 from .stripe_fees import format_fee_for_display
 from .models import InvoicePayment, VendorPayment
@@ -147,7 +147,7 @@ def confirm_invoice_payment(request):
             )
         
         if payment_status['status'] == 'succeeded':
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update invoice status
                 invoice.status = 'paid'
                 invoice.save(update_fields=['status'])
@@ -287,7 +287,7 @@ def create_vendor_payment(request):
         
         if result['success']:
             # Record payment
-            with transaction.atomic():
+            with db_transaction.atomic():
                 payment = VendorPayment.objects.create(
                     vendor=vendor,
                     business_id=request.user.business_id,

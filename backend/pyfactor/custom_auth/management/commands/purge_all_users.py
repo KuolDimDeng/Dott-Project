@@ -3,7 +3,7 @@ Django management command to purge all user data
 Run with: python manage.py purge_all_users
 """
 from django.core.management.base import BaseCommand
-from django.db import transaction, connection
+from django.db import transaction as db_transaction, connection
 from django.contrib.auth import get_user_model
 from django.apps import apps
 
@@ -65,7 +65,7 @@ class Command(BaseCommand):
             return
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Delete in correct order to respect foreign key constraints
                 
                 # 1. Delete OnboardingProgress first (references users)

@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.cache import cache
 from pyfactor.logging_config import get_logger
 from .models import OnboardingProgress
@@ -179,10 +179,10 @@ class OnboardingStateManager:
     @sync_to_async
     def _execute_transition(self, next_state: str) -> bool:
         """
-        Execute the state transition in the database within a transaction.
+        Execute the state transition in the database within a db_transaction.
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 progress = OnboardingProgress.objects.select_for_update().get(user=self.user)
                 progress.onboarding_status = next_state
                 progress.last_updated = timezone.now()

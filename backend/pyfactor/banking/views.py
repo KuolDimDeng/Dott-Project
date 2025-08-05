@@ -26,7 +26,7 @@ from .models import PlaidItem, TinkItem, BankingRule, BankingAuditLog, BankAccou
 import hashlib
 import io
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from .serializers import BankAccountSerializer, BankTransactionSerializer, BankingRuleSerializer
 from plaid.model.accounts_get_request import AccountsGetRequest
 from django.contrib.contenttypes.models import ContentType
@@ -85,8 +85,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reconcile(self, request, pk=None):
         transaction = self.get_object()
-        transaction.is_reconciled = True
-        transaction.save()
+        db_transaction.is_reconciled = True
+        db_transaction.save()
         return Response({"message": "Transaction reconciled"})
 
 # Plaid Link Token View
@@ -244,10 +244,10 @@ class DownloadTransactionsView(APIView):
 
         for transaction in transactions:
             writer.writerow([
-                transaction.date.strftime('%Y-%m-%d'),
-                transaction.description,
-                transaction.amount,
-                transaction.transaction_type
+                db_transaction.date.strftime('%Y-%m-%d'),
+                db_transaction.description,
+                db_transaction.amount,
+                db_transaction.transaction_type
             ])
 
         return response
@@ -279,11 +279,11 @@ class RecentTransactionsView(APIView):
             transactions = []
             for transaction in response['transactions']:
                 transactions.append({
-                    'id': transaction.transaction_id,
-                    'date': str(transaction.date),
-                    'description': transaction.name,
-                    'amount': transaction.amount,
-                    'category': transaction.category[0] if transaction.category else None
+                    'id': db_transaction.transaction_id,
+                    'date': str(db_transaction.date),
+                    'description': db_transaction.name,
+                    'amount': db_transaction.amount,
+                    'category': db_transaction.category[0] if db_transaction.category else None
                 })
             
             return Response({'transactions': transactions})
@@ -1085,7 +1085,7 @@ class SyncTransactionsView(APIView):
             duplicate_count = 0
             error_count = 0
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for plaid_tx in plaid_transactions:
                     try:
                         # Get or create bank account

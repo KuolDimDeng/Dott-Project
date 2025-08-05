@@ -17,7 +17,7 @@ import os
 import sys
 import django
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 import argparse
 from datetime import datetime
 
@@ -318,7 +318,7 @@ def main():
     
     # Perform deletion
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             if args.hard:
                 batch_deletion.hard_delete_all_users(
                     exclude_superusers=not args.include_superusers

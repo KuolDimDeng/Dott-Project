@@ -4,7 +4,7 @@ Run this after migrations: python manage.py shell < scripts/create_staging_test_
 """
 
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from businesses.models import Business, BusinessUser
 from users.models import UserProfile
 import uuid
@@ -41,7 +41,7 @@ test_users = [
     }
 ]
 
-with transaction.atomic():
+with db_transaction.atomic():
     # Create test business first
     business = Business.objects.create(
         id=uuid.uuid4(),

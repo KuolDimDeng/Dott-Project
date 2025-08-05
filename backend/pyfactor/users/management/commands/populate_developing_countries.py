@@ -3,7 +3,7 @@ Management command to populate developing countries table
 Run with: python manage.py populate_developing_countries
 """
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from users.discount_models import DevelopingCountry
 
 
@@ -85,7 +85,7 @@ class Command(BaseCommand):
         self.stdout.write(f"\nAdding {len(countries_data)} developing countries...")
         
         created_count = 0
-        with transaction.atomic():
+        with db_transaction.atomic():
             for country_data in countries_data:
                 country, created = DevelopingCountry.objects.get_or_create(
                     country_code=country_data['code'],

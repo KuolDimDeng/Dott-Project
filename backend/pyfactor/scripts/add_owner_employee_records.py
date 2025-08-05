@@ -11,7 +11,7 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from hr.models import Employee
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 User = get_user_model()
 
@@ -46,6 +46,6 @@ def add_owner_employee_records():
             print(f"Employee record already exists for owner: {owner.email}")
 
 if __name__ == '__main__':
-    with transaction.atomic():
+    with db_transaction.atomic():
         add_owner_employee_records()
     

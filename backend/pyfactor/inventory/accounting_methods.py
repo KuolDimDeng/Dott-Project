@@ -1,7 +1,7 @@
 # Inventory Valuation Methods based on Accounting Standards
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-from django.db import models, transaction
+from django.db import models, transaction as db_transaction
 from django.utils import timezone
 
 class InventoryValuationMethod:
@@ -75,7 +75,7 @@ class InventoryValuation:
             remaining_quantity__gt=0
         ).order_by('purchase_date')
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             for layer in layers:
                 if remaining_to_consume <= 0:
                     break
@@ -105,7 +105,7 @@ class InventoryValuation:
             remaining_quantity__gt=0
         ).order_by('-purchase_date')
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             for layer in layers:
                 if remaining_to_consume <= 0:
                     break

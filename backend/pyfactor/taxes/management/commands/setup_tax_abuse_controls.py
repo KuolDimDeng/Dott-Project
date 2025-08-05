@@ -1,6 +1,6 @@
 # taxes/management/commands/setup_tax_abuse_controls.py
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from taxes.models import TaxDataEntryControl
 from custom_auth.models import Tenant
 import logging
@@ -50,7 +50,7 @@ class Command(BaseCommand):
         ]
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 if tenant_id:
                     # Set up for specific tenant
                     tenants = [tenant_id]

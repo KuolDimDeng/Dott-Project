@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, transaction as db_transaction
 from custom_auth.models import Tenant, User
 from custom_auth.serializers import TenantSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -68,7 +68,7 @@ class TenantDetailView(APIView):
                 }, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # First check if a tenant already exists for this user
                     existing_tenant = Tenant.objects.filter(owner_id=request.user.id).select_for_update().first()
                     

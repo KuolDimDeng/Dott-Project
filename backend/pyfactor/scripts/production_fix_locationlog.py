@@ -7,7 +7,7 @@ This script can be run on production without affecting existing data
 import os
 import sys
 import django
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.core.management import call_command
 
 # Add the parent directory to sys.path
@@ -86,7 +86,7 @@ def create_locationlog_table_safe():
     """
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connection.cursor() as cursor:
                 cursor.execute(create_sql)
                 print("✅ Table and indexes created successfully!")

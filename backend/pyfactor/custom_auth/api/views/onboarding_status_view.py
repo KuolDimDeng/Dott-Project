@@ -6,7 +6,7 @@ Handles updating onboarding completion status for Auth0 users
 import logging
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -48,7 +48,7 @@ class UpdateOnboardingStatusView(APIView):
                     'error': 'tenant_id is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get or create onboarding progress
                 progress, created = OnboardingProgress.objects.get_or_create(
                     user=user,

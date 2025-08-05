@@ -12,7 +12,7 @@ Usage:
 import os
 import sys
 import django
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.core.management import call_command
 
 # Setup Django environment
@@ -56,7 +56,7 @@ def execute_deletion():
                 return
             
             # Use a transaction for safety
-            with transaction.atomic():
+            with db_transaction.atomic():
                 print("\nStarting deletion process...")
                 
                 # Delete in correct order to avoid FK constraint violations

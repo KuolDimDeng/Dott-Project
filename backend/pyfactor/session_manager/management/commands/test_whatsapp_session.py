@@ -3,7 +3,7 @@ Django management command to test WhatsApp commerce preference in session data
 """
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 from users.models import UserProfile
 from session_manager.models import UserSession

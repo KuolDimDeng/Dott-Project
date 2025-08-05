@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any, Union
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -64,7 +64,7 @@ class SignatureManager:
             TaxSignatureRequest instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create signature request record
                 signature_request = TaxSignatureRequest.objects.create(
                     tenant_id=self.tenant_id,
@@ -164,7 +164,7 @@ class SignatureManager:
                 raise SignatureWorkflowError(provider_response.get('error', 'Provider error'))
             
             # Update signature request with provider details
-            with transaction.atomic():
+            with db_transaction.atomic():
                 signature_request.provider_request_id = provider_response['request_id']
                 signature_request.status = provider_response['status']
                 signature_request.provider_data = provider_response
@@ -236,7 +236,7 @@ class SignatureManager:
             new_status = status_response.get('status')
             
             if old_status != new_status:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     signature_request.status = new_status
                     signature_request.provider_data.update(status_response)
                     
@@ -333,7 +333,7 @@ class SignatureManager:
                 success = provider.cancel_signature_request(signature_request.provider_request_id)
             
             if success:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     signature_request.status = SignatureStatus.CANCELLED
                     signature_request.cancelled_at = timezone.now()
                     signature_request.save()

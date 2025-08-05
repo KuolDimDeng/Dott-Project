@@ -2,7 +2,7 @@
 Enhanced SQL optimizations for services.
 This module provides functions to optimize database performance for service-related operations.
 """
-from django.db import connections, transaction
+from django.db import connections, transaction as db_transaction
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ def apply_service_optimizations():
     This function creates indexes and optimizes the database for service-related queries.
     """
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connections['default'].cursor() as cursor:
                 # Add index on created_at for faster sorting
                 cursor.execute("CREATE INDEX IF NOT EXISTS inventory_service_created_at_idx ON inventory_service(created_at);")

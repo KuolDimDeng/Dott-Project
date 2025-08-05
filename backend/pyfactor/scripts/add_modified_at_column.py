@@ -7,7 +7,7 @@ import os
 import sys
 import django
 import logging
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 # Set up Django environment
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,7 +46,7 @@ def add_modified_at_column():
                 
             # Add the column if it doesn't exist
             logger.info("Adding modified_at column to users_userprofile table...")
-            with transaction.atomic():
+            with db_transaction.atomic():
                 cursor.execute("""
                     ALTER TABLE users_userprofile 
                     ADD COLUMN modified_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

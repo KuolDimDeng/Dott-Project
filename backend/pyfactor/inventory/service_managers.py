@@ -1,4 +1,4 @@
-from django.db import models, connection, transaction
+from django.db import models, connection, transaction as db_transaction
 from django.db.models import Case, When, F, ExpressionWrapper, BooleanField, DurationField, Sum, Avg, Count
 from django.db.models.functions import Now
 from django.utils import timezone
@@ -39,7 +39,7 @@ class OptimizedServiceManager(models.Manager):
             return self.get_queryset()
         
         # Use a single transaction for better performance
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Set tenant context
             with connection.cursor() as cursor:
                 cursor.execute(f"SET app.current_tenant_id = '{str(tenant_id)}'")
@@ -196,7 +196,7 @@ class OptimizedServiceManager(models.Manager):
         
         queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Generate service codes
             for service_data in services_data:
                 if not service_data.get('service_code'):
@@ -219,7 +219,7 @@ class OptimizedServiceManager(models.Manager):
         """
         queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             updated_count = 0
             
             # Process each service in services_data

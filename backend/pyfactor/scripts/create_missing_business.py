@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 def create_missing_business():
     """Create the missing business directly with SQL"""
@@ -28,7 +28,7 @@ def create_missing_business():
             print(f"Business {business_id} already exists")
             return
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create the business with required fields including Stripe defaults
             cursor.execute("""
                 INSERT INTO users_business (

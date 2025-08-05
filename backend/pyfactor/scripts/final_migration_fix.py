@@ -2,7 +2,7 @@
 import os
 import sys
 import django
-from django.db import connections, connection, transaction
+from django.db import connections, connection, transaction as db_transaction
 
 # Add the current directory and its parent to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))

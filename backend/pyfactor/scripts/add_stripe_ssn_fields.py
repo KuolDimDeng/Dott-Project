@@ -13,7 +13,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 # Setup Django
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -106,7 +106,7 @@ def main():
     logger.info("🚀 Starting Stripe SSN fields addition...")
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             success = add_stripe_ssn_fields()
             
             if success:

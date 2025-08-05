@@ -15,7 +15,7 @@ sys.path.append('/app')  # Render deployment path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dott_project.settings')
 django.setup()
 
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 
 email = "jubacargovillage@gmail.com"
@@ -25,7 +25,7 @@ print(f"🗑️  DELETING USER: {email}")
 print("=" * 70)
 
 try:
-    with transaction.atomic():
+    with db_transaction.atomic():
         user = User.objects.get(email=email)
         print(f"\n✅ Found user: {email}")
         print(f"   - User ID: {user.id}")

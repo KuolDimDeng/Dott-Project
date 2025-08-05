@@ -10,7 +10,7 @@ Usage:
 import os
 import sys
 import django
-from django.db import transaction
+from django.db import transaction as db_transaction
 from datetime import datetime
 
 # Set up Django environment
@@ -65,7 +65,7 @@ def fix_all_incomplete_onboarding():
                 print(f"   - Tenant: {user.tenant.name if user.tenant else 'None'}")
                 print(f"   - Current needs_onboarding: {user.needs_onboarding}")
                 
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # Update user status
                     user.needs_onboarding = False
                     user.onboarding_completed = True
@@ -126,7 +126,7 @@ def fix_all_incomplete_onboarding():
         
         for user in orphaned_users:
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     user.needs_onboarding = False
                     user.onboarding_completed = True
                     user.setup_done = True

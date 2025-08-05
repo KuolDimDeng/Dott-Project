@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from custom_auth.models import User
 from .models import UserProfile
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 import logging
 
 logger = logging.getLogger(__name__)

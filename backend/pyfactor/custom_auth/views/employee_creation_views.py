@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 from ..models import User
@@ -70,7 +70,7 @@ def create_employee_for_user(request):
             })
         
         # Create employee
-        with transaction.atomic():
+        with db_transaction.atomic():
             employee = create_employee_for_user_explicit(
                 user,
                 first_name=employee_data.get('first_name', ''),

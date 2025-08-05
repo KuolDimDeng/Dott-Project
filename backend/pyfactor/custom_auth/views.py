@@ -1,5 +1,5 @@
 import uuid
-from django.db import connections, transaction, DatabaseError, IntegrityError
+from django.db import connections, transaction as db_transaction, DatabaseError, IntegrityError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -69,7 +69,7 @@ class RegisterView(generics.CreateAPIView):
 
         if serializer.is_valid():
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     user = initial_user_registration(serializer.validated_data)
                     user.is_active = False
                     user.save()
@@ -298,7 +298,7 @@ class CustomAuthToken(ObtainAuthToken):
 class SocialLoginView(APIView):
     permission_classes = [AllowAny]
 
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request):
         logger.debug(f"Received social login request: {request.data}")
         serializer = SocialLoginSerializer(data=request.data)
@@ -388,7 +388,7 @@ class SocialLoginView(APIView):
             logger.error("Failed to validate Google token: %s", str(e))
             return None
 
-    @transaction.atomic
+    @db_transaction.atomic
     def get_or_create_user(self, user_info):
         email = user_info.get('email')
         logger.debug(f"Checking if user exists with email: {email}")
@@ -469,7 +469,7 @@ class SignUpView(APIView):
         if serializer.is_valid():
             logger.info("Sign-up data is valid")
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     try:
                         # Create user first
                         user = User.objects.create(
@@ -751,7 +751,7 @@ def setup_user(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create user profile if it doesn't exist
             user_profile, created = UserProfile.objects.get_or_create(
                 user_id=user_id,
@@ -829,7 +829,7 @@ class TokenService:
 class SignupAPIView(APIView):
     permission_classes = [AllowAny]
 
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request):
         """
         Handle user signup with Auth0 authentication
@@ -906,7 +906,7 @@ class SignupAPIView(APIView):
 class UpdateSessionView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request, *args, **kwargs):
         user = request.user
         try:
@@ -952,7 +952,7 @@ class OAuthSignUpView(APIView):
                     'error': 'Email is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Check if user already exists
                 existing_user = User.objects.filter(email=email).first()
                 if existing_user:

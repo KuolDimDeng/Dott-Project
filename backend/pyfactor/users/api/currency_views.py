@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.exceptions import ValidationError
 from users.models import Business, BusinessDetails, UserProfile
 from currency.currency_data import get_currency_list, get_currency_info

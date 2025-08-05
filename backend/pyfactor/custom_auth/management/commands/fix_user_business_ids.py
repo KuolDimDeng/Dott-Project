@@ -4,7 +4,7 @@ Sets user.business_id to match their tenant.id
 """
 import logging
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 
 logger = logging.getLogger('pyfactor')
@@ -62,7 +62,7 @@ class Command(BaseCommand):
                 )
             else:
                 try:
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         user.business_id = user.tenant.id
                         user.save(update_fields=['business_id'])
                         self.stdout.write(self.style.SUCCESS(

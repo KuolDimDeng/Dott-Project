@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from decimal import Decimal
@@ -246,7 +246,7 @@ class WhatsAppOrderViewSet(viewsets.ModelViewSet):
     def create_order(self, request):
         """Create a new WhatsApp order"""
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Extract order data
                 customer_phone = request.data.get('customer_phone')
                 customer_name = request.data.get('customer_name')

@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import transaction
+from django.db import transaction as db_transaction
 from taxes.models import GlobalSalesTaxRate
 import logging
 
@@ -3334,7 +3334,7 @@ def update_remaining_countries(batch_size=10, batch_number=1):
                 is_current=True
             )
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Basic filing info
                 tax_rate.tax_authority_name = filing_info['tax_authority_name']
                 tax_rate.filing_frequency = filing_info['filing_frequency']

@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 from users.models import MenuVisibilitySettings, BusinessDetails
 from users.business_categories import get_features_for_business_type
 import logging
@@ -301,7 +301,7 @@ class MenuVisibilityView(APIView):
             
             updates = request.data.get('updates', [])
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for update in updates:
                     menu_item = update.get('menu_item')
                     is_visible = update.get('is_visible')

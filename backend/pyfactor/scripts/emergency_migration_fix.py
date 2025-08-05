@@ -13,7 +13,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 import django
 django.setup()
 
-from django.db import connections, connection, transaction
+from django.db import connections, connection, transaction as db_transaction
 from django.core.management import call_command
 
 def execute_sql(sql, params=None):
@@ -78,7 +78,7 @@ def create_missing_tables():
     
     try:
         # Use transaction to ensure all tables are created together
-        with transaction.atomic():
+        with db_transaction.atomic():
             execute_sql(users_business_sql)
             print("✅ users_business table created")
             

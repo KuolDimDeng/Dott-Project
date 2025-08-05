@@ -16,7 +16,7 @@ from ..serializers import (
     TaxDataBlacklistSerializer, TaxSettingsSerializer,
     TaxApiUsageSerializer
 )
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 import logging
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -160,7 +160,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 updated_rates = []
                 for rate_data in request.data:
                     rate_id = rate_data.pop('id', None)

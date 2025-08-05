@@ -12,7 +12,7 @@ import uuid
 import logging
 import time
 import json
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from functools import wraps
@@ -58,7 +58,7 @@ class TenantManagementService:
             raise ValidationError(error_msg)
             
         # Use transaction to ensure atomicity and prevent race conditions
-        with transaction.atomic():
+        with db_transaction.atomic():
             # First check if the user already has a tenant
             existing_tenant = Tenant.objects.select_for_update().filter(owner_id=str(user_id)).first()
             

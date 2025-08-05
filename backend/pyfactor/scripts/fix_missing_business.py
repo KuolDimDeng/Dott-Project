@@ -17,7 +17,7 @@ django.setup()
 
 from users.models import User, Business, BusinessDetails, UserProfile
 from custom_auth.models import Tenant
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -75,7 +75,7 @@ def fix_user_business(email):
                 logger.warning("Tenant not found, will use business_id as tenant_id")
         
         # Create the missing Business
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Use business name from user
             business_name = None
             if hasattr(user, 'business_name') and user.business_name:

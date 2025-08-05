@@ -3,7 +3,7 @@ Management command to sync employee roles with user permissions
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import transaction as db_transaction
 from hr.models import Employee
 from custom_auth.employee_sync import sync_employee_role_to_user_permissions
 import logging
@@ -46,7 +46,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('DRY RUN MODE - No changes will be made'))
             
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 if employee_id:
                     # Sync single employee
                     try:
@@ -120,7 +120,7 @@ class Command(BaseCommand):
                         
                 if dry_run:
                     # Rollback transaction in dry run mode
-                    transaction.set_rollback(True)
+                    db_transaction.set_rollback(True)
                     self.stdout.write(self.style.WARNING('DRY RUN complete - no changes made'))
                     
         except Exception as e:

@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from custom_auth.models import User, Tenant
 from django.utils import timezone
 import uuid
@@ -139,7 +139,7 @@ class TenantCreateView(APIView):
                 schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
                 tenant_name = f"{user.first_name}'s Business" if user.first_name else f"Business for {user.email}"
                 
-                with transaction.atomic():
+                with db_transaction.atomic():
                     tenant = Tenant.objects.create(
                         id=tenant_id,
                         schema_name=schema_name,

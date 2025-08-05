@@ -5,7 +5,7 @@ import uuid
 import datetime
 import traceback
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.conf import settings
 from pyfactor.custom_auth.models import TenantSchema
 from pyfactor.users.models import User
@@ -189,7 +189,7 @@ class Command(BaseCommand):
         logger.info(f"Migrating data from {source_schema} to {target_schema}")
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get list of tables in source schema
                 with connection.cursor() as cursor:
                     cursor.execute(

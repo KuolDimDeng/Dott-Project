@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import transaction
+from django.db import transaction as db_transaction
 from taxes.models import GlobalSalesTaxRate
 from anthropic import Anthropic
 import logging
@@ -127,7 +127,7 @@ def update_filing_information(batch_size=10, limit=None):
             
             if filing_info:
                 try:
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         # Update the record
                         tax_rate.tax_authority_name = filing_info.get('tax_authority_name', '')
                         tax_rate.filing_frequency = filing_info.get('filing_frequency', '')

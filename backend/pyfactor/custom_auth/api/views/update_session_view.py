@@ -6,7 +6,7 @@ Handles updating session data for Auth0 users
 import logging
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status

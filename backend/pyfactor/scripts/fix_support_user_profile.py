@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 from users.models import UserProfile, Business
 
@@ -106,7 +106,7 @@ def fix_support_user_profile():
     
     # Create UserProfile
     print(f"\nCreating UserProfile...")
-    with transaction.atomic():
+    with db_transaction.atomic():
         try:
             profile = UserProfile.objects.create(
                 user=user,

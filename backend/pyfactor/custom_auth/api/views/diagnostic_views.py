@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -118,7 +118,7 @@ class RestoreAccountView(APIView):
             
             logger.info(f"🔧 Starting account restoration for {email}")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Find or create the user
                 user, user_created = User.objects.get_or_create(
                     email=email,

@@ -13,7 +13,7 @@ import argparse
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.conf import settings
 import psycopg2
 

@@ -10,7 +10,7 @@ import json
 from django.utils import timezone
 from custom_auth.rls import set_tenant_context
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -201,7 +201,7 @@ class OnboardingStatusAPI(APIView):
                 )
             
             # Update progress in database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update step-specific fields
                 if step == 'business-info' and 'business_info' in step_data:
                     business_info = step_data.get('business_info', {})
@@ -358,7 +358,7 @@ class CompleteOnboardingAPI(APIView):
                 onboarding_session_service.sync_to_db(session_id, OnboardingProgress)
             
             # Mark onboarding as complete
-            with transaction.atomic():
+            with db_transaction.atomic():
                 progress.onboarding_status = 'complete'
                 progress.current_step = 'complete'
                 progress.next_step = 'dashboard'

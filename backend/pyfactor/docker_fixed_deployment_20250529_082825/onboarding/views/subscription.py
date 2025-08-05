@@ -2,7 +2,7 @@ import uuid
 import logging
 import traceback
 from django.utils import timezone
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -98,7 +98,7 @@ class SubscriptionSaveView(APIView):
     @sync_to_async
     def update_onboarding_progress(self, request, business, selected_plan, billing_cycle):
         """Update onboarding progress with transaction"""
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Get or create progress record
             progress, created = OnboardingProgress.objects.get_or_create(
                 user=request.user,

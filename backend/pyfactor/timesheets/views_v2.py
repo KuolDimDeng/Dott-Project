@@ -5,7 +5,7 @@ Handles employee timesheets, leave requests, and supervisor approvals
 import logging
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 from django.db.models import Q, Sum, Count, F
 from django.utils import timezone
 from rest_framework import viewsets, status, permissions
@@ -141,7 +141,7 @@ class EmployeeTimesheetViewSet(viewsets.ModelViewSet):
         entries_data = request.data.get('entries', [])
         logger.info(f"[EmployeeTimesheetViewSet] Updating {len(entries_data)} entries for timesheet {timesheet.id}")
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             for entry_data in entries_data:
                 entry_id = entry_data.get('id')
                 if entry_id:

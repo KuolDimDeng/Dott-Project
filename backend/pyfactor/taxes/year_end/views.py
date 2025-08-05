@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.http import HttpResponse, FileResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -52,7 +52,7 @@ class W2FormViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create generation record
                 generation = YearEndTaxGeneration.objects.create(
                     tenant_id=request.user.tenant_id,
@@ -293,7 +293,7 @@ class Form1099ViewSet(viewsets.ModelViewSet):
         tax_year = request.data.get('tax_year', datetime.now().year - 1)
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create generation record
                 generation = YearEndTaxGeneration.objects.create(
                     tenant_id=request.user.tenant_id,
@@ -515,7 +515,7 @@ class YearEndTaxGenerationViewSet(viewsets.ReadOnlyModelViewSet):
         tax_year = request.data.get('tax_year', datetime.now().year - 1)
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create generation record
                 generation = YearEndTaxGeneration.objects.create(
                     tenant_id=request.user.tenant_id,

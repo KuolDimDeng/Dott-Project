@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.conf import settings
 from users.models import Business, BusinessDetails, UserProfile
 from currency.currency_data import get_currency_info, get_currency_list
@@ -182,7 +182,7 @@ def currency_preferences_v3(request):
             logger.info(f"✏️ [Currency V3] Processing PUT request")
             logger.info(f"✏️ [Currency V3] Request data: {json.dumps(dict(request.data), indent=2)}")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update currency if provided
                 currency_code = request.data.get('currency_code')
                 if currency_code:

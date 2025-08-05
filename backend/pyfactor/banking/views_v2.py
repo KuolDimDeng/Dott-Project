@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.db.models import Sum, Q, Avg
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -104,7 +104,7 @@ class SyncTransactionsView(APIView):
             duplicate_count = 0
             error_count = 0
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for plaid_tx in plaid_transactions:
                     try:
                         # Get or create bank account
@@ -312,18 +312,18 @@ class BankingTransactionsView(APIView):
             transactions = []
             for transaction in queryset:
                 transactions.append({
-                    'id': transaction.id,
-                    'account_id': transaction.account.id,
-                    'account_name': transaction.account.bank_name,
-                    'amount': float(transaction.amount),
-                    'transaction_type': transaction.transaction_type,
-                    'description': transaction.description,
-                    'date': transaction.date.strftime('%Y-%m-%d'),
-                    'is_reconciled': transaction.is_reconciled,
-                    'reference_number': transaction.reference_number,
-                    'merchant_name': transaction.merchant_name,
-                    'category': transaction.category,
-                    'imported_at': transaction.imported_at.strftime('%Y-%m-%d %H:%M:%S') if transaction.imported_at else None
+                    'id': db_transaction.id,
+                    'account_id': db_transaction.account.id,
+                    'account_name': db_transaction.account.bank_name,
+                    'amount': float(db_transaction.amount),
+                    'transaction_type': db_transaction.transaction_type,
+                    'description': db_transaction.description,
+                    'date': db_transaction.date.strftime('%Y-%m-%d'),
+                    'is_reconciled': db_transaction.is_reconciled,
+                    'reference_number': db_transaction.reference_number,
+                    'merchant_name': db_transaction.merchant_name,
+                    'category': db_transaction.category,
+                    'imported_at': db_transaction.imported_at.strftime('%Y-%m-%d %H:%M:%S') if db_transaction.imported_at else None
                 })
             
             logger.debug(f"🎯 [BankingTransactionsView] Returning {len(transactions)} transactions")
@@ -469,7 +469,7 @@ class ReconciliationView(APIView):
             reconciled_count = 0
             failed_count = 0
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 if reconcile_action == 'reconcile':
                     # Reconcile specified transactions
                     if transaction_ids:

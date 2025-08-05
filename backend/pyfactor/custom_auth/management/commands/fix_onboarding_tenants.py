@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User, Tenant
 from onboarding.models import OnboardingProgress
 import logging
@@ -24,7 +24,7 @@ class Command(BaseCommand):
         total_count = progress_records.count()
         self.stdout.write(f"Found {total_count} onboarding progress records")
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             for progress in progress_records:
                 user = progress.user
                 

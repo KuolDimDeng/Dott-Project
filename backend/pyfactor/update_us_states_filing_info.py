@@ -2,7 +2,7 @@ import os
 import sys
 import django
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 # Set up Django environment
@@ -48,7 +48,7 @@ def update_us_states():
     # Update each record
     for record in us_records:
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update with state-specific info where available
                 state_name = record.region_name if record.region_name else 'Federal'
                 

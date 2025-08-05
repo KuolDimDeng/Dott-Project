@@ -3,7 +3,7 @@ Emergency management command to fix employee tenant_id column issue
 Run this if migrations aren't working properly
 """
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 import logging
 
 logger = logging.getLogger(__name__)

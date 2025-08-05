@@ -13,7 +13,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 # Setup Django
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.core.management import call_command
 import logging
 
@@ -96,7 +96,7 @@ def main():
     logger.info("🚀 Starting hr_locationlog table creation...")
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             success = create_hr_locationlog_table()
             
             if success:
