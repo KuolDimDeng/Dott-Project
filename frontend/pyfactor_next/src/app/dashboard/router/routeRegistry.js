@@ -651,12 +651,12 @@ export const routeRegistry = {
 
   // Tools & Settings
   'profile': {
-    component: enhancedLazy(() => import('../../Settings/UserProfile/components/UserProfile'), 'Profile'),
+    component: enhancedLazy(() => import('../../../profile/page'), 'Profile'),
     title: 'My Profile',
     description: 'View and edit your profile'
   },
   'settings': {
-    component: enhancedLazy(() => import('../../Settings/UserProfile/components/UserProfileSettings'), 'Settings'),
+    component: enhancedLazy(() => import('../../Settings/components/SettingsManagement'), 'Settings'),
     title: 'Settings',
     description: 'Account settings'
   },
