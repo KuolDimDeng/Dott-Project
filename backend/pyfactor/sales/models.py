@@ -601,6 +601,7 @@ class POSTransactionItem(TenantAwareModel):
     """
     Individual line items within a POS transaction.
     """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     transaction = models.ForeignKey(POSTransaction, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.PROTECT, null=True, blank=True)
