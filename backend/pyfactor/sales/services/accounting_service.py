@@ -4,7 +4,7 @@ Handles automatic journal entries for sales, payments, and refunds.
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount, Account
@@ -138,7 +138,7 @@ class AccountingService:
             JournalEntry instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get business from the user who created the transaction
                 business = None
                 if pos_transaction.created_by and hasattr(pos_transaction.created_by, 'business_id'):
@@ -289,7 +289,7 @@ class AccountingService:
             JournalEntry instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 original_transaction = pos_refund.original_transaction
                 
                 # Get business from the user who created the refund
@@ -400,7 +400,7 @@ class AccountingService:
             JournalEntry instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Get business from the user who voided the transaction
                 business = None
                 if pos_transaction.voided_by and hasattr(pos_transaction.voided_by, 'business_id'):
