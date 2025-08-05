@@ -541,8 +541,8 @@ export const routeRegistry = {
     description: 'Stock management'
   },
   'inventory-supplies': {
-    component: enhancedLazy(() => import('../../inventory/components/InventoryManagement'), 'Materials Management'),
-    title: 'Materials Management',
+    component: enhancedLazy(() => import('../components/forms/inventory/SuppliesManagement'), 'Supplies Management'),
+    title: 'Supplies Management',
     description: 'Manage materials and supplies'
   },
   'inventory-suppliers': {
