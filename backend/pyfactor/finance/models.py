@@ -1,6 +1,6 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/finance/models.py
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction as db_transaction
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
@@ -92,7 +92,7 @@ class Account(TenantAwareModel):
         
     def reconcile(self, statement_balance, reconciliation_date):
         """Reconcile account with bank statement"""
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Get all unreconciled transactions up to reconciliation date
             transactions = self.transactions.filter(
                 date__lte=reconciliation_date,
@@ -231,7 +231,7 @@ class FinanceTransaction(TenantAwareModel):
         if self.status != 'pending':
             raise ValidationError('Only pending transactions can update account balance')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Lock the account row for update
             account = Account.objects.select_for_update().get(pk=self.account.pk)
             
@@ -273,7 +273,7 @@ class FinanceTransaction(TenantAwareModel):
         if self.status not in ['posted', 'reconciled']:
             raise ValidationError('Only posted or reconciled transactions can be voided')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Reverse the account balance change
             account = Account.objects.select_for_update().get(pk=self.account.pk)
             old_balance = account.balance
@@ -407,7 +407,7 @@ class JournalEntry(models.Model):
             
         self.clean()  # Validate the entry
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Update account balances
             for line in self.lines.all():
                 account = line.account
@@ -533,7 +533,7 @@ class AccountReconciliation(models.Model):
         if unmatched_items.exists():
             raise ValidationError('Cannot complete reconciliation with unmatched items')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Calculate final balances
             matched_items = self.items.filter(is_matched=True)
             total_adjustments = sum(item.adjustment_amount for item in matched_items)
@@ -810,7 +810,7 @@ class MonthEndClosing(models.Model):
         if incomplete_tasks.exists():
             raise ValidationError('All tasks must be completed before closing')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Calculate final totals
             self.calculate_totals()
             
@@ -1347,7 +1347,7 @@ class FixedAsset(models.Model):
         if self.status == 'disposed':
             raise ValidationError('Asset is already disposed')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             old_status = self.status
             
             self.status = 'disposed'
