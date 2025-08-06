@@ -26,6 +26,9 @@ urlpatterns = [
     # Tax filing payment webhook
     path('webhooks/stripe/tax-filing/', webhook_handlers.stripe_webhook_handler, name='tax_filing_stripe_webhook'),
     
+    # POS/Settlement webhook for Wise transfers
+    path('webhooks/stripe/pos-settlements/', webhook_handlers.stripe_pos_settlement_webhook, name='pos_settlement_webhook'),
+    
     # Payment recording endpoint
     path('record/', views.record_payment, name='record_payment'),
     

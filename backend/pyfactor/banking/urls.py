@@ -29,6 +29,9 @@ from .views_v2 import (
     MonthlyStatementsView,
 )
 
+# Import Wise views
+from .api import wise_views
+
 # Create router for ViewSets
 router = DefaultRouter()
 router.register(r'rules', BankingRuleViewSet, basename='banking-rules')
@@ -61,4 +64,12 @@ urlpatterns = [
     path('cash-flow/', CashFlowReportView.as_view(), name='cash-flow-report'),
     path('account-balances/', AccountBalancesView.as_view(), name='account-balances'),
     path('monthly-statements/', MonthlyStatementsView.as_view(), name='monthly-statements'),
+    
+    # Wise integration endpoints
+    path('method/', wise_views.get_banking_method, name='banking_method'),
+    path('wise/setup/', wise_views.setup_wise_account, name='wise_setup'),
+    path('wise/account/', wise_views.get_wise_account, name='wise_account'),
+    path('wise/quote/', wise_views.get_transfer_quote, name='wise_quote'),
+    path('settlements/', wise_views.get_settlements, name='settlements'),
+    path('settlements/process/', wise_views.process_manual_settlement, name='process_settlement'),
 ]

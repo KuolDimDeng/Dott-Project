@@ -259,7 +259,11 @@
       "Bash(./deploy-to-production.sh:*)",
       "Bash(./check-render-deployment.sh:*)",
       "Bash(npm ls:*)",
-      "Bash(/Users/kuoldeng/projectx/deploy_county_tax_updates.sh)"
+      "Bash(/Users/kuoldeng/projectx/deploy_county_tax_updates.sh)",
+      "Bash(./deploy_destination_based_tax.sh:*)",
+      "WebFetch(domain:stripe.com)",
+      "WebFetch(domain:docs.stripe.com)",
+      "Bash(./deploy_wise_integration.sh:*)"
     ],
     "deny": []
   }
