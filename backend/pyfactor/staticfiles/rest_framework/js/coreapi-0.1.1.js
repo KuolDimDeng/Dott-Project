@@ -3,7 +3,49 @@
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function/* RLS: Use tenant_id filtering */ /basic":1,"./session/* RLS: Use tenant_id filtering */ /token":4}],3:[function(require,module,exports){
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BasicAuthentication = function () {
+  function BasicAuthentication() {
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+    _classCallCheck(this, BasicAuthentication);
+
+    var username = options.username;
+    var password = options.password;
+    var hash = window.btoa(username + ':' + password);
+    this.auth = 'Basic ' + hash;
+  }
+
+  _createClass(BasicAuthentication, [{
+    key: 'authenticate',
+    value: function authenticate(options) {
+      options.headers['Authorization'] = this.auth;
+      return options;
+    }
+  }]);
+
+  return BasicAuthentication;
+}();
+
+module.exports = {
+  BasicAuthentication: BasicAuthentication
+};
+
+},{}],2:[function(require,module,exports){
+'use strict';
+
+var basic = require('./basic');
+var session = require('./session');
+var token = require('./token');
+
+module.exports = {
+  BasicAuthentication: basic.BasicAuthentication,
+  SessionAuthentication: session.SessionAuthentication,
+  TokenAuthentication: token.TokenAuthentication
+};
+
+},{"./basic":1,"./session":3,"./token":4}],3:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -96,7 +138,96 @@ module.exports = {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function/* RLS: Use tenant_id filtering */ /codecs":7,"./document/* RLS: Use tenant_id filtering */ /errors":11,"./transports/* RLS: Use tenant_id filtering */ /utils":15}],6:[function(require,module,exports){
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var document = require('./document');
+var codecs = require('./codecs');
+var errors = require('./errors');
+var transports = require('./transports');
+var utils = require('./utils');
+
+function lookupLink(node, keys) {
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = keys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var key = _step.value;
+
+      if (node instanceof document.Document) {
+        node = node.content[key];
+      } else {
+        node = node[key];
+      }
+      if (node === undefined) {
+        throw new errors.LinkLookupError('Invalid link lookup: ' + JSON.stringify(keys));
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  if (!(node instanceof document.Link)) {
+    throw new errors.LinkLookupError('Invalid link lookup: ' + JSON.stringify(keys));
+  }
+  return node;
+}
+
+var Client = function () {
+  function Client() {
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+    _classCallCheck(this, Client);
+
+    var transportOptions = {
+      auth: options.auth || null,
+      headers: options.headers || {},
+      requestCallback: options.requestCallback,
+      responseCallback: options.responseCallback
+    };
+
+    this.decoders = options.decoders || [new codecs.CoreJSONCodec(), new codecs.JSONCodec(), new codecs.TextCodec()];
+    this.transports = options.transports || [new transports.HTTPTransport(transportOptions)];
+  }
+
+  _createClass(Client, [{
+    key: 'action',
+    value: function action(document, keys) {
+      var params = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      var link = lookupLink(document, keys);
+      var transport = utils.determineTransport(this.transports, link.url);
+      return transport.action(link, this.decoders, params);
+    }
+  }, {
+    key: 'get',
+    value: function get(url) {
+      var link = new document.Link(url, 'get');
+      var transport = utils.determineTransport(this.transports, url);
+      return transport.action(link, this.decoders);
+    }
+  }]);
+
+  return Client;
+}();
+
+module.exports = {
+  Client: Client
+};
+
+},{"./codecs":7,"./document":10,"./errors":11,"./transports":14,"./utils":15}],6:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -239,7 +370,20 @@ module.exports = {
   CoreJSONCodec: CoreJSONCodec
 };
 
-},{"../document":10,"url-parse/* RLS: Use tenant_id filtering */ /corejson":6,"./json/* RLS: Use tenant_id filtering */ /text":9}],8:[function(require,module,exports){
+},{"../document":10,"url-parse":19}],7:[function(require,module,exports){
+'use strict';
+
+var corejson = require('./corejson');
+var json = require('./json');
+var text = require('./text');
+
+module.exports = {
+  CoreJSONCodec: corejson.CoreJSONCodec,
+  JSONCodec: json.JSONCodec,
+  TextCodec: text.TextCodec
+};
+
+},{"./corejson":6,"./json":8,"./text":9}],8:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -372,7 +516,88 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not /* RLS: Use tenant_id filtering */ /auth":2,"./client/* RLS: Use tenant_id filtering */ /codecs":7,"./document/* RLS: Use tenant_id filtering */ /errors":11,"./transports/* RLS: Use tenant_id filtering */ /utils":15}],13:[function(require,module,exports){
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ParameterError = function (_Error) {
+  _inherits(ParameterError, _Error);
+
+  function ParameterError(message) {
+    _classCallCheck(this, ParameterError);
+
+    var _this = _possibleConstructorReturn(this, (ParameterError.__proto__ || Object.getPrototypeOf(ParameterError)).call(this, message));
+
+    _this.message = message;
+    _this.name = 'ParameterError';
+    return _this;
+  }
+
+  return ParameterError;
+}(Error);
+
+var LinkLookupError = function (_Error2) {
+  _inherits(LinkLookupError, _Error2);
+
+  function LinkLookupError(message) {
+    _classCallCheck(this, LinkLookupError);
+
+    var _this2 = _possibleConstructorReturn(this, (LinkLookupError.__proto__ || Object.getPrototypeOf(LinkLookupError)).call(this, message));
+
+    _this2.message = message;
+    _this2.name = 'LinkLookupError';
+    return _this2;
+  }
+
+  return LinkLookupError;
+}(Error);
+
+var ErrorMessage = function (_Error3) {
+  _inherits(ErrorMessage, _Error3);
+
+  function ErrorMessage(message, content) {
+    _classCallCheck(this, ErrorMessage);
+
+    var _this3 = _possibleConstructorReturn(this, (ErrorMessage.__proto__ || Object.getPrototypeOf(ErrorMessage)).call(this, message));
+
+    _this3.message = message;
+    _this3.content = content;
+    _this3.name = 'ErrorMessage';
+    return _this3;
+  }
+
+  return ErrorMessage;
+}(Error);
+
+module.exports = {
+  ParameterError: ParameterError,
+  LinkLookupError: LinkLookupError,
+  ErrorMessage: ErrorMessage
+};
+
+},{}],12:[function(require,module,exports){
+'use strict';
+
+var auth = require('./auth');
+var client = require('./client');
+var codecs = require('./codecs');
+var document = require('./document');
+var errors = require('./errors');
+var transports = require('./transports');
+var utils = require('./utils');
+
+var coreapi = {
+  Client: client.Client,
+  Document: document.Document,
+  Link: document.Link,
+  auth: auth,
+  codecs: codecs,
+  errors: errors,
+  transports: transports,
+  utils: utils
+};
+
+module.exports = coreapi;
+
+},{"./auth":2,"./client":5,"./codecs":7,"./document":10,"./errors":11,"./transports":14,"./utils":15}],13:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -537,7 +762,16 @@ module.exports = {
   HTTPTransport: HTTPTransport
 };
 
-},{"../errors":11,"../utils":15,"isomorphic-fetch":16,"url-parse":19,"url-template/* RLS: Use tenant_id filtering */ /http":13}],15:[function(require,module,exports){
+},{"../errors":11,"../utils":15,"isomorphic-fetch":16,"url-parse":19,"url-template":21}],14:[function(require,module,exports){
+'use strict';
+
+var http = require('./http');
+
+module.exports = {
+  HTTPTransport: http.HTTPTransport
+};
+
+},{"./http":13}],15:[function(require,module,exports){
 'use strict';
 
 var URL = require('url-parse');
@@ -778,7 +1012,327 @@ var rules = [
  */
 
 /**
- * Extract protocol information from a URL with/without double slash ("///* RLS: Use tenant_id filtering */ /lolcation":20,"querystringify":17,"requires-port":18}],20:[function(require,module,exports){
+ * Extract protocol information from a URL with/without double slash ("//").
+ *
+ * @param {String} address URL we want to extract from.
+ * @return {ProtocolExtract} Extracted information.
+ * @api private
+ */
+function extractProtocol(address) {
+  var match = protocolre.exec(address);
+
+  return {
+    protocol: match[1] ? match[1].toLowerCase() : '',
+    slashes: !!match[2],
+    rest: match[3]
+  };
+}
+
+/**
+ * Resolve a relative URL pathname against a base URL pathname.
+ *
+ * @param {String} relative Pathname of the relative URL.
+ * @param {String} base Pathname of the base URL.
+ * @return {String} Resolved pathname.
+ * @api private
+ */
+function resolve(relative, base) {
+  var path = (base || '/').split('/').slice(0, -1).concat(relative.split('/'))
+    , i = path.length
+    , last = path[i - 1]
+    , unshift = false
+    , up = 0;
+
+  while (i--) {
+    if (path[i] === '.') {
+      path.splice(i, 1);
+    } else if (path[i] === '..') {
+      path.splice(i, 1);
+      up++;
+    } else if (up) {
+      if (i === 0) unshift = true;
+      path.splice(i, 1);
+      up--;
+    }
+  }
+
+  if (unshift) path.unshift('');
+  if (last === '.' || last === '..') path.push('');
+
+  return path.join('/');
+}
+
+/**
+ * The actual URL instance. Instead of returning an object we've opted-in to
+ * create an actual constructor as it's much more memory efficient and
+ * faster and it pleases my OCD.
+ *
+ * @constructor
+ * @param {String} address URL we want to parse.
+ * @param {Object|String} location Location defaults for relative paths.
+ * @param {Boolean|Function} parser Parser for the query string.
+ * @api public
+ */
+function URL(address, location, parser) {
+  if (!(this instanceof URL)) {
+    return new URL(address, location, parser);
+  }
+
+  var relative, extracted, parse, instruction, index, key
+    , instructions = rules.slice()
+    , type = typeof location
+    , url = this
+    , i = 0;
+
+  //
+  // The following if statements allows this module two have compatibility with
+  // 2 different API:
+  //
+  // 1. Node.js's `url.parse` api which accepts a URL, boolean as arguments
+  //    where the boolean indicates that the query string should also be parsed.
+  //
+  // 2. The `URL` interface of the browser which accepts a URL, object as
+  //    arguments. The supplied object will be used as default values / fall-back
+  //    for relative paths.
+  //
+  if ('object' !== type && 'string' !== type) {
+    parser = location;
+    location = null;
+  }
+
+  if (parser && 'function' !== typeof parser) parser = qs.parse;
+
+  location = lolcation(location);
+
+  //
+  // Extract protocol information before running the instructions.
+  //
+  extracted = extractProtocol(address || '');
+  relative = !extracted.protocol && !extracted.slashes;
+  url.slashes = extracted.slashes || relative && location.slashes;
+  url.protocol = extracted.protocol || location.protocol || '';
+  address = extracted.rest;
+
+  //
+  // When the authority component is absent the URL starts with a path
+  // component.
+  //
+  if (!extracted.slashes) instructions[2] = [/(.*)/, 'pathname'];
+
+  for (; i < instructions.length; i++) {
+    instruction = instructions[i];
+    parse = instruction[0];
+    key = instruction[1];
+
+    if (parse !== parse) {
+      url[key] = address;
+    } else if ('string' === typeof parse) {
+      if (~(index = address.indexOf(parse))) {
+        if ('number' === typeof instruction[2]) {
+          url[key] = address.slice(0, index);
+          address = address.slice(index + instruction[2]);
+        } else {
+          url[key] = address.slice(index);
+          address = address.slice(0, index);
+        }
+      }
+    } else if (index = parse.exec(address)) {
+      url[key] = index[1];
+      address = address.slice(0, index.index);
+    }
+
+    url[key] = url[key] || (
+      relative && instruction[3] ? location[key] || '' : ''
+    );
+
+    //
+    // Hostname, host and protocol should be lowercased so they can be used to
+    // create a proper `origin`.
+    //
+    if (instruction[4]) url[key] = url[key].toLowerCase();
+  }
+
+  //
+  // Also parse the supplied query string in to an object. If we're supplied
+  // with a custom parser as function use that instead of the default build-in
+  // parser.
+  //
+  if (parser) url.query = parser(url.query);
+
+  //
+  // If the URL is relative, resolve the pathname against the base URL.
+  //
+  if (
+      relative
+    && location.slashes
+    && url.pathname.charAt(0) !== '/'
+    && (url.pathname !== '' || location.pathname !== '')
+  ) {
+    url.pathname = resolve(url.pathname, location.pathname);
+  }
+
+  //
+  // We should not add port numbers if they are already the default port number
+  // for a given protocol. As the host also contains the port number we're going
+  // override it with the hostname which contains no port number.
+  //
+  if (!required(url.port, url.protocol)) {
+    url.host = url.hostname;
+    url.port = '';
+  }
+
+  //
+  // Parse down the `auth` for the username and password.
+  //
+  url.username = url.password = '';
+  if (url.auth) {
+    instruction = url.auth.split(':');
+    url.username = instruction[0] || '';
+    url.password = instruction[1] || '';
+  }
+
+  url.origin = url.protocol && url.host && url.protocol !== 'file:'
+    ? url.protocol +'//'+ url.host
+    : 'null';
+
+  //
+  // The href is just the compiled result.
+  //
+  url.href = url.toString();
+}
+
+/**
+ * This is convenience method for changing properties in the URL instance to
+ * insure that they all propagate correctly.
+ *
+ * @param {String} part          Property we need to adjust.
+ * @param {Mixed} value          The newly assigned value.
+ * @param {Boolean|Function} fn  When setting the query, it will be the function
+ *                               used to parse the query.
+ *                               When setting the protocol, double slash will be
+ *                               removed from the final url if it is true.
+ * @returns {URL}
+ * @api public
+ */
+URL.prototype.set = function set(part, value, fn) {
+  var url = this;
+
+  switch (part) {
+    case 'query':
+      if ('string' === typeof value && value.length) {
+        value = (fn || qs.parse)(value);
+      }
+
+      url[part] = value;
+      break;
+
+    case 'port':
+      url[part] = value;
+
+      if (!required(value, url.protocol)) {
+        url.host = url.hostname;
+        url[part] = '';
+      } else if (value) {
+        url.host = url.hostname +':'+ value;
+      }
+
+      break;
+
+    case 'hostname':
+      url[part] = value;
+
+      if (url.port) value += ':'+ url.port;
+      url.host = value;
+      break;
+
+    case 'host':
+      url[part] = value;
+
+      if (/:\d+$/.test(value)) {
+        value = value.split(':');
+        url.port = value.pop();
+        url.hostname = value.join(':');
+      } else {
+        url.hostname = value;
+        url.port = '';
+      }
+
+      break;
+
+    case 'protocol':
+      url.protocol = value.toLowerCase();
+      url.slashes = !fn;
+      break;
+
+    case 'pathname':
+      url.pathname = value.length && value.charAt(0) !== '/' ? '/' + value : value;
+
+      break;
+
+    default:
+      url[part] = value;
+  }
+
+  for (var i = 0; i < rules.length; i++) {
+    var ins = rules[i];
+
+    if (ins[4]) url[ins[1]] = url[ins[1]].toLowerCase();
+  }
+
+  url.origin = url.protocol && url.host && url.protocol !== 'file:'
+    ? url.protocol +'//'+ url.host
+    : 'null';
+
+  url.href = url.toString();
+
+  return url;
+};
+
+/**
+ * Transform the properties back in to a valid and full URL string.
+ *
+ * @param {Function} stringify Optional query stringify function.
+ * @returns {String}
+ * @api public
+ */
+URL.prototype.toString = function toString(stringify) {
+  if (!stringify || 'function' !== typeof stringify) stringify = qs.stringify;
+
+  var query
+    , url = this
+    , protocol = url.protocol;
+
+  if (protocol && protocol.charAt(protocol.length - 1) !== ':') protocol += ':';
+
+  var result = protocol + (url.slashes ? '//' : '');
+
+  if (url.username) {
+    result += url.username;
+    if (url.password) result += ':'+ url.password;
+    result += '@';
+  }
+
+  result += url.host + url.pathname;
+
+  query = 'object' === typeof url.query ? stringify(url.query) : url.query;
+  if (query) result += '?' !== query.charAt(0) ? '?'+ query : query;
+
+  if (url.hash) result += url.hash;
+
+  return result;
+};
+
+//
+// Expose the URL parser and some additional properties that might be useful for
+// others or testing.
+//
+URL.extractProtocol = extractProtocol;
+URL.location = lolcation;
+URL.qs = qs;
+
+module.exports = URL;
+
+},{"./lolcation":20,"querystringify":17,"requires-port":18}],20:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -834,7 +1388,9 @@ module.exports = function lolcation(loc) {
   return finaldestination;
 };
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined/* RLS: Use tenant_id filtering */ /":19}],21:[function(require,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+
+},{"./":19}],21:[function(require,module,exports){
 (function (root, factory) {
     if (typeof exports === 'object') {
         module.exports = factory();

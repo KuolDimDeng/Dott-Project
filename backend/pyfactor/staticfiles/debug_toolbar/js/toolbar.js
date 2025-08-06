@@ -34,7 +34,10 @@ const djdt = {
                 djdt.hidePanels();
 
                 $$.show(current);
-                this.parentElement.classList.add("djdt-active/* RLS: Use tenant_id filtering */ djDebugPanelContent .djdt-scroll"
+                this.parentElement.classList.add("djdt-active");
+
+                const inner = current.querySelector(
+                        ".djDebugPanelContent .djdt-scroll"
                     ),
                     storeId = djDebug.dataset.storeId;
                 if (storeId && inner.children.length === 0) {
@@ -64,12 +67,13 @@ const djdt = {
                 }
             }
         });
-        $$.on(djDebug, "click/* RLS: Use tenant_id filtering */ djDebugClose", function () {
+        $$.on(djDebug, "click", ".djDebugClose", function () {
             djdt.hideOneLevel();
         });
         $$.on(
             djDebug,
-            "click/* RLS: Use tenant_id filtering */ djDebugPanelButton input[type=checkbox]",
+            "click",
+            ".djDebugPanelButton input[type=checkbox]",
             function () {
                 djdt.cookie.set(
                     this.dataset.cookie,
@@ -83,7 +87,7 @@ const djdt = {
         );
 
         // Used by the SQL and template panels
-        $$.on(djDebug, "click/* RLS: Use tenant_id filtering */ remoteCall", function (event) {
+        $$.on(djDebug, "click", ".remoteCall", function (event) {
             event.preventDefault();
 
             let url;
@@ -106,18 +110,25 @@ const djdt = {
         });
 
         // Used by the cache, profiling and SQL panels
-        $$.on(djDebug, "click/* RLS: Use tenant_id filtering */ djToggleSwitch", function () {
+        $$.on(djDebug, "click", ".djToggleSwitch", function () {
             const id = this.dataset.toggleId;
             const toggleOpen = "+";
             const toggleClose = "-";
             const openMe = this.textContent === toggleOpen;
             const name = this.dataset.toggleName;
-            const container = document.getElementById(name + "_/* RLS: Use tenant_id filtering */ djDebugCollapsed")
+            const container = document.getElementById(name + "_" + id);
+            container
+                .querySelectorAll(".djDebugCollapsed")
                 .forEach(function (e) {
                     $$.toggle(e, openMe);
                 });
             container
-                .querySelectorAll(".djDebugUncollapsed/* RLS: Use tenant_id filtering */ djDebugPanelContent")
+                .querySelectorAll(".djDebugUncollapsed")
+                .forEach(function (e) {
+                    $$.toggle(e, !openMe);
+                });
+            const self = this;
+            this.closest(".djDebugPanelContent")
                 .querySelectorAll(".djToggleDetails_" + id)
                 .forEach(function (e) {
                     if (openMe) {
@@ -126,7 +137,10 @@ const djdt = {
                         self.textContent = toggleClose;
                     } else {
                         e.classList.remove("djSelected");
-                        e.classList.add("djUnselected/* RLS: Use tenant_id filtering */ djToggleSwitch");
+                        e.classList.add("djUnselected");
+                        self.textContent = toggleOpen;
+                    }
+                    const switch_ = e.querySelector(".djToggleSwitch");
                     if (switch_) {
                         switch_.textContent = self.textContent;
                     }
@@ -225,7 +239,8 @@ const djdt = {
     },
     hidePanels() {
         const djDebug = getDebugElement();
-        $$.hide(document.getElementById("djDebugWindow/* RLS: Use tenant_id filtering */ djdt-panelContent").forEach(function (e) {
+        $$.hide(document.getElementById("djDebugWindow"));
+        djDebug.querySelectorAll(".djdt-panelContent").forEach(function (e) {
             $$.hide(e);
         });
         document.querySelectorAll("#djDebugToolbar li").forEach(function (e) {
