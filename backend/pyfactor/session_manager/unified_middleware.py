@@ -49,6 +49,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         '/api/payments/webhooks/',
         '/api/onboarding/webhooks/',
         '/api/contact-form/',  # Public contact form submissions
+        '/admin/',  # Django admin uses its own authentication
         '/health/',
         '/static/',
         '/media/',

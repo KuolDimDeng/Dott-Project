@@ -788,25 +788,34 @@ MIDDLEWARE = [
     # 3. Cloudflare/Proxy handling (required for proper IP detection)
     'pyfactor.middleware.cloudflare_middleware.CloudflareMiddleware',
     
-    # 4. CORS (required for API access)
+    # 4. Django Session (required for admin)
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    
+    # 5. CORS (required for API access)
     'corsheaders.middleware.CorsMiddleware',
     
-    # 5. Django Common (essential)
+    # 6. Django Common (essential)
     'django.middleware.common.CommonMiddleware',
     
-    # 6. CSRF Protection (security requirement)
+    # 7. CSRF Protection (security requirement)
     'django.middleware.csrf.CsrfViewMiddleware',
     
-    # 7. Unified Session Management (replaces 4 session middleware)
+    # 8. Django Auth (required for admin)
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    # 9. Django Messages (required for admin)
+    'django.contrib.messages.middleware.MessageMiddleware',
+    
+    # 10. Unified Session Management (replaces 4 session middleware)
     'session_manager.unified_middleware.UnifiedSessionMiddleware',
     
-    # 8. Unified Tenant & Auth (replaces 6 tenant/RLS middleware)
+    # 11. Unified Tenant & Auth (replaces 6 tenant/RLS middleware)
     'custom_auth.unified_middleware.UnifiedTenantMiddleware',
     
-    # 9. Security Headers (defense in depth)
+    # 12. Security Headers (defense in depth)
     'custom_auth.unified_middleware.SecurityHeadersMiddleware',
     
-    # 10. Clickjacking Protection (security)
+    # 13. Clickjacking Protection (security)
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     # Optional middleware (enable as needed)
