@@ -1,7 +1,7 @@
 # serializers.py
 import uuid
-# from allauth.account.adapter import get_adapter  # Commented out - using Auth0
-# from dj_rest_auth.registration.serializers import RegisterSerializer  # Commented out - using Auth0
+from allauth.account.adapter import get_adapter
+from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
 from django.db import models
 from .models import User, Tenant, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
@@ -38,10 +38,6 @@ from users.choices import SUBSCRIPTION_TYPES  # Import from users.choices
 
 logger = get_logger()
 
-
-"""
-# Commented out - using Auth0 instead of allauth
-# Keeping this code for reference but it's not used
 
 class CustomRegisterSerializer(RegisterSerializer):
     username = None  # Remove username if not used
@@ -163,7 +159,6 @@ class CustomRegisterSerializer(RegisterSerializer):
         user.save()
 
         logger.info("User profile created for email: %s", user.email)
-"""
     
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
