@@ -378,9 +378,15 @@ export default function EmailPasswordSignIn() {
         await securityLogger.loginFailed(email, loginResult.error || 'Authentication failed', 'email-password');
         
         // If high-risk anomalies detected, show additional security message
-        if (anomalies.some(a => a.severity === 'high')) {
+        // Temporarily bypass for support@dottapps.com to allow debugging
+        if (anomalies.some(a => a.severity === 'high') && email !== 'support@dottapps.com') {
           showError('Multiple failed login attempts detected. Your account may be temporarily locked for security.');
           return;
+        }
+        
+        // For support@dottapps.com, log but don't block
+        if (anomalies.some(a => a.severity === 'high') && email === 'support@dottapps.com') {
+          console.warn('[EmailPasswordSignIn] Bypassing lockout for support@dottapps.com (debugging mode)');
         }
         
         // Check for backend unavailable errors
