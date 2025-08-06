@@ -442,10 +442,13 @@ def stripe_pos_settlement_webhook(request):
     
     logger.info(f"Received POS settlement webhook")
     
+    # Use POS-specific webhook secret if available, otherwise fall back to default
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET_POS', settings.STRIPE_WEBHOOK_SECRET)
+    
     try:
         # Verify webhook signature
         event = stripe.Webhook.construct_event(
-            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+            payload, sig_header, webhook_secret
         )
     except ValueError as e:
         logger.error(f"Invalid POS webhook payload: {str(e)}")
