@@ -19,7 +19,8 @@
       "cardPayments": "Gamuchira kadhi pasi rose",
       "languages": "Mitauro inopfuura makumi maviri",
       "mobilePhone": "App yenhare yakabatanidzwa",
-      "jobManagement": "Kutungamira mabasa nemitengo"
+      "jobManagement": "Kutungamira mabasa nemitengo",
+      "accounting": "Rutsigiro rweIFRS neUS GAAP"
     }
   },
   "navFeatures": "Zvimiro",
@@ -140,7 +141,10 @@
     "security": "Kuchengetedzeka Kwebhizinesi",
     "security.description": "Kuchengetedzeka kwebhangi nekutevedzera kwedunhu",
     "jobs": "Kutonga Mabasa neMutengo",
-    "jobs.description": "Kutevera purojekiti kubva kutanga kusvika kumagumo nemitengo yenguva chaiyo, app yemufoni, uye kuongorora purofiti"
+    "jobs.description": "Kutevera purojekiti kubva kutanga kusvika kumagumo nemitengo yenguva chaiyo, app yemufoni, uye kuongorora purofiti",
+    "accounting": "Zviyero zveAccounting Zviviri",
+    "languages": "Rutsigiro Rwemitauro Yakawanda",
+    "currencies": "Hurongwa Hwemari Dzakawanda"
   },
   "trust": {
     "soc2Title": "Inotevedzera SOC2",
@@ -229,7 +233,19 @@
       "description": "Svika kuvatengi uye manage bhizinesi rako nemutauro waunofarira. Kubva kuChirungu kusvika kuSwahili, kuSpanish kusvika kuMandarin, tinotsigira mitauro inopfuura 30 kuita kuti Dott iwane kuma businesses munyika yose.",
       "imageAlt": "Multi-language interface demonstration",
       "availableIn": "Inowanikwa mu:"
-    }
+    },
+    "vatGst": "Rutsigiro rweVAT/GST",
+    "taxReports": "Mishumo yemutero",
+    "eFilingReady": "Yakagadzirira kufaira yemagetsi",
+    "ifrs": "IFRS yenyika 166+",
+    "gaap": "US GAAP yemabhizinesi eUS",
+    "autoDetect": "Kuona otomatiki nenyika",
+    "autoDetection": "Kuona mutauro otomatiki",
+    "rightToLeft": "Mitauro yekurudyi kuenda kuruboshwe",
+    "regionalFormat": "Mafomati ezuva/nhamba dzedunhu",
+    "realTimeRates": "Mitengo yekuchinja yenguva chaiyo",
+    "cryptoCurrency": "Rutsigiro rwecryptocurrency",
+    "currencyConversion": "Kushandurwa otomatiki"
   },
   "builtForYou": {
     "title": "Yakagadzirirwa Iwe",

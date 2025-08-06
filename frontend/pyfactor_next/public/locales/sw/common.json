@@ -320,7 +320,19 @@
     },
     "jobCosting": "Ukadiriaji wa gharama za kazi wakati halisi",
     "mobileFieldApp": "Programu ya simu kwa wafanyakazi wa uwandani",
-    "materialLaborTracking": "Ufuatiliaji wa vifaa na kazi"
+    "materialLaborTracking": "Ufuatiliaji wa vifaa na kazi",
+    "vatGst": "Msaada wa VAT/GST",
+    "taxReports": "Ripoti za kodi",
+    "eFilingReady": "Tayari kwa uwasilishaji wa kielektroniki",
+    "ifrs": "IFRS kwa nchi 166+",
+    "gaap": "US GAAP kwa biashara za Marekani",
+    "autoDetect": "Kutambua kiotomatiki kulingana na nchi",
+    "autoDetection": "Kutambua lugha kiotomatiki",
+    "rightToLeft": "Lugha za kulia kwenda kushoto",
+    "regionalFormat": "Miundo ya tarehe/nambari za kikanda",
+    "realTimeRates": "Viwango vya ubadilishaji wa wakati halisi",
+    "cryptoCurrency": "Msaada wa sarafu ya kripto",
+    "currencyConversion": "Ubadilishaji otomatiki"
   },
   "contact": {
     "eyebrow": "Wasiliana Nasi",
@@ -697,7 +709,8 @@
       "cardPayments": "Malipo ya kadi duniani kote",
       "languages": "Zaidi ya lugha 20 zinazotumika",
       "mobilePhone": "Programu ya simu ya mkononi imejumuishwa",
-      "jobManagement": "Usimamizi wa kazi na gharama"
+      "jobManagement": "Usimamizi wa kazi na gharama",
+      "accounting": "Msaada wa IFRS & US GAAP"
     }
   },
   "heroTitle": "Programu ya Biashara Yote-katika-Moja",
@@ -1119,7 +1132,10 @@
     "security": "Usalama wa Kampuni",
     "security.description": "Usalama wa kiwango cha benki na kufuata sheria za kikanda",
     "jobs": "Usimamizi wa Kazi na Ukadiriaji wa Gharama",
-    "jobs.description": "Ufuatiliaji wa mradi kutoka mwanzo hadi mwisho na ukadiriaji wa gharama wa wakati halisi, programu ya simu ya uwandani na uchanganuzi wa faida"
+    "jobs.description": "Ufuatiliaji wa mradi kutoka mwanzo hadi mwisho na ukadiriaji wa gharama wa wakati halisi, programu ya simu ya uwandani na uchanganuzi wa faida",
+    "accounting": "Viwango vya Uhasibu Mara Mbili",
+    "languages": "Msaada wa Lugha Nyingi",
+    "currencies": "Mfumo wa Sarafu Nyingi"
   },
   "trust": {
     "soc2Title": "Inafuata SOC2",

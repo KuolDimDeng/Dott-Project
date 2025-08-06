@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "Vollständige Unternehmenslösung",
+    "eyebrow": "Komplette Geschäftslösung",
     "heading": "Alles was Sie brauchen, um global zu wachsen",
     "subheading": "Mächtige Tools für moderne Unternehmen, die grenzüberschreitend operieren",
     "operations": {
@@ -614,7 +614,8 @@
       "cardPayments": "Kartenzahlungen weltweit",
       "languages": "Über 20 Sprachen unterstützt",
       "mobilePhone": "Mobile App inklusive",
-      "jobManagement": "Auftragsmanagement & Kalkulation"
+      "jobManagement": "Auftragsmanagement & Kalkulation",
+      "accounting": "IFRS & US GAAP Unterstützung"
     }
   },
   "heroTitle": "All-in-One Business-Software",
@@ -736,9 +737,9 @@
     "recurringInvoices": "Wiederkehrende Rechnungen",
     "paymentReminders": "Zahlungserinnerungen",
     "invoiceFactoring": "Rechnungsfactoring",
-    "vatGst": "MwSt/GST-Unterstützung",
+    "vatGst": "USt/GST-Unterstützung",
     "taxReports": "Steuerberichte",
-    "eFilingReady": "E-Filing bereit",
+    "eFilingReady": "Bereit für E-Filing",
     "customDashboards": "Benutzerdefinierte Dashboards",
     "profitAnalysis": "Gewinnanalyse",
     "cashFlowForecast": "Cashflow-Prognose",
@@ -768,7 +769,16 @@
     },
     "jobCosting": "Echtzeit-Auftragskalkulation",
     "mobileFieldApp": "Mobile App für Außendienstmitarbeiter",
-    "materialLaborTracking": "Material- und Arbeitsverfolgung"
+    "materialLaborTracking": "Material- und Arbeitsverfolgung",
+    "ifrs": "IFRS für über 166 Länder",
+    "gaap": "US GAAP für US-Unternehmen",
+    "autoDetect": "Automatische Erkennung nach Land",
+    "autoDetection": "Automatische Spracherkennung",
+    "rightToLeft": "Rechts-nach-links-Sprachen",
+    "regionalFormat": "Regionale Datums-/Zahlenformate",
+    "realTimeRates": "Echtzeit-Wechselkurse",
+    "cryptoCurrency": "Kryptowährungs-Unterstützung",
+    "currencyConversion": "Automatische Umrechnungen"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1129,7 +1139,10 @@
     "security": "Unternehmenssicherheit",
     "security.description": "Bank-Standard-Sicherheit mit regionaler Compliance",
     "jobs": "Auftragsmanagement & Kalkulation",
-    "jobs.description": "End-to-End-Projektverfolgung mit Echtzeit-Kalkulation, mobiler Außendienst-App und Rentabilitätsanalyse"
+    "jobs.description": "End-to-End-Projektverfolgung mit Echtzeit-Kalkulation, mobiler Außendienst-App und Rentabilitätsanalyse",
+    "accounting": "Duale Rechnungslegungsstandards",
+    "languages": "Mehrsprachige Unterstützung",
+    "currencies": "Multi-Währungssystem"
   },
   "trust": {
     "soc2Title": "SOC2-konform",

@@ -372,7 +372,8 @@
       "cardPayments": "የዓለም አቀፍ ካርድ ክፍያዎች",
       "languages": "ከ20 በላይ ቃንቃዎች ይደገፋሉ",
       "mobilePhone": "የሞባይል ስልክ መተግበሪያ ተካትቷል",
-      "jobManagement": "የሥራ አስተዳደር እና ወጪ ስሌት"
+      "jobManagement": "የሥራ አስተዳደር እና ወጪ ስሌት",
+      "accounting": "IFRS እና US GAAP ድጋፍ"
     }
   },
   "featuresTitle": "ዓለም አቀፍ የንግድ ባህሪያት",
@@ -453,7 +454,10 @@
     "security": "የድርጅት ደህንነት",
     "security.description": "የባንክ ደረጃ ደህንነት ከክልላዊ ተገዥነት ጋር",
     "jobs": "የሥራ አስተዳደር እና ወጪ ስሌት",
-    "jobs.description": "ከጫፍ እስከ ጫፍ ፕሮጀክት መከታተል ከእውነተኛ ጊዜ ወጪ ስሌት፣ የሞባይል መስክ መተግበሪያ እና የትርፋማነት ትንተና ጋር"
+    "jobs.description": "ከጫፍ እስከ ጫፍ ፕሮጀክት መከታተል ከእውነተኛ ጊዜ ወጪ ስሌት፣ የሞባይል መስክ መተግበሪያ እና የትርፋማነት ትንተና ጋር",
+    "accounting": "ድርብ የሂሳብ ደረጃዎች",
+    "languages": "ብዙ ቋንቋ ድጋፍ",
+    "currencies": "ብዙ ምንዛሪ ስርዓት"
   },
   "highlights": {
     "bluetooth": "ብልቱው ስካነር እንተግሪሽን",
@@ -468,9 +472,9 @@
     "recurringInvoices": "ተደግሜ ይመጠቁ ወጨቦች",
     "paymentReminders": "የክፍያ ማስታወሻዎች",
     "invoiceFactoring": "የወጨብ ፋክተሪንግ",
-    "vatGst": "VAT/GST ድግፍ",
+    "vatGst": "VAT/GST ድጋፍ",
     "taxReports": "የግብር ሪፖርቶች",
-    "eFilingReady": "ለኢ-ፋይሊንግ ዝጉጁ",
+    "eFilingReady": "ለኤሌክትሮኒክ ማስገባት ዝግጁ",
     "customDashboards": "ግላዊ ዳሽቦርዶች",
     "profitAnalysis": "የትርፍ ትንተና",
     "cashFlowForecast": "የግንዘብ ፍሰት ትንበያ",
@@ -500,7 +504,16 @@
     },
     "jobCosting": "የእውነተኛ ጊዜ የሥራ ወጪ ስሌት",
     "mobileFieldApp": "ለመስክ ሠራተኞች የሞባይል መተግበሪያ",
-    "materialLaborTracking": "የቁሳቁስ እና የጉልበት መከታተል"
+    "materialLaborTracking": "የቁሳቁስ እና የጉልበት መከታተል",
+    "ifrs": "ለ166+ አገሮች IFRS",
+    "gaap": "ለአሜሪካ ንግዶች US GAAP",
+    "autoDetect": "በአገር መሰረት አውቶማቲክ ማወቅ",
+    "autoDetection": "አውቶማቲክ ቋንቋ ማወቅ",
+    "rightToLeft": "ከቀኝ ወደ ግራ ቋንቋዎች",
+    "regionalFormat": "የክልል ቀን/ቁጥር ቅርጸቶች",
+    "realTimeRates": "እውነተኛ ጊዜ ምንዛሬ ተመኖች",
+    "cryptoCurrency": "Cryptocurrency ድጋፍ",
+    "currencyConversion": "አውቶማቲክ ለውጦች"
   },
   "faq_a_does_dott_support_mobile_money_payments": "አዎን! በአፍሪካ እና እስያ ያሉ ታዋቂ የሞባይል ገንዘብ መድረኮችን እንደ ኤም-ፔሳ፣ ኤምቲኤን ሞባይል ገንዘብ፣ ኤርቴል ገንዘብ እና ሌሎችንም ውህደት እንደግፋለን። ይህ ንግድዎ የአካባቢ የክፍያ ዘዴዎችን በቀላሉ እንዲቀበል እና እንዲያስኬድ ያስችለዋል።",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "የባርኮድ እና የእቃ መጋዘን ስካነር ባህሪ እንዴት ይሰራል?",

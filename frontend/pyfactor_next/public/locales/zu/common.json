@@ -372,7 +372,8 @@
       "cardPayments": "Izinkokhelo zamakhadi emhlabeni jikelele",
       "languages": "Izilimi ezingaphezu kuka-20 ziyasekelwa",
       "mobilePhone": "Uhlelo lokusebenza lweselula lufakiwe",
-      "jobManagement": "Ukuphathwa kwemisebenzi & izindleko"
+      "jobManagement": "Ukuphathwa kwemisebenzi & izindleko",
+      "accounting": "Ukwesekwa kwe-IFRS & US GAAP"
     }
   },
   "featuresTitle": "Izici Zebhizinisi Lomhlaba Jikelele",
@@ -453,7 +454,10 @@
     "security": "Ukuphepha Kwenkampani",
     "security.description": "Ukuphepha kwezinga lebhange nokuthobela kwesifunda",
     "jobs": "Ukuphathwa Kwemisebenzi Nokubala Izindleko",
-    "jobs.description": "Ukulandelela iphrojekthi kusuka ekuqaleni kuze kube sekugcineni ngokubala izindleko zesikhathi sangempela, uhlelo lokusebenza lwenkundla yeselula nokuhlaziya inzuzo"
+    "jobs.description": "Ukulandelela iphrojekthi kusuka ekuqaleni kuze kube sekugcineni ngokubala izindleko zesikhathi sangempela, uhlelo lokusebenza lwenkundla yeselula nokuhlaziya inzuzo",
+    "accounting": "Amazinga Okubalwa Amabili",
+    "languages": "Ukwesekwa Kwezilimi Eziningi",
+    "currencies": "Uhlelo Lwemali Eziningi"
   },
   "highlights": {
     "bluetooth": "Ukuhlanganiswa kwesikena se-Bluetooth",
@@ -468,9 +472,9 @@
     "recurringInvoices": "Ama-invoyisi aphindaphindayo",
     "paymentReminders": "Izikhumbuzi zokukhokha",
     "invoiceFactoring": "I-invoice factoring",
-    "vatGst": "Ukusekela i-VAT/GST",
+    "vatGst": "Ukwesekwa kwe-VAT/GST",
     "taxReports": "Imibiko yentela",
-    "eFilingReady": "Ilungele i-e-filing",
+    "eFilingReady": "Kulungele ukufayela nge-elekthronikhi",
     "customDashboards": "Amadashbhodi angokwezifiso",
     "profitAnalysis": "Ukuhlaziywa kwenzuzo",
     "cashFlowForecast": "Ukubikezela ukugeleza kwemali",
@@ -500,7 +504,16 @@
     },
     "jobCosting": "Ukubala izindleko zomsebenzi zesikhathi sangempela",
     "mobileFieldApp": "Uhlelo lokusebenza lweselula labasebenzi benkundla",
-    "materialLaborTracking": "Ukulandelela izinto zokusebenza nabasebenzi"
+    "materialLaborTracking": "Ukulandelela izinto zokusebenza nabasebenzi",
+    "ifrs": "I-IFRS yamazwe angu-166+",
+    "gaap": "I-US GAAP yamabhizinisi ase-US",
+    "autoDetect": "Ukuthola ngokuzenzakalelayo ngezwe",
+    "autoDetection": "Ukuthola ulimi ngokuzenzakalelayo",
+    "rightToLeft": "Izilimi zokuya kwesobunxele ukusuka kwesokudla",
+    "regionalFormat": "Amafomethi osuku/izinombolo zesifunda",
+    "realTimeRates": "Amazinga okushintshana esikhathi sangempela",
+    "cryptoCurrency": "Ukwesekwa kwe-cryptocurrency",
+    "currencyConversion": "Ukuguqulwa okuzenzakalelayo"
   },
   "faq_a_does_dott_support_mobile_money_payments": "Yebo! Sixhasa ukuxhuma nezinkundla zemali yeselula ezidumile njenge-M-Pesa, i-MTN Mobile Money, i-Airtel Money, nabanye e-Africa nase-Asia. Lokhu kuvumela ibhizinisi lakho ukwamukela nokuphatha kalula izindlela zokukhokha zasendaweni.",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Isici seskena se-barcode nesempahla sisebenza kanjani?",

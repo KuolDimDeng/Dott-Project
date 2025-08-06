@@ -230,7 +230,19 @@
     },
     "jobCosting": "Perhitungan biaya pekerjaan real-time",
     "mobileFieldApp": "Aplikasi mobile untuk pekerja lapangan",
-    "materialLaborTracking": "Pelacakan material dan tenaga kerja"
+    "materialLaborTracking": "Pelacakan material dan tenaga kerja",
+    "vatGst": "Dukungan PPN/GST",
+    "taxReports": "Laporan pajak",
+    "eFilingReady": "Siap untuk e-filing",
+    "ifrs": "IFRS untuk 166+ negara",
+    "gaap": "US GAAP untuk bisnis AS",
+    "autoDetect": "Deteksi otomatis berdasarkan negara",
+    "autoDetection": "Deteksi bahasa otomatis",
+    "rightToLeft": "Bahasa kanan ke kiri",
+    "regionalFormat": "Format tanggal/angka regional",
+    "realTimeRates": "Nilai tukar real-time",
+    "cryptoCurrency": "Dukungan cryptocurrency",
+    "currencyConversion": "Konversi otomatis"
   },
   "contact": {
     "eyebrow": "Kontak",
@@ -594,7 +606,8 @@
       "cardPayments": "Pembayaran kartu global",
       "languages": "Mendukung lebih dari 20 bahasa",
       "mobilePhone": "Aplikasi ponsel termasuk",
-      "jobManagement": "Manajemen pekerjaan & biaya"
+      "jobManagement": "Manajemen pekerjaan & biaya",
+      "accounting": "Dukungan IFRS & US GAAP"
     }
   },
   "heroTitle": "Perangkat Lunak Bisnis All-in-One",
@@ -1002,7 +1015,10 @@
     "security": "Keamanan Enterprise",
     "security.description": "Keamanan tingkat bank dengan kepatuhan regional",
     "jobs": "Manajemen Pekerjaan & Perhitungan Biaya",
-    "jobs.description": "Pelacakan proyek end-to-end dengan perhitungan biaya real-time, aplikasi lapangan mobile, dan analisis profitabilitas"
+    "jobs.description": "Pelacakan proyek end-to-end dengan perhitungan biaya real-time, aplikasi lapangan mobile, dan analisis profitabilitas",
+    "accounting": "Standar Akuntansi Ganda",
+    "languages": "Dukungan Multi-Bahasa",
+    "currencies": "Sistem Multi-Mata Uang"
   },
   "trust": {
     "soc2Title": "Sesuai SOC2",

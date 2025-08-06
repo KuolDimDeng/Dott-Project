@@ -614,7 +614,8 @@
       "cardPayments": "Acepta pagos con tarjeta en todo el mundo",
       "languages": "Más de 20 idiomas soportados",
       "mobilePhone": "Aplicación móvil incluida",
-      "jobManagement": "Gestión y costeo de trabajos"
+      "jobManagement": "Gestión y costeo de trabajos",
+      "accounting": "Soporte IFRS y US GAAP"
     }
   },
   "builtForYou": {
@@ -762,7 +763,16 @@
     },
     "jobCosting": "Costeo de trabajos en tiempo real",
     "mobileFieldApp": "Aplicación móvil para trabajadores de campo",
-    "materialLaborTracking": "Seguimiento de materiales y mano de obra"
+    "materialLaborTracking": "Seguimiento de materiales y mano de obra",
+    "ifrs": "IFRS para más de 166 países",
+    "gaap": "US GAAP para empresas de EE.UU.",
+    "autoDetect": "Detección automática según el país",
+    "autoDetection": "Detección automática de idioma",
+    "rightToLeft": "Idiomas de derecha a izquierda",
+    "regionalFormat": "Formatos regionales de fecha/número",
+    "realTimeRates": "Tasas de cambio en tiempo real",
+    "cryptoCurrency": "Soporte de criptomonedas",
+    "currencyConversion": "Conversiones automáticas"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1123,7 +1133,10 @@
     "security": "Seguridad Empresarial",
     "security.description": "Seguridad de grado bancario con cumplimiento regional",
     "jobs": "Gestión y Costeo de Trabajos",
-    "jobs.description": "Seguimiento de proyectos de principio a fin con costeo en tiempo real, aplicación móvil de campo y análisis de rentabilidad"
+    "jobs.description": "Seguimiento de proyectos de principio a fin con costeo en tiempo real, aplicación móvil de campo y análisis de rentabilidad",
+    "accounting": "Estándares de Contabilidad Dual",
+    "languages": "Soporte Multi-Idioma",
+    "currencies": "Sistema Multi-Moneda"
   },
   "trust": {
     "soc2Title": "Cumple SOC2",

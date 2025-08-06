@@ -320,7 +320,19 @@
     },
     "jobCosting": "リアルタイムの作業原価計算",
     "mobileFieldApp": "フィールドワーカー向けモバイルアプリ",
-    "materialLaborTracking": "材料と労働の追跡"
+    "materialLaborTracking": "材料と労働の追跡",
+    "vatGst": "VAT/GST サポート",
+    "taxReports": "税務レポート",
+    "eFilingReady": "電子申告対応",
+    "ifrs": "166カ国以上のIFRS",
+    "gaap": "米国企業向けUS GAAP",
+    "autoDetect": "国別自動検出",
+    "autoDetection": "自動言語検出",
+    "rightToLeft": "右から左への言語",
+    "regionalFormat": "地域の日付/数値形式",
+    "realTimeRates": "リアルタイム為替レート",
+    "cryptoCurrency": "暗号通貨サポート",
+    "currencyConversion": "自動変換"
   },
   "contact": {
     "eyebrow": "お問い合わせ",
@@ -466,7 +478,8 @@
       "cardPayments": "世界中でのカード決済",
       "languages": "20以上の言語に対応",
       "mobilePhone": "モバイルアプリ付属",
-      "jobManagement": "作業管理と原価計算"
+      "jobManagement": "作業管理と原価計算",
+      "accounting": "IFRS & US GAAP サポート"
     }
   },
   "heroTitle": "オールインワンビジネスソフトウェア",
@@ -888,7 +901,10 @@
     "security": "エンタープライズセキュリティ",
     "security.description": "銀行グレードセキュリティと地域コンプライアンス",
     "jobs": "作業管理と原価計算",
-    "jobs.description": "リアルタイムの原価計算、モバイルフィールドアプリ、収益性分析を備えたエンドツーエンドのプロジェクト追跡"
+    "jobs.description": "リアルタイムの原価計算、モバイルフィールドアプリ、収益性分析を備えたエンドツーエンドのプロジェクト追跡",
+    "accounting": "デュアル会計基準",
+    "languages": "多言語サポート",
+    "currencies": "マルチ通貨システム"
   },
   "trust": {
     "soc2Title": "SOC2準拠",

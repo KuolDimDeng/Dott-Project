@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "Eksiksiz İş Çözümü",
+    "eyebrow": "Tam İş Çözümü",
     "heading": "Küresel Büyüme İçin İhtiyaç Duyduğunuz Her Şey",
     "subheading": "Sınırları aşan modern işletmeler için tasarlanmış güçlü araçlar",
     "operations": {
@@ -320,7 +320,19 @@
     },
     "jobCosting": "Gerçek zamanlı iş maliyetlendirmesi",
     "mobileFieldApp": "Saha çalışanları için mobil uygulama",
-    "materialLaborTracking": "Malzeme ve işçilik takibi"
+    "materialLaborTracking": "Malzeme ve işçilik takibi",
+    "vatGst": "KDV/GST desteği",
+    "taxReports": "Vergi raporları",
+    "eFilingReady": "E-dosyalama hazır",
+    "ifrs": "166+ ülke için IFRS",
+    "gaap": "ABD işletmeleri için US GAAP",
+    "autoDetect": "Ülkeye göre otomatik algılama",
+    "autoDetection": "Otomatik dil algılama",
+    "rightToLeft": "Sağdan sola diller",
+    "regionalFormat": "Bölgesel tarih/sayı formatları",
+    "realTimeRates": "Gerçek zamanlı döviz kurları",
+    "cryptoCurrency": "Kripto para desteği",
+    "currencyConversion": "Otomatik dönüşümler"
   },
   "contact": {
     "eyebrow": "Bizimle İletişime Geçin",
@@ -697,7 +709,8 @@
       "cardPayments": "Dünya çapında kart ödemeleri",
       "languages": "20'den fazla dil desteklenir",
       "mobilePhone": "Mobil telefon uygulaması dahil",
-      "jobManagement": "İş yönetimi ve maliyetlendirme"
+      "jobManagement": "İş yönetimi ve maliyetlendirme",
+      "accounting": "IFRS ve US GAAP desteği"
     }
   },
   "heroTitle": "Hepsi Bir Arada İşletme Yazılımı",
@@ -1119,7 +1132,10 @@
     "security": "Kurumsal Güvenlik",
     "security.description": "Bölgesel uyumla banka düzeyi güvenlik",
     "jobs": "İş Yönetimi ve Maliyetlendirme",
-    "jobs.description": "Gerçek zamanlı maliyetlendirme, mobil saha uygulaması ve kârlılık analiziyle uçtan uca proje takibi"
+    "jobs.description": "Gerçek zamanlı maliyetlendirme, mobil saha uygulaması ve kârlılık analiziyle uçtan uca proje takibi",
+    "accounting": "Çift Muhasebe Standartları",
+    "languages": "Çoklu Dil Desteği",
+    "currencies": "Çoklu Para Birimi Sistemi"
   },
   "trust": {
     "soc2Title": "SOC2 Uyumlu",

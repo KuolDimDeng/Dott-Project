@@ -19,7 +19,8 @@
       "cardPayments": "Accetta pagamenti con carta in tutto il mondo",
       "languages": "Supporto per oltre 30 lingue",
       "mobilePhone": "App mobile inclusa",
-      "jobManagement": "Gestione lavori e costi"
+      "jobManagement": "Gestione lavori e costi",
+      "accounting": "Supporto IFRS e US GAAP"
     }
   },
   "navFeatures": "Funzionalità",
@@ -105,7 +106,10 @@
     "security": "Sicurezza Aziendale",
     "security.description": "Sicurezza di livello bancario con conformità regionale",
     "jobs": "Gestione Lavori e Costi",
-    "jobs.description": "Monitoraggio progetti end-to-end con costi in tempo reale, app mobile e analisi redditività"
+    "jobs.description": "Monitoraggio progetti end-to-end con costi in tempo reale, app mobile e analisi redditività",
+    "accounting": "Standard Contabili Doppi",
+    "languages": "Supporto Multilingue",
+    "currencies": "Sistema Multi-Valuta"
   },
   "trust": {
     "soc2Title": "Conforme SOC2",
@@ -194,7 +198,19 @@
       "description": "Raggiungi i clienti e gestisci la tua azienda nella tua lingua preferita. Dall'inglese al swahili, dallo spagnolo al mandarino, supportiamo oltre 30 lingue per rendere Dott accessibile alle aziende di tutto il mondo.",
       "imageAlt": "Dimostrazione interfaccia multilingue",
       "availableIn": "Disponibile in:"
-    }
+    },
+    "vatGst": "Supporto IVA/GST",
+    "taxReports": "Report fiscali",
+    "eFilingReady": "Pronto per l'invio elettronico",
+    "ifrs": "IFRS per oltre 166 paesi",
+    "gaap": "US GAAP per le aziende statunitensi",
+    "autoDetect": "Rilevamento automatico per paese",
+    "autoDetection": "Rilevamento automatico della lingua",
+    "rightToLeft": "Lingue da destra a sinistra",
+    "regionalFormat": "Formati regionali di data/numero",
+    "realTimeRates": "Tassi di cambio in tempo reale",
+    "cryptoCurrency": "Supporto criptovalute",
+    "currencyConversion": "Conversioni automatiche"
   },
   "footer": {
     "home": "Home",

@@ -614,7 +614,8 @@
       "cardPayments": "Paiements par carte dans le monde entier",
       "languages": "Plus de 20 langues prises en charge",
       "mobilePhone": "Application mobile incluse",
-      "jobManagement": "Gestion et coût des chantiers"
+      "jobManagement": "Gestion et coût des chantiers",
+      "accounting": "Support IFRS et US GAAP"
     }
   },
   "heroTitle": "Logiciel d'entreprise tout-en-un",
@@ -738,7 +739,7 @@
     "invoiceFactoring": "Affacturage",
     "vatGst": "Support TVA/TPS",
     "taxReports": "Rapports fiscaux",
-    "eFilingReady": "Prêt pour e-déclaration",
+    "eFilingReady": "Prêt pour le dépôt électronique",
     "customDashboards": "Tableaux de bord personnalisés",
     "profitAnalysis": "Analyse des profits",
     "cashFlowForecast": "Prévision de trésorerie",
@@ -768,7 +769,16 @@
     },
     "jobCosting": "Calcul des coûts en temps réel",
     "mobileFieldApp": "Application mobile pour travailleurs de terrain",
-    "materialLaborTracking": "Suivi des matériaux et de la main-d'œuvre"
+    "materialLaborTracking": "Suivi des matériaux et de la main-d'œuvre",
+    "ifrs": "IFRS pour plus de 166 pays",
+    "gaap": "US GAAP pour les entreprises américaines",
+    "autoDetect": "Détection automatique selon le pays",
+    "autoDetection": "Détection automatique de la langue",
+    "rightToLeft": "Langues de droite à gauche",
+    "regionalFormat": "Formats régionaux de date/nombre",
+    "realTimeRates": "Taux de change en temps réel",
+    "cryptoCurrency": "Support des cryptomonnaies",
+    "currencyConversion": "Conversions automatiques"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1129,7 +1139,10 @@
     "security": "Sécurité d'Entreprise",
     "security.description": "Sécurité de niveau bancaire avec conformité régionale",
     "jobs": "Gestion et Calcul des Coûts des Chantiers",
-    "jobs.description": "Suivi de projet de bout en bout avec calcul des coûts en temps réel, application mobile de terrain et analyse de rentabilité"
+    "jobs.description": "Suivi de projet de bout en bout avec calcul des coûts en temps réel, application mobile de terrain et analyse de rentabilité",
+    "accounting": "Normes Comptables Doubles",
+    "languages": "Support Multi-Langues",
+    "currencies": "Système Multi-Devises"
   },
   "trust": {
     "soc2Title": "Conforme SOC2",

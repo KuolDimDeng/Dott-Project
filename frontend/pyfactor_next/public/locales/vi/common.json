@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "Giải pháp kinh doanh hoàn chỉnh",
+    "eyebrow": "Giải pháp Kinh doanh Toàn diện",
     "heading": "Mọi thứ bạn cần để phát triển toàn cầu",
     "subheading": "Các công cụ mạnh mẽ được thiết kế cho các doanh nghiệp hiện đại hoạt động xuyên biên giới",
     "operations": {
@@ -230,7 +230,19 @@
     },
     "jobCosting": "Tính chi phí công việc thời gian thực",
     "mobileFieldApp": "Ứng dụng di động cho nhân viên thực địa",
-    "materialLaborTracking": "Theo dõi vật liệu và lao động"
+    "materialLaborTracking": "Theo dõi vật liệu và lao động",
+    "vatGst": "Hỗ trợ VAT/GST",
+    "taxReports": "Báo cáo thuế",
+    "eFilingReady": "Sẵn sàng nộp điện tử",
+    "ifrs": "IFRS cho hơn 166 quốc gia",
+    "gaap": "US GAAP cho doanh nghiệp Mỹ",
+    "autoDetect": "Tự động phát hiện theo quốc gia",
+    "autoDetection": "Tự động phát hiện ngôn ngữ",
+    "rightToLeft": "Ngôn ngữ từ phải sang trái",
+    "regionalFormat": "Định dạng ngày/số khu vực",
+    "realTimeRates": "Tỷ giá hối đoái thời gian thực",
+    "cryptoCurrency": "Hỗ trợ tiền mã hóa",
+    "currencyConversion": "Chuyển đổi tự động"
   },
   "contact": {
     "eyebrow": "Liên hệ",
@@ -594,7 +606,8 @@
       "cardPayments": "Thanh toán thẻ toàn cầu",
       "languages": "Hỗ trợ hơn 20 ngôn ngữ",
       "mobilePhone": "Ứng dụng điện thoại di động đi kèm",
-      "jobManagement": "Quản lý công việc & chi phí"
+      "jobManagement": "Quản lý công việc & chi phí",
+      "accounting": "Hỗ trợ IFRS & US GAAP"
     }
   },
   "heroTitle": "Phần mềm kinh doanh tất cả trong một",
@@ -1002,7 +1015,10 @@
     "security": "Bảo mật doanh nghiệp",
     "security.description": "Bảo mật cấp ngân hàng với tuân thủ khu vực",
     "jobs": "Quản lý Công việc & Tính Chi phí",
-    "jobs.description": "Theo dõi dự án từ đầu đến cuối với tính chi phí thời gian thực, ứng dụng di động thực địa và phân tích lợi nhuận"
+    "jobs.description": "Theo dõi dự án từ đầu đến cuối với tính chi phí thời gian thực, ứng dụng di động thực địa và phân tích lợi nhuận",
+    "accounting": "Chuẩn Kế toán Kép",
+    "languages": "Hỗ trợ Đa Ngôn ngữ",
+    "currencies": "Hệ thống Đa Tiền tệ"
   },
   "trust": {
     "soc2Title": "Tuân thủ SOC2",

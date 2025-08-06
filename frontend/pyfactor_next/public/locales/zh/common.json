@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "完整的企业解决方案",
+    "eyebrow": "完整的商业解决方案",
     "heading": "全球化增长所需的一切",
     "subheading": "为跨国界运营的现代企业设计的强大工具",
     "operations": {
@@ -615,7 +615,8 @@
       "cardPayments": "全球卡支付",
       "languages": "支持20多种语言",
       "mobilePhone": "包含手机应用程序",
-      "jobManagement": "作业管理与成本核算"
+      "jobManagement": "作业管理与成本核算",
+      "accounting": "IFRS 和 US GAAP 支持"
     }
   },
   "heroTitle": "一体化商业软件",
@@ -737,7 +738,7 @@
     "recurringInvoices": "定期发票",
     "paymentReminders": "付款提醒",
     "invoiceFactoring": "发票保理",
-    "vatGst": "增值税/消费税支持",
+    "vatGst": "增值税/GST 支持",
     "taxReports": "税务报告",
     "eFilingReady": "电子申报就绪",
     "customDashboards": "自定义仪表板",
@@ -769,7 +770,16 @@
     },
     "jobCosting": "实时作业成本核算",
     "mobileFieldApp": "现场工作人员移动应用",
-    "materialLaborTracking": "材料和人工跟踪"
+    "materialLaborTracking": "材料和人工跟踪",
+    "ifrs": "166+ 个国家的 IFRS",
+    "gaap": "美国企业的 US GAAP",
+    "autoDetect": "根据国家自动检测",
+    "autoDetection": "自动语言检测",
+    "rightToLeft": "从右到左的语言",
+    "regionalFormat": "区域日期/数字格式",
+    "realTimeRates": "实时汇率",
+    "cryptoCurrency": "加密货币支持",
+    "currencyConversion": "自动转换"
   },
   "faq": {
     "eyebrow": "常见问题",
@@ -1130,7 +1140,10 @@
     "security": "企业安全",
     "security.description": "银行级安全和地区合规",
     "jobs": "作业管理与成本核算",
-    "jobs.description": "端到端项目跟踪，具有实时成本核算、移动现场应用和盈利能力分析"
+    "jobs.description": "端到端项目跟踪，具有实时成本核算、移动现场应用和盈利能力分析",
+    "accounting": "双重会计准则",
+    "languages": "多语言支持",
+    "currencies": "多货币系统"
   },
   "trust": {
     "soc2Title": "SOC2合规",

@@ -19,7 +19,8 @@
       "cardPayments": "Akceptuj płatności kartą na całym świecie",
       "languages": "Obsługa ponad 30 języków",
       "mobilePhone": "Aplikacja mobilna w zestawie",
-      "jobManagement": "Zarządzanie zadaniami i kosztami"
+      "jobManagement": "Zarządzanie zadaniami i kosztami",
+      "accounting": "Wsparcie IFRS i US GAAP"
     }
   },
   "navFeatures": "Funkcje",
@@ -105,7 +106,10 @@
     "security": "Bezpieczeństwo Korporacyjne",
     "security.description": "Bezpieczeństwo na poziomie bankowym z regionalną zgodnością",
     "jobs": "Zarządzanie Zadaniami i Kosztami",
-    "jobs.description": "Kompleksowe śledzenie projektów z kosztami w czasie rzeczywistym, aplikacją mobilną i analizą rentowności"
+    "jobs.description": "Kompleksowe śledzenie projektów z kosztami w czasie rzeczywistym, aplikacją mobilną i analizą rentowności",
+    "accounting": "Podwójne Standardy Rachunkowości",
+    "languages": "Wsparcie Wielojęzyczne",
+    "currencies": "System Wielowalutowy"
   },
   "trust": {
     "soc2Title": "Zgodny z SOC2",
@@ -194,7 +198,19 @@
       "description": "Docieraj do klientów i zarządzaj firmą w preferowanym języku. Od angielskiego po suahili, od hiszpańskiego po mandaryński, obsługujemy ponad 30 języków, aby uczynić Dott dostępnym dla firm na całym świecie.",
       "imageAlt": "Demonstracja wielojęzycznego interfejsu",
       "availableIn": "Dostępne w:"
-    }
+    },
+    "vatGst": "Wsparcie VAT/GST",
+    "taxReports": "Raporty podatkowe",
+    "eFilingReady": "Gotowe do e-składania",
+    "ifrs": "IFRS dla ponad 166 krajów",
+    "gaap": "US GAAP dla firm amerykańskich",
+    "autoDetect": "Automatyczne wykrywanie według kraju",
+    "autoDetection": "Automatyczne wykrywanie języka",
+    "rightToLeft": "Języki od prawej do lewej",
+    "regionalFormat": "Regionalne formaty daty/liczb",
+    "realTimeRates": "Kursy wymiany w czasie rzeczywistym",
+    "cryptoCurrency": "Wsparcie kryptowalut",
+    "currencyConversion": "Automatyczne konwersje"
   },
   "footer": {
     "home": "Strona główna",

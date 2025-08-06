@@ -19,7 +19,8 @@
       "cardPayments": "Tumanggap ng card payments sa buong mundo",
       "languages": "30+ suportadong wika",
       "mobilePhone": "Kasama ang mobile phone app",
-      "jobManagement": "Pamamahala ng trabaho at gastos"
+      "jobManagement": "Pamamahala ng trabaho at gastos",
+      "accounting": "Suporta sa IFRS at US GAAP"
     }
   },
   "navFeatures": "Mga Feature",
@@ -140,7 +141,10 @@
     "security": "Enterprise Security",
     "security.description": "Bank-grade na seguridad na may rehiyonal na pagsunod",
     "jobs": "Pamamahala ng Trabaho at Gastos",
-    "jobs.description": "End-to-end na pagsubaybay ng proyekto na may real-time na gastos, mobile app, at pagsusuri ng kita"
+    "jobs.description": "End-to-end na pagsubaybay ng proyekto na may real-time na gastos, mobile app, at pagsusuri ng kita",
+    "accounting": "Dalawang Pamantayan sa Accounting",
+    "languages": "Suporta sa Maraming Wika",
+    "currencies": "Sistema ng Maraming Pera"
   },
   "trust": {
     "soc2Title": "SOC2 Compliant",
@@ -229,7 +233,19 @@
       "description": "Maabot ang mga customer at pamahalaan ang inyong business sa inyong preferred na wika. Mula sa English hanggang Swahili, Spanish hanggang Mandarin, sinusuportahan namin ang mahigit 30 wika para gawing accessible ang Dott sa mga business worldwide.",
       "imageAlt": "Multi-language interface demonstration",
       "availableIn": "Available sa:"
-    }
+    },
+    "vatGst": "Suporta sa VAT/GST",
+    "taxReports": "Mga ulat ng buwis",
+    "eFilingReady": "Handa para sa e-filing",
+    "ifrs": "IFRS para sa 166+ bansa",
+    "gaap": "US GAAP para sa mga negosyo sa US",
+    "autoDetect": "Awtomatikong pagtukoy ayon sa bansa",
+    "autoDetection": "Awtomatikong pagtukoy ng wika",
+    "rightToLeft": "Mga wikang kanan-pakaliwa",
+    "regionalFormat": "Mga rehiyonal na format ng petsa/numero",
+    "realTimeRates": "Real-time na palitan",
+    "cryptoCurrency": "Suporta sa cryptocurrency",
+    "currencyConversion": "Awtomatikong pagpapalit"
   },
   "builtForYou": {
     "title": "Ginawa Para Sa Iyo",

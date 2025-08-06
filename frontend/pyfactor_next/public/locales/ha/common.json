@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "Cikakken Magani na Kasuwanci",
+    "eyebrow": "Cikakken Maganin Kasuwanci",
     "heading": "Duk Abin Da Kuke Bukata Don Girma a Duniya",
     "subheading": "Kayan aiki masu ƙarfi da aka tsara don kasuwanci na zamani da ke aiki a kan iyakoki",
     "operations": {
@@ -512,7 +512,8 @@
       "cardPayments": "Biyan kuɗi ta katu a duniya",
       "languages": "Harsuna sama da 20 ana goyon baya",
       "mobilePhone": "An haɗa app na wayar hannu",
-      "jobManagement": "Gudanar da ayyuka & ƙididdige farashi"
+      "jobManagement": "Gudanar da ayyuka & ƙididdige farashi",
+      "accounting": "Tallafin IFRS & US GAAP"
     }
   },
   "heroTitle": "Software Kasuwanci Duk-a-Daya",
@@ -571,7 +572,7 @@
     "invoiceFactoring": "Sayar da takardun bashi",
     "vatGst": "Tallafin VAT/GST",
     "taxReports": "Rahotannin haraji",
-    "eFilingReady": "Shirye don aikawa ta yanar gizo",
+    "eFilingReady": "Shirye don shigar da wutar lantarki",
     "customDashboards": "Dashboard ɗin musamman",
     "profitAnalysis": "Nazarin riba",
     "cashFlowForecast": "Hasashen kuɗin shiga",
@@ -601,7 +602,16 @@
     },
     "jobCosting": "Ƙididdigar farashin aiki na ainihin lokaci",
     "mobileFieldApp": "Aikace-aikacen wayar hannu don ma'aikatan filin",
-    "materialLaborTracking": "Bin diddigin kayayyaki da aiki"
+    "materialLaborTracking": "Bin diddigin kayayyaki da aiki",
+    "ifrs": "IFRS don ƙasashe 166+",
+    "gaap": "US GAAP don kasuwancin Amurka",
+    "autoDetect": "Ganewa ta atomatik bisa ƙasa",
+    "autoDetection": "Gano harshe ta atomatik",
+    "rightToLeft": "Harsunan dama zuwa hagu",
+    "regionalFormat": "Tsarin kwanan wata/lamba na yanki",
+    "realTimeRates": "Farashin musanya na lokaci-lokaci",
+    "cryptoCurrency": "Tallafin cryptocurrency",
+    "currencyConversion": "Juyawa ta atomatik"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -967,7 +977,10 @@
     "security": "Tsaron Kamfani",
     "security.description": "Tsaro mai matsayin banki da cika dokoki na yanki",
     "jobs": "Gudanar da Ayyuka & Ƙididdigar Farashi",
-    "jobs.description": "Bin diddigin aikin farko zuwa ƙarshe tare da ƙididdige farashi na ainihin lokaci, aikace-aikacen filin wayar hannu da nazarin riba"
+    "jobs.description": "Bin diddigin aikin farko zuwa ƙarshe tare da ƙididdige farashi na ainihin lokaci, aikace-aikacen filin wayar hannu da nazarin riba",
+    "accounting": "Ma'auni na Lissafi Biyu",
+    "languages": "Tallafin Harsuna Masu Yawa",
+    "currencies": "Tsarin Kuɗi Masu Yawa"
   },
   "blog": {
     "hero": {

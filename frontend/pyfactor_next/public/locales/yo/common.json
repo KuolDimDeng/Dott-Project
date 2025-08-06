@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "Ojútùú Iṣẹ́ Tó Péye",
+    "eyebrow": "Ojutu Iṣowo Pipe",
     "heading": "Gbogbo Ohun Tí O Nílò Láti Dàgbà Ní Àgbáyé",
     "subheading": "Àwọn irinṣẹ́ tó lágbára tí a ṣètò fún àwọn iṣẹ́ ọ̀dájú tí ń ṣiṣẹ́ kọjá àwọn aláàlà",
     "operations": {
@@ -453,7 +453,8 @@
       "cardPayments": "Àwọn Ìsanwó Káàdì Àgbáyé",
       "languages": "O ju awọn ede 20 lọ ti a ṣe atilẹyin",
       "mobilePhone": "App foonu alagbeka wa pẹlu",
-      "jobManagement": "Iṣakoso iṣẹ & iṣiro iye owo"
+      "jobManagement": "Iṣakoso iṣẹ & iṣiro iye owo",
+      "accounting": "Atilẹyin IFRS & US GAAP"
     }
   },
   "featuresTitle": "Àwọn Ẹ̀yà Iṣẹ́ Àgbáyé",
@@ -534,7 +535,10 @@
     "security": "Aabo Ilé-iṣẹ́",
     "security.description": "Aabo ipò banki pẹ̀lú ìfàragbá agbègbè",
     "jobs": "Iṣakoso Iṣẹ & Iṣiro Iye owo",
-    "jobs.description": "Titọpa iṣẹ akanṣe lati ibẹrẹ si ipari pẹlu iṣiro iye owo ni akoko gidi, ohun elo aaye alagbeka ati itupalẹ ere"
+    "jobs.description": "Titọpa iṣẹ akanṣe lati ibẹrẹ si ipari pẹlu iṣiro iye owo ni akoko gidi, ohun elo aaye alagbeka ati itupalẹ ere",
+    "accounting": "Awọn iṣedede Iṣiro meji",
+    "languages": "Atilẹyin Ede Pupọ",
+    "currencies": "Eto Owo Pupọ"
   },
   "highlights": {
     "bluetooth": "Iṣọsọpọ mọ ọkà Bluetooth",
@@ -549,9 +553,9 @@
     "recurringInvoices": "Àwọn ìwé-áṣà igbagbogbo",
     "paymentReminders": "Àwọn ìrántí iṣanwo",
     "invoiceFactoring": "Àràn ìwé-áṣà",
-    "vatGst": "Atìlẹyìn VAT/GST",
-    "taxReports": "Ìròyìn orí-ìṣanà",
-    "eFilingReady": "Múra fún E-filing",
+    "vatGst": "Atilẹyin VAT/GST",
+    "taxReports": "Awọn iroyin ori",
+    "eFilingReady": "Ṣetan fun fifi itanna",
     "customDashboards": "Daṣibọdù adani",
     "profitAnalysis": "Ìtúpàlẹ èrè",
     "cashFlowForecast": "Asọtẹlẹ iṣan-owo",
@@ -581,7 +585,16 @@
     },
     "jobCosting": "Iṣiro iye owo iṣẹ ni akoko gidi",
     "mobileFieldApp": "Ohun elo alagbeka fun awọn oṣiṣẹ aaye",
-    "materialLaborTracking": "Titọpa ohun elo ati iṣẹ"
+    "materialLaborTracking": "Titọpa ohun elo ati iṣẹ",
+    "ifrs": "IFRS fun awọn orilẹ-ede 166+",
+    "gaap": "US GAAP fun awọn iṣowo AMẸRIKA",
+    "autoDetect": "Iwari laifọwọyi nipasẹ orilẹ-ede",
+    "autoDetection": "Iwari ede laifọwọyi",
+    "rightToLeft": "Awọn ede ọtun si osi",
+    "regionalFormat": "Awọn ọna kika ọjọ/nọmba agbegbe",
+    "realTimeRates": "Awọn oṣuwọn paṣipaarọ akoko gidi",
+    "cryptoCurrency": "Atilẹyin cryptocurrency",
+    "currencyConversion": "Awọn iyipada laifọwọyi"
   },
   "faq_a_does_dott_support_mobile_money_payments": "Bẹ́ẹ̀ni! A ń ṣe àtìlẹ́yìn fún ìdàpọ̀ pẹ̀lú àwọn pẹ̀pẹ̀ owó fóònù tí ó gbajúmọ̀ bí M-Pesa, MTN Mobile Money, Airtel Money, àti àwọn míràn ní Afíríkà àti Ésíà. Èyí ń fún iṣẹ́ rẹ láàyè láti gba àti ṣe àwọn ọ̀nà ìsanwó abẹ́lé lọ́rọrùn.",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Báwo ni ẹ̀yà skánà báàkódù àti àjọjọpọ̀ ọjà ṣe ń ṣiṣẹ́?",

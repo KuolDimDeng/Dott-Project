@@ -82,7 +82,7 @@
     }
   },
   "features": {
-    "eyebrow": "Complete bedrijfsoplossing",
+    "eyebrow": "Complete Bedrijfsoplossing",
     "heading": "Alles wat u nodig heeft om wereldwijd te groeien",
     "subheading": "Krachtige tools ontworpen voor moderne bedrijven die grensoverschrijdend opereren",
     "operations": {
@@ -230,7 +230,19 @@
     },
     "jobCosting": "Realtime opdrachtkostenberekening",
     "mobileFieldApp": "Mobiele app voor veldmedewerkers",
-    "materialLaborTracking": "Materiaal- en arbeidstracking"
+    "materialLaborTracking": "Materiaal- en arbeidstracking",
+    "vatGst": "BTW/GST ondersteuning",
+    "taxReports": "Belastingrapporten",
+    "eFilingReady": "Klaar voor e-filing",
+    "ifrs": "IFRS voor 166+ landen",
+    "gaap": "US GAAP voor Amerikaanse bedrijven",
+    "autoDetect": "Automatische detectie per land",
+    "autoDetection": "Automatische taaldetectie",
+    "rightToLeft": "Rechts-naar-links talen",
+    "regionalFormat": "Regionale datum/nummer formaten",
+    "realTimeRates": "Realtime wisselkoersen",
+    "cryptoCurrency": "Cryptocurrency ondersteuning",
+    "currencyConversion": "Automatische conversies"
   },
   "contact": {
     "eyebrow": "Contact",
@@ -594,7 +606,8 @@
       "cardPayments": "Wereldwijde kaartbetalingen",
       "languages": "Meer dan 20 talen ondersteund",
       "mobilePhone": "Mobiele app inbegrepen",
-      "jobManagement": "Opdrachtbeheer & kostenberekening"
+      "jobManagement": "Opdrachtbeheer & kostenberekening",
+      "accounting": "IFRS & US GAAP ondersteuning"
     }
   },
   "heroTitle": "All-in-one bedrijfssoftware",
@@ -1002,7 +1015,10 @@
     "security": "Enterprise beveiliging",
     "security.description": "Beveiliging op bankniveau met regionale compliance",
     "jobs": "Opdrachtbeheer & Kostenberekening",
-    "jobs.description": "End-to-end projecttracking met realtime kostenberekening, mobiele veld-app en winstgevendheidsanalyse"
+    "jobs.description": "End-to-end projecttracking met realtime kostenberekening, mobiele veld-app en winstgevendheidsanalyse",
+    "accounting": "Dubbele Boekhoudnormen",
+    "languages": "Meertalige Ondersteuning",
+    "currencies": "Multi-Valuta Systeem"
   },
   "trust": {
     "soc2Title": "SOC2 conform",

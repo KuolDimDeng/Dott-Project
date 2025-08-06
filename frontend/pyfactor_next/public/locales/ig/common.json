@@ -19,7 +19,8 @@
       "cardPayments": "Nabata ụgwọ kaadị n'ụwa niile",
       "languages": "Nkwado asụsụ karịrị 30",
       "mobilePhone": "Ngwa ekwentị gụnyere",
-      "jobManagement": "Nchịkwa ọrụ na ọnụ ahịa"
+      "jobManagement": "Nchịkwa ọrụ na ọnụ ahịa",
+      "accounting": "Nkwado IFRS na US GAAP"
     }
   },
   "navFeatures": "Atụmatụ",
@@ -140,7 +141,10 @@
     "security": "Nchekwa Ụlọ Ọrụ",
     "security.description": "Nchekwa ọkwa ụlọ akụ na nrube isi mpaghara",
     "jobs": "Njikwa Ọrụ na Ọnụ Ahịa",
-    "jobs.description": "Nleba anya ọrụ site na mmalite ruo na njedebe na ọnụ ahịa n'oge ozugbo, ngwa mkpanaka, na nyocha uru"
+    "jobs.description": "Nleba anya ọrụ site na mmalite ruo na njedebe na ọnụ ahịa n'oge ozugbo, ngwa mkpanaka, na nyocha uru",
+    "accounting": "Ụkpụrụ Ndekọ Ego Abụọ",
+    "languages": "Nkwado Asụsụ Ọtụtụ",
+    "currencies": "Usoro Ego Ọtụtụ"
   },
   "trust": {
     "soc2Title": "SOC2 Kwadoro",
@@ -229,7 +233,19 @@
       "description": "Ruo ndị ahịa ma jikwaa azụmahịa gị n'asụsụ ị hụrụ n'anya. Site na Bekee ruo Swahili, Spanish ruo Mandarin, anyị na-akwado asụsụ karịrị 30 iji mee ka Dott ruo azụmahịa niile n'ụwa.",
       "imageAlt": "Ngosi interface asụsụ ọtụtụ",
       "availableIn": "Dị na:"
-    }
+    },
+    "vatGst": "Nkwado VAT/GST",
+    "taxReports": "Akụkọ ụtụ isi",
+    "eFilingReady": "Dị njikere maka itinye elektrọnik",
+    "ifrs": "IFRS maka mba 166+",
+    "gaap": "US GAAP maka azụmaahịa US",
+    "autoDetect": "Nchọpụta akpaaka site na mba",
+    "autoDetection": "Nchọpụta asụsụ akpaaka",
+    "rightToLeft": "Asụsụ aka nri gaa aka ekpe",
+    "regionalFormat": "Usoro ụbọchị/ọnụọgụ mpaghara",
+    "realTimeRates": "Ọnụego mgbanwe n'ezie",
+    "cryptoCurrency": "Nkwado cryptocurrency",
+    "currencyConversion": "Ntụgharị akpaaka"
   },
   "builtForYou": {
     "title": "Ewuru Maka Gị",

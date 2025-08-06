@@ -614,7 +614,8 @@
       "cardPayments": "Pagamentos com cartão em todo o mundo",
       "languages": "Mais de 20 idiomas suportados",
       "mobilePhone": "Aplicativo móvel incluído",
-      "jobManagement": "Gestão e custeio de trabalhos"
+      "jobManagement": "Gestão e custeio de trabalhos",
+      "accounting": "Suporte IFRS e US GAAP"
     }
   },
   "heroTitle": "Software empresarial tudo-em-um",
@@ -738,7 +739,7 @@
     "invoiceFactoring": "Factoring de faturas",
     "vatGst": "Suporte IVA/GST",
     "taxReports": "Relatórios fiscais",
-    "eFilingReady": "Pronto para e-declaração",
+    "eFilingReady": "Pronto para apresentação eletrônica",
     "customDashboards": "Painéis personalizados",
     "profitAnalysis": "Análise de lucros",
     "cashFlowForecast": "Previsão de fluxo de caixa",
@@ -768,7 +769,16 @@
     },
     "jobCosting": "Custeio de trabalhos em tempo real",
     "mobileFieldApp": "Aplicativo móvel para trabalhadores de campo",
-    "materialLaborTracking": "Rastreamento de materiais e mão de obra"
+    "materialLaborTracking": "Rastreamento de materiais e mão de obra",
+    "ifrs": "IFRS para mais de 166 países",
+    "gaap": "US GAAP para empresas dos EUA",
+    "autoDetect": "Detecção automática por país",
+    "autoDetection": "Detecção automática de idioma",
+    "rightToLeft": "Idiomas da direita para a esquerda",
+    "regionalFormat": "Formatos regionais de data/número",
+    "realTimeRates": "Taxas de câmbio em tempo real",
+    "cryptoCurrency": "Suporte a criptomoedas",
+    "currencyConversion": "Conversões automáticas"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1129,7 +1139,10 @@
     "security": "Segurança Empresarial",
     "security.description": "Segurança de nível bancário com conformidade regional",
     "jobs": "Gestão e Custeio de Trabalhos",
-    "jobs.description": "Acompanhamento de projetos de ponta a ponta com custeio em tempo real, aplicativo móvel de campo e análise de lucratividade"
+    "jobs.description": "Acompanhamento de projetos de ponta a ponta com custeio em tempo real, aplicativo móvel de campo e análise de lucratividade",
+    "accounting": "Padrões Contábeis Duplos",
+    "languages": "Suporte Multi-Idiomas",
+    "currencies": "Sistema Multi-Moeda"
   },
   "trust": {
     "soc2Title": "Conforme SOC2",

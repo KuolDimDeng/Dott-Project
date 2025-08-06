@@ -1,7 +1,7 @@
 {
   "about": "회사 소개",
   "features": {
-    "eyebrow": "완전한 비즈니스 솔루션",
+    "eyebrow": "완벽한 비즈니스 솔루션",
     "heading": "글로벌 성장에 필요한 모든 것",
     "subheading": "국경을 넘나드는 현대 비즈니스를 위해 설계된 강력한 도구",
     "operations": {
@@ -360,7 +360,8 @@
       "cardPayments": "전 세계 카드 결제",
       "languages": "20개 이상의 언어 지원",
       "mobilePhone": "모바일 앱 포함",
-      "jobManagement": "작업 관리 및 원가 계산"
+      "jobManagement": "작업 관리 및 원가 계산",
+      "accounting": "IFRS 및 US GAAP 지원"
     }
   },
   "heroTitle": "올인원 비즈니스 소프트웨어",
@@ -683,7 +684,10 @@
     "security": "엔터프라이즈 보안",
     "security.description": "지역 규정 준수와 함께 은행 수준의 보안",
     "jobs": "작업 관리 및 원가 계산",
-    "jobs.description": "실시간 원가 계산, 모바일 현장 앱 및 수익성 분석을 통한 전체 프로젝트 추적"
+    "jobs.description": "실시간 원가 계산, 모바일 현장 앱 및 수익성 분석을 통한 전체 프로젝트 추적",
+    "accounting": "이중 회계 표준",
+    "languages": "다국어 지원",
+    "currencies": "다중 통화 시스템"
   },
   "highlights": {
     "bluetooth": "블루투스 스캐너 통합",
@@ -730,7 +734,16 @@
     },
     "jobCosting": "실시간 작업 원가 계산",
     "mobileFieldApp": "현장 작업자를 위한 모바일 앱",
-    "materialLaborTracking": "자재 및 노동력 추적"
+    "materialLaborTracking": "자재 및 노동력 추적",
+    "ifrs": "166개국 이상의 IFRS",
+    "gaap": "미국 기업을 위한 US GAAP",
+    "autoDetect": "국가별 자동 감지",
+    "autoDetection": "자동 언어 감지",
+    "rightToLeft": "오른쪽에서 왼쪽 언어",
+    "regionalFormat": "지역 날짜/숫자 형식",
+    "realTimeRates": "실시간 환율",
+    "cryptoCurrency": "암호화폐 지원",
+    "currencyConversion": "자동 변환"
   },
   "trust": {
     "soc2Title": "SOC2 준수",

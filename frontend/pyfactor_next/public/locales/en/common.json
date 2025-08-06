@@ -623,7 +623,8 @@
       "cardPayments": "Accept card payments worldwide",
       "languages": "30+ languages supported",
       "mobilePhone": "Mobile phone app included",
-      "jobManagement": "Job management & costing"
+      "jobManagement": "Job management & costing",
+      "accounting": "IFRS & US GAAP support"
     }
   },
   "builtForYou": {
@@ -771,7 +772,16 @@
     },
     "jobCosting": "Real-time job costing",
     "mobileFieldApp": "Mobile field worker app",
-    "materialLaborTracking": "Material & labor tracking"
+    "materialLaborTracking": "Material & labor tracking",
+    "ifrs": "IFRS for 166+ countries",
+    "gaap": "US GAAP for US businesses",
+    "autoDetect": "Auto-detects based on country",
+    "autoDetection": "Auto language detection",
+    "rightToLeft": "Right-to-left languages",
+    "regionalFormat": "Regional date/number formats",
+    "realTimeRates": "Real-time exchange rates",
+    "cryptoCurrency": "Cryptocurrency support",
+    "currencyConversion": "Automatic conversions"
   },
   "heroSlideshow": {
     "slides": {
@@ -1176,7 +1186,10 @@
     "security": "Enterprise Security",
     "security.description": "Bank-grade security with regional compliance",
     "jobs": "Job Management & Costing",
-    "jobs.description": "End-to-end project tracking with real-time costing, mobile field app, and profitability analysis"
+    "jobs.description": "End-to-end project tracking with real-time costing, mobile field app, and profitability analysis",
+    "accounting": "Dual Accounting Standards",
+    "languages": "Multi-Language Support",
+    "currencies": "Multi-Currency System"
   },
   "trust": {
     "soc2Title": "SOC2 Compliant",
