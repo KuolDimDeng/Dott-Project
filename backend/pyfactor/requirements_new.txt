@@ -1,0 +1,4 @@
+# New dependencies for security and monitoring features
+psutil>=5.9.0
+phonenumbers>=8.13.0
+drf-yasg>=1.21.0
