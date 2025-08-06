@@ -220,7 +220,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       try {
         setProductsLoading(true);
         // Fetch from backend
-        const response = await fetch('/api/products/', {
+        const response = await fetch('/api/products', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -296,7 +296,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     const fetchCustomers = async () => {
       try {
         // Call the backend CRM customers endpoint directly
-        const response = await fetch('/api/backend/crm/customers/', {
+        const response = await fetch('/api/backend/crm/customers', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -357,7 +357,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchBusinessInfo = async () => {
       try {
-        const response = await fetch('/api/users/me/', {
+        const response = await fetch('/api/users/me', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

@@ -263,7 +263,8 @@
       "Bash(./deploy_destination_based_tax.sh:*)",
       "WebFetch(domain:stripe.com)",
       "WebFetch(domain:docs.stripe.com)",
-      "Bash(./deploy_wise_integration.sh:*)"
+      "Bash(./deploy_wise_integration.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/test_pos_api.sh)"
     ],
     "deny": []
   }
