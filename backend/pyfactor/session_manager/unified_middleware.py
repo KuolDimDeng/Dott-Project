@@ -41,6 +41,8 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         '/api/auth/oauth-exchange/',  # OAuth token exchange
         '/api/auth/deployment-check/',  # Deployment verification
         '/api/auth/forgot-password',
+        '/api/sessions/public/',  # Public session verification after login
+        '/api/sessions/consolidated-auth/',  # Consolidated auth session creation
         '/api/payments/webhooks/',
         '/api/onboarding/webhooks/',
         '/health/',
