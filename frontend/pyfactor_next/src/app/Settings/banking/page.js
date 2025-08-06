@@ -11,7 +11,7 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Country codes where Plaid is available
 const PLAID_COUNTRIES = [
