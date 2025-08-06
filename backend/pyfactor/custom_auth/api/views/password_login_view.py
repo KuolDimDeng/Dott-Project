@@ -61,9 +61,14 @@ class PasswordLoginView(APIView):
             auth0_client_secret = settings.AUTH0_CLIENT_SECRET
             auth0_audience = settings.AUTH0_AUDIENCE
             
-            # Use the actual Auth0 domain (not custom domain) for token endpoint
-            if auth0_domain == 'auth.dottapps.com':
+            # IMPORTANT: Always use the actual Auth0 domain for API calls
+            # Custom domains don't support the /oauth/token endpoint
+            # Even if auth0_domain is set to custom domain, we must use the real one
+            if auth0_domain == 'auth.dottapps.com' or 'dottapps.com' in auth0_domain:
                 # Use the real Auth0 domain for API calls
+                auth0_api_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
+            elif '.auth0.com' not in auth0_domain:
+                # If it's not an auth0.com domain, it's likely a custom domain
                 auth0_api_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
             else:
                 auth0_api_domain = auth0_domain

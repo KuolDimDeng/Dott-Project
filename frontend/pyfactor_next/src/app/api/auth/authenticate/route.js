@@ -52,8 +52,9 @@ export async function POST(request) {
     }
     
     // Get Auth0 configuration
-    // Use custom domain for embedded login
-    const auth0Domain = process.env.AUTH0_CUSTOM_DOMAIN || 'auth.dottapps.com';
+    // IMPORTANT: Password grant MUST use the actual Auth0 domain, not custom domain
+    // Custom domains don't support the /oauth/token endpoint for password grants
+    const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com';
     const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
     const clientSecret = process.env.AUTH0_CLIENT_SECRET;
     const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
