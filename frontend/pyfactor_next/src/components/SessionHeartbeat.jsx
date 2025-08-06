@@ -24,7 +24,7 @@ const SessionHeartbeat = ({
     }
 
     try {
-      const response = await fetch('/api/sessions/security/heartbeat/', {
+      const response = await fetch('/api/sessions/security/heartbeat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
