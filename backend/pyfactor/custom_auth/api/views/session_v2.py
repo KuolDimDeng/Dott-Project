@@ -13,7 +13,6 @@ from session_manager.models import UserSession
 from session_manager.services import session_service
 from session_manager.authentication import SessionAuthentication
 from users.models import UserProfile
-from tenants.models import TenantUser
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -91,9 +90,8 @@ class SessionV2View(APIView):
             user = session.user
             profile = UserProfile.objects.filter(user=user).first()
             
-            # Get tenant info
-            tenant_user = TenantUser.objects.filter(user=user).select_related('tenant').first()
-            tenant = tenant_user.tenant if tenant_user else None
+            # Get tenant info (tenant_id is the user's ID in this system)
+            tenant_id = user.id
             
             # Build response
             response_data = {
@@ -125,14 +123,12 @@ class SessionV2View(APIView):
                     'subscription_status': profile.subscription_status,
                 })
             
-            # Add tenant data if exists
-            if tenant:
-                response_data['tenant'] = {
-                    'id': tenant.id,
-                    'name': tenant.name,
-                    'slug': tenant.slug,
-                }
-                response_data['user']['role'] = tenant_user.role
+            # Add tenant data (in this system, tenant_id is the user's ID)
+            response_data['tenant'] = {
+                'id': tenant_id,
+                'name': profile.business_name if profile else f"User {user.id}",
+            }
+            response_data['user']['tenant_id'] = tenant_id
             
             logger.info(f'[SessionV2] Session validated for user {user.email}')
             
