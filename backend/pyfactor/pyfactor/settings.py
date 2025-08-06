@@ -800,14 +800,14 @@ MIDDLEWARE = [
     # 7. CSRF Protection (security requirement)
     'django.middleware.csrf.CsrfViewMiddleware',
     
-    # 8. Django Auth (required for admin)
+    # 8. Unified Session Management (must run before Django Auth to set request.user)
+    'session_manager.unified_middleware.UnifiedSessionMiddleware',
+    
+    # 9. Django Auth (required for admin)
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     
-    # 9. Django Messages (required for admin)
+    # 10. Django Messages (required for admin)
     'django.contrib.messages.middleware.MessageMiddleware',
-    
-    # 10. Unified Session Management (replaces 4 session middleware)
-    'session_manager.unified_middleware.UnifiedSessionMiddleware',
     
     # 11. Unified Tenant & Auth (replaces 6 tenant/RLS middleware)
     'custom_auth.unified_middleware.UnifiedTenantMiddleware',

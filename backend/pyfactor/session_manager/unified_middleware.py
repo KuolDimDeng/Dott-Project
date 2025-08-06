@@ -95,7 +95,17 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         
         # Attach session to request
         request.session_data = session
-        request.user = session.get('user')
+        
+        # Set the actual Django user object on the request
+        user_obj = session.get('user')
+        if user_obj:
+            request.user = user_obj
+            request._cached_user = user_obj  # For Django's auth middleware compatibility
+        else:
+            # Fallback to AnonymousUser if no user in session
+            from django.contrib.auth.models import AnonymousUser
+            request.user = AnonymousUser()
+            request._cached_user = AnonymousUser()
         
         # Device fingerprint validation (if enabled)
         if getattr(settings, 'ENFORCE_DEVICE_FINGERPRINT', False):
