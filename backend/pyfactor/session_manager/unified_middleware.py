@@ -42,7 +42,9 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         '/api/auth/deployment-check/',  # Deployment verification
         '/api/auth/forgot-password',
         '/api/sessions/public/',  # Public session verification after login
+        '/api/sessions/validate/',  # Session validation endpoint
         '/api/sessions/consolidated-auth/',  # Consolidated auth session creation
+        '/api/sessions/',  # General session endpoints (for specific session IDs)
         '/api/payments/webhooks/',
         '/api/onboarding/webhooks/',
         '/health/',
