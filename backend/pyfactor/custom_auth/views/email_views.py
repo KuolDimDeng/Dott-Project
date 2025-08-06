@@ -296,7 +296,6 @@ This message was sent from the contact form on dottapps.com
                 reply_to=[email]
             )
             support_email.content_subtype = 'html'
-            support_email.attach_alternative(text_content, 'text/plain')
             support_email.send(fail_silently=False)
             
             # Send auto-reply to the user
@@ -370,7 +369,6 @@ This is an automated response. Please do not reply directly to this email.
                     to=[email]
                 )
                 auto_reply.content_subtype = 'html'
-                auto_reply.attach_alternative(auto_reply_text, 'text/plain')
                 auto_reply.send(fail_silently=True)  # Don't fail the whole request if auto-reply fails
                 logger.info(f'[ContactForm] Auto-reply sent to {email}')
             except Exception as e:
