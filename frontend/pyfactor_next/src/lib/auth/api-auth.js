@@ -57,11 +57,12 @@ export function createAuthenticatedRoute(handler) {
 
       // Validate session with backend
       const validationResponse = await fetch(
-        `${BACKEND_URL}/api/sessions/${sessionId.value}/`,
+        `${BACKEND_URL}/api/auth/session-v2`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Session ${sessionId.value}`,
           },
           cache: 'no-store',
         }

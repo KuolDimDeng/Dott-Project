@@ -47,11 +47,12 @@ export async function validateSession(sessionId) {
   }
 
   try {
-    // Validate with backend
-    const response = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}/`, {
+    // Validate with backend using session-v2 endpoint
+    const response = await fetch(`${BACKEND_URL}/api/auth/session-v2`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sessionId}`,
       },
       cache: 'no-store' // Disable Next.js caching for session validation
     });
@@ -177,11 +178,13 @@ export function clearSessionCookies(response) {
  */
 export async function refreshSession(sessionId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}/refresh`, {
-      method: 'POST',
+    const response = await fetch(`${BACKEND_URL}/api/auth/session-v2`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sessionId}`,
       },
+      body: JSON.stringify({ action: 'refresh' }),
       cache: 'no-store'
     });
 
@@ -199,10 +202,11 @@ export async function refreshSession(sessionId) {
  */
 export async function destroySession(sessionId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}/`, {
+    const response = await fetch(`${BACKEND_URL}/api/auth/session-v2`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sessionId}`,
       },
       cache: 'no-store'
     });

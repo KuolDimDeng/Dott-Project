@@ -18,6 +18,7 @@ from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
+from .views.session_v2 import SessionV2View
 from custom_auth.views.email_views import SendEmailView, ContactFormView
 # Password login is now in auth_views
 # from .views.password_login_view import PasswordLoginView
@@ -43,6 +44,9 @@ urlpatterns = [
     path('auth/deployment-check/', auth_views.DeploymentCheckView.as_view(), name='deployment-check'),
     # path('auth/test-endpoint/', TestEndpointView.as_view(), name='test-endpoint'),
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
+    
+    # Industry-standard session management v2
+    path('auth/session-v2', SessionV2View.as_view(), name='session-v2'),
     
     # Unified profile endpoint (consolidates all profile endpoints)
     path('auth/profile', UnifiedProfileView.as_view(), name='unified-profile'),
