@@ -143,7 +143,7 @@ urlpatterns = [
     path('', include('users.urls')),
     
     # Authentication routes  
-    path('accounts/', include('allauth.urls')),
+    # path('accounts/', include('allauth.urls')),  # Commented out - using Auth0
     path('auth/', include('custom_auth.urls')),
     
     # Onboarding routes (includes Stripe webhook)
