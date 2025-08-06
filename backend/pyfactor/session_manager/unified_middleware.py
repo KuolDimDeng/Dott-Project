@@ -36,6 +36,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
     SESSION_EXEMPT_PATHS = [
         '/api/auth/signin',
         '/api/auth/signup', 
+        '/api/auth/session-v2',  # Industry-standard session management v2
         '/api/auth/password-login/',  # Password-based authentication endpoint
         '/api/auth/register/',  # Email/password registration
         '/api/auth/oauth-exchange/',  # OAuth token exchange
