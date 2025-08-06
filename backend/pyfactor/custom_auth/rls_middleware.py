@@ -42,6 +42,7 @@ class RowLevelSecurityMiddleware:
             '/favicon.ico',
             '/api/users/api/currency/diagnostic/',
             '/api/users/api/currency/test-public/',
+            '/api/payments/webhooks/',  # All payment webhooks are exempt
         ]
         
         # Check if RLS functions exist
