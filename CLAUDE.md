@@ -287,6 +287,22 @@
 - **Removed**: Inventory methods, statement naming, complex rules
 - **Documentation**: `/docs/ACCOUNTING_STANDARDS_FEATURE.md`
 
+### [53.0.0] - 2025-08-06 - CURRENT - Wise/Stripe Banking Integration
+- **Purpose**: Enable non-Plaid countries to receive POS payments via Wise
+- **Security**: Bank details stored in Stripe Connect, only last 4 digits local
+- **Payment Flow**: Customer → Stripe → Platform → Wise → User Bank
+- **Fees**: Stripe (2.9% + $0.30) + Platform (0.1% + $0.30) + Wise (user pays)
+- **Webhook**: `/api/payments/webhooks/stripe/pos-settlements/`
+- **Cron Job**: Daily settlement processing at 2 AM UTC
+- **Countries**: 80+ non-Plaid countries supported
+- **Minimum Settlement**: $10 (configurable)
+- **Documentation**: `/docs/WISE_STRIPE_INTEGRATION.md`
+- **Key Files**: 
+  - `/banking/models.py` (WiseItem, PaymentSettlement)
+  - `/banking/services/wise_service.py`
+  - `/banking/services/stripe_bank_service.py`
+  - `/Settings/banking/page.js`
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
