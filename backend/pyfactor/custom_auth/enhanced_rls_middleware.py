@@ -82,6 +82,8 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/api/pricing/',  # Public pricing endpoints for country-based pricing
             '/api/onboarding/api/debug/',  # Debug endpoints for testing
             '/api/payments/webhooks/paystack/',  # Paystack webhook doesn't have auth
+            '/api/payments/webhooks/stripe/pos-settlements/',  # POS settlement webhook for Wise transfers
+            '/api/payments/webhooks/stripe/tax-filing/',  # Tax filing webhook  
             '/api/contact-form/',  # Public contact form endpoint from landing page
         ]
         
