@@ -48,6 +48,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         '/api/sessions/',  # General session endpoints (for specific session IDs)
         '/api/payments/webhooks/',
         '/api/onboarding/webhooks/',
+        '/api/contact-form/',  # Public contact form submissions
         '/health/',
         '/static/',
         '/media/',
