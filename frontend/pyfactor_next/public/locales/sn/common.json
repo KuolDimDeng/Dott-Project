@@ -76,11 +76,13 @@
     },
     "financial": {
       "title": "Kutonga Mari",
-      "description": "Kutonga kuzere kwemari yebhizinesi rako"
+      "description": "Kutonga kuzere kwemari yebhizinesi rako",
+      "heading": "Kutonga kuzere pamusoro pemari yebhizinesi rako"
     },
     "global": {
       "title": "Zvishandiso Zvebhizinesi Repasi Rose",
-      "description": "Zvese zvaunoda kushanda pasi rose"
+      "description": "Zvese zvaunoda kushanda pasi rose",
+      "heading": "Zvese zvaunoda kumabasa epasi rose"
     },
     "trust": {
       "title": "Yakavakirwa Kuchengetedzeka neKutevedzera"

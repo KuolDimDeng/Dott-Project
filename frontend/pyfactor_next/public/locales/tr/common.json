@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Finansal Yönetim",
-      "description": "İş finanslarınızüzerinde tam kontrol"
+      "description": "İş finanslarınızüzerinde tam kontrol",
+      "heading": "İşletme finansınız üzerinde tam kontrol"
     },
     "global": {
       "title": "Küresel İş Araçları",
-      "description": "Uluslararası faaliyet için ihtiyaç duyduğunuz her şey"
+      "description": "Uluslararası faaliyet için ihtiyaç duyduğunuz her şey",
+      "heading": "Uluslararası operasyonlar için gereken her şey"
     },
     "trust": {
       "title": "Güvenlik ve Uyumluluk İçin Yapıldı"

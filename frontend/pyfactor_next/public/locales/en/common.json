@@ -92,11 +92,13 @@
     },
     "financial": {
       "title": "Financial Management",
-      "description": "Complete control over your business finances"
+      "description": "Complete control over your business finances",
+      "heading": "Complete control over your business finances"
     },
     "global": {
       "title": "Global Business Tools",
-      "description": "Everything you need to operate internationally"
+      "description": "Everything you need to operate internationally",
+      "heading": "Everything you need for international operations"
     },
     "trust": {
       "title": "Built for Security & Compliance"

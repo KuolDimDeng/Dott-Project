@@ -76,11 +76,13 @@
     },
     "financial": {
       "title": "Zarządzanie Finansowe",
-      "description": "Pełna kontrola nad finansami firmy"
+      "description": "Pełna kontrola nad finansami firmy",
+      "heading": "Pełna kontrola nad finansami firmy"
     },
     "global": {
       "title": "Globalne Narzędzia Biznesowe",
-      "description": "Wszystko czego potrzebujesz do działania międzynarodowego"
+      "description": "Wszystko czego potrzebujesz do działania międzynarodowego",
+      "heading": "Wszystko czego potrzebujesz do działań międzynarodowych"
     },
     "trust": {
       "title": "Stworzone dla Bezpieczeństwa i Zgodności"

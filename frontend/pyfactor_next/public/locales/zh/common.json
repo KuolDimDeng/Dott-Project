@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "财务管理",
-      "description": "全面控制您的企业财务"
+      "description": "全面控制您的企业财务",
+      "heading": "完全掌控您的企业财务"
     },
     "global": {
       "title": "全球业务工具",
-      "description": "国际化运营所需的一切"
+      "description": "国际化运营所需的一切",
+      "heading": "国际运营所需的一切"
     },
     "trust": {
       "title": "为安全和合规而构建"

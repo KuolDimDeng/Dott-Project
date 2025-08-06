@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Finanzmanagement",
-      "description": "Vollständige Kontrolle über Ihre Unternehmensfinanzen"
+      "description": "Vollständige Kontrolle über Ihre Unternehmensfinanzen",
+      "heading": "Vollständige Kontrolle über Ihre Unternehmensfinanzen"
     },
     "global": {
       "title": "Globale Geschäftstools",
-      "description": "Alles was Sie für internationale Geschäfte brauchen"
+      "description": "Alles was Sie für internationale Geschäfte brauchen",
+      "heading": "Alles was Sie für internationale Geschäfte benötigen"
     },
     "trust": {
       "title": "Gebaut für Sicherheit & Compliance"

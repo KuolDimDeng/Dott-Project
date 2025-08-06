@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Gestion Financière",
-      "description": "Contrôle complet sur les finances de votre entreprise"
+      "description": "Contrôle complet sur les finances de votre entreprise",
+      "heading": "Contrôle complet sur les finances de votre entreprise"
     },
     "global": {
       "title": "Outils d'Entreprise Globale",
-      "description": "Tout ce dont vous avez besoin pour opérer internationalement"
+      "description": "Tout ce dont vous avez besoin pour opérer internationalement",
+      "heading": "Tout ce dont vous avez besoin pour les opérations internationales"
     },
     "trust": {
       "title": "Conçu pour la Sécurité et la Conformité"

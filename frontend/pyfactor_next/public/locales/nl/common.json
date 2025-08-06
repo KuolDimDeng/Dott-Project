@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Financieel beheer",
-      "description": "Volledige controle over uw bedrijfsfinanciën"
+      "description": "Volledige controle over uw bedrijfsfinanciën",
+      "heading": "Volledige controle over uw bedrijfsfinanciën"
     },
     "global": {
       "title": "Wereldwijde bedrijfstools",
-      "description": "Alles wat u nodig heeft om internationaal te opereren"
+      "description": "Alles wat u nodig heeft om internationaal te opereren",
+      "heading": "Alles wat u nodig heeft voor internationale operaties"
     },
     "trust": {
       "title": "Gebouwd voor veiligheid en compliance"

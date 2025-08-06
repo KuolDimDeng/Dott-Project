@@ -76,11 +76,13 @@
     },
     "financial": {
       "title": "Njikwa Ego",
-      "description": "Njikwa zuru ezu nke ego azụmahịa gị"
+      "description": "Njikwa zuru ezu nke ego azụmahịa gị",
+      "heading": "Njikwa zuru ezu na ego azụmahịa gị"
     },
     "global": {
       "title": "Ngwaọrụ Azụmahịa Ụwa",
-      "description": "Ihe niile ị chọrọ iji rụọ ọrụ n'ụwa niile"
+      "description": "Ihe niile ị chọrọ iji rụọ ọrụ n'ụwa niile",
+      "heading": "Ihe niile ị chọrọ maka ọrụ mba ụwa"
     },
     "trust": {
       "title": "Ewuru maka Nchekwa na Nrube isi"

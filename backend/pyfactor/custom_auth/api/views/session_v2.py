@@ -12,7 +12,7 @@ from rest_framework.permissions import AllowAny
 from session_manager.models import UserSession
 from session_manager.services import session_service
 from session_manager.authentication import SessionAuthentication
-from custom_auth.models import UserProfile
+from users.models import UserProfile
 from tenants.models import TenantUser
 import uuid
 

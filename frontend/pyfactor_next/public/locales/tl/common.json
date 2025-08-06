@@ -76,11 +76,13 @@
     },
     "financial": {
       "title": "Pamamahala ng Pananalapi",
-      "description": "Kumpletong kontrol sa pananalapi ng iyong negosyo"
+      "description": "Kumpletong kontrol sa pananalapi ng iyong negosyo",
+      "heading": "Kumpletong kontrol sa pananalapi ng iyong negosyo"
     },
     "global": {
       "title": "Pandaigdigang Kasangkapan sa Negosyo",
-      "description": "Lahat ng kailangan mo para mag-operate sa buong mundo"
+      "description": "Lahat ng kailangan mo para mag-operate sa buong mundo",
+      "heading": "Lahat ng kailangan mo para sa pandaigdigang operasyon"
     },
     "trust": {
       "title": "Binuo para sa Seguridad at Pagsunod"

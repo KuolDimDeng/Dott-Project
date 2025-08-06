@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Usimamizi wa Kifedha",
-      "description": "Udhibiti kamili wa fedha za biashara yako"
+      "description": "Udhibiti kamili wa fedha za biashara yako",
+      "heading": "Udhibiti kamili wa fedha za biashara yako"
     },
     "global": {
       "title": "Zana za Biashara ya Kimataifa",
-      "description": "Kila kitu unachohitaji kufanya biashara kimataifa"
+      "description": "Kila kitu unachohitaji kufanya biashara kimataifa",
+      "heading": "Kila kitu unachohitaji kwa shughuli za kimataifa"
     },
     "trust": {
       "title": "Imejengwa kwa Usalama na Kufuata Sheria"

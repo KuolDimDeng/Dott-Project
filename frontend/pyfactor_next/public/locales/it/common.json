@@ -76,11 +76,13 @@
     },
     "financial": {
       "title": "Gestione Finanziaria",
-      "description": "Controllo completo sulle finanze aziendali"
+      "description": "Controllo completo sulle finanze aziendali",
+      "heading": "Controllo completo sulle finanze aziendali"
     },
     "global": {
       "title": "Strumenti Aziendali Globali",
-      "description": "Tutto il necessario per operare a livello internazionale"
+      "description": "Tutto il necessario per operare a livello internazionale",
+      "heading": "Tutto il necessario per le operazioni internazionali"
     },
     "trust": {
       "title": "Costruito per Sicurezza e Conformità"

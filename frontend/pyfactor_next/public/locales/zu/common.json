@@ -10,11 +10,13 @@
     },
     "financial": {
       "title": "Ukulawula Kwezezimali",
-      "description": "Ukulawula okugcwele kwezezimali zebhizinisi lakho"
+      "description": "Ukulawula okugcwele kwezezimali zebhizinisi lakho",
+      "heading": "Ukulawula okuphelele kwezimali zebhizinisi lakho"
     },
     "global": {
       "title": "Amathuluzi Ebhizinisi Lomhlaba Jikelele",
-      "description": "Konke okudingayo ukuze usebenze emhlabeni wonke"
+      "description": "Konke okudingayo ukuze usebenze emhlabeni wonke",
+      "heading": "Konke okudingayo ukusebenza emhlabeni jikelele"
     },
     "trust": {
       "title": "Yakhelwe Ukuphepha Nokuthobela"

@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Manajemen Keuangan",
-      "description": "Kontrol penuh atas keuangan bisnis Anda"
+      "description": "Kontrol penuh atas keuangan bisnis Anda",
+      "heading": "Kontrol penuh atas keuangan bisnis Anda"
     },
     "global": {
       "title": "Alat Bisnis Global",
-      "description": "Semua yang Anda butuhkan untuk beroperasi secara internasional"
+      "description": "Semua yang Anda butuhkan untuk beroperasi secara internasional",
+      "heading": "Semua yang Anda butuhkan untuk operasi internasional"
     },
     "trust": {
       "title": "Dibangun untuk Keamanan & Kepatuhan"

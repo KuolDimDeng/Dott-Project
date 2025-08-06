@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Ìṣàkóso Owó",
-      "description": "Ìṣàkóso pípé lórí owó iṣẹ́ rẹ"
+      "description": "Ìṣàkóso pípé lórí owó iṣẹ́ rẹ",
+      "heading": "Iṣakoso pipe lori owo-iṣowo rẹ"
     },
     "global": {
       "title": "Àwọn Irinṣẹ́ Iṣẹ́ Àgbáyé",
-      "description": "Gbogbo ohun tí o nílò láti ṣiṣẹ́ ní àgbáyé"
+      "description": "Gbogbo ohun tí o nílò láti ṣiṣẹ́ ní àgbáyé",
+      "heading": "Ohun gbogbo ti o nilo fun awọn iṣẹ kariaye"
     },
     "trust": {
       "title": "A Kọ́ Fún Aabo & Ìfàragbá"

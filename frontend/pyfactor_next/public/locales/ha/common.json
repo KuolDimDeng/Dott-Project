@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Sarrafa Kuɗi",
-      "description": "Cikakken iko akan kuɗin kasuwancin ku"
+      "description": "Cikakken iko akan kuɗin kasuwancin ku",
+      "heading": "Cikakken iko akan kuɗin kasuwancin ku"
     },
     "global": {
       "title": "Kayan Aikin Kasuwanci na Duniya",
-      "description": "Duk abin da kuke bukata don aiki a duniya"
+      "description": "Duk abin da kuke bukata don aiki a duniya",
+      "heading": "Duk abin da kuke buƙata don ayyukan ƙasa da ƙasa"
     },
     "trust": {
       "title": "An Gina Don Tsaro da Cika Dokoki"

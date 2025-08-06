@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "財務管理",
-      "description": "ビジネス財務の完全な管理"
+      "description": "ビジネス財務の完全な管理",
+      "heading": "ビジネス財務の完全なコントロール"
     },
     "global": {
       "title": "グローバルビジネスツール",
-      "description": "国際的な運営に必要なすべて"
+      "description": "国際的な運営に必要なすべて",
+      "heading": "国際事業に必要なすべて"
     },
     "trust": {
       "title": "セキュリティとコンプライアンスのために構築"

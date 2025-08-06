@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Quản lý tài chính",
-      "description": "Kiểm soát hoàn toàn tài chính doanh nghiệp của bạn"
+      "description": "Kiểm soát hoàn toàn tài chính doanh nghiệp của bạn",
+      "heading": "Kiểm soát hoàn toàn tài chính doanh nghiệp của bạn"
     },
     "global": {
       "title": "Công cụ kinh doanh toàn cầu",
-      "description": "Tất cả những gì bạn cần để hoạt động quốc tế"
+      "description": "Tất cả những gì bạn cần để hoạt động quốc tế",
+      "heading": "Mọi thứ bạn cần cho hoạt động quốc tế"
     },
     "trust": {
       "title": "Xây dựng cho bảo mật và tuân thủ"

@@ -91,11 +91,13 @@
     },
     "financial": {
       "title": "Gestão Financeira",
-      "description": "Controle completo sobre as finanças do seu negócio"
+      "description": "Controle completo sobre as finanças do seu negócio",
+      "heading": "Controle total sobre as finanças do seu negócio"
     },
     "global": {
       "title": "Ferramentas de Negócios Globais",
-      "description": "Tudo o que você precisa para operar internacionalmente"
+      "description": "Tudo o que você precisa para operar internacionalmente",
+      "heading": "Tudo o que você precisa para operações internacionais"
     },
     "trust": {
       "title": "Construído para Segurança e Conformidade"
