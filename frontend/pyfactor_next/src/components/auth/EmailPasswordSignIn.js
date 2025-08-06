@@ -323,14 +323,18 @@ export default function EmailPasswordSignIn() {
   const handleLogin = async () => {
     const { email, password } = formData;
 
-    console.log('[EmailPasswordSignIn] handleLogin called with email:', email);
-    console.log('[EmailPasswordSignIn] Password length:', password?.length);
+    console.log('🔐 [EmailPasswordSignIn] ===== LOGIN ATTEMPT STARTED =====');
+    console.log('🔐 [EmailPasswordSignIn] Email:', email);
+    console.log('🔐 [EmailPasswordSignIn] Password length:', password?.length);
+    console.log('🔐 [EmailPasswordSignIn] Timestamp:', new Date().toISOString());
+    console.log('🔐 [EmailPasswordSignIn] Browser:', navigator.userAgent);
 
     // Track sign in started
     trackEvent(posthog, EVENTS.SIGN_IN_STARTED, { email });
 
     try {
-      console.log('[EmailPasswordSignIn] Attempting login via /api/auth/consolidated-login');
+      console.log('📡 [EmailPasswordSignIn] Calling /api/auth/consolidated-login');
+      console.log('📡 [EmailPasswordSignIn] Request payload:', { email, passwordLength: password?.length });
       
       // Use consolidated login endpoint for atomic operation with timeout
       const controller = new AbortController();
@@ -343,12 +347,14 @@ export default function EmailPasswordSignIn() {
         clearTimeout(timeoutId);
       });
 
-      console.log('[EmailPasswordSignIn] Login response status:', loginResponse.status);
-      console.log('[EmailPasswordSignIn] Login response headers:', loginResponse.headers);
+      console.log('📨 [EmailPasswordSignIn] Response received');
+      console.log('📨 [EmailPasswordSignIn] Status:', loginResponse.status);
+      console.log('📨 [EmailPasswordSignIn] Status Text:', loginResponse.statusText);
+      console.log('📨 [EmailPasswordSignIn] Headers:', Object.fromEntries(loginResponse.headers.entries()));
 
       const loginResult = await loginResponse.json();
-      console.log('[EmailPasswordSignIn] Login result:', loginResult);
-      console.log('[EmailPasswordSignIn] Login result details:', {
+      console.log('📋 [EmailPasswordSignIn] Parsed response body:', loginResult);
+      console.log('📋 [EmailPasswordSignIn] Response breakdown:', {
         success: loginResult.success,
         hasSessionToken: !!loginResult.sessionToken,
         hasSession_token: !!loginResult.session_token,
@@ -386,7 +392,18 @@ export default function EmailPasswordSignIn() {
         
         // For support@dottapps.com, log but don't block
         if (anomalies.some(a => a.severity === 'high') && email === 'support@dottapps.com') {
-          console.warn('[EmailPasswordSignIn] Bypassing lockout for support@dottapps.com (debugging mode)');
+          console.warn('⚠️ [EmailPasswordSignIn] Bypassing lockout for support@dottapps.com (debugging mode)');
+          console.warn('⚠️ [EmailPasswordSignIn] Anomalies detected:', anomalies);
+        }
+        
+        // DEBUG: Log the exact error for support@dottapps.com
+        if (email === 'support@dottapps.com') {
+          console.error('❌ [EmailPasswordSignIn] LOGIN FAILED FOR SUPPORT');
+          console.error('❌ [EmailPasswordSignIn] Status:', loginResponse.status);
+          console.error('❌ [EmailPasswordSignIn] Error:', loginResult.error);
+          console.error('❌ [EmailPasswordSignIn] Debug Log:', loginResult.debugLog);
+          console.error('❌ [EmailPasswordSignIn] Backend URL:', loginResult.backendUrl);
+          console.error('❌ [EmailPasswordSignIn] Env API URL:', loginResult.envApiUrl);
         }
         
         // Check for backend unavailable errors

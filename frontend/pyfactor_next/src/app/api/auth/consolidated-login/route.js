@@ -59,10 +59,14 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    console.log('[ConsolidatedLogin] Starting atomic login flow for:', email);
-    console.log('[ConsolidatedLogin] Environment:', {
+    console.log('🔄 [ConsolidatedLogin] ===== CONSOLIDATED LOGIN START =====');
+    console.log('🔄 [ConsolidatedLogin] Email:', email);
+    console.log('🔄 [ConsolidatedLogin] Password length:', password?.length);
+    console.log('🔄 [ConsolidatedLogin] Timestamp:', new Date().toISOString());
+    console.log('🔄 [ConsolidatedLogin] Environment:', {
       baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
       apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      auth0Domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
       hasAuth0ClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
       hasAuth0Secret: !!process.env.AUTH0_SECRET
     });
@@ -70,12 +74,15 @@ export async function POST(request) {
     // Step 1: Authenticate with Auth0
     // In production/staging, Next.js API routes are relative to the current domain
     const authUrl = '/api/auth/authenticate';
-    console.log('[ConsolidatedLogin] Auth endpoint:', authUrl);
+    console.log('🎯 [ConsolidatedLogin] Step 1: Calling Auth0 authenticate endpoint');
+    console.log('🎯 [ConsolidatedLogin] Auth endpoint:', authUrl);
     
     // When running in a server-side Next.js API route, we need the full URL
     const protocol = request.headers.get('x-forwarded-proto') || 'https';
     const fullAuthUrl = `${protocol}://${host}${authUrl}`;
-    console.log('[ConsolidatedLogin] Full auth URL:', fullAuthUrl);
+    console.log('🌐 [ConsolidatedLogin] Full auth URL:', fullAuthUrl);
+    console.log('🌐 [ConsolidatedLogin] Protocol:', protocol);
+    console.log('🌐 [ConsolidatedLogin] Host:', host);
     
     debugInfo.authRequest = {
       url: fullAuthUrl,
@@ -84,6 +91,7 @@ export async function POST(request) {
       hasCfIp: !!request.headers.get('cf-connecting-ip')
     };
     
+    console.log('📤 [ConsolidatedLogin] Making auth request...');
     const authResponse = await fetch(fullAuthUrl, {
       method: 'POST',
       headers: {
@@ -92,6 +100,9 @@ export async function POST(request) {
       },
       body: JSON.stringify({ email, password })
     });
+    console.log('📥 [ConsolidatedLogin] Auth response received');
+    console.log('📥 [ConsolidatedLogin] Auth status:', authResponse.status);
+    console.log('📥 [ConsolidatedLogin] Auth status text:', authResponse.statusText);
     
     debugInfo.authResponse = {
       status: authResponse.status,

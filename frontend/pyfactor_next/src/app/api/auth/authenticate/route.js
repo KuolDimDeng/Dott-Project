@@ -55,6 +55,18 @@ export async function POST(request) {
     // IMPORTANT: Password grant MUST use the actual Auth0 domain, not custom domain
     // Custom domains don't support the /oauth/token endpoint for password grants
     const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com';
+    
+    // DEBUG: Log all environment variables to understand configuration
+    console.log('🔍 [AUTH DEBUG] ===== ENVIRONMENT CONFIGURATION =====');
+    console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_AUTH0_DOMAIN:', process.env.NEXT_PUBLIC_AUTH0_DOMAIN);
+    console.log('🔍 [AUTH DEBUG] AUTH0_DOMAIN:', process.env.AUTH0_DOMAIN);
+    console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_AUTH0_CLIENT_ID:', process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID);
+    console.log('🔍 [AUTH DEBUG] AUTH0_CLIENT_ID:', process.env.AUTH0_CLIENT_ID);
+    console.log('🔍 [AUTH DEBUG] AUTH0_CLIENT_SECRET exists:', !!process.env.AUTH0_CLIENT_SECRET);
+    console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_AUTH0_AUDIENCE:', process.env.NEXT_PUBLIC_AUTH0_AUDIENCE);
+    console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+    console.log('🔍 [AUTH DEBUG] Final auth0Domain being used:', auth0Domain);
+    console.log('🔍 [AUTH DEBUG] ===== END ENVIRONMENT CONFIGURATION =====');
     const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
     const clientSecret = process.env.AUTH0_CLIENT_SECRET;
     const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
@@ -80,6 +92,14 @@ export async function POST(request) {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
       const cookieStore = cookies();
       
+      // DEBUG: Log backend proxy details
+      console.log('🔐 [BACKEND PROXY] ===== BACKEND AUTHENTICATION =====');
+      console.log('🔐 [BACKEND PROXY] Using backend authentication');
+      console.log('🔐 [BACKEND PROXY] API URL:', API_URL);
+      console.log('🔐 [BACKEND PROXY] Email:', email);
+      console.log('🔐 [BACKEND PROXY] Password length:', password?.length);
+      console.log('🔐 [BACKEND PROXY] ===================================');
+      
       addDebugEntry('Backend proxy configuration', {
         apiUrl: API_URL,
         endpoint: `${API_URL}/api/auth/password-login/`,
@@ -91,6 +111,10 @@ export async function POST(request) {
         const backendUrl = `${API_URL}/api/auth/password-login/`;
         addDebugEntry('Making backend request', { url: backendUrl });
         
+        // DEBUG: Log the exact request being made
+        console.log('🌐 [BACKEND REQUEST] Making request to:', backendUrl);
+        console.log('🌐 [BACKEND REQUEST] Request body:', { email, passwordLength: password?.length });
+        
         const backendResponse = await fetch(backendUrl, {
           method: 'POST',
           headers: {
@@ -100,6 +124,9 @@ export async function POST(request) {
           },
           body: JSON.stringify({ email, password })
         });
+        
+        console.log('🌐 [BACKEND RESPONSE] Status:', backendResponse.status);
+        console.log('🌐 [BACKEND RESPONSE] Status Text:', backendResponse.statusText);
         
         const responseText = await backendResponse.text();
         addDebugEntry('Backend raw response', {
@@ -121,6 +148,13 @@ export async function POST(request) {
         }
         
         if (!backendResponse.ok) {
+          // DEBUG: Log detailed error information
+          console.error('❌ [BACKEND ERROR] Authentication failed');
+          console.error('❌ [BACKEND ERROR] Status:', backendResponse.status);
+          console.error('❌ [BACKEND ERROR] Error response:', backendResult);
+          console.error('❌ [BACKEND ERROR] Full URL:', backendUrl);
+          console.error('❌ [BACKEND ERROR] API URL from env:', process.env.NEXT_PUBLIC_API_URL);
+          
           addDebugEntry('Backend password login failed', { 
             status: backendResponse.status,
             error: backendResult,
@@ -146,6 +180,12 @@ export async function POST(request) {
             { status: backendResponse.status }
           );
         }
+        
+        // DEBUG: Log successful authentication
+        console.log('✅ [BACKEND SUCCESS] Authentication successful');
+        console.log('✅ [BACKEND SUCCESS] User:', backendResult.user?.email);
+        console.log('✅ [BACKEND SUCCESS] Session ID exists:', !!backendResult.session_id);
+        console.log('✅ [BACKEND SUCCESS] Tenant ID exists:', !!backendResult.tenant_id);
         
         addDebugEntry('Backend password login successful', { 
           hasUser: !!backendResult.user,

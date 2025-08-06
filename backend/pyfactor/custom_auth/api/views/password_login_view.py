@@ -61,17 +61,31 @@ class PasswordLoginView(APIView):
             auth0_client_secret = settings.AUTH0_CLIENT_SECRET
             auth0_audience = settings.AUTH0_AUDIENCE
             
+            # DEBUG: Log the actual Auth0 configuration being used
+            logger.info(f"🔐 [PASSWORD_LOGIN] ===== AUTH0 CONFIG DEBUG =====")
+            logger.info(f"🔐 [PASSWORD_LOGIN] AUTH0_DOMAIN from settings: {auth0_domain}")
+            logger.info(f"🔐 [PASSWORD_LOGIN] AUTH0_CLIENT_ID: {auth0_client_id}")
+            logger.info(f"🔐 [PASSWORD_LOGIN] AUTH0_CLIENT_SECRET exists: {bool(auth0_client_secret)}")
+            logger.info(f"🔐 [PASSWORD_LOGIN] AUTH0_CLIENT_SECRET length: {len(auth0_client_secret) if auth0_client_secret else 0}")
+            logger.info(f"🔐 [PASSWORD_LOGIN] AUTH0_AUDIENCE: {auth0_audience}")
+            
             # IMPORTANT: Always use the actual Auth0 domain for API calls
             # Custom domains don't support the /oauth/token endpoint
             # Even if auth0_domain is set to custom domain, we must use the real one
             if auth0_domain == 'auth.dottapps.com' or 'dottapps.com' in auth0_domain:
                 # Use the real Auth0 domain for API calls
                 auth0_api_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
+                logger.warning(f"🔐 [PASSWORD_LOGIN] ⚠️ AUTH0_DOMAIN was custom domain ({auth0_domain}), overriding to: {auth0_api_domain}")
             elif '.auth0.com' not in auth0_domain:
                 # If it's not an auth0.com domain, it's likely a custom domain
                 auth0_api_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
+                logger.warning(f"🔐 [PASSWORD_LOGIN] ⚠️ AUTH0_DOMAIN not an auth0.com domain ({auth0_domain}), overriding to: {auth0_api_domain}")
             else:
                 auth0_api_domain = auth0_domain
+                logger.info(f"🔐 [PASSWORD_LOGIN] ✅ Using AUTH0_DOMAIN as-is: {auth0_api_domain}")
+            
+            logger.info(f"🔐 [PASSWORD_LOGIN] ===== END AUTH0 CONFIG DEBUG =====")
+            logger.info(f"🔐 [PASSWORD_LOGIN] Final Auth0 API domain for token endpoint: {auth0_api_domain}")
             
             auth_response = requests.post(
                 f"https://{auth0_api_domain}/oauth/token",
