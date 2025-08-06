@@ -24,7 +24,7 @@ def get_countries(request):
     try:
         # Get unique countries from GlobalSalesTaxRate
         countries = (GlobalSalesTaxRate.objects
-                    .filter(is_active=True)
+                    .filter(is_current=True)
                     .exclude(country__isnull=True)
                     .exclude(country='')
                     .values('country', 'country_name')
@@ -70,7 +70,7 @@ def get_states(request):
         states = (GlobalSalesTaxRate.objects
                  .filter(
                      country=country,
-                     is_active=True
+                     is_current=True
                  )
                  .exclude(Q(region_code__isnull=True) | Q(region_code=''))
                  .values('region_code', 'region_name')
@@ -119,7 +119,7 @@ def get_counties(request):
                    .filter(
                        country=country,
                        region_code=state,
-                       is_active=True
+                       is_current=True
                    )
                    .exclude(Q(locality__isnull=True) | Q(locality=''))
                    .values('locality')
@@ -169,7 +169,7 @@ def validate_location(request):
             )
         
         # Build query based on provided parameters
-        query = Q(country=country, is_active=True)
+        query = Q(country=country, is_current=True)
         
         if county and state:
             # Try county-level first
