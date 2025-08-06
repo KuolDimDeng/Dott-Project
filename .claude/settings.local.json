@@ -265,7 +265,8 @@
       "WebFetch(domain:docs.stripe.com)",
       "Bash(./deploy_wise_integration.sh:*)",
       "Bash(/Users/kuoldeng/projectx/test_pos_api.sh)",
-      "Bash(PGPASSWORD=postgres psql:*)"
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(/Users/kuoldeng/projectx/test_pos_session_flow.sh)"
     ],
     "deny": []
   }
