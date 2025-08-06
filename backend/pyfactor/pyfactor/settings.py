@@ -178,7 +178,9 @@ if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.starts
 # Auth0 Settings (Primary Authentication)
 # Dynamic configuration using environment variables
 AUTH0_CUSTOM_DOMAIN = os.getenv('AUTH0_CUSTOM_DOMAIN', 'auth.dottapps.com')
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'auth.dottapps.com')
+# IMPORTANT: Must use actual Auth0 domain for API calls, not custom domain
+# Custom domains don't support password grant on /oauth/token endpoint
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
 AUTH0_ISSUER_DOMAIN = os.getenv('AUTH0_ISSUER_DOMAIN', AUTH0_DOMAIN)  # Default to AUTH0_DOMAIN if not specified
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
@@ -1213,9 +1215,8 @@ print(f"   AUTH0_CUSTOM_DOMAIN: {os.getenv('AUTH0_CUSTOM_DOMAIN', 'NOT_SET')}")
 print(f"   Environment: {os.getenv('ENVIRONMENT', 'NOT_SET')}")
 print(f"   Debug mode: {DEBUG}")
 
-# Auth0 Configuration
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
-# Force deployment refresh Fri Jun  6 05:44:20 MDT 2025
+# Auth0 Configuration - removed duplicate (already defined on line 183)
+# Force deployment refresh Tue Aug  6 05:44:20 MDT 2025
 
 # ===== ENHANCED SECURITY SETTINGS =====
 # Risk thresholds for session security
