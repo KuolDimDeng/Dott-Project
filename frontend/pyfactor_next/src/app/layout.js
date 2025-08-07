@@ -3,6 +3,7 @@ import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
 import ChunkErrorHandler from '@/components/ChunkErrorHandler';
+import GlobalErrorInitializer from '@/components/GlobalErrorInitializer';
 import '@/utils/bindPolyfill';
 import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
 import Providers from '@/providers';
@@ -66,6 +67,9 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-startup-image" href="/static/images/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
       <body className={inter.className}>
+        {/* Global Error Handler */}
+        <GlobalErrorInitializer />
+        
         {/* Session Heartbeat Component */}
         <SessionHeartbeat interval={60000} />
         

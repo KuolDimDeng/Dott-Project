@@ -3,12 +3,39 @@ import { getDb } from '@/lib/db';
 import { logger } from '@/utils/logger';
 import { validateTenantAccess } from '@/utils/auth.server';
 
+export async function OPTIONS(request) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-tenant-id',
+    },
+  });
+}
+
 export async function GET(request) {
   try {
+    // Add proper CORS headers
+    const response = new NextResponse();
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id');
+
     // Validate tenant access
     const tenantValidation = await validateTenantAccess(request);
     if (!tenantValidation.success) {
-      return NextResponse.json({ error: tenantValidation.error }, { status: 401 });
+      logger.warn('[Services API] Tenant validation failed:', {
+        error: tenantValidation.error,
+        url: request.url,
+        headers: Object.fromEntries(request.headers.entries())
+      });
+      return NextResponse.json({ 
+        success: false,
+        error: tenantValidation.error, 
+        services: [],
+        total: 0
+      }, { status: 401 });
     }
     
     const { tenantId } = tenantValidation;
@@ -93,6 +120,7 @@ export async function GET(request) {
     const result = await db.query(query, params);
     
     return NextResponse.json({
+      success: true,
       services: result.rows,
       total,
       totalPages: Math.ceil(total / limit),
@@ -100,11 +128,21 @@ export async function GET(request) {
     });
     
   } catch (error) {
-    logger.error('Error fetching services:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch services' },
-      { status: 500 }
-    );
+    logger.error('[Services API] Error fetching services:', {
+      error: error.message,
+      stack: error.stack,
+      url: request.url
+    });
+    
+    // Return graceful error response that won't cause redirects
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch services',
+      services: [],
+      total: 0,
+      totalPages: 0,
+      currentPage: 1
+    }, { status: 200 }); // Return 200 to prevent automatic error handling
   }
 }
 

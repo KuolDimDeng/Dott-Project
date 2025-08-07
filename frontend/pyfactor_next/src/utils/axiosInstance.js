@@ -192,7 +192,30 @@ axiosInstance.interceptors.response.use(
     
     // Handle token expiration or authentication issues
     if (error.response && error.response.status === 401) {
-      // Redirect to login if token expired/invalid
+      console.log('[Axios] 401 Authentication error detected:', {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        retryCount: originalRequest._retryCount || 0
+      });
+
+      // Don't redirect for dashboard API calls - let components handle gracefully
+      const isDashboardApiCall = originalRequest?.url?.includes('/api/') && 
+                                 (originalRequest?.url?.includes('/services') ||
+                                  originalRequest?.url?.includes('/calendar') ||
+                                  originalRequest?.url?.includes('/dashboard'));
+
+      if (isDashboardApiCall) {
+        console.log('[Axios] Dashboard API call failed - handling gracefully without redirect');
+        // Clear auth data but don't redirect
+        if (typeof window !== 'undefined' && appCache.getAll()) {
+          appCache.remove('auth.token');
+          appCache.remove('auth.user');
+        }
+        // Return the error to let components handle it
+        return Promise.reject(error);
+      }
+
+      // Only redirect for non-dashboard calls or auth-specific endpoints
       if (typeof window !== 'undefined') {
         // Clear auth data
         if (appCache.getAll()) {
@@ -200,19 +223,21 @@ axiosInstance.interceptors.response.use(
           appCache.remove('auth.user');
         }
         
-        // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login')) {
-          console.log('[Axios] Authentication error, redirecting to login...');
+        // Only redirect if not already on login page and it's an auth-critical endpoint
+        if (!window.location.pathname.includes('/login') && 
+            (originalRequest?.url?.includes('/auth') || 
+             originalRequest?.url?.includes('/onboarding'))) {
+          console.log('[Axios] Critical auth endpoint failed - redirecting to login...');
           
-          // Instead of immediate redirect, set a flag to avoid interrupting current operation
+          // Set a flag to avoid interrupting current operation
           if (appCache.getAll()) {
             if (!appCache.get('auth')) {
-    appCache.set('auth', {});
-  }
+              appCache.set('auth', {});
+            }
             appCache.set('auth.redirectNeeded', true);
           }
           
-          // After a short delay, check if we should actually redirect
+          // After a delay, check if we should actually redirect
           setTimeout(() => {
             const redirectNeeded = appCache.get('auth.redirectNeeded');
             if (redirectNeeded) {
@@ -221,7 +246,7 @@ axiosInstance.interceptors.response.use(
               }
               window.location.href = '/login';
             }
-          }, 2000);
+          }, 3000); // Increased delay to 3 seconds
         }
       }
     }

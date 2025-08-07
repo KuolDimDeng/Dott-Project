@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
+import HydrationSafeWrapper from '@/components/HydrationSafeWrapper';
 
 function CalendarWidget({ onNavigate }) {
   const { t } = useTranslation('dashboard');
@@ -90,10 +91,14 @@ function CalendarWidget({ onNavigate }) {
             console.error('[CalendarWidget] Network error fetching events:', fetchError);
           }
           setEvents([]);
+          // Prevent error propagation that could cause navigation
+          return;
         }
       } catch (error) {
         console.error('[CalendarWidget] Error in fetchEvents:', error);
         setEvents([]);
+        // Prevent error propagation that could cause navigation
+        return;
       } finally {
         setLoading(false);
       }
@@ -174,8 +179,26 @@ function CalendarWidget({ onNavigate }) {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="p-6">
+    <HydrationSafeWrapper 
+      fallback={
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Calendar
+              </h2>
+            </div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
             Calendar
@@ -280,7 +303,7 @@ function CalendarWidget({ onNavigate }) {
           )}
         </div>
       </div>
-    </div>
+    </HydrationSafeWrapper>
   );
 }
 
