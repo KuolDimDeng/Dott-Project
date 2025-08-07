@@ -189,6 +189,11 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
     def _get_session(self, request):
         """Get session from request (cookie, header, or database)"""
         
+        # Log all auth-related headers for debugging
+        logger.info(f"[Session] Getting session for path: {request.path}")
+        logger.info(f"[Session] Cookies: {list(request.COOKIES.keys())}")
+        logger.info(f"[Session] Authorization header: {request.META.get('HTTP_AUTHORIZATION', 'None')[:50]}...")
+        
         # Try cookie first
         session_id = request.COOKIES.get('sid')
         
@@ -197,12 +202,19 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
             auth_header = request.META.get('HTTP_AUTHORIZATION', '')
             if auth_header.startswith('Session '):
                 session_id = auth_header[8:]
+                logger.info(f"[Session] Got session from Authorization header")
+            elif auth_header:
+                logger.warning(f"[Session] Authorization header present but not Session type: {auth_header[:30]}")
+        else:
+            logger.info(f"[Session] Got session from cookie")
         
         if not session_id:
-            logger.debug(f"No session ID found for path: {request.path}")
+            logger.warning(f"[Session] No session ID found for path: {request.path}")
+            logger.warning(f"[Session] Available cookies: {request.COOKIES}")
+            logger.warning(f"[Session] META keys with AUTH: {[k for k in request.META.keys() if 'AUTH' in k.upper()]}")
             return None
         
-        logger.debug(f"Found session ID {session_id[:8]}... for path: {request.path}")
+        logger.info(f"[Session] Found session ID {session_id[:8]}... for path: {request.path}")
         
         # Get session from database
         try:
