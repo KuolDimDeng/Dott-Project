@@ -64,6 +64,12 @@ const PROTECTED_ROUTES = {
     permissions: ['read']
   },
   
+  // POS System (Sales category)
+  '/pos': { 
+    category: 'Sales',
+    permissions: ['read']
+  },
+  
   // System (Owner/Admin only)
   '/settings/users': { 
     category: 'System',
@@ -84,104 +90,110 @@ const PROTECTED_ROUTES = {
 
 // Check if user has permission to access a route
 export async function checkPagePermissions(request, sessionData) {
-  const pathname = request.nextUrl.pathname;
+  try {
+    const pathname = request.nextUrl.pathname;
   
-  // Extract the base path without tenant ID
-  const pathMatch = pathname.match(/^\/[^\/]+(\/.*)$/);
-  const basePath = pathMatch ? pathMatch[1] : pathname;
-  
-  console.log('[PermissionChecker] Checking permissions for:', {
-    pathname,
-    basePath,
-    userRole: sessionData?.user?.role,
-    hasPermissions: !!sessionData?.user?.permissions
-  });
-  
-  // Find the protected route configuration
-  const routeConfig = PROTECTED_ROUTES[basePath];
-  
-  if (!routeConfig) {
-    // Not a protected route, allow access
-    console.log('[PermissionChecker] Route not protected, allowing access');
-    return NextResponse.next();
-  }
-  
-  // Check if user is authenticated
-  if (!sessionData?.user) {
-    console.log('[PermissionChecker] User not authenticated');
-    return NextResponse.redirect(new URL('/auth/signin', request.url));
-  }
-  
-  const user = sessionData.user;
-  
-  // Check role-based access first (for system pages)
-  if (routeConfig.roles) {
-    if (!routeConfig.roles.includes(user.role)) {
-      console.log('[PermissionChecker] User role not allowed:', {
-        userRole: user.role,
-        requiredRoles: routeConfig.roles
-      });
-      
-      // Redirect to access denied with error details
-      const url = new URL('/access-denied', request.url);
-      url.searchParams.set('path', basePath);
-      url.searchParams.set('reason', 'role');
-      return NextResponse.redirect(url);
-    }
-  }
-  
-  // OWNER and ADMIN have access to all pages
-  if (user.role === 'OWNER' || user.role === 'ADMIN') {
-    console.log('[PermissionChecker] Owner/Admin access granted');
-    return NextResponse.next();
-  }
-  
-  // For regular users, check page-specific permissions
-  const permissions = user.page_permissions || user.permissions;
-  if (user.role === 'USER' && permissions) {
-    // Find permission for this specific path
-    const pagePermission = permissions.find(p => p.path === basePath);
+    // Extract the base path without tenant ID
+    const pathMatch = pathname.match(/^\/[^\/]+(\/.*)$/);
+    const basePath = pathMatch ? pathMatch[1] : pathname;
     
-    if (!pagePermission) {
-      console.log('[PermissionChecker] No permission found for path');
-      const url = new URL('/access-denied', request.url);
-      url.searchParams.set('path', basePath);
-      url.searchParams.set('reason', 'no_permission');
-      return NextResponse.redirect(url);
-    }
-    
-    // Check if user has required permission level
-    const hasRequiredPermission = routeConfig.permissions.every(perm => {
-      switch (perm) {
-        case 'read':
-          return pagePermission.can_read;
-        case 'write':
-          return pagePermission.can_write;
-        case 'edit':
-          return pagePermission.can_edit;
-        case 'delete':
-          return pagePermission.can_delete;
-        default:
-          return false;
-      }
+    console.log('[PermissionChecker] Checking permissions for:', {
+      pathname,
+      basePath,
+      userRole: sessionData?.user?.role,
+      hasPermissions: !!sessionData?.user?.permissions
     });
     
-    if (!hasRequiredPermission) {
-      console.log('[PermissionChecker] Insufficient permissions:', {
-        required: routeConfig.permissions,
-        userPermissions: pagePermission
+    // Find the protected route configuration
+    const routeConfig = PROTECTED_ROUTES[basePath];
+    
+    if (!routeConfig) {
+      // Not a protected route, allow access
+      console.log('[PermissionChecker] Route not protected, allowing access');
+      return NextResponse.next();
+    }
+    
+    // Check if user is authenticated
+    if (!sessionData?.user) {
+      console.log('[PermissionChecker] User not authenticated');
+      return NextResponse.redirect(new URL('/auth/signin', request.url));
+    }
+    
+    const user = sessionData.user;
+    
+    // Check role-based access first (for system pages)
+    if (routeConfig.roles) {
+      if (!routeConfig.roles.includes(user.role)) {
+        console.log('[PermissionChecker] User role not allowed:', {
+          userRole: user.role,
+          requiredRoles: routeConfig.roles
+        });
+        
+        // Redirect to access denied with error details
+        const url = new URL('/access-denied', request.url);
+        url.searchParams.set('path', basePath);
+        url.searchParams.set('reason', 'role');
+        return NextResponse.redirect(url);
+      }
+    }
+    
+    // OWNER and ADMIN have access to all pages
+    if (user.role === 'OWNER' || user.role === 'ADMIN') {
+      console.log('[PermissionChecker] Owner/Admin access granted');
+      return NextResponse.next();
+    }
+    
+    // For regular users, check page-specific permissions
+    const permissions = user.page_permissions || user.permissions;
+    if (user.role === 'USER' && permissions) {
+      // Find permission for this specific path
+      const pagePermission = permissions.find(p => p.path === basePath);
+      
+      if (!pagePermission) {
+        console.log('[PermissionChecker] No permission found for path');
+        const url = new URL('/access-denied', request.url);
+        url.searchParams.set('path', basePath);
+        url.searchParams.set('reason', 'no_permission');
+        return NextResponse.redirect(url);
+      }
+      
+      // Check if user has required permission level
+      const hasRequiredPermission = routeConfig.permissions.every(perm => {
+        switch (perm) {
+          case 'read':
+            return pagePermission.can_read;
+          case 'write':
+            return pagePermission.can_write;
+          case 'edit':
+            return pagePermission.can_edit;
+          case 'delete':
+            return pagePermission.can_delete;
+          default:
+            return false;
+        }
       });
       
-      const url = new URL('/access-denied', request.url);
-      url.searchParams.set('path', basePath);
-      url.searchParams.set('reason', 'insufficient_permission');
-      return NextResponse.redirect(url);
+      if (!hasRequiredPermission) {
+        console.log('[PermissionChecker] Insufficient permissions:', {
+          required: routeConfig.permissions,
+          userPermissions: pagePermission
+        });
+        
+        const url = new URL('/access-denied', request.url);
+        url.searchParams.set('path', basePath);
+        url.searchParams.set('reason', 'insufficient_permission');
+        return NextResponse.redirect(url);
+      }
     }
-  }
   
-  // Allow access
-  console.log('[PermissionChecker] Access granted');
-  return NextResponse.next();
+    // Allow access
+    console.log('[PermissionChecker] Access granted');
+    return NextResponse.next();
+  } catch (error) {
+    console.error('[PermissionChecker] Error in checkPagePermissions:', error);
+    // On error, allow access rather than blocking (fail-open approach for stability)
+    return NextResponse.next();
+  }
 }
 
 // Get accessible routes for a user

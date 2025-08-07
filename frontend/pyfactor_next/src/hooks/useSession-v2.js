@@ -23,7 +23,13 @@ export function useSession() {
       setLoading(true);
       setError(null);
       
-      const sessionData = await sessionManagerEnhanced.getSession();
+      // Add timeout to prevent endless loading
+      const sessionPromise = sessionManagerEnhanced.getSession();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Session load timeout')), 10000); // 10 second timeout
+      });
+      
+      const sessionData = await Promise.race([sessionPromise, timeoutPromise]);
       console.log('[useSession] Session data loaded:', sessionData);
       console.log('[useSession] User data:', sessionData?.user);
       console.log('[useSession] User role:', sessionData?.user?.role);
@@ -40,7 +46,8 @@ export function useSession() {
     } catch (err) {
       console.error('[useSession] Error loading session:', err);
       setError(err.message);
-      setSession(null);
+      // Set session to unauthenticated state on timeout or error
+      setSession({ authenticated: false, user: null });
     } finally {
       setLoading(false);
     }
