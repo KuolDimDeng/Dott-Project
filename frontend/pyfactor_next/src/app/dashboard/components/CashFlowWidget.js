@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { 
   ArrowTrendingUpIcon, 
@@ -13,7 +13,10 @@ import { useTranslation } from 'react-i18next';
 // Dynamically import Recharts to avoid SSR issues
 const ResponsiveContainer = dynamic(
   () => import('recharts').then(mod => mod.ResponsiveContainer),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-64 flex items-center justify-center">Loading chart...</div>
+  }
 );
 
 const ComposedChart = dynamic(
@@ -62,6 +65,12 @@ function CashFlowWidget({ onNavigate, userData }) {
   const [cashFlowData, setCashFlowData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('USD');
+  const [mounted, setMounted] = useState(false);
+  
+  // Ensure component is mounted before rendering charts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Get currency from userData or business
   useEffect(() => {
@@ -75,6 +84,7 @@ function CashFlowWidget({ onNavigate, userData }) {
           const data = await response.json();
           if (data.success && data.preferences?.currency) {
             setCurrency(data.preferences.currency);
+            console.log('[CashFlowWidget] Currency set to:', data.preferences.currency);
           }
         }
       } catch (error) {
@@ -85,68 +95,45 @@ function CashFlowWidget({ onNavigate, userData }) {
     fetchCurrency();
   }, [userData]);
   
-  // Fetch or generate cash flow data
+  // Fetch cash flow data - REAL DATA ONLY
   useEffect(() => {
     const fetchCashFlowData = async () => {
       try {
         setLoading(true);
         
-        // Try to fetch real data first
+        // Fetch real data from our new endpoint
         const response = await fetch(`/api/reports/cashflow?range=${timeRange}`, {
           credentials: 'include'
         });
         
         if (response.ok) {
           const data = await response.json();
-          if (data.data && data.data.length > 0) {
+          console.log('[CashFlowWidget] API Response:', data);
+          
+          if (data.success && data.data && data.data.length > 0) {
             setCashFlowData(data.data);
+            console.log('[CashFlowWidget] Real data loaded:', data.data.length, 'records');
           } else {
-            // Generate sample data if no real data
-            generateSampleData();
+            // No data available - don't generate mock data
+            console.log('[CashFlowWidget] No cash flow data in database');
+            setCashFlowData([]);
           }
         } else {
-          // Generate sample data on error
-          generateSampleData();
+          console.error('[CashFlowWidget] Failed to fetch data:', response.status);
+          setCashFlowData([]);
         }
       } catch (error) {
         console.error('[CashFlowWidget] Error fetching cash flow:', error);
-        generateSampleData();
+        setCashFlowData([]);
       } finally {
         setLoading(false);
       }
     };
     
-    const generateSampleData = () => {
-      const months = timeRange === 'year' 
-        ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        : timeRange === 'quarter'
-        ? ['Month 1', 'Month 2', 'Month 3']
-        : ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-      
-      const dataArray = [];
-      let runningBalance = 25000;
-      
-      for (let i = 0; i < months.length; i++) {
-        const inflow = Math.floor(Math.random() * 20000) + 15000;
-        const outflow = Math.floor(Math.random() * 15000) + 10000;
-        const netFlow = inflow - outflow;
-        runningBalance += netFlow;
-        
-        dataArray.push({
-          period: months[i],
-          month: months[i], // Keep for backward compatibility
-          inflow,
-          outflow,
-          netFlow,
-          balance: runningBalance
-        });
-      }
-      
-      setCashFlowData(dataArray);
-    };
-    
-    fetchCashFlowData();
-  }, [timeRange]);
+    if (mounted) {
+      fetchCashFlowData();
+    }
+  }, [timeRange, mounted]);
   
   const handleNavigateToCashFlow = () => {
     console.log('[CashFlowWidget] Navigating to reports');
@@ -162,12 +149,12 @@ function CashFlowWidget({ onNavigate, userData }) {
     }
   };
   
-  // Calculate current month stats
-  const currentMonthData = cashFlowData[cashFlowData.length - 1] || {};
-  const previousMonthData = cashFlowData[cashFlowData.length - 2] || {};
-  const cashFlowChange = (currentMonthData.balance || 0) - (previousMonthData.balance || 0);
-  const changePercentage = previousMonthData.balance 
-    ? ((cashFlowChange / previousMonthData.balance) * 100).toFixed(1)
+  // Calculate current period stats
+  const currentPeriodData = cashFlowData[cashFlowData.length - 1] || {};
+  const previousPeriodData = cashFlowData[cashFlowData.length - 2] || {};
+  const cashFlowChange = (currentPeriodData.balance || 0) - (previousPeriodData.balance || 0);
+  const changePercentage = previousPeriodData.balance 
+    ? ((cashFlowChange / previousPeriodData.balance) * 100).toFixed(1)
     : 0;
   
   // Custom tooltip
@@ -259,13 +246,13 @@ function CashFlowWidget({ onNavigate, userData }) {
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
             <p className="text-xs text-green-700 font-medium mb-1">Cash In</p>
             <p className="text-lg font-bold text-green-900">
-              {formatCurrency(currentMonthData.inflow)}
+              {formatCurrency(currentPeriodData.inflow)}
             </p>
           </div>
           <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3 border border-red-200">
             <p className="text-xs text-red-700 font-medium mb-1">Cash Out</p>
             <p className="text-lg font-bold text-red-900">
-              {formatCurrency(currentMonthData.outflow)}
+              {formatCurrency(currentPeriodData.outflow)}
             </p>
           </div>
           <div className={`bg-gradient-to-br rounded-lg p-3 border ${
@@ -285,7 +272,7 @@ function CashFlowWidget({ onNavigate, userData }) {
               <p className={`text-lg font-bold ${
                 cashFlowChange >= 0 ? 'text-blue-900' : 'text-orange-900'
               }`}>
-                {formatCurrency(Math.abs(currentMonthData.netFlow || 0))}
+                {formatCurrency(Math.abs(currentPeriodData.netFlow || 0))}
               </p>
             </div>
           </div>
@@ -299,7 +286,7 @@ function CashFlowWidget({ onNavigate, userData }) {
               <p className="text-sm text-gray-500 mt-2">Loading cash flow data...</p>
             </div>
           </div>
-        ) : cashFlowData.length > 0 ? (
+        ) : mounted && cashFlowData.length > 0 ? (
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
@@ -318,7 +305,7 @@ function CashFlowWidget({ onNavigate, userData }) {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
-                  dataKey={cashFlowData[0]?.period ? "period" : "month"}
+                  dataKey="period"
                   tick={{ fontSize: 12, fill: '#6b7280' }}
                   axisLine={{ stroke: '#e5e7eb' }}
                 />
@@ -361,11 +348,12 @@ function CashFlowWidget({ onNavigate, userData }) {
             <div className="text-center">
               <ChartBarIcon className="h-12 w-12 text-gray-300 mx-auto" />
               <p className="text-sm text-gray-500 mt-2">No cash flow data available</p>
+              <p className="text-xs text-gray-400 mt-1">Add invoices and expenses to see your cash flow</p>
               <button
                 onClick={handleNavigateToCashFlow}
                 className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                View Reports
+                Go to Reports
               </button>
             </div>
           </div>
@@ -377,23 +365,25 @@ function CashFlowWidget({ onNavigate, userData }) {
             <div>
               <p className="text-sm text-gray-600">Current Balance</p>
               <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(currentMonthData.balance)}
+                {formatCurrency(currentPeriodData.balance)}
               </p>
             </div>
-            <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full ${
-              cashFlowChange >= 0 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
-            }`}>
-              {cashFlowChange >= 0 ? (
-                <ArrowTrendingUpIcon className="h-4 w-4" />
-              ) : (
-                <ArrowTrendingDownIcon className="h-4 w-4" />
-              )}
-              <span className="text-sm font-medium">
-                {changePercentage}% vs last period
-              </span>
-            </div>
+            {cashFlowData.length > 1 && (
+              <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full ${
+                cashFlowChange >= 0 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {cashFlowChange >= 0 ? (
+                  <ArrowTrendingUpIcon className="h-4 w-4" />
+                ) : (
+                  <ArrowTrendingDownIcon className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">
+                  {changePercentage}% vs last period
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

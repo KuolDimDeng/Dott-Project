@@ -15,7 +15,7 @@ function CalendarWidget({ onNavigate }) {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   
-  // Fetch calendar events
+  // Fetch calendar events - REAL DATA ONLY
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -23,46 +23,51 @@ function CalendarWidget({ onNavigate }) {
         const today = new Date();
         const startDate = today.toISOString().split('T')[0];
         
-        const response = await fetch(`/api/calendar/events?date=${startDate}`, {
+        // Get the last day of current month for end date
+        const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+        
+        const response = await fetch(`/api/calendar/events?start=${startDate}&end=${endDate}`, {
           credentials: 'include'
         });
         
         if (response.ok) {
           const data = await response.json();
-          // Handle different response formats
+          console.log('[CalendarWidget] Events API Response:', data);
+          
+          // Handle different response formats - use real data only
           const eventsList = data.events || data.results || data.data || [];
           
-          // Format events for display
-          const formattedEvents = eventsList.map(event => ({
-            id: event.id,
-            title: event.title || event.name || event.subject || 'Untitled Event',
-            time: event.start_time || event.time || event.start || 'All Day',
-            date: event.date || event.start_date || startDate,
-            type: event.type || 'general'
-          }));
-          
-          // Filter for today's events
-          const todayEvents = formattedEvents.filter(event => {
-            const eventDate = new Date(event.date).toDateString();
-            return eventDate === today.toDateString();
-          });
-          
-          setEvents(todayEvents);
+          if (Array.isArray(eventsList) && eventsList.length > 0) {
+            // Format real events for display
+            const formattedEvents = eventsList.map(event => ({
+              id: event.id,
+              title: event.title || event.name || event.subject || 'Untitled Event',
+              time: event.start_time || event.time || event.start || 'All Day',
+              date: event.date || event.start_date || event.start,
+              type: event.type || event.eventType || 'general',
+              description: event.description || ''
+            }));
+            
+            // Filter for today's events
+            const todayEvents = formattedEvents.filter(event => {
+              if (!event.date) return false;
+              const eventDate = new Date(event.date).toDateString();
+              return eventDate === today.toDateString();
+            });
+            
+            setEvents(todayEvents);
+          } else {
+            // No events - keep empty array (don't use mock data)
+            console.log('[CalendarWidget] No events found in database');
+            setEvents([]);
+          }
         } else {
           console.log('[CalendarWidget] Failed to fetch events:', response.status);
-          // Set some sample events for demo purposes
-          setEvents([
-            { id: 1, title: 'Team Meeting', time: '10:00 AM', type: 'meeting' },
-            { id: 2, title: 'Invoice #1234 Due', time: '2:00 PM', type: 'reminder' },
-            { id: 3, title: 'Payroll Processing', time: '4:00 PM', type: 'task' }
-          ].slice(0, Math.floor(Math.random() * 3) + 1));
+          setEvents([]);
         }
       } catch (error) {
         console.error('[CalendarWidget] Error fetching events:', error);
-        // Set sample events on error
-        setEvents([
-          { id: 1, title: 'Team Meeting', time: '10:00 AM', type: 'meeting' }
-        ]);
+        setEvents([]);
       } finally {
         setLoading(false);
       }
@@ -114,7 +119,8 @@ function CalendarWidget({ onNavigate }) {
       // Check if this day has events
       const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const hasEvents = events.some(event => {
-        const eventDate = new Date(event.date || new Date());
+        if (!event.date) return false;
+        const eventDate = new Date(event.date);
         return eventDate.toDateString() === dayDate.toDateString();
       });
       
