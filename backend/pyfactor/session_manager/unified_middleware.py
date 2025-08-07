@@ -59,12 +59,18 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         self.get_response = get_response
         super().__init__(get_response)
         logger.info("UnifiedSessionMiddleware initialized")
+        logger.info(f"SESSION_EXEMPT_PATHS: {self.SESSION_EXEMPT_PATHS}")
     
     def process_request(self, request):
         """Process incoming request for session management"""
         
         # Skip session checks for exempt paths
         if self._is_exempt_path(request.path):
+            # For exempt paths, still set AnonymousUser if not already set
+            if not hasattr(request, 'user'):
+                from django.contrib.auth.models import AnonymousUser
+                request.user = AnonymousUser()
+                request._cached_user = AnonymousUser()
             return None
         
         # Get session from request
@@ -72,6 +78,11 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         
         if not session:
             # No session for non-exempt path
+            # Set AnonymousUser for compatibility
+            from django.contrib.auth.models import AnonymousUser
+            request.user = AnonymousUser()
+            request._cached_user = AnonymousUser()
+            
             if request.path.startswith('/api/'):
                 return JsonResponse({
                     'error': 'Session required',
@@ -83,6 +94,11 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         validation_result = self._validate_session(session, request)
         
         if not validation_result['valid']:
+            # Set AnonymousUser for compatibility
+            from django.contrib.auth.models import AnonymousUser
+            request.user = AnonymousUser()
+            request._cached_user = AnonymousUser()
+            
             if request.path.startswith('/api/'):
                 return JsonResponse({
                     'error': validation_result['reason'],
@@ -101,6 +117,14 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         if user_obj:
             request.user = user_obj
             request._cached_user = user_obj  # For Django's auth middleware compatibility
+            
+            # Ensure user is marked as authenticated (important!)
+            if hasattr(user_obj, 'is_authenticated'):
+                # It's already a User object, good
+                pass
+            else:
+                # Need to make sure is_authenticated is available
+                user_obj.is_authenticated = True
             
             # Add business_id and tenant_id attributes for compatibility
             if hasattr(user_obj, 'id'):
@@ -175,7 +199,10 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 session_id = auth_header[8:]
         
         if not session_id:
+            logger.debug(f"No session ID found for path: {request.path}")
             return None
+        
+        logger.debug(f"Found session ID {session_id[:8]}... for path: {request.path}")
         
         # Get session from database
         try:
@@ -194,7 +221,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 is_active=True
             )
             
-            return {
+            result = {
                 'id': session_id,
                 'user': session_obj.user,
                 'created_at': session_obj.created_at.timestamp(),
@@ -204,6 +231,8 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 'device_fingerprint': session_obj.device_fingerprint,
                 'data': json.loads(session_obj.session_data or '{}')
             }
+            logger.debug(f"Session found for user: {session_obj.user.email if session_obj.user else 'None'}")
+            return result
         except Exception as e:
             logger.debug(f"Session not found or invalid: {e}")
             return None
