@@ -21,6 +21,8 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
+import CalendarWidget from './CalendarWidget';
+import CashFlowWidget from './CashFlowWidget';
 
 /**
  * Home Component
@@ -507,8 +509,11 @@ function Home({ userData, onNavigate }) {
         )}
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Getting Started Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Show Calendar Widget if Getting Started is complete, otherwise show Getting Started */}
+          {completedItems === checklistItems.length && !loading ? (
+            <CalendarWidget onNavigate={onNavigate} />
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -584,6 +589,7 @@ function Home({ userData, onNavigate }) {
               )}
             </div>
           </div>
+          )}
           
           {/* Recent Updates Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -658,6 +664,11 @@ function Home({ userData, onNavigate }) {
               )}
             </div>
           </div>
+        </div>
+        
+        {/* Cash Flow Widget - Full Width Below */}
+        <div className="mt-6">
+          <CashFlowWidget onNavigate={onNavigate} />
         </div>
 
         {/* Plan Details Dialog */}
