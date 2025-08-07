@@ -115,12 +115,16 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
             )
         
         # Try to get existing tenant settings
-        tenant_settings = TenantTaxSettings.objects.filter(
-            tenant_id=tenant_id,
-            country=country,
-            region_code=region_code,
-            locality=''  # For now, default to state-level settings
-        ).first()
+        # Skip locality for now as it may not be in database yet
+        try:
+            tenant_settings = TenantTaxSettings.objects.filter(
+                tenant_id=tenant_id,
+                country=country,
+                region_code=region_code
+            ).first()
+        except Exception as e:
+            logger.warning(f"[TenantTaxSettings] Could not query tenant settings: {e}")
+            tenant_settings = None
         
         if tenant_settings:
             serializer = TenantTaxSettingsSerializer(tenant_settings)
@@ -150,16 +154,16 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
                 "source": "global",
                 "settings": {
                     "country": str(country),
-                    "country_name": country.name,
+                    "country_name": global_rate.country_name if hasattr(global_rate, 'country_name') else str(country),
                     "region_code": region_code,
-                    "region_name": global_rate.region_name,
+                    "region_name": global_rate.region_name if global_rate.region_name else region_code,
                     "sales_tax_enabled": True,
                     "sales_tax_rate": float(global_rate.rate),
-                    "sales_tax_type": global_rate.tax_type,
+                    "sales_tax_type": global_rate.tax_type if hasattr(global_rate, 'tax_type') else 'VAT',
                     "rate_percentage": float(global_rate.rate * 100),
                     "is_custom_rate": False,
                     "ai_confidence_score": float(global_rate.ai_confidence_score) if global_rate.ai_confidence_score else None,
-                    "manually_verified": global_rate.manually_verified
+                    "manually_verified": global_rate.manually_verified if hasattr(global_rate, 'manually_verified') else False
                 }
             })
         
@@ -168,7 +172,7 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
             "source": "none",
             "settings": {
                 "country": str(country),
-                "country_name": country.name,
+                "country_name": str(country),
                 "region_code": region_code,
                 "sales_tax_enabled": False,
                 "sales_tax_rate": 0.0,
