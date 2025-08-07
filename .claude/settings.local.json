@@ -268,7 +268,8 @@
       "Bash(PGPASSWORD=postgres psql:*)",
       "Bash(/Users/kuoldeng/projectx/test_pos_session_flow.sh)",
       "Bash(/Users/kuoldeng/projectx/test_pos_session.sh)",
-      "Bash(/Users/kuoldeng/projectx/scripts/verify_security_deployment.sh:*)"
+      "Bash(/Users/kuoldeng/projectx/scripts/verify_security_deployment.sh:*)",
+      "Bash(./test_pos_api.sh:*)"
     ],
     "deny": []
   }

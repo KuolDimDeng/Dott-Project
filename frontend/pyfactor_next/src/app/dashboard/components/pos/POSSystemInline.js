@@ -897,17 +897,29 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         console.log('[POS] ✅ Tax rate set to', taxRatePercentage, '% for customer in', location);
       } else {
         console.error('[POS] Failed to calculate tax, response status:', response.status);
-        console.error('[POS] Using default tax rate:', defaultTaxRate);
+        console.error('[POS] ❌ Using default tax rate:', defaultTaxRate);
+        
+        // Try to get error details
+        try {
+          const errorText = await response.text();
+          console.error('[POS] Error response text:', errorText);
+        } catch (e) {
+          console.error('[POS] Could not read error response');
+        }
+        
         setTaxRate(defaultTaxRate || 0);
         
         // Still show a message so user knows what's happening
         toast.warning(`Using default tax rate: ${(defaultTaxRate || 0).toFixed(2)}%`);
       }
     } catch (error) {
-      console.error('[POS] Error calculating customer tax:', error);
+      console.error('[POS] ❌ Exception calculating customer tax:', error);
+      console.error('[POS] Error stack:', error.stack);
       setTaxRate(defaultTaxRate || 0);
       toast.error('Could not calculate tax rate');
     }
+    
+    console.log('[POS] === END TAX CALCULATION ===');
   };
 
   // Reset cart
