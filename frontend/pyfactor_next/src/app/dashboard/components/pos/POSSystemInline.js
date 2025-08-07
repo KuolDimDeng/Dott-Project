@@ -354,6 +354,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   }, []);
 
   // Load business info and tax rate
+  const [businessCountry, setBusinessCountry] = useState('');
+  
   useEffect(() => {
     const fetchBusinessInfo = async () => {
       try {
@@ -371,7 +373,17 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             name: data.business_name || data.businessName || 'Business Name',
             address: data.business_address || '',
             phone: data.business_phone || '',
-            email: data.email || ''
+            email: data.email || '',
+            country: data.country || '',
+            state: data.state || '',
+            county: data.county || ''
+          });
+          // Store business location for tax calculations
+          setBusinessCountry(data.country || '');
+          console.log('[POS] Business location:', {
+            country: data.country,
+            state: data.state,
+            county: data.county
           });
         }
       } catch (error) {
@@ -399,6 +411,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             // Convert from decimal to percentage (0.0875 → 8.75)
             const taxRatePercentage = parseFloat(taxData.settings.sales_tax_rate) * 100;
             setTaxRate(taxRatePercentage);
+            setDefaultTaxRate(taxRatePercentage); // Save as default for when no customer is selected
             
             // Show notification based on source
             const source = taxData.source === 'tenant' ? 'your custom settings' : 'default rates';
@@ -407,12 +420,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             const fullLocation = region ? `${location}, ${region}` : location;
             
             toast.success(
-              `Tax rate set to ${taxRatePercentage.toFixed(2)}% from ${source}` + 
+              `Default tax rate set to ${taxRatePercentage.toFixed(2)}% from ${source}` + 
               (fullLocation ? ` (${fullLocation})` : ''),
               { duration: 4000 }
             );
             
-            console.log(`[POS] ✅ Tax rate set to ${taxRatePercentage}% from ${taxData.source}`);
+            console.log(`[POS] ✅ Default tax rate set to ${taxRatePercentage}% from ${taxData.source}`);
           } else {
             console.log('[POS] ⚠️ No tax settings found, defaulting to 0%');
             setTaxRate(0);
@@ -438,6 +451,92 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     fetchBusinessInfo();
     fetchEstimatedTaxRate();
   }, []);
+
+  // Update tax rate when customer is selected
+  const [defaultTaxRate, setDefaultTaxRate] = useState(0);
+  
+  useEffect(() => {
+    const fetchCustomerTaxRate = async () => {
+      if (!selectedCustomer) {
+        // No customer selected, revert to default business tax rate
+        console.log('[POS] No customer selected, reverting to default tax rate');
+        setTaxRate(defaultTaxRate);
+        setTaxJurisdiction(null);
+        return;
+      }
+
+      console.log('[POS] 🔍 Fetching tax rate for customer:', selectedCustomer);
+      
+      try {
+        const response = await fetch('/api/taxes/calculate-customer-rate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            customerId: selectedCustomer,
+            businessCountry: businessCountry,
+            businessState: businessInfo.state || '',
+            businessCounty: businessInfo.county || ''
+          })
+        });
+        
+        if (response.ok) {
+          const taxData = await response.json();
+          console.log('[POS] 📊 Customer tax calculation:', taxData);
+          
+          if (taxData.source === 'international') {
+            // International sale - no tax
+            setTaxRate(0);
+            setTaxJurisdiction(taxData.jurisdiction);
+            toast.success(
+              `International sale to ${taxData.jurisdiction.country} - No tax collected`,
+              { duration: 4000 }
+            );
+          } else if (taxData.tax_percentage !== undefined) {
+            // Domestic sale - apply tax
+            setTaxRate(taxData.tax_percentage);
+            setTaxJurisdiction(taxData.jurisdiction);
+            
+            const locationParts = [];
+            if (taxData.jurisdiction.county) locationParts.push(taxData.jurisdiction.county);
+            if (taxData.jurisdiction.state_name || taxData.jurisdiction.state) {
+              locationParts.push(taxData.jurisdiction.state_name || taxData.jurisdiction.state);
+            }
+            if (taxData.jurisdiction.country_name || taxData.jurisdiction.country) {
+              locationParts.push(taxData.jurisdiction.country_name || taxData.jurisdiction.country);
+            }
+            const location = locationParts.join(', ');
+            
+            // Customize message based on address type
+            let message = `Tax rate: ${taxData.tax_percentage.toFixed(2)}%`;
+            if (taxData.address_type === 'business_default') {
+              message += ` - Using business location (customer has no address)`;
+            } else {
+              message += ` for ${taxData.customer_name}`;
+              if (location) {
+                message += ` (${taxData.address_type} address: ${location})`;
+              }
+            }
+            
+            toast.success(message, { duration: 4000 });
+          }
+        } else {
+          console.error('[POS] Failed to fetch customer tax rate');
+          // Keep existing tax rate on error
+        }
+      } catch (error) {
+        console.error('[POS] Error fetching customer tax rate:', error);
+        // Keep existing tax rate on error
+      }
+    };
+
+    if (businessCountry) {
+      // Only fetch if we have the business country loaded
+      fetchCustomerTaxRate();
+    }
+  }, [selectedCustomer, businessCountry]);
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
