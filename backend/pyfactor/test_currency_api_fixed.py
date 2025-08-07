@@ -1,5 +1,5 @@
 #\!/usr/bin/env python3
-"""Test script for currency API"""
+"""Test script for currency API with tenant context"""
 
 import os
 import sys
@@ -12,13 +12,13 @@ django.setup()
 from django.test import RequestFactory
 from django.contrib.auth import get_user_model
 from users.api.currency_views_v3 import currency_preferences_v3
-from users.models import Business, BusinessDetails
-from currency.currency_data import get_currency_info
+from users.models import Business
+from custom_auth.models import Tenant
 
 User = get_user_model()
 
 def test_currency_api():
-    """Test the currency API endpoint"""
+    """Test the currency API endpoint with tenant context"""
     
     # Get the support@dottapps.com user
     try:
@@ -40,15 +40,6 @@ def test_currency_api():
             print(f"   - Currency Code: {business.preferred_currency_code}")
             print(f"   - Currency Name: {business.preferred_currency_name}")
             print(f"   - Currency Symbol: {business.preferred_currency_symbol}")
-            print(f"   - Currency Updated: {business.currency_updated_at}")
-            
-            # Check if SSP is in currency data
-            ssp_info = get_currency_info('SSP')
-            if ssp_info:
-                print(f"\n✅ SSP currency info from get_currency_info():")
-                print(f"   - Name: {ssp_info['name']}")
-                print(f"   - Symbol: {ssp_info['symbol']}")
-                print(f"   - Decimal Places: {ssp_info['decimal_places']}")
             
         except Business.DoesNotExist:
             print(f"❌ Business not found for ID: {user.business_id}")
@@ -60,10 +51,20 @@ def test_currency_api():
     # Test the API endpoint
     print("\n📞 Testing currency API endpoint...")
     
-    # Create a mock request
+    # Create a mock request with tenant context
     factory = RequestFactory()
     request = factory.get('/api/currency/preferences')
     request.user = user
+    
+    # Add tenant context (required by middleware)
+    if user.tenant_id:
+        try:
+            tenant = Tenant.objects.get(id=user.tenant_id)
+            request.tenant = tenant
+            request.tenant_id = tenant.id
+            print(f"   Added tenant context: {tenant.name}")
+        except Tenant.DoesNotExist:
+            print(f"   ⚠️ Warning: Tenant not found for ID {user.tenant_id}")
     
     try:
         response = currency_preferences_v3(request)
@@ -79,16 +80,14 @@ def test_currency_api():
                 print(f"   - Code: {prefs.get('currency_code')}")
                 print(f"   - Name: {prefs.get('currency_name')}")
                 print(f"   - Symbol: {prefs.get('currency_symbol')}")
-                print(f"   - Updated: {prefs.get('last_updated')}")
+                
+                # Check display format
+                print(f"\n   Display Format:")
+                print(f"   - DashAppBar should show: {prefs.get('currency_code')} (3-letter code)")
+                print(f"   - Amount displays should use: {prefs.get('currency_symbol')} (symbol)")
             else:
                 print(f"   No preferences in response")
                 
-            if data.get('business'):
-                biz = data['business']
-                print(f"\n   Business Info:")
-                print(f"   - ID: {biz.get('id')}")
-                print(f"   - Name: {biz.get('name')}")
-                print(f"   - Country: {biz.get('country')}")
         else:
             print(f"❌ API returned error status: {response.status_code}")
             print(f"   Data: {response.data}")
@@ -100,4 +99,3 @@ def test_currency_api():
 
 if __name__ == '__main__':
     test_currency_api()
-EOF < /dev/null

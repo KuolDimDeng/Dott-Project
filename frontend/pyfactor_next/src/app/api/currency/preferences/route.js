@@ -19,7 +19,7 @@ export async function GET(request) {
       });
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/currency/preferences/`, {
+    const response = await fetch(`${API_BASE_URL}/api/currency/preferences`, {
       method: 'GET',
       headers: {
         'Cookie': `sid=${sidCookie.value}`,
@@ -87,7 +87,7 @@ export async function POST(request) {
 
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/api/currency/preferences/`, {
+    const response = await fetch(`${API_BASE_URL}/api/currency/preferences`, {
       method: 'POST',
       headers: {
         'Cookie': `sid=${sidCookie.value}`,
