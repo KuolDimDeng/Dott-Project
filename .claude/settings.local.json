@@ -270,7 +270,8 @@
       "Bash(/Users/kuoldeng/projectx/test_pos_session.sh)",
       "Bash(/Users/kuoldeng/projectx/scripts/verify_security_deployment.sh:*)",
       "Bash(./test_pos_api.sh:*)",
-      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3:*)"
+      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3:*)",
+      "WebFetch(domain:www.dottapps.com)"
     ],
     "deny": []
   }
