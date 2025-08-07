@@ -29,16 +29,20 @@ export default function POSPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`/api/products/${session.tenantId}`, {
+      const response = await fetch('/api/products', {
         credentials: 'include'
       });
       
       if (response.ok) {
         const data = await response.json();
-        setProducts(data.products || []);
+        setProducts(Array.isArray(data.products) ? data.products : []);
+      } else {
+        console.error('Failed to fetch products:', response.status);
+        toast.error('Failed to load products');
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      toast.error('Error loading products');
     }
   };
 
