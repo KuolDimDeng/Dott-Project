@@ -398,8 +398,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     };
 
     const fetchEstimatedTaxRate = async () => {
-      console.log('[POS] 🔍 Fetching tax rate from tenant settings...');
+      console.log('[POS] 🔍 === START FETCHING DEFAULT TAX RATE ===');
+      console.log('[POS] 📍 Business Location State:', {
+        country: businessCountry || 'NOT_SET',
+        state: businessState || 'NOT_SET',
+        county: businessCounty || 'NOT_SET'
+      });
+      
       try {
+        console.log('[POS] 🌐 Calling: /api/taxes/tenant-settings');
         const response = await fetch('/api/taxes/tenant-settings', {
           method: 'GET',
           headers: {
@@ -407,15 +414,26 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           },
           credentials: 'include',
         });
+        console.log('[POS] 📨 Tenant settings response status:', response.status);
         
         if (response.ok) {
           const taxData = await response.json();
-          console.log('[POS] 📊 Tax settings received:', taxData);
+          console.log('[POS] 📊 === TAX SETTINGS RECEIVED ===');
+          console.log('[POS] Raw response data:', JSON.stringify(taxData, null, 2));
           
           // Check if user has tax settings (either custom or from global)
           if (taxData.settings && taxData.settings.sales_tax_rate !== undefined) {
-            // Convert from decimal to percentage (0.0875 → 8.75)
-            const taxRatePercentage = parseFloat(taxData.settings.sales_tax_rate) * 100;
+            const rawRate = taxData.settings.sales_tax_rate;
+            // Convert from decimal to percentage (0.18 → 18%)
+            const taxRatePercentage = parseFloat(rawRate) * 100;
+            
+            console.log('[POS] 🧮 === DEFAULT TAX RATE CALCULATION ===');
+            console.log('[POS] Source:', taxData.source);
+            console.log('[POS] Country:', taxData.settings.country);
+            console.log('[POS] Country Name:', taxData.settings.country_name);
+            console.log('[POS] Raw Rate (decimal):', rawRate);
+            console.log('[POS] Converted Rate (percentage):', taxRatePercentage + '%');
+            
             setTaxRate(taxRatePercentage);
             setDefaultTaxRate(taxRatePercentage); // Save as default for when no customer is selected
             
@@ -425,9 +443,14 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             const region = taxData.settings.region_name || taxData.settings.region_code || '';
             const fullLocation = region ? `${location}, ${region}` : location;
             
+            console.log('[POS] ✅ Default tax rate set successfully:', {
+              rate: taxRatePercentage + '%',
+              source: source,
+              location: fullLocation
+            });
+            
             toast.success(
-              `Default tax rate set to ${taxRatePercentage.toFixed(2)}% from ${source}` + 
-              (fullLocation ? ` (${fullLocation})` : ''),
+              `Default: ${taxRatePercentage.toFixed(1)}% (${location})`,
               { duration: 4000 }
             );
             
@@ -932,11 +955,17 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       if (state) params.append('state', state);
       if (county) params.append('county', county);
       
-      console.log('[POS] 🔄 Fetching tax rate from API');
-      console.log('[POS] API URL:', `/api/taxes/calculate?${params.toString()}`);
+      console.log('[POS] 🔄 === CALLING TAX CALCULATION API ===');
+      const apiUrl = `/api/taxes/calculate?${params.toString()}`;
+      console.log('[POS] 🌐 API URL:', apiUrl);
+      console.log('[POS] 📤 Request parameters:', {
+        country: params.get('country'),
+        state: params.get('state'),
+        county: params.get('county')
+      });
       
       // Call the tax calculation API
-      const response = await fetch(`/api/taxes/calculate?${params.toString()}`, {
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -944,20 +973,36 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         credentials: 'include',
       });
       
+      console.log('[POS] 📨 Tax calculation API response status:', response.status);
+      
       console.log('[POS] API Response status:', response.status);
       
       if (response.ok) {
         const taxData = await response.json();
-        console.log('[POS] ✅ Tax calculation successful:', taxData);
+        console.log('[POS] 📥 === TAX CALCULATION RESPONSE RECEIVED ===');
+        console.log('[POS] Raw response data:', JSON.stringify(taxData, null, 2));
         
-        const taxRatePercentage = parseFloat(taxData.tax_rate || 0) * 100;
+        // Parse the tax rate (API returns decimal, we need percentage)
+        const rawRate = taxData.tax_rate || 0;
+        const taxRatePercentage = parseFloat(rawRate) * 100;
+        
+        console.log('[POS] 🧮 === TAX RATE PARSING ===');
+        console.log('[POS] Raw tax_rate from API:', rawRate);
+        console.log('[POS] Converted to percentage:', taxRatePercentage + '%');
+        console.log('[POS] Source:', taxData.source || 'Not provided');
+        console.log('[POS] Jurisdiction:', taxData.jurisdiction || 'Not provided');
+        
         setTaxRate(taxRatePercentage);
         
         // Show location in toast
         const location = taxData.county_name || taxData.state_name || taxData.country_name || 'Unknown';
-        toast.success(`Tax rate: ${taxRatePercentage.toFixed(2)}% for ${location}`);
+        console.log('[POS] 📍 Tax jurisdiction:', location);
         
-        console.log('[POS] ✅ Tax rate set to', taxRatePercentage, '% for customer in', location);
+        toast.success(`Tax: ${taxRatePercentage.toFixed(1)}% (${location})`);
+        
+        console.log('[POS] ✅ === CUSTOMER TAX CALCULATION COMPLETE ===');
+        console.log('[POS] Final tax rate applied:', taxRatePercentage + '%');
+        console.log('[POS] Location:', location);
       } else {
         console.error('[POS] Failed to calculate tax, response status:', response.status);
         console.error('[POS] ❌ Using default tax rate:', defaultTaxRate);
