@@ -151,42 +151,59 @@ class SessionSerializer(serializers.ModelSerializer):
                     user_data['business_name'] = onboarding.business.name
                     user_data['businessName'] = onboarding.business.name  # Both formats for compatibility
                 
-                # Get business type and country from BusinessDetails
+                # Get business type and country from consolidated Business model (new architecture)
                 business_country = None
                 business_type = None
+                business_state = None
+                business_county = None
+                
                 if onboarding.business:
                     business_type = onboarding.business.business_type
                     if business_type:
                         user_data['business_type'] = business_type
                         user_data['businessType'] = business_type
                     
-                    # Get country from business details (correct location)
+                    # Get country from Business model directly (new consolidated architecture)
                     try:
-                        # Country is stored in BusinessDetails.country
-                        business_details = onboarding.business.details
-                        if business_details and business_details.country:
-                            business_country = str(business_details.country)
-                            logger.debug(f"Found country from BusinessDetails: {business_country}")
+                        # Country is now stored directly in Business.country
+                        if hasattr(onboarding.business, 'country') and onboarding.business.country:
+                            business_country = str(onboarding.business.country)
+                            logger.debug(f"Found country from Business model: {business_country}")
+                            
+                            # Also get state and county if available
+                            if hasattr(onboarding.business, 'state'):
+                                business_state = str(onboarding.business.state) if onboarding.business.state else None
+                            if hasattr(onboarding.business, 'county'):
+                                business_county = str(onboarding.business.county) if onboarding.business.county else None
+                        else:
+                            # Fallback to BusinessDetails if Business.country not available (backward compatibility)
+                            try:
+                                business_details = onboarding.business.details
+                                if business_details and business_details.country:
+                                    business_country = str(business_details.country)
+                                    logger.debug(f"Fallback: Found country from BusinessDetails: {business_country}")
+                            except Exception as e:
+                                logger.debug(f"Could not fetch country from business details: {e}")
                     except Exception as e:
-                        logger.debug(f"Could not fetch country from business details: {e}")
-                        # Fallback: try to get from onboarding.business directly if it has a country field
-                        try:
-                            if hasattr(onboarding.business, 'country') and onboarding.business.country:
-                                business_country = str(onboarding.business.country)
-                                logger.debug(f"Found country from Business fallback: {business_country}")
-                        except Exception as fallback_e:
-                            logger.debug(f"Fallback country lookup also failed: {fallback_e}")
+                        logger.debug(f"Could not fetch country from Business model: {e}")
                 
                 # Include full onboarding progress data
                 user_data['onboardingProgress'] = {
                     'businessName': onboarding.business.name if onboarding.business else None,
                     'businessType': business_type,
-                    'country': business_country,  # Now correctly from BusinessDetails
+                    'country': business_country,  # Now correctly from Business model
+                    'state': business_state,
+                    'county': business_county,
                     'legalStructure': onboarding.legal_structure,
                     'dateFounded': onboarding.date_founded.isoformat() if onboarding.date_founded else None,
                     'currentStep': onboarding.current_step,
                     'onboardingStatus': onboarding.onboarding_status
                 }
+                
+                # Also add business location at root level for POS
+                user_data['business_country'] = business_country
+                user_data['business_state'] = business_state
+                user_data['business_county'] = business_county
         except Exception as e:
             # Don't fail if onboarding info is not available
             logger.debug(f"Could not fetch onboarding info: {e}")

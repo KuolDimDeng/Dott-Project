@@ -356,6 +356,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
 
   // Load business info and tax rate
   const [businessCountry, setBusinessCountry] = useState('');
+  const [businessState, setBusinessState] = useState('');
+  const [businessCounty, setBusinessCounty] = useState('');
   
   useEffect(() => {
     const fetchBusinessInfo = async () => {
@@ -381,6 +383,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           });
           // Store business location for tax calculations
           setBusinessCountry(data.country || '');
+          setBusinessState(data.state || '');
+          setBusinessCounty(data.county || '');
           console.log('[POS] Business location:', {
             country: data.country,
             state: data.state,
@@ -458,10 +462,28 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchCustomerTaxRate = async () => {
       if (!selectedCustomer) {
-        // No customer selected, revert to default business tax rate
-        console.log('[POS] No customer selected, reverting to default tax rate:', defaultTaxRate);
-        setTaxRate(defaultTaxRate);
-        setTaxJurisdiction(null);
+        // Walk-In customer - calculate tax based on business location
+        console.log('[POS] Walk-In customer, calculating tax for business location');
+        if (businessCountry || businessState || businessCounty) {
+          // Create a pseudo-customer object with business location
+          const walkInCustomer = {
+            id: 'walk-in',
+            first_name: 'Walk-In',
+            last_name: 'Customer',
+            billing_country: businessCountry,
+            billing_state: businessState,
+            billing_county: businessCounty,
+            shipping_country: businessCountry,
+            shipping_state: businessState,
+            shipping_county: businessCounty
+          };
+          await calculateCustomerTax(walkInCustomer);
+        } else {
+          // Fallback to default if business location not loaded yet
+          console.log('[POS] Business location not loaded, using default tax rate:', defaultTaxRate);
+          setTaxRate(defaultTaxRate);
+          setTaxJurisdiction(null);
+        }
         return;
       }
 
@@ -482,7 +504,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       // Only fetch if we have the business country loaded
       fetchCustomerTaxRate();
     }
-  }, [selectedCustomer, businessCountry, customers, defaultTaxRate]);
+  }, [selectedCustomer, businessCountry, businessState, businessCounty, customers, defaultTaxRate]);
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
@@ -732,6 +754,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         customer_id: selectedCustomer,
         taxRate: taxRate,
         businessCountry: businessCountry,
+        businessState: businessState,
+        businessCounty: businessCounty,
         customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : 'Walk-in',
         totals: totals
       });
@@ -837,11 +861,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       billing_county: customer.billing_county,
       shipping_country: customer.shipping_country,
       shipping_state: customer.shipping_state,
-      shipping_county: customer.shipping_county
+      shipping_county: customer.shipping_county,
+      isWalkIn: customer.id === 'walk-in'
     });
     
-    // If customer has no location info, use business default
-    if (!customer.billing_country && !customer.shipping_country) {
+    // If customer has no location info and it's not a Walk-In customer, use business default
+    if (!customer.billing_country && !customer.shipping_country && customer.id !== 'walk-in') {
       console.log('[POS] ⚠️ Customer has no location, using business default tax rate:', defaultTaxRate);
       setTaxRate(defaultTaxRate || 0);
       return;
@@ -852,7 +877,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     const state = customer.billing_state || customer.shipping_state || '';
     const county = customer.billing_county || customer.shipping_county || '';
     
-    console.log('[POS] 📍 Using location for tax calculation:', { country, state, county });
+    console.log('[POS] 📍 Using location for tax calculation:', { 
+      country, 
+      state, 
+      county,
+      customerType: customer.id === 'walk-in' ? 'Walk-In (using business location)' : 'Regular customer'
+    });
     
     // If it's an international sale (customer country != business country)
     if (businessCountry && country && country !== businessCountry) {
