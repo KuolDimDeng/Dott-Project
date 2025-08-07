@@ -64,8 +64,12 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """Process incoming request for session management"""
         
+        logger.info(f"[UnifiedSessionMiddleware] Processing request for path: {request.path}")
+        logger.info(f"[UnifiedSessionMiddleware] Method: {request.method}")
+        
         # Skip session checks for exempt paths
         if self._is_exempt_path(request.path):
+            logger.info(f"[UnifiedSessionMiddleware] Path {request.path} is exempt from session checks")
             # For exempt paths, still set AnonymousUser if not already set
             if not hasattr(request, 'user'):
                 from django.contrib.auth.models import AnonymousUser

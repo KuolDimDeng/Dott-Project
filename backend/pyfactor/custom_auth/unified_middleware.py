@@ -73,23 +73,34 @@ class UnifiedTenantMiddleware(MiddlewareMixin):
         # Add request ID for tracing
         request.request_id = str(uuid.uuid4())[:8]
         
+        logger.info(f"[UnifiedTenantMiddleware] Processing request {request.request_id} for path: {request.path}")
+        
         # Check if path is public
         if self._is_public_path(request.path):
+            logger.info(f"[UnifiedTenantMiddleware] Path {request.path} is public, no auth needed")
             clear_current_tenant_id()
             request.tenant_id = None
             return None
         
         # Check if path requires auth but not tenant
         if self._is_auth_only_path(request.path):
+            logger.info(f"[UnifiedTenantMiddleware] Path {request.path} requires auth only (no tenant)")
             # Just ensure user is authenticated, don't require tenant
             if not hasattr(request, 'user') or not request.user.is_authenticated:
+                logger.warning(f"[UnifiedTenantMiddleware] No authenticated user for auth-only path {request.path}")
                 return JsonResponse({'error': 'Authentication required'}, status=401)
             return None
         
         # For all other paths, require both auth and tenant
         user = getattr(request, 'user', None)
+        logger.info(f"[UnifiedTenantMiddleware] Path {request.path} requires tenant, checking user...")
+        logger.info(f"[UnifiedTenantMiddleware] User object: {user}")
+        logger.info(f"[UnifiedTenantMiddleware] User type: {type(user)}")
+        logger.info(f"[UnifiedTenantMiddleware] Has user: {user is not None}")
+        logger.info(f"[UnifiedTenantMiddleware] User authenticated: {user.is_authenticated if user else 'N/A'}")
         
         if not user or not user.is_authenticated:
+            logger.warning(f"[UnifiedTenantMiddleware] Authentication required for {request.path} - user not authenticated")
             return JsonResponse({'error': 'Authentication required'}, status=401)
         
         # Get tenant ID from user
