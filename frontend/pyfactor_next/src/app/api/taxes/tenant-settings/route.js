@@ -32,11 +32,21 @@ export async function GET(request) {
     });
 
     if (!profileResponse.ok) {
-      console.error('[Tenant Settings] Failed to fetch user profile');
-      return NextResponse.json(
-        { error: 'Failed to fetch user profile' },
-        { status: profileResponse.status }
-      );
+      console.error('[Tenant Settings] Failed to fetch user profile, status:', profileResponse.status);
+      // Return default values instead of error for POS to work
+      return NextResponse.json({
+        settings: {
+          sales_tax_rate: 0,
+          country: '',
+          country_name: '',
+          region_code: '',
+          region_name: '',
+          county: '',
+          county_name: ''
+        },
+        source: 'default',
+        tax_authority: null
+      });
     }
 
     const userProfile = await profileResponse.json();

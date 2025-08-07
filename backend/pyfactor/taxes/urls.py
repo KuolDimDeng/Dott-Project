@@ -73,6 +73,7 @@ router.register(r'settings', TaxSettingsViewSet, basename='tax-settings')
 
 # Import tenant tax settings view
 from .views.tenant_tax_settings_views import TenantTaxSettingsViewSet
+from .views.simple_tenant_settings import get_tenant_tax_settings
 router.register(r'tenant-settings', TenantTaxSettingsViewSet, basename='tenant-tax-settings')
 router.register(r'api-usage', TaxApiUsageViewSet, basename='tax-api-usage')
 router.register(r'filing-locations', TaxFilingLocationViewSet, basename='tax-filing-locations')
@@ -107,6 +108,7 @@ router.register(r'abuse-control/blacklist', TaxDataBlacklistViewSet, basename='t
 urlpatterns = [
     path('', include(router.urls)),
     path('calculate/', TaxCalculationView.as_view(), name='tax-calculate'),
+    path('tenant-settings/', get_tenant_tax_settings, name='tenant-tax-settings-simple'),
     path('suggestions/', get_tax_suggestions, name='tax-suggestions'),
     path('feedback/', submit_tax_feedback, name='tax-feedback'),
     path('global-compliance/<str:country_code>/', GlobalComplianceViewSet.as_view({'get': 'global_compliance'}), name='global-compliance'),
