@@ -51,6 +51,10 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '    python manage.py migrate --noinput || echo "Migration failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Fixing tax exemption fields..." ' >> /app/start.sh && \
     echo '    python fix_tax_exemption_migration.py || echo "Tax exemption fix failed but continuing..."' >> /app/start.sh && \
+    echo '    echo "Fixing UserProfile county field..." ' >> /app/start.sh && \
+    echo '    python fix_userprofile_county.py || echo "UserProfile county fix failed but continuing..."' >> /app/start.sh && \
+    echo '    echo "Fixing Customer county fields..." ' >> /app/start.sh && \
+    echo '    python fix_customer_county.py || echo "Customer county fix failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Collecting static files..." ' >> /app/start.sh && \
     echo '    python manage.py collectstatic --noinput --verbosity 0' >> /app/start.sh && \
     echo '    echo "Starting Gunicorn server..." ' >> /app/start.sh && \

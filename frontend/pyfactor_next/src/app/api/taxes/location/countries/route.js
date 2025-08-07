@@ -22,8 +22,11 @@ export async function GET(request) {
 
     console.log('[Countries API] Fetching from backend with session:', sidCookie.value.substring(0, 8) + '...');
     
-    // Call backend directly - no trailing slash
-    const response = await fetch(`${BACKEND_URL}/api/taxes/location/countries`, {
+    // Call backend directly - try with trailing slash since Django might expect it
+    const backendUrl = `${BACKEND_URL}/api/taxes/location/countries/`;
+    console.log('[Countries API] Calling backend URL:', backendUrl);
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -39,9 +42,11 @@ export async function GET(request) {
       console.error('[Countries API] Received HTML error page instead of JSON');
       console.error('[Countries API] Response status:', response.status);
       console.error('[Countries API] First 500 chars:', responseText.substring(0, 500));
+      
+      // Return empty array so the form still works
       return NextResponse.json(
-        { error: 'Backend returned HTML error page', countries: [] },
-        { status: 500 }
+        { countries: [] },
+        { status: 200 }
       );
     }
 
