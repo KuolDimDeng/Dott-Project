@@ -409,6 +409,94 @@ class TaxFormViewSet(viewsets.ModelViewSet):
 class TaxCalculationView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
+    def get(self, request):
+        """Calculate sales tax rate for a given location"""
+        try:
+            from ..models import GlobalSalesTaxRate
+            
+            # Get query parameters - use request.GET for regular Django views
+            country = request.GET.get('country', '').upper()
+            state = request.GET.get('state', '').upper()
+            county = request.GET.get('county', '').upper()
+            
+            logger.info(f"[Sales Tax Calculation] Request: country={country}, state={state}, county={county}")
+            
+            if not country:
+                return Response(
+                    {"error": "Country is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Try to find the most specific tax rate
+            tax_rate = None
+            source = 'global'
+            
+            # Try county level first (most specific)
+            if county and state:
+                tax_rate = GlobalSalesTaxRate.objects.filter(
+                    country=country,
+                    region_code=state,
+                    locality__iexact=county,
+                    is_current=True
+                ).first()
+                if tax_rate:
+                    source = 'county'
+                    logger.info(f"[Sales Tax] Found county-level rate: {tax_rate.rate}%")
+            
+            # Try state level
+            if not tax_rate and state:
+                tax_rate = GlobalSalesTaxRate.objects.filter(
+                    country=country,
+                    region_code=state,
+                    locality='',
+                    is_current=True
+                ).first()
+                if tax_rate:
+                    source = 'state'
+                    logger.info(f"[Sales Tax] Found state-level rate: {tax_rate.rate}%")
+            
+            # Try country level
+            if not tax_rate:
+                tax_rate = GlobalSalesTaxRate.objects.filter(
+                    country=country,
+                    region_code='',
+                    locality='',
+                    is_current=True
+                ).first()
+                if tax_rate:
+                    source = 'country'
+                    logger.info(f"[Sales Tax] Found country-level rate: {tax_rate.rate}%")
+            
+            if tax_rate:
+                # Return the tax rate information
+                return Response({
+                    'tax_rate': float(tax_rate.rate),  # Already stored as decimal (0.18 = 18%)
+                    'tax_percentage': float(tax_rate.rate) * 100,  # Convert to percentage for display
+                    'source': source,
+                    'country': tax_rate.country,
+                    'country_name': tax_rate.country_name,
+                    'state': tax_rate.region_code if tax_rate.region_code else None,
+                    'state_name': tax_rate.region_name if tax_rate.region_name else None,
+                    'county': tax_rate.locality if tax_rate.locality else None,
+                    'tax_authority': tax_rate.tax_authority_name if hasattr(tax_rate, 'tax_authority_name') else None
+                })
+            else:
+                # No tax rate found
+                logger.warning(f"[Sales Tax] No tax rate found for country={country}, state={state}, county={county}")
+                return Response({
+                    'tax_rate': 0,
+                    'tax_percentage': 0,
+                    'source': 'not_found',
+                    'message': f'No tax rate found for {country}'
+                })
+                
+        except Exception as e:
+            logger.error(f"[Sales Tax Calculation] Error: {str(e)}")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def post(self, request):
         """Calculate taxes for payroll"""
         try:
