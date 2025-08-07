@@ -102,6 +102,7 @@ const eventToRouteMap = {
   'smart-insight': 'smart-insights',
   
   // Other
+  'calendar': 'calendar',
   'whatsapp-business': 'whatsapp-business',
   'import-export': 'import-export',
   'invite-friend': 'invite-friend',

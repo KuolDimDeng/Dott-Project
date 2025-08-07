@@ -23,6 +23,14 @@ function CalendarWidget({ onNavigate }) {
   };
   
   const handleCalendarClick = () => {
+    console.log('[CalendarWidget] Navigating to calendar');
+    // Dispatch a custom event for navigation
+    const event = new CustomEvent('menuNavigation', {
+      detail: { item: 'calendar' }
+    });
+    window.dispatchEvent(event);
+    
+    // Also try the onNavigate prop if available
     if (onNavigate) {
       onNavigate('calendar');
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ComposedChart,
   Bar,
@@ -58,6 +58,14 @@ function CashFlowWidget({ onNavigate }) {
   }, [timeRange]);
   
   const handleNavigateToCashFlow = () => {
+    console.log('[CashFlowWidget] Navigating to reports');
+    // Dispatch a custom event for navigation
+    const event = new CustomEvent('menuNavigation', {
+      detail: { item: 'reports-dashboard' }
+    });
+    window.dispatchEvent(event);
+    
+    // Also try the onNavigate prop if available
     if (onNavigate) {
       onNavigate('reports', { activeTab: 'cashflow' });
     }
@@ -178,14 +186,14 @@ function CashFlowWidget({ onNavigate }) {
         </div>
         
         {/* Chart */}
-        {loading ? (
+        {loading || !cashFlowData.length ? (
           <div className="h-64 flex items-center justify-center">
             <div className="animate-pulse">
               <ChartBarIcon className="h-12 w-12 text-gray-300" />
               <p className="text-sm text-gray-500 mt-2">Loading cash flow data...</p>
             </div>
           </div>
-        ) : (
+        ) : cashFlowData.length > 0 && (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
