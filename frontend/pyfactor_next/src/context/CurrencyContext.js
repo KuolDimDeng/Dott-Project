@@ -34,6 +34,13 @@ export const CurrencyProvider = ({ children }) => {
   // Load currency preferences on mount - ALWAYS from database
   useEffect(() => {
     const loadCurrency = async () => {
+      // Skip loading currency on admin pages
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+        console.log('💰 [CurrencyContext] Skipping currency load on admin page');
+        setIsLoading(false);
+        return;
+      }
+      
       console.log('💰 [CurrencyContext] === LOADING CURRENCY START ===');
       
       try {

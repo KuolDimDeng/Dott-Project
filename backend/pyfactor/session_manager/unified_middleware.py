@@ -58,8 +58,12 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
     def __init__(self, get_response):
         self.get_response = get_response
         super().__init__(get_response)
+        
+        # Add custom paths from settings
+        self.session_exempt_paths = self.SESSION_EXEMPT_PATHS + getattr(settings, 'TENANT_EXEMPT_PATHS', [])
+        
         logger.info("UnifiedSessionMiddleware initialized")
-        logger.info(f"SESSION_EXEMPT_PATHS: {self.SESSION_EXEMPT_PATHS}")
+        logger.info(f"SESSION_EXEMPT_PATHS: {self.session_exempt_paths}")
     
     def process_request(self, request):
         """Process incoming request for session management"""
@@ -188,7 +192,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
     
     def _is_exempt_path(self, path):
         """Check if path is exempt from session requirements"""
-        return any(path.startswith(p) for p in self.SESSION_EXEMPT_PATHS)
+        return any(path.startswith(p) for p in self.session_exempt_paths)
     
     def _get_session(self, request):
         """Get session from request (cookie, header, or database)"""
