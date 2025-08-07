@@ -130,7 +130,6 @@ const CustomerManagement = () => {
     try {
       const response = await fetch('/api/taxes/location/countries/', {
         headers: {
-          'Authorization': `Bearer ${getCacheValue('token')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -151,7 +150,6 @@ const CustomerManagement = () => {
       setLocationLoading(true);
       const response = await fetch(`/api/taxes/location/states/?country=${country}`, {
         headers: {
-          'Authorization': `Bearer ${getCacheValue('token')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -180,7 +178,6 @@ const CustomerManagement = () => {
       setLocationLoading(true);
       const response = await fetch(`/api/taxes/location/counties/?country=${country}&state=${state}`, {
         headers: {
-          'Authorization': `Bearer ${getCacheValue('token')}`,
           'Content-Type': 'application/json'
         }
       });
