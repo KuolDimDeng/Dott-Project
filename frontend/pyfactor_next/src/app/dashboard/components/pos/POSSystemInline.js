@@ -296,7 +296,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     const fetchCustomers = async () => {
       try {
         // Call the backend CRM customers endpoint directly
-        const response = await fetch('/api/backend/crm/customers', {
+        const response = await fetch('/api/crm/customers', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -357,7 +357,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchBusinessInfo = async () => {
       try {
-        const response = await fetch('/api/users/me', {
+        const response = await fetch('/api/user/profile', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -382,7 +382,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     const fetchEstimatedTaxRate = async () => {
       console.log('[POS] 🔍 Fetching tax rate from tenant settings...');
       try {
-        const response = await fetch('/api/settings/taxes', {
+        const response = await fetch('/api/taxes/tenant-settings', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -593,7 +593,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const getCustomerDisplayName = (customerId) => {
     if (!customerId) return '';
     const customer = customers.find(c => c.id === customerId);
-    return customer ? (customer.name || customer.company_name) : '';
+    if (!customer) return '';
+    
+    // Try multiple fields for customer name
+    return customer.name || 
+           customer.business_name || 
+           customer.company_name || 
+           `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
+           customer.email ||
+           '';
   };
 
   // Close dropdown when clicking outside
@@ -1071,9 +1079,17 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                   {customers
                     .filter(customer => {
                       const searchLower = customerSearchTerm.toLowerCase();
-                      const name = (customer.name || customer.company_name || '').toLowerCase();
+                      // Build display name using same logic as getCustomerDisplayName
+                      const displayName = (
+                        customer.name || 
+                        customer.business_name || 
+                        customer.company_name || 
+                        `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
+                        customer.email ||
+                        ''
+                      ).toLowerCase();
                       const email = (customer.email || '').toLowerCase();
-                      return name.includes(searchLower) || email.includes(searchLower);
+                      return displayName.includes(searchLower) || email.includes(searchLower);
                     })
                     .map(customer => (
                       <div
@@ -1086,16 +1102,27 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                       >
                         <div className="font-medium">
-                          {customer.name || customer.company_name}
+                          {customer.name || 
+                           customer.business_name || 
+                           customer.company_name || 
+                           `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
+                           customer.email}
                         </div>
                         <div className="text-sm text-gray-500">{customer.email}</div>
                       </div>
                     ))}
                   {customers.filter(customer => {
                     const searchLower = customerSearchTerm.toLowerCase();
-                    const name = (customer.name || customer.company_name || '').toLowerCase();
+                    const displayName = (
+                      customer.name || 
+                      customer.business_name || 
+                      customer.company_name || 
+                      `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
+                      customer.email ||
+                      ''
+                    ).toLowerCase();
                     const email = (customer.email || '').toLowerCase();
-                    return name.includes(searchLower) || email.includes(searchLower);
+                    return displayName.includes(searchLower) || email.includes(searchLower);
                   }).length === 0 && customerSearchTerm && (
                     <div className="px-3 py-2 text-gray-500 text-sm">
                       No customers found
