@@ -1,5 +1,11 @@
 """
-Hotfix for currency preferences API - bypasses business_utils issues
+DEPRECATED - Hotfix for currency preferences API
+This was a temporary fix. The permanent solution is now in place:
+- business_utils.py has been fixed to not use select_related on owner
+- Business model has get_owner() method to handle schema mismatch
+- Using currency_views_v3.py is now safe
+
+This file is kept for reference only. DO NOT USE.
 """
 
 import logging
