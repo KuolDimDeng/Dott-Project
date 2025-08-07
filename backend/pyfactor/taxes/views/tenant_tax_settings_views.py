@@ -49,7 +49,9 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
         
         # Get user's country from profile/business
         try:
-            from users.models import UserProfile, BusinessDetails
+            from users.models import UserProfile, Business
+            from onboarding.models import OnboardingProgress
+            
             user_profile = UserProfile.objects.filter(user=request.user).first()
             logger.info(f"[TenantTaxSettings] Found user profile: {user_profile is not None}")
             
@@ -60,24 +62,47 @@ class TenantTaxSettingsViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get country from BusinessDetails
+            # Get country from Business model (new consolidated architecture)
             country = None
             region_code = ''
+            locality = ''
             
+            # First try to get from Business model directly
             if user_profile.business_id:
                 try:
-                    business_details = BusinessDetails.objects.filter(business_id=user_profile.business_id).first()
-                    if business_details:
-                        country = business_details.country
-                        region_code = business_details.state or ''
-                        logger.info(f"[TenantTaxSettings] Got country from BusinessDetails: {country}")
+                    business = Business.objects.filter(id=user_profile.business_id).first()
+                    if business and hasattr(business, 'country'):
+                        country = str(business.country) if business.country else None
+                        region_code = str(business.state) if hasattr(business, 'state') and business.state else ''
+                        locality = str(business.county) if hasattr(business, 'county') and business.county else ''
+                        logger.info(f"[TenantTaxSettings] Got location from Business model: {country}/{region_code}/{locality}")
                 except Exception as e:
-                    logger.warning(f"[TenantTaxSettings] Could not get BusinessDetails: {e}")
+                    logger.warning(f"[TenantTaxSettings] Could not get Business: {e}")
+            
+            # If not found, try OnboardingProgress
+            if not country:
+                try:
+                    onboarding = OnboardingProgress.objects.filter(user=request.user).first()
+                    if onboarding and onboarding.business:
+                        country = str(onboarding.business.country) if onboarding.business.country else None
+                        region_code = str(onboarding.business.state) if hasattr(onboarding.business, 'state') and onboarding.business.state else ''
+                        locality = str(onboarding.business.county) if hasattr(onboarding.business, 'county') and onboarding.business.county else ''
+                        logger.info(f"[TenantTaxSettings] Got location from OnboardingProgress: {country}/{region_code}/{locality}")
+                except Exception as e:
+                    logger.warning(f"[TenantTaxSettings] Could not get OnboardingProgress: {e}")
+            
+            # Final fallback to UserProfile country
+            if not country and hasattr(user_profile, 'country'):
+                country = str(user_profile.country) if user_profile.country else None
+                logger.info(f"[TenantTaxSettings] Got country from UserProfile: {country}")
             
             if not country:
-                # Fallback to US if no country found
-                country = 'US'
-                logger.info(f"[TenantTaxSettings] No country found, defaulting to US")
+                # Don't default to US - return error instead
+                logger.error(f"[TenantTaxSettings] No country found for user {request.user.id}")
+                return Response(
+                    {"error": "Business location not configured"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             logger.info(f"[TenantTaxSettings] Country: {country}, Region: {region_code}")
             
         except Exception as e:

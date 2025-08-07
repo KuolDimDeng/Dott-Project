@@ -381,14 +381,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             state: data.state || '',
             county: data.county || ''
           });
-          // Store business location for tax calculations
-          setBusinessCountry(data.country || '');
-          setBusinessState(data.state || '');
-          setBusinessCounty(data.county || '');
-          console.log('[POS] Business location:', {
-            country: data.country,
-            state: data.state,
-            county: data.county
+          // Store business location for tax calculations (normalize to uppercase)
+          setBusinessCountry((data.country || '').toUpperCase().trim());
+          setBusinessState((data.state || '').toUpperCase().trim());
+          setBusinessCounty((data.county || '').toUpperCase().trim());
+          console.log('[POS] Business location (normalized):', {
+            country: (data.country || '').toUpperCase().trim(),
+            state: (data.state || '').toUpperCase().trim(),
+            county: (data.county || '').toUpperCase().trim(),
+            raw: { country: data.country, state: data.state, county: data.county }
           });
         }
       } catch (error) {
@@ -441,11 +442,16 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           }
         } else {
           console.error('[POS] ❌ Failed to fetch tax settings:', response.status);
-          setTaxRate(0);
-          toast.error(
-            'Could not load tax settings. Please check your settings.',
-            { duration: 5000 }
-          );
+          // Don't set a default rate of 0 - let the Walk-In calculation handle it properly
+          // Only show error for unexpected status codes
+          if (response.status !== 403 && response.status !== 404 && response.status !== 400) {
+            toast.error(
+              'Could not load tax settings. Please check your settings.',
+              { duration: 5000 }
+            );
+          } else {
+            console.log('[POS] Tax settings not configured yet - will calculate based on business location');
+          }
         }
       } catch (error) {
         console.error('[POS] ❌ Error fetching tax rate:', error);
@@ -873,23 +879,50 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     }
     
     // Use billing address first, fall back to shipping address
-    const country = customer.billing_country || customer.shipping_country || '';
-    const state = customer.billing_state || customer.shipping_state || '';
-    const county = customer.billing_county || customer.shipping_county || '';
+    // Normalize country codes to uppercase for comparison
+    // Handle null/undefined values properly
+    const rawBillingCountry = customer.billing_country;
+    const rawShippingCountry = customer.shipping_country;
+    
+    console.log('[POS] Raw customer location data:', {
+      billing_country: rawBillingCountry,
+      shipping_country: rawShippingCountry,
+      billing_state: customer.billing_state,
+      shipping_state: customer.shipping_state
+    });
+    
+    const country = (rawBillingCountry || rawShippingCountry || '').toString().toUpperCase().trim();
+    const state = (customer.billing_state || customer.shipping_state || '').toString().toUpperCase().trim();
+    const county = (customer.billing_county || customer.shipping_county || '').toString().toUpperCase().trim();
     
     console.log('[POS] 📍 Using location for tax calculation:', { 
       country, 
       state, 
       county,
-      customerType: customer.id === 'walk-in' ? 'Walk-In (using business location)' : 'Regular customer'
+      customerType: customer.id === 'walk-in' ? 'Walk-In (using business location)' : 'Regular customer',
+      businessCountry: businessCountry,
+      isInternational: businessCountry && country && country !== businessCountry.toUpperCase().trim()
     });
     
     // If it's an international sale (customer country != business country)
-    if (businessCountry && country && country !== businessCountry) {
-      console.log('[POS] 🌍 International sale detected! Business:', businessCountry, 'Customer:', country);
+    // Make sure to normalize both for comparison
+    const normalizedBusinessCountry = businessCountry ? businessCountry.toString().toUpperCase().trim() : '';
+    
+    // Check for international sale
+    const isInternational = normalizedBusinessCountry && country && 
+                          normalizedBusinessCountry !== '' && country !== '' &&
+                          normalizedBusinessCountry !== country;
+    
+    if (isInternational) {
+      console.log('[POS] 🌍 International sale detected!');
+      console.log('[POS] Business country (normalized):', normalizedBusinessCountry);
+      console.log('[POS] Customer country (normalized):', country);
+      console.log('[POS] Countries match?', normalizedBusinessCountry === country);
       setTaxRate(0);
       toast.success(`International sale - 0% tax applied`);
       return;
+    } else if (normalizedBusinessCountry && country) {
+      console.log('[POS] 🏠 Domestic sale - both in:', country);
     }
     
     try {
