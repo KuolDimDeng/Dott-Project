@@ -23,7 +23,7 @@ export async function GET(request) {
     console.log('[Tenant Settings] Fetching tax settings from backend');
 
     // First, fetch the user's business location to determine default tax rate
-    const profileResponse = await fetch(`${BACKEND_URL}/api/auth/session-profile/`, {
+    const profileResponse = await fetch(`${BACKEND_URL}/api/users/me/`, {
       method: 'GET',
       headers: {
         'Authorization': `Session ${sidCookie.value}`,
