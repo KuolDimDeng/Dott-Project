@@ -101,6 +101,22 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         if user_obj:
             request.user = user_obj
             request._cached_user = user_obj  # For Django's auth middleware compatibility
+            
+            # Add business_id and tenant_id attributes for compatibility
+            if hasattr(user_obj, 'id'):
+                # Use user.id as both business_id and tenant_id for consistency
+                request.user.business_id = user_obj.id
+                request.user.tenant_id = user_obj.id
+                
+                # Also try to get from UserProfile if it exists
+                try:
+                    from users.models import UserProfile
+                    profile = UserProfile.objects.get(user=user_obj)
+                    if profile.tenant_id:
+                        request.user.tenant_id = profile.tenant_id
+                        request.user.business_id = profile.tenant_id
+                except:
+                    pass
         else:
             # Fallback to AnonymousUser if no user in session
             from django.contrib.auth.models import AnonymousUser
@@ -174,7 +190,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 return None
                 
             session_obj = UserSession.objects.get(
-                session_token=session_uuid,
+                session_id=session_uuid,
                 is_active=True
             )
             
@@ -249,7 +265,7 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         
         try:
             from session_manager.models import UserSession
-            UserSession.objects.filter(session_token=session['id']).update(
+            UserSession.objects.filter(session_id=session['id']).update(
                 last_activity=timezone.now()
             )
         except Exception as e:
