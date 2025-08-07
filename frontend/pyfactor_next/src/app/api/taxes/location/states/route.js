@@ -15,7 +15,7 @@ export async function GET(request) {
     if (!sidCookie?.value) {
       console.error('[States API] No session cookie found');
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Authentication required', states: [] },
         { status: 401 }
       );
     }
@@ -25,17 +25,23 @@ export async function GET(request) {
     const queryString = searchParams.toString();
     
     console.log('[States API] Fetching from backend with params:', queryString);
+    console.log('[States API] Using session:', sidCookie.value);
     
-    // Call backend directly - no trailing slash
-    const response = await fetch(`${BACKEND_URL}/api/taxes/location/states${queryString ? '?' + queryString : ''}`, {
+    // Call backend directly with trailing slash to match Django URL pattern
+    const backendUrl = `${BACKEND_URL}/api/taxes/location/states/${queryString ? '?' + queryString : ''}`;
+    console.log('[States API] Backend URL:', backendUrl);
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
+        'Accept': 'application/json',
       },
       cache: 'no-store'
     });
 
+    console.log('[States API] Backend response status:', response.status);
     const responseText = await response.text();
     
     // Check if response is HTML (error page)

@@ -15,7 +15,7 @@ export async function GET(request) {
     if (!sidCookie?.value) {
       console.error('[Counties API] No session cookie found');
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Authentication required', counties: [] },
         { status: 401 }
       );
     }
@@ -25,16 +25,23 @@ export async function GET(request) {
     const queryString = searchParams.toString();
     
     console.log('[Counties API] Fetching from backend with params:', queryString);
+    console.log('[Counties API] Using session:', sidCookie.value);
     
-    // Call backend directly - no trailing slash
-    const response = await fetch(`${BACKEND_URL}/api/taxes/location/counties${queryString ? '?' + queryString : ''}`, {
+    // Call backend directly with trailing slash to match Django URL pattern
+    const backendUrl = `${BACKEND_URL}/api/taxes/location/counties/${queryString ? '?' + queryString : ''}`;
+    console.log('[Counties API] Backend URL:', backendUrl);
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
+        'Accept': 'application/json',
       },
       cache: 'no-store'
     });
+    
+    console.log('[Counties API] Backend response status:', response.status);
 
     const responseText = await response.text();
     
