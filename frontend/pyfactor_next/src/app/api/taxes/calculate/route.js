@@ -35,6 +35,7 @@ export async function GET(request) {
     if (county) backendParams.append('county', county);
 
     // Call backend tax calculation endpoint
+    console.log('[Tax Calculate] Calling backend with URL:', `${BACKEND_URL}/api/taxes/calculate/?${backendParams.toString()}`);
     const response = await fetch(
       `${BACKEND_URL}/api/taxes/calculate/?${backendParams.toString()}`,
       {

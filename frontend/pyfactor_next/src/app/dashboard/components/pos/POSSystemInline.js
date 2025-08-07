@@ -883,8 +883,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         
         console.log('[POS] ✅ Tax rate set to', taxRatePercentage, '% for customer in', location);
       } else {
-        console.error('[POS] Failed to calculate tax, using default');
+        console.error('[POS] Failed to calculate tax, response status:', response.status);
+        console.error('[POS] Using default tax rate:', defaultTaxRate);
         setTaxRate(defaultTaxRate || 0);
+        
+        // Still show a message so user knows what's happening
+        toast.warning(`Using default tax rate: ${(defaultTaxRate || 0).toFixed(2)}%`);
       }
     } catch (error) {
       console.error('[POS] Error calculating customer tax:', error);

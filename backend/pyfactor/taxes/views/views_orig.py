@@ -415,11 +415,14 @@ class TaxCalculationView(APIView):
             from ..models import GlobalSalesTaxRate
             
             # Get query parameters - use request.GET for regular Django views
-            country = request.GET.get('country', '').upper()
-            state = request.GET.get('state', '').upper()
-            county = request.GET.get('county', '').upper()
+            country = request.GET.get('country', '').strip().upper()
+            state = request.GET.get('state', '').strip().upper()
+            county = request.GET.get('county', '').strip().upper()
             
             logger.info(f"[Sales Tax Calculation] Request: country={country}, state={state}, county={county}")
+            
+            # Debug: Log all parameters
+            logger.info(f"[Sales Tax] Raw request params: {dict(request.GET)}")
             
             if not country:
                 return Response(

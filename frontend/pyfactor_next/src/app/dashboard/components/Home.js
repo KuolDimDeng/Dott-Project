@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from './SubscriptionPopup';
-import { customerApi, productApi, supplierApi } from '@/utils/apiClient';
+import { customerApi, productApi, supplierApi, serviceApi, invoiceApi } from '@/utils/apiClient';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -59,14 +59,13 @@ function Home({ userData, onNavigate }) {
         // The API calls will handle authentication automatically
         
         // Fetch various stats in parallel
-        const [customerStats, serviceStats, dashboardMetrics] = await Promise.all([
+        const [customerStats, dashboardMetrics] = await Promise.all([
           fetch('/api/customers/stats', { credentials: 'include' }).then(res => res.json()).catch(() => ({ total: 0 })),
-          fetch('/api/services/stats', { credentials: 'include' }).then(res => res.json()).catch(() => ({ stats: { total: 0 } })),
           fetch('/api/dashboard/metrics/summary', { credentials: 'include' }).then(res => res.json()).catch(() => ({ metrics: {} }))
         ]);
 
         // Fetch entity counts
-        const [customersResponse, productsResponse, suppliersResponse] = await Promise.all([
+        const [customersResponse, productsResponse, suppliersResponse, servicesResponse, invoicesResponse] = await Promise.all([
           customerApi.getAll().then(res => {
             console.log('[Home] Customers response:', res);
             // Django REST Framework paginated response format
@@ -104,6 +103,30 @@ function Home({ userData, onNavigate }) {
           }).catch((error) => {
             console.error('[Home] Error fetching suppliers:', error);
             return [];
+          }),
+          serviceApi.getAll().then(res => {
+            console.log('[Home] Services response:', res);
+            // Handle different response formats
+            if (res.services && Array.isArray(res.services)) return res.services;
+            if (res.results && Array.isArray(res.results)) return res.results;
+            if (Array.isArray(res)) return res;
+            if (res.data && Array.isArray(res.data)) return res.data;
+            return [];
+          }).catch((error) => {
+            console.error('[Home] Error fetching services:', error);
+            return [];
+          }),
+          invoiceApi.getAll().then(res => {
+            console.log('[Home] Invoices response:', res);
+            // Handle different response formats
+            if (res.results && Array.isArray(res.results)) return res.results;
+            if (Array.isArray(res)) return res;
+            if (res.invoices && Array.isArray(res.invoices)) return res.invoices;
+            if (res.data && Array.isArray(res.data)) return res.data;
+            return [];
+          }).catch((error) => {
+            console.error('[Home] Error fetching invoices:', error);
+            return [];
           })
         ]);
 
@@ -111,14 +134,16 @@ function Home({ userData, onNavigate }) {
         const customers = customersResponse || [];
         const products = productsResponse || [];
         const suppliers = suppliersResponse || [];
+        const services = servicesResponse || [];
+        const invoices = invoicesResponse || [];
 
         // Update stats - use actual data counts, not failing stats endpoints
         setStats({
           customers: customers.length || customerStats.total || 0,
           products: products.length || 0,
-          services: serviceStats.stats?.total || serviceStats.total || 0,
+          services: services.length || 0,
           suppliers: suppliers.length || 0,
-          invoices: dashboardMetrics.metrics?.invoices?.total || dashboardMetrics.total || 0
+          invoices: invoices.length || 0
         });
 
         // Update checklist based on real data
@@ -126,9 +151,9 @@ function Home({ userData, onNavigate }) {
           profileComplete: !!(userData?.businessName || userData?.business_name || userData?.company_name),
           hasCustomers: customers.length > 0 || customerStats.total > 0,
           hasProducts: products.length > 0,
-          hasServices: (serviceStats.stats?.total || serviceStats.total || 0) > 0,
+          hasServices: services.length > 0,
           hasSuppliers: suppliers.length > 0,
-          hasInvoices: (dashboardMetrics.metrics?.invoices?.total || dashboardMetrics.total || 0) > 0,
+          hasInvoices: invoices.length > 0,
           exploredDashboard: true // Can track this via localStorage or user activity
         };
         
@@ -137,8 +162,9 @@ function Home({ userData, onNavigate }) {
           customerStats,
           customers: customers.length,
           products: products.length,
-          serviceStats,
+          services: services.length,
           suppliers: suppliers.length,
+          invoices: invoices.length,
           dashboardMetrics
         });
         
