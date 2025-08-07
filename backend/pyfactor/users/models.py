@@ -222,6 +222,11 @@ class BusinessDetails(models.Model):
         default='US Dollar',
         help_text='Full currency name'
     )
+    preferred_currency_symbol = models.CharField(
+        max_length=10,
+        default='$',
+        help_text='Currency symbol (e.g., $, €, £)'
+    )
     currency_updated_at = models.DateTimeField(
         null=True,
         blank=True,
