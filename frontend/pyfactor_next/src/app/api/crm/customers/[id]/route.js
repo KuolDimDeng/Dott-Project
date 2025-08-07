@@ -50,6 +50,16 @@ export async function PUT(request, { params }) {
     // Get request body
     const body = await request.json();
     
+    // Clean up date fields - convert empty strings to null
+    if (body.tax_exempt_expiry === '' || body.tax_exempt_expiry === undefined) {
+      body.tax_exempt_expiry = null;
+    }
+    
+    // Ensure boolean fields are properly typed
+    if (body.is_tax_exempt !== undefined) {
+      body.is_tax_exempt = Boolean(body.is_tax_exempt);
+    }
+    
     // Forward request to Django backend
     const response = await fetch(`${API_URL}/api/crm/customers/${id}/`, {
       method: 'PUT',
