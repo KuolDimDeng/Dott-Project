@@ -57,8 +57,12 @@ class TaxService:
             )
             
             # Step 2: Check if this is an international sale (Phase 1 approach)
-            business_country = str(user_profile.country) if user_profile.country else 'US'
+            business_country = str(user_profile.country) if user_profile.country else None
             customer_country = tax_location['country']
+            
+            # If business country is not set, skip international check
+            if not business_country:
+                business_country = customer_country  # Assume domestic sale
             
             # International sales = zero tax (export exemption)
             if business_country != customer_country:
@@ -368,9 +372,9 @@ class TaxService:
             # Get business location tax rate
             tax_rate = Decimal('0')
             
-            if user_profile.state:
+            if user_profile.state and user_profile.country:
                 state_rate = GlobalSalesTaxRate.objects.filter(
-                    country=str(user_profile.country) if user_profile.country else 'US',
+                    country=str(user_profile.country),
                     state=user_profile.state,
                     county__isnull=True,
                     is_active=True

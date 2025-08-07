@@ -262,11 +262,11 @@ class ConsolidatedAuthView(View):
                 profile = UserProfile.objects.get(user=user)
                 response_data['user']['show_whatsapp_commerce'] = profile.get_whatsapp_commerce_preference()
                 response_data['user']['whatsapp_commerce_explicit'] = profile.show_whatsapp_commerce
-                response_data['user']['country'] = str(profile.country) if profile.country else 'US'
+                response_data['user']['country'] = str(profile.country) if profile.country else None
             except Exception as e:
                 logger.debug(f"[ConsolidatedAuth] Could not fetch UserProfile data: {e}")
                 response_data['user']['show_whatsapp_commerce'] = False
-                response_data['user']['country'] = 'US'
+                response_data['user']['country'] = None
             
             # Add tenant info if available
             if tenant:

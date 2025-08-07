@@ -509,9 +509,10 @@ class Auth0UserProfileView(APIView):
                     logger.warning(f"🔥 [USER_PROFILE] Failed to get business name from Business record: {str(e)}")
             
             # Get business details including country/state information
-            business_country = 'US'  # Default
+            # Don't hardcode defaults - let the system determine based on user's actual location
+            business_country = None
             business_state = ''
-            business_country_name = 'United States'
+            business_country_name = None
             
             if onboarding_progress and onboarding_progress.business:
                 try:
@@ -521,9 +522,9 @@ class Auth0UserProfileView(APIView):
                         # Try to get business details
                         try:
                             business_details = business_obj.details
-                            if business_details:
-                                business_country = str(business_details.country.code) if business_details.country else 'US'
-                                business_country_name = str(business_details.country.name) if business_details.country else 'United States'
+                            if business_details and business_details.country:
+                                business_country = str(business_details.country.code)
+                                business_country_name = str(business_details.country.name)
                                 logger.info(f"🔥 [USER_PROFILE] Found business country: {business_country} ({business_country_name})")
                         except BusinessDetails.DoesNotExist:
                             logger.warning(f"🔥 [USER_PROFILE] No BusinessDetails found for business {business_obj.id}")
@@ -628,7 +629,7 @@ class Auth0OnboardingBusinessInfoView(APIView):
             # Extract business data
             business_name = data.get('business_name') or data.get('businessName')
             business_type = data.get('business_type') or data.get('businessType')
-            country = data.get('country', 'US')
+            country = data.get('country')  # No default value, let it be None if not provided
             
             if not business_name:
                 return Response({
