@@ -3,9 +3,10 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useTranslation } from 'react-i18next';
-import { I18nextProvider } from 'react-i18next';
-import i18nInstance from '@/i18n';
+// Temporary: Remove i18n imports to fix React error #130
+// import { useTranslation } from 'react-i18next';
+// import { I18nextProvider } from 'react-i18next';
+// import i18nInstance from '@/i18n';
 import { 
   ArrowLeft, 
   Target,
@@ -23,7 +24,8 @@ import {
 } from '@phosphor-icons/react';
 
 function AboutUsContent() {
-  const { t } = useTranslation();
+  // Temporary: Remove i18n to fix React error #130
+  // const { t } = useTranslation();
 
   const problems = [
     {
@@ -299,9 +301,6 @@ function AboutUsContent() {
 }
 
 export default function AboutUs() {
-  return (
-    <I18nextProvider i18n={i18nInstance}>
-      <AboutUsContent />
-    </I18nextProvider>
-  );
+  // Temporary: Remove i18n wrapper to fix React error #130
+  return <AboutUsContent />;
 }
