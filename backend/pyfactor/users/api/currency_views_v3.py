@@ -97,7 +97,7 @@ def get_user_business(user):
         logger.error(f"❌ [Currency V3] Error fetching business: {str(e)}")
         return None, None
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'POST'])
 @permission_classes([IsAuthenticated])
 def currency_preferences_v3(request):
     """
@@ -125,10 +125,25 @@ def currency_preferences_v3(request):
         # Get country code for auto-detection
         country_code = None
         profile = UserProfile.objects.filter(user=request.user).first()
+        logger.info(f"🔍 [Currency V3] Profile found: {bool(profile)}")
+        if profile:
+            logger.info(f"🔍 [Currency V3] Profile country: {profile.country}")
+            logger.info(f"🔍 [Currency V3] Profile country type: {type(profile.country)}")
+        
         if profile and profile.country:
             country_code = str(profile.country)
-        elif hasattr(business, 'country'):
-            country_code = str(business.country) if business.country else None
+            logger.info(f"🌍 [Currency V3] Using profile country: {country_code}")
+        else:
+            # Check BusinessDetails for country
+            try:
+                business_details_temp = BusinessDetails.objects.filter(business=business).first()
+                if business_details_temp and business_details_temp.country:
+                    country_code = str(business_details_temp.country)
+                    logger.info(f"🌍 [Currency V3] Using BusinessDetails country: {country_code}")
+                else:
+                    logger.info(f"🌍 [Currency V3] No country found in BusinessDetails")
+            except Exception as e:
+                logger.warning(f"⚠️ [Currency V3] Error checking BusinessDetails country: {str(e)}")
         
         # Auto-detect currency based on country
         if country_code:
@@ -192,15 +207,15 @@ def currency_preferences_v3(request):
                 'business': {
                     'id': str(business.id),
                     'name': business.name,
-                    'country': business.country
+                    'country': str(business_details.country) if business_details.country else None
                 }
             }
             
             logger.info(f"✅ [Currency V3] GET Response: {json.dumps(response_data, indent=2)}")
             return Response(response_data)
         
-        # Handle PUT request
-        elif request.method == 'PUT':
+        # Handle PUT/POST request (POST is used by some frontend components)
+        elif request.method in ['PUT', 'POST']:
             logger.info(f"✏️ [Currency V3] Processing PUT request")
             logger.info(f"✏️ [Currency V3] Request data: {json.dumps(dict(request.data), indent=2)}")
             

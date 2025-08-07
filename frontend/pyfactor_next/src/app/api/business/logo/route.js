@@ -40,6 +40,13 @@ export async function GET(request) {
     });
 
     if (!response.ok) {
+      // Handle 404 gracefully - user likely doesn't have a logo
+      if (response.status === 404) {
+        return NextResponse.json({ 
+          logo_data: null,
+          message: 'No logo found' 
+        });
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
