@@ -18,7 +18,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
-import CurrencyPreferencesV2 from './CurrencyPreferencesV2';
 import AccountingStandards from './AccountingStandards';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
@@ -1021,11 +1020,6 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Currency Preferences Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <CurrencyPreferencesV2 />
           </div>
 
           {/* Accounting Standards Section */}

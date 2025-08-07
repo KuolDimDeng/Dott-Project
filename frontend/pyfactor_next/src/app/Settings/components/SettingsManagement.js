@@ -21,6 +21,7 @@ import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettingsSimple';
 import MainMenuSettings from './sections/MainMenuSettings';
 import TaxSettings from './sections/TaxSettings';
+import CurrencySettings from './sections/CurrencySettings';
 // import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
@@ -35,7 +36,8 @@ import {
   MapPinIcon,
   ChatBubbleLeftRightIcon,
   Squares2X2Icon,
-  CalculatorIcon
+  CalculatorIcon,
+  BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -79,10 +81,18 @@ const SettingsManagement = () => {
     {
       id: 'bank-connections',
       title: 'Banking', // Changed from Bank Connections
-      icon: BanknotesIcon,
+      icon: BuildingLibraryIcon,
       description: t('bankConnections.title'),
       component: BankConnections,
       requiredRole: 'admin' // Only admin and owner can access
+    },
+    {
+      id: 'currency',
+      title: 'Currency',
+      icon: CurrencyDollarIcon,
+      description: 'Set your business currency for invoices and reports',
+      component: CurrencySettings,
+      requiredRole: 'user' // All users can view their currency
     },
     {
       id: 'taxes',
@@ -95,7 +105,7 @@ const SettingsManagement = () => {
     {
       id: 'payroll',
       title: t('tabs.payroll'),
-      icon: CurrencyDollarIcon,
+      icon: BanknotesIcon,
       description: t('payroll.title'),
       component: PayrollSettings,
       requiredRole: 'admin' // Only admin and owner can access

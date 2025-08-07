@@ -14,6 +14,7 @@ from django.db import transaction as db_transaction
 from django.conf import settings
 from users.models import Business, BusinessDetails, UserProfile
 from currency.currency_data import get_currency_info, get_currency_list
+from currency.currency_detection import auto_set_currency_for_business, detect_currency_for_country
 
 # Configure logging with more detail
 logger = logging.getLogger(__name__)
@@ -121,24 +122,45 @@ def currency_preferences_v3(request):
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Get or create BusinessDetails
+        # Get country code for auto-detection
+        country_code = None
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile and profile.country:
+            country_code = str(profile.country)
+        elif hasattr(business, 'country'):
+            country_code = str(business.country) if business.country else None
+        
+        # Auto-detect currency based on country
+        if country_code:
+            currency_info = detect_currency_for_country(country_code)
+            logger.info(f"🌍 [Currency V3] Detected currency for {country_code}: {currency_info['code']}")
+        else:
+            currency_info = {'code': 'USD', 'name': 'US Dollar', 'symbol': '$'}
+            logger.info(f"🌍 [Currency V3] No country found, defaulting to USD")
+        
+        # Get or create BusinessDetails with auto-detected currency
         business_details, created = BusinessDetails.objects.get_or_create(
             business=business,
             defaults={
-                'preferred_currency_code': 'USD',
-                'preferred_currency_name': 'US Dollar',
-                'preferred_currency_symbol': '$',
-                'show_usd_on_invoices': True,
-                'show_usd_on_quotes': True,
+                'preferred_currency_code': currency_info['code'],
+                'preferred_currency_name': currency_info['name'],
+                'preferred_currency_symbol': currency_info['symbol'],
+                'show_usd_on_invoices': currency_info['code'] != 'USD',
+                'show_usd_on_quotes': currency_info['code'] != 'USD',
                 'show_usd_on_reports': False,
-                'accounting_standard': 'GAAP' if business.country == 'US' else 'IFRS'
+                'accounting_standard': 'GAAP' if country_code == 'US' else 'IFRS'
             }
         )
         
         if created:
-            logger.info(f"✨ [Currency V3] Created new BusinessDetails for: {business.name}")
+            logger.info(f"✨ [Currency V3] Created new BusinessDetails with {currency_info['code']} for: {business.name}")
         else:
             logger.info(f"📋 [Currency V3] Found existing BusinessDetails for: {business.name}")
+            # Auto-update currency for existing users if not manually changed
+            if not business_details.currency_updated_at and country_code:
+                updated = auto_set_currency_for_business(business_details, country_code)
+                if updated:
+                    logger.info(f"🔄 [Currency V3] Auto-updated currency for existing user based on country")
         
         # Handle GET request
         if request.method == 'GET':
@@ -198,6 +220,8 @@ def currency_preferences_v3(request):
                             business_details.preferred_currency_code = currency_code
                             business_details.preferred_currency_name = currency_info.get('name', currency_code)
                             business_details.preferred_currency_symbol = currency_info.get('symbol', currency_code)
+                            # Mark as manually updated so auto-detection won't override
+                            business_details.currency_updated_at = timezone.now()
                             logger.info(f"✅ [Currency V3] Currency validated: {currency_info}")
                         else:
                             # Fallback for unknown currencies
