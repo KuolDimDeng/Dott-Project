@@ -848,6 +848,8 @@ TENANT_EXEMPT_PATHS = [
     '/api/onboarding/webhooks/',  # Onboarding webhooks
     '/api/contact-form/',  # Public contact form
     '/api/public/',  # Public API endpoints
+    '/api/notifications/admin/',  # Admin portal endpoints
+    '/api/leads/',  # Leads management (admin access)
 ]
 
 # Paths that require authentication but not tenant context (used during onboarding)
