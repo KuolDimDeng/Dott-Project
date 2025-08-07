@@ -237,6 +237,13 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 is_active=True
             )
             
+            # Build session result
+            session_data = session_obj.session_data
+            if isinstance(session_data, str):
+                session_data = json.loads(session_data or '{}')
+            elif session_data is None:
+                session_data = {}
+            
             result = {
                 'id': session_id,
                 'user': session_obj.user,
@@ -244,13 +251,16 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 'last_activity': session_obj.last_activity.timestamp(),
                 'ip_address': session_obj.ip_address,
                 'user_agent': session_obj.user_agent,
-                'device_fingerprint': session_obj.device_fingerprint,
-                'data': json.loads(session_obj.session_data or '{}')
+                'device_fingerprint': getattr(session_obj, 'device_fingerprint', None),
+                'data': session_data
             }
             logger.debug(f"Session found for user: {session_obj.user.email if session_obj.user else 'None'}")
             return result
+        except UserSession.DoesNotExist:
+            logger.warning(f"Session {session_id} not found in database")
+            return None
         except Exception as e:
-            logger.debug(f"Session not found or invalid: {e}")
+            logger.error(f"Error getting session {session_id}: {e}", exc_info=True)
             return None
     
     def _validate_session(self, session, request):
