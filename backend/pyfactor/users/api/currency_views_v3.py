@@ -50,9 +50,22 @@ def log_request_details(request, method):
         logger.info(f"🌟 [Currency V3] Body: {json.dumps(dict(request.data), indent=2)}")
 
 def get_user_business(user):
-    """Get business for user with multiple fallback methods"""
+    """Get business for user with improved utilities"""
     logger.info(f"🔍 [Currency V3] Getting business for user: {user.email}")
     
+    # Try importing the new business utils first
+    try:
+        from users.business_utils import get_user_business as get_business_improved
+        business = get_business_improved(user)
+        if business:
+            logger.info(f"✅ [Currency V3] Business found via improved utils: {business.name} (ID: {business.id})")
+            return business, 'improved_utils'
+    except ImportError:
+        logger.debug("Business utils not available yet, using fallback")
+    except Exception as e:
+        logger.warning(f"Error using business utils: {e}")
+    
+    # Fallback to original logic
     business_id = None
     method_used = None
     

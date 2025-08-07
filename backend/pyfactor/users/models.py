@@ -29,12 +29,74 @@ from users.business_categories import SIMPLIFIED_BUSINESS_TYPES
 class Business(models.Model):
     """
     Business model - core model for storing business information.
-    Business details are stored in a separate BusinessDetails model.
+    Consolidated to include essential fields for better performance.
+    Maintains multi-tenant RLS architecture (tenant_id = business.id).
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner_id = models.UUIDField(verbose_name='Owner ID', null=True, blank=True)
     name = models.CharField(max_length=255)  # This matches the actual column in your DB
-    # business_type field is now handled by the BusinessDetails model
+    
+    # Consolidated fields (previously in BusinessDetails)
+    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES, blank=True, null=True)
+    simplified_business_type = models.CharField(
+        max_length=50,
+        choices=SIMPLIFIED_BUSINESS_TYPES,
+        null=True,
+        blank=True,
+        help_text="Simplified category for feature access (SERVICE/RETAIL/MIXED)"
+    )
+    legal_structure = models.CharField(
+        max_length=50,
+        choices=LEGAL_STRUCTURE_CHOICES,
+        default='SOLE_PROPRIETORSHIP'
+    )
+    country = CountryField(default='US')
+    date_founded = models.DateField(null=True, blank=True)
+    
+    # Currency preferences (essential for display)
+    preferred_currency_code = models.CharField(
+        max_length=3,
+        default='USD',
+        help_text='3-letter ISO currency code'
+    )
+    preferred_currency_name = models.CharField(
+        max_length=50,
+        default='US Dollar'
+    )
+    preferred_currency_symbol = models.CharField(
+        max_length=10,
+        default='$'
+    )
+    currency_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last manual currency update'
+    )
+    
+    # Accounting preferences
+    accounting_standard = models.CharField(
+        max_length=10,
+        choices=[
+            ('IFRS', 'IFRS (International)'),
+            ('GAAP', 'US GAAP'),
+        ],
+        default='IFRS'
+    )
+    
+    # Logo (base64 stored in DB for simplicity)
+    logo_data = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Business logo as base64 data URL'
+    )
+    
+    # Multi-tenant field (RLS)
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    
+    # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)  # This matches 'updated_at' in your DB
     business_num = models.CharField(max_length=6, unique=True, null=True, blank=True)
@@ -50,10 +112,10 @@ class Business(models.Model):
     default_bank_token = models.CharField(max_length=100, blank=True, help_text="Payment method ID for ACH debits")
     ach_mandate_id = models.CharField(max_length=100, blank=True, help_text="ACH mandate for recurring debits")
 
-    # Helper property for linter - Django automatically creates this reverse relationship
+    # Helper property for backward compatibility with BusinessDetails
     @property
     def details(self):
-        """Get the related BusinessDetails instance"""
+        """Get the related BusinessDetails instance (for backward compatibility)"""
         from users.models import BusinessDetails
         try:
             return BusinessDetails.objects.get(business=self)
@@ -68,84 +130,70 @@ class Business(models.Model):
     @business_name.setter
     def business_name(self, value):
         self.name = value
-
-    @property
-    def business_type(self):
-        """
-        Get business_type from the related BusinessDetails object
-        """
-        try:
-            details_obj = self.details
-            return details_obj.business_type if details_obj else None
-        except BusinessDetails.DoesNotExist:
-            return None
-
-    @business_type.setter
-    def business_type(self, value):
-        """
-        Store business_type value to be set on BusinessDetails 
-        during save() to handle unsaved Business instances properly
-        """
-        # Store the value for use in save()
-        self._business_type_value = value
-        
-        # If the instance is already saved, update BusinessDetails directly
-        if self.pk:
-            try:
-                details, created = BusinessDetails.objects.get_or_create(
-                    business=self,
-                    defaults={'business_type': value}
-                )
-                
-                if not created and details.business_type != value:
-                    details.business_type = value
-                    details.save(update_fields=['business_type'])
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error setting business_type: {str(e)}")
+    
+    def get_currency_display(self):
+        """Get formatted currency for display"""
+        return f"{self.preferred_currency_code} ({self.preferred_currency_symbol})"
 
 
     def save(self, *args, **kwargs):
         # Generate a unique business number if not provided
         if not self.business_num:
             self.business_num = self.generate_business_number()
-            
-        # Handle the case where we're linked to an owner
-        owner_id = self.owner_id
         
-        # Temporarily store business_type if set via property
-        business_type_value = getattr(self, '_business_type_value', None)
+        # CRITICAL: Set tenant_id = business.id for RLS
+        if not self.tenant_id:
+            self.tenant_id = self.id
+        
+        # Auto-detect currency based on country if not manually set
+        if not self.currency_updated_at and self.country:
+            try:
+                from currency.currency_detection import detect_currency_for_country
+                currency_info = detect_currency_for_country(str(self.country))
+                if currency_info:
+                    self.preferred_currency_code = currency_info['code']
+                    self.preferred_currency_name = currency_info['name']
+                    self.preferred_currency_symbol = currency_info['symbol']
+            except Exception as e:
+                logger.debug(f"Could not auto-detect currency: {e}")
+        
+        # Set accounting standard based on country
+        if not self.accounting_standard:
+            self.accounting_standard = 'GAAP' if str(self.country) == 'US' else 'IFRS'
 
         # Perform the actual save operation
         super().save(*args, **kwargs)
         
-        # Create or update BusinessDetails with the stored business_type
-        if business_type_value:
+        # Sync BusinessDetails for backward compatibility
+        if hasattr(self, '_sync_to_details') and self._sync_to_details:
             from users.models import BusinessDetails
             try:
                 details, created = BusinessDetails.objects.get_or_create(
                     business=self,
                     defaults={
-                        'business_type': business_type_value,
-                        'legal_structure': 'SOLE_PROPRIETORSHIP',
-                        'country': 'US'
+                        'business_type': self.business_type,
+                        'simplified_business_type': self.simplified_business_type,
+                        'legal_structure': self.legal_structure,
+                        'country': self.country,
+                        'date_founded': self.date_founded,
+                        'preferred_currency_code': self.preferred_currency_code,
+                        'preferred_currency_name': self.preferred_currency_name,
+                        'preferred_currency_symbol': self.preferred_currency_symbol,
+                        'currency_updated_at': self.currency_updated_at,
+                        'accounting_standard': self.accounting_standard,
+                        'logo_data': self.logo_data
                     }
                 )
-                if not created and details.business_type != business_type_value:
-                    details.business_type = business_type_value
-                    details.save(update_fields=['business_type'])
+                if not created:
+                    # Update existing details
+                    for field in ['business_type', 'simplified_business_type', 'legal_structure',
+                                  'country', 'date_founded', 'preferred_currency_code',
+                                  'preferred_currency_name', 'preferred_currency_symbol',
+                                  'currency_updated_at', 'accounting_standard', 'logo_data']:
+                        setattr(details, field, getattr(self, field))
+                    details.save()
             except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error setting business_type: {str(e)}")
-        
-        # If we have an owner_id, update the UserProfile safely
-        if owner_id:
-            # For now, skip UserProfile update if we have owner_id
-            # The issue is a database schema mismatch that needs to be fixed
-            # by running: python manage.py shell < scripts/fix_userprofile_field_type.py
-            print(f"[Business.save] Skipping UserProfile update - schema fix needed")
+                logger.debug(f"Could not sync to BusinessDetails: {e}")
 
     def generate_business_number(self):
         """Generate a unique 6-digit business number"""

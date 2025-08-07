@@ -50,16 +50,26 @@ const InvoiceForm = ({ mode = 'create' }) => {
       const response = await fetch('/api/business/logo');
       if (response.ok) {
         const data = await response.json();
-        if (data.logo_url) {
+        // Check for logo_data or logo_url (API now returns logo_data: null for no logo)
+        const logoData = data.logo_data || data.logo_url;
+        if (logoData) {
           // Convert backend URL to full URL if needed
-          const fullUrl = data.logo_url.startsWith('http') 
-            ? data.logo_url 
-            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+          const fullUrl = logoData.startsWith('http') 
+            ? logoData 
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${logoData}`;
           setLogo(fullUrl);
+        } else {
+          // No logo found
+          console.log('[InvoiceForm] No business logo found');
+          setLogo(null);
         }
+      } else {
+        console.log('[InvoiceForm] Failed to fetch business logo');
+        setLogo(null);
       }
     } catch (error) {
-      console.error('Error loading business logo:', error);
+      console.log('[InvoiceForm] Business logo fetch failed (expected for users without logos):', error.message);
+      setLogo(null);
     }
   };
 

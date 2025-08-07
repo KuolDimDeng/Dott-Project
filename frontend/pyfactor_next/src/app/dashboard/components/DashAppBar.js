@@ -205,18 +205,28 @@ const DashAppBar = ({
         const response = await fetch('/api/business/logo');
         if (response.ok) {
           const data = await response.json();
-          if (data.logo_url && isMounted.current) {
+          // Check for logo_data or logo_url (API now returns logo_data: null for no logo)
+          const logoData = data.logo_data || data.logo_url;
+          if (logoData && isMounted.current) {
             // Convert backend URL to full URL if needed
             // Support both http URLs and data: URLs (base64)
-            const fullUrl = (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))
-              ? data.logo_url 
-              : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+            const fullUrl = (logoData.startsWith('http') || logoData.startsWith('data:'))
+              ? logoData 
+              : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${logoData}`;
             console.log('[DashAppBar] Business logo loaded:', fullUrl.substring(0, 100) + '...');
             setBusinessLogoUrl(fullUrl);
+          } else {
+            // No logo found - set to null to avoid errors
+            console.log('[DashAppBar] No business logo found');
+            setBusinessLogoUrl(null);
           }
+        } else {
+          console.log('[DashAppBar] Failed to fetch business logo, response not ok');
+          setBusinessLogoUrl(null);
         }
       } catch (error) {
-        console.error('Error loading business logo:', error);
+        console.log('[DashAppBar] Business logo fetch failed (expected for users without logos):', error.message);
+        setBusinessLogoUrl(null);
       }
     };
 

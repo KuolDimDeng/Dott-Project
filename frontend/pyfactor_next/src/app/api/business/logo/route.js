@@ -53,11 +53,12 @@ export async function GET(request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching business logo:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch business logo" },
-      { status: 500 }
-    );
+    console.log("[Business Logo API] Fetch failed (expected for users without logos):", error.message);
+    // Return consistent response even on error - no logo found
+    return NextResponse.json({ 
+      logo_data: null,
+      message: 'No logo found' 
+    });
   }
 }
 

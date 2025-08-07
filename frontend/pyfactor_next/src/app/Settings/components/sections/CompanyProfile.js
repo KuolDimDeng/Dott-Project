@@ -82,16 +82,26 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       const response = await fetch('/api/business/logo');
       if (response.ok) {
         const data = await response.json();
-        if (data.logo_url) {
+        // Check for logo_data or logo_url (API now returns logo_data: null for no logo)
+        const logoData = data.logo_data || data.logo_url;
+        if (logoData) {
           // Convert backend URL to full URL if needed
-          const fullUrl = data.logo_url.startsWith('http') 
-            ? data.logo_url 
-            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+          const fullUrl = logoData.startsWith('http') 
+            ? logoData 
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${logoData}`;
           setLogoUrl(fullUrl);
+        } else {
+          // No logo found
+          console.log('[CompanyProfile] No business logo found');
+          setLogoUrl(null);
         }
+      } else {
+        console.log('[CompanyProfile] Failed to fetch business logo');
+        setLogoUrl(null);
       }
     } catch (error) {
-      console.error('Error loading business logo:', error);
+      console.log('[CompanyProfile] Business logo fetch failed (expected for users without logos):', error.message);
+      setLogoUrl(null);
     }
   };
 
