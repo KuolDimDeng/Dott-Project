@@ -55,6 +55,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '    python fix_userprofile_county.py || echo "UserProfile county fix failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Fixing Customer county fields..." ' >> /app/start.sh && \
     echo '    python fix_customer_county.py || echo "Customer county fix failed but continuing..."' >> /app/start.sh && \
+    echo '    echo "Fixing all Customer fields comprehensively..." ' >> /app/start.sh && \
+    echo '    python fix_all_customer_fields.py || echo "Customer fields fix failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Collecting static files..." ' >> /app/start.sh && \
     echo '    python manage.py collectstatic --noinput --verbosity 0' >> /app/start.sh && \
     echo '    echo "Starting Gunicorn server..." ' >> /app/start.sh && \
