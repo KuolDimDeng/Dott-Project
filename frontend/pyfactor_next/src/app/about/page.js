@@ -3,10 +3,9 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-// Temporary: Remove i18n imports to fix React error #130
-// import { useTranslation } from 'react-i18next';
-// import { I18nextProvider } from 'react-i18next';
-// import i18nInstance from '@/i18n';
+import { useTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
+import i18nInstance from '@/i18n';
 import { 
   ArrowLeft, 
   Target,
@@ -24,8 +23,19 @@ import {
 } from '@phosphor-icons/react';
 
 function AboutUsContent() {
-  // Temporary: Remove i18n to fix React error #130
-  // const { t } = useTranslation();
+  const { t, ready } = useTranslation();
+  
+  // Don't render until i18n is ready
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-64 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-4 w-48 bg-gray-100 rounded mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   const problems = [
     {
@@ -301,6 +311,27 @@ function AboutUsContent() {
 }
 
 export default function AboutUs() {
-  // Temporary: Remove i18n wrapper to fix React error #130
-  return <AboutUsContent />;
+  const [isClient, setIsClient] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Don't render on server to avoid hydration mismatch
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-64 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-4 w-48 bg-gray-100 rounded mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <I18nextProvider i18n={i18nInstance}>
+      <AboutUsContent />
+    </I18nextProvider>
+  );
 }
