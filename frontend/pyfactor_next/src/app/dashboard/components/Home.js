@@ -668,7 +668,7 @@ function Home({ userData, onNavigate }) {
         
         {/* Cash Flow Widget - Full Width Below */}
         <div className="mt-6">
-          <CashFlowWidget onNavigate={onNavigate} />
+          <CashFlowWidget onNavigate={onNavigate} userData={userData} />
         </div>
 
         {/* Plan Details Dialog */}

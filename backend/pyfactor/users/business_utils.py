@@ -43,6 +43,7 @@ def get_user_business(user, use_cache=True) -> Optional['Business']:
     # Method 1: User.business_id (most common in your system)
     if hasattr(user, 'business_id') and user.business_id:
         try:
+            # Don't use select_related('owner') due to schema mismatch
             business = Business.objects.get(
                 id=user.business_id,
                 is_active=True
@@ -54,6 +55,7 @@ def get_user_business(user, use_cache=True) -> Optional['Business']:
     # Method 2: User.tenant_id (tenant = business in our system)
     if not business and hasattr(user, 'tenant_id') and user.tenant_id:
         try:
+            # Don't use select_related('owner') due to schema mismatch
             business = Business.objects.get(
                 id=user.tenant_id,
                 is_active=True

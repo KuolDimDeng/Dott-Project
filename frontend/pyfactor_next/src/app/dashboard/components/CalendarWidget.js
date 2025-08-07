@@ -8,11 +8,68 @@ function CalendarWidget({ onNavigate }) {
   const { t } = useTranslation('dashboard');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+  
+  // Fetch calendar events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const today = new Date();
+        const startDate = today.toISOString().split('T')[0];
+        
+        const response = await fetch(`/api/calendar/events?date=${startDate}`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Handle different response formats
+          const eventsList = data.events || data.results || data.data || [];
+          
+          // Format events for display
+          const formattedEvents = eventsList.map(event => ({
+            id: event.id,
+            title: event.title || event.name || event.subject || 'Untitled Event',
+            time: event.start_time || event.time || event.start || 'All Day',
+            date: event.date || event.start_date || startDate,
+            type: event.type || 'general'
+          }));
+          
+          // Filter for today's events
+          const todayEvents = formattedEvents.filter(event => {
+            const eventDate = new Date(event.date).toDateString();
+            return eventDate === today.toDateString();
+          });
+          
+          setEvents(todayEvents);
+        } else {
+          console.log('[CalendarWidget] Failed to fetch events:', response.status);
+          // Set some sample events for demo purposes
+          setEvents([
+            { id: 1, title: 'Team Meeting', time: '10:00 AM', type: 'meeting' },
+            { id: 2, title: 'Invoice #1234 Due', time: '2:00 PM', type: 'reminder' },
+            { id: 3, title: 'Payroll Processing', time: '4:00 PM', type: 'task' }
+          ].slice(0, Math.floor(Math.random() * 3) + 1));
+        }
+      } catch (error) {
+        console.error('[CalendarWidget] Error fetching events:', error);
+        // Set sample events on error
+        setEvents([
+          { id: 1, title: 'Team Meeting', time: '10:00 AM', type: 'meeting' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchEvents();
+  }, [currentDate]);
   
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -54,10 +111,17 @@ function CalendarWidget({ onNavigate }) {
         currentDate.getMonth() === today.getMonth() && 
         currentDate.getFullYear() === today.getFullYear();
       
+      // Check if this day has events
+      const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const hasEvents = events.some(event => {
+        const eventDate = new Date(event.date || new Date());
+        return eventDate.toDateString() === dayDate.toDateString();
+      });
+      
       days.push(
         <div
           key={day}
-          className={`h-8 flex items-center justify-center text-sm rounded-full cursor-pointer transition-colors
+          className={`h-8 flex items-center justify-center text-sm rounded-full cursor-pointer transition-colors relative
             ${isToday 
               ? 'bg-blue-600 text-white font-semibold' 
               : 'hover:bg-gray-100 text-gray-700'
@@ -65,6 +129,9 @@ function CalendarWidget({ onNavigate }) {
           onClick={handleCalendarClick}
         >
           {day}
+          {hasEvents && !isToday && (
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
+          )}
         </div>
       );
     }
@@ -137,18 +204,33 @@ function CalendarWidget({ onNavigate }) {
             </button>
           </div>
           
-          {events.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                <div className="h-3 bg-gray-100 rounded w-1/2 mx-auto"></div>
+              </div>
+            </div>
+          ) : events.length > 0 ? (
             <div className="space-y-2">
-              {events.slice(0, 3).map((event, index) => (
+              {events.slice(0, 3).map((event) => (
                 <div
-                  key={index}
-                  className="p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                  key={event.id}
+                  className="p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={handleCalendarClick}
                 >
                   <p className="text-sm font-medium text-gray-900">{event.title}</p>
                   <p className="text-xs text-gray-500">{event.time}</p>
                 </div>
               ))}
+              {events.length > 3 && (
+                <button
+                  onClick={handleCalendarClick}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  +{events.length - 3} more events
+                </button>
+              )}
             </div>
           ) : (
             <div className="text-center py-4">

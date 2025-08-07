@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Area
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import { 
   ArrowTrendingUpIcon, 
   ArrowTrendingDownIcon,
@@ -21,15 +10,119 @@ import {
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 
-function CashFlowWidget({ onNavigate }) {
+// Dynamically import Recharts to avoid SSR issues
+const ResponsiveContainer = dynamic(
+  () => import('recharts').then(mod => mod.ResponsiveContainer),
+  { ssr: false }
+);
+
+const ComposedChart = dynamic(
+  () => import('recharts').then(mod => mod.ComposedChart),
+  { ssr: false }
+);
+
+const Bar = dynamic(
+  () => import('recharts').then(mod => mod.Bar),
+  { ssr: false }
+);
+
+const Line = dynamic(
+  () => import('recharts').then(mod => mod.Line),
+  { ssr: false }
+);
+
+const XAxis = dynamic(
+  () => import('recharts').then(mod => mod.XAxis),
+  { ssr: false }
+);
+
+const YAxis = dynamic(
+  () => import('recharts').then(mod => mod.YAxis),
+  { ssr: false }
+);
+
+const CartesianGrid = dynamic(
+  () => import('recharts').then(mod => mod.CartesianGrid),
+  { ssr: false }
+);
+
+const Tooltip = dynamic(
+  () => import('recharts').then(mod => mod.Tooltip),
+  { ssr: false }
+);
+
+const Legend = dynamic(
+  () => import('recharts').then(mod => mod.Legend),
+  { ssr: false }
+);
+
+function CashFlowWidget({ onNavigate, userData }) {
   const { t } = useTranslation('dashboard');
   const [timeRange, setTimeRange] = useState('month');
   const [cashFlowData, setCashFlowData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState('USD');
   
+  // Get currency from userData or business
   useEffect(() => {
-    const generateCashFlowData = () => {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const fetchCurrency = async () => {
+      try {
+        const response = await fetch('/api/currency/preferences', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.preferences?.currency) {
+            setCurrency(data.preferences.currency);
+          }
+        }
+      } catch (error) {
+        console.log('[CashFlowWidget] Using default currency');
+      }
+    };
+    
+    fetchCurrency();
+  }, [userData]);
+  
+  // Fetch or generate cash flow data
+  useEffect(() => {
+    const fetchCashFlowData = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to fetch real data first
+        const response = await fetch(`/api/reports/cashflow?range=${timeRange}`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data && data.data.length > 0) {
+            setCashFlowData(data.data);
+          } else {
+            // Generate sample data if no real data
+            generateSampleData();
+          }
+        } else {
+          // Generate sample data on error
+          generateSampleData();
+        }
+      } catch (error) {
+        console.error('[CashFlowWidget] Error fetching cash flow:', error);
+        generateSampleData();
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const generateSampleData = () => {
+      const months = timeRange === 'year' 
+        ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        : timeRange === 'quarter'
+        ? ['Month 1', 'Month 2', 'Month 3']
+        : ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+      
       const dataArray = [];
       let runningBalance = 25000;
       
@@ -40,7 +133,8 @@ function CashFlowWidget({ onNavigate }) {
         runningBalance += netFlow;
         
         dataArray.push({
-          month: months[i],
+          period: months[i],
+          month: months[i], // Keep for backward compatibility
           inflow,
           outflow,
           netFlow,
@@ -48,13 +142,10 @@ function CashFlowWidget({ onNavigate }) {
         });
       }
       
-      return dataArray;
+      setCashFlowData(dataArray);
     };
     
-    setTimeout(() => {
-      setCashFlowData(generateCashFlowData());
-      setLoading(false);
-    }, 500);
+    fetchCashFlowData();
   }, [timeRange]);
   
   const handleNavigateToCashFlow = () => {
@@ -91,7 +182,10 @@ function CashFlowWidget({ onNavigate }) {
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
                 {entry.name}:
               </span>
-              <span className="font-medium">${entry.value?.toLocaleString()}</span>
+              <span className="font-medium">
+                {currency === 'SSP' ? 'SSP' : currency === 'KES' ? 'KSh' : '$'}
+                {entry.value?.toLocaleString()}
+              </span>
             </div>
           ))}
         </div>
@@ -102,10 +196,17 @@ function CashFlowWidget({ onNavigate }) {
   
   // Format Y-axis
   const formatYAxis = (value) => {
+    const currencySymbol = currency === 'SSP' ? 'SSP' : currency === 'KES' ? 'KSh' : '$';
     if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}k`;
+      return `${currencySymbol}${(value / 1000).toFixed(0)}k`;
     }
-    return `$${value}`;
+    return `${currencySymbol}${value}`;
+  };
+  
+  // Format currency display
+  const formatCurrency = (value) => {
+    const currencySymbol = currency === 'SSP' ? 'SSP ' : currency === 'KES' ? 'KSh ' : '$';
+    return `${currencySymbol}${value?.toLocaleString() || '0'}`;
   };
   
   return (
@@ -117,10 +218,15 @@ function CashFlowWidget({ onNavigate }) {
             <h2 className="text-xl font-semibold text-gray-900">Cash Flow</h2>
             <div className="group relative">
               <InformationCircleIcon className="h-4 w-4 text-gray-400 cursor-help" />
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                 Track money in and out of your business
               </div>
             </div>
+            {currency !== 'USD' && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {currency}
+              </span>
+            )}
           </div>
           <button
             onClick={handleNavigateToCashFlow}
@@ -153,13 +259,13 @@ function CashFlowWidget({ onNavigate }) {
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
             <p className="text-xs text-green-700 font-medium mb-1">Cash In</p>
             <p className="text-lg font-bold text-green-900">
-              ${currentMonthData.inflow?.toLocaleString() || '0'}
+              {formatCurrency(currentMonthData.inflow)}
             </p>
           </div>
           <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3 border border-red-200">
             <p className="text-xs text-red-700 font-medium mb-1">Cash Out</p>
             <p className="text-lg font-bold text-red-900">
-              ${currentMonthData.outflow?.toLocaleString() || '0'}
+              {formatCurrency(currentMonthData.outflow)}
             </p>
           </div>
           <div className={`bg-gradient-to-br rounded-lg p-3 border ${
@@ -179,22 +285,22 @@ function CashFlowWidget({ onNavigate }) {
               <p className={`text-lg font-bold ${
                 cashFlowChange >= 0 ? 'text-blue-900' : 'text-orange-900'
               }`}>
-                ${Math.abs(currentMonthData.netFlow || 0).toLocaleString()}
+                {formatCurrency(Math.abs(currentMonthData.netFlow || 0))}
               </p>
             </div>
           </div>
         </div>
         
         {/* Chart */}
-        {loading || !cashFlowData.length ? (
+        {loading ? (
           <div className="h-64 flex items-center justify-center">
-            <div className="animate-pulse">
-              <ChartBarIcon className="h-12 w-12 text-gray-300" />
+            <div className="animate-pulse text-center">
+              <ChartBarIcon className="h-12 w-12 text-gray-300 mx-auto" />
               <p className="text-sm text-gray-500 mt-2">Loading cash flow data...</p>
             </div>
           </div>
-        ) : cashFlowData.length > 0 && (
-          <div className="h-64">
+        ) : cashFlowData.length > 0 ? (
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={cashFlowData}
@@ -209,14 +315,10 @@ function CashFlowWidget({ onNavigate }) {
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3}/>
                   </linearGradient>
-                  <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
-                  dataKey="month" 
+                  dataKey={cashFlowData[0]?.period ? "period" : "month"}
                   tick={{ fontSize: 12, fill: '#6b7280' }}
                   axisLine={{ stroke: '#e5e7eb' }}
                 />
@@ -254,6 +356,19 @@ function CashFlowWidget({ onNavigate }) {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center">
+            <div className="text-center">
+              <ChartBarIcon className="h-12 w-12 text-gray-300 mx-auto" />
+              <p className="text-sm text-gray-500 mt-2">No cash flow data available</p>
+              <button
+                onClick={handleNavigateToCashFlow}
+                className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View Reports
+              </button>
+            </div>
+          </div>
         )}
         
         {/* Footer Summary */}
@@ -262,7 +377,7 @@ function CashFlowWidget({ onNavigate }) {
             <div>
               <p className="text-sm text-gray-600">Current Balance</p>
               <p className="text-xl font-bold text-gray-900">
-                ${currentMonthData.balance?.toLocaleString() || '0'}
+                {formatCurrency(currentMonthData.balance)}
               </p>
             </div>
             <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full ${
@@ -276,7 +391,7 @@ function CashFlowWidget({ onNavigate }) {
                 <ArrowTrendingDownIcon className="h-4 w-4" />
               )}
               <span className="text-sm font-medium">
-                {changePercentage}% vs last month
+                {changePercentage}% vs last period
               </span>
             </div>
           </div>

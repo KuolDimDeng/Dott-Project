@@ -33,6 +33,9 @@ class Business(models.Model):
     Maintains multi-tenant RLS architecture (tenant_id = business.id).
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Note: owner_id is stored as UUID in DB but references integer User.id
+    # This is a legacy schema issue. Use get_owner() method for safe access
     owner_id = models.UUIDField(verbose_name='Owner ID', null=True, blank=True)
     name = models.CharField(max_length=255)  # This matches the actual column in your DB
     
@@ -134,6 +137,39 @@ class Business(models.Model):
     def get_currency_display(self):
         """Get formatted currency for display"""
         return f"{self.preferred_currency_code} ({self.preferred_currency_symbol})"
+    
+    def get_owner(self):
+        """
+        Safely get the owner User object despite schema mismatch.
+        owner_id is stored as UUID but actually contains integer User.id values.
+        """
+        if not self.owner_id:
+            return None
+        
+        try:
+            # Try to extract integer from UUID bytes
+            # The UUID might be storing an integer like 250 as 00000000-0000-0000-0000-0000000000fa
+            owner_id_str = str(self.owner_id)
+            
+            # Check if it's a special format UUID with integer in last part
+            if owner_id_str.startswith('00000000-0000-0000-0000-'):
+                # Extract the hex value from the last segment
+                hex_part = owner_id_str.split('-')[-1]
+                owner_id_int = int(hex_part, 16)
+                
+                from custom_auth.models import User
+                return User.objects.filter(id=owner_id_int).first()
+            
+            # Otherwise try direct integer conversion
+            owner_id_int = int(str(self.owner_id).replace('-', ''), 16)
+            if owner_id_int < 1000000:  # Reasonable user ID range
+                from custom_auth.models import User
+                return User.objects.filter(id=owner_id_int).first()
+                
+        except (ValueError, TypeError):
+            pass
+        
+        return None
 
 
     def save(self, *args, **kwargs):
