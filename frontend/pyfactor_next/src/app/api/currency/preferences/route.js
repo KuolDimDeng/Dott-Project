@@ -10,14 +10,12 @@ export async function GET(request) {
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
-      // Return default currency preferences instead of error
+      // Return empty if no session
+      console.log('[Currency API] No session cookie, returning empty');
       return NextResponse.json({
-        success: true,
-        data: {
-          currency: 'USD',
-          exchange_rate: 1,
-          lastUpdated: new Date().toISOString()
-        }
+        success: false,
+        error: 'No session',
+        preferences: null
       });
     }
 
@@ -31,38 +29,49 @@ export async function GET(request) {
     });
 
     if (!response.ok) {
-      // Return default currency instead of throwing error
+      // Return empty instead of default
       console.warn('[Currency API] Failed to fetch preferences:', response.status);
       return NextResponse.json({
-        success: true,
-        data: {
-          currency: 'USD',
-          exchange_rate: 1,
-          lastUpdated: new Date().toISOString()
-        }
+        success: false,
+        error: `Backend returned ${response.status}`,
+        preferences: null
       });
     }
 
     const data = await response.json();
-    return NextResponse.json({
-      success: true,
-      data: {
-        currency: data.currency || 'USD',
-        exchange_rate: data.exchange_rate || 1,
-        ...data
-      }
-    });
+    console.log('[Currency API] Backend response:', data);
+    
+    // Map backend response to frontend format
+    if (data.success && data.preferences) {
+      return NextResponse.json({
+        success: true,
+        preferences: data.preferences
+      });
+    } else if (data.currency_code) {
+      // Fallback for old format
+      return NextResponse.json({
+        success: true,
+        preferences: {
+          currency_code: data.currency_code,
+          currency_name: data.currency_name,
+          currency_symbol: data.currency_symbol
+        }
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid response format',
+        preferences: null
+      });
+    }
 
   } catch (error) {
     console.error('[Currency API] Error:', error);
-    // Always return a valid response
+    // Return empty on error
     return NextResponse.json({
-      success: true,
-      data: {
-        currency: 'USD',
-        exchange_rate: 1,
-        lastUpdated: new Date().toISOString()
-      }
+      success: false,
+      error: error.message,
+      preferences: null
     });
   }
 }

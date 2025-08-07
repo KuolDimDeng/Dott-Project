@@ -5,7 +5,7 @@ const CurrencyIndicator = () => {
   const { currency, isLoading } = useCurrency();
 
   // Show loading state while currency loads from database
-  if (isLoading && !currency) {
+  if (isLoading && !currency?.code) {
     return (
       <div className="flex items-center text-white/70 text-base">
         <span>...</span>
@@ -13,8 +13,17 @@ const CurrencyIndicator = () => {
     );
   }
 
-  // Always show something, even if still loading
-  const displayCurrency = currency || { code: 'USD', name: 'US Dollar', symbol: '$' };
+  // Show empty if no currency loaded
+  const displayCurrency = currency || { code: '', name: '', symbol: '' };
+  
+  // Don't render if no currency code
+  if (!displayCurrency.code) {
+    return (
+      <div className="flex items-center text-white/70 text-base">
+        <span></span>
+      </div>
+    );
+  }
 
   return (
     <div 

@@ -7,12 +7,12 @@ const CurrencyContext = createContext();
 export const useCurrency = () => {
   const context = useContext(CurrencyContext);
   if (!context) {
-    // Return default USD if context is not available
+    // Return empty currency if context is not available
     return {
       currency: {
-        code: 'USD',
-        name: 'US Dollar',
-        symbol: '$'
+        code: '',
+        name: '',
+        symbol: ''
       },
       updateCurrency: () => {},
       refreshCurrency: () => {},
@@ -23,53 +23,70 @@ export const useCurrency = () => {
 };
 
 export const CurrencyProvider = ({ children }) => {
-  // Always start with USD default until database loads
+  // Start with empty currency until database loads
   const [currency, setCurrency] = useState({
-    code: 'USD',
-    name: 'US Dollar',
-    symbol: '$'
+    code: '',
+    name: '',
+    symbol: ''
   });
   const [isLoading, setIsLoading] = useState(true);
 
   // Load currency preferences on mount - ALWAYS from database
   useEffect(() => {
     const loadCurrency = async () => {
+      console.log('💰 [CurrencyContext] === LOADING CURRENCY START ===');
+      
       try {
         // Use direct API endpoint without proxy
-      const response = await fetch('/api/currency/preferences');
+        const response = await fetch('/api/currency/preferences');
+        console.log('💰 [CurrencyContext] API Response status:', response.status);
         
         if (response.ok) {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
+            console.log('💰 [CurrencyContext] API Response data:', data);
             
             if (data.success && data.preferences) {
               const newCurrency = {
-                code: data.preferences.currency_code || 'USD',
-                name: data.preferences.currency_name || 'US Dollar',
-                symbol: data.preferences.currency_symbol || '$'
+                code: data.preferences.currency_code || '',
+                name: data.preferences.currency_name || '',
+                symbol: data.preferences.currency_symbol || ''
               };
               
-              setCurrency(newCurrency);
+              console.log('💰 [CurrencyContext] Setting currency to:', newCurrency);
               
-              // Update localStorage AFTER loading from database
-              localStorage.setItem('dott_currency', JSON.stringify(newCurrency));
+              // Only set if we have a valid currency code
+              if (newCurrency.code) {
+                setCurrency(newCurrency);
+                // Update localStorage AFTER loading from database
+                localStorage.setItem('dott_currency', JSON.stringify(newCurrency));
+              } else {
+                console.warn('💰 [CurrencyContext] No currency code in response');
+              }
+            } else {
+              console.warn('💰 [CurrencyContext] Response missing success or preferences:', data);
             }
+          } else {
+            console.warn('💰 [CurrencyContext] Response not JSON:', contentType);
           }
         } else {
+          console.warn('💰 [CurrencyContext] API returned non-OK status:', response.status);
           // Try localStorage fallback
           try {
             const localCurrency = localStorage.getItem('dott_currency');
             if (localCurrency) {
               const parsedCurrency = JSON.parse(localCurrency);
               setCurrency({
-                code: parsedCurrency.code || 'USD',
-                name: parsedCurrency.name || 'US Dollar',
-                symbol: parsedCurrency.symbol || '$'
+                code: parsedCurrency.code || '',
+                name: parsedCurrency.name || '',
+                symbol: parsedCurrency.symbol || ''
               });
+              console.log('💰 [CurrencyContext] Loaded from localStorage:', parsedCurrency);
             }
           } catch (error) {
-            // Keep default USD
+            // Keep empty currency
+            console.warn('💰 [CurrencyContext] Error loading from localStorage:', error);
           }
         }
       } catch (error) {
@@ -79,16 +96,19 @@ export const CurrencyProvider = ({ children }) => {
           if (localCurrency) {
             const parsedCurrency = JSON.parse(localCurrency);
             setCurrency({
-              code: parsedCurrency.code || 'USD',
-              name: parsedCurrency.name || 'US Dollar',
-              symbol: parsedCurrency.symbol || '$'
+              code: parsedCurrency.code || '',
+              name: parsedCurrency.name || '',
+              symbol: parsedCurrency.symbol || ''
             });
           }
         } catch (localError) {
-          // Keep default USD
+          // Keep empty currency
+          console.warn('💰 [CurrencyContext] Error in fallback:', localError);
         }
       } finally {
         setIsLoading(false);
+        console.log('💰 [CurrencyContext] === LOADING CURRENCY END ===');
+        console.log('💰 [CurrencyContext] Final currency:', currency);
       }
     };
 
@@ -146,10 +166,12 @@ export const CurrencyProvider = ({ children }) => {
           
           if (data.success && data.preferences) {
             const newCurrency = {
-              code: data.preferences.currency_code || 'USD',
-              name: data.preferences.currency_name || 'US Dollar',
-              symbol: data.preferences.currency_symbol || '$'
+              code: data.preferences.currency_code || '',
+              name: data.preferences.currency_name || '',
+              symbol: data.preferences.currency_symbol || ''
             };
+            
+            console.log('💰 [CurrencyContext] Refreshed from API:', newCurrency);
             
             setCurrency(newCurrency);
             localStorage.setItem('dott_currency', JSON.stringify(newCurrency));

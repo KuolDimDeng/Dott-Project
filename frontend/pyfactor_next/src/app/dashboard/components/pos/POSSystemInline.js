@@ -140,6 +140,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // percentage or amount
   const [taxRate, setTaxRate] = useState(0);
+  const [defaultTaxRate, setDefaultTaxRate] = useState(0); // Business default tax rate
   const [taxJurisdiction, setTaxJurisdiction] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
@@ -453,90 +454,35 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   }, []);
 
   // Update tax rate when customer is selected
-  const [defaultTaxRate, setDefaultTaxRate] = useState(0);
   
   useEffect(() => {
     const fetchCustomerTaxRate = async () => {
       if (!selectedCustomer) {
         // No customer selected, revert to default business tax rate
-        console.log('[POS] No customer selected, reverting to default tax rate');
+        console.log('[POS] No customer selected, reverting to default tax rate:', defaultTaxRate);
         setTaxRate(defaultTaxRate);
         setTaxJurisdiction(null);
         return;
       }
 
-      console.log('[POS] 🔍 Fetching tax rate for customer:', selectedCustomer);
+      console.log('[POS] 🔍 Fetching tax rate for customer ID:', selectedCustomer);
       
-      try {
-        const response = await fetch('/api/taxes/calculate-customer-rate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            customerId: selectedCustomer,
-            businessCountry: businessCountry,
-            businessState: businessInfo.state || '',
-            businessCounty: businessInfo.county || ''
-          })
-        });
-        
-        if (response.ok) {
-          const taxData = await response.json();
-          console.log('[POS] 📊 Customer tax calculation:', taxData);
-          
-          if (taxData.source === 'international') {
-            // International sale - no tax
-            setTaxRate(0);
-            setTaxJurisdiction(taxData.jurisdiction);
-            toast.success(
-              `International sale to ${taxData.jurisdiction.country} - No tax collected`,
-              { duration: 4000 }
-            );
-          } else if (taxData.tax_percentage !== undefined) {
-            // Domestic sale - apply tax
-            setTaxRate(taxData.tax_percentage);
-            setTaxJurisdiction(taxData.jurisdiction);
-            
-            const locationParts = [];
-            if (taxData.jurisdiction.county) locationParts.push(taxData.jurisdiction.county);
-            if (taxData.jurisdiction.state_name || taxData.jurisdiction.state) {
-              locationParts.push(taxData.jurisdiction.state_name || taxData.jurisdiction.state);
-            }
-            if (taxData.jurisdiction.country_name || taxData.jurisdiction.country) {
-              locationParts.push(taxData.jurisdiction.country_name || taxData.jurisdiction.country);
-            }
-            const location = locationParts.join(', ');
-            
-            // Customize message based on address type
-            let message = `Tax rate: ${taxData.tax_percentage.toFixed(2)}%`;
-            if (taxData.address_type === 'business_default') {
-              message += ` - Using business location (customer has no address)`;
-            } else {
-              message += ` for ${taxData.customer_name}`;
-              if (location) {
-                message += ` (${taxData.address_type} address: ${location})`;
-              }
-            }
-            
-            toast.success(message, { duration: 4000 });
-          }
-        } else {
-          console.error('[POS] Failed to fetch customer tax rate');
-          // Keep existing tax rate on error
-        }
-      } catch (error) {
-        console.error('[POS] Error fetching customer tax rate:', error);
-        // Keep existing tax rate on error
+      // Find the customer object
+      const customer = customers.find(c => c.id === selectedCustomer);
+      if (!customer) {
+        console.log('[POS] Customer not found in list');
+        return;
       }
+      
+      // Calculate tax for this customer
+      await calculateCustomerTax(customer);
     };
 
     if (businessCountry) {
       // Only fetch if we have the business country loaded
       fetchCustomerTaxRate();
     }
-  }, [selectedCustomer, businessCountry]);
+  }, [selectedCustomer, businessCountry, customers, defaultTaxRate]);
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
@@ -742,6 +688,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     const discountedAmount = subtotal - discountAmount;
     const taxAmount = discountedAmount * taxRate / 100;
     const total = discountedAmount + taxAmount;
+    
+    console.log('[POS] 💰 Calculating totals:', {
+      subtotal,
+      discountAmount,
+      discountedAmount,
+      taxRate: taxRate + '%',
+      taxAmount,
+      total
+    });
 
     return {
       subtotal: subtotal.toFixed(2),
@@ -772,13 +727,24 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         unit_price: parseFloat(item.price || 0)
       }));
 
+      // Debug logging for tax calculation
+      console.log('[POS] 🧮 Processing sale with tax info:', {
+        customer_id: selectedCustomer,
+        taxRate: taxRate,
+        businessCountry: businessCountry,
+        customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : 'Walk-in',
+        totals: totals
+      });
+
       const saleData = {
         items: mappedItems,
         customer_id: selectedCustomer || null,
         discount_percentage: discountType === 'percentage' ? discount : 0,
         payment_method: paymentMethod,
         use_shipping_address: useShippingAddress,
-        notes
+        notes,
+        tax_rate: taxRate, // Include tax rate in sale data
+        tax_amount: totals.taxAmount
       };
 
       // Add shipping address if using it
@@ -857,6 +823,73 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       toast.error(`${t('error')}: ${error.message}`);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Calculate tax based on customer location
+  const calculateCustomerTax = async (customer) => {
+    console.log('[POS] 🧮 Calculating tax for customer:', customer);
+    
+    // If customer has no location info, use business default
+    if (!customer.billing_country && !customer.shipping_country) {
+      console.log('[POS] Customer has no location, using business default tax rate:', defaultTaxRate);
+      setTaxRate(defaultTaxRate || 0);
+      return;
+    }
+    
+    // Use billing address first, fall back to shipping address
+    const country = customer.billing_country || customer.shipping_country || '';
+    const state = customer.billing_state || customer.shipping_state || '';
+    const county = customer.billing_county || customer.shipping_county || '';
+    
+    console.log('[POS] Customer location:', { country, state, county });
+    
+    // If it's an international sale (customer country != business country)
+    if (businessCountry && country && country !== businessCountry) {
+      console.log('[POS] 🌍 International sale detected! Business:', businessCountry, 'Customer:', country);
+      setTaxRate(0);
+      toast.success(`International sale - 0% tax applied`);
+      return;
+    }
+    
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (country) params.append('country', country);
+      if (state) params.append('state', state);
+      if (county) params.append('county', county);
+      
+      console.log('[POS] Fetching tax rate with params:', params.toString());
+      
+      // Call the tax calculation API
+      const response = await fetch(`/api/taxes/calculate?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const taxData = await response.json();
+        console.log('[POS] Tax calculation response:', taxData);
+        
+        const taxRatePercentage = parseFloat(taxData.tax_rate || 0) * 100;
+        setTaxRate(taxRatePercentage);
+        
+        // Show location in toast
+        const location = taxData.county_name || taxData.state_name || taxData.country_name || 'Unknown';
+        toast.success(`Tax rate: ${taxRatePercentage.toFixed(2)}% for ${location}`);
+        
+        console.log('[POS] ✅ Tax rate set to', taxRatePercentage, '% for customer in', location);
+      } else {
+        console.error('[POS] Failed to calculate tax, using default');
+        setTaxRate(defaultTaxRate || 0);
+      }
+    } catch (error) {
+      console.error('[POS] Error calculating customer tax:', error);
+      setTaxRate(defaultTaxRate || 0);
+      toast.error('Could not calculate tax rate');
     }
   };
 
@@ -1169,6 +1202,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       setSelectedCustomer('');
                       setCustomerSearchTerm('');
                       setShowCustomerDropdown(false);
+                      // Reset to business default tax for walk-in customer
+                      setTaxRate(defaultTaxRate || 0);
+                      console.log('[POS] Reset to default tax rate for walk-in customer:', defaultTaxRate);
                     }}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
                   >
@@ -1197,6 +1233,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                           setSelectedCustomer(customer.id);
                           setCustomerSearchTerm(getCustomerDisplayName(customer.id));
                           setShowCustomerDropdown(false);
+                          // Calculate tax for this customer
+                          calculateCustomerTax(customer);
                         }}
                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                       >
