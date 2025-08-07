@@ -828,11 +828,21 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
 
   // Calculate tax based on customer location
   const calculateCustomerTax = async (customer) => {
-    console.log('[POS] 🧮 Calculating tax for customer:', customer);
+    console.log('[POS] 🧮 === START TAX CALCULATION ===');
+    console.log('[POS] Customer data:', {
+      id: customer.id,
+      name: customer.first_name + ' ' + customer.last_name,
+      billing_country: customer.billing_country,
+      billing_state: customer.billing_state,
+      billing_county: customer.billing_county,
+      shipping_country: customer.shipping_country,
+      shipping_state: customer.shipping_state,
+      shipping_county: customer.shipping_county
+    });
     
     // If customer has no location info, use business default
     if (!customer.billing_country && !customer.shipping_country) {
-      console.log('[POS] Customer has no location, using business default tax rate:', defaultTaxRate);
+      console.log('[POS] ⚠️ Customer has no location, using business default tax rate:', defaultTaxRate);
       setTaxRate(defaultTaxRate || 0);
       return;
     }
@@ -842,7 +852,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     const state = customer.billing_state || customer.shipping_state || '';
     const county = customer.billing_county || customer.shipping_county || '';
     
-    console.log('[POS] Customer location:', { country, state, county });
+    console.log('[POS] 📍 Using location for tax calculation:', { country, state, county });
     
     // If it's an international sale (customer country != business country)
     if (businessCountry && country && country !== businessCountry) {
@@ -859,7 +869,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       if (state) params.append('state', state);
       if (county) params.append('county', county);
       
-      console.log('[POS] Fetching tax rate with params:', params.toString());
+      console.log('[POS] 🔄 Fetching tax rate from API');
+      console.log('[POS] API URL:', `/api/taxes/calculate?${params.toString()}`);
       
       // Call the tax calculation API
       const response = await fetch(`/api/taxes/calculate?${params.toString()}`, {
@@ -870,9 +881,11 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         credentials: 'include',
       });
       
+      console.log('[POS] API Response status:', response.status);
+      
       if (response.ok) {
         const taxData = await response.json();
-        console.log('[POS] Tax calculation response:', taxData);
+        console.log('[POS] ✅ Tax calculation successful:', taxData);
         
         const taxRatePercentage = parseFloat(taxData.tax_rate || 0) * 100;
         setTaxRate(taxRatePercentage);

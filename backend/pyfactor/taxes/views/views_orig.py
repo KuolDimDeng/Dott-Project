@@ -412,6 +412,9 @@ class TaxCalculationView(APIView):
     def get(self, request):
         """Calculate sales tax rate for a given location"""
         try:
+            logger.info(f"[Tax Calculation] === START === User: {getattr(request.user, 'email', 'anonymous')}")
+            logger.info(f"[Tax Calculation] Request headers: {dict(request.headers)}")
+            
             from ..models import GlobalSalesTaxRate
             
             # Get query parameters - use request.GET for regular Django views
@@ -419,12 +422,12 @@ class TaxCalculationView(APIView):
             state = request.GET.get('state', '').strip().upper()
             county = request.GET.get('county', '').strip().upper()
             
-            logger.info(f"[Sales Tax Calculation] Request: country={country}, state={state}, county={county}")
-            
-            # Debug: Log all parameters
-            logger.info(f"[Sales Tax] Raw request params: {dict(request.GET)}")
+            logger.info(f"[Tax Calculation] Raw params before processing: country={request.GET.get('country')}, state={request.GET.get('state')}, county={request.GET.get('county')}")
+            logger.info(f"[Tax Calculation] Processed params: country={country}, state={state}, county={county}")
+            logger.info(f"[Tax Calculation] All request params: {dict(request.GET)}")
             
             if not country:
+                logger.warning(f"[Tax Calculation] Country is required but was empty")
                 return Response(
                     {"error": "Country is required"},
                     status=status.HTTP_400_BAD_REQUEST
@@ -436,53 +439,89 @@ class TaxCalculationView(APIView):
             
             # Try county level first (most specific)
             if county and state:
-                tax_rate = GlobalSalesTaxRate.objects.filter(
-                    country=country,
-                    region_code=state,
-                    locality__iexact=county,
-                    is_current=True
-                ).first()
-                if tax_rate:
-                    source = 'county'
-                    logger.info(f"[Sales Tax] Found county-level rate: {tax_rate.rate}%")
+                logger.info(f"[Tax Calculation] Searching for county-level rate: country={country}, state={state}, county={county}")
+                try:
+                    tax_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        region_code=state,
+                        locality__iexact=county,
+                        is_current=True
+                    ).first()
+                    if tax_rate:
+                        source = 'county'
+                        logger.info(f"[Tax Calculation] Found county-level rate: {tax_rate.rate}% for {county}, {state}")
+                    else:
+                        logger.info(f"[Tax Calculation] No county-level rate found for {county}, {state}")
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error querying county-level rate: {str(e)}")
             
             # Try state level
             if not tax_rate and state:
-                tax_rate = GlobalSalesTaxRate.objects.filter(
-                    country=country,
-                    region_code=state,
-                    locality='',
-                    is_current=True
-                ).first()
-                if tax_rate:
-                    source = 'state'
-                    logger.info(f"[Sales Tax] Found state-level rate: {tax_rate.rate}%")
+                logger.info(f"[Tax Calculation] Searching for state-level rate: country={country}, state={state}")
+                try:
+                    tax_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        region_code=state,
+                        locality='',
+                        is_current=True
+                    ).first()
+                    if tax_rate:
+                        source = 'state'
+                        logger.info(f"[Tax Calculation] Found state-level rate: {tax_rate.rate}% for {state}")
+                    else:
+                        logger.info(f"[Tax Calculation] No state-level rate found for {state}")
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error querying state-level rate: {str(e)}")
             
             # Try country level
             if not tax_rate:
-                tax_rate = GlobalSalesTaxRate.objects.filter(
-                    country=country,
-                    region_code='',
-                    locality='',
-                    is_current=True
-                ).first()
-                if tax_rate:
-                    source = 'country'
-                    logger.info(f"[Sales Tax] Found country-level rate: {tax_rate.rate}%")
+                logger.info(f"[Tax Calculation] Searching for country-level rate: country={country}")
+                try:
+                    tax_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        region_code='',
+                        locality='',
+                        is_current=True
+                    ).first()
+                    if tax_rate:
+                        source = 'country'
+                        logger.info(f"[Tax Calculation] Found country-level rate: {tax_rate.rate}% for {country}")
+                    else:
+                        logger.info(f"[Tax Calculation] No country-level rate found for {country}")
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error querying country-level rate: {str(e)}")
             
             if tax_rate:
-                # Return the tax rate information
-                return Response({
-                    'tax_rate': float(tax_rate.rate),  # Already stored as decimal (0.18 = 18%)
-                    'tax_percentage': float(tax_rate.rate) * 100,  # Convert to percentage for display
-                    'source': source,
-                    'country': tax_rate.country,
-                    'country_name': tax_rate.country_name,
-                    'state': tax_rate.region_code if tax_rate.region_code else None,
-                    'state_name': tax_rate.region_name if tax_rate.region_name else None,
-                    'county': tax_rate.locality if tax_rate.locality else None,
-                    'tax_authority': tax_rate.tax_authority_name if hasattr(tax_rate, 'tax_authority_name') else None
-                })
+                logger.info(f"[Tax Calculation] Building response for tax_rate object")
+                try:
+                    # Safely access attributes
+                    rate_value = float(tax_rate.rate) if tax_rate.rate else 0
+                    country_code = str(tax_rate.country) if tax_rate.country else country
+                    country_name = tax_rate.country_name if hasattr(tax_rate, 'country_name') and tax_rate.country_name else country_code
+                    region_code = tax_rate.region_code if hasattr(tax_rate, 'region_code') and tax_rate.region_code else None
+                    region_name = tax_rate.region_name if hasattr(tax_rate, 'region_name') and tax_rate.region_name else None
+                    locality = tax_rate.locality if hasattr(tax_rate, 'locality') and tax_rate.locality else None
+                    tax_authority = tax_rate.tax_authority_name if hasattr(tax_rate, 'tax_authority_name') else None
+                    
+                    response_data = {
+                        'tax_rate': rate_value,  # Already stored as decimal (0.18 = 18%)
+                        'tax_percentage': rate_value * 100,  # Convert to percentage for display
+                        'source': source,
+                        'country': country_code,
+                        'country_name': country_name,
+                        'state': region_code,
+                        'state_name': region_name,
+                        'county': locality,
+                        'tax_authority': tax_authority
+                    }
+                    
+                    logger.info(f"[Tax Calculation] === SUCCESS === Response: {response_data}")
+                    return Response(response_data)
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error building response: {str(e)}")
+                    logger.error(f"[Tax Calculation] Tax rate object type: {type(tax_rate)}")
+                    logger.error(f"[Tax Calculation] Tax rate attributes: {dir(tax_rate)}")
+                    raise
             else:
                 # No tax rate found
                 logger.warning(f"[Sales Tax] No tax rate found for country={country}, state={state}, county={county}")
@@ -494,9 +533,12 @@ class TaxCalculationView(APIView):
                 })
                 
         except Exception as e:
-            logger.error(f"[Sales Tax Calculation] Error: {str(e)}")
+            logger.error(f"[Tax Calculation] === ERROR === Exception: {str(e)}")
+            logger.error(f"[Tax Calculation] Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"[Tax Calculation] Traceback:\n{traceback.format_exc()}")
             return Response(
-                {"error": str(e)},
+                {"error": f"Tax calculation failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
