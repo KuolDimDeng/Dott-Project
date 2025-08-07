@@ -26,54 +26,82 @@ function CalendarWidget({ onNavigate }) {
         // Get the last day of current month for end date
         const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
         
-        const response = await fetch(`/api/calendar/events?start=${startDate}&end=${endDate}`, {
-          credentials: 'include'
-        });
+        // Add timeout and better error handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[CalendarWidget] Events API Response:', data);
+        try {
+          const response = await fetch(`/api/calendar/events?start=${startDate}&end=${endDate}`, {
+            credentials: 'include',
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
           
-          // Handle different response formats - use real data only
-          const eventsList = data.events || data.results || data.data || [];
+          clearTimeout(timeoutId);
           
-          if (Array.isArray(eventsList) && eventsList.length > 0) {
-            // Format real events for display
-            const formattedEvents = eventsList.map(event => ({
-              id: event.id,
-              title: event.title || event.name || event.subject || 'Untitled Event',
-              time: event.start_time || event.time || event.start || 'All Day',
-              date: event.date || event.start_date || event.start,
-              type: event.type || event.eventType || 'general',
-              description: event.description || ''
-            }));
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[CalendarWidget] Events API Response:', data);
             
-            // Filter for today's events
-            const todayEvents = formattedEvents.filter(event => {
-              if (!event.date) return false;
-              const eventDate = new Date(event.date).toDateString();
-              return eventDate === today.toDateString();
-            });
+            // Handle different response formats - use real data only
+            const eventsList = data.events || data.results || data.data || [];
             
-            setEvents(todayEvents);
+            if (Array.isArray(eventsList) && eventsList.length > 0) {
+              // Format real events for display
+              const formattedEvents = eventsList.map(event => ({
+                id: event.id,
+                title: event.title || event.name || event.subject || 'Untitled Event',
+                time: event.start_time || event.time || event.start || 'All Day',
+                date: event.date || event.start_date || event.start,
+                type: event.type || event.eventType || 'general',
+                description: event.description || ''
+              }));
+              
+              // Filter for today's events
+              const todayEvents = formattedEvents.filter(event => {
+                if (!event.date) return false;
+                const eventDate = new Date(event.date).toDateString();
+                return eventDate === today.toDateString();
+              });
+              
+              setEvents(todayEvents);
+            } else {
+              // No events - keep empty array (don't use mock data)
+              console.log('[CalendarWidget] No events found in database');
+              setEvents([]);
+            }
+          } else if (response.status === 401) {
+            console.log('[CalendarWidget] Authentication required for calendar events');
+            setEvents([]);
+          } else if (response.status === 404) {
+            console.log('[CalendarWidget] Calendar API endpoint not found');
+            setEvents([]);
           } else {
-            // No events - keep empty array (don't use mock data)
-            console.log('[CalendarWidget] No events found in database');
+            console.log('[CalendarWidget] Failed to fetch events:', response.status);
             setEvents([]);
           }
-        } else {
-          console.log('[CalendarWidget] Failed to fetch events:', response.status);
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            console.log('[CalendarWidget] Request timed out after 8 seconds');
+          } else {
+            console.error('[CalendarWidget] Network error fetching events:', fetchError);
+          }
           setEvents([]);
         }
       } catch (error) {
-        console.error('[CalendarWidget] Error fetching events:', error);
+        console.error('[CalendarWidget] Error in fetchEvents:', error);
         setEvents([]);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchEvents();
+    // Add debouncing to prevent excessive requests
+    const timeoutId = setTimeout(fetchEvents, 300);
+    return () => clearTimeout(timeoutId);
   }, [currentDate]);
   
   const getDaysInMonth = (date) => {

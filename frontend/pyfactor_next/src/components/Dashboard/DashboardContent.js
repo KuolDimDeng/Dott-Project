@@ -48,64 +48,53 @@ const RenderMainContent = lazy(() =>
 const LoadingComponent = () => <DashboardLoader message="Loading dashboard components..." />;
 
 function DashboardContent({ setupStatus = 'pending', customContent, mockData, userAttributes, tenantId: propTenantId }) {
-  // CRITICAL DEBUG: Log all props received
-  console.log('🚨 [DashboardContent] === COMPONENT RENDER START ===');
-  console.log('🚨 [DashboardContent] Props received:', {
-    setupStatus,
-    hasCustomContent: !!customContent,
-    hasMockData: !!mockData,
-    hasUserAttributes: !!userAttributes,
-    userAttributesKeys: userAttributes ? Object.keys(userAttributes) : 'none',
-    propTenantId
-  });
-  console.log('🚨 [DashboardContent] Full userAttributes:', userAttributes);
+  // Minimal logging to prevent infinite loops - only log once per minute
+  const lastLogTime = useRef(0);
+  const now = Date.now();
+  if (now - lastLogTime.current > 60000) {
+    console.log('[DashboardContent] Component render with props:', {
+      setupStatus,
+      hasCustomContent: !!customContent,
+      hasMockData: !!mockData,
+      hasUserAttributes: !!userAttributes,
+      propTenantId
+    });
+    lastLogTime.current = now;
+  }
   
-  let user, isAuthenticated, logout;
+  // Use hooks with minimal error handling to prevent loops
+  let user, isAuthenticated, logout, router, showNotification;
+  
   try {
-    console.log('🚨 [DashboardContent] About to call useAuth hook...');
     const authResult = useAuth();
     user = authResult.user;
     isAuthenticated = authResult.isAuthenticated;
     logout = authResult.logout;
-    console.log('🚨 [DashboardContent] useAuth successful:', { hasUser: !!user, isAuthenticated });
   } catch (authError) {
-    console.error('🎯 [DashboardContent] ERROR in useAuth:', authError);
-    console.error('Stack:', authError?.stack);
-    if (authError?.message?.includes('t is not defined')) {
-      console.error('🎯 FOUND "t is not defined" ERROR IN useAuth!');
+    if (now - lastLogTime.current > 60000) {
+      console.error('[DashboardContent] useAuth error:', authError.message);
     }
-    // Set default values
     user = null;
     isAuthenticated = false;
     logout = () => {};
   }
   
-  let router;
   try {
-    console.log('🚨 [DashboardContent] About to call useRouter...');
     router = useRouter();
-    console.log('🚨 [DashboardContent] useRouter successful');
   } catch (routerError) {
-    console.error('🎯 [DashboardContent] ERROR in useRouter:', routerError);
-    console.error('Stack:', routerError?.stack);
-    if (routerError?.message?.includes('t is not defined')) {
-      console.error('🎯 FOUND "t is not defined" ERROR IN useRouter!');
+    if (now - lastLogTime.current > 60000) {
+      console.error('[DashboardContent] useRouter error:', routerError.message);
     }
+    router = { push: () => {}, events: { on: () => {}, off: () => {} } };
   }
   
-  let showNotification;
   try {
-    console.log('🚨 [DashboardContent] About to call useNotification...');
     const notifResult = useNotification();
     showNotification = notifResult.showNotification;
-    console.log('🚨 [DashboardContent] useNotification successful');
   } catch (notifError) {
-    console.error('🎯 [DashboardContent] ERROR in useNotification:', notifError);
-    console.error('Stack:', notifError?.stack);
-    if (notifError?.message?.includes('t is not defined')) {
-      console.error('🎯 FOUND "t is not defined" ERROR IN useNotification!');
+    if (now - lastLogTime.current > 60000) {
+      console.error('[DashboardContent] useNotification error:', notifError.message);
     }
-    // Set default value
     showNotification = () => {};
   }
   
@@ -114,30 +103,14 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   
   useEffect(() => {
     try {
-      console.error('[DashboardContent] useEffect - Starting dashboard content render');
-      // Sentry not configured - commenting out Sentry-specific code
-      // const span = Sentry.startSpan({ name: 'dashboard-content-render' });
       const renderTime = Date.now() - renderStartTime.current;
-      logger.performance('DashboardContent render', renderTime);
-      // span.end();
-      
-      // Set user context for Sentry
-      if (user) {
-        console.error('[DashboardContent] useEffect - Setting user context:', user);
-        // Sentry.setUser({
-        //   id: user.id,
-        //   email: user.email,
-        //   tenantId: user.tenant_id,
-        // });
+      if (renderTime > 100 && now - lastLogTime.current > 60000) {
+        logger.performance('DashboardContent render', renderTime);
       }
-      
-      return () => {
-        console.error('[DashboardContent] useEffect - Cleanup');
-        // span.end();
-      };
     } catch (error) {
-      console.error('[DashboardContent] ERROR in useEffect:', error);
-      console.error('[DashboardContent] Error stack:', error.stack);
+      if (now - lastLogTime.current > 60000) {
+        console.error('[DashboardContent] useEffect error:', error.message);
+      }
     }
   }, [user]);
   const { tenantStatus, tenantError, tenantId: hookTenantId, retry } = useEnsureTenant();
@@ -307,27 +280,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showCreateMenu, showCreateOptions, showBenefitsManagement, showPOSSystem, showPayrollWizard
   } = uiState;
   
-  // CRITICAL DEBUG: Log userData state after destructuring
-  console.log('🔴 [DashboardContent] === USERDATA STATE DEBUG ===');
-  console.log('🔴 [DashboardContent] userData from uiState:', userData);
-  console.log('🔴 [DashboardContent] userData type:', typeof userData);
-  console.log('🔴 [DashboardContent] userData is null:', userData === null);
-  console.log('🔴 [DashboardContent] userData is undefined:', userData === undefined);
-  console.log('🔴 [DashboardContent] userData keys:', userData ? Object.keys(userData) : 'userData is falsy');
-  console.log('🔴 [DashboardContent] initialUserData:', initialUserData);
-  
-  // Track showPOSSystem state changes
-  useEffect(() => {
-    console.log('🎯 [DashboardContent] showPOSSystem state changed to:', showPOSSystem);
-    console.log('🎯 [DashboardContent] Full uiState:', {
-      showPOSSystem,
-      showCreateMenu,
-      showCreateOptions,
-      selectedOption,
-      view
-    });
-  }, [showPOSSystem]);
-  console.log('🔴 [DashboardContent] Full uiState:', uiState);
+  // Minimal debug logging for critical userData issues
+  if (!userData && now - lastLogTime.current > 60000) {
+    console.log('[DashboardContent] Warning: userData is null/undefined');
+  }
   
   // Computed values - memoize these values
   const openMenu = Boolean(anchorEl);
@@ -336,11 +292,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Create optimized state setter that uses functional updates to prevent unnecessary renders
   const updateState = useCallback((updates) => {
     try {
-      console.error('[DashboardContent] updateState called with:', typeof updates === 'function' ? 'function' : updates);
       setUiState(prev => {
         // If updates is a function, call it with prev
         if (typeof updates === 'function') {
-          console.error('[DashboardContent] updateState - Calling function update');
           return updates(prev);
         }
         
@@ -349,8 +303,6 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
           ([key, value]) => prev[key] !== value
         );
         
-        console.error('[DashboardContent] updateState - hasChanges:', hasChanges);
-        
         // If no changes, return the previous state reference to avoid a re-render
         if (!hasChanges) return prev;
         
@@ -358,23 +310,21 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         return { ...prev, ...updates };
       });
     } catch (error) {
-      console.error('[DashboardContent] ERROR in updateState:', error);
-      console.error('[DashboardContent] Error stack:', error.stack);
+      if (now - lastLogTime.current > 60000) {
+        console.error('[DashboardContent] updateState error:', error.message);
+      }
     }
   }, []);
 
   // Update userData state when session data is available
   useEffect(() => {
-    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG START ===');
-    console.log('🚨 [DashboardContent] Session loading:', sessionLoading);
-    console.log('🚨 [DashboardContent] Session object:', session);
-    console.log('🚨 [DashboardContent] Session user:', session?.user);
+    if (session?.user && !sessionLoading && now - lastLogTime.current > 60000) {
+      console.log('[DashboardContent] Syncing session user data');
+    }
     
     if (session?.user && !sessionLoading) {
-      console.log('🚨 [DashboardContent] Updating userData state with session data');
       updateState({ userData: session.user });
     }
-    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG END ===');
   }, [session, sessionLoading, updateState]);
 
   // Handle clearCreateOptions event
@@ -1340,14 +1290,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   // Memoize userData to prevent unnecessary re-renders
   const memoizedUserData = useMemo(() => {
-    console.log('🔴 [DashboardContent] === MEMOIZED USERDATA DEBUG ===');
-    console.log('🔴 [DashboardContent] Creating memoizedUserData with:');
-    console.log('🔴 [DashboardContent] - userData:', userData);
-    console.log('🔴 [DashboardContent] - initialUserData:', initialUserData);
     const result = userData || initialUserData || {};
-    console.log('🔴 [DashboardContent] - result:', result);
-    console.log('🔴 [DashboardContent] - result type:', typeof result);
-    console.log('🔴 [DashboardContent] - result keys:', result ? Object.keys(result) : 'result is falsy');
+    if (!result.email && now - lastLogTime.current > 60000) {
+      console.log('[DashboardContent] Warning: memoizedUserData has no email');
+    }
     return result;
   }, [userData, initialUserData]);
   
@@ -1632,13 +1578,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     loadEmployees();
   }, []);
 
-  console.error('[DashboardContent] About to render main JSX');
-  console.error('[DashboardContent] Current state:', {
-    view,
-    showCustomerList: uiState.showCustomerList,
-    navigationKey,
-    drawerOpen
-  });
+  // Log render state only occasionally to prevent spam
+  if (now - lastLogTime.current > 60000) {
+    console.log('[DashboardContent] Rendering with state:', { view, navigationKey, drawerOpen });
+  }
   
   const dashboardContent = (
     <DashboardErrorBoundary>
@@ -1646,10 +1589,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         <NotificationProvider>
           <ToastProvider>
           <div className="flex min-h-screen flex-col">
-            {console.error('[DashboardContent] Rendering DashAppBar')}
             <DashAppBar {...dashAppBarProps} />
             <div className="flex flex-grow pt-16 relative">
-              {console.error('[DashboardContent] Rendering Drawer')}
               <Drawer {...drawerProps} />
               
               <div 
@@ -1668,24 +1609,12 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
                 }}
                 key={`content-container-${navigationKey}`}
               >
-                {console.error('[DashboardContent] About to render RenderMainContent in Suspense')}
                 <Suspense fallback={<LoadingComponent />}>
-                  {(() => {
-                    try {
-                      console.error('[DashboardContent] Rendering RenderMainContent with props:', mainContentProps);
-                      return (
-                        <RenderMainContent 
-                          {...mainContentProps} 
-                          navigationKey={navigationKey}
-                          selectedSettingsOption={selectedSettingsOption} 
-                        />
-                      );
-                    } catch (error) {
-                      console.error('[DashboardContent] ERROR rendering RenderMainContent:', error);
-                      console.error('[DashboardContent] Error stack:', error.stack);
-                      return <div>Error rendering content: {error.message}</div>;
-                    }
-                  })()}
+                  <RenderMainContent 
+                    {...mainContentProps} 
+                    navigationKey={navigationKey}
+                    selectedSettingsOption={selectedSettingsOption} 
+                  />
                 </Suspense>
               </div>
             </div>

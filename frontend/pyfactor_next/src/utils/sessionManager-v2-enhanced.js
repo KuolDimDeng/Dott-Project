@@ -12,8 +12,10 @@
 class SessionManagerV2Enhanced {
   constructor() {
     this.cache = new Map(); // Local cache as fallback
-    this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
+    this.cacheExpiry = 10 * 60 * 1000; // 10 minutes - increased to reduce API calls
     this.cacheTTL = new Map(); // Track cache expiry times
+    this.lastFetchTime = 0; // Track when we last fetched from API
+    this.minFetchInterval = 30000; // Minimum 30 seconds between API calls
     this.metrics = {
       requests: 0,
       cacheHits: 0,
@@ -28,7 +30,7 @@ class SessionManagerV2Enhanced {
       failures: 0,
       lastFailure: null,
       state: 'CLOSED', // CLOSED, OPEN, HALF_OPEN
-      threshold: 5,
+      threshold: 3, // Reduced threshold to open circuit breaker faster
       timeout: 60000 // 1 minute
     };
     this.pendingRequests = new Map();
@@ -39,14 +41,24 @@ class SessionManagerV2Enhanced {
    * Priority: Local Cache → Backend API
    */
   async getSession() {
-    console.log('[SessionManager] getSession called');
     const startTime = performance.now();
+    const currentTime = Date.now();
+    
+    // First check local cache
+    const cached = this.getFromLocalCache('current-session');
+    if (cached) {
+      console.log('[SessionManager] Using cached session');
+      this.recordMetric('local_cache_hit', startTime);
+      return cached;
+    }
+    
+    // Rate limiting: don't fetch too frequently
+    if (currentTime - this.lastFetchTime < this.minFetchInterval) {
+      console.log('[SessionManager] Rate limited, returning cached or unauthenticated');
+      return this.cache.get('current-session') || { authenticated: false, user: null };
+    }
     
     try {
-      // In the session-v2 system, we don't read cookies directly
-      // Instead, we call the session API which will read the httpOnly cookies
-      console.log('[SessionManager] Fetching session from API...');
-      
       // Check for duplicate requests using a fixed key since we can't read the session ID
       const requestKey = 'session-fetch';
       if (this.pendingRequests.has(requestKey)) {
@@ -60,13 +72,17 @@ class SessionManagerV2Enhanced {
       const result = await sessionPromise;
       this.pendingRequests.delete(requestKey);
       
-      console.log('[SessionManager] Session result:', result);
+      // Update last fetch time on successful request
+      this.lastFetchTime = currentTime;
+      
       return result || { authenticated: false, user: null };
     } catch (error) {
       console.error('[SessionManager] Error in getSession:', error);
       this.pendingRequests.delete('session-fetch');
       this.handleError(error, startTime);
-      return { authenticated: false, user: null };
+      
+      // Return cached data if available, otherwise unauthenticated
+      return this.cache.get('current-session') || { authenticated: false, user: null };
     }
   }
   

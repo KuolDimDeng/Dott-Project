@@ -1,7 +1,7 @@
 /**
  * Utility functions for API requests
  */
-import { appCache } from '@/utils/appCache';
+import { appCache, getCacheValue } from '@/utils/appCache';
 import { logger } from './logger';
 import axiosInstance from './axiosInstance';
 
