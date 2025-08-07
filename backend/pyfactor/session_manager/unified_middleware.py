@@ -163,9 +163,18 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         
         # Get session from database
         try:
-            from session_manager.models import Session
-            session_obj = Session.objects.get(
-                session_id=session_id,
+            import uuid
+            from session_manager.models import UserSession
+            
+            # Convert session_id to UUID if it's a string
+            try:
+                session_uuid = uuid.UUID(session_id)
+            except (ValueError, AttributeError):
+                logger.debug(f"Invalid session ID format: {session_id}")
+                return None
+                
+            session_obj = UserSession.objects.get(
+                session_token=session_uuid,
                 is_active=True
             )
             
@@ -239,8 +248,8 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         """Update session last activity time"""
         
         try:
-            from session_manager.models import Session
-            Session.objects.filter(session_id=session['id']).update(
+            from session_manager.models import UserSession
+            UserSession.objects.filter(session_token=session['id']).update(
                 last_activity=timezone.now()
             )
         except Exception as e:
