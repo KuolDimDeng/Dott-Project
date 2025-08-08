@@ -361,40 +361,71 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, *args, **kwargs):
         """Override destroy to track product deletion"""
-        instance = self.get_object()
-        product_id = instance.id
-        product_name = instance.name
-        inventory_value = float(instance.price) * int(instance.stock_quantity)
+        logger.info("🔴 [BACKEND DELETE] === START PRODUCT DELETION ===")
+        logger.info(f"🔴 [BACKEND DELETE] Request path: {request.path}")
+        logger.info(f"🔴 [BACKEND DELETE] Request method: {request.method}")
+        logger.info(f"🔴 [BACKEND DELETE] Request user: {request.user}")
+        logger.info(f"🔴 [BACKEND DELETE] Tenant ID: {getattr(request, 'tenant_id', 'Not set')}")
+        logger.info(f"🔴 [BACKEND DELETE] URL kwargs: {kwargs}")
         
-        response = super().destroy(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            user_id = str(request.user.id) if request.user.is_authenticated else None
+        try:
+            logger.info("🔴 [BACKEND DELETE] Step 1: Getting product instance...")
+            instance = self.get_object()
+            product_id = str(instance.id)
+            product_name = instance.name
+            inventory_value = float(instance.price) * int(instance.stock_quantity)
             
-            # Track product deletion event
-            track_event(
-                user_id=user_id,
-                event_name='product_deleted_backend',
-                properties={
-                    'product_id': product_id,
-                    'product_name': product_name,
-                    'inventory_value_removed': inventory_value
-                }
-            )
+            logger.info(f"🔴 [BACKEND DELETE] Step 2: Found product to delete:")
+            logger.info(f"🔴 [BACKEND DELETE]   - ID: {product_id}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Name: {product_name}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Price: {instance.price}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Stock: {instance.stock_quantity}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Inventory value: {inventory_value}")
             
-            # Track inventory value reduction
-            if inventory_value > 0:
-                track_business_metric(
+            logger.info("🔴 [BACKEND DELETE] Step 3: Calling parent destroy method...")
+            response = super().destroy(request, *args, **kwargs)
+            
+            logger.info(f"🔴 [BACKEND DELETE] Step 4: Delete response status: {response.status_code}")
+            
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                logger.info("🔴 [BACKEND DELETE] ✅ Product deleted successfully")
+                user_id = str(request.user.id) if request.user.is_authenticated else None
+                
+                # Track product deletion event
+                track_event(
                     user_id=user_id,
-                    metric_name='inventory_value_removed',
-                    value=inventory_value,
-                    metadata={
+                    event_name='product_deleted_backend',
+                    properties={
                         'product_id': product_id,
+                        'product_name': product_name,
+                        'inventory_value_removed': inventory_value
+                    }
+                )
+                
+                # Track inventory value reduction
+                if inventory_value > 0:
+                    track_business_metric(
+                        user_id=user_id,
+                        metric_name='inventory_value_removed',
+                        value=inventory_value,
+                        metadata={
+                            'product_id': product_id,
                         'product_name': product_name
                     }
                 )
-        
-        return response
+            else:
+                logger.error(f"🔴 [BACKEND DELETE] ❌ Delete failed with status: {response.status_code}")
+            
+            logger.info("🔴 [BACKEND DELETE] === END PRODUCT DELETION ===")
+            return response
+            
+        except Exception as e:
+            logger.error(f"🔴 [BACKEND DELETE] ❌ Exception during deletion: {str(e)}", exc_info=True)
+            logger.error(f"🔴 [BACKEND DELETE] Exception type: {type(e).__name__}")
+            logger.error("🔴 [BACKEND DELETE] === END PRODUCT DELETION (ERROR) ===")
+            
+            # Re-raise the exception to let DRF handle it
+            raise
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()  # TenantManager handles filtering automatically

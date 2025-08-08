@@ -1032,23 +1032,44 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
   // Handle product deletion
   const handleDeleteProduct = useCallback(async () => {
-    if (!productToDelete?.id) return;
+    console.log('🔴 [DELETE] === START DELETE PRODUCT ===');
+    console.log('🔴 [DELETE] Product to delete:', productToDelete);
+    
+    if (!productToDelete?.id) {
+      console.error('🔴 [DELETE] No product ID provided');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
-      console.log(`[ProductManagement] Attempting to delete product with ID: ${productToDelete.id}`);
+      console.log(`🔴 [DELETE] Step 1: Starting deletion for product ID: ${productToDelete.id}`);
+      console.log(`🔴 [DELETE] Product details:`, {
+        id: productToDelete.id,
+        name: productToDelete.name,
+        product_code: productToDelete.product_code
+      });
       
       const tenantId = await getUserTenantId();
+      console.log(`🔴 [DELETE] Step 2: Got tenant ID: ${tenantId}`);
       
-      // Use RLS for deletion with tenant ID in headers
-      await axios.delete(`/api/inventory/products/${productToDelete.id}`, {
+      // Build the delete URL
+      const deleteUrl = `/api/inventory/products/${productToDelete.id}`;
+      console.log(`🔴 [DELETE] Step 3: Delete URL: ${deleteUrl}`);
+      
+      console.log('🔴 [DELETE] Step 4: Sending DELETE request...');
+      const response = await axios.delete(deleteUrl, {
         headers: {
-          'x-tenant-id': tenantId
+          'x-tenant-id': tenantId,
+          'Content-Type': 'application/json'
         }
       });
       
-      console.log(`[ProductManagement] Successfully deleted product with ID: ${productToDelete.id}`);
+      console.log('🔴 [DELETE] Step 5: Delete response:', response);
+      console.log(`🔴 [DELETE] Response status: ${response.status}`);
+      console.log(`🔴 [DELETE] Response data:`, response.data);
+      
       toast.success('Product deleted successfully');
+      console.log('🔴 [DELETE] Step 6: Product deleted successfully');
       
       // Track product deletion
       captureEvent('product_deleted', {
@@ -1057,20 +1078,44 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       });
       
       // Update products list without refetching
-      setProducts(prev => prev.filter(prod => prod.id !== productToDelete.id));
+      console.log('🔴 [DELETE] Step 7: Updating local product list');
+      setProducts(prev => {
+        const filtered = prev.filter(prod => prod.id !== productToDelete.id);
+        console.log(`🔴 [DELETE] Products before: ${prev.length}, after: ${filtered.length}`);
+        return filtered;
+      });
+      
       setDeleteDialogOpen(false);
       setProductToDelete(null);
       
       // If deleted product was selected, clear selection
       if (selectedProduct && selectedProduct.id === productToDelete.id) {
+        console.log('🔴 [DELETE] Step 8: Clearing selected product');
         setSelectedProduct(null);
         setActiveTab(2); // Go back to list view
       }
+      
+      console.log('🔴 [DELETE] === DELETE COMPLETE ===');
     } catch (error) {
-      console.error('[ProductManagement] Error deleting product:', error);
-      toast.error(error.response?.data?.error || 'Failed to delete product');
+      console.error('🔴 [DELETE] ❌ Error deleting product:', error);
+      console.error('🔴 [DELETE] Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to delete product';
+      
+      console.error('🔴 [DELETE] Showing error toast:', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
+      console.log('🔴 [DELETE] === END DELETE PRODUCT ===');
     }
   }, [productToDelete, selectedProduct]);
 
@@ -2220,8 +2265,15 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50"
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('🔴 [UI DELETE] Delete button clicked for product:', row.original);
+                console.log('🔴 [UI DELETE] Product details:', {
+                  id: row.original.id,
+                  name: row.original.name,
+                  product_code: row.original.product_code
+                });
                 setProductToDelete(row.original);
                 setDeleteDialogOpen(true);
+                console.log('🔴 [UI DELETE] Delete dialog opened');
               }}
             >
               Delete

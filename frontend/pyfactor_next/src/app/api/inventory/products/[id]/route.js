@@ -263,13 +263,27 @@ export async function DELETE(request, { params }) {
   const { id } = params;
   const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
   
+  console.log('🔴 [API DELETE] === START DELETE REQUEST ===');
+  console.log(`🔴 [API DELETE] Request ID: ${requestId}`);
+  console.log(`🔴 [API DELETE] Product ID: ${id}`);
+  console.log(`🔴 [API DELETE] Request headers:`, request.headers);
+  
   logger.info(`[${requestId}] DELETE /api/inventory/products/${id} - Start processing request`);
   
   try {
+    console.log('🔴 [API DELETE] Step 1: Getting authentication tokens...');
     // Get authentication tokens - use the proper approach
     const { accessToken, idToken, tenantId } = await getTokens(request);
     
+    console.log('🔴 [API DELETE] Step 2: Auth tokens retrieved:', {
+      hasAccessToken: !!accessToken,
+      hasIdToken: !!idToken,
+      tenantId: tenantId,
+      accessTokenLength: accessToken ? accessToken.length : 0
+    });
+    
     if (!accessToken || !tenantId) {
+      console.error('🔴 [API DELETE] ❌ Missing authentication tokens');
       logger.error(`[${requestId}] Missing authentication tokens`);
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -277,11 +291,22 @@ export async function DELETE(request, { params }) {
       );
     }
     
+    // Construct backend URL
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`;
+    console.log(`🔴 [API DELETE] Step 3: Backend URL: ${backendUrl}`);
+    
     logger.info(`[${requestId}] Deleting product ${id} for tenant: ${tenantId}`);
+    
+    console.log('🔴 [API DELETE] Step 4: Sending DELETE to backend...');
+    console.log('🔴 [API DELETE] Headers being sent:', {
+      Authorization: `Bearer ${accessToken.substring(0, 20)}...`,
+      'X-Id-Token': idToken ? `${idToken.substring(0, 20)}...` : 'none',
+      'X-Tenant-ID': tenantId
+    });
     
     // Forward the request to the backend API
     const response = await serverAxiosInstance.delete(
-      `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`,
+      backendUrl,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -291,26 +316,67 @@ export async function DELETE(request, { params }) {
       }
     );
     
+    console.log('🔴 [API DELETE] Step 5: Backend response received');
+    console.log('🔴 [API DELETE] Response status:', response.status);
+    console.log('🔴 [API DELETE] Response data:', response.data);
+    
     logger.info(`[${requestId}] Product ${id} deleted successfully`);
+    
+    console.log('🔴 [API DELETE] ✅ Successfully deleted product');
+    console.log('🔴 [API DELETE] === END DELETE REQUEST (SUCCESS) ===');
     
     return NextResponse.json({
       success: true,
-      message: 'Product deleted successfully'
+      message: 'Product deleted successfully',
+      productId: id
     });
     
   } catch (error) {
+    console.error('🔴 [API DELETE] ❌ Error occurred:', error);
+    console.error('🔴 [API DELETE] Error type:', error.constructor.name);
+    console.error('🔴 [API DELETE] Error message:', error.message);
+    
+    if (error.response) {
+      console.error('🔴 [API DELETE] Backend error response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    }
+    
+    if (error.config) {
+      console.error('🔴 [API DELETE] Request config:', {
+        url: error.config.url,
+        method: error.config.method,
+        headers: error.config.headers
+      });
+    }
+    
     logger.error(`[${requestId}] Error deleting product ${id}: ${error.message}`, error);
     
     // Handle specific error responses from backend
     if (error.response) {
+      const errorMessage = error.response.data?.error || 
+                          error.response.data?.detail || 
+                          error.response.data?.message || 
+                          'Failed to delete product';
+      
+      console.error(`🔴 [API DELETE] Returning error: ${errorMessage}`);
+      console.error('🔴 [API DELETE] === END DELETE REQUEST (ERROR) ===');
+      
       return NextResponse.json(
         {
-          error: error.response.data?.error || 'Failed to delete product',
-          message: error.response.data?.message || error.message
+          error: errorMessage,
+          message: error.response.data?.message || error.message,
+          details: error.response.data
         },
         { status: error.response.status }
       );
     }
+    
+    console.error('🔴 [API DELETE] Returning generic error');
+    console.error('🔴 [API DELETE] === END DELETE REQUEST (ERROR) ===');
     
     return NextResponse.json(
       {
