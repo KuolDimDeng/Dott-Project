@@ -20,7 +20,7 @@ export default function EmailPasswordSignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
-  const { t, i18n } = useTranslation('auth');
+  const { t, i18n, ready } = useTranslation('auth');
   const { session, loading: sessionLoading, isAuthenticated } = useSession();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -645,9 +645,9 @@ export default function EmailPasswordSignIn() {
     }
   };
 
-  // Show loading spinner while checking session
-  if (sessionLoading) {
-    console.log('🔍 [EmailPasswordSignIn] Showing session loading state');
+  // Show loading spinner while checking session or loading translations
+  if (sessionLoading || !ready) {
+    console.log('🔍 [EmailPasswordSignIn] Showing loading state', { sessionLoading, translationsReady: ready });
     return (
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
@@ -657,7 +657,7 @@ export default function EmailPasswordSignIn() {
               src="https://dottapps.com/static/images/PyfactorLandingpage.png" 
               alt="Dott" 
             />
-            <h2 className="mt-6 text-2xl font-bold text-gray-900">{t('oauth.processing')}</h2>
+            <h2 className="mt-6 text-2xl font-bold text-gray-900">Loading...</h2>
             <div className="mt-4 flex justify-center">
               <div className="loader"></div>
             </div>
