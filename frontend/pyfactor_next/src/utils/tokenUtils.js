@@ -30,8 +30,7 @@ export async function getAccessToken() {
 async function getClientAccessToken() {
   try {
     // Get token from Auth service
-    const { fetchAuthSession } = await import('@/config/amplifyUnified');
-    const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
     
     if (!session || !session.tokens) {
       console.error('[tokenUtils] No current session available');
@@ -88,10 +87,9 @@ export async function getIdToken() {
 async function getClientIdToken() {
   try {
     // Import auth utilities
-    const { fetchAuthSession } = await import('@/config/amplifyUnified');
     
     // Get current session
-    const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
     
     if (session && session.tokens && session.tokens.idToken) {
       return session.tokens.idToken.toString();
@@ -137,7 +135,6 @@ export function setTokens(tokens) {
 export async function clearTokens() {
   try {
     // Import auth utilities
-    const { signOut } = await import('@/config/amplifyUnified');
     
     // Sign out completely
     await signOut({ global: true });

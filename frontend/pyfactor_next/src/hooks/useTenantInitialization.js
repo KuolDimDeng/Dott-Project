@@ -8,7 +8,7 @@ import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { logger } from '@/utils/logger';
 import { getTenantId, storeTenantInfo } from '@/utils/tenantUtils';
 import { useAuth } from './auth';
-import { signIn, fetchUserAttributes, fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { reconfigureAmplify } from '@/config/amplifyConfig';
 // Import standardized constants
 import { 
@@ -135,7 +135,7 @@ const getSafeTenantId = () => {
     if (!tenantId) {
       try {
         // Use the Auth API to get the current user's attributes directly
-        fetchUserAttributes()
+        // fetchUserAttributes() - removed Amplify
           .then(attributes => {
             const cognitoTenantId = attributes?.['custom:tenant_ID'] || attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
             if (cognitoTenantId && !tenantId) {

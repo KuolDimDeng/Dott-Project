@@ -7,7 +7,7 @@ import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import ErrorBoundaryHandler from '@/components/ErrorBoundaryHandler';
 import { useRouter } from 'next/navigation';
-import { fetchAuthSession, signOut } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { SessionProvider } from '@/contexts/SessionContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ClientDataSync } from '@/app/dashboard/DashboardClient';

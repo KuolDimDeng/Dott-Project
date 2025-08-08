@@ -12,14 +12,14 @@ import DashboardLoader from '@/components/DashboardLoader';
 import { storeTenantId, getTenantIdFromCognito } from '@/utils/tenantUtils';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
-// import { fetchUserAttributes } from '@/config/amplifyUnified'; // No longer using Cognito
+// // Auth0 authentication is handled via useSession hook
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
 import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
 import SessionTimeoutModal from '@/components/SessionTimeoutModal';
 
 // Import needed for recovery
-// import { signIn } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
+// // Auth0 authentication is handled via useSession hook
 import Cookies from 'js-cookie';
 import SessionInitializer from '@/components/SessionInitializer';
 import DebugGlobals from './debug-globals';

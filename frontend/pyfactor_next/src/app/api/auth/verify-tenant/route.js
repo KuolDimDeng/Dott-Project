@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { isValidUUID } from '@/utils/tenantUtils';
 import axiosInstance from '@/lib/axiosConfig';
 import { serverLogger } from '@/utils/serverLogger';
-import { updateUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { API_ERROR_CODES } from '@/constants/errors';
 
 /**

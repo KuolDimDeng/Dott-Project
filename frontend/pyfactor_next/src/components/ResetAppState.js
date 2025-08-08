@@ -30,7 +30,6 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         await updateTenantIdInCognito('');
         
         // Reset other Cognito attributes
-        const { updateUserAttributes } = await import('@/config/amplifyUnified');
         await updateUserAttributes({
           userAttributes: {
             'custom:onboardingStep': '',

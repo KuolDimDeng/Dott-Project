@@ -277,7 +277,10 @@
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import payments.urls; print(''✅ Imports working correctly'')\")",
       "Bash(./fix-timesheet-imports.sh:*)",
       "Bash(/tmp/fix_timesheet_request_params.sh:*)",
-      "Bash(/tmp/test_whatsapp_production.sh:*)"
+      "Bash(/tmp/test_whatsapp_production.sh:*)",
+      "Bash(./remove_amplify_imports.sh)",
+      "Bash(timeout 60 pnpm build:*)",
+      "Bash(./fix_amplify_syntax.sh:*)"
     ],
     "deny": []
   }

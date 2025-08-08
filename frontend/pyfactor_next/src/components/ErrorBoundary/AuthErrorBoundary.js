@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { logger } from '@/utils/logger';
-import { signOut } from '@/config/amplifyUnified';
+// Auth0 signout is handled via /api/auth/logout
 import { useRouter } from 'next/navigation';
 
 class AuthErrorBoundary extends React.Component {
@@ -37,16 +37,10 @@ class AuthErrorBoundary extends React.Component {
 
   handleSignOut = async () => {
     try {
-      logger.debug('[AuthErrorBoundary] Attempting to sign out after error');
-      const signOutResult = await signOut();
-      if (signOutResult.success) {
-        logger.debug('[AuthErrorBoundary] Sign out successful');
-      } else {
-        logger.debug('[AuthErrorBoundary] Sign out failed:', signOutResult.error);
-      }
-      window.location.href = '/auth/signin';
+      logger.debug('[AuthErrorBoundary] Redirecting to Auth0 logout after error');
+      window.location.href = '/api/auth/logout';
     } catch (error) {
-      logger.error('[AuthErrorBoundary] Sign out failed:', error);
+      logger.error('[AuthErrorBoundary] Logout redirect failed:', error);
       // Force redirect even if sign out fails
       window.location.href = '/auth/signin';
     }

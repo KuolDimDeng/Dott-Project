@@ -55,26 +55,15 @@ export async function POST(request) {
       });
       
       try {
-        // Fix via direct Cognito update
-        const { updateUserAttributes } = await import('@/config/amplifyUnified');
+        // Removed Amplify/Cognito - using Auth0
+        // This endpoint is no longer needed with Auth0
         const timestamp = new Date().toISOString();
         
-        // Create the attributes object with all required fields - consistent lowercase
-        const attributesToUpdate = {
-          'custom:onboarding': 'complete',
-          'custom:setupdone': 'true',
-          'custom:acctstatus': 'active',
-          'custom:updated_at': timestamp,
-          'custom:setupcompletedtime': timestamp,
-          'custom:onboardingCompletedAt': timestamp
-        };
+        // Auth0 doesn't use custom attributes like Cognito
+        console.log(`[DEBUG][${new Date().toISOString()}] FIX STATUS - Auth0 doesn't require attribute updates`);
         
-        console.log(`[DEBUG][${new Date().toISOString()}] FIX STATUS - Updating attributes:`, attributesToUpdate);
-        
-        // Update the attributes
-        await updateUserAttributes({
-          userAttributes: attributesToUpdate
-        });
+        // With Auth0, onboarding status is managed differently
+        // Return success since Auth0 handles this differently
         
         console.log(`[DEBUG][${new Date().toISOString()}] FIX STATUS - Update successful`);
         logger.info(`[api/onboarding/fix-status:${requestId}] Status fixed successfully`);

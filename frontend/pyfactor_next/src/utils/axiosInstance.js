@@ -64,8 +64,7 @@ const getTenantAndTokenInfo = async () => {
     if (!token || !tenantId) {
       try {
         // Dynamic import to avoid server-side errors
-        const { fetchAuthSession } = await import('@/config/amplifyUnified');
-        const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
         
         if (session?.tokens?.idToken) {
           token = session.tokens.idToken.toString();

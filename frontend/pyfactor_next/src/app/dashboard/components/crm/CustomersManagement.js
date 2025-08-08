@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import { appCache } from '@/utils/appCache';
-import { fetchAuthSession } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { Dialog } from '@headlessui/react';
 import { 
   AddIcon, 

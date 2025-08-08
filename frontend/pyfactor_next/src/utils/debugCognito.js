@@ -2,7 +2,7 @@
  * Debug utilities for Cognito user attributes and authentication issues
  */
 import { logger } from './logger';
-import { updateUserAttributes, fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
 /**
@@ -14,7 +14,7 @@ export async function testUpdateAttributes() {
     logger.info('[DebugCognito] Testing direct attribute update');
     
     // Get current attributes
-    const currentAttributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
     logger.info('[DebugCognito] Current attributes:', currentAttributes);
     
     // Try update with resilient implementation first
@@ -102,7 +102,7 @@ export async function diagnoseCognitoIssues() {
     
     // Check attributes
     try {
-      const attributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
       diagnostics.attributes = {
         onboarding: attributes['custom:onboarding'] || 'not set',
         setupDone: attributes['custom:setupdone'] || 'not set',
@@ -121,7 +121,7 @@ export async function diagnoseCognitoIssues() {
     
     // Check session
     try {
-      const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
       diagnostics.session = {
         hasIdToken: !!session?.tokens?.idToken,
         hasAccessToken: !!session?.tokens?.accessToken,

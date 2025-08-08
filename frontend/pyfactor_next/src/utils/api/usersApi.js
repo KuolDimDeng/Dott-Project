@@ -6,7 +6,7 @@
 
 import axios from 'axios';
 import { logger } from '@/utils/logger';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 
 /**
  * Create an axios instance for users API

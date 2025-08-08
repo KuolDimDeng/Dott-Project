@@ -4,7 +4,7 @@ import { logger } from '@/utils/logger';
 import { inventoryService } from '@/services/inventoryService';
 import { userService } from '@/services/userService';
 import { useUser } from '@/contexts/UserContext';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { setTokens } from '@/utils/tenantUtils';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 

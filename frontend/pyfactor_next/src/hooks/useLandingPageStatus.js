@@ -2,7 +2,7 @@
 
 
 import { useState, useEffect } from 'react';
-import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession-v2';
 import { useOnboardingPolling } from '@/hooks/useOnboardingPolling';
@@ -44,7 +44,7 @@ export function useLandingPageStatus() {
         logger.debug('[LandingStatus] Checking authentication status...');
         
         // Get current session using v6 API
-        const { tokens } = await fetchAuthSession().catch(error => {
+    const session = null; // Removed Amplify - using Auth0
           logger.debug('[LandingStatus] Error fetching auth session:', error);
           return { tokens: null };
         });

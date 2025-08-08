@@ -53,45 +53,10 @@ export async function POST(request) {
       willUpdateCognito: updateCognito
     });
     
-    // If updateCognito flag is true, make sure to update Cognito attributes (primary source of truth)
+    // Removed Cognito update logic - using Auth0
+    // Auth0 handles user attributes differently through the Management API
     if (updateCognito) {
-      try {
-        // Dynamically import Amplify auth to ensure it only runs client-side
-        const { updateUserAttributes } = await import('@/config/amplifyUnified');
-        
-        // Build attributes object based on provided values
-        const userAttributes = {};
-        
-        if (onboardingStep || onboardedStatus) {
-          userAttributes['custom:onboarding'] = onboardedStatus || onboardingStep;
-        }
-        
-        if (setupCompleted !== undefined) {
-          userAttributes['custom:setupdone'] = setupCompleted ? 'TRUE' : 'FALSE';
-        }
-        
-        if (tenantId) {
-          userAttributes['custom:tenant_ID'] = tenantId;
-          userAttributes['custom:businessid'] = tenantId;
-        }
-        
-        // Add timestamp for tracking
-        userAttributes['custom:updated_at'] = new Date().toISOString();
-        
-        // Only make the API call if we have attributes to update
-        if (Object.keys(userAttributes).length > 0) {
-          await updateUserAttributes({ userAttributes });
-          logger.info('[API] Successfully updated Cognito attributes:', Object.keys(userAttributes));
-        }
-      } catch (cognitoError) {
-        // This is now considered a more significant error since Cognito is our primary source of truth
-        logger.error('[API] Failed to update Cognito attributes:', cognitoError);
-        return NextResponse.json({ 
-          error: 'Failed to update Cognito attributes', 
-          message: 'Authentication state requires Cognito updates. Please try again.',
-          details: cognitoError.message
-        }, { status: 500 });
-      }
+      logger.info('[API] Auth0 attribute update - handled through backend API');
     }
     
     // Set cookies for backward compatibility only
@@ -174,20 +139,9 @@ export async function POST(request) {
         cognitoOnboardingStatus = 'complete';
         cognitoSetupDone = true;
         
-        // Update the Cognito attribute if we're fixing this issue
+        // Removed Cognito update - using Auth0
         if (updateCognito) {
-          try {
-            const { updateUserAttributes } = await import('@/config/amplifyUnified');
-            await updateUserAttributes({ 
-              userAttributes: {
-                'custom:onboarding': 'complete',
-                'custom:setupdone': 'TRUE'
-              }
-            });
-            logger.info('[API] Fixed stuck subscription status in Cognito');
-          } catch (fixError) {
-            logger.error('[API] Failed to fix subscription status in Cognito:', fixError);
-          }
+          logger.info('[API] Auth0 attribute update - handled through backend API');
         }
       }
     } catch (parseError) {

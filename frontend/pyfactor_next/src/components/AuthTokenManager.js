@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { tokenService } from '@/services/tokenService';
 import { getTenantIdFromCognito, setTenantId } from '@/utils/tenantUtils';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
+// Auth0 session management is handled server-side via useSession hook
 import { SafeHub } from '@/utils/safeHub';
 
 /**
@@ -96,12 +96,8 @@ export default function AuthTokenManager({ children }) {
       } else {
         logger.debug('[AuthTokenManager] Tokens still valid');
         
-        // Even with valid tokens, ensure we have the latest auth session
-        try {
-          await fetchAuthSession();
-        } catch (sessionError) {
-          logger.warn('[AuthTokenManager] Error refreshing auth session:', sessionError);
-        }
+        // Auth0 session is managed server-side, no need to manually refresh
+        logger.debug('[AuthTokenManager] Auth0 session is managed server-side');
       }
       
       // Sync tenant ID after token initialization

@@ -6,7 +6,7 @@ import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
-import { fetchAuthSession } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { appCache } from '@/utils/appCache';
 
 const DealsPage = () => {

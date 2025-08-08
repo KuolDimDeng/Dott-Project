@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { checkDisabledAccount, reactivateAccount } from '@/lib/account-reactivation';
 
 /**

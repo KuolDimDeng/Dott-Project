@@ -2,7 +2,7 @@
  * Auth token utilities for managing tokens and checking expiration
  */
 
-import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
@@ -24,7 +24,7 @@ export async function isTokenExpired() {
     }
     
     // Get session from Amplify
-    const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
     
     if (!session || !session.tokens) {
       // If no session or tokens, consider expired
@@ -96,7 +96,7 @@ export async function getTokenExpiry() {
     }
     
     // Get session from Amplify
-    const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
     
     if (!session || !session.tokens) {
       // If no session or tokens, return current time (expired)
@@ -153,7 +153,7 @@ export async function getUserGroups() {
     }
     
     // Get session from Amplify
-    const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
     
     if (!session || !session.tokens || !session.tokens.accessToken) {
       return [];

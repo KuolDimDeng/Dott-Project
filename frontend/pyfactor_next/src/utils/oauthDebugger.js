@@ -5,7 +5,7 @@
  * that can be used from any page in the browser console.
  */
 
-import { fetchAuthSession, fetchUserAttributes, configureAmplify, isAmplifyConfigured } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 import { logger } from '@/utils/logger';
 
@@ -48,7 +48,7 @@ export const manualOAuthRetry = async () => {
         
         // Step 3: Fetch user attributes
         console.log('  3. Fetching user attributes...');
-        const userAttributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
         console.log('  ✅ User attributes:', userAttributes);
         
         // Step 4: Set cookies and determine next step

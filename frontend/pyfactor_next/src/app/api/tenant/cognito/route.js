@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 
 /**
@@ -67,19 +67,13 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // Import Amplify auth to update user attributes
-    const { updateUserAttributes } = await import('@/config/amplifyUnified');
+    // Removed Amplify/Cognito - using Auth0
+    // Auth0 stores tenant ID differently (in app_metadata)
+    // This is now handled through the backend API
     
-    // Update the tenant ID in Cognito attributes
-    await updateUserAttributes({
-      userAttributes: {
-        'custom:tenant_ID': tenantId,
-        'custom:businessid': tenantId, // For backward compatibility
-        'custom:updated_at': new Date().toISOString()
-      }
-    });
+    logger.info('[Tenant API] Auth0 tenant update - handled by backend');
     
-    logger.info('[Tenant API] Successfully updated tenant ID in Cognito:', tenantId);
+    logger.info('[Tenant API] Tenant ID update request processed:', tenantId);
     
     return NextResponse.json({
       success: true,

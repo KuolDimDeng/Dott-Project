@@ -1,4 +1,4 @@
-import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 
 const ONBOARDING_STEPS = {
@@ -50,7 +50,7 @@ const ONBOARDING_STEPS = {
 export async function validateOnboardingStep(step) {
   try {
     // Get current session using v6 API
-    const { tokens } = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
     if (!tokens?.idToken) {
       throw new Error('No valid session');
     }

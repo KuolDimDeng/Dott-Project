@@ -2,7 +2,7 @@ import { appCache } from '@/utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { getCurrentUser  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 
 // Increase initial polling interval and add exponential backoff
 const BASE_POLLING_INTERVAL = 30000; // 30 seconds (increased from 15 seconds)
@@ -133,8 +133,7 @@ export function useSetupPolling() {
           
           // Try to refresh user attributes during cooldown period
           try {
-            const auth = await import('@/config/amplifyUnified');
-            await auth.fetchUserAttributes();
+            await auth.// fetchUserAttributes() - removed Amplify;
             logger.info('[SetupPolling] Refreshed user attributes during cooldown period');
           } catch (refreshError) {
             logger.error('[SetupPolling] Failed to refresh user attributes during cooldown:', refreshError);
@@ -195,8 +194,7 @@ export function useSetupPolling() {
           // Force a refresh of the user's Cognito attributes to update onboarding status
           try {
             // Attempt to refresh the user's session to get updated attributes
-            const auth = await import('@/config/amplifyUnified');
-            await auth.fetchUserAttributes();
+            await auth.// fetchUserAttributes() - removed Amplify;
             logger.info('[SetupPolling] Refreshed user attributes after 429 error');
           } catch (refreshError) {
             logger.error('[SetupPolling] Failed to refresh user attributes:', refreshError);
