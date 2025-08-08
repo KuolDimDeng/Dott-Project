@@ -416,6 +416,7 @@ class TaxCalculationView(APIView):
             logger.info(f"[Tax Calculation] Request headers: {dict(request.headers)}")
             
             from ..models import GlobalSalesTaxRate
+            from users.models import UserProfile
             
             # Get query parameters - use request.GET for regular Django views
             country = request.GET.get('country', '').strip().upper()
@@ -426,12 +427,52 @@ class TaxCalculationView(APIView):
             logger.info(f"[Tax Calculation] Processed params: country={country}, state={state}, county={county}")
             logger.info(f"[Tax Calculation] All request params: {dict(request.GET)}")
             
+            # If no country provided, fall back to business location (for walk-in customers)
             if not country:
-                logger.warning(f"[Tax Calculation] Country is required but was empty")
-                return Response(
-                    {"error": "Country is required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                logger.info(f"[Tax Calculation] No country provided, falling back to business location")
+                try:
+                    user_profile = UserProfile.objects.filter(user=request.user).first()
+                    if user_profile and user_profile.country:
+                        country = str(user_profile.country).upper()
+                        state = user_profile.state or ''
+                        county = user_profile.county or ''
+                        logger.info(f"[Tax Calculation] Using business location: {country}, {state}, {county}")
+                    else:
+                        logger.warning(f"[Tax Calculation] No business location found in user profile")
+                        return Response({
+                            'tax_rate': 0,
+                            'tax_percentage': 0,
+                            'source': 'no_business_location',
+                            'message': 'No business location configured'
+                        })
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error getting business location: {str(e)}")
+                    return Response(
+                        {"error": "Could not determine tax location"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Check if this is an international sale (export exemption logic)
+            try:
+                user_profile = UserProfile.objects.filter(user=request.user).first()
+                business_country = str(user_profile.country).upper() if user_profile and user_profile.country else None
+                customer_country = country
+                
+                if business_country and business_country != customer_country:
+                    logger.info(f"[Tax Calculation] International sale detected: {business_country} → {customer_country}. Applying export exemption.")
+                    return Response({
+                        'tax_rate': 0,
+                        'tax_percentage': 0,
+                        'source': 'international_export',
+                        'country': customer_country,
+                        'country_name': customer_country,
+                        'state': state,
+                        'county': county,
+                        'message': 'Export exemption - no tax on international sales',
+                        'exemption_reason': 'International export'
+                    })
+            except Exception as e:
+                logger.warning(f"[Tax Calculation] Could not check for international sale: {str(e)}")
             
             # Try to find the most specific tax rate
             tax_rate = None
