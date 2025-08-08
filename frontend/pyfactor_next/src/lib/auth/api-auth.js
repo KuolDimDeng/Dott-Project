@@ -9,6 +9,32 @@ import { NextResponse } from 'next/server';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
+ * Ensures an endpoint has a trailing slash for Django compatibility
+ * @param {string} endpoint - API endpoint
+ * @returns {string} Endpoint with trailing slash
+ */
+export function ensureTrailingSlash(endpoint) {
+  // Remove leading slash if present
+  let cleanEndpoint = endpoint.replace(/^\//, '');
+  
+  // Add trailing slash if not present (but only if there's no query string)
+  if (cleanEndpoint && !cleanEndpoint.endsWith('/')) {
+    // Check if there's a query string
+    const hasQueryString = cleanEndpoint.includes('?');
+    if (hasQueryString) {
+      // Add slash before query string
+      const [path, query] = cleanEndpoint.split('?');
+      cleanEndpoint = `${path}/?${query}`;
+    } else {
+      // Simple case - just add trailing slash
+      cleanEndpoint = `${cleanEndpoint}/`;
+    }
+  }
+  
+  return cleanEndpoint;
+}
+
+/**
  * Makes authenticated request to backend
  * @param {string} endpoint - API endpoint
  * @param {Object} options - Request options
@@ -124,9 +150,13 @@ export async function proxyToBackend(endpoint, request) {
       }
     }
 
+    // Ensure trailing slash for Django compatibility
+    const endpointWithSlash = ensureTrailingSlash(endpoint);
+    
     // Forward to backend
-    const backendUrl = `${BACKEND_URL}/api/${endpoint.replace(/^\//, '')}`;
+    const backendUrl = `${BACKEND_URL}/api/${endpointWithSlash}`;
     console.log(`[API Proxy] Calling backend: ${backendUrl}`);
+    console.log(`[API Proxy] Session ID: ${sessionId.value.substring(0, 8)}...`);
     
     const backendResponse = await fetch(
       backendUrl,
@@ -135,6 +165,7 @@ export async function proxyToBackend(endpoint, request) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Session ${sessionId.value}`,
+          'X-Requested-With': 'XMLHttpRequest',
         },
         ...(body && { body: JSON.stringify(body) }),
         cache: 'no-store',

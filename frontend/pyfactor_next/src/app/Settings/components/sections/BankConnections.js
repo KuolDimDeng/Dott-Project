@@ -33,7 +33,24 @@ const BankConnections = () => {
   const loadBusinessCountry = async () => {
     logger.info('🎯 [BankConnections] === LOADING BUSINESS COUNTRY ===');
     try {
-      const response = await fetch('/api/users/me');
+      const response = await fetch('/api/users/me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      logger.info('🎯 [BankConnections] Response status:', response.status);
+      
+      if (!response.ok) {
+        logger.error('🎯 [BankConnections] Failed to load user profile:', response.status);
+        const errorText = await response.text();
+        logger.error('🎯 [BankConnections] Error response:', errorText);
+        setBusinessCountry('US'); // Default to US
+        return;
+      }
+      
       const data = await response.json();
       
       // Debug log the full response
