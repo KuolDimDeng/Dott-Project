@@ -22,6 +22,7 @@ import GeofencingSettings from './sections/GeofencingSettingsSimple';
 import MainMenuSettings from './sections/MainMenuSettings';
 import TaxSettings from './sections/TaxSettings';
 import CurrencySettings from './sections/CurrencySettings';
+import Accounting from './sections/Accounting';
 // import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
@@ -37,7 +38,8 @@ import {
   ChatBubbleLeftRightIcon,
   Squares2X2Icon,
   CalculatorIcon,
-  BuildingLibraryIcon
+  BuildingLibraryIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -93,6 +95,14 @@ const SettingsManagement = () => {
       description: 'Set your business currency for invoices and reports',
       component: CurrencySettings,
       requiredRole: 'user' // All users can view their currency
+    },
+    {
+      id: 'accounting',
+      title: 'Accounting',
+      icon: DocumentTextIcon,
+      description: 'Configure accounting standards and financial reporting settings',
+      component: Accounting,
+      requiredRole: 'admin' // Only admin and owner can access
     },
     {
       id: 'taxes',

@@ -18,7 +18,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
-import AccountingStandards from './AccountingStandards';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
   console.log('[CompanyProfile] === COMPONENT RENDERED v2 ===');
@@ -1032,10 +1031,6 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             )}
           </div>
 
-          {/* Accounting Standards Section */}
-          <div className="mt-6">
-            <AccountingStandards />
-          </div>
 
           {editMode && (
             <div className="flex justify-end space-x-3 pt-4">
