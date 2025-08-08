@@ -253,13 +253,9 @@ export function SessionTimeoutProvider({ children }) {
     });
     console.log('🔐 [SessionTimeout] Added event listeners for:', events);
     
-    // Also track API activity by intercepting fetch
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      updateActivity();
-      return originalFetch.apply(this, args);
-    };
-    console.log('🔐 [SessionTimeout] Intercepted fetch for activity tracking');
+    // DO NOT track API activity - only track actual user interactions
+    // Automatic API calls should not reset the timeout
+    console.log('🔐 [SessionTimeout] NOT tracking API calls for activity (only user interactions)');
     
     // Start checking for inactivity
     checkIntervalRef.current = setInterval(checkInactivity, CHECK_INTERVAL);
@@ -270,7 +266,6 @@ export function SessionTimeoutProvider({ children }) {
       events.forEach(event => {
         document.removeEventListener(event, throttledUpdateActivity);
       });
-      window.fetch = originalFetch;
       
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
