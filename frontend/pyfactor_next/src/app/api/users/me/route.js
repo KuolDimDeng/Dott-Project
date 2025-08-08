@@ -10,20 +10,7 @@ import { proxyToBackend } from '@/lib/auth/api-auth';
  * Fetches current user profile
  */
 export async function GET(request) {
-  const response = await proxyToBackend('users/me', request);
-  
-  // Clone the response to read it
-  const clonedResponse = response.clone();
-  const data = await clonedResponse.json();
-  
-  console.log('🎯 [/api/users/me] Response data:', {
-    email: data.email,
-    country: data.country,
-    business_country: data.business_country,
-    tenant_id: data.tenant_id
-  });
-  
-  return response;
+  return proxyToBackend('users/me', request);
 }
 
 /**
