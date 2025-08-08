@@ -116,16 +116,18 @@ export class ReceiptGenerator {
         <div class="divider"></div>
         
         <div class="items">
-          ${items.map(item => `
+          ${items.map(item => {
+            const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
+            return `
             <div class="item">
               <div class="item-name">${item.name}</div>
               <div class="item-qty">${item.quantity}</div>
-              <div class="item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+              <div class="item-price">$${(itemPrice * item.quantity).toFixed(2)}</div>
             </div>
             <div style="font-size: 10px; color: #666; margin-left: 5px;">
-              $${item.price} each
+              $${itemPrice} each
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
         
         <div class="divider"></div>
@@ -231,12 +233,13 @@ export class ReceiptGenerator {
     
     // Items
     items.forEach(item => {
+      const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
       pdf.text(item.name, 5, y);
       pdf.text(`${item.quantity}`, pageWidth-25, y);
-      pdf.text(`$${(item.price * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
+      pdf.text(`$${(itemPrice * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
       y += lineHeight;
       pdf.setFontSize(7);
-      pdf.text(`$${item.price} each`, 8, y);
+      pdf.text(`$${itemPrice} each`, 8, y);
       pdf.setFontSize(8);
       y += lineHeight;
     });
@@ -350,8 +353,10 @@ export class ReceiptGenerator {
     text += `==========================================\n`;
     
     items.forEach(item => {
+      // Support both 'price' and 'unit_price' field names
+      const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
       text += `${item.name}\n`;
-      text += `  ${item.quantity} x $${item.price} = $${(item.price * item.quantity).toFixed(2)}\n`;
+      text += `  ${item.quantity} x $${itemPrice} = $${(itemPrice * item.quantity).toFixed(2)}\n`;
     });
     
     text += `==========================================\n`;

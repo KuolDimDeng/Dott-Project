@@ -265,31 +265,34 @@ function generateEmailHTML(receipt) {
         </tr>
       </thead>
       <tbody>
-        ${items.map(item => `
+        ${items.map(item => {
+          const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
+          const itemTotal = item.total !== undefined ? item.total : (itemPrice * item.quantity);
+          return `
           <tr>
             <td>${item.name}</td>
             <td>${item.quantity}</td>
-            <td>$${item.price.toFixed(2)}</td>
-            <td>$${item.total.toFixed(2)}</td>
+            <td>$${parseFloat(itemPrice).toFixed(2)}</td>
+            <td>$${parseFloat(itemTotal).toFixed(2)}</td>
           </tr>
-        `).join('')}
+        `}).join('')}
       </tbody>
     </table>
 
     <div class="totals">
       <div class="total-row">
         <span>Subtotal:</span>
-        <span>$${totals.subtotal.toFixed(2)}</span>
+        <span>$${parseFloat(totals.subtotal || 0).toFixed(2)}</span>
       </div>
-      ${totals.tax > 0 ? `
+      ${parseFloat(totals.tax || 0) > 0 ? `
       <div class="total-row">
         <span>Tax:</span>
-        <span>$${totals.tax.toFixed(2)}</span>
+        <span>$${parseFloat(totals.tax || 0).toFixed(2)}</span>
       </div>
       ` : ''}
       <div class="total-row grand-total">
         <span>Total:</span>
-        <span>$${totals.total.toFixed(2)}</span>
+        <span>$${parseFloat(totals.total || 0).toFixed(2)}</span>
       </div>
     </div>
 
@@ -309,12 +312,13 @@ function generateEmailText(receipt) {
   
   text += 'Items:\n';
   items.forEach(item => {
-    text += `- ${item.name} x${item.quantity} = $${item.total.toFixed(2)}\n`;
+    const itemTotal = item.total !== undefined ? item.total : ((item.price || item.unit_price || 0) * item.quantity);
+    text += `- ${item.name} x${item.quantity} = $${parseFloat(itemTotal).toFixed(2)}\n`;
   });
   
-  text += `\nSubtotal: $${totals.subtotal.toFixed(2)}\n`;
-  if (totals.tax > 0) text += `Tax: $${totals.tax.toFixed(2)}\n`;
-  text += `Total: $${totals.total.toFixed(2)}\n`;
+  text += `\nSubtotal: $${parseFloat(totals.subtotal || 0).toFixed(2)}\n`;
+  if (parseFloat(totals.tax || 0) > 0) text += `Tax: $${parseFloat(totals.tax || 0).toFixed(2)}\n`;
+  text += `Total: $${parseFloat(totals.total || 0).toFixed(2)}\n`;
   text += '\nThank you for your business!';
   
   return text;
