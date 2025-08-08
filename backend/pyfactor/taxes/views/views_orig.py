@@ -431,20 +431,31 @@ class TaxCalculationView(APIView):
             if not country:
                 logger.info(f"[Tax Calculation] No country provided, falling back to business location")
                 try:
-                    user_profile = UserProfile.objects.filter(user=request.user).first()
-                    if user_profile and user_profile.country:
-                        country = str(user_profile.country).upper()
-                        state = user_profile.state or ''
-                        county = user_profile.county or ''
-                        logger.info(f"[Tax Calculation] Using business location: {country}, {state}, {county}")
+                    # Try Business model first (new architecture)
+                    from users.models import Business
+                    business = Business.objects.filter(owner_id=request.user.id).first()
+                    if not business:
+                        business = Business.objects.filter(tenant_id=request.user.tenant_id).first()
+                    
+                    if business and business.country:
+                        country = str(business.country).upper()
+                        logger.info(f"[Tax Calculation] Using business location from Business model: {country}")
                     else:
-                        logger.warning(f"[Tax Calculation] No business location found in user profile")
-                        return Response({
-                            'tax_rate': 0,
-                            'tax_percentage': 0,
-                            'source': 'no_business_location',
-                            'message': 'No business location configured'
-                        })
+                        # Fall back to UserProfile
+                        user_profile = UserProfile.objects.filter(user=request.user).first()
+                        if user_profile and user_profile.country:
+                            country = str(user_profile.country).upper()
+                            state = user_profile.state or ''
+                            county = user_profile.county or ''
+                            logger.info(f"[Tax Calculation] Using business location from UserProfile: {country}, {state}, {county}")
+                        else:
+                            logger.warning(f"[Tax Calculation] No business location found in Business or UserProfile")
+                            return Response({
+                                'tax_rate': 0,
+                                'tax_percentage': 0,
+                                'source': 'no_business_location',
+                                'message': 'No business location configured'
+                            })
                 except Exception as e:
                     logger.error(f"[Tax Calculation] Error getting business location: {str(e)}")
                     return Response(
@@ -454,8 +465,19 @@ class TaxCalculationView(APIView):
             
             # Check if this is an international sale (export exemption logic)
             try:
-                user_profile = UserProfile.objects.filter(user=request.user).first()
-                business_country = str(user_profile.country).upper() if user_profile and user_profile.country else None
+                # Try Business model first (new architecture)
+                from users.models import Business
+                business = Business.objects.filter(owner_id=request.user.id).first()
+                if not business:
+                    business = Business.objects.filter(tenant_id=request.user.tenant_id).first()
+                
+                if business and business.country:
+                    business_country = str(business.country).upper()
+                else:
+                    # Fall back to UserProfile
+                    user_profile = UserProfile.objects.filter(user=request.user).first()
+                    business_country = str(user_profile.country).upper() if user_profile and user_profile.country else None
+                
                 customer_country = country
                 
                 if business_country and business_country != customer_country:

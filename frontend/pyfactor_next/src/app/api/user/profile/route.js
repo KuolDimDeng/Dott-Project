@@ -103,7 +103,8 @@ export async function GET(request) {
             yearEstablished: businessInfo.yearEstablished || '',
             address: businessInfo.address || {},
             // Add business location from session data (new architecture)
-            country: sessionData.business_country || sessionData.country || businessInfo.country || 'US',
+            // Don't default to US - let the actual country come through
+            country: sessionData.business_country || sessionData.country || businessInfo.country || '',
             state: sessionData.business_state || sessionData.state || businessInfo.state || '',
             county: sessionData.business_county || sessionData.county || businessInfo.county || '',
             subscriptionPlan: sessionData.subscription_plan || 'free',
