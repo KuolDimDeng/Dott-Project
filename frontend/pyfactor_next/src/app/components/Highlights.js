@@ -341,14 +341,15 @@ export default function Highlights() {
                 </div>
                 
                 <div className={`mt-10 lg:mt-0 ${highlight.reverse ? 'lg:col-start-1' : 'lg:col-start-2'}`}>
-                  <div className="relative overflow-hidden rounded-lg shadow-xl">
-                    <div className="aspect-w-5 aspect-h-3">
+                  <div className="relative overflow-hidden rounded-lg shadow-xl bg-gray-100">
+                    <div className="relative w-full" style={{ paddingBottom: '60%' }}>
                       <Image
                         src={highlight.image}
                         alt={highlight.imageAlt}
-                        width={800}
-                        height={480}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
+                        className="object-cover"
+                        priority={index === 0}
                       />
                     </div>
                   </div>
