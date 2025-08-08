@@ -104,7 +104,10 @@ export async function proxyToBackend(endpoint, request) {
     const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
+    console.log(`[API Proxy] Proxying ${endpoint} with session:`, sessionId?.value?.substring(0, 8) + '...');
+    
     if (!sessionId?.value) {
+      console.error('[API Proxy] No session cookie found');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -122,8 +125,11 @@ export async function proxyToBackend(endpoint, request) {
     }
 
     // Forward to backend
+    const backendUrl = `${BACKEND_URL}/api/${endpoint.replace(/^\//, '')}`;
+    console.log(`[API Proxy] Calling backend: ${backendUrl}`);
+    
     const backendResponse = await fetch(
-      `${BACKEND_URL}/api/${endpoint.replace(/^\//, '')}`,
+      backendUrl,
       {
         method: request.method,
         headers: {
@@ -136,7 +142,29 @@ export async function proxyToBackend(endpoint, request) {
     );
 
     // Get response data
-    const data = await backendResponse.json().catch(() => null);
+    let data = null;
+    const contentType = backendResponse.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await backendResponse.json();
+      } catch (e) {
+        console.error('[API Proxy] Failed to parse JSON response:', e);
+        data = { error: 'Invalid JSON response from backend' };
+      }
+    } else {
+      // If not JSON, try to get text
+      const text = await backendResponse.text();
+      console.log('[API Proxy] Non-JSON response:', text.substring(0, 200));
+      data = { error: 'Backend returned non-JSON response', detail: text.substring(0, 500) };
+    }
+
+    // Log the response for debugging
+    console.log(`[API Proxy] Response for ${endpoint}:`, {
+      status: backendResponse.status,
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data).slice(0, 5) : null
+    });
 
     // Return with same status
     return NextResponse.json(
