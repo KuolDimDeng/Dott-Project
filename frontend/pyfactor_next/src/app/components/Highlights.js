@@ -38,7 +38,7 @@ export default function Highlights() {
       key: 'jobs',
       title: t('highlights.jobs.title', 'Comprehensive Job Management'),
       description: t('highlights.jobs.description', 'End-to-end job costing from quote to completion. Track materials, labor, and expenses with real-time profitability analysis. Perfect for service businesses, contractors, and field operations with mobile-first design.'),
-      image: '/static/images/job-management-screenshot.jpg',
+      image: '/static/images/job-management.jpg',
       imageAlt: t('highlights.jobs.imageAlt', 'Job management and costing interface'),
       reverse: true,
     },
