@@ -130,10 +130,13 @@ export async function proxyToBackend(endpoint, request) {
     const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
-    console.log(`[API Proxy] Proxying ${endpoint} with session:`, sessionId?.value?.substring(0, 8) + '...');
+    console.log(`🔍🔍🔍 [API Proxy] === STARTING PROXY FOR ${endpoint} ===`);
+    console.log(`🔍🔍🔍 [API Proxy] Session cookie found:`, sessionId ? 'YES' : 'NO');
+    console.log(`🔍🔍🔍 [API Proxy] Session value:`, sessionId?.value?.substring(0, 8) + '...');
+    console.log(`🔍🔍🔍 [API Proxy] Request method:`, request.method);
     
     if (!sessionId?.value) {
-      console.error('[API Proxy] No session cookie found');
+      console.error('🔍🔍🔍 [API Proxy] No session cookie found - returning 401');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -155,22 +158,30 @@ export async function proxyToBackend(endpoint, request) {
     
     // Forward to backend
     const backendUrl = `${BACKEND_URL}/api/${endpointWithSlash}`;
-    console.log(`[API Proxy] Calling backend: ${backendUrl}`);
-    console.log(`[API Proxy] Session ID: ${sessionId.value.substring(0, 8)}...`);
+    console.log(`🔍🔍🔍 [API Proxy] Backend URL: ${backendUrl}`);
+    console.log(`🔍🔍🔍 [API Proxy] Authorization header: Session ${sessionId.value.substring(0, 8)}...`);
+    
+    // Build headers
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Session ${sessionId.value}`,
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    
+    console.log(`🔍🔍🔍 [API Proxy] Request headers:`, JSON.stringify(headers, null, 2));
     
     const backendResponse = await fetch(
       backendUrl,
       {
         method: request.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Session ${sessionId.value}`,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
+        headers,
         ...(body && { body: JSON.stringify(body) }),
         cache: 'no-store',
       }
     );
+    
+    console.log(`🔍🔍🔍 [API Proxy] Backend response status:`, backendResponse.status);
+    console.log(`🔍🔍🔍 [API Proxy] Backend response ok:`, backendResponse.ok);
 
     // Get response data
     let data = null;
@@ -191,11 +202,14 @@ export async function proxyToBackend(endpoint, request) {
     }
 
     // Log the response for debugging
-    console.log(`[API Proxy] Response for ${endpoint}:`, {
-      status: backendResponse.status,
-      hasData: !!data,
-      dataKeys: data ? Object.keys(data).slice(0, 5) : null
-    });
+    console.log(`🔍🔍🔍 [API Proxy] === RESPONSE FOR ${endpoint} ===`);
+    console.log(`🔍🔍🔍 [API Proxy] Status:`, backendResponse.status);
+    console.log(`🔍🔍🔍 [API Proxy] Has data:`, !!data);
+    console.log(`🔍🔍🔍 [API Proxy] Data keys:`, data ? Object.keys(data).slice(0, 5) : null);
+    
+    if (!backendResponse.ok) {
+      console.error(`🔍🔍🔍 [API Proxy] ERROR response:`, JSON.stringify(data, null, 2));
+    }
 
     // Return with same status
     return NextResponse.json(

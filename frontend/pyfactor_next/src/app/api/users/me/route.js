@@ -4,12 +4,19 @@
  */
 
 import { proxyToBackend } from '@/lib/auth/api-auth';
+import { cookies } from 'next/headers';
 
 /**
  * GET /api/users/me
  * Fetches current user profile
  */
 export async function GET(request) {
+  // Debug logging
+  const cookieStore = cookies();
+  const sid = cookieStore.get('sid');
+  console.log('🔍🔍🔍 [/api/users/me route] Session cookie exists:', !!sid);
+  console.log('🔍🔍🔍 [/api/users/me route] Session value:', sid?.value?.substring(0, 8) + '...');
+  
   return proxyToBackend('users/me', request);
 }
 
