@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Image from 'next/image';
 import FeatureDetailModal from './FeatureDetailModal';
 
 export default function Highlights() {
@@ -343,13 +342,11 @@ export default function Highlights() {
                 <div className={`mt-10 lg:mt-0 ${highlight.reverse ? 'lg:col-start-1' : 'lg:col-start-2'}`}>
                   <div className="relative overflow-hidden rounded-lg shadow-xl bg-gray-100">
                     <div className="relative w-full" style={{ paddingBottom: '60%' }}>
-                      <Image
+                      <img
                         src={highlight.image}
                         alt={highlight.imageAlt}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
-                        className="object-cover"
-                        priority={index === 0}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        loading={index === 0 ? "eager" : "lazy"}
                       />
                     </div>
                   </div>
