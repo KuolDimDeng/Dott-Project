@@ -406,6 +406,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const notifyInfo = (message) => toast.loading(message);
   const notifyWarning = (message) => toast.error(message, { icon: '⚠️' });
   
+  // Track if component is mounted on client side
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  
   // Add isMounted ref to track component mounting status
   const isMounted = useRef(true);
   // Add refs for tracking network requests and timeouts
@@ -414,11 +417,16 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   
   // Effect to track component mount status
   useEffect(() => {
+    // Set client mounted flag
+    setIsClientMounted(true);
+    console.log('🔵 [ProductManagement] Component mounted on client');
+    
     // Set to true on mount (though it's already initialized as true)
     isMounted.current = true;
     // Cleanup function sets to false when component unmounts
     return () => {
       isMounted.current = false;
+      console.log('🔵 [ProductManagement] Component unmounting');
     };
   }, []);
   
@@ -2936,6 +2944,20 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   };
 
   // Update the main render function
+  // Show loading state during server-side rendering
+  if (!isClientMounted) {
+    return (
+      <div className="p-6 bg-gray-50">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading Product Management...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="p-6 bg-gray-50">
       {/* Print styles for QR code printing */}
