@@ -40,10 +40,15 @@ const BankConnections = () => {
       const response = await fetch('/api/users/me');
       const data = await response.json();
       
+      // Debug log the full response
+      logger.info('🎯 [BankConnections] Full API response:', JSON.stringify(data, null, 2));
+      
       // Get country from the user profile (backend returns 'country' not 'business_country')
       const country = data.country || data.business_country || 'US';
       setBusinessCountry(country);
       logger.info('🎯 [BankConnections] Business country loaded:', country);
+      logger.info('🎯 [BankConnections] data.country:', data.country);
+      logger.info('🎯 [BankConnections] data.business_country:', data.business_country);
     } catch (error) {
       logger.error('🎯 [BankConnections] Error loading business country:', error);
       setBusinessCountry('US'); // Default to US

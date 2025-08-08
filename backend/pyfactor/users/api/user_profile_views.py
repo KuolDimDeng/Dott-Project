@@ -161,6 +161,9 @@ class UserProfileMeView(APIView):
                 logger.warning(f"[UserProfileMeView] Could not get employee data: {str(e)}")
             
             # Build response data
+            user_country = str(profile.country) if profile.country else 'US'
+            logger.info(f"[UserProfileMeView] Profile country: {profile.country}, Returning: {user_country}")
+            
             response_data = {
                 'id': request.user.id,
                 'email': request.user.email,
@@ -174,7 +177,7 @@ class UserProfileMeView(APIView):
                 'is_business_owner': profile.is_business_owner,
                 'tenant_id': str(profile.tenant_id) if profile.tenant_id else None,
                 'business_id': str(profile.business_id) if profile.business_id else None,
-                'country': str(profile.country) if profile.country else 'US',
+                'country': user_country,
                 'phone_number': profile.phone_number,
                 'occupation': profile.occupation,
                 'show_whatsapp_commerce': profile.get_whatsapp_commerce_preference(),
