@@ -38,7 +38,7 @@ export default function AddBankAccount({ provider, userCountry, onSuccess, onCan
           <p>
             {provider === 'plaid' 
               ? 'Connect your bank account securely using Plaid. Your credentials are encrypted and never stored on our servers.'
-              : 'Connect your international bank account using Wise. We'll securely store your bank details with our payment processor.'}
+              : 'Connect your international bank account using Wise. We\'ll securely store your bank details with our payment processor.'}
           </p>
         </div>
 
