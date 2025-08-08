@@ -12,7 +12,7 @@ from . import api
 from accounts import views_payment
 
 # Import POS payment views for credit card processing
-from .views import pos_payment_views
+from . import pos_payment_views
 
 urlpatterns = [
     # Payment provider endpoints
