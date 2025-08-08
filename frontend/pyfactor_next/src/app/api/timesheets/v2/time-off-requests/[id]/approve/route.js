@@ -3,7 +3,7 @@
  * Proxies to backend V2 timesheet API
  */
 
-import { makeBackendRequest } from '@/utils/api';
+import { makeRequest } from '@/utils/api';
 
 export async function POST(request, { params }) {
   try {
@@ -12,16 +12,16 @@ export async function POST(request, { params }) {
     const body = await request.json();
     console.log('👔 [API] Approve time off request body:', body);
 
-    const response = await makeBackendRequest(`/api/timesheets/v2/time-off-requests/${params.id}/approve/`, {
+    const response = await makeRequest(`/api/timesheets/v2/time-off-requests/${params.id}/approve/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      cookies: request.cookies,
+      // cookies handled by makeRequest
     });
 
-    return response;
+    return Response.json(response);
   } catch (error) {
     console.error('👔 [API] Approve time off request error:', error);
     return Response.json(

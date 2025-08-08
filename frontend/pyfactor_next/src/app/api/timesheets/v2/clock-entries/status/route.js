@@ -3,21 +3,21 @@
  * Proxies to backend V2 timesheet API
  */
 
-import { makeBackendRequest } from '@/utils/api';
+import { makeRequest } from '@/utils/api';
 
 export async function GET(request) {
   try {
     console.log('🕐 [API] Get clock status API called');
     
-    const response = await makeBackendRequest('/api/timesheets/v2/clock-entries/status/', {
+    const response = await makeRequest('/api/timesheets/v2/clock-entries/status/', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      cookies: request.cookies,
+      // cookies handled by makeRequest
     });
 
-    return response;
+    return Response.json(response);
   } catch (error) {
     console.error('🕐 [API] Get clock status error:', error);
     return Response.json(

@@ -271,7 +271,9 @@
       "Bash(/Users/kuoldeng/projectx/scripts/verify_security_deployment.sh:*)",
       "Bash(./test_pos_api.sh:*)",
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3:*)",
-      "WebFetch(domain:www.dottapps.com)"
+      "WebFetch(domain:www.dottapps.com)",
+      "Bash(/Users/kuoldeng/projectx/fix-timesheet-imports.sh)",
+      "Bash(RESEND_API_KEY=\"re_test_key\" timeout 60 pnpm build)"
     ],
     "deny": []
   }

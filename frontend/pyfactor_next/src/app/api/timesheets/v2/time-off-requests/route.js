@@ -3,21 +3,20 @@
  * Proxies to backend V2 timesheet API
  */
 
-import { makeBackendRequest } from '@/utils/api';
+import { makeRequest } from '@/utils/api';
 
 export async function GET(request) {
   try {
     console.log('🕐 [API] Get time off requests API called');
     
-    const response = await makeBackendRequest('/api/timesheets/v2/time-off-requests/', {
+    const response = await makeRequest('/api/timesheets/v2/time-off-requests/', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      cookies: request.cookies,
-    });
+    }, request);
 
-    return response;
+    return Response.json(response);
   } catch (error) {
     console.error('🕐 [API] Get time off requests error:', error);
     return Response.json(
