@@ -190,16 +190,31 @@ const BankConnections = () => {
   };
 
   const shouldUseWise = () => {
-    // Countries where Plaid doesn't work well
-    const wiseCountries = [
-      'KE', 'NG', 'ZA', 'GH', 'UG', 'TZ', 'RW', 'ET', 'EG', 'MA', // Africa
-      'IN', 'PK', 'BD', 'LK', 'NP', // South Asia
-      'ID', 'MY', 'TH', 'VN', 'PH', // Southeast Asia
-      'BR', 'AR', 'CL', 'CO', 'PE', 'UY', 'PY', 'BO', 'EC', 'VE', // South America
-      'TR', 'AE', 'SA', 'QA', 'KW', 'BH', 'OM', 'JO', 'LB' // Middle East
+    // Plaid only works well in these countries
+    const plaidCountries = [
+      'US', // United States
+      'CA', // Canada
+      'GB', // United Kingdom
+      'FR', // France
+      'ES', // Spain
+      'NL', // Netherlands
+      'IE', // Ireland
+      'DE', // Germany (limited)
+      'DK', // Denmark (limited)
+      'NO', // Norway (limited)
+      'SE', // Sweden (limited)
+      'EE', // Estonia (limited)
+      'LT', // Lithuania (limited)
+      'LV', // Latvia (limited)
+      'PL', // Poland (limited)
+      'BE', // Belgium (limited)
+      'AT', // Austria (limited)
+      'PT', // Portugal (limited)
+      'IT', // Italy (limited)
     ];
     
-    return wiseCountries.includes(businessCountry);
+    // If NOT in Plaid countries, use Wise
+    return !plaidCountries.includes(businessCountry);
   };
 
   if (loading) {
