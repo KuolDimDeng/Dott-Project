@@ -302,6 +302,7 @@ function CalendarWidget({ onNavigate }) {
             </div>
           )}
         </div>
+        </div>
       </div>
     </HydrationSafeWrapper>
   );
