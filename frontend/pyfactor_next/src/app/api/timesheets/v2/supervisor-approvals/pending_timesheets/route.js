@@ -14,8 +14,7 @@ export async function GET(request) {
       headers: {
         'Content-Type': 'application/json',
       },
-      // cookies handled by makeRequest
-    });
+      }, request);
 
     return Response.json(response);
   } catch (error) {

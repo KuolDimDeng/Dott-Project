@@ -33,16 +33,15 @@ export async function POST(request) {
     const body = await request.json();
     console.log('🕐 [API] Time off request body:', body);
 
-    const response = await makeBackendRequest('/api/timesheets/v2/time-off-requests/', {
+    const response = await makeRequest('/api/timesheets/v2/time-off-requests/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      cookies: request.cookies,
-    });
+    }, request);
 
-    return response;
+    return Response.json(response);
   } catch (error) {
     console.error('🕐 [API] Create time off request error:', error);
     return Response.json(

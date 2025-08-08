@@ -779,15 +779,27 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         unit_price: parseFloat(item.price || 0)
       }));
       
+      // Calculate discount percentage even if discount is entered as amount
+      let discountPercentage = 0;
+      if (discount > 0) {
+        if (discountType === 'percentage') {
+          discountPercentage = discount;
+        } else {
+          // Convert amount to percentage
+          discountPercentage = totals.subtotal > 0 ? (discount / totals.subtotal) * 100 : 0;
+        }
+      }
+      
       const saleData = {
         items: mappedItems,
         customer_id: selectedCustomer || null,
-        discount_percentage: discountType === 'percentage' ? discount : 0,
+        discount_percentage: discountPercentage,
         payment_method: paymentMethod,
         use_shipping_address: useShippingAddress,
         notes,
         tax_rate: taxRate,
-        tax_amount: totals.taxAmount
+        tax_amount: totals.taxAmount,
+        total_amount: totals.total
       };
       
       // Store sale data for after payment
@@ -822,16 +834,33 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         totals: totals
       });
 
+      // Calculate discount percentage even if discount is entered as amount
+      let discountPercentage = 0;
+      if (discount > 0) {
+        if (discountType === 'percentage') {
+          discountPercentage = discount;
+        } else {
+          // Convert amount to percentage
+          discountPercentage = totals.subtotal > 0 ? (discount / totals.subtotal) * 100 : 0;
+        }
+      }
+
       const saleData = {
         items: mappedItems,
         customer_id: selectedCustomer || null,
-        discount_percentage: discountType === 'percentage' ? discount : 0,
+        discount_percentage: discountPercentage,
         payment_method: paymentMethod,
         use_shipping_address: useShippingAddress,
         notes,
         tax_rate: taxRate, // Include tax rate in sale data
-        tax_amount: totals.taxAmount
+        tax_amount: totals.taxAmount,
+        total_amount: totals.total // Include total for backend reference
       };
+
+      // Add amount_tendered for cash payments (customer pays exact amount by default)
+      if (paymentMethod === 'cash') {
+        saleData.amount_tendered = parseFloat(totals.total);
+      }
 
       // Add shipping address if using it
       if (useShippingAddress && selectedCustomer) {

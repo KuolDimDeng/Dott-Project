@@ -274,7 +274,9 @@
       "WebFetch(domain:www.dottapps.com)",
       "Bash(/Users/kuoldeng/projectx/fix-timesheet-imports.sh)",
       "Bash(RESEND_API_KEY=\"re_test_key\" timeout 60 pnpm build)",
-      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import payments.urls; print(''✅ Imports working correctly'')\")"
+      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import payments.urls; print(''✅ Imports working correctly'')\")",
+      "Bash(./fix-timesheet-imports.sh:*)",
+      "Bash(/tmp/fix_timesheet_request_params.sh:*)"
     ],
     "deny": []
   }

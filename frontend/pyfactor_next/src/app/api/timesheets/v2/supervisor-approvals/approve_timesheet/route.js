@@ -18,8 +18,7 @@ export async function POST(request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      // cookies handled by makeRequest
-    });
+      }, request);
 
     return Response.json(response);
   } catch (error) {

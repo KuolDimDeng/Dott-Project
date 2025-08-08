@@ -61,10 +61,8 @@ export async function POST(request) {
       })),
       customer_id: saleData.customer_id || null,
       payment_method: saleData.payment_method,
-      amount_tendered: parseFloat(saleData.amount_tendered || saleData.total_amount),
-      discount_percentage: saleData.discount_type === 'percentage' 
-        ? parseFloat(saleData.discount_percentage || 0) 
-        : (parseFloat(saleData.discount_amount || 0) / parseFloat(saleData.subtotal) * 100),
+      amount_tendered: parseFloat(saleData.amount_tendered || saleData.total_amount || 0),
+      discount_percentage: parseFloat(saleData.discount_percentage || 0),
       tax_rate: parseFloat(saleData.tax_rate || 0),
       notes: saleData.notes || ''
     };
