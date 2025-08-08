@@ -198,89 +198,55 @@ export async function PUT(request, { params }) {
     const productData = await request.json();
     logger.debug(`[${requestId}] Product PUT data for ID: ${id}:`, productData);
     
-    // Extract tenant info from request
-    const tenantInfo = await extractTenantId(request);
-    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
+    // Get authentication tokens - use the proper approach
+    const { accessToken, idToken, tenantId } = await getTokens(request);
     
-    if (!finalTenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request`);
+    if (!accessToken || !tenantId) {
+      logger.error(`[${requestId}] Missing authentication tokens`);
       return NextResponse.json(
-        { error: 'Tenant ID is required' }, 
-        { status: 400 }
+        { error: 'Authentication required' }, 
+        { status: 401 }
       );
     }
     
-    logger.info(`[${requestId}] Updating product ${id} for tenant: ${finalTenantId}`);
+    logger.info(`[${requestId}] Updating product ${id} for tenant: ${tenantId}`);
     
-    // Import the RLS database utility
-    const db = await import('@/utils/db/rls-database');
+    // Forward the request to the backend API
+    const response = await serverAxiosInstance.put(
+      `${process.env.NEXT_PUBLIC_API_URL}/products/products/${id}/`,
+      productData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'X-Id-Token': idToken || '',
+          'X-Tenant-ID': tenantId,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
     
-    // Update using tenant context for RLS
-    const result = await db.transaction(async (client) => {
-      // Update the product with tenant ID context for RLS
-      const updateQuery = `
-        UPDATE public.inventory_product 
-        SET 
-          name = $1,
-          description = $2,
-          sku = $3,
-          price = $4,
-          cost = $5,
-          stock_quantity = $6,
-          reorder_level = $7,
-          for_sale = $8,
-          for_rent = $9,
-          supplier_id = $10,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $11
-        RETURNING *
-      `;
-      
-      const params = [
-        productData.name,
-        productData.description || '',
-        productData.sku || '',
-        parseFloat(productData.price) || 0,
-        parseFloat(productData.cost) || 0,
-        parseInt(productData.stock_quantity) || 0,
-        parseInt(productData.reorder_level) || 0,
-        productData.for_sale === true,
-        productData.for_rent === true,
-        productData.supplier_id || null,
-        id
-      ];
-      
-      logger.debug(`[${requestId}] Executing product update with tenant context: ${finalTenantId}`);
-      
-      const result = await client.query(updateQuery, params);
-      return result;
-    }, {
-      debug: true,
-      requestId,
-      tenantId: finalTenantId // Set the tenant context for RLS
-    });
+    logger.info(`[${requestId}] Product ${id} updated successfully`);
     
-    if (result.rowCount === 0) {
-      logger.warn(`[${requestId}] Product ${id} not found or not owned by tenant ${finalTenantId}`);
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
-    
-    logger.info(`[${requestId}] Product ${id} updated successfully for tenant ${finalTenantId}`);
-    
-    return NextResponse.json({
-      success: true,
-      product: result.rows[0],
-      message: 'Product updated successfully'
-    });
+    return NextResponse.json(response.data);
     
   } catch (error) {
     logger.error(`[${requestId}] Error updating product ${id}: ${error.message}`, error);
     
+    // Handle specific error responses from backend
+    if (error.response) {
+      return NextResponse.json(
+        {
+          error: error.response.data?.error || 'Failed to update product',
+          message: error.response.data?.message || error.message
+        },
+        { status: error.response.status }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: 'Failed to update product',
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: error.message
       }, 
       { status: 500 }
     );
@@ -300,46 +266,32 @@ export async function DELETE(request, { params }) {
   logger.info(`[${requestId}] DELETE /api/inventory/products/${id} - Start processing request`);
   
   try {
-    // Extract tenant info from request
-    const tenantInfo = await extractTenantId(request);
-    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
+    // Get authentication tokens - use the proper approach
+    const { accessToken, idToken, tenantId } = await getTokens(request);
     
-    if (!finalTenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request`);
+    if (!accessToken || !tenantId) {
+      logger.error(`[${requestId}] Missing authentication tokens`);
       return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
     
-    logger.info(`[${requestId}] Deleting product ${id} for tenant: ${finalTenantId}`);
+    logger.info(`[${requestId}] Deleting product ${id} for tenant: ${tenantId}`);
     
-    // Import the RLS database utility
-    const db = await import('@/utils/db/rls-database');
+    // Forward the request to the backend API
+    const response = await serverAxiosInstance.delete(
+      `${process.env.NEXT_PUBLIC_API_URL}/products/products/${id}/`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'X-Id-Token': idToken || '',
+          'X-Tenant-ID': tenantId
+        }
+      }
+    );
     
-    // Delete using tenant context for RLS
-    const result = await db.transaction(async (client) => {
-      // Delete the product with tenant ID context for RLS
-      const deleteQuery = `
-        DELETE FROM public.inventory_product 
-        WHERE id = $1
-        RETURNING id
-      `;
-      
-      const result = await client.query(deleteQuery, [id]);
-      return result;
-    }, {
-      debug: true,
-      requestId,
-      tenantId: finalTenantId // Set the tenant context for RLS
-    });
-    
-    if (result.rowCount === 0) {
-      logger.warn(`[${requestId}] Product ${id} not found or not owned by tenant ${finalTenantId}`);
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
-    
-    logger.info(`[${requestId}] Product ${id} deleted successfully for tenant ${finalTenantId}`);
+    logger.info(`[${requestId}] Product ${id} deleted successfully`);
     
     return NextResponse.json({
       success: true,
@@ -349,11 +301,21 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     logger.error(`[${requestId}] Error deleting product ${id}: ${error.message}`, error);
     
+    // Handle specific error responses from backend
+    if (error.response) {
+      return NextResponse.json(
+        {
+          error: error.response.data?.error || 'Failed to delete product',
+          message: error.response.data?.message || error.message
+        },
+        { status: error.response.status }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: 'Failed to delete product',
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: error.message
       },
       { status: 500 }
     );
