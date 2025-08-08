@@ -14,11 +14,11 @@ import {
   Shield,
   ChartBar,
   Rocket,
-  CurrencyCircleDollar,
-  DeviceMobile,
+  CurrencyDollar,
+  DevicePhoneMobile,
   Lock,
   Timer,
-  HeartHandshake,
+  Handshake,
   Sparkle
 } from '@phosphor-icons/react';
 
@@ -40,7 +40,7 @@ function AboutUsContent() {
   const problems = [
     {
       title: 'Expensive enterprise software they can\'t afford',
-      icon: <CurrencyCircleDollar size={24} weight="duotone" className="text-red-500" />
+      icon: <CurrencyDollar size={24} weight="duotone" className="text-red-500" />
     },
     {
       title: 'Juggling 10+ different tools that don\'t talk to each other',
@@ -48,14 +48,14 @@ function AboutUsContent() {
     },
     {
       title: 'Outdated systems that weren\'t built for today\'s mobile, global world',
-      icon: <DeviceMobile size={24} weight="duotone" className="text-yellow-600" />
+      icon: <DevicePhoneMobile size={24} weight="duotone" className="text-yellow-600" />
     }
   ];
 
   const approach = [
     {
       title: 'Built from the ground up for mobile-first businesses',
-      icon: <DeviceMobile size={20} weight="bold" className="text-blue-600" />
+      icon: <DevicePhoneMobile size={20} weight="bold" className="text-blue-600" />
     },
     {
       title: 'Designed for global operations from day one',
@@ -63,7 +63,7 @@ function AboutUsContent() {
     },
     {
       title: 'Focused on what actually matters: helping you make money',
-      icon: <CurrencyCircleDollar size={20} weight="bold" className="text-green-600" />
+      icon: <CurrencyDollar size={20} weight="bold" className="text-green-600" />
     }
   ];
 
@@ -249,7 +249,7 @@ function AboutUsContent() {
             <div className="space-y-3">
               {beliefs.map((belief, index) => (
                 <div key={index} className="flex items-center gap-3">
-                  <HeartHandshake size={20} weight="duotone" className="text-indigo-600" />
+                  <Handshake size={20} weight="duotone" className="text-indigo-600" />
                   <p className="text-gray-800 font-medium">{belief}</p>
                 </div>
               ))}
