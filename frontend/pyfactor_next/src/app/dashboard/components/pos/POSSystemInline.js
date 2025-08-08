@@ -853,13 +853,17 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         use_shipping_address: useShippingAddress,
         notes,
         tax_rate: taxRate, // Include tax rate in sale data
-        tax_amount: totals.taxAmount,
-        total_amount: totals.total // Include total for backend reference
+        tax_amount: parseFloat(totals.taxAmount) || 0,
+        total_amount: parseFloat(totals.total) || 0 // Ensure it's a number
       };
 
       // Add amount_tendered for cash payments (customer pays exact amount by default)
       if (paymentMethod === 'cash') {
-        saleData.amount_tendered = parseFloat(totals.total);
+        // Ensure amount_tendered is set and is a valid number
+        const totalAmount = parseFloat(totals.total) || 0;
+        saleData.amount_tendered = totalAmount;
+        saleData.change_due = 0; // Exact payment by default
+        console.log('[POS] Cash payment - amount_tendered:', saleData.amount_tendered, 'total:', totalAmount);
       }
 
       // Add shipping address if using it
