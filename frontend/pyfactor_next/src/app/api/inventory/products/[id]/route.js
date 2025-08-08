@@ -213,7 +213,7 @@ export async function PUT(request, { params }) {
     
     // Forward the request to the backend API
     const response = await serverAxiosInstance.put(
-      `${process.env.NEXT_PUBLIC_API_URL}/products/products/${id}/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`,
       productData,
       {
         headers: {
@@ -281,7 +281,7 @@ export async function DELETE(request, { params }) {
     
     // Forward the request to the backend API
     const response = await serverAxiosInstance.delete(
-      `${process.env.NEXT_PUBLIC_API_URL}/products/products/${id}/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
