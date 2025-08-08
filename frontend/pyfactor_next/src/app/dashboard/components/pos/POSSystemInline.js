@@ -24,6 +24,7 @@ const BarcodeIcon = (props) => (
 );
 import { logger } from '@/utils/logger';
 import ReceiptDialog from './ReceiptDialog';
+import StripePaymentModal from '@/components/pos/StripePaymentModal';
 
 // Ensure logger exists
 const safeLogger = logger || { info: console.log, error: console.error };
@@ -152,6 +153,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [productsError, setProductsError] = useState(null);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [completedSaleData, setCompletedSaleData] = useState(null);
+  const [showStripePayment, setShowStripePayment] = useState(false);
+  const [pendingSaleData, setPendingSaleData] = useState(null);
   const [businessInfo, setBusinessInfo] = useState({
     name: '',
     address: '',
