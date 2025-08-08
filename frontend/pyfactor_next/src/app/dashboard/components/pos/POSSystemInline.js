@@ -491,28 +491,31 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchCustomerTaxRate = async () => {
       if (!selectedCustomer) {
-        // Walk-In customer - calculate tax based on business location
+        // Walk-In customer - always calculate tax (backend will use business location as fallback)
         console.log('[POS] Walk-In customer, calculating tax for business location');
-        if (businessCountry || businessState || businessCounty) {
-          // Create a pseudo-customer object with business location
-          const walkInCustomer = {
-            id: 'walk-in',
-            first_name: 'Walk-In',
-            last_name: 'Customer',
-            billing_country: businessCountry,
-            billing_state: businessState,
-            billing_county: businessCounty,
-            shipping_country: businessCountry,
-            shipping_state: businessState,
-            shipping_county: businessCounty
-          };
-          await calculateCustomerTax(walkInCustomer);
-        } else {
-          // Fallback to default if business location not loaded yet
-          console.log('[POS] Business location not loaded, using default tax rate:', defaultTaxRate);
-          setTaxRate(defaultTaxRate);
-          setTaxJurisdiction(null);
-        }
+        console.log('[POS] Business location state:', {
+          country: businessCountry || 'EMPTY',
+          state: businessState || 'EMPTY',
+          county: businessCounty || 'EMPTY'
+        });
+        
+        // Create a pseudo-customer object with business location (even if empty)
+        // Backend will use the business location as fallback when country is empty
+        const walkInCustomer = {
+          id: 'walk-in',
+          first_name: 'Walk-In',
+          last_name: 'Customer',
+          billing_country: businessCountry || '',
+          billing_state: businessState || '',
+          billing_county: businessCounty || '',
+          shipping_country: businessCountry || '',
+          shipping_state: businessState || '',
+          shipping_county: businessCounty || ''
+        };
+        
+        // Always call calculateCustomerTax for Walk-In
+        // The backend will handle empty country by using business location
+        await calculateCustomerTax(walkInCustomer);
         return;
       }
 
@@ -529,10 +532,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       await calculateCustomerTax(customer);
     };
 
-    if (businessCountry) {
-      // Only fetch if we have the business country loaded
-      fetchCustomerTaxRate();
-    }
+    // Always fetch tax rate - backend will use business location as fallback
+    // Even if businessCountry is empty, the backend knows the business location
+    fetchCustomerTaxRate();
   }, [selectedCustomer, businessCountry, businessState, businessCounty, customers, defaultTaxRate]);
 
   // Add item to cart
