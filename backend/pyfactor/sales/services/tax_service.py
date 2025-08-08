@@ -249,16 +249,16 @@ class TaxService:
             if country != 'US':
                 country_rate = GlobalSalesTaxRate.objects.filter(
                     country=country,
-                    state__isnull=True,
-                    is_active=True
+                    region_code='',
+                    is_current=True
                 ).first()
                 
                 if country_rate:
-                    rates['total_rate'] = country_rate.tax_rate
+                    rates['total_rate'] = country_rate.rate
                     rates['components'].append({
                         'type': 'country',
                         'name': country,
-                        'rate': str(country_rate.tax_rate)
+                        'rate': str(country_rate.rate)
                     })
                 
                 return rates
@@ -267,32 +267,32 @@ class TaxService:
             if state:
                 state_rate = GlobalSalesTaxRate.objects.filter(
                     country='US',
-                    state=state,
-                    county__isnull=True,
-                    is_active=True
+                    region_code=state,
+                    locality='',
+                    is_current=True
                 ).first()
                 
                 if state_rate:
-                    rates['state_rate'] = state_rate.tax_rate
+                    rates['state_rate'] = state_rate.rate
                     rates['components'].append({
                         'type': 'state',
                         'name': state,
-                        'rate': str(state_rate.tax_rate)
+                        'rate': str(state_rate.rate)
                     })
             
             # Get county rate (aggregate rate that includes state)
             if county and state:
                 county_rate = GlobalSalesTaxRate.objects.filter(
                     country='US',
-                    state=state,
-                    county=county,
-                    is_active=True
+                    region_code=state,
+                    locality=county,
+                    is_current=True
                 ).first()
                 
                 if county_rate:
                     # County rate is aggregate (includes state)
-                    rates['county_rate'] = county_rate.tax_rate - rates['state_rate']
-                    rates['total_rate'] = county_rate.tax_rate
+                    rates['county_rate'] = county_rate.rate - rates['state_rate']
+                    rates['total_rate'] = county_rate.rate
                     rates['components'].append({
                         'type': 'county',
                         'name': county,
@@ -375,13 +375,13 @@ class TaxService:
             if user_profile.state and user_profile.country:
                 state_rate = GlobalSalesTaxRate.objects.filter(
                     country=str(user_profile.country),
-                    state=user_profile.state,
-                    county__isnull=True,
-                    is_active=True
+                    region_code=user_profile.state,
+                    locality='',
+                    is_current=True
                 ).first()
                 
                 if state_rate:
-                    tax_rate = state_rate.tax_rate
+                    tax_rate = state_rate.rate
             
             # Calculate simple tax
             total_taxable = sum(
