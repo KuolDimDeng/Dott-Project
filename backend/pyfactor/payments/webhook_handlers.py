@@ -287,11 +287,11 @@ def handle_payment_intent_for_settlement(payment_intent):
             logger.error(f"User not found: {user_id}")
             return
         
-        # Check if user has Wise account set up
-        wise_item = WiseItem.objects.filter(user=user, is_verified=True).first()
+        # Check if user has Wise account set up (don't require verified for now)
+        wise_item = WiseItem.objects.filter(user=user).first()
         if not wise_item:
-            logger.info(f"User {user_id} doesn't have Wise account set up. Skipping settlement.")
-            return
+            logger.info(f"User {user_id} doesn't have Wise account set up. Creating settlement anyway for future processing.")
+            # Still create the settlement so it can be processed once bank account is added
         
         # Check if settlement already exists
         if PaymentSettlement.objects.filter(stripe_payment_intent_id=payment_intent['id']).exists():
@@ -359,10 +359,11 @@ def handle_charge_for_settlement(charge):
             logger.error(f"User not found: {user_id}")
             return
         
-        # Check if user has Wise account
-        wise_item = WiseItem.objects.filter(user=user, is_verified=True).first()
+        # Check if user has Wise account (don't require verified for now)
+        wise_item = WiseItem.objects.filter(user=user).first()
         if not wise_item:
-            return
+            logger.info(f"User {user_id} doesn't have Wise account set up. Creating settlement anyway for future processing.")
+            # Still create the settlement so it can be processed once bank account is added
         
         # Check if settlement exists (use charge ID as unique identifier)
         if PaymentSettlement.objects.filter(stripe_payment_intent_id=charge['id']).exists():

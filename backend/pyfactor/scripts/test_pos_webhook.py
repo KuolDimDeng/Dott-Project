@@ -1,197 +1,147 @@
 #!/usr/bin/env python
 """
-Test script for POS settlement webhook
-Simulates a Stripe webhook event for testing
+Test script for POS webhook handler
+Usage: python scripts/test_pos_webhook.py --local
 """
 
+import os
+import sys
+import django
 import json
-import hmac
-import hashlib
-import time
-import requests
+import stripe
 from decimal import Decimal
 
-# Configuration
-WEBHOOK_URL = "https://api.dottapps.com/api/payments/webhooks/stripe/pos-settlements/"
-WEBHOOK_SECRET = "whsec_..."  # Replace with your actual webhook secret
+# Setup Django environment
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+django.setup()
 
-def generate_stripe_signature(payload, secret):
-    """Generate a valid Stripe webhook signature"""
-    timestamp = int(time.time())
-    signed_payload = f"{timestamp}.{payload}"
-    signature = hmac.new(
-        secret.encode('utf-8'),
-        signed_payload.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
-    return f"t={timestamp},v1={signature}"
+from django.conf import settings
+from custom_auth.models import User
+from banking.models import PaymentSettlement, WiseItem
+from payments.webhook_handlers import handle_payment_intent_for_settlement
 
-def create_test_payment_intent_event(user_id, amount=10000):
-    """Create a test payment_intent.succeeded event"""
-    return {
-        "id": f"evt_test_{int(time.time())}",
-        "object": "event",
-        "created": int(time.time()),
-        "type": "payment_intent.succeeded",
-        "data": {
-            "object": {
-                "id": f"pi_test_{int(time.time())}",
-                "object": "payment_intent",
-                "amount": amount,  # in cents
-                "currency": "usd",
-                "status": "succeeded",
-                "metadata": {
-                    "source": "pos",
-                    "user_id": user_id,
-                    "pos_transaction_id": f"POS-TEST-{int(time.time())}",
-                    "store_id": "store_test_123"
-                },
-                "receipt_email": "customer@example.com",
-                "created": int(time.time()),
-                "charges": {
-                    "object": "list",
-                    "data": [{
-                        "id": f"ch_test_{int(time.time())}",
-                        "amount": amount,
-                        "currency": "usd"
-                    }]
-                }
-            }
-        }
-    }
+# Initialize Stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
-def send_test_webhook(event_data, webhook_secret=None):
-    """Send test webhook to the endpoint"""
-    payload = json.dumps(event_data)
+def test_webhook_handler():
+    """Test the webhook handler with a simulated payment intent"""
     
-    headers = {
-        "Content-Type": "application/json",
-    }
-    
-    if webhook_secret:
-        signature = generate_stripe_signature(payload, webhook_secret)
-        headers["Stripe-Signature"] = signature
-    
+    # Get a test user
     try:
-        response = requests.post(
-            WEBHOOK_URL,
-            data=payload,
-            headers=headers,
-            timeout=30
-        )
+        user = User.objects.filter(email='test@example.com').first()
+        if not user:
+            print("❌ No test user found. Please create a user with email: test@example.com")
+            return False
+    except Exception as e:
+        print(f"❌ Error getting user: {e}")
+        return False
+    
+    print(f"✅ Found user: {user.email}")
+    
+    # Check if user has Wise account
+    wise_item = WiseItem.objects.filter(user=user).first()
+    if wise_item:
+        print(f"✅ User has Wise account: {wise_item.bank_name}")
+    else:
+        print("⚠️  User doesn't have Wise account set up (settlement will be created anyway)")
+    
+    # Create a test payment intent object (simulating Stripe's format)
+    test_payment_intent = {
+        'id': f'pi_test_{int(os.urandom(8).hex(), 16)}',
+        'amount': 10000,  # $100.00 in cents
+        'currency': 'usd',
+        'metadata': {
+            'user_id': str(user.id),
+            'pos_transaction_id': f'pos_test_{int(os.urandom(4).hex(), 16)}',
+            'source': 'pos'
+        },
+        'receipt_email': user.email
+    }
+    
+    print(f"\n📝 Test Payment Intent:")
+    print(f"   ID: {test_payment_intent['id']}")
+    print(f"   Amount: ${test_payment_intent['amount']/100:.2f}")
+    print(f"   User ID: {test_payment_intent['metadata']['user_id']}")
+    
+    # Check if settlement already exists
+    existing = PaymentSettlement.objects.filter(
+        stripe_payment_intent_id=test_payment_intent['id']
+    ).first()
+    
+    if existing:
+        print(f"⚠️  Settlement already exists: {existing.id}")
+        return False
+    
+    # Process the payment intent
+    print("\n🔄 Processing payment intent...")
+    try:
+        handle_payment_intent_for_settlement(test_payment_intent)
         
-        print(f"Response Status: {response.status_code}")
-        print(f"Response Body: {response.text[:500] if response.text else 'Empty'}")
+        # Check if settlement was created
+        settlement = PaymentSettlement.objects.filter(
+            stripe_payment_intent_id=test_payment_intent['id']
+        ).first()
         
-        if response.status_code == 200:
-            print("✅ Webhook processed successfully!")
-        elif response.status_code == 400:
-            print("❌ Bad request - check webhook signature or payload")
-        else:
-            print(f"⚠️ Unexpected status code: {response.status_code}")
+        if settlement:
+            print(f"✅ Settlement created successfully!")
+            print(f"\n💰 Settlement Details:")
+            print(f"   ID: {settlement.id}")
+            print(f"   Original Amount: ${settlement.original_amount}")
+            print(f"   Stripe Fee: ${settlement.stripe_fee}")
+            print(f"   Platform Fee: ${settlement.platform_fee}")
+            print(f"   Settlement Amount: ${settlement.settlement_amount}")
+            print(f"   Status: {settlement.status}")
             
-        return response
-        
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error sending webhook: {e}")
-        return None
-
-def test_local_webhook():
-    """Test webhook locally (without signature verification)"""
-    print("\n=== Testing Local Webhook (No Signature) ===")
-    
-    # Use a test user ID - replace with actual user ID from your database
-    test_user_id = "1"  # Replace with actual user ID
-    
-    event = create_test_payment_intent_event(
-        user_id=test_user_id,
-        amount=10000  # $100.00
-    )
-    
-    print(f"Sending test payment for user {test_user_id}, amount: $100.00")
-    send_test_webhook(event)
-
-def test_production_webhook():
-    """Test production webhook with signature"""
-    print("\n=== Testing Production Webhook (With Signature) ===")
-    
-    if WEBHOOK_SECRET == "whsec_...":
-        print("⚠️ Please update WEBHOOK_SECRET with your actual secret from Stripe Dashboard")
-        return
-    
-    # Use actual user ID from your production database
-    test_user_id = "1"  # Replace with actual user ID
-    
-    event = create_test_payment_intent_event(
-        user_id=test_user_id,
-        amount=15000  # $150.00
-    )
-    
-    print(f"Sending test payment for user {test_user_id}, amount: $150.00")
-    send_test_webhook(event, WEBHOOK_SECRET)
-
-def check_settlement_created(user_id):
-    """Check if settlement was created (requires Django environment)"""
-    try:
-        import django
-        import os
-        import sys
-        
-        # Add parent directory to path
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
-        django.setup()
-        
-        from banking.models import PaymentSettlement
-        
-        recent_settlements = PaymentSettlement.objects.filter(
-            user_id=user_id
-        ).order_by('-created_at')[:5]
-        
-        if recent_settlements:
-            print(f"\n📊 Recent settlements for user {user_id}:")
-            for settlement in recent_settlements:
-                print(f"  - ID: {settlement.id}")
-                print(f"    Amount: ${settlement.original_amount}")
-                print(f"    Status: {settlement.status}")
-                print(f"    Created: {settlement.created_at}")
-                print(f"    POS Transaction: {settlement.pos_transaction_id}")
+            # Calculate what user receives
+            wise_fee = Decimal('1.20')  # Estimated Wise fee
+            user_receives = settlement.settlement_amount - wise_fee
+            print(f"   Estimated User Receives: ${user_receives:.2f} (after ~${wise_fee} Wise fee)")
+            
+            return True
         else:
-            print(f"\n⚠️ No settlements found for user {user_id}")
+            print("❌ Settlement was not created")
+            return False
             
     except Exception as e:
-        print(f"\n⚠️ Could not check settlements (run this in Django environment): {e}")
+        print(f"❌ Error processing payment intent: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
-if __name__ == "__main__":
-    import sys
+def cleanup_test_data():
+    """Clean up test settlements"""
+    test_settlements = PaymentSettlement.objects.filter(
+        stripe_payment_intent_id__startswith='pi_test_'
+    )
+    count = test_settlements.count()
+    if count > 0:
+        test_settlements.delete()
+        print(f"\n🧹 Cleaned up {count} test settlement(s)")
+
+if __name__ == '__main__':
+    print("=" * 60)
+    print("POS WEBHOOK HANDLER TEST")
+    print("=" * 60)
     
-    print("🧪 POS Settlement Webhook Test Script")
-    print("=" * 50)
-    
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--local":
-            test_local_webhook()
-        elif sys.argv[1] == "--production":
-            test_production_webhook()
-        elif sys.argv[1] == "--check":
-            if len(sys.argv) > 2:
-                check_settlement_created(sys.argv[2])
-            else:
-                print("Usage: python test_pos_webhook.py --check <user_id>")
-        else:
-            print("Usage:")
-            print("  python test_pos_webhook.py --local      # Test without signature")
-            print("  python test_pos_webhook.py --production # Test with signature")
-            print("  python test_pos_webhook.py --check <user_id> # Check settlements")
+    # Check for --local flag
+    if '--local' in sys.argv:
+        print("Running in LOCAL mode\n")
     else:
-        # Default: test without signature
-        test_local_webhook()
+        print("⚠️  Add --local flag to run this test")
+        sys.exit(1)
+    
+    # Run the test
+    success = test_webhook_handler()
+    
+    if success:
+        print("\n✅ TEST PASSED - Webhook handler is working!")
         
-        print("\n💡 To test with production signature:")
-        print("   1. Get webhook secret from Stripe Dashboard")
-        print("   2. Update WEBHOOK_SECRET in this script")
-        print("   3. Run: python test_pos_webhook.py --production")
-        
-        print("\n💡 To check if settlement was created:")
-        print("   Run: python test_pos_webhook.py --check <user_id>")
+        # Ask if user wants to clean up
+        response = input("\nClean up test data? (y/n): ")
+        if response.lower() == 'y':
+            cleanup_test_data()
+    else:
+        print("\n❌ TEST FAILED - Check the errors above")
+    
+    print("=" * 60)
