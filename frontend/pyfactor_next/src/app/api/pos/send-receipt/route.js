@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
- * API endpoint for sending receipts via email
+ * API endpoint for sending receipts via email, WhatsApp, SMS
  * Supports various receipt delivery methods
  */
 
@@ -50,6 +55,8 @@ export async function POST(request) {
     switch (type) {
       case 'email':
         return await handleEmailReceipt(to, receipt, emailContent, session);
+      case 'whatsapp':
+        return await handleWhatsAppReceipt(to, receipt, session);
       case 'sms':
         return await handleSMSReceipt(to, receipt, session);
       default:
@@ -69,13 +76,10 @@ export async function POST(request) {
 }
 
 /**
- * Handle email receipt delivery
+ * Handle email receipt delivery using Resend
  */
 async function handleEmailReceipt(to, receipt, emailContent, session) {
   try {
-    // In a real implementation, you would integrate with an email service
-    // like SendGrid, Amazon SES, or Nodemailer with SMTP
-    
     console.log('[send-receipt] Email receipt request:', {
       to,
       receiptNumber: receipt.receipt.number,
@@ -83,31 +87,28 @@ async function handleEmailReceipt(to, receipt, emailContent, session) {
       amount: receipt.totals.total
     });
 
-    // Simulate email sending with a delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mock successful email delivery
-    // In production, you would call your email service here:
-    /*
-    const emailService = getEmailService();
-    const result = await emailService.send({
-      to: to,
-      from: process.env.BUSINESS_EMAIL || 'noreply@dottapps.com',
-      subject: emailContent.subject,
-      html: emailContent.html,
-      text: emailContent.text,
-      attachments: emailContent.attachments || []
+    // Generate email HTML
+    const emailHtml = generateEmailHTML(receipt);
+    
+    // Send via Resend
+    const data = await resend.emails.send({
+      from: 'Dott POS <receipts@dottapps.com>',
+      to: [to],
+      subject: `Receipt #${receipt.receipt.number} - ${receipt.business.name}`,
+      html: emailHtml,
+      text: generateEmailText(receipt),
     });
-    */
 
-    // For now, return success (in production, check actual email service result)
+    console.log('[send-receipt] Email sent successfully:', data);
+    
     return NextResponse.json({
       success: true,
-      message: 'Receipt sent successfully',
+      message: 'Receipt sent to email',
       details: {
         type: 'email',
         recipient: to,
         receiptNumber: receipt.receipt.number,
+        messageId: data.id,
         timestamp: new Date().toISOString()
       }
     });
@@ -161,29 +162,156 @@ async function handleSMSReceipt(to, receipt, session) {
 }
 
 /**
- * Get email service instance
- * This would be implemented based on your chosen email provider
+ * Handle WhatsApp receipt delivery
  */
-function getEmailService() {
-  // Example using SendGrid:
-  /*
-  const sgMail = require('@sendgrid/mail');
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  return sgMail;
-  */
+async function handleWhatsAppReceipt(to, receipt, session) {
+  try {
+    console.log('[send-receipt] WhatsApp receipt request:', {
+      to,
+      receiptNumber: receipt.receipt.number,
+      business: receipt.business.name,
+      amount: receipt.totals.total
+    });
 
-  // Example using Nodemailer:
-  /*
-  const nodemailer = require('nodemailer');
-  return nodemailer.createTransporter({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+    // Get session cookie for backend call
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie?.value) {
+      throw new Error('No session found');
     }
-  });
-  */
 
-  // Placeholder for actual implementation
-  return null;
+    // Call backend WhatsApp API
+    const response = await fetch(`${BACKEND_URL}/api/whatsapp/send-receipt/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phone_number: to,
+        receipt_data: receipt,
+        format: 'text'
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send WhatsApp message');
+    }
+
+    const data = await response.json();
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Receipt sent via WhatsApp',
+      details: {
+        type: 'whatsapp',
+        recipient: to,
+        receiptNumber: receipt.receipt.number,
+        messageId: data.message_id,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('[send-receipt] WhatsApp error:', error);
+    return NextResponse.json(
+      { error: 'Failed to send WhatsApp receipt' },
+      { status: 500 }
+    );
+  }
+}
+
+// Generate HTML email template
+function generateEmailHTML(receipt) {
+  const { business, items, totals, customer, payment } = receipt;
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; border-bottom: 2px solid #1e40af; padding-bottom: 20px; }
+    .business-name { font-size: 24px; font-weight: bold; color: #1e40af; }
+    .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .items-table th { background-color: #1e40af; color: white; padding: 10px; }
+    .items-table td { border-bottom: 1px solid #e5e7eb; padding: 8px; }
+    .totals { margin-top: 20px; }
+    .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
+    .grand-total { font-size: 20px; font-weight: bold; color: #1e40af; border-top: 2px solid #1e40af; padding-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="business-name">${business.name}</div>
+      <div>Receipt #${receipt.receipt.number}</div>
+      <div>${new Date(receipt.receipt.date).toLocaleString()}</div>
+    </div>
+
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(item => `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>$${item.price.toFixed(2)}</td>
+            <td>$${item.total.toFixed(2)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="total-row">
+        <span>Subtotal:</span>
+        <span>$${totals.subtotal.toFixed(2)}</span>
+      </div>
+      ${totals.tax > 0 ? `
+      <div class="total-row">
+        <span>Tax:</span>
+        <span>$${totals.tax.toFixed(2)}</span>
+      </div>
+      ` : ''}
+      <div class="total-row grand-total">
+        <span>Total:</span>
+        <span>$${totals.total.toFixed(2)}</span>
+      </div>
+    </div>
+
+    <p>Thank you for your business!</p>
+  </div>
+</body>
+</html>
+  `;
+}
+
+// Generate plain text email
+function generateEmailText(receipt) {
+  const { business, items, totals } = receipt;
+  
+  let text = `${business.name}\n`;
+  text += `Receipt #${receipt.receipt.number}\n\n`;
+  
+  text += 'Items:\n';
+  items.forEach(item => {
+    text += `- ${item.name} x${item.quantity} = $${item.total.toFixed(2)}\n`;
+  });
+  
+  text += `\nSubtotal: $${totals.subtotal.toFixed(2)}\n`;
+  if (totals.tax > 0) text += `Tax: $${totals.tax.toFixed(2)}\n`;
+  text += `Total: $${totals.total.toFixed(2)}\n`;
+  text += '\nThank you for your business!';
+  
+  return text;
 }

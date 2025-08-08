@@ -11,6 +11,9 @@ from . import api
 # Import payment views from accounts app for Stripe integration
 from accounts import views_payment
 
+# Import POS payment views for credit card processing
+from .views import pos_payment_views
+
 urlpatterns = [
     # Payment provider endpoints
     path('providers/country/<str:country_code>/', views.country_payment_providers, name='country-payment-providers'),
@@ -60,4 +63,8 @@ urlpatterns = [
     path('api/confirm-invoice-payment/', api.confirm_invoice_payment, name='api_confirm_invoice_payment'),
     path('api/create-vendor-payment/', api.create_vendor_payment, name='api_create_vendor_payment'),
     path('api/calculate-fees/', api.calculate_payment_fees, name='api_calculate_fees'),
+    
+    # POS credit card payment endpoints
+    path('create-pos-intent/', pos_payment_views.create_pos_payment_intent, name='create_pos_payment_intent'),
+    path('confirm-pos-payment/', pos_payment_views.confirm_pos_payment, name='confirm_pos_payment'),
 ]

@@ -769,6 +769,34 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       return;
     }
 
+    // If credit card payment, show Stripe modal first
+    if (paymentMethod === 'card') {
+      const totals = calculateTotals();
+      const mappedItems = cartItems.map(item => ({
+        id: item.id,
+        type: 'product',
+        quantity: item.quantity || 1,
+        unit_price: parseFloat(item.price || 0)
+      }));
+      
+      const saleData = {
+        items: mappedItems,
+        customer_id: selectedCustomer || null,
+        discount_percentage: discountType === 'percentage' ? discount : 0,
+        payment_method: paymentMethod,
+        use_shipping_address: useShippingAddress,
+        notes,
+        tax_rate: taxRate,
+        tax_amount: totals.taxAmount
+      };
+      
+      // Store sale data for after payment
+      setPendingSaleData(saleData);
+      setShowStripePayment(true);
+      return;
+    }
+
+    // For non-card payments, process immediately
     setIsProcessing(true);
     try {
       const totals = calculateTotals();
@@ -1033,6 +1061,67 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     }
     
     console.log('[POS] === END TAX CALCULATION ===');
+  };
+
+  // Handle successful Stripe payment
+  const handleStripePaymentSuccess = async (paymentDetails) => {
+    console.log('[POS] Stripe payment successful:', paymentDetails);
+    setShowStripePayment(false);
+    setIsProcessing(true);
+    
+    try {
+      // Complete the sale with payment details
+      const saleDataWithPayment = {
+        ...pendingSaleData,
+        payment_intent_id: paymentDetails.payment_intent_id,
+        stripe_payment_confirmed: true
+      };
+      
+      console.log('[POS] Completing sale with Stripe payment:', saleDataWithPayment);
+      
+      // Call backend to complete sale
+      const response = await fetch('/api/pos/complete-sale', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(saleDataWithPayment),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('[POS] Complete sale error:', errorData);
+        throw new Error(`Sale failed: ${errorData}`);
+      }
+      
+      const result = await response.json();
+      console.log('[POS] Sale completed successfully with Stripe payment:', result);
+      
+      // Prepare sale data for receipt
+      const enhancedSaleData = {
+        ...saleDataWithPayment,
+        ...result,
+        invoice_number: result.invoice_number || result.transaction?.transaction_number || result.id,
+        customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null,
+        payment_details: paymentDetails
+      };
+      
+      // Show receipt dialog
+      setCompletedSaleData(enhancedSaleData);
+      setShowReceiptDialog(true);
+      
+      // Reset cart
+      resetCart();
+      toast.success('Payment processed successfully!');
+      
+    } catch (error) {
+      console.error('[POS] Error completing sale after payment:', error);
+      toast.error(`Sale failed: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+      setPendingSaleData(null);
+    }
   };
 
   // Reset cart
@@ -1709,6 +1798,39 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           </div>
         </div>
       </div>
+      
+      {/* Stripe Payment Modal */}
+      <StripePaymentModal
+        isOpen={showStripePayment}
+        onClose={() => {
+          setShowStripePayment(false);
+          setPendingSaleData(null);
+        }}
+        amount={parseFloat(totals.total)}
+        onSuccess={handleStripePaymentSuccess}
+        saleData={pendingSaleData}
+        customerName={
+          selectedCustomer 
+            ? customers.find(c => c.id === selectedCustomer)?.name || 
+              customers.find(c => c.id === selectedCustomer)?.company_name ||
+              'Customer'
+            : 'Walk-In Customer'
+        }
+      />
+      
+      {/* Receipt Dialog */}
+      {showReceiptDialog && (
+        <ReceiptDialog
+          isOpen={showReceiptDialog}
+          onClose={() => {
+            setShowReceiptDialog(false);
+            setCompletedSaleData(null);
+          }}
+          saleData={completedSaleData}
+          businessInfo={businessInfo}
+          customers={customers}
+        />
+      )}
     </div>
   );
 }
