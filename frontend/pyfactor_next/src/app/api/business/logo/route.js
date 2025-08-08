@@ -34,7 +34,7 @@ export async function GET(request) {
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/business/logo/`, {
+    const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/`, {
       method: "GET",
       headers,
     });
@@ -93,7 +93,7 @@ export async function DELETE(request) {
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/business/logo/delete/`, {
+    const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/delete/`, {
       method: "DELETE",
       headers,
     });
