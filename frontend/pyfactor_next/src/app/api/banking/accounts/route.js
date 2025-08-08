@@ -16,12 +16,18 @@ export async function GET(request) {
 
     // Forward request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    
+    console.log('🎯 [Banking API] Fetching from:', `${backendUrl}/api/banking/accounts/`);
+    console.log('🎯 [Banking API] Session:', sidCookie.value);
+    
     const response = await fetch(`${backendUrl}/api/banking/accounts/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
+        'Cache-Control': 'no-cache', // Prevent caching
       },
+      cache: 'no-store' // Next.js specific - don't cache this request
     });
 
     if (!response.ok) {
@@ -34,6 +40,12 @@ export async function GET(request) {
     }
 
     const data = await response.json();
+    
+    console.log('🎯 [Banking API] Response data:', {
+      count: Array.isArray(data) ? data.length : data.data?.length || 0,
+      firstAccount: Array.isArray(data) ? data[0] : data.data?.[0]
+    });
+    
     return Response.json(data);
     
   } catch (error) {
@@ -79,6 +91,12 @@ export async function DELETE(request) {
     }
 
     const data = await response.json();
+    
+    console.log('🎯 [Banking API] Response data:', {
+      count: Array.isArray(data) ? data.length : data.data?.length || 0,
+      firstAccount: Array.isArray(data) ? data[0] : data.data?.[0]
+    });
+    
     return Response.json(data);
     
   } catch (error) {

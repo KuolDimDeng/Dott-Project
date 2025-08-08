@@ -14,13 +14,9 @@ const ConnectBank = dynamic(
     ssr: false
   }
 );
-
-const PlaidDebugger = dynamic(
-  () => import('@/app/dashboard/components/forms/PlaidDebugger'),
-  { ssr: false }
-);
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { logger } from '@/utils/logger';
+import BankConnectionsDebug from './BankConnectionsDebug';
 
 const BankConnections = () => {
   const { notifySuccess, notifyError } = useNotification();
@@ -428,8 +424,8 @@ const BankConnections = () => {
         Debug: Connected Accounts: {connectedAccounts.length} | Country: {businessCountry} | Provider: {shouldUseWise() ? 'Wise' : 'Plaid'}
       </div>
       
-      {/* Temporary Plaid Debugger */}
-      <PlaidDebugger />
+      {/* Temporary Debug Component */}
+      <BankConnectionsDebug />
     </div>
   );
 };
