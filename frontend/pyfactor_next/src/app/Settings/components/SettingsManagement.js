@@ -16,7 +16,7 @@ import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
-import BankConnections from './sections/BankConnections';
+import BankingSettings from '../banking/page';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettingsSimple';
 import MainMenuSettings from './sections/MainMenuSettings';
@@ -84,8 +84,8 @@ const SettingsManagement = () => {
       id: 'bank-connections',
       title: 'Banking', // Changed from Bank Connections
       icon: BuildingLibraryIcon,
-      description: t('bankConnections.title'),
-      component: BankConnections,
+      description: 'Connect and manage bank accounts for payments and payroll',
+      component: BankingSettings,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
