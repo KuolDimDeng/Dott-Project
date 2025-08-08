@@ -10,11 +10,25 @@ const BankConnectionsDebug = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // First check what cookies we have
+        console.log('🔍 [Debug] Document cookies:', document.cookie);
+        
+        // Check for session cookie specifically
+        const sidCookie = document.cookie.split(';').find(c => c.trim().startsWith('sid='));
+        console.log('🔍 [Debug] Session cookie found:', sidCookie ? sidCookie.trim() : 'NO SESSION COOKIE');
+        
         console.log('🔍 [Debug] Fetching /api/users/me...');
-        const response = await fetch('/api/users/me');
+        const response = await fetch('/api/users/me', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
         
         console.log('🔍 [Debug] Response status:', response.status);
         console.log('🔍 [Debug] Response ok:', response.ok);
+        console.log('🔍 [Debug] Response headers:', response.headers);
         
         if (!response.ok) {
           const errorText = await response.text();
