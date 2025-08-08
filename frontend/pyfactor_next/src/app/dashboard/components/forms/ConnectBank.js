@@ -26,6 +26,10 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
 
   // Use preferredProvider when provided - skip region selection entirely
   useEffect(() => {
+    console.log('🔍🔍🔍 [ConnectBank] === USEEFFECT TRIGGERED ===');
+    console.log('🔍🔍🔍 [ConnectBank] preferredProvider:', preferredProvider);
+    console.log('🔍🔍🔍 [ConnectBank] businessCountry:', businessCountry);
+    
     if (preferredProvider && businessCountry) {
       // Set region based on preferred provider
       if (preferredProvider.provider === 'plaid') {
@@ -36,14 +40,22 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         ];
         
         if (europeanCountries.includes(businessCountry)) {
+          console.log('🔍🔍🔍 [ConnectBank] Setting region to Europe');
           setRegion('Europe');
         } else {
+          console.log('🔍🔍🔍 [ConnectBank] Setting region to America');
           setRegion('America');
         }
+      } else if (preferredProvider.provider === 'wise') {
+        // Handle Wise provider - used for international banking
+        console.log('🔍🔍🔍 [ConnectBank] Setting up for Wise provider');
+        setRegion('International');
       } else if (preferredProvider.provider === 'mobilemoney') {
+        console.log('🔍🔍🔍 [ConnectBank] Setting region to Africa with Mobile Money');
         setRegion('Africa');
         setAfricanOption('Mobile Money');
       } else if (preferredProvider.provider === 'dlocal') {
+        console.log('🔍🔍🔍 [ConnectBank] Setting region to South America');
         setRegion('South America');
       }
       
@@ -71,32 +83,54 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
   };
 
   const getProviderForRegion = (region) => {
+    console.log('🔍🔍🔍 [getProviderForRegion] region:', region);
+    console.log('🔍🔍🔍 [getProviderForRegion] preferredProvider:', preferredProvider);
+    
     // If we have a preferred provider from the backend, use that
     if (preferredProvider && preferredProvider.provider) {
+      console.log('🔍🔍🔍 [getProviderForRegion] Using preferred provider:', preferredProvider.provider);
       return preferredProvider.provider;
     }
     
     // Otherwise, use region-based logic as a fallback
+    let provider;
     switch (region) {
       case 'America':
       case 'Europe':
-        return 'plaid';
+        provider = 'plaid';
+        break;
+      case 'International':
+        provider = 'wise';
+        break;
       case 'Africa':
-        return africanOption === 'Mobile Money' ? 'africas_talking' : africanBankProvider;
+        provider = africanOption === 'Mobile Money' ? 'africas_talking' : africanBankProvider;
+        break;
       case 'South America':
-        return 'dlocal';
+        provider = 'dlocal';
+        break;
       case 'Asia':
-        return 'salt_edge';
+        provider = 'salt_edge';
+        break;
       default:
-        return 'unknown';
+        provider = 'unknown';
     }
+    
+    console.log('🔍🔍🔍 [getProviderForRegion] Selected provider:', provider);
+    return provider;
   };
   
 
   const handleConnect = async () => {
+    console.log('🔍🔍🔍 [handleConnect] === STARTING CONNECTION ===');
+    console.log('🔍🔍🔍 [handleConnect] Current region:', region);
+    console.log('🔍🔍🔍 [handleConnect] Business country:', businessCountry);
+    
     setLoading(true);
     setError(null);
     const provider = getProviderForRegion(region);
+    
+    console.log('🔍🔍🔍 [handleConnect] Selected provider:', provider);
+    
     try {
       const payload = { region, provider };
       if (region === 'Africa') {
@@ -111,9 +145,11 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         payload.country_code = businessCountry;
       }
 
+      console.log('🔍🔍🔍 [handleConnect] Final payload:', JSON.stringify(payload, null, 2));
       logger.info('🏦 [ConnectBank] Creating link token with payload:', payload);
       const response = await plaidApi.createLinkToken(payload);
       logger.info('🏦 [ConnectBank] Link token response:', response);
+      console.log('🔍🔍🔍 [handleConnect] Response from API:', response);
 
       if (response.data && response.data.link_token) {
         logger.info('🏦 [ConnectBank] Link token received successfully');

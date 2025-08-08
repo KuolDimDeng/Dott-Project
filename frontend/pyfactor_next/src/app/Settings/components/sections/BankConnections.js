@@ -31,8 +31,11 @@ const BankConnections = () => {
   }, []);
 
   const loadBusinessCountry = async () => {
-    logger.info('🎯 [BankConnections] === LOADING BUSINESS COUNTRY ===');
+    console.log('🔍🔍🔍 [BankConnections] === START LOADING BUSINESS COUNTRY ===');
+    console.log('🔍🔍🔍 [BankConnections] Current businessCountry state:', businessCountry);
+    
     try {
+      console.log('🔍🔍🔍 [BankConnections] Fetching /api/users/me...');
       const response = await fetch('/api/users/me', {
         method: 'GET',
         credentials: 'include',
@@ -41,12 +44,14 @@ const BankConnections = () => {
         }
       });
       
-      logger.info('🎯 [BankConnections] Response status:', response.status);
+      console.log('🔍🔍🔍 [BankConnections] Response status:', response.status);
+      console.log('🔍🔍🔍 [BankConnections] Response ok:', response.ok);
       
       if (!response.ok) {
-        logger.error('🎯 [BankConnections] Failed to load user profile:', response.status);
+        console.error('🔍🔍🔍 [BankConnections] Failed to load user profile:', response.status);
         const errorText = await response.text();
-        logger.error('🎯 [BankConnections] Error response:', errorText);
+        console.error('🔍🔍🔍 [BankConnections] Error response:', errorText);
+        console.error('🔍🔍🔍 [BankConnections] DEFAULTING TO US DUE TO API ERROR');
         setBusinessCountry('US'); // Default to US
         return;
       }
@@ -54,18 +59,41 @@ const BankConnections = () => {
       const data = await response.json();
       
       // Debug log the full response
-      logger.info('🎯 [BankConnections] Full API response:', JSON.stringify(data, null, 2));
+      console.log('🔍🔍🔍 [BankConnections] Full API response:', JSON.stringify(data, null, 2));
+      console.log('🔍🔍🔍 [BankConnections] data.country value:', data.country);
+      console.log('🔍🔍🔍 [BankConnections] data.business_country value:', data.business_country);
+      console.log('🔍🔍🔍 [BankConnections] data.country type:', typeof data.country);
+      console.log('🔍🔍🔍 [BankConnections] data.business_country type:', typeof data.business_country);
       
       // Get country from the user profile (backend returns 'country' not 'business_country')
       const country = data.country || data.business_country || 'US';
+      
+      console.log('🔍🔍🔍 [BankConnections] Selected country:', country);
+      console.log('🔍🔍🔍 [BankConnections] Why this country was selected:');
+      if (data.country) {
+        console.log('🔍🔍🔍   - Using data.country:', data.country);
+      } else if (data.business_country) {
+        console.log('🔍🔍🔍   - Using data.business_country:', data.business_country);
+      } else {
+        console.log('🔍🔍🔍   - DEFAULTING TO US (no country in response)');
+      }
+      
+      console.log('🔍🔍🔍 [BankConnections] Setting businessCountry to:', country);
       setBusinessCountry(country);
-      logger.info('🎯 [BankConnections] Business country loaded:', country);
-      logger.info('🎯 [BankConnections] data.country:', data.country);
-      logger.info('🎯 [BankConnections] data.business_country:', data.business_country);
+      console.log('🔍🔍🔍 [BankConnections] businessCountry state will be updated to:', country);
+      
     } catch (error) {
-      logger.error('🎯 [BankConnections] Error loading business country:', error);
+      console.error('🔍🔍🔍 [BankConnections] Error loading business country:', error);
+      console.error('🔍🔍🔍 [BankConnections] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      console.error('🔍🔍🔍 [BankConnections] DEFAULTING TO US DUE TO EXCEPTION');
       setBusinessCountry('US'); // Default to US
     }
+    
+    console.log('🔍🔍🔍 [BankConnections] === END LOADING BUSINESS COUNTRY ===');
   };
 
   const loadBankAccounts = async () => {
@@ -211,6 +239,10 @@ const BankConnections = () => {
   };
 
   const shouldUseWise = () => {
+    console.log('🔍🔍🔍 [shouldUseWise] === DETERMINING PROVIDER ===');
+    console.log('🔍🔍🔍 [shouldUseWise] Current businessCountry:', businessCountry);
+    console.log('🔍🔍🔍 [shouldUseWise] businessCountry type:', typeof businessCountry);
+    
     // Plaid only works well in these countries
     const plaidCountries = [
       'US', // United States
@@ -234,17 +266,31 @@ const BankConnections = () => {
       'IT', // Italy (limited)
     ];
     
+    console.log('🔍🔍🔍 [shouldUseWise] Plaid countries:', plaidCountries);
+    console.log('🔍🔍🔍 [shouldUseWise] Is businessCountry in plaidCountries?:', plaidCountries.includes(businessCountry));
+    
     // Log the decision
     const useWise = !plaidCountries.includes(businessCountry);
-    logger.debug(`🎯 [BankConnections] Country: ${businessCountry}, Use Wise: ${useWise}`);
+    console.log('🔍🔍🔍 [shouldUseWise] Decision: Use Wise?', useWise);
+    console.log('🔍🔍🔍 [shouldUseWise] Provider selected:', useWise ? 'WISE' : 'PLAID');
     
     // If NOT in Plaid countries, use Wise
     return useWise;
   };
 
+  console.log('🔍🔍🔍 [BankConnections] === RENDER PHASE ===');
+  console.log('🔍🔍🔍 [BankConnections] Loading state:', loading);
+  console.log('🔍🔍🔍 [BankConnections] BusinessCountry state:', businessCountry);
+  console.log('🔍🔍🔍 [BankConnections] Connected accounts:', connectedAccounts.length);
+
   if (loading) {
+    console.log('🔍🔍🔍 [BankConnections] Returning spinner (loading=true)');
     return <CenteredSpinner />;
   }
+
+  // Pre-calculate provider to avoid multiple calls
+  const useWise = shouldUseWise();
+  console.log('🔍🔍🔍 [BankConnections] Rendering with Wise?', useWise);
 
   return (
     <div className="space-y-6">
@@ -272,7 +318,7 @@ const BankConnections = () => {
         {/* Security Note */}
         <div className="p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>🔒 Security:</strong> We use {shouldUseWise() ? 'Wise' : 'Plaid'} for secure bank connections 
+            <strong>🔒 Security:</strong> We use {useWise ? 'Wise' : 'Plaid'} for secure bank connections 
             in your region ({businessCountry || 'detecting...'}). Your credentials are never stored on our servers.
           </p>
         </div>
@@ -427,7 +473,7 @@ const BankConnections = () => {
             
             {/* Load the actual ConnectBank component */}
             <ConnectBank
-              preferredProvider={shouldUseWise() ? { provider: 'wise', name: 'Wise', description: 'International bank connections' } : { provider: 'plaid', name: 'Plaid', description: 'Secure bank connections for US & Europe' }}
+              preferredProvider={useWise ? { provider: 'wise', name: 'Wise', description: 'International bank connections' } : { provider: 'plaid', name: 'Plaid', description: 'Secure bank connections for US & Europe' }}
               businessCountry={businessCountry}
               autoConnect={false}
               onSuccess={handleBankConnected}
@@ -438,7 +484,7 @@ const BankConnections = () => {
       )}
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Connected Accounts: {connectedAccounts.length} | Country: {businessCountry} | Provider: {shouldUseWise() ? 'Wise' : 'Plaid'}
+        Debug: Connected Accounts: {connectedAccounts.length} | Country: {businessCountry} | Provider: {useWise ? 'Wise' : 'Plaid'}
       </div>
       
       {/* Temporary Debug Component */}
