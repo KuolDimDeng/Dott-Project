@@ -565,21 +565,46 @@ class POSTransaction(TenantAwareModel):
             prefix = "POS"
             year = timezone.now().year
             month = timezone.now().month
-            # Count transactions today for sequence
-            today = timezone.now().date()
-            daily_count = POSTransaction.objects.filter(
+            
+            # Get the highest transaction number for this month
+            # This ensures we always increment properly, even across days
+            month_prefix = f"{prefix}-{year}{month:02d}-"
+            last_transaction = POSTransaction.objects.filter(
                 tenant_id=self.tenant_id,
-                created_at__date=today
-            ).count() + 1
+                transaction_number__startswith=month_prefix
+            ).order_by('-transaction_number').first()
             
-            self.transaction_number = f"{prefix}-{year}{month:02d}-{daily_count:04d}"
+            if last_transaction and last_transaction.transaction_number.startswith(month_prefix):
+                # Extract the sequence number from the last transaction
+                try:
+                    # Handle both formats: POS-202508-0001 and POS-202508-0001-1
+                    parts = last_transaction.transaction_number.replace(month_prefix, '').split('-')
+                    last_sequence = int(parts[0])
+                    next_sequence = last_sequence + 1
+                except (ValueError, IndexError):
+                    # If we can't parse, start from 1
+                    next_sequence = 1
+            else:
+                # First transaction of the month
+                next_sequence = 1
             
-            # Ensure uniqueness (handle race conditions)
-            original_number = self.transaction_number
-            counter = 1
-            while POSTransaction.objects.filter(tenant_id=self.tenant_id, transaction_number=self.transaction_number).exists():
-                self.transaction_number = f"{original_number}-{counter}"
-                counter += 1
+            self.transaction_number = f"{month_prefix}{next_sequence:04d}"
+            
+            # Ensure uniqueness (handle race conditions with retry logic)
+            max_attempts = 10
+            attempt = 0
+            while POSTransaction.objects.filter(
+                tenant_id=self.tenant_id, 
+                transaction_number=self.transaction_number
+            ).exists() and attempt < max_attempts:
+                next_sequence += 1
+                self.transaction_number = f"{month_prefix}{next_sequence:04d}"
+                attempt += 1
+            
+            if attempt >= max_attempts:
+                # Fallback: add timestamp to ensure uniqueness
+                import time
+                self.transaction_number = f"{month_prefix}{next_sequence:04d}-{int(time.time())}"
                 
         super().save(*args, **kwargs)
     
@@ -804,21 +829,46 @@ class POSRefund(TenantAwareModel):
             prefix = "REF"
             year = timezone.now().year
             month = timezone.now().month
-            # Count refunds today for sequence
-            today = timezone.now().date()
-            daily_count = POSRefund.objects.filter(
+            
+            # Get the highest refund number for this month
+            # This ensures we always increment properly, even across days
+            month_prefix = f"{prefix}-{year}{month:02d}-"
+            last_refund = POSRefund.objects.filter(
                 tenant_id=self.tenant_id,
-                created_at__date=today
-            ).count() + 1
+                refund_number__startswith=month_prefix
+            ).order_by('-refund_number').first()
             
-            self.refund_number = f"{prefix}-{year}{month:02d}-{daily_count:04d}"
+            if last_refund and last_refund.refund_number.startswith(month_prefix):
+                # Extract the sequence number from the last refund
+                try:
+                    # Handle both formats: REF-202508-0001 and REF-202508-0001-1
+                    parts = last_refund.refund_number.replace(month_prefix, '').split('-')
+                    last_sequence = int(parts[0])
+                    next_sequence = last_sequence + 1
+                except (ValueError, IndexError):
+                    # If we can't parse, start from 1
+                    next_sequence = 1
+            else:
+                # First refund of the month
+                next_sequence = 1
             
-            # Ensure uniqueness
-            original_number = self.refund_number
-            counter = 1
-            while POSRefund.objects.filter(tenant_id=self.tenant_id, refund_number=self.refund_number).exists():
-                self.refund_number = f"{original_number}-{counter}"
-                counter += 1
+            self.refund_number = f"{month_prefix}{next_sequence:04d}"
+            
+            # Ensure uniqueness (handle race conditions with retry logic)
+            max_attempts = 10
+            attempt = 0
+            while POSRefund.objects.filter(
+                tenant_id=self.tenant_id,
+                refund_number=self.refund_number
+            ).exists() and attempt < max_attempts:
+                next_sequence += 1
+                self.refund_number = f"{month_prefix}{next_sequence:04d}"
+                attempt += 1
+            
+            if attempt >= max_attempts:
+                # Fallback: add timestamp to ensure uniqueness
+                import time
+                self.refund_number = f"{month_prefix}{next_sequence:04d}-{int(time.time())}"
                 
         super().save(*args, **kwargs)
     
