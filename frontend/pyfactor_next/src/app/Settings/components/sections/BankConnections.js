@@ -37,10 +37,13 @@ const BankConnections = () => {
   const loadBusinessCountry = async () => {
     logger.info('🎯 [BankConnections] === LOADING BUSINESS COUNTRY ===');
     try {
-      const response = await fetch('/api/tenant/profile');
+      const response = await fetch('/api/users/me');
       const data = await response.json();
-      setBusinessCountry(data.country || 'US');
-      logger.debug('🎯 [BankConnections] Business country loaded:', data.country);
+      
+      // Get country from the user profile (backend returns 'country' not 'business_country')
+      const country = data.country || data.business_country || 'US';
+      setBusinessCountry(country);
+      logger.info('🎯 [BankConnections] Business country loaded:', country);
     } catch (error) {
       logger.error('🎯 [BankConnections] Error loading business country:', error);
       setBusinessCountry('US'); // Default to US
@@ -213,8 +216,12 @@ const BankConnections = () => {
       'IT', // Italy (limited)
     ];
     
+    // Log the decision
+    const useWise = !plaidCountries.includes(businessCountry);
+    logger.debug(`🎯 [BankConnections] Country: ${businessCountry}, Use Wise: ${useWise}`);
+    
     // If NOT in Plaid countries, use Wise
-    return !plaidCountries.includes(businessCountry);
+    return useWise;
   };
 
   if (loading) {
@@ -248,7 +255,7 @@ const BankConnections = () => {
         <div className="p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>🔒 Security:</strong> We use {shouldUseWise() ? 'Wise' : 'Plaid'} for secure bank connections 
-            in your region. Your credentials are never stored on our servers.
+            in your region ({businessCountry || 'detecting...'}). Your credentials are never stored on our servers.
           </p>
         </div>
       </div>
