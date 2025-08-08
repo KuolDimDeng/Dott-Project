@@ -12,6 +12,17 @@ const BankConnectionsDebug = () => {
       try {
         console.log('🔍 [Debug] Fetching /api/users/me...');
         const response = await fetch('/api/users/me');
+        
+        console.log('🔍 [Debug] Response status:', response.status);
+        console.log('🔍 [Debug] Response ok:', response.ok);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('🔍 [Debug] API Error:', response.status, errorText);
+          setError(`API Error ${response.status}: ${errorText}`);
+          return;
+        }
+        
         const data = await response.json();
         
         console.log('🔍 [Debug] Full response:', data);
