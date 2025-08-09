@@ -57,8 +57,12 @@ class TaxService:
             )
             
             # Step 2: Check if this is an international sale (Phase 1 approach)
-            business_country = str(user_profile.country) if user_profile.country else None
+            # Convert business country to ISO code for comparison
+            from utils.country_codes import get_country_iso_code
+            business_country = get_country_iso_code(user_profile.country) if user_profile.country else None
             customer_country = tax_location['country']
+            
+            logger.info(f"[TaxService] Walk-in customer tax - Business: {user_profile.country} -> {business_country}, Customer location: {customer_country}, Tax method: {tax_location.get('method')}")
             
             # If business country is not set, skip international check
             if not business_country:
@@ -254,6 +258,8 @@ class TaxService:
             
             # For non-USA countries, get country-level rate
             if country != 'US':
+                logger.info(f"[TaxService] Looking up tax rate for country: {country}")
+                
                 country_rate = GlobalSalesTaxRate.objects.filter(
                     country=country,
                     region_code='',
@@ -261,12 +267,15 @@ class TaxService:
                 ).first()
                 
                 if country_rate:
+                    logger.info(f"[TaxService] Found tax rate for {country}: {country_rate.rate * 100}%")
                     rates['total_rate'] = country_rate.rate
                     rates['components'].append({
                         'type': 'country',
                         'name': country,
                         'rate': str(country_rate.rate)
                     })
+                else:
+                    logger.warning(f"[TaxService] No tax rate found for country: {country}")
                 
                 return rates
             
