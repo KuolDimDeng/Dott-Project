@@ -666,18 +666,23 @@ def chart_of_accounts(request):
     logger.debug("User: %s, Business ID: %s", user.email, business_id)
 
     if request.method == 'GET':
-        # Use default database - ChartOfAccount doesn't have business_id field yet
-        # so we return all accounts for now
-        chart_accounts = ChartOfAccount.objects.using('default').all()
+        # Filter by business_id for proper tenant isolation
+        if business_id:
+            chart_accounts = ChartOfAccount.objects.filter(business_id=business_id)
+        else:
+            chart_accounts = ChartOfAccount.objects.none()
         
         serializer = ChartOfAccountSerializer(chart_accounts, many=True)
         logger.debug("Chart of Accounts count: %s", len(chart_accounts))
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = ChartOfAccountSerializer(data=request.data)
+        data = request.data.copy()
+        data['business'] = business_id  # Add business_id to data
+        
+        serializer = ChartOfAccountSerializer(data=data)
         if serializer.is_valid():
-            account = serializer.save()
+            account = serializer.save(business_id=business_id)
             return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -689,18 +694,22 @@ def journal_entry_list(request):
     business_id = getattr(user, 'business_id', None)
     
     if request.method == 'GET':
-        # Use default database - JournalEntry may not have business_id field
-        journal_entries = JournalEntry.objects.using('default').all()
+        # Filter by business_id for proper tenant isolation
+        if business_id:
+            journal_entries = JournalEntry.objects.filter(business_id=business_id)
+        else:
+            journal_entries = JournalEntry.objects.none()
         serializer = JournalEntrySerializer(journal_entries, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = JournalEntrySerializer(data=request.data)
+        data = request.data.copy()
+        data['business'] = business_id  # Add business_id to data
+        
+        serializer = JournalEntrySerializer(data=data)
         if serializer.is_valid():
             with db_transaction.atomic():
-                journal_entry = serializer.save()
-                # Remove database_name parameter
-                # update_account_balances should use default database
+                journal_entry = serializer.save(business_id=business_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -793,8 +802,11 @@ def general_ledger(request):
     end_date = request.query_params.get('end_date')
     account_id = request.query_params.get('account_id')
 
-    # Use default database - GeneralLedgerEntry may not have business_id field
-    queryset = GeneralLedgerEntry.objects.using('default').all()
+    # Filter by business_id for proper tenant isolation
+    if business_id:
+        queryset = GeneralLedgerEntry.objects.filter(business_id=business_id)
+    else:
+        queryset = GeneralLedgerEntry.objects.none()
 
     if start_date:
         queryset = queryset.filter(date__gte=start_date)
@@ -1143,23 +1155,42 @@ def cash_flow_view(request):
 
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def fixed_asset_list(request):
+    user = request.user
+    business_id = getattr(user, 'business_id', None)
+    
     if request.method == 'GET':
-        fixed_assets = FixedAsset.objects.all()
+        # Filter by business_id for proper tenant isolation
+        if business_id:
+            fixed_assets = FixedAsset.objects.filter(business_id=business_id)
+        else:
+            fixed_assets = FixedAsset.objects.none()
         serializer = FixedAssetSerializer(fixed_assets, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = FixedAssetSerializer(data=request.data)
+        data = request.data.copy()
+        data['business'] = business_id  # Add business_id to data
+        
+        serializer = FixedAssetSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(business_id=business_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def fixed_asset_detail(request, pk):
+    user = request.user
+    business_id = getattr(user, 'business_id', None)
+    
     try:
-        fixed_asset = FixedAsset.objects.get(pk=pk)
+        # Filter by business_id for security
+        if business_id:
+            fixed_asset = FixedAsset.objects.get(pk=pk, business_id=business_id)
+        else:
+            raise FixedAsset.DoesNotExist
     except FixedAsset.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
