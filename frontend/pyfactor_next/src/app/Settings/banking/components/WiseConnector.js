@@ -295,8 +295,10 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
   
   const [formData, setFormData] = useState({
     account_nickname: '',
+    bank_name: '',
     account_holder_name: '',
     account_holder_type: 'individual', // or 'company'
+    account_type: 'checking', // checking, savings, business
     currency: currencies[0] || 'USD',
     country: COUNTRY_NAMES[userCountry] || userCountry || '',
     
@@ -341,6 +343,9 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
     // Common validations
     if (!formData.account_nickname) {
       newErrors.account_nickname = 'Account nickname is required';
+    }
+    if (!formData.bank_name) {
+      newErrors.bank_name = 'Bank name is required';
     }
     if (!formData.account_holder_name) {
       newErrors.account_holder_name = 'Account holder name is required';
@@ -643,6 +648,25 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
 
         <div>
           <label className="block text-sm font-medium text-gray-700">
+            Bank Name *
+          </label>
+          <input
+            type="text"
+            name="bank_name"
+            value={formData.bank_name}
+            onChange={handleChange}
+            placeholder="e.g., Chase Bank, Bank of America"
+            className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+              errors.bank_name ? 'border-red-300' : ''
+            }`}
+          />
+          {errors.bank_name && (
+            <p className="mt-1 text-sm text-red-600">{errors.bank_name}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Account Holder Name *
           </label>
           <input
@@ -661,7 +685,7 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
 
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Account Type *
+            Account Holder Type *
           </label>
           <select
             name="account_holder_type"
@@ -671,6 +695,22 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
           >
             <option value="individual">Individual</option>
             <option value="company">Company</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Account Type *
+          </label>
+          <select
+            name="account_type"
+            value={formData.account_type}
+            onChange={handleChange}
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+            <option value="business">Business</option>
           </select>
         </div>
 
