@@ -142,6 +142,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                 
                 # Step 5: Create POS transaction with tax jurisdiction info
                 pos_transaction = POSTransaction.objects.create(
+                    tenant_id=request.user.tenant_id,  # CRITICAL: Explicitly set tenant_id
                     customer=customer,
                     subtotal=subtotal,
                     discount_amount=discount_amount,
