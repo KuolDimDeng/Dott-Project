@@ -10,14 +10,21 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from resend import Resend
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Initialize Resend client if API key is available
+# Try to import Resend, but don't fail if not available
+try:
+    from resend import Resend
+    RESEND_AVAILABLE = True
+except ImportError:
+    RESEND_AVAILABLE = False
+    logger.warning('Resend package not installed. Email functionality will be disabled.')
+
+# Initialize Resend client if API key is available and package is installed
 resend_client = None
-if hasattr(settings, 'RESEND_API_KEY') and settings.RESEND_API_KEY:
+if RESEND_AVAILABLE and hasattr(settings, 'RESEND_API_KEY') and settings.RESEND_API_KEY:
     resend_client = Resend(api_key=settings.RESEND_API_KEY)
 
 

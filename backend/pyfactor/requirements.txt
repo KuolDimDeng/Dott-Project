@@ -44,6 +44,9 @@ jwcrypto==1.5.6
 stripe>=5.0.0
 posthog==6.0.0
 
+# Email services
+resend==2.5.0
+
 # User agent parsing
 user-agents==2.2.0
 
