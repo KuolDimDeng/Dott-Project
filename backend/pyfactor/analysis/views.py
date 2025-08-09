@@ -193,7 +193,14 @@ def get_cash_flow_data(request):
         # For default database, just use the default connection
         database_name = 'default'
 
-    logger.info(f"[CashFlow] Fetching cash flow data for user {user.email} from {start_date} to {end_date}")
+    # Get user's business_id for filtering
+    business_id = None
+    if hasattr(user, 'business_id'):
+        business_id = user.business_id
+    elif hasattr(user, 'tenant_id'):
+        business_id = user.tenant_id
+    
+    logger.info(f"[CashFlow] Fetching cash flow data for user {user.email} (business: {business_id}) from {start_date} to {end_date}")
 
     # Get cash-related accounts
     cash_accounts = ChartOfAccount.objects.using(database_name).filter(
@@ -223,36 +230,48 @@ def get_cash_flow_data(request):
             month_end = month_start.replace(month=month_start.month + 1, day=1) - timedelta(days=1)
         
         # Get cash inflows (debits to cash accounts)
-        cash_inflows = JournalEntryLine.objects.using(database_name).filter(
+        cash_inflows_query = JournalEntryLine.objects.using(database_name).filter(
             account__in=cash_accounts,
             journal_entry__status='posted',
             journal_entry__date__gte=month_start,
             journal_entry__date__lte=month_end
-        ).aggregate(total=Sum('debit_amount'))['total'] or Decimal('0.00')
+        )
+        if business_id:
+            cash_inflows_query = cash_inflows_query.filter(journal_entry__business_id=business_id)
+        cash_inflows = cash_inflows_query.aggregate(total=Sum('debit_amount'))['total'] or Decimal('0.00')
         
         # Get cash outflows (credits to cash accounts)
-        cash_outflows = JournalEntryLine.objects.using(database_name).filter(
+        cash_outflows_query = JournalEntryLine.objects.using(database_name).filter(
             account__in=cash_accounts,
             journal_entry__status='posted',
             journal_entry__date__gte=month_start,
             journal_entry__date__lte=month_end
-        ).aggregate(total=Sum('credit_amount'))['total'] or Decimal('0.00')
+        )
+        if business_id:
+            cash_outflows_query = cash_outflows_query.filter(journal_entry__business_id=business_id)
+        cash_outflows = cash_outflows_query.aggregate(total=Sum('credit_amount'))['total'] or Decimal('0.00')
         
         # Get total revenue for the month (credits to revenue accounts)
-        total_revenue = JournalEntryLine.objects.using(database_name).filter(
+        revenue_query = JournalEntryLine.objects.using(database_name).filter(
             account__in=revenue_accounts,
             journal_entry__status='posted',
             journal_entry__date__gte=month_start,
             journal_entry__date__lte=month_end
-        ).aggregate(total=Sum('credit_amount'))['total'] or Decimal('0.00')
+        )
+        if business_id:
+            revenue_query = revenue_query.filter(journal_entry__business_id=business_id)
+        total_revenue = revenue_query.aggregate(total=Sum('credit_amount'))['total'] or Decimal('0.00')
         
         # Get total expenses for the month (debits to expense accounts)
-        total_expenses = JournalEntryLine.objects.using(database_name).filter(
+        expenses_query = JournalEntryLine.objects.using(database_name).filter(
             account__in=expense_accounts,
             journal_entry__status='posted',
             journal_entry__date__gte=month_start,
             journal_entry__date__lte=month_end
-        ).aggregate(total=Sum('debit_amount'))['total'] or Decimal('0.00')
+        )
+        if business_id:
+            expenses_query = expenses_query.filter(journal_entry__business_id=business_id)
+        total_expenses = expenses_query.aggregate(total=Sum('debit_amount'))['total'] or Decimal('0.00')
         
         net_cash_flow = cash_inflows - cash_outflows
         

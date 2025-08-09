@@ -281,7 +281,8 @@
       "Bash(./remove_amplify_imports.sh)",
       "Bash(timeout 60 pnpm build:*)",
       "Bash(./fix_amplify_syntax.sh:*)",
-      "Bash(timeout 60 pnpm:*)"
+      "Bash(timeout 60 pnpm:*)",
+      "Bash(./initialize_production_accounts.sh:*)"
     ],
     "deny": []
   }
