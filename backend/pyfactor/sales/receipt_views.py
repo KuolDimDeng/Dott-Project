@@ -1,47 +1,17 @@
 """
 Receipt email sending views for POS system.
-Handles secure server-side email delivery.
+Handles secure server-side email delivery using Resend API.
 """
 
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
-
-# Try to import Resend, but don't fail if not available
-RESEND_AVAILABLE = False
-resend = None
-try:
-    import resend as resend_module
-    resend = resend_module
-    RESEND_AVAILABLE = True
-    logger.info('Resend package imported successfully')
-except ImportError as e:
-    logger.error(f'Resend package not installed: {e}. Email functionality will be disabled.')
-except Exception as e:
-    logger.error(f'Unexpected error importing resend: {e}')
-
-# Initialize Resend with API key if available and package is installed
-resend_configured = False
-if RESEND_AVAILABLE and resend:
-    api_key = getattr(settings, 'RESEND_API_KEY', None)
-    if api_key:
-        try:
-            resend.api_key = api_key
-            resend_configured = True
-            logger.info(f'Resend configured with API key: {api_key[:10]}...')
-        except Exception as e:
-            logger.error(f'Failed to configure Resend: {e}')
-    else:
-        logger.warning('RESEND_API_KEY not found in settings')
-else:
-    logger.warning('Resend package not available, skipping configuration')
 
 
 @api_view(['POST'])
@@ -50,6 +20,7 @@ def send_receipt_email(request):
     """
     Send receipt via email using Resend API.
     This is the secure backend endpoint that keeps API keys hidden.
+    Uses direct HTTP requests to Resend API for maximum compatibility.
     """
     try:
         # Extract data from request
@@ -62,27 +33,15 @@ def send_receipt_email(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if Resend is configured
-        if not resend_configured:
-            error_details = []
-            if not RESEND_AVAILABLE:
-                error_details.append('Resend package not installed')
-            if not getattr(settings, 'RESEND_API_KEY', None):
-                error_details.append('RESEND_API_KEY not configured')
-            
-            error_msg = f'Email service unavailable: {", ".join(error_details) if error_details else "Unknown error"}'
-            logger.error(error_msg)
-            
+        # Check if Resend API key is configured
+        resend_api_key = getattr(settings, 'RESEND_API_KEY', None)
+        if not resend_api_key:
+            logger.error('RESEND_API_KEY not configured in settings')
             return Response(
                 {
-                    'error': 'Email service temporarily unavailable',
-                    'message': 'Email service is being configured. Please download the PDF receipt instead.',
-                    'details': error_msg,
-                    'debug': {
-                        'resend_available': RESEND_AVAILABLE,
-                        'api_key_configured': bool(getattr(settings, 'RESEND_API_KEY', None)),
-                        'resend_configured': resend_configured
-                    }
+                    'error': 'Email service not configured',
+                    'message': 'Email service is not properly configured. Please contact support.',
+                    'details': 'RESEND_API_KEY missing'
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
@@ -95,44 +54,68 @@ def send_receipt_email(request):
         html_content = generate_receipt_html(receipt_data)
         text_content = generate_receipt_text(receipt_data)
         
-        # Send email using Resend
-        if not resend:
-            logger.error('Resend module not available')
-            return Response(
-                {'error': 'Email service not configured', 'message': 'The resend module is not available'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+        # Send email using Resend API via HTTP request
+        logger.info(f"Sending receipt email to {email_to} using Resend API")
+        
+        try:
+            # Use requests library to call Resend API directly
+            response = requests.post(
+                'https://api.resend.com/emails',
+                headers={
+                    'Authorization': f'Bearer {resend_api_key}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    "from": "Dott POS <noreply@dottapps.com>",
+                    "to": [email_to],
+                    "subject": f"Receipt #{receipt_number} - {business_name}",
+                    "html": html_content,
+                    "text": text_content
+                },
+                timeout=10
             )
             
-        try:
-            response = resend.Emails.send({
-                "from": "Dott POS <noreply@dottapps.com>",
-                "to": [email_to],
-                "subject": f"Receipt #{receipt_number} - {business_name}",
-                "html": html_content,
-                "text": text_content
-            })
-        except AttributeError as e:
-            logger.error(f'Resend API error - module issue: {e}')
+            if response.status_code == 200:
+                response_data = response.json()
+                logger.info(f"Receipt email sent successfully to {email_to}, message ID: {response_data.get('id')}")
+                
+                return Response({
+                    'success': True,
+                    'message': 'Receipt sent to email',
+                    'details': {
+                        'type': 'email',
+                        'recipient': email_to,
+                        'receiptNumber': receipt_number,
+                        'messageId': response_data.get('id')
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                error_msg = response.text
+                logger.error(f"Resend API error: {response.status_code} - {error_msg}")
+                return Response(
+                    {
+                        'error': 'Failed to send email',
+                        'message': 'Email service returned an error',
+                        'details': error_msg
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                
+        except requests.exceptions.Timeout:
+            logger.error('Resend API timeout')
             return Response(
-                {'error': 'Email service configuration error', 'details': str(e)},
+                {'error': 'Email service timeout', 'message': 'The email service took too long to respond'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Resend API request error: {e}')
+            return Response(
+                {'error': 'Email service error', 'details': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        logger.info(f"Receipt email sent successfully to {email_to}")
-        
-        return Response({
-            'success': True,
-            'message': 'Receipt sent to email',
-            'details': {
-                'type': 'email',
-                'recipient': email_to,
-                'receiptNumber': receipt_number,
-                'messageId': response.get('id')
-            }
-        }, status=status.HTTP_200_OK)
-        
     except Exception as e:
-        logger.error(f"Failed to send receipt email: {str(e)}")
+        logger.error(f"Unexpected error sending receipt email: {str(e)}")
         return Response(
             {'error': 'Failed to send email receipt', 'details': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
