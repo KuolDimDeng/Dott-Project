@@ -121,14 +121,18 @@ export class ReceiptGenerator {
         <div class="items">
           ${items.map(item => {
             const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
+            const backorderNote = item.isBackorder ? ' (BACKORDER)' : 
+                                 item.isPartialBackorder ? ` (${item.backorderQuantity} BACKORDER)` : '';
             return `
             <div class="item">
-              <div class="item-name">${item.name}</div>
+              <div class="item-name">${item.name}${backorderNote}</div>
               <div class="item-qty">${item.quantity}</div>
               <div class="item-price">$${(itemPrice * item.quantity).toFixed(2)}</div>
             </div>
             <div style="font-size: 10px; color: #666; margin-left: 5px;">
               $${itemPrice} each
+              ${item.isBackorder ? '<span style="color: red; font-weight: bold;"> - OUT OF STOCK</span>' : ''}
+              ${item.isPartialBackorder ? `<span style="color: orange; font-weight: bold;"> - ${item.backorderQuantity} on backorder</span>` : ''}
             </div>
           `}).join('')}
         </div>
@@ -424,8 +428,15 @@ export class ReceiptGenerator {
     items.forEach(item => {
       // Support both 'price' and 'unit_price' field names
       const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
-      text += `${item.name}\n`;
+      const backorderNote = item.isBackorder ? ' (BACKORDER)' : 
+                           item.isPartialBackorder ? ` (${item.backorderQuantity} BACKORDER)` : '';
+      text += `${item.name}${backorderNote}\n`;
       text += `  ${item.quantity} x $${itemPrice} = $${(itemPrice * item.quantity).toFixed(2)}\n`;
+      if (item.isBackorder) {
+        text += `  ** OUT OF STOCK - BACKORDER **\n`;
+      } else if (item.isPartialBackorder) {
+        text += `  ** ${item.backorderQuantity} items on backorder **\n`;
+      }
     });
     
     text += `==========================================\n`;

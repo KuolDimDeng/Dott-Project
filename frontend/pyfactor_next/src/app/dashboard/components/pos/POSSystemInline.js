@@ -574,17 +574,63 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
+    // Check stock level
+    const currentStock = product.stock_quantity || product.quantity || 0;
+    const existingInCart = cartItems.find(item => item.id === product.id);
+    const currentCartQuantity = existingInCart ? existingInCart.quantity : 0;
+    const totalQuantityAfterAdd = currentCartQuantity + quantity;
+    
+    // Check if product is out of stock or will exceed stock
+    if (currentStock === 0) {
+      const confirmed = window.confirm(
+        `⚠️ Out of Stock Warning\n\n` +
+        `"${product.name}" has 0 items in stock.\n\n` +
+        `Do you want to proceed with this order?\n` +
+        `(This will create a backorder)`
+      );
+      
+      if (!confirmed) return;
+      
+      // Mark as backorder
+      product.isBackorder = true;
+    } else if (totalQuantityAfterAdd > currentStock) {
+      const confirmed = window.confirm(
+        `⚠️ Insufficient Stock Warning\n\n` +
+        `"${product.name}" only has ${currentStock} items in stock.\n` +
+        `You're trying to sell ${totalQuantityAfterAdd} total.\n\n` +
+        `Proceed with partial backorder for ${totalQuantityAfterAdd - currentStock} items?`
+      );
+      
+      if (!confirmed) return;
+      
+      // Mark as partial backorder
+      product.isPartialBackorder = true;
+      product.backorderQuantity = totalQuantityAfterAdd - currentStock;
+    }
+    
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       
       if (existingItem) {
         return prev.map(item =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { 
+                ...item, 
+                quantity: item.quantity + quantity,
+                isBackorder: product.isBackorder || item.isBackorder,
+                isPartialBackorder: product.isPartialBackorder || item.isPartialBackorder,
+                backorderQuantity: product.backorderQuantity || item.backorderQuantity
+              }
             : item
         );
       } else {
-        return [...prev, { ...product, quantity }];
+        return [...prev, { 
+          ...product, 
+          quantity,
+          isBackorder: product.isBackorder,
+          isPartialBackorder: product.isPartialBackorder,
+          backorderQuantity: product.backorderQuantity
+        }];
       }
     });
   };
@@ -1399,25 +1445,45 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       </td>
                     </tr>
                   ) : (
-                    filteredProducts.map(product => (
-                      <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-2 text-sm font-medium text-gray-900">{product.name}</td>
-                        <td className="px-4 py-2 text-sm text-gray-500">{product.sku || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 text-right">${product.price}</td>
-                        <td className="px-4 py-2 text-sm text-gray-500 text-right">
-                          {product.quantity_in_stock !== undefined ? product.quantity_in_stock : 'N/A'}
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <button
-                            onClick={() => addToCart(product)}
-                            className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-1" />
-                            Add
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filteredProducts.map(product => {
+                      const stockLevel = product.stock_quantity || product.quantity || product.quantity_in_stock || 0;
+                      const isOutOfStock = stockLevel === 0;
+                      const isLowStock = stockLevel > 0 && stockLevel <= 5;
+                      
+                      return (
+                        <tr key={product.id} className={`hover:bg-gray-50 transition-colors ${isOutOfStock ? 'bg-red-50' : ''}`}>
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900">{product.name}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">{product.sku || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 text-right">${product.price}</td>
+                          <td className="px-4 py-2 text-sm text-right">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              isOutOfStock 
+                                ? 'bg-red-100 text-red-800' 
+                                : isLowStock 
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {stockLevel}
+                              {isOutOfStock && ' (OUT)'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <button
+                              onClick={() => addToCart(product)}
+                              className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded transition-colors ${
+                                isOutOfStock 
+                                  ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                              title={isOutOfStock ? 'Out of stock - will create backorder' : 'Add to cart'}
+                            >
+                              <PlusIcon className="h-4 w-4 mr-1" />
+                              {isOutOfStock ? 'Backorder' : 'Add'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -1437,10 +1503,22 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             ) : (
               <div className="space-y-3">
                 {cartItems.map(item => (
-                  <div key={item.id} className="bg-gray-50 p-3 rounded-lg">
+                  <div key={item.id} className={`p-3 rounded-lg ${item.isBackorder || item.isPartialBackorder ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{item.name}</h4>
+                          {item.isBackorder && (
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                              BACKORDER
+                            </span>
+                          )}
+                          {item.isPartialBackorder && (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
+                              PARTIAL BACKORDER ({item.backorderQuantity})
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500">${item.price} each</p>
                       </div>
                       <div className="flex items-center space-x-2">
