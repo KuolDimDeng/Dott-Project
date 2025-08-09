@@ -15,17 +15,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Try to import Resend, but don't fail if not available
+RESEND_AVAILABLE = False
+resend = None
 try:
-    import resend
+    import resend as resend_module
+    resend = resend_module
     RESEND_AVAILABLE = True
     logger.info('Resend package imported successfully')
 except ImportError as e:
-    RESEND_AVAILABLE = False
     logger.error(f'Resend package not installed: {e}. Email functionality will be disabled.')
+except Exception as e:
+    logger.error(f'Unexpected error importing resend: {e}')
 
 # Initialize Resend with API key if available and package is installed
 resend_configured = False
-if RESEND_AVAILABLE:
+if RESEND_AVAILABLE and resend:
     api_key = getattr(settings, 'RESEND_API_KEY', None)
     if api_key:
         try:
@@ -92,13 +96,27 @@ def send_receipt_email(request):
         text_content = generate_receipt_text(receipt_data)
         
         # Send email using Resend
-        response = resend.Emails.send({
-            "from": "Dott POS <noreply@dottapps.com>",
-            "to": [email_to],
-            "subject": f"Receipt #{receipt_number} - {business_name}",
-            "html": html_content,
-            "text": text_content
-        })
+        if not resend:
+            logger.error('Resend module not available')
+            return Response(
+                {'error': 'Email service not configured', 'message': 'The resend module is not available'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+            
+        try:
+            response = resend.Emails.send({
+                "from": "Dott POS <noreply@dottapps.com>",
+                "to": [email_to],
+                "subject": f"Receipt #{receipt_number} - {business_name}",
+                "html": html_content,
+                "text": text_content
+            })
+        except AttributeError as e:
+            logger.error(f'Resend API error - module issue: {e}')
+            return Response(
+                {'error': 'Email service configuration error', 'details': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         logger.info(f"Receipt email sent successfully to {email_to}")
         
