@@ -300,7 +300,7 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
     account_holder_type: 'individual', // or 'company'
     account_type: 'checking', // checking, savings, business
     currency: currencies[0] || 'USD',
-    country: COUNTRY_NAMES[userCountry] || userCountry || '',
+    country: userCountry || 'US',  // Store the 2-letter code, not the name
     
     // Bank details (varies by country)
     account_number: '',
@@ -355,7 +355,8 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
     }
     
     // Country-specific validations
-    const country = formData.country.toUpperCase();
+    // formData.country is already the 2-letter code
+    const country = formData.country ? formData.country.toUpperCase() : '';
     
     if (country === 'US') {
       if (!formData.account_number) {
@@ -431,7 +432,8 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
    * Render country-specific fields
    */
   const renderCountryFields = () => {
-    const country = formData.country.toUpperCase();
+    // formData.country is already the 2-letter code
+    const country = formData.country ? formData.country.toUpperCase() : '';
     
     if (country === 'US') {
       return (
@@ -737,17 +739,42 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
           <input
             type="text"
             name="country"
-            value={formData.country}
-            onChange={handleChange}
-            placeholder="e.g., US, GB, IN, NG"
-            maxLength="2"
+            value={COUNTRY_NAMES[formData.country] || formData.country}  // Display name but store code
+            onChange={(e) => {
+              // If user types a known country name, convert to code
+              const inputValue = e.target.value;
+              let countryCode = formData.country;
+              
+              // Check if input matches any country name
+              for (const [code, name] of Object.entries(COUNTRY_NAMES)) {
+                if (name.toLowerCase() === inputValue.toLowerCase()) {
+                  countryCode = code;
+                  break;
+                }
+              }
+              
+              // If it's a 2-letter code, use it directly
+              if (inputValue.length === 2) {
+                countryCode = inputValue.toUpperCase();
+              }
+              
+              setFormData(prev => ({
+                ...prev,
+                country: countryCode
+              }));
+            }}
+            placeholder="e.g., South Sudan, Nigeria, Kenya"
             className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
               errors.country ? 'border-red-300' : ''
             }`}
+            readOnly  // Make it read-only since it's pre-filled from user's business country
           />
           {errors.country && (
             <p className="mt-1 text-sm text-red-600">{errors.country}</p>
           )}
+          <p className="mt-1 text-xs text-gray-500">
+            Bank country detected from your business location: {COUNTRY_NAMES[formData.country] || formData.country}
+          </p>
         </div>
 
         {formData.country && renderCountryFields()}
