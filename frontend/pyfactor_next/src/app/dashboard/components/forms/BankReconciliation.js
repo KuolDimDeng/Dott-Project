@@ -114,8 +114,35 @@ const BankReconciliation = () => {
   const fetchConnectedBanks = async () => {
     try {
       logger.info('🎯 [Reconciliation] === FETCHING CONNECTED BANKS ===');
+      
+      // Try to fetch from connections endpoint (Wise/Plaid connections)
+      try {
+        const connectionsResponse = await fetch('/api/banking/connections', {
+          credentials: 'include'
+        });
+        
+        if (connectionsResponse.ok) {
+          const connectionsData = await connectionsResponse.json();
+          logger.info('🎯 [Reconciliation] Connections response:', connectionsData);
+          
+          const connections = connectionsData.connections || [];
+          if (connections.length > 0) {
+            setConnectedBanks(connections);
+            
+            // Auto-select first account if available
+            if (!bankAccount) {
+              setBankAccount(connections[0].id);
+            }
+            return;
+          }
+        }
+      } catch (connError) {
+        logger.warn('🎯 [Reconciliation] Could not fetch connections:', connError);
+      }
+      
+      // Fallback to bankAccountsApi
       const response = await bankAccountsApi.list();
-      logger.info('🎯 [Reconciliation] Banks response:', response);
+      logger.info('🎯 [Reconciliation] Banks API response:', response);
       
       const connectedAccounts = response.data?.filter(account => 
         account.status === 'connected' || account.is_active !== false
@@ -448,6 +475,29 @@ const BankReconciliation = () => {
         </div>
       </div>
 
+      {/* No Bank Accounts Message */}
+      {connectedBanks.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+          <div className="flex">
+            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800">
+                No Bank Accounts Connected
+              </h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>You need to connect a bank account to use the reconciliation feature.</p>
+                <button
+                  onClick={() => window.location.href = '/Settings/banking'}
+                  className="mt-2 px-3 py-1 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm"
+                >
+                  Connect Bank Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header/Overview Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div>
@@ -460,12 +510,16 @@ const BankReconciliation = () => {
             value={bankAccount}
             onChange={(e) => setBankAccount(e.target.value)}
           >
-            <option value="" disabled>Select Bank Account</option>
-            {connectedBanks.map((account) => (
-              <option key={account.id || account.account_id} value={account.id || account.account_id}>
-                {account.bank_name} - {account.name || account.account_name} (****{account.account_number?.slice(-4) || account.mask})
-              </option>
-            ))}
+            <option value="">Select Bank Account</option>
+            {connectedBanks.length === 0 ? (
+              <option value="" disabled>No connected accounts found</option>
+            ) : (
+              connectedBanks.map((account) => (
+                <option key={account.id || account.account_id} value={account.id || account.account_id}>
+                  {account.bank_name || 'Unknown Bank'} - {account.account_type || 'Account'} (****{account.last4 || account.account_number?.slice(-4) || account.mask || '****'})
+                </option>
+              ))
+            )}
           </select>
         </div>
         <div>

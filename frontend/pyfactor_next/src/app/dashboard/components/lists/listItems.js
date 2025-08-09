@@ -1567,7 +1567,7 @@ const MainListItems = ({
           value: 'financial-statements',
         },
         { 
-          label: t('subMenu.chartOfAccounts'), 
+          label: t('subMenu.fixedAssets'), 
           onClick: (value) => {
             // Create navigation event for fixed assets
             const navigationKey = `nav-${Date.now()}`;
