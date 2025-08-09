@@ -666,9 +666,9 @@ def chart_of_accounts(request):
     logger.debug("User: %s, Business ID: %s", user.email, business_id)
 
     if request.method == 'GET':
-        # Filter by business_id for proper tenant isolation
+        # Filter by business for proper tenant isolation
         if business_id:
-            chart_accounts = ChartOfAccount.objects.filter(business_id=business_id)
+            chart_accounts = ChartOfAccount.objects.filter(business=business_id)
         else:
             chart_accounts = ChartOfAccount.objects.none()
         

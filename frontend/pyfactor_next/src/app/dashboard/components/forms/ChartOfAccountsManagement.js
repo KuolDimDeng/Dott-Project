@@ -120,24 +120,45 @@ function ChartOfAccountsManagement({ onNavigate }) {
     try {
       setLoading(true);
       const response = await fetch('/api/accounting/chart-of-accounts');
+      
+      if (!response.ok) {
+        console.error('API Error:', response.status, response.statusText);
+        setAccounts([]);
+        setLoading(false);
+        return;
+      }
+      
       const data = await response.json();
       
-      // Use the real data from the backend
-      setAccounts(Array.isArray(data) ? data : []);
+      // Handle various response formats
+      let accountsArray = [];
+      if (Array.isArray(data)) {
+        accountsArray = data;
+      } else if (data && Array.isArray(data.accounts)) {
+        accountsArray = data.accounts;
+      } else if (data && Array.isArray(data.results)) {
+        accountsArray = data.results;
+      } else if (data && typeof data === 'object') {
+        console.warn('Unexpected data format:', data);
+        accountsArray = [];
+      }
+      
+      setAccounts(accountsArray);
       
       // Calculate stats
       const stats = {
-        totalAccounts: data.length,
-        activeAccounts: data.filter(a => a.isActive).length,
-        totalAssets: data.filter(a => a.type === 'asset').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-        totalLiabilities: data.filter(a => a.type === 'liability').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-        totalEquity: data.filter(a => a.type === 'equity').reduce((sum, a) => sum + (a.currentBalance || 0), 0)
+        totalAccounts: accountsArray.length,
+        activeAccounts: accountsArray.filter(a => a.isActive).length,
+        totalAssets: accountsArray.filter(a => a.type === 'asset').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
+        totalLiabilities: accountsArray.filter(a => a.type === 'liability').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
+        totalEquity: accountsArray.filter(a => a.type === 'equity').reduce((sum, a) => sum + (a.currentBalance || 0), 0)
       };
       setStats(stats);
       
     } catch (error) {
       logger.error('[ChartOfAccounts] Error loading accounts:', error);
       toast.error('Failed to load chart of accounts');
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
