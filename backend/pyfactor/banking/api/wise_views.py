@@ -1,6 +1,7 @@
 """
 Wise Banking Integration Views
 Handles bank account setup and settlement processing for non-Plaid countries
+Last updated: 2025-08-09
 """
 
 import logging
