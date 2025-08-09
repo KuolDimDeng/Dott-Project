@@ -415,7 +415,21 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
       if (response.ok) {
         const data = await response.json();
         toast.success('Bank account connected successfully!');
-        onSuccess(data.connection);
+        // Backend returns data.data with connection details
+        const connectionData = data.data || data.connection;
+        // Transform the data to match expected format
+        const connection = {
+          id: connectionData.connection_id || connectionData.id,
+          bank_name: connectionData.bank_name,
+          account_type: connectionData.account_type,
+          currency: connectionData.currency,
+          country: connectionData.country,
+          last4: connectionData.last4,
+          provider: connectionData.provider || 'wise',
+          created_at: new Date().toISOString(),
+          status: 'active'
+        };
+        onSuccess(connection);
       } else {
         const error = await response.json();
         toast.error(error.message || 'Failed to connect bank account');
