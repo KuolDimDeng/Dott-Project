@@ -160,150 +160,93 @@ function FinancialStatementsManagement({ onNavigate }) {
       
       // Fetch financial statements from API
       const [balanceSheetData, incomeData, cashFlowData] = await Promise.all([
-        accountingApi.financialStatements.getBalanceSheet(dateRange).catch(err => {
-          logger.warn('[FinancialStatements] Balance sheet API error, using demo data:', err);
-          return null;
-        }),
-        accountingApi.financialStatements.getIncomeStatement(dateRange).catch(err => {
-          logger.warn('[FinancialStatements] Income statement API error, using demo data:', err);
-          return null;
-        }),
-        accountingApi.financialStatements.getCashFlow(dateRange).catch(err => {
-          logger.warn('[FinancialStatements] Cash flow API error, using demo data:', err);
-          return null;
-        })
+        fetch(`/api/accounting/financial-statements?type=balance-sheet&start_date=${dateRange.startDate}&end_date=${dateRange.endDate}`)
+          .then(res => res.json())
+          .catch(err => {
+            logger.error('[FinancialStatements] Balance sheet API error:', err);
+            return null;
+          }),
+        fetch(`/api/accounting/financial-statements?type=income-statement&start_date=${dateRange.startDate}&end_date=${dateRange.endDate}`)
+          .then(res => res.json())
+          .catch(err => {
+            logger.error('[FinancialStatements] Income statement API error:', err);
+            return null;
+          }),
+        fetch(`/api/accounting/financial-statements?type=cash-flow&start_date=${dateRange.startDate}&end_date=${dateRange.endDate}`)
+          .then(res => res.json())
+          .catch(err => {
+            logger.error('[FinancialStatements] Cash flow API error:', err);
+            return null;
+          })
       ]);
       
-      // Demo data fallback
-      const demoBalanceSheet = {
+      // Use real data from backend or empty state
+      setBalanceSheet(balanceSheetData || {
         asOf: dateRange.endDate,
-        assets: {
-          current: {
-            cash: 125000,
-            accountsReceivable: 45000,
-            inventory: 32000,
-            prepaidExpenses: 8000,
-            totalCurrent: 210000
-          },
-          nonCurrent: {
-            propertyPlantEquipment: 250000,
-            accumulatedDepreciation: -75000,
-            intangibleAssets: 20000,
-            totalNonCurrent: 195000
-          },
-          totalAssets: 405000
-        },
-        liabilities: {
-          current: {
-            accountsPayable: 35000,
-            accruedExpenses: 12000,
-            shortTermDebt: 20000,
-            totalCurrent: 67000
-          },
-          nonCurrent: {
-            longTermDebt: 100000,
-            deferredTaxLiabilities: 8000,
-            totalNonCurrent: 108000
-          },
-          totalLiabilities: 175000
-        },
-        equity: {
-          commonStock: 100000,
-          retainedEarnings: 130000,
-          totalEquity: 230000
-        },
-        totalLiabilitiesAndEquity: 405000
-      };
+        assets: { current: { totalCurrent: 0 }, nonCurrent: { totalNonCurrent: 0 }, totalAssets: 0 },
+        liabilities: { current: { totalCurrent: 0 }, nonCurrent: { totalNonCurrent: 0 }, totalLiabilities: 0 },
+        equity: { totalEquity: 0 },
+        totalLiabilitiesAndEquity: 0
+      });
       
-      const demoIncomeStatement = {
+      setIncomeStatement(incomeData || {
         period: dateRange,
-        revenue: {
-          salesRevenue: 150000,
-          serviceRevenue: 35000,
-          otherRevenue: 5000,
-          totalRevenue: 190000
-        },
-        costOfGoodsSold: 95000,
-        grossProfit: 95000,
-        operatingExpenses: {
-          salariesAndWages: 40000,
-          rent: 8000,
-          utilities: 2000,
-          depreciation: 5000,
-          marketing: 6000,
-          administrative: 9000,
-          totalOperating: 70000
-        },
-        operatingIncome: 25000,
-        otherIncome: 2000,
-        interestExpense: 3000,
-        incomeBeforeTax: 24000,
-        taxExpense: 7200,
-        netIncome: 16800
-      };
+        revenue: { totalRevenue: 0 },
+        costOfGoodsSold: 0,
+        grossProfit: 0,
+        operatingExpenses: { totalOperating: 0 },
+        operatingIncome: 0,
+        netIncome: 0
+      });
       
-      const demoCashFlow = {
+      setCashFlow(cashFlowData || {
         period: dateRange,
-        operatingActivities: {
-          netIncome: 16800,
-          adjustments: {
-            depreciation: 5000,
-            changesInWorkingCapital: {
-              accountsReceivable: -5000,
-              inventory: -3000,
-              accountsPayable: 4000,
-              accruedExpenses: 2000
-            },
-            totalAdjustments: 3000
+        operatingActivities: { netCashFromOperating: 0 },
+        investingActivities: { netCashFromInvesting: 0 },
+        financingActivities: { netCashFromFinancing: 0 },
+        netChangeInCash: 0,
+        beginningCash: 0,
+        endingCash: 0
+      });
+      
+      // Calculate financial ratios from real data
+      if (balanceSheetData && incomeData) {
+        const bs = balanceSheetData;
+        const is = incomeData;
+        
+        const calculatedRatios = {
+          liquidity: {
+            currentRatio: bs.liabilities.current.totalCurrent ? (bs.assets.current.totalCurrent / bs.liabilities.current.totalCurrent).toFixed(2) : '0',
+            quickRatio: bs.liabilities.current.totalCurrent ? ((bs.assets.current.totalCurrent - (bs.assets.current.inventory || 0)) / bs.liabilities.current.totalCurrent).toFixed(2) : '0',
+            cashRatio: bs.liabilities.current.totalCurrent ? ((bs.assets.current.cash || 0) / bs.liabilities.current.totalCurrent).toFixed(2) : '0'
           },
-          netCashFromOperating: 19800
-        },
-        investingActivities: {
-          purchaseOfEquipment: -15000,
-          saleOfAssets: 2000,
-          netCashFromInvesting: -13000
-        },
-        financingActivities: {
-          proceedsFromDebt: 10000,
-          debtRepayments: -5000,
-          dividendsPaid: -8000,
-          netCashFromFinancing: -3000
-        },
-        netIncreaseInCash: 3800,
-        beginningCash: 121200,
-        endingCash: 125000
-      };
-      
-      // Calculate financial ratios
-      const calculatedRatios = {
-        liquidity: {
-          currentRatio: (demoBalanceSheet.assets.current.totalCurrent / demoBalanceSheet.liabilities.current.totalCurrent).toFixed(2),
-          quickRatio: ((demoBalanceSheet.assets.current.totalCurrent - demoBalanceSheet.assets.current.inventory) / demoBalanceSheet.liabilities.current.totalCurrent).toFixed(2),
-          cashRatio: (demoBalanceSheet.assets.current.cash / demoBalanceSheet.liabilities.current.totalCurrent).toFixed(2)
-        },
-        profitability: {
-          grossProfitMargin: ((demoIncomeStatement.grossProfit / demoIncomeStatement.revenue.totalRevenue) * 100).toFixed(1),
-          operatingMargin: ((demoIncomeStatement.operatingIncome / demoIncomeStatement.revenue.totalRevenue) * 100).toFixed(1),
-          netProfitMargin: ((demoIncomeStatement.netIncome / demoIncomeStatement.revenue.totalRevenue) * 100).toFixed(1),
-          returnOnAssets: ((demoIncomeStatement.netIncome / demoBalanceSheet.assets.totalAssets) * 100).toFixed(1),
-          returnOnEquity: ((demoIncomeStatement.netIncome / demoBalanceSheet.equity.totalEquity) * 100).toFixed(1)
-        },
-        leverage: {
-          debtToEquity: (demoBalanceSheet.liabilities.totalLiabilities / demoBalanceSheet.equity.totalEquity).toFixed(2),
-          debtToAssets: (demoBalanceSheet.liabilities.totalLiabilities / demoBalanceSheet.assets.totalAssets).toFixed(2),
-          interestCoverage: (demoIncomeStatement.operatingIncome / (demoIncomeStatement.interestExpense || 1)).toFixed(2)
-        },
-        efficiency: {
-          assetTurnover: (demoIncomeStatement.revenue.totalRevenue / demoBalanceSheet.assets.totalAssets).toFixed(2),
-          receivablesTurnover: (demoIncomeStatement.revenue.totalRevenue / demoBalanceSheet.assets.current.accountsReceivable).toFixed(2),
-          inventoryTurnover: (demoIncomeStatement.costOfGoodsSold / demoBalanceSheet.assets.current.inventory).toFixed(2)
-        }
-      };
-      
-      setBalanceSheet(balanceSheetData || demoBalanceSheet);
-      setIncomeStatement(incomeData || demoIncomeStatement);
-      setCashFlow(cashFlowData || demoCashFlow);
-      setRatios(calculatedRatios);
+          profitability: {
+            grossProfitMargin: is.revenue.totalRevenue ? ((is.grossProfit / is.revenue.totalRevenue) * 100).toFixed(1) : '0',
+            operatingMargin: is.revenue.totalRevenue ? ((is.operatingIncome / is.revenue.totalRevenue) * 100).toFixed(1) : '0',
+            netProfitMargin: is.revenue.totalRevenue ? ((is.netIncome / is.revenue.totalRevenue) * 100).toFixed(1) : '0',
+            returnOnAssets: bs.assets.totalAssets ? ((is.netIncome / bs.assets.totalAssets) * 100).toFixed(1) : '0',
+            returnOnEquity: bs.equity.totalEquity ? ((is.netIncome / bs.equity.totalEquity) * 100).toFixed(1) : '0'
+          },
+          leverage: {
+            debtToEquity: bs.equity.totalEquity ? (bs.liabilities.totalLiabilities / bs.equity.totalEquity).toFixed(2) : '0',
+            debtToAssets: bs.assets.totalAssets ? (bs.liabilities.totalLiabilities / bs.assets.totalAssets).toFixed(2) : '0',
+            interestCoverage: is.interestExpense ? (is.operatingIncome / is.interestExpense).toFixed(2) : 'N/A'
+          },
+          efficiency: {
+            assetTurnover: bs.assets.totalAssets ? (is.revenue.totalRevenue / bs.assets.totalAssets).toFixed(2) : '0',
+            receivablesTurnover: bs.assets.current.accountsReceivable ? (is.revenue.totalRevenue / bs.assets.current.accountsReceivable).toFixed(2) : '0',
+            inventoryTurnover: bs.assets.current.inventory ? (is.costOfGoodsSold / bs.assets.current.inventory).toFixed(2) : '0'
+          }
+        };
+        setRatios(calculatedRatios);
+      } else {
+        setRatios({
+          liquidity: { currentRatio: '0', quickRatio: '0', cashRatio: '0' },
+          profitability: { grossProfitMargin: '0', operatingMargin: '0', netProfitMargin: '0', returnOnAssets: '0', returnOnEquity: '0' },
+          leverage: { debtToEquity: '0', debtToAssets: '0', interestCoverage: '0' },
+          efficiency: { assetTurnover: '0', receivablesTurnover: '0', inventoryTurnover: '0' }
+        });
+      }
       
       toast.success('Financial statements generated successfully');
     } catch (error) {

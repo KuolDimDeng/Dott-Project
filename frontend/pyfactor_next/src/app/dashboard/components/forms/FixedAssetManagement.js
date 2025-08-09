@@ -137,127 +137,20 @@ function FixedAssetManagement({ onNavigate }) {
     setLoading(true);
 
     try {
-      const response = await accountingApi.fixedAssets.getAll().catch(err => {
-        logger.warn('[FixedAssets] API error, using demo data:', err);
-        return null;
-      });
+      // Fetch from API proxy endpoint
+      const response = await fetch('/api/accounting/fixed-assets')
+        .then(res => res.json())
+        .catch(err => {
+          logger.error('[FixedAssets] API error:', err);
+          return { assets: [] };
+        });
 
-      // Demo data fallback
-      const demoAssets = [
-        {
-          id: 1,
-          name: 'Office Building - Main',
-          assetTag: 'FA-001',
-          category: 'building',
-          description: 'Corporate headquarters building',
-          acquisitionDate: '2020-01-15',
-          acquisitionCost: 2500000,
-          depreciationMethod: 'straight-line',
-          usefulLife: 40,
-          salvageValue: 500000,
-          accumulatedDepreciation: 150000,
-          bookValue: 2350000,
-          location: 'Main Campus',
-          status: 'active',
-          vendor: 'ABC Construction Co.',
-          warrantyExpiry: '2025-01-15',
-          maintenanceSchedule: 'annual',
-          lastMaintenanceDate: '2024-11-15',
-          nextMaintenanceDate: '2025-11-15',
-          notes: 'Annual inspection required'
-        },
-        {
-          id: 2,
-          name: 'Delivery Truck #1',
-          assetTag: 'FA-002',
-          category: 'vehicle',
-          description: 'Ford F-150 delivery truck',
-          acquisitionDate: '2022-06-20',
-          acquisitionCost: 45000,
-          depreciationMethod: 'declining-balance',
-          usefulLife: 5,
-          salvageValue: 8000,
-          accumulatedDepreciation: 18000,
-          bookValue: 27000,
-          location: 'Vehicle Fleet',
-          status: 'active',
-          vendor: 'City Motors',
-          warrantyExpiry: '2025-06-20',
-          maintenanceSchedule: 'quarterly',
-          lastMaintenanceDate: '2024-10-01',
-          nextMaintenanceDate: '2025-01-01',
-          notes: 'Oil change every 5000 miles'
-        },
-        {
-          id: 3,
-          name: 'Server Rack System',
-          assetTag: 'FA-003',
-          category: 'equipment',
-          description: 'Dell PowerEdge server system',
-          acquisitionDate: '2023-03-10',
-          acquisitionCost: 25000,
-          depreciationMethod: 'straight-line',
-          usefulLife: 5,
-          salvageValue: 2000,
-          accumulatedDepreciation: 4600,
-          bookValue: 20400,
-          location: 'Data Center',
-          status: 'active',
-          vendor: 'Tech Solutions Inc.',
-          warrantyExpiry: '2026-03-10',
-          maintenanceSchedule: 'monthly',
-          lastMaintenanceDate: '2024-12-01',
-          nextMaintenanceDate: '2025-01-01',
-          notes: 'Critical infrastructure'
-        },
-        {
-          id: 4,
-          name: 'Office Furniture Set',
-          assetTag: 'FA-004',
-          category: 'furniture',
-          description: 'Executive office furniture',
-          acquisitionDate: '2021-09-01',
-          acquisitionCost: 15000,
-          depreciationMethod: 'straight-line',
-          usefulLife: 10,
-          salvageValue: 1500,
-          accumulatedDepreciation: 4050,
-          bookValue: 10950,
-          location: 'Executive Floor',
-          status: 'active',
-          vendor: 'Office Depot',
-          warrantyExpiry: '2023-09-01',
-          maintenanceSchedule: 'annual',
-          lastMaintenanceDate: '2024-09-01',
-          nextMaintenanceDate: '2025-09-01',
-          notes: 'Includes desk, chairs, and cabinets'
-        },
-        {
-          id: 5,
-          name: 'Old Copier Machine',
-          assetTag: 'FA-005',
-          category: 'equipment',
-          description: 'Xerox multifunction printer',
-          acquisitionDate: '2019-04-15',
-          acquisitionCost: 8000,
-          depreciationMethod: 'straight-line',
-          usefulLife: 5,
-          salvageValue: 500,
-          accumulatedDepreciation: 7500,
-          bookValue: 500,
-          location: 'Storage',
-          status: 'disposed',
-          vendor: 'Xerox Corp',
-          warrantyExpiry: '2022-04-15',
-          maintenanceSchedule: 'quarterly',
-          disposalDate: '2024-04-15',
-          disposalAmount: 500,
-          notes: 'Replaced with newer model'
-        }
-      ];
-
-      // Demo categories
-      const demoCategories = [
+      // Use real data from backend
+      const assetData = response?.assets || [];
+      setAssets(assetData);
+      
+      // Set categories from backend or defaults
+      const categories = response?.categories || [
         { id: 'building', name: 'Buildings & Property' },
         { id: 'vehicle', name: 'Vehicles' },
         { id: 'equipment', name: 'Equipment & Machinery' },
@@ -265,24 +158,18 @@ function FixedAssetManagement({ onNavigate }) {
         { id: 'computer', name: 'Computer & IT Equipment' },
         { id: 'other', name: 'Other Assets' }
       ];
-
-      // Demo locations
-      const demoLocations = [
-        'Main Campus',
+      setCategories(categories);
+      
+      // Set locations from backend or defaults
+      const locations = response?.locations || [
+        'Main Office',
         'Branch Office',
         'Warehouse',
-        'Data Center',
-        'Vehicle Fleet',
-        'Executive Floor',
-        'Storage'
+        'Remote'
       ];
-
-      setAssets(response?.assets || demoAssets);
-      setCategories(demoCategories);
-      setLocations(demoLocations);
+      setLocations(locations);
 
       // Calculate statistics
-      const assetData = response?.assets || demoAssets;
       const statsData = assetData.reduce((acc, asset) => {
         acc.totalAssets++;
         if (asset.status === 'active') {

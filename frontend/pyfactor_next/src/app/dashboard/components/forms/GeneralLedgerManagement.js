@@ -103,24 +103,9 @@ function GeneralLedgerManagement({ onNavigate }) {
     if (!tenantId) return;
 
     try {
-      const response = await accountingApi.chartOfAccounts.getAll().catch(err => {
-        logger.warn('[GeneralLedger] Accounts API error, using demo data:', err);
-        return null;
-      });
-
-      // Demo accounts fallback
-      const demoAccounts = [
-        { id: '1001', code: '1001', name: 'Cash - Operating Account', type: 'asset' },
-        { id: '1002', code: '1002', name: 'Cash - Savings Account', type: 'asset' },
-        { id: '1200', code: '1200', name: 'Accounts Receivable', type: 'asset' },
-        { id: '1500', code: '1500', name: 'Equipment', type: 'asset' },
-        { id: '2100', code: '2100', name: 'Accounts Payable', type: 'liability' },
-        { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'equity' },
-        { id: '4000', code: '4000', name: 'Sales Revenue', type: 'revenue' },
-        { id: '5100', code: '5100', name: 'Rent Expense', type: 'expense' }
-      ];
-
-      setAccounts(response?.accounts || demoAccounts);
+      const response = await accountingApi.chartOfAccounts.getAll();
+      // Use real data from backend
+      setAccounts(Array.isArray(response) ? response : (response?.accounts || []));
     } catch (error) {
       logger.error('[GeneralLedger] Error fetching accounts:', error);
     }
@@ -141,111 +126,11 @@ function GeneralLedgerManagement({ onNavigate }) {
       };
 
       const response = selectedAccount 
-        ? await accountingApi.generalLedger.getByAccount(selectedAccount, params).catch(err => {
-            logger.warn('[GeneralLedger] API error, using demo data:', err);
-            return null;
-          })
-        : await accountingApi.generalLedger.getAll(params).catch(err => {
-            logger.warn('[GeneralLedger] API error, using demo data:', err);
-            return null;
-          });
+        ? await accountingApi.generalLedger.getByAccount(selectedAccount, params)
+        : await accountingApi.generalLedger.getAll(params);
 
-      // Demo data fallback
-      const demoEntries = [
-        {
-          id: 1,
-          date: '2025-01-01',
-          account: '1001 - Cash - Operating Account',
-          accountCode: '1001',
-          description: 'Opening Balance',
-          reference: 'OB-2025',
-          journalId: null,
-          debit: 50000,
-          credit: 0,
-          balance: 50000,
-          type: 'debit'
-        },
-        {
-          id: 2,
-          date: '2025-01-05',
-          account: '1001 - Cash - Operating Account',
-          accountCode: '1001',
-          description: 'Office rent payment',
-          reference: 'JE-2025-001',
-          journalId: 1,
-          debit: 0,
-          credit: 5000,
-          balance: 45000,
-          type: 'credit'
-        },
-        {
-          id: 3,
-          date: '2025-01-05',
-          account: '5100 - Rent Expense',
-          accountCode: '5100',
-          description: 'Office rent payment',
-          reference: 'JE-2025-001',
-          journalId: 1,
-          debit: 5000,
-          credit: 0,
-          balance: 5000,
-          type: 'debit'
-        },
-        {
-          id: 4,
-          date: '2025-01-06',
-          account: '1001 - Cash - Operating Account',
-          accountCode: '1001',
-          description: 'Customer payment received',
-          reference: 'JE-2025-002',
-          journalId: 2,
-          debit: 12000,
-          credit: 0,
-          balance: 57000,
-          type: 'debit'
-        },
-        {
-          id: 5,
-          date: '2025-01-06',
-          account: '1200 - Accounts Receivable',
-          accountCode: '1200',
-          description: 'Customer payment received',
-          reference: 'JE-2025-002',
-          journalId: 2,
-          debit: 0,
-          credit: 12000,
-          balance: 38000,
-          type: 'credit'
-        },
-        {
-          id: 6,
-          date: '2025-01-08',
-          account: '1500 - Equipment',
-          accountCode: '1500',
-          description: 'Computer equipment purchase',
-          reference: 'JE-2025-003',
-          journalId: 3,
-          debit: 8500,
-          credit: 0,
-          balance: 23500,
-          type: 'debit'
-        },
-        {
-          id: 7,
-          date: '2025-01-08',
-          account: '2100 - Accounts Payable',
-          accountCode: '2100',
-          description: 'Computer equipment purchase',
-          reference: 'JE-2025-003',
-          journalId: 3,
-          debit: 0,
-          credit: 8500,
-          balance: 43500,
-          type: 'credit'
-        }
-      ];
-
-      const entries = response?.entries || demoEntries;
+      // Use real data from backend
+      const entries = response?.entries || [];
       setLedgerEntries(entries);
 
       // Calculate statistics
