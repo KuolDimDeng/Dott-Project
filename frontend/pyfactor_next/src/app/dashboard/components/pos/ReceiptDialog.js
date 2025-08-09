@@ -105,29 +105,28 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo, onReceiptHandl
 
     setIsGenerating(true);
     try {
-      const emailData = receiptGenerator.generateEmailReceipt(receiptData);
-      
-      // Send email via API
-      const response = await fetch('/api/pos/send-receipt', {
+      // Call backend API to send email (secure, server-side)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/sales/pos/send-receipt/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Session ${document.cookie.split('sid=')[1]?.split(';')[0] || ''}`,
         },
         credentials: 'include',
         body: JSON.stringify({
-          type: 'email',
           to: customerEmail,
-          receipt: receiptData,
-          emailContent: emailData
+          receipt: receiptData
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         if (response.status === 503) {
-          toast.error('Email service not configured. Please contact support.');
+          toast.error('Email service is being configured. Please download the PDF receipt instead.');
+        } else if (response.status === 401) {
+          toast.error('Authentication required. Please sign in again.');
         } else {
-          toast.error(errorData.error || 'Failed to send email');
+          toast.error(errorData.error || errorData.message || 'Failed to send email');
         }
         return;
       }

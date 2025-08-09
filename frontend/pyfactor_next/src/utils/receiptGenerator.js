@@ -11,7 +11,7 @@ export class ReceiptGenerator {
   constructor(businessInfo = {}) {
     // Only include business info fields that actually exist (no defaults)
     this.businessInfo = {
-      name: businessInfo.name || businessInfo.business_name || 'Business',
+      name: businessInfo.name || businessInfo.business_name || '',  // Remove hardcoded default
       address: businessInfo.address || businessInfo.business_address || null,
       phone: businessInfo.phone || businessInfo.business_phone || null,
       email: businessInfo.email || businessInfo.business_email || null,
@@ -98,7 +98,7 @@ export class ReceiptGenerator {
       </head>
       <body>
         <div class="header">
-          <div class="business-name">${business.name}</div>
+          ${business.name ? `<div class="business-name">${business.name}</div>` : ''}
           <div class="business-info">
             ${business.address ? `${business.address}<br>` : ''}
             ${this.formatContactInfo(business)}
@@ -202,11 +202,13 @@ export class ReceiptGenerator {
     const lineHeight = 4;
     const pageWidth = 80;
     
-    // Header
-    pdf.setFontSize(12);
-    pdf.setFont(undefined, 'bold');
-    pdf.text(business.name, pageWidth/2, y, { align: 'center' });
-    y += lineHeight + 2;
+    // Header - only show business name if it exists
+    if (business.name) {
+      pdf.setFontSize(12);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(business.name, pageWidth/2, y, { align: 'center' });
+      y += lineHeight + 2;
+    }
     
     pdf.setFontSize(8);
     pdf.setFont(undefined, 'normal');
@@ -387,7 +389,10 @@ export class ReceiptGenerator {
     const { receipt, business, customer, items, totals, payment, notes } = receiptData;
     
     let text = '';
-    text += `${business.name}\n`;
+    // Only add business name if it exists
+    if (business.name) {
+      text += `${business.name}\n`;
+    }
     
     // Only add address if it exists
     if (business.address) {

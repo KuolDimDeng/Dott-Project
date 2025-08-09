@@ -87,9 +87,13 @@ async function handleEmailReceipt(to, receipt, emailContent, session) {
     
     // Check if Resend is configured
     if (!resend) {
-      console.error('[send-receipt] Resend API key not configured');
+      console.error('[send-receipt] Resend API key not configured. Please set RESEND_API_KEY environment variable.');
       return NextResponse.json(
-        { error: 'Email service not configured' },
+        { 
+          error: 'Email service temporarily unavailable',
+          message: 'Email service is being configured. Please try downloading the receipt as PDF instead.',
+          details: 'RESEND_API_KEY not configured'
+        },
         { status: 503 }
       );
     }

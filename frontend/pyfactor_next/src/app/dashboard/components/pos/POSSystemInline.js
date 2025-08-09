@@ -377,7 +377,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         if (response.ok) {
           const data = await response.json();
           setBusinessInfo({
-            name: data.business_name || data.businessName || 'Business Name',
+            name: data.business_name || data.businessName || '',  // Remove hardcoded default
             address: data.business_address || '',
             phone: data.business_phone || '',
             email: data.email || '',
@@ -495,30 +495,47 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   useEffect(() => {
     const fetchCustomerTaxRate = async () => {
       if (!selectedCustomer) {
-        // Walk-In customer - always calculate tax (backend will use business location as fallback)
+        // Walk-In customer - wait for business info to be loaded
+        if (!businessInfo.country && !businessCountry) {
+          console.log('[POS] Business location not yet loaded, waiting...');
+          return; // Wait for business info to load
+        }
+        
         console.log('[POS] Walk-In customer, calculating tax for business location');
         console.log('[POS] Business location state:', {
-          country: businessCountry || 'EMPTY',
-          state: businessState || 'EMPTY',
-          county: businessCounty || 'EMPTY'
+          country: businessCountry || businessInfo.country || 'EMPTY',
+          state: businessState || businessInfo.state || 'EMPTY',
+          county: businessCounty || businessInfo.county || 'EMPTY'
         });
         
-        // Create a pseudo-customer object with business location (even if empty)
-        // Backend will use the business location as fallback when country is empty
+        // Create a pseudo-customer object with business location
+        // Use businessInfo as fallback if state variables not yet set
+        const walkInCountry = businessCountry || businessInfo.country || '';
+        const walkInState = businessState || businessInfo.state || '';
+        const walkInCounty = businessCounty || businessInfo.county || '';
+        
+        console.log('[POS] Creating Walk-In customer with location:', {
+          country: walkInCountry,
+          state: walkInState, 
+          county: walkInCounty,
+          businessInfo: businessInfo,
+          businessCountry: businessCountry,
+          businessState: businessState
+        });
+        
         const walkInCustomer = {
           id: 'walk-in',
           first_name: 'Walk-In',
           last_name: 'Customer',
-          billing_country: businessCountry || '',
-          billing_state: businessState || '',
-          billing_county: businessCounty || '',
-          shipping_country: businessCountry || '',
-          shipping_state: businessState || '',
-          shipping_county: businessCounty || ''
+          billing_country: walkInCountry,
+          billing_state: walkInState,
+          billing_county: walkInCounty,
+          shipping_country: walkInCountry,
+          shipping_state: walkInState,
+          shipping_county: walkInCounty
         };
         
         // Always call calculateCustomerTax for Walk-In
-        // The backend will handle empty country by using business location
         await calculateCustomerTax(walkInCustomer);
         return;
       }
@@ -539,7 +556,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     // Always fetch tax rate - backend will use business location as fallback
     // Even if businessCountry is empty, the backend knows the business location
     fetchCustomerTaxRate();
-  }, [selectedCustomer, businessCountry, businessState, businessCounty, customers, defaultTaxRate]);
+  }, [selectedCustomer, businessCountry, businessState, businessCounty, businessInfo, customers, defaultTaxRate]);
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
