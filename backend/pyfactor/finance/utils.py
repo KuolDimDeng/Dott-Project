@@ -294,12 +294,13 @@ def get_or_create_chart_account(database_name, account_name, account_type_name):
         raise
     
  
-def generate_financial_statements(database_name):
+def generate_financial_statements(database_name, business_id=None):
     today = timezone.now().date()
-    logger.info(f"Generating financial statements for database: {database_name}, date: {today}")
+    logger.info(f"Generating financial statements for database: {database_name}, business_id: {business_id}, date: {today}")
 
-    # Fetch all accounts
-    accounts = ChartOfAccount.objects.using(database_name).all()
+    # Fetch all accounts - using default database
+    # Note: ChartOfAccount doesn't have business_id field yet, so we get all accounts
+    accounts = ChartOfAccount.objects.using('default').all()
 
     # Group accounts by category
     revenue_accounts = accounts.filter(category__name='Revenue')

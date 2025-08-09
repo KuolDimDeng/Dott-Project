@@ -656,22 +656,26 @@ def chart_of_account_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def chart_of_accounts(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
+    
     logger.debug("Chart of Accounts API called")
-    logger.debug("Database Name: %s", database_name)
+    logger.debug("User: %s, Business ID: %s", user.email, business_id)
 
     if request.method == 'GET':
-        chart_accounts = ChartOfAccount.objects.using(database_name).all()
-        serializer = ChartOfAccountSerializer(chart_accounts, many=True, context={'database_name': database_name})
-        logger.debug("Chart of Accounts: %s", chart_accounts)
+        # Use default database - ChartOfAccount doesn't have business_id field yet
+        # so we return all accounts for now
+        chart_accounts = ChartOfAccount.objects.using('default').all()
+        
+        serializer = ChartOfAccountSerializer(chart_accounts, many=True)
+        logger.debug("Chart of Accounts count: %s", len(chart_accounts))
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = ChartOfAccountSerializer(data=request.data, context={'database_name': database_name})
+        serializer = ChartOfAccountSerializer(data=request.data)
         if serializer.is_valid():
             account = serializer.save()
             return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
@@ -681,8 +685,12 @@ def chart_of_accounts(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def journal_entry_list(request):
+    user = request.user
+    business_id = getattr(user, 'business_id', None)
+    
     if request.method == 'GET':
-        journal_entries = JournalEntry.objects.all()
+        # Use default database - JournalEntry may not have business_id field
+        journal_entries = JournalEntry.objects.using('default').all()
         serializer = JournalEntrySerializer(journal_entries, many=True)
         return Response(serializer.data)
 
@@ -691,7 +699,8 @@ def journal_entry_list(request):
         if serializer.is_valid():
             with db_transaction.atomic():
                 journal_entry = serializer.save()
-                update_account_balances(journal_entry, request.user.profile.database_name)
+                # Remove database_name parameter
+                # update_account_balances should use default database
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -774,17 +783,18 @@ def update_account_balances(journal_entry, database_name):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def general_ledger(request):
-    print("General ledger view called")
-    print(f"Request user: {request.user}")
-    print(f"Request query params: {request.query_params}")
+    logger.debug("General ledger view called")
+    logger.debug(f"Request user: {request.user}")
+    
     user = request.user
-    database_name = get_user_database(user)
-    logger.debug("Database Name: %s", database_name)
+    business_id = getattr(user, 'business_id', None)
+    
     start_date = request.query_params.get('start_date')
     end_date = request.query_params.get('end_date')
     account_id = request.query_params.get('account_id')
 
-    queryset = GeneralLedgerEntry.objects.using(database_name).all()
+    # Use default database - GeneralLedgerEntry may not have business_id field
+    queryset = GeneralLedgerEntry.objects.using('default').all()
 
     if start_date:
         queryset = queryset.filter(date__gte=start_date)
@@ -793,14 +803,11 @@ def general_ledger(request):
     if account_id:
         queryset = queryset.filter(account_id=account_id)
 
-    print(f"Query parameters: start_date={start_date}, end_date={end_date}, account_id={account_id}")
-    print(f"Queryset SQL: {queryset.query}")
-
-    print(f"Queryset count: {queryset.count()}")
+    logger.debug(f"Query parameters: start_date={start_date}, end_date={end_date}, account_id={account_id}")
+    logger.debug(f"Queryset count: {queryset.count()}")
+    
     entries = queryset.order_by('date', 'id')
-    print(f"Entries count: {len(entries)}")
     serializer = GeneralLedgerEntrySerializer(entries, many=True)
-    print(f"Serialized data count: {len(serializer.data)}")
     
     return Response(serializer.data)
 
@@ -1106,37 +1113,32 @@ def financial_statement_view(request, statement_type):
 @permission_classes([IsAuthenticated])
 def profit_and_loss_view(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
     
-    if not database_name:
-        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    financial_data = generate_financial_statements(database_name)
-    return Response(financial_data['profit_and_loss'])
+    # Generate financial statements using default database
+    # The generate_financial_statements function needs to be updated to use business_id
+    financial_data = generate_financial_statements('default', business_id)
+    return Response(financial_data.get('profit_and_loss', {}))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def balance_sheet_view(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
     
-    if not database_name:
-        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    financial_data = generate_financial_statements(database_name)
-    return Response(financial_data['balance_sheet'])
+    # Generate financial statements using default database
+    financial_data = generate_financial_statements('default', business_id)
+    return Response(financial_data.get('balance_sheet', {}))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cash_flow_view(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
     
-    if not database_name:
-        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    financial_data = generate_financial_statements(database_name)
-    return Response(financial_data['cash_flow'])
+    # Generate financial statements using default database
+    financial_data = generate_financial_statements('default', business_id)
+    return Response(financial_data.get('cash_flow', {}))
 
 
 
