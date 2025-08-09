@@ -28,7 +28,7 @@ export async function POST(request) {
     let userCurrency = 'USD'; // fallback
     try {
       logger.info('[POSProxy] Fetching user currency preference...');
-      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
+      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

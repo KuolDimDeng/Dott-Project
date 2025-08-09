@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { Resend } from 'resend';
 
-// Initialize Resend only if API key exists (to avoid build errors)
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
@@ -71,7 +68,7 @@ export async function POST(request) {
 }
 
 /**
- * Handle email receipt delivery using Resend
+ * Handle email receipt delivery by calling backend API
  */
 async function handleEmailReceipt(to, receipt, emailContent, session) {
   try {
@@ -82,30 +79,47 @@ async function handleEmailReceipt(to, receipt, emailContent, session) {
       amount: receipt.totals.total
     });
 
-    // Generate email HTML
-    const emailHtml = generateEmailHTML(receipt);
+    // Get session cookie for backend call
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    // Check if Resend is configured
-    if (!resend) {
-      console.error('[send-receipt] Resend API key not configured. Please set RESEND_API_KEY environment variable.');
+    if (!sidCookie?.value) {
+      throw new Error('No session found');
+    }
+
+    // Call backend email API
+    const response = await fetch(`${BACKEND_URL}/api/sales/pos/send-receipt/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: to,
+        receipt: receipt
+      }),
+    });
+
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error('[send-receipt] Invalid JSON response:', responseText);
+      throw new Error('Invalid response from email service');
+    }
+
+    if (!response.ok) {
+      console.error('[send-receipt] Backend email error:', data);
       return NextResponse.json(
         { 
-          error: 'Email service temporarily unavailable',
-          message: 'Email service is being configured. Please try downloading the receipt as PDF instead.',
-          details: 'RESEND_API_KEY not configured'
+          error: data.error || 'Failed to send email receipt',
+          message: data.message || 'Email service error',
+          details: data.details || responseText
         },
-        { status: 503 }
+        { status: response.status }
       );
     }
-    
-    // Send via Resend
-    const data = await resend.emails.send({
-      from: 'Dott POS <noreply@dottapps.com>', // Use noreply which is likely configured
-      to: [to],
-      subject: `Receipt #${receipt.receipt.number} - ${receipt.business.name}`,
-      html: emailHtml,
-      text: generateEmailText(receipt),
-    });
 
     console.log('[send-receipt] Email sent successfully:', data);
     
@@ -116,7 +130,7 @@ async function handleEmailReceipt(to, receipt, emailContent, session) {
         type: 'email',
         recipient: to,
         receiptNumber: receipt.receipt.number,
-        messageId: data.id,
+        messageId: data.details?.messageId,
         timestamp: new Date().toISOString()
       }
     });
@@ -124,7 +138,7 @@ async function handleEmailReceipt(to, receipt, emailContent, session) {
   } catch (error) {
     console.error('[send-receipt] Email error:', error);
     return NextResponse.json(
-      { error: 'Failed to send email receipt' },
+      { error: 'Failed to send email receipt', details: error.message },
       { status: 500 }
     );
   }
