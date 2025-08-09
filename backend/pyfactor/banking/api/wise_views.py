@@ -536,7 +536,8 @@ def list_bank_connections(request):
         logger.info(f"[List Connections] Fetching connections for user {user.email}")
         
         # Get all bank connections for the user
-        connections = BankAccount.objects.filter(user=user).order_by('-created_at')
+        # Note: BankAccount model uses 'last_synced' instead of 'created_at'
+        connections = BankAccount.objects.filter(user=user).order_by('-last_synced')
         logger.info(f"[List Connections] Found {connections.count()} connections")
         
         connections_data = []
@@ -567,7 +568,7 @@ def list_bank_connections(request):
                 'country': wise_item.bank_country if wise_item else '',
                 'last4': last4,
                 'provider': 'wise',
-                'created_at': conn.created_at.isoformat() if conn.created_at else None,
+                'created_at': conn.last_synced.isoformat() if conn.last_synced else None,
                 'status': 'active'  # Could be enhanced with actual status checking
             })
         
@@ -630,7 +631,7 @@ def manage_bank_connection(request, connection_id):
                     'country': wise_item.bank_country if wise_item else '',
                     'last4': last4,
                     'provider': 'wise',
-                    'created_at': connection.created_at.isoformat() if connection.created_at else None,
+                    'created_at': connection.last_synced.isoformat() if connection.last_synced else None,
                     'status': 'active'
                 }
             })

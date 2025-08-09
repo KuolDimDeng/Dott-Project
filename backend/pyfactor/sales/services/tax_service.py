@@ -260,6 +260,17 @@ class TaxService:
             if country != 'US':
                 logger.info(f"[TaxService] Looking up tax rate for country: {country}")
                 
+                # Hard-coded fallback for South Sudan
+                if country == 'SS':
+                    logger.info(f"[TaxService] Using hard-coded rate for South Sudan: 18%")
+                    rates['total_rate'] = Decimal('0.18')
+                    rates['components'].append({
+                        'type': 'country',
+                        'name': 'South Sudan',
+                        'rate': '0.18'
+                    })
+                    return rates
+                
                 country_rate = GlobalSalesTaxRate.objects.filter(
                     country=country,
                     region_code='',
@@ -276,6 +287,28 @@ class TaxService:
                     })
                 else:
                     logger.warning(f"[TaxService] No tax rate found for country: {country}")
+                    
+                    # Additional hard-coded rates for common African countries
+                    hardcoded_rates = {
+                        'KE': ('Kenya', Decimal('0.16')),
+                        'NG': ('Nigeria', Decimal('0.075')),
+                        'GH': ('Ghana', Decimal('0.125')),
+                        'UG': ('Uganda', Decimal('0.18')),
+                        'TZ': ('Tanzania', Decimal('0.18')),
+                        'RW': ('Rwanda', Decimal('0.18')),
+                        'ET': ('Ethiopia', Decimal('0.15')),
+                        'ZA': ('South Africa', Decimal('0.15')),
+                    }
+                    
+                    if country in hardcoded_rates:
+                        name, rate = hardcoded_rates[country]
+                        logger.info(f"[TaxService] Using hard-coded rate for {name}: {rate * 100}%")
+                        rates['total_rate'] = rate
+                        rates['components'].append({
+                            'type': 'country',
+                            'name': name,
+                            'rate': str(rate)
+                        })
                 
                 return rates
             
