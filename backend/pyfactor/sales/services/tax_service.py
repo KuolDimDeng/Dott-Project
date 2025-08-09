@@ -176,9 +176,16 @@ class TaxService:
             }
         
         # Fall back to business origin
+        # Convert country name to ISO code if needed
+        from utils.country_codes import get_country_iso_code
+        
+        country_value = get_country_iso_code(user_profile.country)
+        
+        logger.info(f"Walk-in customer tax location - Business country: {user_profile.country} -> ISO: {country_value}")
+        
         return {
             'method': 'origin',
-            'country': str(user_profile.country) if user_profile.country else 'US',
+            'country': country_value,
             'state': user_profile.state or '',
             'county': user_profile.county or ''
         }
