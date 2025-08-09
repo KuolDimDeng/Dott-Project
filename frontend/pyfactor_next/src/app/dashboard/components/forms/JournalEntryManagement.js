@@ -122,52 +122,10 @@ function JournalEntryManagement({ onNavigate }) {
     setLoading(true);
 
     try {
-      const response = await accountingApi.journalEntries.getAll().catch(err => {
-        logger.warn('[JournalEntryManagement] API error, using demo data:', err);
-        return null;
-      });
-
-      // Demo data fallback
-      const demoEntries = [
-        {
-          id: 1,
-          date: '2025-01-05',
-          reference: 'JE-2025-001',
-          description: 'Office rent payment for January',
-          status: 'posted',
-          total: 5000,
-          lines: [
-            { account: '5100 - Rent Expense', debit: 5000, credit: 0 },
-            { account: '1001 - Bank Account', debit: 0, credit: 5000 }
-          ]
-        },
-        {
-          id: 2,
-          date: '2025-01-04',
-          reference: 'JE-2025-002',
-          description: 'Customer payment received',
-          status: 'posted',
-          total: 12000,
-          lines: [
-            { account: '1001 - Bank Account', debit: 12000, credit: 0 },
-            { account: '1200 - Accounts Receivable', debit: 0, credit: 12000 }
-          ]
-        },
-        {
-          id: 3,
-          date: '2025-01-03',
-          reference: 'JE-2025-003',
-          description: 'Equipment purchase',
-          status: 'draft',
-          total: 8500,
-          lines: [
-            { account: '1500 - Equipment', debit: 8500, credit: 0 },
-            { account: '2100 - Accounts Payable', debit: 0, credit: 8500 }
-          ]
-        }
-      ];
-
-      const entries = response?.entries || demoEntries;
+      const response = await accountingApi.journalEntries.getAll();
+      
+      // Use real data from backend
+      const entries = response?.entries || [];
       setJournalEntries(entries);
 
       // Calculate stats

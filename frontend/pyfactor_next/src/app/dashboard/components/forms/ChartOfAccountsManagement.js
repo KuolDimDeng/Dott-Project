@@ -119,19 +119,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const data = await accountingApi.chartOfAccounts.getAll().catch(err => {
-        logger.warn('[ChartOfAccounts] API not ready, using demo data:', err);
-        // Return demo data if API is not ready
-        return [
-          { id: 1, code: '1000', name: 'Cash', type: 'asset', description: 'Cash and cash equivalents', normalBalance: 'debit', currentBalance: 50000, isActive: true },
-          { id: 2, code: '1200', name: 'Accounts Receivable', type: 'asset', description: 'Money owed by customers', normalBalance: 'debit', currentBalance: 25000, isActive: true },
-          { id: 3, code: '2000', name: 'Accounts Payable', type: 'liability', description: 'Money owed to suppliers', normalBalance: 'credit', currentBalance: 15000, isActive: true },
-          { id: 4, code: '3000', name: "Owner's Equity", type: 'equity', description: 'Owner investment in business', normalBalance: 'credit', currentBalance: 100000, isActive: true },
-          { id: 5, code: '4000', name: 'Sales Revenue', type: 'revenue', description: 'Income from sales', normalBalance: 'credit', currentBalance: 75000, isActive: true },
-          { id: 6, code: '5000', name: 'Rent Expense', type: 'expense', description: 'Monthly rent payments', normalBalance: 'debit', currentBalance: 5000, isActive: true }
-        ];
-      });
+      const data = await accountingApi.chartOfAccounts.getAll();
       
+      // Use the real data from the backend
       setAccounts(Array.isArray(data) ? data : []);
       
       // Calculate stats
