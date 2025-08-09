@@ -416,6 +416,7 @@ class Service(Item):
     service_code = models.CharField(max_length=50, unique=True, editable=False, db_index=True)
     duration = models.DurationField(null=True, blank=True)
     is_recurring = models.BooleanField(default=False, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     
     # Use TenantManager for tenant isolation
     objects = TenantManager()

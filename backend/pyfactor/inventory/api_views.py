@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -98,6 +98,11 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         """
         params = self.request.query_params
         
+        # Filter by active status (default to active only unless specified)
+        show_inactive = params.get('show_inactive', 'false').lower() == 'true'
+        if not show_inactive:
+            queryset = queryset.filter(is_active=True)
+        
         # Apply filters based on parameters
         if params.get('is_for_sale') is not None:
             is_for_sale = params.get('is_for_sale').lower() == 'true'
@@ -180,6 +185,56 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         Override destroy method to add better error handling
         """
         return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """
+        Toggle the active status of a product
+        """
+        product = self.get_object()
+        product.is_active = not product.is_active
+        product.save(update_fields=['is_active', 'updated_at'])
+        
+        action_text = "activated" if product.is_active else "deactivated"
+        
+        return Response({
+            'success': True,
+            'message': f'Product {action_text} successfully',
+            'is_active': product.is_active,
+            'product': ProductSerializer(product).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """
+        Activate a product
+        """
+        product = self.get_object()
+        product.is_active = True
+        product.save(update_fields=['is_active', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Product activated successfully',
+            'is_active': product.is_active,
+            'product': ProductSerializer(product).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        """
+        Deactivate a product
+        """
+        product = self.get_object()
+        product.is_active = False
+        product.save(update_fields=['is_active', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Product deactivated successfully',
+            'is_active': product.is_active,
+            'product': ProductSerializer(product).data
+        })
 
 class SmallPagination(PageNumberPagination):
     page_size = 20

@@ -2533,13 +2533,24 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <div className="text-sm text-black">{product.quantity || 0}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  product.quantity > 0 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {(product.quantity || product.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    product.is_active !== false
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {product.is_active !== false ? 'Active' : 'Inactive'}
+                  </span>
+                  {product.is_active !== false && (
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      (product.quantity || product.stock_quantity || 0) > 0 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {(product.quantity || product.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
@@ -2573,38 +2584,46 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🔴 DELETE ICON: Clicked for product:', product);
                     
-                    // Simple confirmation and delete
-                    if (window.confirm(`Delete "${product.name}"?`)) {
-                      console.log('🔴 DELETE ICON: Confirmed, deleting...');
-                      
-                      fetch(`/api/inventory/products/${product.id}`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                      })
-                      .then(res => {
-                        if (res.ok) {
-                          toast.success('Product deleted');
-                          fetchProducts();
-                        } else {
-                          toast.error('Delete failed');
-                        }
-                      })
-                      .catch(err => {
-                        console.error('🔴 DELETE ICON: Error:', err);
-                        toast.error('Delete error');
+                    try {
+                      const endpoint = product.is_active !== false ? 'deactivate' : 'activate';
+                      const response = await fetch(`/api/products/optimized/${product.id}/${endpoint}/`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
                       });
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        toast.success(data.message);
+                        // Refresh the products list
+                        fetchProducts();
+                      } else {
+                        const error = await response.json();
+                        toast.error(error.message || 'Failed to update product status');
+                      }
+                    } catch (error) {
+                      console.error('Error toggling product status:', error);
+                      toast.error('Failed to update product status');
                     }
                   }}
-                  className="text-red-600 hover:text-red-900 mr-3 focus:outline-none"
+                  className={product.is_active !== false ? "text-yellow-600 hover:text-yellow-900 mr-3 focus:outline-none" : "text-green-600 hover:text-green-900 mr-3 focus:outline-none"}
+                  title={product.is_active !== false ? "Deactivate Product" : "Activate Product"}
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  {product.is_active !== false ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </button>
                 <button
                   onClick={() => handleGenerateBarcode(product)}

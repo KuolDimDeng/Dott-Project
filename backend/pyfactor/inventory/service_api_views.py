@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -99,6 +99,11 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         Apply filters from query parameters
         """
         params = self.request.query_params
+        
+        # Filter by active status (default to active only unless specified)
+        show_inactive = params.get('show_inactive', 'false').lower() == 'true'
+        if not show_inactive:
+            queryset = queryset.filter(is_active=True)
         
         # Apply filters based on parameters
         if params.get('is_for_sale') is not None:
@@ -208,6 +213,56 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         cache.delete(cache_key)
         
         return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """
+        Toggle the active status of a service
+        """
+        service = self.get_object()
+        service.is_active = not service.is_active
+        service.save(update_fields=['is_active', 'updated_at'])
+        
+        action_text = "activated" if service.is_active else "deactivated"
+        
+        return Response({
+            'success': True,
+            'message': f'Service {action_text} successfully',
+            'is_active': service.is_active,
+            'service': ServiceSerializer(service).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """
+        Activate a service
+        """
+        service = self.get_object()
+        service.is_active = True
+        service.save(update_fields=['is_active', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Service activated successfully',
+            'is_active': service.is_active,
+            'service': ServiceSerializer(service).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        """
+        Deactivate a service
+        """
+        service = self.get_object()
+        service.is_active = False
+        service.save(update_fields=['is_active', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Service deactivated successfully',
+            'is_active': service.is_active,
+            'service': ServiceSerializer(service).data
+        })
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
