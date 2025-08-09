@@ -552,13 +552,20 @@ def list_bank_connections(request):
             except Exception as integration_error:
                 logger.warning(f"[List Connections] Could not fetch integration for connection {conn.id}: {integration_error}")
             
+            # Safely get last 4 digits of account number
+            last4 = ''
+            if wise_item and wise_item.account_number_last4:
+                last4 = wise_item.account_number_last4
+            elif conn.account_number:
+                last4 = conn.account_number[-4:] if len(conn.account_number) >= 4 else conn.account_number
+            
             connections_data.append({
                 'id': str(conn.id),
                 'bank_name': conn.bank_name,
                 'account_type': conn.account_type,
                 'currency': wise_item.currency if wise_item else 'USD',
                 'country': wise_item.bank_country if wise_item else '',
-                'last4': wise_item.account_number_last4 if wise_item else conn.account_number[-4:],
+                'last4': last4,
                 'provider': 'wise',
                 'created_at': conn.created_at.isoformat() if conn.created_at else None,
                 'status': 'active'  # Could be enhanced with actual status checking
@@ -571,10 +578,12 @@ def list_bank_connections(request):
         })
         
     except Exception as e:
+        import traceback
         logger.error(f"[List Connections] Error: {str(e)}")
+        logger.error(f"[List Connections] Traceback: {traceback.format_exc()}")
         return Response({
             'success': False,
-            'error': 'Failed to fetch bank connections'
+            'error': f'Failed to fetch bank connections: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -598,8 +607,18 @@ def manage_bank_connection(request, connection_id):
         if request.method == 'GET':
             # Get connection details with WiseItem data if available
             wise_item = None
-            if hasattr(connection, 'integration') and connection.integration:
-                wise_item = connection.integration
+            try:
+                if hasattr(connection, 'integration') and connection.integration:
+                    wise_item = connection.integration
+            except Exception as e:
+                logger.warning(f"[Manage Connection] Could not fetch integration: {e}")
+            
+            # Safely get last 4 digits
+            last4 = ''
+            if wise_item and wise_item.account_number_last4:
+                last4 = wise_item.account_number_last4
+            elif connection.account_number:
+                last4 = connection.account_number[-4:] if len(connection.account_number) >= 4 else connection.account_number
                 
             return Response({
                 'success': True,
@@ -609,7 +628,7 @@ def manage_bank_connection(request, connection_id):
                     'account_type': connection.account_type,
                     'currency': wise_item.currency if wise_item else 'USD',
                     'country': wise_item.bank_country if wise_item else '',
-                    'last4': wise_item.account_number_last4 if wise_item else connection.account_number[-4:],
+                    'last4': last4,
                     'provider': 'wise',
                     'created_at': connection.created_at.isoformat() if connection.created_at else None,
                     'status': 'active'
