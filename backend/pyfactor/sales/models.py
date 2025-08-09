@@ -561,18 +561,25 @@ class POSTransaction(TenantAwareModel):
     
     def save(self, *args, **kwargs):
         if not self.transaction_number:
+            logger.info(f"🎯 [POSTransaction.save] === TRANSACTION NUMBER GENERATION START ===")
+            logger.info(f"🎯 [POSTransaction.save] Tenant ID: {self.tenant_id}")
+            
             # Generate unique transaction number
             prefix = "POS"
             year = timezone.now().year
             month = timezone.now().month
+            month_prefix = f"{prefix}-{year}{month:02d}-"
+            
+            logger.info(f"🎯 [POSTransaction.save] Month prefix: {month_prefix}")
             
             # Get the highest transaction number for this month
             # This ensures we always increment properly, even across days
-            month_prefix = f"{prefix}-{year}{month:02d}-"
             last_transaction = POSTransaction.objects.filter(
                 tenant_id=self.tenant_id,
                 transaction_number__startswith=month_prefix
             ).order_by('-transaction_number').first()
+            
+            logger.info(f"🎯 [POSTransaction.save] Last transaction found: {last_transaction.transaction_number if last_transaction else 'None'}")
             
             if last_transaction and last_transaction.transaction_number.startswith(month_prefix):
                 # Extract the sequence number from the last transaction
@@ -581,14 +588,18 @@ class POSTransaction(TenantAwareModel):
                     parts = last_transaction.transaction_number.replace(month_prefix, '').split('-')
                     last_sequence = int(parts[0])
                     next_sequence = last_sequence + 1
-                except (ValueError, IndexError):
+                    logger.info(f"🎯 [POSTransaction.save] Last sequence: {last_sequence}, Next: {next_sequence}")
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"🎯 [POSTransaction.save] Error parsing sequence: {e}")
                     # If we can't parse, start from 1
                     next_sequence = 1
             else:
                 # First transaction of the month
                 next_sequence = 1
+                logger.info(f"🎯 [POSTransaction.save] First transaction of month, starting with sequence: {next_sequence}")
             
             self.transaction_number = f"{month_prefix}{next_sequence:04d}"
+            logger.info(f"🎯 [POSTransaction.save] Generated transaction number: {self.transaction_number}")
             
             # Ensure uniqueness (handle race conditions with retry logic)
             max_attempts = 10
@@ -597,14 +608,21 @@ class POSTransaction(TenantAwareModel):
                 tenant_id=self.tenant_id, 
                 transaction_number=self.transaction_number
             ).exists() and attempt < max_attempts:
+                logger.warning(f"🎯 [POSTransaction.save] Transaction number {self.transaction_number} already exists, attempt {attempt + 1}")
                 next_sequence += 1
                 self.transaction_number = f"{month_prefix}{next_sequence:04d}"
                 attempt += 1
+                logger.info(f"🎯 [POSTransaction.save] Retrying with: {self.transaction_number}")
             
             if attempt >= max_attempts:
                 # Fallback: add timestamp to ensure uniqueness
                 import time
-                self.transaction_number = f"{month_prefix}{next_sequence:04d}-{int(time.time())}"
+                timestamp_suffix = int(time.time())
+                self.transaction_number = f"{month_prefix}{next_sequence:04d}-{timestamp_suffix}"
+                logger.warning(f"🎯 [POSTransaction.save] Max attempts reached, using timestamp fallback: {self.transaction_number}")
+            
+            logger.info(f"🎯 [POSTransaction.save] Final transaction number: {self.transaction_number}")
+            logger.info(f"🎯 [POSTransaction.save] === TRANSACTION NUMBER GENERATION END ===")
                 
         super().save(*args, **kwargs)
     
