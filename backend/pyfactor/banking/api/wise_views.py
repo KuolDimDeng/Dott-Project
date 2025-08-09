@@ -176,7 +176,6 @@ def setup_wise_account(request):
                     'account_number': f"****{account_last4}",
                     'balance': Decimal('0.00'),
                     'account_type': 'checking',
-                    'purpose': 'payments',
                     'integration_type': ContentType.objects.get_for_model(WiseItem),
                     'integration_id': wise_item.id,
                     'tenant_id': user.tenant_id if hasattr(user, 'tenant_id') else user.tenant.id if hasattr(user, 'tenant') else None
@@ -482,7 +481,6 @@ def connect_wise_account(request):
                         account_number=f"****{data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number']}",
                         balance=Decimal('0.00'),
                         account_type=data.get('account_type', 'checking'),
-                        purpose='payments',
                         integration_type=ContentType.objects.get_for_model(WiseItem),
                         integration_id=wise_item.id
                     )
