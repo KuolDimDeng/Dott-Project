@@ -105,17 +105,21 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo, onReceiptHandl
 
     setIsGenerating(true);
     try {
-      // Call backend API to send email (secure, server-side)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/sales/pos/send-receipt/`, {
+      // Call frontend API proxy to send email (handles auth properly)
+      const response = await fetch('/api/pos/send-receipt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Session ${document.cookie.split('sid=')[1]?.split(';')[0] || ''}`,
         },
         credentials: 'include',
         body: JSON.stringify({
+          type: 'email',
           to: customerEmail,
-          receipt: receiptData
+          receipt: receiptData,
+          emailContent: {
+            subject: `Receipt #${receiptData?.receipt?.number || 'N/A'}`,
+            html: true
+          }
         }),
       });
 
