@@ -26,16 +26,16 @@ export async function GET(request) {
     let endpoint;
     switch(statementType) {
       case 'balance-sheet':
-        endpoint = '/api/balance-sheet/';
+        endpoint = '/api/finance/api/balance-sheet/';
         break;
       case 'income-statement':
-        endpoint = '/api/profit-and-loss/';
+        endpoint = '/api/finance/api/profit-and-loss/';
         break;
       case 'cash-flow':
-        endpoint = '/api/cash-flow/';
+        endpoint = '/api/finance/api/cash-flow/';
         break;
       default:
-        endpoint = '/api/balance-sheet/';
+        endpoint = '/api/finance/api/balance-sheet/';
     }
     
     // Fetch from Django backend
@@ -203,7 +203,7 @@ export async function POST(request) {
     
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/financial-statements/generate/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/financial-statements/generate/`, {
       method: 'POST',
       headers: {
         'Authorization': `Session ${sessionId.value}`,

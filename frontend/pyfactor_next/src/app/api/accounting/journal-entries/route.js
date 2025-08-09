@@ -13,7 +13,7 @@ export async function GET(request) {
     }
     
     // Fetch from Django backend
-    const response = await fetch(`${API_BASE_URL}/journal-entries/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,
@@ -87,7 +87,7 @@ export async function POST(request) {
       }))
     };
     
-    const response = await fetch(`${API_BASE_URL}/journal-entries/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/`, {
       method: 'POST',
       headers: {
         'Authorization': `Session ${sessionId.value}`,
@@ -149,7 +149,7 @@ export async function PUT(request) {
       }))
     };
     
-    const response = await fetch(`${API_BASE_URL}/journal-entries/${id}/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/${id}/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Session ${sessionId.value}`,
@@ -195,7 +195,7 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Entry ID required' }, { status: 400 });
     }
     
-    const response = await fetch(`${API_BASE_URL}/journal-entries/${id}/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/${id}/`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Session ${sessionId.value}`,

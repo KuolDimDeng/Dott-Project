@@ -13,7 +13,7 @@ export async function GET(request) {
     }
     
     // Fetch from Django backend
-    const response = await fetch(`${API_BASE_URL}/api/chart-of-accounts/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/api/chart-of-accounts/`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,
@@ -84,7 +84,7 @@ export async function POST(request) {
       notes: body.notes || ''
     };
     
-    const response = await fetch(`${API_BASE_URL}/api/chart-of-accounts/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/api/chart-of-accounts/`, {
       method: 'POST',
       headers: {
         'Authorization': `Session ${sessionId.value}`,
@@ -146,7 +146,7 @@ export async function PUT(request) {
       notes: body.notes || ''
     };
     
-    const response = await fetch(`${API_BASE_URL}/api/chart-of-accounts/${id}/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/api/chart-of-accounts/${id}/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Session ${sessionId.value}`,
@@ -192,7 +192,7 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
     }
     
-    const response = await fetch(`${API_BASE_URL}/api/chart-of-accounts/${id}/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/api/chart-of-accounts/${id}/`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Session ${sessionId.value}`,

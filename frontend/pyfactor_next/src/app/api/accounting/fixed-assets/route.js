@@ -13,7 +13,7 @@ export async function GET(request) {
     }
     
     // Fetch from Django backend
-    const response = await fetch(`${API_BASE_URL}/fixed-assets/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/fixed-assets/`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,
@@ -96,7 +96,7 @@ export async function POST(request) {
       notes: body.notes || ''
     };
     
-    const response = await fetch(`${API_BASE_URL}/fixed-assets/`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/fixed-assets/`, {
       method: 'POST',
       headers: {
         'Authorization': `Session ${sessionId.value}`,

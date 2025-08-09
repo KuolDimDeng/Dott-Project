@@ -22,7 +22,8 @@ import {
   ScaleIcon,
   ArrowPathIcon,
   CheckCircleIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  CalculatorIcon
 } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help

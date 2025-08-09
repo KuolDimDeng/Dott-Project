@@ -24,7 +24,7 @@ export async function GET(request) {
     if (endDate) params.append('end_date', endDate);
     
     // Fetch from Django backend
-    const response = await fetch(`${API_BASE_URL}/general-ledger/?${params}`, {
+    const response = await fetch(`${API_BASE_URL}/api/finance/general-ledger/?${params}`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,
