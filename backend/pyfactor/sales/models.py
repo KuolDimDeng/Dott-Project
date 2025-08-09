@@ -494,7 +494,7 @@ class POSTransaction(TenantAwareModel):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    transaction_number = models.CharField(max_length=50, editable=False, unique=True)
+    transaction_number = models.CharField(max_length=50, editable=False)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_transactions')
     subtotal = models.DecimalField(max_digits=15, decimal_places=4, default=0)
     discount_amount = models.DecimalField(max_digits=15, decimal_places=4, default=0)
