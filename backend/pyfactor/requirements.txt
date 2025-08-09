@@ -45,7 +45,7 @@ stripe>=5.0.0
 posthog==6.0.0
 
 # Email services
-resend==2.5.0
+resend==2.5.1
 
 # User agent parsing
 user-agents==2.2.0

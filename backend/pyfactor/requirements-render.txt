@@ -135,4 +135,4 @@ google-auth-oauthlib==1.2.1
 
 # ASGI server - Used in run scripts (not needed for Render deployment)
 # uvicorn==0.34.0  # Commented out as Render uses gunicorn
-resend==2.5.0
+resend==2.5.1
