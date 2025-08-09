@@ -66,8 +66,12 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
       </div>
       
       <ul className="divide-y divide-gray-200">
-        {connections.map((connection) => (
-          <li key={connection.id}>
+        {connections.map((connection) => {
+          // Add defensive check for undefined connection
+          if (!connection) return null;
+          
+          return (
+          <li key={connection.id || Math.random()}>
             <div className="px-4 py-4 sm:px-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -77,7 +81,7 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                   <div className="ml-4">
                     <div className="flex items-center">
                       <p className="text-sm font-medium text-gray-900">
-                        {connection.account_nickname || 'Bank Account'}
+                        {connection.bank_name || connection.account_nickname || 'Bank Account'}
                       </p>
                       {connection.is_primary && (
                         <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -87,10 +91,10 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                     </div>
                     <p className="text-sm text-gray-500">
                       {connection.provider === 'plaid' ? 'Connected via Plaid' : 'Connected via Wise'}
-                      {' • '}****{connection.account_last4 || '****'}
+                      {' • '}****{connection.last4 || connection.account_last4 || '****'}
                     </p>
                     <div className="mt-2 flex items-center text-sm text-gray-500">
-                      {connection.is_active ? (
+                      {(connection.is_active !== false && connection.status !== 'inactive') ? (
                         <>
                           <CheckCircleIcon className="flex-shrink-0 mr-1.5 h-4 w-4 text-green-400" />
                           Active
@@ -101,15 +105,17 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                           Inactive
                         </>
                       )}
-                      <span className="ml-4">
-                        Connected {new Date(connection.created_at).toLocaleDateString()}
-                      </span>
+                      {connection.created_at && (
+                        <span className="ml-4">
+                          Connected {new Date(connection.created_at).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {!connection.is_primary && connection.is_active && (
+                  {!connection.is_primary && (connection.is_active !== false && connection.status !== 'inactive') && (
                     <button
                       onClick={() => onSetPrimary(connection.id)}
                       className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -141,7 +147,8 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
               </div>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );
