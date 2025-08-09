@@ -103,9 +103,10 @@ function GeneralLedgerManagement({ onNavigate }) {
     if (!tenantId) return;
 
     try {
-      const response = await accountingApi.chartOfAccounts.getAll();
+      const response = await fetch('/api/accounting/chart-of-accounts');
+      const data = await response.json();
       // Use real data from backend
-      setAccounts(Array.isArray(response) ? response : (response?.accounts || []));
+      setAccounts(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error('[GeneralLedger] Error fetching accounts:', error);
     }
@@ -125,12 +126,12 @@ function GeneralLedgerManagement({ onNavigate }) {
         end_date: dateRange.endDate
       };
 
-      const response = selectedAccount 
-        ? await accountingApi.generalLedger.getByAccount(selectedAccount, params)
-        : await accountingApi.generalLedger.getAll(params);
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`/api/accounting/general-ledger?${queryString}`);
+      const data = await response.json();
 
       // Use real data from backend
-      const entries = response?.entries || [];
+      const entries = data?.entries || [];
       setLedgerEntries(entries);
 
       // Calculate statistics

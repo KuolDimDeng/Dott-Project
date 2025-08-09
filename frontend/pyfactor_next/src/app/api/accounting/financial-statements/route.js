@@ -19,12 +19,27 @@ export async function GET(request) {
     
     // Build query params
     const params = new URLSearchParams();
-    params.append('type', statementType);
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
+    // Determine endpoint based on statement type
+    let endpoint;
+    switch(statementType) {
+      case 'balance-sheet':
+        endpoint = '/api/balance-sheet/';
+        break;
+      case 'income-statement':
+        endpoint = '/api/profit-and-loss/';
+        break;
+      case 'cash-flow':
+        endpoint = '/api/cash-flow/';
+        break;
+      default:
+        endpoint = '/api/balance-sheet/';
+    }
+    
     // Fetch from Django backend
-    const response = await fetch(`${API_BASE_URL}/financial-statements/?${params}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}?${params}`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,

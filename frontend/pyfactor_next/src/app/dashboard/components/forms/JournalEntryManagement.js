@@ -122,10 +122,11 @@ function JournalEntryManagement({ onNavigate }) {
     setLoading(true);
 
     try {
-      const response = await accountingApi.journalEntries.getAll();
+      const response = await fetch('/api/accounting/journal-entries');
+      const data = await response.json();
       
       // Use real data from backend
-      const entries = response?.entries || [];
+      const entries = data?.entries || [];
       setJournalEntries(entries);
 
       // Calculate stats
@@ -173,24 +174,11 @@ function JournalEntryManagement({ onNavigate }) {
     if (!tenantId) return;
 
     try {
-      const response = await accountingApi.chartOfAccounts.getAll().catch(err => {
-        logger.warn('[JournalEntryManagement] Accounts API error, using demo data:', err);
-        return null;
-      });
-
-      // Demo accounts fallback
-      const demoAccounts = [
-        { id: '1001', code: '1001', name: 'Bank Account', type: 'asset', normalBalance: 'debit' },
-        { id: '1200', code: '1200', name: 'Accounts Receivable', type: 'asset', normalBalance: 'debit' },
-        { id: '1500', code: '1500', name: 'Equipment', type: 'asset', normalBalance: 'debit' },
-        { id: '2100', code: '2100', name: 'Accounts Payable', type: 'liability', normalBalance: 'credit' },
-        { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'equity', normalBalance: 'credit' },
-        { id: '4000', code: '4000', name: 'Sales Revenue', type: 'revenue', normalBalance: 'credit' },
-        { id: '5100', code: '5100', name: 'Rent Expense', type: 'expense', normalBalance: 'debit' },
-        { id: '5200', code: '5200', name: 'Utilities Expense', type: 'expense', normalBalance: 'debit' }
-      ];
-
-      setAccounts(response?.accounts || demoAccounts);
+      const response = await fetch('/api/accounting/chart-of-accounts');
+      const data = await response.json();
+      
+      // Use real data from backend only
+      setAccounts(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error('[JournalEntryManagement] Error fetching accounts:', error);
     }
@@ -379,10 +367,18 @@ function JournalEntryManagement({ onNavigate }) {
       };
 
       if (selectedEntry) {
-        await accountingApi.journalEntries.update(selectedEntry.id, entryData);
+        await fetch(`/api/accounting/journal-entries?id=${selectedEntry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entryData)
+        });
         toast.success('Journal entry updated successfully');
       } else {
-        await accountingApi.journalEntries.create(entryData);
+        await fetch('/api/accounting/journal-entries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entryData)
+        });
         toast.success('Journal entry created successfully');
       }
 
@@ -398,7 +394,9 @@ function JournalEntryManagement({ onNavigate }) {
   // Handle confirm delete
   const handleConfirmDelete = async () => {
     try {
-      await accountingApi.journalEntries.delete(selectedEntry.id);
+      await fetch(`/api/accounting/journal-entries?id=${selectedEntry.id}`, {
+        method: 'DELETE'
+      });
       toast.success('Journal entry deleted successfully');
       setIsDeleteModalOpen(false);
       fetchJournalEntries();
@@ -416,7 +414,11 @@ function JournalEntryManagement({ onNavigate }) {
     }
 
     try {
-      await accountingApi.journalEntries.update(entry.id, { ...entry, status: 'posted' });
+      await fetch(`/api/accounting/journal-entries?id=${entry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...entry, status: 'posted' })
+      });
       toast.success('Journal entry posted successfully');
       fetchJournalEntries();
     } catch (error) {

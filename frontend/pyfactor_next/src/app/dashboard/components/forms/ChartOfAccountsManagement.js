@@ -119,7 +119,8 @@ function ChartOfAccountsManagement({ onNavigate }) {
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const data = await accountingApi.chartOfAccounts.getAll();
+      const response = await fetch('/api/accounting/chart-of-accounts');
+      const data = await response.json();
       
       // Use the real data from the backend
       setAccounts(Array.isArray(data) ? data : []);
@@ -184,12 +185,20 @@ function ChartOfAccountsManagement({ onNavigate }) {
     try {
       if (selectedAccount) {
         // Update existing account
-        await accountingApi.chartOfAccounts.update(selectedAccount.id, formData);
+        await fetch(`/api/accounting/chart-of-accounts?id=${selectedAccount.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
         toast.success('Account updated successfully');
         setIsEditModalOpen(false);
       } else {
         // Create new account
-        await accountingApi.chartOfAccounts.create(formData);
+        await fetch('/api/accounting/chart-of-accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
         toast.success('Account created successfully');
         setIsCreateModalOpen(false);
       }
@@ -207,7 +216,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
     if (!selectedAccount) return;
     
     try {
-      await accountingApi.chartOfAccounts.delete(selectedAccount.id);
+      await fetch(`/api/accounting/chart-of-accounts?id=${selectedAccount.id}`, {
+        method: 'DELETE'
+      });
       toast.success('Account deleted successfully');
       setIsDeleteModalOpen(false);
       loadAccounts();
