@@ -162,12 +162,12 @@ def setup_wise_account(request):
                     'stripe_external_account_id': external_account.id,
                     'stripe_bank_account_token': token.id,
                     'is_verified': False,
-                    'tenant': user.tenant
+                    'tenant_id': user.tenant_id if hasattr(user, 'tenant_id') else user.tenant.id if hasattr(user, 'tenant') else None
                 }
             )
             
             # Also create a BankAccount record for compatibility
-            from django.contrib.contenttypes.models import ContentType
+            # ContentType already imported at top of file
             bank_account, _ = BankAccount.objects.update_or_create(
                 user=user,
                 bank_name=data['bank_name'],
@@ -178,7 +178,7 @@ def setup_wise_account(request):
                     'purpose': 'payments',
                     'integration_type': ContentType.objects.get_for_model(WiseItem),
                     'integration_id': wise_item.id,
-                    'tenant': user.tenant
+                    'tenant_id': user.tenant_id if hasattr(user, 'tenant_id') else user.tenant.id if hasattr(user, 'tenant') else None
                 }
             )
         
@@ -454,9 +454,10 @@ def connect_wise_account(request):
                     logger.info(f"[Wise Connect] Creating WiseItem for user {user.email}")
                     
                     # Create WiseItem first to get its ID
+                    # Note: WiseItem inherits tenant_id from TenantAwareModel, not tenant
                     wise_item = WiseItem.objects.create(
                         user=user,
-                        tenant=user.tenant,
+                        tenant_id=user.tenant_id if hasattr(user, 'tenant_id') else user.tenant.id if hasattr(user, 'tenant') else None,
                         bank_name=data.get('bank_name', data['account_nickname']),
                         bank_country=data['country'],
                         account_holder_name=data['account_holder_name'],
@@ -472,9 +473,10 @@ def connect_wise_account(request):
                     logger.info(f"[Wise Connect] Created WiseItem with ID: {wise_item.id}")
                     
                     # Create BankAccount with correct integration_id
+                    # Note: BankAccount also uses tenant_id, not tenant
                     bank_account = BankAccount.objects.create(
                         user=user,
-                        tenant=user.tenant,
+                        tenant_id=user.tenant_id if hasattr(user, 'tenant_id') else user.tenant.id if hasattr(user, 'tenant') else None,
                         bank_name=data.get('bank_name', data['account_nickname']),
                         account_number=f"****{data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number']}",
                         balance=Decimal('0.00'),
