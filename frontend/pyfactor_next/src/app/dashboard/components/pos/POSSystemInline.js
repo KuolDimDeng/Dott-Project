@@ -144,6 +144,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [defaultTaxRate, setDefaultTaxRate] = useState(0); // Business default tax rate
   const [taxJurisdiction, setTaxJurisdiction] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [amountTendered, setAmountTendered] = useState('');
   const [notes, setNotes] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -857,13 +858,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         total_amount: parseFloat(totals.total) || 0 // Ensure it's a number
       };
 
-      // Add amount_tendered for cash payments (customer pays exact amount by default)
+      // Add amount_tendered for cash payments
       if (paymentMethod === 'cash') {
-        // Ensure amount_tendered is set and is a valid number
         const totalAmount = parseFloat(totals.total) || 0;
-        saleData.amount_tendered = totalAmount;
-        saleData.change_due = 0; // Exact payment by default
-        console.log('[POS] Cash payment - amount_tendered:', saleData.amount_tendered, 'total:', totalAmount);
+        const customerPaid = parseFloat(amountTendered) || totalAmount; // Use actual amount tendered or default to exact
+        const changeDue = Math.max(0, customerPaid - totalAmount);
+        
+        saleData.amount_tendered = customerPaid;
+        saleData.change_due = changeDue;
+        console.log('[POS] Cash payment - amount_tendered:', saleData.amount_tendered, 'total:', totalAmount, 'change:', changeDue);
       }
 
       // Add shipping address if using it
@@ -1165,6 +1168,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     setTaxRate(0);
     setNotes('');
     setProductSearchTerm('');
+    setAmountTendered(''); // Reset cash drawer amount
   };
 
   const totals = calculateTotals();
@@ -1173,6 +1177,24 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const handleReceiptDialogClose = () => {
     setShowReceiptDialog(false);
     setCompletedSaleData(null);
+  };
+
+  const handleReceiptHandled = () => {
+    console.log('[POS] Receipt handled, resetting POS for next customer...');
+    
+    // Industry standard: Reset POS immediately for next customer
+    resetCart();
+    
+    // Clear any tax jurisdiction from previous sale
+    setTaxJurisdiction(null);
+    
+    // Show brief success message
+    toast.success('Ready for next customer!', {
+      duration: 2000,
+      icon: '🛒'
+    });
+    
+    console.log('[POS] POS reset complete');
   };
 
   // Filter products based on search
@@ -1251,6 +1273,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         onClose={handleReceiptDialogClose}
         saleData={completedSaleData}
         businessInfo={businessInfo}
+        onReceiptHandled={handleReceiptHandled}
       />
 
       {/* Header */}
@@ -1680,6 +1703,26 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                 </div>
                 
                 {/* Tax Jurisdiction Display */}
+                {!taxJurisdiction && taxRate === 0 && (
+                  <div className="mt-2 p-3 rounded-lg text-xs border bg-gray-50 border-gray-200">
+                    <div className="font-medium mb-1 text-gray-900">
+                      Tax Source: Manual Entry
+                    </div>
+                    <div className="text-gray-700">
+                      Location: Not specified
+                    </div>
+                    <div className="text-gray-700 mt-1">
+                      <div className="font-medium mb-1">Tax Breakdown:</div>
+                      <div className="text-gray-600">No tax applied (0.00%)</div>
+                    </div>
+                    <div className="border-t border-gray-200 pt-1 mt-2">
+                      <div className="flex justify-between font-medium text-gray-900">
+                        <span>Total Rate:</span>
+                        <span>0.00%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {taxJurisdiction && (
                   <div className={`mt-2 p-3 rounded-lg text-xs border ${
                     taxJurisdiction.tax_calculation_method === 'international_export' 
@@ -1689,14 +1732,17 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                     <div className={`font-medium mb-2 flex items-center justify-between ${
                       taxJurisdiction.tax_calculation_method === 'international_export' 
                         ? 'text-green-900' 
+                        : taxJurisdiction.tax_calculation_method === 'manual'
+                        ? 'text-gray-900'
                         : 'text-blue-900'
                     }`}>
                       <span>
-                        Tax Source: {taxJurisdiction.tax_calculation_method === 'destination' ? 'Customer Shipping Address' :
-                                    taxJurisdiction.tax_calculation_method === 'billing' ? 'Customer Billing Address' :
+                        Tax Source: {taxJurisdiction.tax_calculation_method === 'destination' ? 'Customer Address' :
+                                    taxJurisdiction.tax_calculation_method === 'billing' ? 'Customer Billing' :
                                     taxJurisdiction.tax_calculation_method === 'origin' ? 'Business Location' :
-                                    taxJurisdiction.tax_calculation_method === 'international_export' ? 'International Sale (Tax-Free Export)' :
-                                    taxJurisdiction.tax_calculation_method}
+                                    taxJurisdiction.tax_calculation_method === 'international_export' ? 'Export (Tax-Free)' :
+                                    taxJurisdiction.tax_calculation_method === 'manual' ? 'Manual Entry' :
+                                    'Automatic'}
                       </span>
                       {taxJurisdiction.tax_jurisdiction?.source === 'tenant_override' && (
                         <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
@@ -1763,7 +1809,13 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               </label>
               <select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+                onChange={(e) => {
+                  setPaymentMethod(e.target.value);
+                  // Reset amount tendered when changing payment method
+                  if (e.target.value !== 'cash') {
+                    setAmountTendered('');
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="cash">{t('cash')}</option>
@@ -1771,6 +1823,80 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                 <option value="mobile">{t('mobileMoney')}</option>
               </select>
             </div>
+
+            {/* Cash Payment Details */}
+            {paymentMethod === 'cash' && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Amount Tendered
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder={totals.total}
+                      value={amountTendered}
+                      onChange={(e) => setAmountTendered(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                  
+                  {/* Change Calculation */}
+                  {amountTendered && parseFloat(amountTendered) >= parseFloat(totals.total) && (
+                    <div className="p-3 bg-white border border-green-300 rounded-lg">
+                      <div className="flex justify-between items-center text-lg font-semibold text-green-800">
+                        <span>Change Due:</span>
+                        <span className="text-2xl">
+                          ${(parseFloat(amountTendered) - parseFloat(totals.total)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Insufficient Payment Warning */}
+                  {amountTendered && parseFloat(amountTendered) < parseFloat(totals.total) && (
+                    <div className="p-3 bg-red-50 border border-red-300 rounded-lg">
+                      <div className="flex justify-between items-center text-red-800">
+                        <span>Insufficient Payment</span>
+                        <span className="font-semibold">
+                          Short: ${(parseFloat(totals.total) - parseFloat(amountTendered)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Quick Amount Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={() => setAmountTendered(totals.total)}
+                      className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                    >
+                      Exact
+                    </button>
+                    <button
+                      onClick={() => setAmountTendered((Math.ceil(parseFloat(totals.total) / 5) * 5).toString())}
+                      className="px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+                    >
+                      $5
+                    </button>
+                    <button
+                      onClick={() => setAmountTendered((Math.ceil(parseFloat(totals.total) / 10) * 10).toString())}
+                      className="px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+                    >
+                      $10
+                    </button>
+                    <button
+                      onClick={() => setAmountTendered((Math.ceil(parseFloat(totals.total) / 20) * 20).toString())}
+                      className="px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+                    >
+                      $20
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="mt-4">

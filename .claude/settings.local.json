@@ -280,7 +280,8 @@
       "Bash(/tmp/test_whatsapp_production.sh:*)",
       "Bash(./remove_amplify_imports.sh)",
       "Bash(timeout 60 pnpm build:*)",
-      "Bash(./fix_amplify_syntax.sh:*)"
+      "Bash(./fix_amplify_syntax.sh:*)",
+      "Bash(timeout 60 pnpm:*)"
     ],
     "deny": []
   }

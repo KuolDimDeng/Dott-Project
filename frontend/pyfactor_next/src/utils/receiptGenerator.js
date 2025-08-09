@@ -47,7 +47,9 @@ export class ReceiptGenerator {
       },
       payment: {
         method: saleData.payment_method || 'cash',
-        amount: saleData.total_amount || '0.00'
+        amount: saleData.total_amount || '0.00',
+        amountTendered: saleData.amount_tendered || saleData.total_amount || '0.00',
+        changeDue: saleData.change_due || '0.00'
       },
       notes: saleData.notes || ''
     };
@@ -160,7 +162,12 @@ export class ReceiptGenerator {
         
         <div class="payment-info">
           <div>Payment Method: ${this.formatPaymentMethod(payment.method)}</div>
-          <div>Amount Paid: $${payment.amount}</div>
+          ${payment.method === 'cash' ? `
+            <div>Amount Tendered: $${payment.amountTendered}</div>
+            ${parseFloat(payment.changeDue) > 0 ? `<div>Change Due: $${payment.changeDue}</div>` : ''}
+          ` : `
+            <div>Amount Paid: $${payment.amount}</div>
+          `}
         </div>
         
         ${notes ? `
@@ -296,8 +303,19 @@ export class ReceiptGenerator {
     pdf.setFont(undefined, 'normal');
     pdf.text(`Payment: ${this.formatPaymentMethod(payment.method)}`, 5, y);
     y += lineHeight;
-    pdf.text(`Amount Paid: $${payment.amount}`, 5, y);
-    y += lineHeight + 3;
+    
+    if (payment.method === 'cash') {
+      pdf.text(`Amount Tendered: $${payment.amountTendered}`, 5, y);
+      y += lineHeight;
+      if (parseFloat(payment.changeDue) > 0) {
+        pdf.text(`Change Due: $${payment.changeDue}`, 5, y);
+        y += lineHeight;
+      }
+    } else {
+      pdf.text(`Amount Paid: $${payment.amount}`, 5, y);
+      y += lineHeight;
+    }
+    y += 3;
     
     // Notes
     if (notes) {
@@ -419,7 +437,15 @@ export class ReceiptGenerator {
     text += `==========================================\n`;
     text += `TOTAL: $${totals.total}\n`;
     text += `Payment: ${this.formatPaymentMethod(payment.method)}\n`;
-    text += `Amount Paid: $${payment.amount}\n`;
+    
+    if (payment.method === 'cash') {
+      text += `Amount Tendered: $${payment.amountTendered}\n`;
+      if (parseFloat(payment.changeDue) > 0) {
+        text += `Change Due: $${payment.changeDue}\n`;
+      }
+    } else {
+      text += `Amount Paid: $${payment.amount}\n`;
+    }
     
     if (notes) {
       text += `\nNotes: ${notes}\n`;

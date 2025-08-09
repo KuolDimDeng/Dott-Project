@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import ReceiptGenerator from '@/utils/receiptGenerator';
 
-const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
+const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo, onReceiptHandled }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
   const [receiptGenerator, setReceiptGenerator] = useState(null);
@@ -56,6 +56,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       };
       
       toast.success('Receipt sent to printer');
+      
+      // Auto-close after successful print and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('Print error:', error);
       toast.error('Failed to print receipt');
@@ -74,6 +81,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       pdf.save(`Receipt-${receiptData.receipt.number}.pdf`);
       
       toast.success('PDF receipt downloaded');
+      
+      // Auto-close after successful download and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF');
@@ -119,6 +133,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       }
 
       toast.success(`Receipt emailed to ${customerEmail}`);
+      
+      // Auto-close after successful email and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('Email error:', error);
       toast.error('Failed to send email receipt');
@@ -146,6 +167,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
         await navigator.clipboard.writeText(textReceipt);
         toast.success('Receipt copied to clipboard');
       }
+      
+      // Auto-close after successful share and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('Share error:', error);
       toast.error('Failed to share receipt');
@@ -286,7 +314,10 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex space-x-3">
                       <button
-                        onClick={onClose}
+                        onClick={() => {
+                          onClose();
+                          if (onReceiptHandled) onReceiptHandled();
+                        }}
                         className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         Skip Receipt

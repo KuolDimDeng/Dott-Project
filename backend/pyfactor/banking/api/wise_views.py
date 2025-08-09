@@ -429,11 +429,14 @@ def connect_wise_account(request):
         user = request.user
         data = request.data
         
+        logger.info(f"[Wise Connect] Request data: {data}")
+        
         # Validate required fields
         required_fields = ['account_nickname', 'account_holder_name', 'account_type', 'currency', 'country', 'account_number']
         missing_fields = [field for field in required_fields if not data.get(field)]
         
         if missing_fields:
+            logger.error(f"[Wise Connect] Missing fields: {missing_fields}")
             return Response({
                 'success': False,
                 'error': f'Missing required fields: {", ".join(missing_fields)}'
@@ -446,38 +449,49 @@ def connect_wise_account(request):
             stripe_bank_account_id = f"ba_test_{user.id}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
             
             # Store bank connection in database
-            with transaction.atomic():
-                bank_account = BankAccount.objects.create(
-                    user=user,
-                    tenant=user.tenant,
-                    bank_name=data.get('bank_name', data['account_nickname']),
-                    account_number=f"****{data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number']}",
-                    balance=Decimal('0.00'),
-                    account_type=data.get('account_type', 'checking'),
-                    purpose='payments',
-                    integration_type=ContentType.objects.get_for_model(WiseItem),
-                    integration_id=0  # Will be updated after WiseItem creation
-                )
-                
-                # Create WiseItem for tracking
-                wise_item = WiseItem.objects.create(
-                    user=user,
-                    tenant=user.tenant,
-                    bank_name=data.get('bank_name', data['account_nickname']),
-                    bank_country=data['country'],
-                    account_holder_name=data['account_holder_name'],
-                    currency=data['currency'],
-                    account_number_last4=data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number'],
-                    routing_number_last4=data.get('routing_number', '')[-4:] if data.get('routing_number') else '',
-                    iban_last4=data.get('iban', '')[-4:] if data.get('iban') else '',
-                    stripe_external_account_id=stripe_bank_account_id,
-                    stripe_bank_account_token=stripe_bank_account_id,
-                    is_verified=True  # In test mode
-                )
-                
-                # Update the BankAccount integration_id
-                bank_account.integration_id = wise_item.id
-                bank_account.save()
+            try:
+                with transaction.atomic():
+                    logger.info(f"[Wise Connect] Creating WiseItem for user {user.email}")
+                    
+                    # Create WiseItem first to get its ID
+                    wise_item = WiseItem.objects.create(
+                        user=user,
+                        tenant=user.tenant,
+                        bank_name=data.get('bank_name', data['account_nickname']),
+                        bank_country=data['country'],
+                        account_holder_name=data['account_holder_name'],
+                        currency=data['currency'],
+                        account_number_last4=data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number'],
+                        routing_number_last4=data.get('routing_number', '')[-4:] if data.get('routing_number') else '',
+                        iban_last4=data.get('iban', '')[-4:] if data.get('iban') else '',
+                        stripe_external_account_id=stripe_bank_account_id,
+                        stripe_bank_account_token=stripe_bank_account_id,
+                        is_verified=True  # In test mode
+                    )
+                    
+                    logger.info(f"[Wise Connect] Created WiseItem with ID: {wise_item.id}")
+                    
+                    # Create BankAccount with correct integration_id
+                    bank_account = BankAccount.objects.create(
+                        user=user,
+                        tenant=user.tenant,
+                        bank_name=data.get('bank_name', data['account_nickname']),
+                        account_number=f"****{data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number']}",
+                        balance=Decimal('0.00'),
+                        account_type=data.get('account_type', 'checking'),
+                        purpose='payments',
+                        integration_type=ContentType.objects.get_for_model(WiseItem),
+                        integration_id=wise_item.id
+                    )
+                    
+                    logger.info(f"[Wise Connect] Created BankAccount with ID: {bank_account.id}")
+                    
+            except Exception as db_error:
+                logger.error(f"[Wise Connect] Database error: {str(db_error)}")
+                return Response({
+                    'success': False,
+                    'error': f'Database error: {str(db_error)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             logger.info(f"[Wise Connect] Created bank connection for user {user.email} in {data['country']}")
             
@@ -518,16 +532,24 @@ def list_bank_connections(request):
     """
     try:
         user = request.user
+        logger.info(f"[List Connections] Fetching connections for user {user.email}")
         
         # Get all bank connections for the user
         connections = BankAccount.objects.filter(user=user).order_by('-created_at')
+        logger.info(f"[List Connections] Found {connections.count()} connections")
         
         connections_data = []
         for conn in connections:
+            logger.info(f"[List Connections] Processing connection {conn.id}")
+            
             # Try to get WiseItem details if available
             wise_item = None
-            if hasattr(conn, 'integration') and conn.integration:
-                wise_item = conn.integration
+            try:
+                if hasattr(conn, 'integration') and conn.integration:
+                    wise_item = conn.integration
+                    logger.info(f"[List Connections] Found WiseItem for connection {conn.id}")
+            except Exception as integration_error:
+                logger.warning(f"[List Connections] Could not fetch integration for connection {conn.id}: {integration_error}")
             
             connections_data.append({
                 'id': str(conn.id),
