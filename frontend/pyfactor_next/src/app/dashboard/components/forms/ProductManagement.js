@@ -2249,55 +2249,89 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       {
         Header: 'Actions',
         id: 'actions',
-        Cell: ({ row }) => (
-          <div className="flex space-x-2">
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-blue-700 text-blue-700 hover:bg-blue-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails(row.original);
-              }}
-            >
-              View
-            </button>
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-purple-700 text-purple-700 hover:bg-purple-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditClick(row.original);
-              }}
-            >
-              Edit
-            </button>
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('🔴 [UI DELETE] Delete button clicked for product:', row.original);
-                console.log('🔴 [UI DELETE] Product details:', {
-                  id: row.original.id,
-                  name: row.original.name,
-                  product_code: row.original.product_code
-                });
-                setProductToDelete(row.original);
-                setDeleteDialogOpen(true);
-                console.log('🔴 [UI DELETE] Delete dialog opened');
-              }}
-            >
-              Delete
-            </button>
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-green-700 text-green-700 hover:bg-green-50 flex items-center"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleGenerateBarcode(row.original);
-              }}
-            >
-              <QrCodeIcon />
-              <span className="ml-1">QR</span>
-            </button>
-          </div>
-        ),
+        Cell: ({ row }) => {
+          // Create a simple inline delete handler for each row
+          const handleDelete = () => {
+            console.log('🔴 DELETE: Button clicked');
+            console.log('🔴 DELETE: Product:', row.original);
+            
+            // Direct API call without complex state management
+            if (window.confirm(`Are you sure you want to delete "${row.original.name}"?`)) {
+              console.log('🔴 DELETE: User confirmed deletion');
+              
+              // Make the delete API call directly
+              fetch(`/api/inventory/products/${row.original.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+              .then(response => {
+                console.log('🔴 DELETE: Response status:', response.status);
+                if (response.ok) {
+                  console.log('🔴 DELETE: Product deleted successfully');
+                  toast.success('Product deleted successfully');
+                  // Refresh the products list
+                  fetchProducts();
+                } else {
+                  throw new Error('Failed to delete product');
+                }
+              })
+              .catch(error => {
+                console.error('🔴 DELETE: Error:', error);
+                toast.error('Failed to delete product');
+              });
+            }
+          };
+          
+          return (
+            <div className="flex space-x-2">
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-blue-700 text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails(row.original);
+                }}
+              >
+                View
+              </button>
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-purple-700 text-purple-700 hover:bg-purple-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(row.original);
+                }}
+              >
+                Edit
+              </button>
+              
+              {/* Simplified Delete Button */}
+              <button 
+                type="button"
+                className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                Delete
+              </button>
+              
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-green-700 text-green-700 hover:bg-green-50 flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleGenerateBarcode(row.original);
+                }}
+              >
+                <QrCodeIcon />
+                <span className="ml-1">QR</span>
+              </button>
+            </div>
+          );
+        },
       },
     ],
     []
@@ -2538,11 +2572,35 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   </svg>
                 </button>
                 <button
-                  onClick={() => {
-                    setProductToDelete(product);
-                    setDeleteDialogOpen(true);
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔴 DELETE ICON: Clicked for product:', product);
+                    
+                    // Simple confirmation and delete
+                    if (window.confirm(`Delete "${product.name}"?`)) {
+                      console.log('🔴 DELETE ICON: Confirmed, deleting...');
+                      
+                      fetch(`/api/inventory/products/${product.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                      })
+                      .then(res => {
+                        if (res.ok) {
+                          toast.success('Product deleted');
+                          fetchProducts();
+                        } else {
+                          toast.error('Delete failed');
+                        }
+                      })
+                      .catch(err => {
+                        console.error('🔴 DELETE ICON: Error:', err);
+                        toast.error('Delete error');
+                      });
+                    }
                   }}
-                  className="text-red-600 hover:text-red-900 mr-3"
+                  className="text-red-600 hover:text-red-900 mr-3 focus:outline-none"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -3051,6 +3109,18 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             </svg>
             Filter
           </button>
+          
+          {/* TEST BUTTON - REMOVE AFTER DEBUGGING */}
+          <button
+            className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
+            onClick={() => {
+              console.log('🟡 TEST BUTTON CLICKED!');
+              alert('Test button works! JavaScript is running.');
+            }}
+          >
+            Test JS
+          </button>
+          
           <button
             className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             onClick={() => {

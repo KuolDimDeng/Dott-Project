@@ -128,12 +128,12 @@ export const routeRegistry = {
     description: 'Sales terminal and checkout'
   },
   'products': {
-    component: enhancedLazy(() => import('../components/forms/ProductManagementClient'), 'Product Management'),
+    component: enhancedLazy(() => import('../components/forms/ProductManagementClientOnly'), 'Product Management'),
     title: 'Products',
     description: 'Manage product catalog'
   },
   'product-management': {
-    component: enhancedLazy(() => import('../components/forms/ProductManagementClient'), 'Product Management'),
+    component: enhancedLazy(() => import('../components/forms/ProductManagementClientOnly'), 'Product Management'),
     title: 'Product Management',
     description: 'Manage products'
   },

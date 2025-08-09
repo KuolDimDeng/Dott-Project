@@ -519,17 +519,32 @@ class Auth0UserProfileView(APIView):
                     from users.models import Business, BusinessDetails
                     business_obj = Business.objects.filter(id=onboarding_progress.business_id).first()
                     if business_obj:
-                        # Try to get business details
-                        try:
-                            business_details = business_obj.details
-                            if business_details and business_details.country:
-                                business_country = str(business_details.country.code)
-                                business_country_name = str(business_details.country.name)
-                                logger.info(f"🔥 [USER_PROFILE] Found business country: {business_country} ({business_country_name})")
-                        except BusinessDetails.DoesNotExist:
-                            logger.warning(f"🔥 [USER_PROFILE] No BusinessDetails found for business {business_obj.id}")
-                        except Exception as e:
-                            logger.warning(f"🔥 [USER_PROFILE] Error accessing BusinessDetails: {str(e)}")
+                        # First check if country is stored directly on the business
+                        if hasattr(business_obj, 'country') and business_obj.country:
+                            business_country = str(business_obj.country)
+                            logger.info(f"🔥 [USER_PROFILE] Found country directly on business: {business_country}")
+                            # Try to get the country name from django-countries
+                            try:
+                                from django_countries import countries
+                                country_dict = dict(countries)
+                                if business_country in country_dict:
+                                    business_country_name = country_dict[business_country]
+                                    logger.info(f"🔥 [USER_PROFILE] Country name: {business_country_name}")
+                            except Exception as e:
+                                logger.warning(f"🔥 [USER_PROFILE] Failed to get country name: {str(e)}")
+                        
+                        # If not found directly, try to get from business details
+                        if not business_country:
+                            try:
+                                business_details = business_obj.details
+                                if business_details and business_details.country:
+                                    business_country = str(business_details.country.code)
+                                    business_country_name = str(business_details.country.name)
+                                    logger.info(f"🔥 [USER_PROFILE] Found business country from details: {business_country} ({business_country_name})")
+                            except BusinessDetails.DoesNotExist:
+                                logger.warning(f"🔥 [USER_PROFILE] No BusinessDetails found for business {business_obj.id}")
+                            except Exception as e:
+                                logger.warning(f"🔥 [USER_PROFILE] Error accessing BusinessDetails: {str(e)}")
                 except Exception as e:
                     logger.warning(f"🔥 [USER_PROFILE] Failed to get business country: {str(e)}")
             
