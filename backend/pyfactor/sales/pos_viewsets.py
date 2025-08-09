@@ -275,7 +275,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                         'change_due': str(pos_transaction.change_due),
                         'status': pos_transaction.status,
                         'created_at': pos_transaction.created_at.isoformat(),
-                        'customer_name': pos_transaction.customer.customerName if pos_transaction.customer else None,
+                        'customer_name': pos_transaction.customer.business_name if pos_transaction.customer else None,
                         'tax_calculation_method': pos_transaction.tax_calculation_method,
                         'tax_jurisdiction': pos_transaction.tax_jurisdiction
                     },
