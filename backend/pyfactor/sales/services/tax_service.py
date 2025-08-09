@@ -202,6 +202,11 @@ class TaxService:
         For USA, returns state and county rates separately.
         """
         try:
+            # Ensure database connection is ready
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            
             rates = {
                 'state_rate': Decimal('0'),
                 'county_rate': Decimal('0'),
@@ -260,25 +265,33 @@ class TaxService:
             if country != 'US':
                 logger.info(f"[TaxService] Looking up tax rate for country: {country}")
                 
-                # Hard-coded fallback for South Sudan
-                if country == 'SS':
-                    logger.info(f"[TaxService] Using hard-coded rate for South Sudan: 18%")
-                    rates['total_rate'] = Decimal('0.18')
-                    rates['components'].append({
-                        'type': 'country',
-                        'name': 'South Sudan',
-                        'rate': '0.18'
-                    })
-                    return rates
+                # Try multiple query approaches to handle potential timing issues
+                country_rate = None
                 
+                # Approach 1: Standard query with explicit empty string
                 country_rate = GlobalSalesTaxRate.objects.filter(
                     country=country,
                     region_code='',
                     is_current=True
                 ).first()
                 
+                # Approach 2: If not found, try with __exact lookup
+                if not country_rate:
+                    country_rate = GlobalSalesTaxRate.objects.filter(
+                        country__exact=country,
+                        region_code__exact='',
+                        is_current=True
+                    ).first()
+                
+                # Approach 3: If still not found, try without region_code filter
+                if not country_rate:
+                    country_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        is_current=True
+                    ).exclude(region_code__isnull=False).exclude(region_code__gt='').first()
+                
                 if country_rate:
-                    logger.info(f"[TaxService] Found tax rate for {country}: {country_rate.rate * 100}%")
+                    logger.info(f"[TaxService] Found tax rate for {country}: {country_rate.rate * 100}% (rate object: {country_rate})")
                     rates['total_rate'] = country_rate.rate
                     rates['components'].append({
                         'type': 'country',
@@ -287,28 +300,9 @@ class TaxService:
                     })
                 else:
                     logger.warning(f"[TaxService] No tax rate found for country: {country}")
-                    
-                    # Additional hard-coded rates for common African countries
-                    hardcoded_rates = {
-                        'KE': ('Kenya', Decimal('0.16')),
-                        'NG': ('Nigeria', Decimal('0.075')),
-                        'GH': ('Ghana', Decimal('0.125')),
-                        'UG': ('Uganda', Decimal('0.18')),
-                        'TZ': ('Tanzania', Decimal('0.18')),
-                        'RW': ('Rwanda', Decimal('0.18')),
-                        'ET': ('Ethiopia', Decimal('0.15')),
-                        'ZA': ('South Africa', Decimal('0.15')),
-                    }
-                    
-                    if country in hardcoded_rates:
-                        name, rate = hardcoded_rates[country]
-                        logger.info(f"[TaxService] Using hard-coded rate for {name}: {rate * 100}%")
-                        rates['total_rate'] = rate
-                        rates['components'].append({
-                            'type': 'country',
-                            'name': name,
-                            'rate': str(rate)
-                        })
+                    # Log all rates for this country for debugging
+                    all_rates = GlobalSalesTaxRate.objects.filter(country=country)
+                    logger.warning(f"[TaxService] All rates for {country}: {list(all_rates.values('region_code', 'rate', 'is_current'))}")
                 
                 return rates
             

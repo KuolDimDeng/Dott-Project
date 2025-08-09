@@ -16,27 +16,28 @@ logger = logging.getLogger(__name__)
 
 # Try to import Resend, but don't fail if not available
 try:
-    from resend import Resend
+    import resend
     RESEND_AVAILABLE = True
     logger.info('Resend package imported successfully')
 except ImportError as e:
     RESEND_AVAILABLE = False
     logger.error(f'Resend package not installed: {e}. Email functionality will be disabled.')
 
-# Initialize Resend client if API key is available and package is installed
-resend_client = None
+# Initialize Resend with API key if available and package is installed
+resend_configured = False
 if RESEND_AVAILABLE:
     api_key = getattr(settings, 'RESEND_API_KEY', None)
     if api_key:
         try:
-            resend_client = Resend(api_key=api_key)
-            logger.info(f'Resend client initialized with API key: {api_key[:10]}...')
+            resend.api_key = api_key
+            resend_configured = True
+            logger.info(f'Resend configured with API key: {api_key[:10]}...')
         except Exception as e:
-            logger.error(f'Failed to initialize Resend client: {e}')
+            logger.error(f'Failed to configure Resend: {e}')
     else:
         logger.warning('RESEND_API_KEY not found in settings')
 else:
-    logger.warning('Resend package not available, skipping client initialization')
+    logger.warning('Resend package not available, skipping configuration')
 
 
 @api_view(['POST'])
@@ -58,7 +59,7 @@ def send_receipt_email(request):
             )
         
         # Check if Resend is configured
-        if not resend_client:
+        if not resend_configured:
             error_details = []
             if not RESEND_AVAILABLE:
                 error_details.append('Resend package not installed')
@@ -76,7 +77,7 @@ def send_receipt_email(request):
                     'debug': {
                         'resend_available': RESEND_AVAILABLE,
                         'api_key_configured': bool(getattr(settings, 'RESEND_API_KEY', None)),
-                        'client_initialized': bool(resend_client)
+                        'resend_configured': resend_configured
                     }
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
@@ -91,7 +92,7 @@ def send_receipt_email(request):
         text_content = generate_receipt_text(receipt_data)
         
         # Send email using Resend
-        response = resend_client.emails.send({
+        response = resend.Emails.send({
             "from": "Dott POS <noreply@dottapps.com>",
             "to": [email_to],
             "subject": f"Receipt #{receipt_number} - {business_name}",
