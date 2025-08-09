@@ -26,6 +26,7 @@ def test_pos_accounting_integration():
         from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount
         from django.contrib.auth import get_user_model
         from custom_auth.models import TenantManager
+        from users.models import Business
         from sales.services.accounting_service import AccountingService
         from django.db import transaction as db_transaction
         
@@ -64,6 +65,20 @@ def test_pos_accounting_integration():
                 password='TestPass123!'
             )
         
+        # Get or create a test business
+        test_business = Business.objects.filter(name='Test Business').first()
+        if not test_business:
+            print("   Creating test business...")
+            test_business = Business.objects.create(
+                name='Test Business',
+                owner_id=test_user.id,
+                country='US'
+            )
+            
+        # Set the business on the user
+        test_user.business_id = test_business.id
+        test_user.save()
+        
         # Create or get a test product
         test_product = Product.objects.filter(name='Test Product').first()
         if not test_product:
@@ -71,9 +86,9 @@ def test_pos_accounting_integration():
             test_product = Product.objects.create(
                 name='Test Product',
                 description='Product for testing',
-                selling_price=Decimal('100.00'),
-                cost_price=Decimal('60.00'),
-                quantity_on_hand=100,
+                price=Decimal('100.00'),
+                cost=Decimal('60.00'),
+                quantity=100,
                 sku='TEST-001'
             )
         
@@ -83,12 +98,12 @@ def test_pos_accounting_integration():
             pos_transaction = POSTransaction.objects.create(
                 transaction_number=f"POS-TEST-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 subtotal=Decimal('100.00'),
-                tax_amount=Decimal('8.00'),
+                tax_total=Decimal('8.00'),
                 discount_amount=Decimal('0.00'),
                 total_amount=Decimal('108.00'),
                 payment_method='cash',
                 amount_tendered=Decimal('110.00'),
-                change_given=Decimal('2.00'),
+                change_due=Decimal('2.00'),
                 status='completed',
                 created_by=test_user,
                 notes='Test transaction for accounting integration'
@@ -98,9 +113,11 @@ def test_pos_accounting_integration():
             transaction_item = POSTransactionItem.objects.create(
                 transaction=pos_transaction,
                 product=test_product,
+                item_name=test_product.name,
+                item_sku=test_product.sku,
                 quantity=1,
                 unit_price=Decimal('100.00'),
-                discount_percentage=Decimal('0.00'),
+                line_discount_percentage=Decimal('0.00'),
                 tax_amount=Decimal('8.00'),
                 line_total=Decimal('108.00'),
                 cost_price=Decimal('60.00')
