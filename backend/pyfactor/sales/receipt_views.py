@@ -18,14 +18,25 @@ logger = logging.getLogger(__name__)
 try:
     from resend import Resend
     RESEND_AVAILABLE = True
-except ImportError:
+    logger.info('Resend package imported successfully')
+except ImportError as e:
     RESEND_AVAILABLE = False
-    logger.warning('Resend package not installed. Email functionality will be disabled.')
+    logger.error(f'Resend package not installed: {e}. Email functionality will be disabled.')
 
 # Initialize Resend client if API key is available and package is installed
 resend_client = None
-if RESEND_AVAILABLE and hasattr(settings, 'RESEND_API_KEY') and settings.RESEND_API_KEY:
-    resend_client = Resend(api_key=settings.RESEND_API_KEY)
+if RESEND_AVAILABLE:
+    api_key = getattr(settings, 'RESEND_API_KEY', None)
+    if api_key:
+        try:
+            resend_client = Resend(api_key=api_key)
+            logger.info(f'Resend client initialized with API key: {api_key[:10]}...')
+        except Exception as e:
+            logger.error(f'Failed to initialize Resend client: {e}')
+    else:
+        logger.warning('RESEND_API_KEY not found in settings')
+else:
+    logger.warning('Resend package not available, skipping client initialization')
 
 
 @api_view(['POST'])
@@ -48,12 +59,25 @@ def send_receipt_email(request):
         
         # Check if Resend is configured
         if not resend_client:
-            logger.error('Resend API key not configured in Django settings')
+            error_details = []
+            if not RESEND_AVAILABLE:
+                error_details.append('Resend package not installed')
+            if not getattr(settings, 'RESEND_API_KEY', None):
+                error_details.append('RESEND_API_KEY not configured')
+            
+            error_msg = f'Email service unavailable: {", ".join(error_details) if error_details else "Unknown error"}'
+            logger.error(error_msg)
+            
             return Response(
                 {
                     'error': 'Email service temporarily unavailable',
                     'message': 'Email service is being configured. Please download the PDF receipt instead.',
-                    'details': 'Contact support to enable email receipts.'
+                    'details': error_msg,
+                    'debug': {
+                        'resend_available': RESEND_AVAILABLE,
+                        'api_key_configured': bool(getattr(settings, 'RESEND_API_KEY', None)),
+                        'client_initialized': bool(resend_client)
+                    }
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
