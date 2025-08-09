@@ -170,7 +170,7 @@ def generate_receipt_html(receipt_data):
     for item in items:
         # Ensure numeric values for calculations
         item_price = float(item.get('price', item.get('unit_price', 0)))
-        quantity = int(item.get('quantity', 1))
+        quantity = int(float(item.get('quantity', 1)))
         item_total = float(item.get('total', item_price * quantity))
         html += f"""
                     <tr>
@@ -250,7 +250,7 @@ def generate_receipt_text(receipt_data):
     for item in items:
         # Ensure numeric values for calculations
         item_price = float(item.get('price', item.get('unit_price', 0)))
-        quantity = int(item.get('quantity', 1))
+        quantity = int(float(item.get('quantity', 1)))
         item_total = float(item.get('total', item_price * quantity))
         text += f"- {item.get('name', 'Item')} x{quantity} = ${item_total:.2f}\n"
     
