@@ -9,13 +9,14 @@ import jsPDF from 'jspdf';
 
 export class ReceiptGenerator {
   constructor(businessInfo = {}) {
+    // Only include business info fields that actually exist (no defaults)
     this.businessInfo = {
-      name: businessInfo.name || 'Your Business Name',
-      address: businessInfo.address || 'Business Address',
-      phone: businessInfo.phone || 'Phone Number',
-      email: businessInfo.email || 'email@business.com',
-      website: businessInfo.website || 'www.business.com',
-      taxId: businessInfo.taxId || 'Tax ID',
+      name: businessInfo.name || businessInfo.business_name || 'Business',
+      address: businessInfo.address || businessInfo.business_address || null,
+      phone: businessInfo.phone || businessInfo.business_phone || null,
+      email: businessInfo.email || businessInfo.business_email || null,
+      website: businessInfo.website || businessInfo.business_website || null,
+      taxId: businessInfo.taxId || businessInfo.tax_id || null,
       ...businessInfo
     };
   }
@@ -97,10 +98,10 @@ export class ReceiptGenerator {
         <div class="header">
           <div class="business-name">${business.name}</div>
           <div class="business-info">
-            ${business.address}<br>
-            ${business.phone} | ${business.email}<br>
-            ${business.website}
-            ${business.taxId ? `<br>Tax ID: ${business.taxId}` : ''}
+            ${business.address ? `${business.address}<br>` : ''}
+            ${this.formatContactInfo(business)}
+            ${business.website ? `${business.website}<br>` : ''}
+            ${business.taxId ? `Tax ID: ${business.taxId}` : ''}
           </div>
         </div>
         
@@ -202,12 +203,29 @@ export class ReceiptGenerator {
     
     pdf.setFontSize(8);
     pdf.setFont(undefined, 'normal');
-    pdf.text(business.address, pageWidth/2, y, { align: 'center' });
-    y += lineHeight;
-    pdf.text(`${business.phone} | ${business.email}`, pageWidth/2, y, { align: 'center' });
-    y += lineHeight;
-    pdf.text(business.website, pageWidth/2, y, { align: 'center' });
-    y += lineHeight + 3;
+    
+    // Only add address if it exists
+    if (business.address) {
+      pdf.text(business.address, pageWidth/2, y, { align: 'center' });
+      y += lineHeight;
+    }
+    
+    // Only add contact info if phone or email exists
+    const contactParts = [];
+    if (business.phone) contactParts.push(business.phone);
+    if (business.email) contactParts.push(business.email);
+    if (contactParts.length > 0) {
+      pdf.text(contactParts.join(' | '), pageWidth/2, y, { align: 'center' });
+      y += lineHeight;
+    }
+    
+    // Only add website if it exists
+    if (business.website) {
+      pdf.text(business.website, pageWidth/2, y, { align: 'center' });
+      y += lineHeight;
+    }
+    
+    y += 3;
     
     // Divider
     pdf.line(5, y, pageWidth-5, y);
@@ -306,6 +324,17 @@ export class ReceiptGenerator {
   }
 
   /**
+   * Format contact information (phone and email) for display
+   */
+  formatContactInfo(business) {
+    const contactParts = [];
+    if (business.phone) contactParts.push(business.phone);
+    if (business.email) contactParts.push(business.email);
+    
+    return contactParts.length > 0 ? `${contactParts.join(' | ')}<br>` : '';
+  }
+
+  /**
    * Format payment method for display
    */
   formatPaymentMethod(method) {
@@ -341,8 +370,25 @@ export class ReceiptGenerator {
     
     let text = '';
     text += `${business.name}\n`;
-    text += `${business.address}\n`;
-    text += `${business.phone} | ${business.email}\n`;
+    
+    // Only add address if it exists
+    if (business.address) {
+      text += `${business.address}\n`;
+    }
+    
+    // Only add contact info if phone or email exists
+    const contactParts = [];
+    if (business.phone) contactParts.push(business.phone);
+    if (business.email) contactParts.push(business.email);
+    if (contactParts.length > 0) {
+      text += `${contactParts.join(' | ')}\n`;
+    }
+    
+    // Only add website if it exists
+    if (business.website) {
+      text += `${business.website}\n`;
+    }
+    
     text += `==========================================\n`;
     text += `Receipt #: ${receipt.number}\n`;
     text += `Date: ${receipt.date} ${receipt.time}\n`;
