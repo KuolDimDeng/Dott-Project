@@ -17,7 +17,6 @@ import ReceiptGenerator from '@/utils/receiptGenerator';
 const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [receiptGenerator, setReceiptGenerator] = useState(null);
   const [receiptData, setReceiptData] = useState(null);
 
@@ -33,7 +32,6 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       // Pre-fill customer contact if available
       if (saleData.customer) {
         setCustomerEmail(saleData.customer.email || '');
-        setCustomerPhone(saleData.customer.phone || '');
       }
     }
   }, [isOpen, saleData, businessInfo]);
@@ -111,7 +109,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send email');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 503) {
+          toast.error('Email service not configured. Please contact support.');
+        } else {
+          toast.error(errorData.error || 'Failed to send email');
+        }
+        return;
       }
 
       toast.success(`Receipt emailed to ${customerEmail}`);
@@ -123,65 +127,6 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
     }
   };
 
-  // WhatsApp receipt
-  const handleWhatsAppReceipt = async () => {
-    if (!receiptGenerator || !receiptData) return;
-
-    // Check if we have a phone number
-    if (!customerPhone.trim()) {
-      toast.error('Please enter customer WhatsApp number');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      // Clean phone number (ensure it has country code)
-      let cleanPhone = customerPhone.replace(/\D/g, '');
-      
-      // Add country code if not present (assuming US +1 as default)
-      if (!cleanPhone.startsWith('1') && !cleanPhone.startsWith('+')) {
-        cleanPhone = '1' + cleanPhone;
-      }
-      
-      // Send via backend WhatsApp Business API
-      const response = await fetch('/api/pos/send-receipt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          type: 'whatsapp',
-          to: cleanPhone,
-          receipt: receiptData
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to send WhatsApp');
-      }
-
-      const result = await response.json();
-      toast.success(`Receipt sent via WhatsApp to ${customerPhone}`);
-      
-    } catch (error) {
-      console.error('WhatsApp error:', error);
-      
-      // Fallback to WhatsApp Web if API fails
-      if (error.message.includes('WhatsApp service not configured')) {
-        const whatsappMessage = receiptGenerator.generateWhatsAppMessage(receiptData);
-        const cleanPhone = customerPhone.replace(/\D/g, '');
-        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
-        window.open(whatsappUrl, '_blank');
-        toast.info('Opening WhatsApp Web as fallback');
-      } else {
-        toast.error(`Failed to send WhatsApp: ${error.message}`);
-      }
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   // Share receipt (Web Share API or fallback)
   const handleShareReceipt = async () => {
@@ -335,23 +280,6 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
                       />
                     </div>
 
-                    {/* WhatsApp Receipt */}
-                    <div className="space-y-2">
-                      <input
-                        type="tel"
-                        placeholder="Customer WhatsApp number (with country code)"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      />
-                      <ReceiptOption
-                        icon={ShareIcon}
-                        title="WhatsApp Receipt"
-                        description="Automatically send receipt via WhatsApp"
-                        onClick={handleWhatsAppReceipt}
-                        disabled={isGenerating || !customerPhone.trim()}
-                      />
-                    </div>
                   </div>
 
                   {/* Footer */}
