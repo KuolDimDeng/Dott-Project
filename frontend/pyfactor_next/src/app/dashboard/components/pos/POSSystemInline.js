@@ -386,11 +386,18 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             county: data.county || ''
           });
           // Store business location for tax calculations (normalize to uppercase)
-          setBusinessCountry((data.country || '').toUpperCase().trim());
+          // Handle both full country names and ISO codes
+          let countryValue = (data.country || '').toUpperCase().trim();
+          // Convert common country names to ISO codes for consistency
+          if (countryValue === 'SOUTH SUDAN') countryValue = 'SS';
+          if (countryValue === 'UNITED STATES') countryValue = 'US';
+          if (countryValue === 'UNITED KINGDOM') countryValue = 'GB';
+          
+          setBusinessCountry(countryValue);
           setBusinessState((data.state || '').toUpperCase().trim());
           setBusinessCounty((data.county || '').toUpperCase().trim());
           console.log('[POS] Business location (normalized):', {
-            country: (data.country || '').toUpperCase().trim(),
+            country: countryValue,
             state: (data.state || '').toUpperCase().trim(),
             county: (data.county || '').toUpperCase().trim(),
             raw: { country: data.country, state: data.state, county: data.county }
@@ -534,6 +541,13 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           shipping_state: walkInState,
           shipping_county: walkInCounty
         };
+        
+        // If no country is set, use default tax rate (likely business default)
+        if (!walkInCountry) {
+          console.log('[POS] No country for walk-in, using default tax rate:', defaultTaxRate);
+          setTaxRate(defaultTaxRate || 0);
+          return;
+        }
         
         // Always call calculateCustomerTax for Walk-In
         await calculateCustomerTax(walkInCustomer);
