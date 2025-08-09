@@ -416,3 +416,208 @@ def get_transfer_quote(request):
             'success': False,
             'error': 'Failed to calculate quote'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def connect_wise_account(request):
+    """
+    Connect a Wise bank account via Stripe Connect
+    """
+    try:
+        user = request.user
+        data = request.data
+        
+        # Validate required fields
+        required_fields = ['account_nickname', 'account_holder_name', 'account_type', 'currency', 'country', 'account_number']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        
+        if missing_fields:
+            return Response({
+                'success': False,
+                'error': f'Missing required fields: {", ".join(missing_fields)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create bank account in Stripe Connect (test mode for now)
+        try:
+            # In production, this would create an actual bank account in Stripe
+            # For now, we'll simulate success
+            stripe_bank_account_id = f"ba_test_{user.id}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            
+            # Store bank connection in database
+            with transaction.atomic():
+                bank_account = BankAccount.objects.create(
+                    user=user,
+                    tenant_id=user.business_id or user.tenant_id,
+                    account_nickname=data['account_nickname'],
+                    account_holder_name=data['account_holder_name'],
+                    account_type=data['account_type'],
+                    currency=data['currency'],
+                    country=data['country'],
+                    account_number_last4=data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number'],
+                    stripe_bank_account_id=stripe_bank_account_id,
+                    provider='wise',
+                    is_primary=not BankAccount.objects.filter(user=user).exists()  # First account is primary
+                )
+                
+                # Create WiseItem for tracking
+                wise_item = WiseItem.objects.create(
+                    user=user,
+                    tenant_id=user.business_id or user.tenant_id,
+                    account_holder_name=data['account_holder_name'],
+                    account_number_last4=data['account_number'][-4:] if len(data['account_number']) >= 4 else data['account_number'],
+                    currency=data['currency'],
+                    country=data['country'],
+                    routing_number=data.get('routing_number', ''),
+                    iban=data.get('iban', ''),
+                    swift_code=data.get('swift_code', ''),
+                    stripe_bank_account_id=stripe_bank_account_id,
+                    is_verified=True  # In test mode
+                )
+            
+            logger.info(f"[Wise Connect] Created bank connection for user {user.email} in {data['country']}")
+            
+            return Response({
+                'success': True,
+                'message': 'Bank account connected successfully',
+                'data': {
+                    'connection_id': str(bank_account.id),
+                    'account_nickname': bank_account.account_nickname,
+                    'account_type': bank_account.account_type,
+                    'currency': bank_account.currency,
+                    'country': bank_account.country,
+                    'last4': bank_account.account_number_last4,
+                    'is_primary': bank_account.is_primary,
+                    'provider': 'wise'
+                }
+            })
+            
+        except Exception as stripe_error:
+            logger.error(f"[Wise Connect] Stripe error: {str(stripe_error)}")
+            return Response({
+                'success': False,
+                'error': 'Failed to connect bank account with payment processor'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    except Exception as e:
+        logger.error(f"[Wise Connect] Error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to connect bank account'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_bank_connections(request):
+    """
+    List all bank connections for the authenticated user
+    """
+    try:
+        user = request.user
+        
+        # Get all bank connections for the user
+        connections = BankAccount.objects.filter(user=user).order_by('-created_at')
+        
+        connections_data = []
+        for conn in connections:
+            connections_data.append({
+                'id': str(conn.id),
+                'account_nickname': conn.account_nickname,
+                'account_holder_name': conn.account_holder_name,
+                'account_type': conn.account_type,
+                'currency': conn.currency,
+                'country': conn.country,
+                'last4': conn.account_number_last4,
+                'provider': conn.provider,
+                'is_primary': conn.is_primary,
+                'created_at': conn.created_at.isoformat() if conn.created_at else None,
+                'status': 'active'  # Could be enhanced with actual status checking
+            })
+        
+        return Response({
+            'success': True,
+            'connections': connections_data,
+            'count': len(connections_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"[List Connections] Error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to fetch bank connections'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def manage_bank_connection(request, connection_id):
+    """
+    Get, update, or delete a specific bank connection
+    """
+    try:
+        user = request.user
+        
+        try:
+            connection = BankAccount.objects.get(id=connection_id, user=user)
+        except BankAccount.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Bank connection not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if request.method == 'GET':
+            # Get connection details
+            return Response({
+                'success': True,
+                'connection': {
+                    'id': str(connection.id),
+                    'account_nickname': connection.account_nickname,
+                    'account_holder_name': connection.account_holder_name,
+                    'account_type': connection.account_type,
+                    'currency': connection.currency,
+                    'country': connection.country,
+                    'last4': connection.account_number_last4,
+                    'provider': connection.provider,
+                    'is_primary': connection.is_primary,
+                    'created_at': connection.created_at.isoformat() if connection.created_at else None,
+                    'status': 'active'
+                }
+            })
+        
+        elif request.method == 'PATCH':
+            # Update connection (e.g., set as primary)
+            data = request.data
+            
+            if data.get('is_primary'):
+                # Unset other primary accounts
+                BankAccount.objects.filter(user=user).update(is_primary=False)
+                connection.is_primary = True
+                connection.save()
+                
+                return Response({
+                    'success': True,
+                    'message': 'Primary bank account updated'
+                })
+            
+            return Response({
+                'success': False,
+                'error': 'No valid updates provided'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == 'DELETE':
+            # Delete connection
+            connection_name = connection.account_nickname
+            connection.delete()
+            
+            return Response({
+                'success': True,
+                'message': f'Bank account "{connection_name}" disconnected'
+            })
+            
+    except Exception as e:
+        logger.error(f"[Manage Connection] Error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to manage bank connection'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

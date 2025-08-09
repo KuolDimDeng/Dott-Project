@@ -65,11 +65,16 @@ urlpatterns = [
     path('account-balances/', AccountBalancesView.as_view(), name='account-balances'),
     path('monthly-statements/', MonthlyStatementsView.as_view(), name='monthly-statements'),
     
-    # Wise integration endpoints
+    # Wise integration endpoints  
     path('method/', wise_views.get_banking_method, name='banking_method'),
     path('wise/setup/', wise_views.setup_wise_account, name='wise_setup'),
     path('wise/account/', wise_views.get_wise_account, name='wise_account'),
     path('wise/quote/', wise_views.get_transfer_quote, name='wise_quote'),
+    path('wise/connect/', wise_views.connect_wise_account, name='wise_connect'),
     path('settlements/', wise_views.get_settlements, name='settlements'),
     path('settlements/process/', wise_views.process_manual_settlement, name='process_settlement'),
+    
+    # New Banking Connection Management endpoints
+    path('connections/', wise_views.list_bank_connections, name='bank_connections'),
+    path('connections/<uuid:connection_id>/', wise_views.manage_bank_connection, name='manage_bank_connection'),
 ]
