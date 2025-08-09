@@ -222,6 +222,15 @@ def generate_receipt_html(receipt_data):
     
     html += """
             <p>Thank you for your business!</p>
+            
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+                <p style="font-size: 11px; color: #6b7280; margin: 0;">
+                    Powered by <a href="https://dottapps.com" style="color: #1e40af; text-decoration: none;">Dott</a>
+                </p>
+                <p style="font-size: 10px; color: #9ca3af; margin-top: 5px;">
+                    <a href="https://dottapps.com" style="color: #9ca3af; text-decoration: none;">dottapps.com</a>
+                </p>
+            </div>
         </div>
     </body>
     </html>
@@ -270,5 +279,7 @@ def generate_receipt_text(receipt_data):
             text += f"Change Due: ${payment.get('changeDue', 0)}\n"
     
     text += "\nThank you for your business!"
+    text += "\n\n" + "-" * 40
+    text += "\nPowered by Dott - dottapps.com"
     
     return text

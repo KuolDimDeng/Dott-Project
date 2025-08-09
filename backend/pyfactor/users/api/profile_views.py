@@ -216,6 +216,19 @@ class UserProfileView(APIView):
                 if profile.phone_number:
                     profile_data["phone_number"] = profile.phone_number
                 
+                # Get business info if available
+                business_info = {}
+                if profile.business:
+                    business_info = {
+                        "businessName": profile.business.name,
+                        "business_name": profile.business.name,  # Both formats for compatibility
+                        "businessType": profile.business.business_type,
+                        "business_type": profile.business.business_type,
+                        "business_address": profile.business.address if hasattr(profile.business, 'address') else None,
+                        "business_phone": profile.business.phone if hasattr(profile.business, 'phone') else None,
+                        "business_email": profile.business.email if hasattr(profile.business, 'email') else None,
+                    }
+                
                 profile_data.update({
                     "occupation": profile.occupation,
                     "street": profile.street,
@@ -223,8 +236,7 @@ class UserProfileView(APIView):
                     "state": profile.state,
                     "postcode": profile.postcode,
                     "country": str(profile.country) if profile.country else None,
-                    "businessName": profile.business.name if profile.business else None,
-                    "businessType": profile.business.business_type if profile.business else None,
+                    **business_info  # Spread business info
                 })
                 
                 # Check metadata for profile photo URL
