@@ -315,6 +315,17 @@
   - `/banking/services/stripe_bank_service.py`
   - `/Settings/banking/page.js`
 
+### [55.0.0] - 2025-08-09 - CURRENT - Banking Integration Fixes
+- **Fixed Issues**: Country detection, field mismatches, database errors
+- **Key Changes**: BankAccount uses `last_synced` not `created_at`
+- **Field Mapping**: Backend `connection_id` → Frontend `id`
+- **Country Display**: Shows full name ("South Sudan") but stores ISO code ("SS")
+- **Provider Logic**: PLAID_COUNTRIES list determines provider selection
+- **Error Handling**: Added defensive checks for undefined connections
+- **Documentation**: `/docs/BANKING_INTEGRATION_DOCUMENTATION.md`
+- **Test Coverage**: Successful creation, listing, and deletion of bank accounts
+- **Key Learning**: Always check actual model fields, not assumptions
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
