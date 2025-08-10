@@ -22,7 +22,7 @@ export async function POST(request) {
     
     // Forward the request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-    const fullUrl = `${backendUrl}/api/notifications/admin/login`;
+    const fullUrl = `${backendUrl}/api/notifications/admin/login/`;
     
     console.log('[Admin Login API] Request details:', {
       url: fullUrl,
