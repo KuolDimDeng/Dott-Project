@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Security Update Notification - Informs users to re-login after security updates
  */
