@@ -1,6 +1,6 @@
 # ========================================
 # Stage 1: Base image with pnpm
-# Cache bust: 2025-08-01-v1-fix-build
+# Cache bust: 2025-08-10-v2-user-names-deployment
 # ========================================
 FROM node:18-alpine AS base
 RUN apk add --no-cache libc6-compat
