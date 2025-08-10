@@ -68,7 +68,7 @@ export default function EnhancedAdminLogin({ onLogin }) {
     setErrors({});
     
     try {
-      const response = await fetch('/api/notifications/admin/login/', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
