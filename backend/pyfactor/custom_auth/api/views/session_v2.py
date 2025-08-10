@@ -66,7 +66,7 @@ class SessionV2View(APIView):
             # Get session from database
             try:
                 session = UserSession.objects.select_related('user').get(
-                    session_token=session_uuid,
+                    session_id=session_uuid,
                     is_active=True
                 )
             except UserSession.DoesNotExist:
@@ -97,7 +97,7 @@ class SessionV2View(APIView):
             response_data = {
                 'success': True,
                 'session': {
-                    'id': str(session.session_token),
+                    'id': str(session.session_id),
                     'expires_at': session.expires_at.isoformat(),
                     'created_at': session.created_at.isoformat(),
                 },
@@ -189,7 +189,7 @@ class SessionV2View(APIView):
             # Build response
             response_data = {
                 'success': True,
-                'session_token': str(session.session_token),
+                'session_token': str(session.session_id),
                 'expires_at': session.expires_at.isoformat(),
                 'user': {
                     'id': user.id,
@@ -230,7 +230,7 @@ class SessionV2View(APIView):
             try:
                 session_uuid = uuid.UUID(session_token)
                 session = UserSession.objects.get(
-                    session_token=session_uuid,
+                    session_id=session_uuid,
                     is_active=True
                 )
             except (ValueError, UserSession.DoesNotExist):
@@ -239,8 +239,10 @@ class SessionV2View(APIView):
                     status=status.HTTP_401_UNAUTHORIZED
                 )
             
-            # Refresh session
-            session = session_service.refresh_session(session)
+            # Refresh session - extend by 24 hours
+            session_service.extend_session(str(session.session_id), hours=24)
+            # Refresh the session object to get updated expires_at
+            session.refresh_from_db()
             
             logger.info(f'[SessionV2] Session refreshed for user {session.user.email}')
             

@@ -75,6 +75,8 @@ export function SessionTimeoutProvider({ children }) {
 
   // Cancel timeout and reset state
   const cancelTimeout = useCallback(() => {
+    console.log('🔐 [SessionTimeout] Canceling timeout and resetting activity');
+    
     setIsWarningVisible(false);
     setShowFinalCountdown(false);
     setTimeRemaining(WARNING_DURATION);
@@ -88,6 +90,10 @@ export function SessionTimeoutProvider({ children }) {
       clearInterval(countdownIntervalRef.current);
       countdownIntervalRef.current = null;
     }
+    
+    // Reset last activity to current time
+    lastActivityRef.current = Date.now();
+    localStorage.setItem('sessionTimeoutLastActivity', Date.now().toString());
   }, []);
 
   // Update last activity timestamp

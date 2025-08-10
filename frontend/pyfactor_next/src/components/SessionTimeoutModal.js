@@ -45,8 +45,57 @@ export default function SessionTimeoutModal() {
 
   if (!isWarningVisible) return null;
 
-  const handleStaySignedIn = () => {
-    cancelTimeout();
+  const handleStaySignedIn = async () => {
+    try {
+      // Get the current session token from localStorage or cookie
+      const sessionToken = localStorage.getItem('sid') || 
+                          document.cookie.split('; ').find(row => row.startsWith('sid='))?.split('=')[1];
+      
+      if (!sessionToken) {
+        console.error('No session token found');
+        await logout();
+        window.location.href = '/auth/signin?error=no_session';
+        return;
+      }
+
+      // Use PATCH method to refresh the session
+      const response = await fetch('/api/auth/session-v2', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sessionToken}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        console.error('Failed to refresh session:', response.status);
+        // If refresh fails, logout for security
+        await logout();
+        window.location.href = '/auth/signin?error=session_refresh_failed';
+        return;
+      }
+
+      const data = await response.json();
+      console.log('🔐 [SessionTimeoutModal] Session refreshed successfully', data);
+      
+      // Then cancel the timeout
+      cancelTimeout();
+      
+      // Update last activity time
+      localStorage.setItem('sessionTimeoutLastActivity', Date.now().toString());
+      
+      // Optional: Force a page refresh to ensure all components get the new session
+      // Comment this out if you don't want a page refresh
+      // setTimeout(() => {
+      //   window.location.reload();
+      // }, 100);
+    } catch (error) {
+      console.error('🔐 [SessionTimeoutModal] Error refreshing session:', error);
+      // On error, logout for security
+      await logout();
+      window.location.href = '/auth/signin?error=session_refresh_failed';
+    }
   };
 
   const handleSignOut = async () => {

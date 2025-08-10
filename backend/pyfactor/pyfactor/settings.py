@@ -998,6 +998,7 @@ TENANT_APPS = (
     'integrations',
     'taxes',
     'purchases',
+    'product_suppliers',  # New app for product suppliers
     'barcode',
     'hr.apps.HrConfig',
     'crm.apps.CrmConfig',
