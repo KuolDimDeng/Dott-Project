@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 /**
  * GET /api/banking/connections/:id
@@ -12,11 +12,6 @@ import { getServerSession } from '@/lib/auth';
  */
 export async function GET(request, { params }) {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = params;
     const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/banking/connections/${id}/`;
     
@@ -25,7 +20,6 @@ export async function GET(request, { params }) {
       headers: {
         'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
-        'X-Session-Id': session.id || '',
       },
     });
 
@@ -54,11 +48,6 @@ export async function GET(request, { params }) {
  */
 export async function PATCH(request, { params }) {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = params;
     const body = await request.json();
     
@@ -69,7 +58,6 @@ export async function PATCH(request, { params }) {
       headers: {
         'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
-        'X-Session-Id': session.id || '',
       },
       body: JSON.stringify(body),
     });
@@ -99,11 +87,6 @@ export async function PATCH(request, { params }) {
  */
 export async function DELETE(request, { params }) {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = params;
     console.log('[Connection DELETE] Attempting to delete connection:', id);
     
@@ -116,7 +99,6 @@ export async function DELETE(request, { params }) {
       headers: {
         'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
-        'X-Session-Id': session.id || '',
       },
     });
 
