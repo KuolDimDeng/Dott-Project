@@ -37,7 +37,7 @@
     "sales": "Sales",
     "purchases": "Purchases",
     "customers": "Customers",
-    "vendors": "Vendors",
+    "vendors": "Suppliers",
     "catalog": "Products",
     "service": "Services",
     "orders": "Orders",
@@ -355,8 +355,8 @@
         "description": "Tax configurations by location"
       },
       "vendors": {
-        "label": "Vendors",
-        "description": "Supplier database and payment terms"
+        "label": "Suppliers",
+        "description": "Product supplier database and payment terms"
       },
       "employees": {
         "label": "Employees",

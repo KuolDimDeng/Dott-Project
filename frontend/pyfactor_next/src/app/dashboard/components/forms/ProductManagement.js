@@ -562,15 +562,15 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         throw new Error('Authentication required. Valid tenant ID is required.');
       }
       
-      // Make API call to get suppliers using the proxy route
-      const response = await fetch('/api/inventory/suppliers', {
+      // Make API call to get product suppliers using the new proxy route
+      const response = await fetch('/api/product-suppliers', {
         headers: {
           'x-tenant-id': tenantIdValue
         }
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch suppliers: ${response.status}`);
+        throw new Error(`Failed to fetch product suppliers: ${response.status}`);
       }
       
       const data = await response.json();
@@ -587,8 +587,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       
       setSuppliers(supplierList);
     } catch (error) {
-      console.error('[ProductManagement] Error fetching suppliers:', error);
-      setSupplierError(error.message || 'Failed to load suppliers');
+      console.error('[ProductManagement] Error fetching product suppliers:', error);
+      setSupplierError(error.message || 'Failed to load product suppliers');
     } finally {
       setLoadingSuppliers(false);
     }
@@ -802,15 +802,15 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
-      // Make API call to get supplier details using the proxy route
-      const response = await fetch(`/api/inventory/suppliers/${supplierId}`, {
+      // Make API call to get product supplier details using the new proxy route
+      const response = await fetch(`/api/product-suppliers/${supplierId}`, {
         headers: {
           'x-tenant-id': tenantIdValue
         }
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch supplier: ${response.status}`);
+        throw new Error(`Failed to fetch product supplier: ${response.status}`);
       }
       
       const data = await response.json();
@@ -1490,8 +1490,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             <div>
               <label htmlFor="supplier_id" className="block text-sm font-medium text-black mb-1">
                 <span className="flex items-center">
-                  Supplier
-                  <FieldTooltip text="Select the supplier or vendor from whom you purchase this product. This helps track your purchasing history and manage supplier relationships." />
+                  Product Supplier
+                  <FieldTooltip text="Select the product supplier from whom you purchase this product for resale. This helps track your purchasing history and manage supplier relationships." />
                 </span>
               </label>
               <select
@@ -1501,9 +1501,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 value={productData.supplier_id || ''}
                 onChange={(e) => setProductData({...productData, supplier_id: e.target.value})}
               >
-                <option value="">Select a supplier</option>
+                <option value="">Select a product supplier</option>
                 {loadingSuppliers ? (
-                  <option disabled>Loading suppliers...</option>
+                  <option disabled>Loading product suppliers...</option>
                 ) : suppliers.length > 0 ? (
                   suppliers.map(supplier => (
                     <option key={supplier.id} value={supplier.id}>
@@ -1511,7 +1511,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     </option>
                   ))
                 ) : (
-                  <option disabled>{supplierError || 'No suppliers available'}</option>
+                  <option disabled>{supplierError || 'No product suppliers available'}</option>
                 )}
               </select>
               {!loadingSuppliers && suppliers.length === 0 && (
@@ -1520,20 +1520,20 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    No suppliers found. 
+                    No product suppliers found. 
                     <button
                       onClick={() => {
-                        // Navigate to suppliers management
+                        // Navigate to product suppliers management
                         if (tenantId) {
                           // Save current form data to localStorage to restore later
                           localStorage.setItem('pendingProductData', JSON.stringify(productData));
-                          // Navigate to suppliers page
+                          // Navigate to product suppliers page
                           window.location.href = `/${tenantId}/dashboard?view=inventory-suppliers`;
                         }
                       }}
                       className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
                     >
-                      Create a supplier
+                      Create a product supplier
                     </button>
                     first to assign products to them.
                   </p>
@@ -1847,7 +1847,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               <div className="text-sm text-gray-500">Description:</div>
               <div className="text-sm text-black">{selectedProduct.description || 'N/A'}</div>
               
-              <div className="text-sm text-gray-500">Supplier:</div>
+              <div className="text-sm text-gray-500">Product Supplier:</div>
               <div className="text-sm text-black">{supplierName || 'None assigned'}</div>
               
               <div className="text-sm text-gray-500">Location:</div>
@@ -2114,7 +2114,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
           <div>
             <label htmlFor="edit-supplier_id" className="block text-sm font-medium text-black mb-1">
-              Supplier
+              Product Supplier
             </label>
             <select
               id="edit-supplier_id"
@@ -2123,9 +2123,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               value={editedProduct.supplier_id || ''}
               onChange={(e) => setEditedProduct({...editedProduct, supplier_id: e.target.value})}
             >
-              <option value="">Select a supplier</option>
+              <option value="">Select a product supplier</option>
               {loadingSuppliers ? (
-                <option disabled>Loading suppliers...</option>
+                <option disabled>Loading product suppliers...</option>
               ) : suppliers.length > 0 ? (
                 suppliers.map(supplier => (
                   <option key={supplier.id} value={supplier.id}>
@@ -2133,7 +2133,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   </option>
                 ))
               ) : (
-                <option disabled>{supplierError || 'No suppliers available'}</option>
+                <option disabled>{supplierError || 'No product suppliers available'}</option>
               )}
             </select>
             {!loadingSuppliers && suppliers.length === 0 && (
@@ -2142,7 +2142,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
-                  No suppliers found. 
+                  No product suppliers found. 
                   <button
                     onClick={() => {
                       if (tenantId) {
@@ -2151,7 +2151,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     }}
                     className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
                   >
-                    Create a supplier
+                    Create a product supplier
                   </button>
                   first.
                 </p>
