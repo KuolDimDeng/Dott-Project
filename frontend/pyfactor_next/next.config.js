@@ -371,35 +371,8 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Scripts - Removed unsafe-inline and unsafe-eval for production security
-              // Note: Some inline scripts may need to be refactored to external files or use nonces
-              "script-src 'self' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com https://static.cloudflareinsights.com https://*.cloudflareinsights.com",
-              // Workers - needed for PostHog session recording
-              "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
-              // Styles - keeping unsafe-inline temporarily for Tailwind/MUI (should migrate to nonces)
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
-              // Fonts
-              "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
-              // Images
-              "img-src 'self' data: https: blob: https://*.dottapps.com https://maps.googleapis.com https://maps.gstatic.com",
-              // Connections - add Cloudflare domains and Sentry
-              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com https://*.cloudflare.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
-              // Frames
-              "frame-src 'self' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://*.plaid.com",
-              // Objects
-              "object-src 'none'",
-              // Base URI
-              "base-uri 'self'",
-              // Form actions
-              "form-action 'self' https://auth.dottapps.com https://dottapps.com https://www.dottapps.com",
-              // Upgrade insecure requests
-              "upgrade-insecure-requests"
-            ].join('; ')
-          }
+          // CSP is now handled by middleware.js for dynamic nonce support
+          // This provides industry-standard security while allowing authentication
         ]
       },
       // API routes should not be cached

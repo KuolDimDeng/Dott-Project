@@ -437,21 +437,27 @@ if not DEBUG:
     
     # Strict CSP compatible with Cloudflare
     CSP_DEFAULT_SRC = ("'self'",)
-    # SECURITY: Removed unsafe-inline and unsafe-eval to prevent XSS attacks
-    # Note: Some inline scripts may need to be refactored to external files
-    CSP_SCRIPT_SRC = ("'self'", 
-                      "https://js.stripe.com", 
-                      "https://client.crisp.chat",
-                      "https://widget.crisp.chat",
-                      "https://cdn.plaid.com", 
-                      "https://app.posthog.com",
-                      "https://cdn.posthog.com",
-                      "https://accounts.google.com",
-                      "https://maps.googleapis.com",
-                      "https://maps.gstatic.com",
-                      "https://auth.dottapps.com",
-                      "https://dev-cbyy63jovi6zrcos.us.auth0.com",
-                      "https://static.cloudflareinsights.com")
+    # Industry-standard CSP configuration
+    # Uses hash-based allowlist for specific auth scripts
+    CSP_SCRIPT_SRC = (
+        "'self'",
+        # Hash for authentication establish-session form
+        "'sha256-mHVJrqf405kt9COJfFfRNPGPFhA9M8E0mexi7ETxbsc='",
+        # Trusted third-party scripts
+        "https://js.stripe.com", 
+        "https://checkout.stripe.com",
+        "https://client.crisp.chat",
+        "https://widget.crisp.chat",
+        "https://cdn.plaid.com", 
+        "https://app.posthog.com",
+        "https://cdn.posthog.com",
+        "https://accounts.google.com",
+        "https://maps.googleapis.com",
+        "https://maps.gstatic.com",
+        "https://auth.dottapps.com",
+        "https://dev-cbyy63jovi6zrcos.us.auth0.com",
+        "https://static.cloudflareinsights.com"
+    )
     # SECURITY: Keeping unsafe-inline temporarily for CSS frameworks (Tailwind/MUI)
     # TODO: Migrate to nonce-based CSS loading in future
     CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", 

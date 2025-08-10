@@ -164,7 +164,7 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """Add security headers to response"""
         
-        # Content Security Policy - SECURITY: Removed unsafe-inline and unsafe-eval
+        # Content Security Policy - Industry standard with hash-based allowlist
         if not settings.DEBUG:
             # Build CSP from settings if available, otherwise use secure defaults
             csp_parts = []
@@ -172,9 +172,11 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
             # Default source
             csp_parts.append("default-src 'self'")
             
-            # Script sources - NO unsafe-inline or unsafe-eval for security
+            # Script sources - Using hash for auth scripts instead of unsafe-inline
             script_sources = getattr(settings, 'CSP_SCRIPT_SRC', (
                 "'self'",
+                # Hash for authentication scripts
+                "'sha256-mHVJrqf405kt9COJfFfRNPGPFhA9M8E0mexi7ETxbsc='",
                 "https://js.stripe.com",
                 "https://client.crisp.chat",
                 "https://cdn.plaid.com",

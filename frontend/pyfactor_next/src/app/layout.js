@@ -6,7 +6,7 @@ import ChunkErrorHandler from '@/components/ChunkErrorHandler';
 import GlobalErrorInitializer from '@/components/GlobalErrorInitializer';
 import '@/utils/bindPolyfill';
 import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
-import SecurityUpdateNotification from '@/components/SecurityUpdateNotification';
+// Security notification removed - CSP now handled properly
 import Providers from '@/providers';
 import { headers } from 'next/headers';
 
@@ -68,8 +68,6 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-startup-image" href="/static/images/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
       <body className={inter.className}>
-        {/* Security Update Notification */}
-        <SecurityUpdateNotification />
         
         {/* Global Error Handler */}
         <GlobalErrorInitializer />
