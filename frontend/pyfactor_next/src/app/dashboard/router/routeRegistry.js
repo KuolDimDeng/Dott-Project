@@ -426,12 +426,27 @@ export const routeRegistry = {
     title: 'Human Resources',
     description: 'HR management tools'
   },
+  'hr-dashboard': {
+    component: enhancedLazy(() => import('../components/forms/HRDashboard'), 'HR Dashboard'),
+    title: 'HR Dashboard',
+    description: 'HR overview'
+  },
   'employees': {
     component: enhancedLazy(() => import('../components/forms/EmployeeManagement'), 'Employee Management'),
     title: 'Employees',
     description: 'Manage employees'
   },
+  'hr-employees': {
+    component: enhancedLazy(() => import('../components/forms/EmployeeManagement'), 'Employee Management'),
+    title: 'Employees',
+    description: 'Manage employees'
+  },
   'timesheets': {
+    component: enhancedLazy(() => import('../components/forms/TimesheetManagement'), 'Timesheet Management'),
+    title: 'Timesheets',
+    description: 'Time tracking'
+  },
+  'hr-timesheets': {
     component: enhancedLazy(() => import('../components/forms/TimesheetManagement'), 'Timesheet Management'),
     title: 'Timesheets',
     description: 'Time tracking'
@@ -446,12 +461,27 @@ export const routeRegistry = {
     title: 'Payroll',
     description: 'Manage payroll'
   },
+  'hr-pay': {
+    component: enhancedLazy(() => import('../components/forms/PayManagement'), 'Pay Management'),
+    title: 'Payroll',
+    description: 'Manage payroll'
+  },
   'benefits': {
     component: enhancedLazy(() => import('../components/forms/BenefitsManagement'), 'Benefits Management'),
     title: 'Benefits',
     description: 'Employee benefits'
   },
+  'hr-benefits': {
+    component: enhancedLazy(() => import('../components/forms/BenefitsManagement'), 'Benefits Management'),
+    title: 'Benefits',
+    description: 'Employee benefits'
+  },
   'performance': {
+    component: enhancedLazy(() => import('../components/forms/PerformanceManagement'), 'Performance Management'),
+    title: 'Performance',
+    description: 'Performance reviews'
+  },
+  'hr-performance': {
     component: enhancedLazy(() => import('../components/forms/PerformanceManagement'), 'Performance Management'),
     title: 'Performance',
     description: 'Performance reviews'
