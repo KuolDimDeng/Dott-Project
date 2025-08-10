@@ -10,6 +10,7 @@ import django
 import logging
 from datetime import datetime
 from django.db import transaction, connection
+from django.utils import timezone
 from django.db.models import Q, Count
 
 # Add the parent directory to the Python path
@@ -68,6 +69,28 @@ def get_business_id_from_session(user_email):
     return None
 
 
+def create_missing_business(business_id, user):
+    """Create a missing Business record for a user"""
+    try:
+        # Check if it really doesn't exist
+        if Business.objects.filter(id=business_id).exists():
+            return True
+            
+        # Create the business
+        # Note: owner field might be a UUID field, not a ForeignKey to User
+        # So we'll skip setting owner for now
+        business = Business.objects.create(
+            id=business_id,
+            name=f"{user.email.split('@')[0]}'s Business",
+            is_active=True
+        )
+        logger.info(f"  ✅ Created missing Business record: {business_id}")
+        return True
+    except Exception as e:
+        logger.error(f"  ❌ Could not create Business {business_id}: {e}")
+        return False
+
+
 def fix_user_profiles():
     """
     Main function to fix UserProfile integrity issues
@@ -75,8 +98,9 @@ def fix_user_profiles():
     This function:
     1. Creates missing UserProfile records
     2. Syncs business_id between User and UserProfile
-    3. Validates business_id references
-    4. Reports any unresolvable issues
+    3. Creates missing Business records where needed
+    4. Validates business_id references
+    5. Reports any unresolvable issues
     """
     logger.info("=" * 80)
     logger.info("STARTING USER PROFILE INTEGRITY CHECK")
@@ -88,6 +112,7 @@ def fix_user_profiles():
         'profiles_created': 0,
         'profiles_updated': 0,
         'business_id_synced': 0,
+        'businesses_created': 0,
         'invalid_business_ids': 0,
         'users_without_business': 0,
         'errors': 0
@@ -137,8 +162,13 @@ def fix_user_profiles():
                 if business_id:
                     business_exists = Business.objects.filter(id=business_id).exists()
                     if not business_exists:
-                        logger.error(f"  Business {business_id} does not exist!")
-                        business_id = None
+                        logger.warning(f"  Business {business_id} does not exist! Creating it...")
+                        # Create the missing business record
+                        if create_missing_business(business_id, user):
+                            stats['businesses_created'] += 1
+                            logger.info(f"  Found valid business_id: {business_id} (source: {source}, created missing record)")
+                        else:
+                            business_id = None  # Failed to create
                     else:
                         logger.info(f"  Found valid business_id: {business_id} (source: {source})")
                 
@@ -178,11 +208,8 @@ def fix_user_profiles():
                             stats['business_id_synced'] += 1
                             logger.info(f"  ✅ Updated user.business_id to {business_id}")
                         
-                        if hasattr(user, 'tenant_id') and not user.tenant_id:
-                            user.tenant_id = business_id
-                            user.save(update_fields=['tenant_id'])
-                            user_updated = True
-                            logger.info(f"  ✅ Set user.tenant_id to {business_id}")
+                        # Skip tenant_id update as it's a ForeignKey, not a UUID field
+                        # The tenant relationship needs to be handled differently
                     
                     # Report if no business found
                     if not business_id:
@@ -201,6 +228,7 @@ def fix_user_profiles():
         logger.info(f"UserProfiles created: {stats['profiles_created']}")
         logger.info(f"UserProfiles updated: {stats['profiles_updated']}")
         logger.info(f"Business IDs synced to User model: {stats['business_id_synced']}")
+        logger.info(f"Missing Business records created: {stats['businesses_created']}")
         logger.info(f"Invalid business IDs found: {stats['invalid_business_ids']}")
         logger.info(f"Users without business: {stats['users_without_business']}")
         logger.info(f"Errors encountered: {stats['errors']}")
