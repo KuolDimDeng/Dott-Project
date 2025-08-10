@@ -47,8 +47,8 @@ export default function BankingDashboard() {
   const fetchUserProfile = async () => {
     console.log('🔍 [BankingDashboard] === STARTING COUNTRY DETECTION ===');
     try {
-      // Try the session endpoint first which has user data
-      const response = await fetch('/api/auth/session-v2', {
+      // Try the user profile endpoint which has business country data
+      const response = await fetch('/api/user/profile', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -58,38 +58,39 @@ export default function BankingDashboard() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 [BankingDashboard] Full session response:', JSON.stringify(data, null, 2));
+        console.log('🔍 [BankingDashboard] Full profile response:', JSON.stringify(data, null, 2));
         
-        // Get country from session user data - check all possible locations
-        const country = data.user?.country || 
-                       data.user?.business_country || 
+        // Get country from profile data - check all possible locations
+        // Priority: business_country > country > default to empty (not US)
+        const country = data.business_country || 
                        data.country || 
-                       data.business_country || 
-                       'US';
+                       data.user?.business_country || 
+                       data.user?.country || 
+                       '';
         
-        console.log('🔍 [BankingDashboard] Extracted country from session:', country);
-        console.log('🔍 [BankingDashboard] Available fields in user:', data.user ? Object.keys(data.user) : 'No user object');
+        console.log('🔍 [BankingDashboard] Extracted country from profile:', country);
+        console.log('🔍 [BankingDashboard] Available fields:', Object.keys(data));
         
-        if (country && country !== 'US') {
-          // Only set if we found a non-US country
+        if (country) {
+          // Set the country we found
           setUserCountry(country);
           const useProvider = PLAID_COUNTRIES.includes(country) ? 'plaid' : 'wise';
           setProvider(useProvider);
           setCountryDetected(true);
-          console.log(`🔍 [BankingDashboard] Session set - Country: ${country}, Provider: ${useProvider}`);
+          console.log(`🔍 [BankingDashboard] Profile set - Country: ${country}, Provider: ${useProvider}`);
           return; // Don't try the alt endpoint
         } else {
-          console.log('🔍 [BankingDashboard] Session returned US or no country, trying alt endpoint...');
+          console.log('🔍 [BankingDashboard] No country in profile, trying session endpoint...');
         }
       } else {
-        console.error('🔍 [BankingDashboard] Failed to fetch session:', response.status);
+        console.error('🔍 [BankingDashboard] Failed to fetch profile:', response.status);
       }
       
       // Try alternative endpoints
       console.log('🔍 [BankingDashboard] Trying alternative endpoints...');
       
-      // First try /api/user/profile
-      let altResponse = await fetch('/api/user/profile', {
+      // Try the session-v2 endpoint
+      let altResponse = await fetch('/api/auth/session-v2', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -99,7 +100,7 @@ export default function BankingDashboard() {
       
       // If that fails, try /api/users/me
       if (!altResponse.ok) {
-        console.log('🔍 [BankingDashboard] /api/user/profile failed, trying /api/users/me...');
+        console.log('🔍 [BankingDashboard] Session-v2 failed, trying /api/users/me...');
         altResponse = await fetch('/api/users/me', {
           method: 'GET',
           credentials: 'include',
@@ -111,35 +112,44 @@ export default function BankingDashboard() {
       
       if (altResponse.ok) {
         const altData = await altResponse.json();
-        console.log('🔍 [BankingDashboard] Full /api/users/me response:', JSON.stringify(altData, null, 2));
+        console.log('🔍 [BankingDashboard] Alternative endpoint response:', JSON.stringify(altData, null, 2));
         
         // Check all possible locations for country
-        const country = altData.country || 
-                       altData.business_country || 
-                       altData.user?.country || 
-                       altData.user?.business_country ||
-                       altData.data?.country ||
+        const country = altData.business_country || 
+                       altData.country || 
+                       altData.user?.business_country || 
+                       altData.user?.country ||
                        altData.data?.business_country ||
-                       'US';
+                       altData.data?.country ||
+                       '';
                        
-        console.log('🔍 [BankingDashboard] Extracted country from /api/users/me:', country);
-        setUserCountry(country);
+        console.log('🔍 [BankingDashboard] Extracted country from alternative endpoint:', country);
         
-        const useProvider = PLAID_COUNTRIES.includes(country) ? 'plaid' : 'wise';
-        setProvider(useProvider);
-        setCountryDetected(true);
-        console.log(`🔍 [BankingDashboard] /api/users/me set - Country: ${country}, Provider: ${useProvider}`);
+        if (country) {
+          setUserCountry(country);
+          const useProvider = PLAID_COUNTRIES.includes(country) ? 'plaid' : 'wise';
+          setProvider(useProvider);
+          setCountryDetected(true);
+          console.log(`🔍 [BankingDashboard] Alternative endpoint set - Country: ${country}, Provider: ${useProvider}`);
+        } else {
+          // If still no country found, default to Wise for international users
+          console.log('🔍 [BankingDashboard] No country found in any endpoint, defaulting to Wise for international');
+          setUserCountry('International');
+          setProvider('wise');
+          setCountryDetected(true);
+        }
       } else {
-        console.error('🔍 [BankingDashboard] Both endpoints failed, defaulting to US');
-        console.error('🔍 [BankingDashboard] /api/users/me status:', altResponse.status);
-        setUserCountry('US');
-        setProvider('plaid');
+        console.error('🔍 [BankingDashboard] All endpoints failed, defaulting to Wise');
+        console.error('🔍 [BankingDashboard] Last endpoint status:', altResponse.status);
+        setUserCountry('International');
+        setProvider('wise');
         setCountryDetected(true);
       }
     } catch (error) {
       console.error('🔍 [BankingDashboard] Error fetching user profile:', error);
-      setUserCountry('US');
-      setProvider('plaid');
+      // Default to Wise for international users when we can't determine country
+      setUserCountry('International');
+      setProvider('wise');
       setCountryDetected(true);
     }
   };
