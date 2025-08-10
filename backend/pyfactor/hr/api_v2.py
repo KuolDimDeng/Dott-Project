@@ -40,10 +40,19 @@ def employee_list_v2(request):
     
     if not business_id:
         logger.error(f"[Employee API v2] No business_id found for user: {request.user.email}")
-        return Response(
-            {"error": "No business association found for user"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        
+        # CRITICAL FIX: If user has tenant_id but no business_id, fix it
+        if hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            logger.warning(f"[Employee API v2] User has tenant_id but no business_id - FIXING")
+            request.user.business_id = request.user.tenant_id
+            request.user.save()
+            business_id = request.user.tenant_id
+            logger.info(f"[Employee API v2] Fixed user's business_id to: {business_id}")
+        else:
+            return Response(
+                {"error": "No business association found for user. Please complete onboarding."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     logger.info(f"[Employee API v2] {request.method} request - User: {request.user.email}, Business: {business_id}")
     
