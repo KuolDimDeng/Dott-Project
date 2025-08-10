@@ -94,7 +94,6 @@ export async function POST(request) {
     });
 
     // Set cookies to update the onboarding step
-    const cookieStore = cookies();
     const expiration = new Date();
     expiration.setDate(expiration.getDate() + 7); // 1 week
     
