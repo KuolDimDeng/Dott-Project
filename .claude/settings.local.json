@@ -285,7 +285,8 @@
       "Bash(./initialize_production_accounts.sh:*)",
       "Bash(/Users/kuoldeng/projectx/deploy_pos_tenant_fix.sh)",
       "Bash(/Users/kuoldeng/projectx/deploy_product_fixes.sh)",
-      "Bash(/Users/kuoldeng/projectx/deploy_react_error_fix.sh)"
+      "Bash(/Users/kuoldeng/projectx/deploy_react_error_fix.sh)",
+      "Bash(/Users/kuoldeng/projectx/deploy_security_complete.sh)"
     ],
     "deny": []
   }

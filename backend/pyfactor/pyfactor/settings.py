@@ -782,6 +782,10 @@ MIDDLEWARE = [
     # 1. Django Security (essential)
     'django.middleware.security.SecurityMiddleware',
     
+    # CRITICAL: Tenant isolation middleware (MUST be early in chain)
+    'custom_auth.middleware_enhanced.EnhancedTenantMiddleware',
+    'custom_auth.middleware_enhanced.CrossTenantAccessMonitor',
+    
     # 2. Static Files (required for production)
     'whitenoise.middleware.WhiteNoiseMiddleware',
     
@@ -1288,3 +1292,25 @@ RLS_PUBLIC_PATHS = [
     '/api/currency/test-public/',  # Public currency test endpoint
     '/api/currency/list/',         # Public currency list endpoint (for initial setup)
 ]
+
+
+# Security Logging Configuration
+LOGGING['loggers']['security.tenant'] = {
+    'handlers': ['console', 'file'],
+    'level': 'INFO',
+    'propagate': False,
+}
+
+LOGGING['loggers']['security.monitor'] = {
+    'handlers': ['console', 'file'], 
+    'level': 'WARNING',
+    'propagate': False,
+}
+
+# Tenant isolation settings
+TENANT_ISOLATION = {
+    'ENABLED': True,
+    'ENFORCE_AT_DATABASE': True,
+    'LOG_VIOLATIONS': True,
+    'BLOCK_NO_TENANT': True,
+}
