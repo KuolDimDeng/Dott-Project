@@ -273,6 +273,14 @@ export async function GET(request) {
       typeof_onboarding_completed: typeof sessionData.onboarding_completed
     });
     
+    // SINGLE SOURCE OF TRUTH: Log subscription plan source
+    console.log('[Session-V2] SUBSCRIPTION SINGLE SOURCE OF TRUTH:', {
+      top_level_subscription: sessionData.subscription_plan,
+      will_use: sessionData.subscription_plan || 'free',
+      ignoring_user_subscription: userData.subscription_plan,
+      ignoring_tenant_subscription: tenantData.subscription_plan
+    });
+    
     // SIMPLIFIED: Direct backend data without internal HTTP calls
     // The backend session data is already authoritative
     
@@ -322,10 +330,10 @@ export async function GET(request) {
         // Business information - check multiple sources
         businessName: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
         business_name: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
-        // Subscription information - prioritize session/tenant data over user model (like business name)
-        subscriptionPlan: sessionData.subscription_plan || tenantData.subscription_plan || userData.subscription_plan || sessionData.selected_plan || 'free',
-        subscription_plan: sessionData.subscription_plan || tenantData.subscription_plan || userData.subscription_plan || sessionData.selected_plan || 'free',
-        selected_plan: sessionData.selected_plan || userData.selected_plan || tenantData.selected_plan,
+        // SINGLE SOURCE OF TRUTH: subscription_plan comes from top-level session data only
+        subscriptionPlan: sessionData.subscription_plan || 'free',
+        subscription_plan: sessionData.subscription_plan || 'free',
+        selected_plan: sessionData.subscription_plan || 'free',  // Ensure consistency
         // CRITICAL: Backend's authoritative onboarding status
         needsOnboarding: sessionData.needs_onboarding,
         onboardingCompleted: sessionData.onboarding_completed || false,

@@ -17,6 +17,7 @@ class SessionSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     tenant = serializers.SerializerMethodField()
     session_token = serializers.SerializerMethodField()
+    subscription_plan = serializers.SerializerMethodField()  # Override to use single source of truth
     
     class Meta:
         model = UserSession
@@ -50,8 +51,34 @@ class SessionSerializer(serializers.ModelSerializer):
         """Return session ID as token"""
         return str(obj.session_id)
     
+    def get_subscription_plan(self, obj):
+        """Return subscription plan from single source of truth"""
+        from users.subscription_service import SubscriptionService
+        
+        # Get subscription from single source of truth
+        if obj.user.business_id:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.user.business_id))
+            logger.info(f"[SessionSerializer] Top-level subscription for business {obj.user.business_id}: {subscription_plan}")
+        elif obj.tenant:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.tenant.id))
+            logger.info(f"[SessionSerializer] Top-level subscription for tenant {obj.tenant.id}: {subscription_plan}")
+        else:
+            subscription_plan = 'free'
+            logger.info(f"[SessionSerializer] No business/tenant found, defaulting to free")
+        
+        # Update the session's subscription_plan field for consistency
+        if obj.subscription_plan != subscription_plan:
+            obj.subscription_plan = subscription_plan
+            obj.save(update_fields=['subscription_plan'])
+            logger.info(f"[SessionSerializer] Updated session subscription_plan field to: {subscription_plan}")
+        
+        return subscription_plan
+    
     def get_user(self, obj):
         """Return user information including business details"""
+        # Import subscription service for single source of truth
+        from users.subscription_service import SubscriptionService
+        
         # Log user role for tracking
         user_role = getattr(obj.user, 'role', 'OWNER')  # Default to OWNER for new users
         logger.info(f"🚨 [ROLE_TRACKING] SessionSerializer - user {obj.user.email} role: {user_role}")
@@ -109,6 +136,21 @@ class SessionSerializer(serializers.ModelSerializer):
         
         logger.info(f"[SessionSerializer] DEBUG - Total permissions loaded: {len(page_permissions)}")
         
+        # Get subscription plan from single source of truth (SubscriptionService)
+        subscription_plan = 'free'  # Default
+        if obj.user.business_id:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.user.business_id))
+            logger.info(f"[SessionSerializer] Subscription from SubscriptionService for business {obj.user.business_id}: {subscription_plan}")
+        elif obj.tenant:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.tenant.id))
+            logger.info(f"[SessionSerializer] Subscription from SubscriptionService for tenant {obj.tenant.id}: {subscription_plan}")
+        
+        # Also update the session object's subscription_plan field for consistency
+        if obj.subscription_plan != subscription_plan:
+            obj.subscription_plan = subscription_plan
+            obj.save(update_fields=['subscription_plan'])
+            logger.info(f"[SessionSerializer] Updated session subscription_plan to: {subscription_plan}")
+        
         user_data = {
             'id': obj.user.id,
             'email': obj.user.email,
@@ -118,7 +160,7 @@ class SessionSerializer(serializers.ModelSerializer):
             'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', ''),
-            'subscription_plan': getattr(obj.user, 'subscription_plan', 'free'),
+            'subscription_plan': subscription_plan,  # Single source of truth
             'business_id': str(obj.user.business_id) if obj.user.business_id else None,
             'tenantId': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None,
             'tenant_id': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None
@@ -251,11 +293,15 @@ class SessionSerializer(serializers.ModelSerializer):
             else:
                 logger.debug(f"[SessionSerializer] Using cached business name: {business_name}")
             
+            # Get subscription from single source of truth
+            from users.subscription_service import SubscriptionService
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.tenant.id))
+            
             return {
                 'id': str(obj.tenant.id),
                 'name': business_name,  # Use the actual business name
                 'business_name': business_name,  # Use the actual business name
-                'subscription_plan': obj.user.subscription_plan if hasattr(obj.user, 'subscription_plan') else obj.subscription_plan
+                'subscription_plan': subscription_plan  # Single source of truth
             }
         return None
 

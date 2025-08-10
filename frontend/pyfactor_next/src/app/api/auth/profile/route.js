@@ -39,14 +39,8 @@ export async function GET(request) {
         
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json();
-          // CRITICAL FIX: Prioritize correct subscription plan sources
-          // 1. sessionData.subscription_plan (top-level session field) 
-          // 2. sessionData.tenant.subscription_plan (tenant model field)
-          // 3. sessionData.user.subscription_plan (user model field - fallback only)
-          const correctSubscriptionPlan = sessionData.subscription_plan || 
-                                         sessionData.tenant?.subscription_plan || 
-                                         sessionData.user?.subscriptionPlan || 
-                                         sessionData.user?.subscription_plan;
+          // SINGLE SOURCE OF TRUTH: Only use top-level subscription_plan
+          const correctSubscriptionPlan = sessionData.subscription_plan || 'free';
           
           console.log('[Profile API] Session data received:', {
             authenticated: sessionData.authenticated,
@@ -54,10 +48,9 @@ export async function GET(request) {
             email: sessionData.user?.email,
             businessName: sessionData.user?.businessName,
             subscriptionPlan: correctSubscriptionPlan,
-            subscriptionSources: {
+            singleSourceOfTruth: {
               topLevel: sessionData.subscription_plan,
-              tenant: sessionData.tenant?.subscription_plan,
-              userModel: sessionData.user?.subscription_plan
+              usingValue: correctSubscriptionPlan
             }
           });
           
