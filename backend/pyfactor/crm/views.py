@@ -11,7 +11,7 @@ from datetime import timedelta
 from django.db.models import Count, Sum
 import logging
 
-from .models import Customer, Contact, Lead, Opportunity, Deal, Activity, Campaign
+from .models import Customer, Contact, Lead, Opportunity, Deal, Activity, Campaign, CampaignMember
 from .serializers import (
     CustomerSerializer, CustomerDetailSerializer, ContactSerializer,
     LeadSerializer, LeadDetailSerializer, OpportunitySerializer,
@@ -227,3 +227,13 @@ class CampaignViewSet(TenantFilteredViewSet):
             'campaigns_by_status': list(campaigns_by_status),
             'tenant_id': str(request.user.tenant_id) if hasattr(request.user, 'tenant_id') else None
         })
+
+
+class CampaignMemberViewSet(TenantFilteredViewSet):
+    """CampaignMember ViewSet with proper tenant isolation"""
+    queryset = CampaignMember.objects.all()
+    serializer_class = CampaignSerializer  # Use CampaignSerializer temporarily
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['campaign', 'status']
+    search_fields = ['contact__first_name', 'contact__last_name', 'lead__first_name', 'lead__last_name']
+    ordering_fields = ['created_at', 'status']
