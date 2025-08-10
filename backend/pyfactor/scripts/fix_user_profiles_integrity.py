@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 from custom_auth.models import User
 from users.models import UserProfile, Business
-from session_manager.models import Session
+from session_manager.models import UserSession
 
 
 def validate_uuid(value):
@@ -51,7 +51,7 @@ def get_business_id_from_session(user_email):
     """Try to get business_id from active sessions"""
     try:
         # Find the most recent active session for this user
-        session = Session.objects.filter(
+        session = UserSession.objects.filter(
             user__email=user_email,
             is_active=True
         ).order_by('-created_at').first()
