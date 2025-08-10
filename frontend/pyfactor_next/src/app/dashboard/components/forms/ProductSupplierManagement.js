@@ -17,7 +17,9 @@ import {
   EnvelopeIcon,
   MapPinIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
@@ -65,7 +67,7 @@ const ProductSupplierManagement = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState(null);
@@ -168,7 +170,7 @@ const ProductSupplierManagement = () => {
         toast.success('Supplier created successfully');
       }
       
-      setOpenDialog(false);
+      setShowForm(false);
       resetForm();
       fetchSuppliers();
       
@@ -192,7 +194,9 @@ const ProductSupplierManagement = () => {
       ...supplier,
       products: supplier.products?.map(p => p.id) || []
     });
-    setOpenDialog(true);
+    setShowForm(true);
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handle delete
@@ -412,16 +416,308 @@ const ProductSupplierManagement = () => {
           </div>
           <button
             onClick={() => {
-              resetForm();
-              setOpenDialog(true);
+              if (showForm && !editingSupplier) {
+                setShowForm(false);
+                resetForm();
+              } else {
+                resetForm();
+                setShowForm(true);
+              }
             }}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className={`flex items-center px-4 py-2 ${
+              showForm && !editingSupplier 
+                ? 'bg-gray-600 hover:bg-gray-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } text-white rounded-lg transition-colors`}
           >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Add Supplier
+            {showForm && !editingSupplier ? (
+              <>
+                <ChevronUpIcon className="w-5 h-5 mr-2" />
+                Hide Form
+              </>
+            ) : (
+              <>
+                <PlusIcon className="w-5 h-5 mr-2" />
+                Add Supplier
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Inline Form */}
+      {showForm && (
+        <div className="mb-6 bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {editingSupplier ? 'Edit Supplier' : 'Add New Supplier'}
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Supplier Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Supplier Name *
+                <FieldTooltip text="Enter the official business name of your supplier" />
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className={`mt-1 block w-full px-3 py-2 border ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="e.g., ABC Supplies Inc."
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Contact Person */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Contact Person
+                <FieldTooltip text="Primary contact person at the supplier company" />
+              </label>
+              <input
+                type="text"
+                value={formData.contact_person}
+                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., John Smith"
+              />
+            </div>
+
+            {/* Email and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email *
+                  <FieldTooltip text="Primary email for purchase orders and communication" />
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className={`mt-1 block w-full px-3 py-2 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="supplier@example.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone *
+                  <FieldTooltip text="Primary phone number for urgent orders" />
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className={`mt-1 block w-full px-3 py-2 border ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="+1 (555) 123-4567"
+                />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Address
+                <FieldTooltip text="Street address for deliveries and correspondence" />
+              </label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="123 Main Street, Suite 100"
+              />
+            </div>
+
+            {/* City, State, Zip */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  City
+                </label>
+                <input
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="New York"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  State
+                </label>
+                <input
+                  type="text"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="NY"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Zip Code
+                </label>
+                <input
+                  type="text"
+                  value={formData.zip_code}
+                  onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="10001"
+                />
+              </div>
+            </div>
+
+            {/* Products */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Products Supplied *
+                <FieldTooltip text="Select all products this supplier provides" />
+              </label>
+              <select
+                multiple
+                value={formData.products}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                  setFormData({ ...formData, products: selected });
+                }}
+                className={`mt-1 block w-full px-3 py-2 border ${
+                  errors.products ? 'border-red-500' : 'border-gray-300'
+                } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                size="5"
+              >
+                {products.map(product => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} - {product.sku}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple products</p>
+              {errors.products && (
+                <p className="mt-1 text-sm text-red-600">{errors.products}</p>
+              )}
+            </div>
+
+            {/* Payment Terms and Tax ID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Payment Terms
+                  <FieldTooltip text="Standard payment terms with this supplier (e.g., Net 30)" />
+                </label>
+                <input
+                  type="text"
+                  value={formData.payment_terms}
+                  onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Net 30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Tax ID
+                  <FieldTooltip text="Supplier's tax identification number for 1099 reporting" />
+                </label>
+                <input
+                  type="text"
+                  value={formData.tax_id}
+                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="XX-XXXXXXX"
+                />
+              </div>
+            </div>
+
+            {/* Website */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Website
+                <FieldTooltip text="Supplier's website for product catalog and ordering" />
+              </label>
+              <input
+                type="url"
+                value={formData.website}
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://www.supplier.com"
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Notes
+                <FieldTooltip text="Additional notes about this supplier (minimum orders, special requirements, etc.)" />
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows="3"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter any additional notes..."
+              />
+            </div>
+
+            {/* Active Status */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+                Active Supplier
+                <FieldTooltip text="Uncheck to temporarily disable this supplier without deleting" />
+              </label>
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false);
+                  resetForm();
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {saving && <ButtonSpinner />}
+                {editingSupplier ? 'Update Supplier' : 'Add Supplier'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Suppliers Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -522,309 +818,6 @@ const ProductSupplierManagement = () => {
           </div>
         </div>
       </div>
-
-      {/* Add/Edit Supplier Dialog */}
-      <Transition appear show={openDialog} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setOpenDialog(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900 mb-4"
-                  >
-                    {editingSupplier ? 'Edit Supplier' : 'Add New Supplier'}
-                  </Dialog.Title>
-
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Supplier Name */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Supplier Name *
-                        <FieldTooltip text="Enter the official business name of your supplier" />
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className={`mt-1 block w-full px-3 py-2 border ${
-                          errors.name ? 'border-red-500' : 'border-gray-300'
-                        } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="e.g., ABC Supplies Inc."
-                      />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                      )}
-                    </div>
-
-                    {/* Contact Person */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Contact Person
-                        <FieldTooltip text="Primary contact person at the supplier company" />
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.contact_person}
-                        onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., John Smith"
-                      />
-                    </div>
-
-                    {/* Email and Phone */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Email *
-                          <FieldTooltip text="Primary email for purchase orders and communication" />
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className={`mt-1 block w-full px-3 py-2 border ${
-                            errors.email ? 'border-red-500' : 'border-gray-300'
-                          } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                          placeholder="supplier@example.com"
-                        />
-                        {errors.email && (
-                          <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Phone *
-                          <FieldTooltip text="Primary phone number for urgent orders" />
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className={`mt-1 block w-full px-3 py-2 border ${
-                            errors.phone ? 'border-red-500' : 'border-gray-300'
-                          } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                          placeholder="+1 (555) 123-4567"
-                        />
-                        {errors.phone && (
-                          <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Address
-                        <FieldTooltip text="Street address for deliveries and correspondence" />
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="123 Main Street, Suite 100"
-                      />
-                    </div>
-
-                    {/* City, State, Zip */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          City
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="New York"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          State
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.state}
-                          onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="NY"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Zip Code
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.zip_code}
-                          onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="10001"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Products */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Products Supplied *
-                        <FieldTooltip text="Select all products this supplier provides" />
-                      </label>
-                      <select
-                        multiple
-                        value={formData.products}
-                        onChange={(e) => {
-                          const selected = Array.from(e.target.selectedOptions, option => option.value);
-                          setFormData({ ...formData, products: selected });
-                        }}
-                        className={`mt-1 block w-full px-3 py-2 border ${
-                          errors.products ? 'border-red-500' : 'border-gray-300'
-                        } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        size="5"
-                      >
-                        {products.map(product => (
-                          <option key={product.id} value={product.id}>
-                            {product.name} - {product.sku}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple products</p>
-                      {errors.products && (
-                        <p className="mt-1 text-sm text-red-600">{errors.products}</p>
-                      )}
-                    </div>
-
-                    {/* Payment Terms and Tax ID */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Payment Terms
-                          <FieldTooltip text="Standard payment terms with this supplier (e.g., Net 30)" />
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.payment_terms}
-                          onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Net 30"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Tax ID
-                          <FieldTooltip text="Supplier's tax identification number for 1099 reporting" />
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.tax_id}
-                          onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="XX-XXXXXXX"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Website */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Website
-                        <FieldTooltip text="Supplier's website for product catalog and ordering" />
-                      </label>
-                      <input
-                        type="url"
-                        value={formData.website}
-                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="https://www.supplier.com"
-                      />
-                    </div>
-
-                    {/* Notes */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Notes
-                        <FieldTooltip text="Additional notes about this supplier (minimum orders, special requirements, etc.)" />
-                      </label>
-                      <textarea
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        rows="3"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter any additional notes..."
-                      />
-                    </div>
-
-                    {/* Active Status */}
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="is_active"
-                        checked={formData.is_active}
-                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-                        Active Supplier
-                        <FieldTooltip text="Uncheck to temporarily disable this supplier without deleting" />
-                      </label>
-                    </div>
-
-                    {/* Form Actions */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenDialog(false);
-                          resetForm();
-                        }}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={saving}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                      >
-                        {saving && <ButtonSpinner />}
-                        {editingSupplier ? 'Update Supplier' : 'Add Supplier'}
-                      </button>
-                    </div>
-                  </form>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
 
       {/* Delete Confirmation Dialog */}
       <Transition appear show={deleteDialogOpen} as={Fragment}>
