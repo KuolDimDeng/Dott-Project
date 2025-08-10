@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q, Sum, Count, Avg
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from core.api import TenantIsolatedViewSet
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from .models import ProductSupplier, ProductSupplierItem
 from .serializers import (
     ProductSupplierSerializer,
