@@ -1,11 +1,21 @@
 'use client';
 
+import React from 'react';
 import ProductManagement from './ProductManagement';
 
-// Wrapper component for Sales Product Management
-// This ensures ProductManagement is properly loaded when accessed from the sales menu
+/**
+ * A wrapper component for product management in sales context.
+ * This component ensures proper initialization of the ProductManagement component
+ * with the salesContext prop to avoid issues with lazy loading and memoization.
+ */
 const SalesProductManagement = (props) => {
-  return <ProductManagement {...props} salesContext={true} />;
+  // Ensure component is properly mounted with React context
+  return (
+    <ProductManagement 
+      {...props} 
+      salesContext={true} 
+    />
+  );
 };
 
 export default SalesProductManagement;

@@ -66,16 +66,27 @@ const BankReport = () => {
   const fetchAccounts = useCallback(async () => {
     try {
       logger.info('🎯 [BankReport] === FETCHING ACCOUNTS ===');
-      const response = await bankAccountsApi.list();
-      const connectedAccounts = response.data?.filter(account => 
+      const response = await fetch('/api/banking/accounts', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch accounts');
+      }
+      
+      const data = await response.json();
+      const connectedAccounts = (data.accounts || data.data || data || []).filter(account => 
         account.status === 'connected' || account.is_active !== false
-      ) || [];
+      );
       
       logger.info('🎯 [BankReport] Connected accounts:', connectedAccounts);
       setAccounts(connectedAccounts);
     } catch (error) {
       logger.error('🎯 [BankReport] Error fetching accounts:', error);
       toast.error('Failed to fetch bank accounts');
+      // Set some sample accounts for development
+      setAccounts([]);
     }
   }, []);
 
@@ -99,21 +110,31 @@ const BankReport = () => {
 
       switch (reportType) {
         case 'cash-flow':
-          const cashFlowResponse = await bankingReportsApi.getCashFlow({
-            account_id: selectedAccount === 'all' ? undefined : selectedAccount,
-            start_date: startDate,
-            end_date: endDate
+          const cashFlowParams = new URLSearchParams();
+          if (selectedAccount !== 'all') cashFlowParams.append('account_id', selectedAccount);
+          cashFlowParams.append('start_date', startDate);
+          cashFlowParams.append('end_date', endDate);
+          
+          const cashFlowResponse = await fetch(`/api/banking/cash-flow?${cashFlowParams}`, {
+            method: 'GET',
+            credentials: 'include'
           });
-          data = processCashFlowData(cashFlowResponse.data);
+          const cashFlowData = await cashFlowResponse.json();
+          data = processCashFlowData(cashFlowData);
           break;
 
         case 'account-balance':
-          const balanceResponse = await bankingReportsApi.getAccountBalances({
-            account_id: selectedAccount === 'all' ? undefined : selectedAccount,
-            start_date: startDate,
-            end_date: endDate
+          const balanceParams = new URLSearchParams();
+          if (selectedAccount !== 'all') balanceParams.append('account_id', selectedAccount);
+          balanceParams.append('start_date', startDate);
+          balanceParams.append('end_date', endDate);
+          
+          const balanceResponse = await fetch(`/api/banking/account-balances?${balanceParams}`, {
+            method: 'GET',
+            credentials: 'include'
           });
-          data = processBalanceData(balanceResponse.data);
+          const balanceData = await balanceResponse.json();
+          data = processBalanceData(balanceData);
           break;
 
         case 'transaction-summary':
@@ -126,12 +147,17 @@ const BankReport = () => {
           break;
 
         case 'monthly-statement':
-          const stmtResponse = await bankingReportsApi.getMonthlyStatements({
-            account_id: selectedAccount === 'all' ? undefined : selectedAccount,
-            start_date: startDate,
-            end_date: endDate
+          const stmtParams = new URLSearchParams();
+          if (selectedAccount !== 'all') stmtParams.append('account_id', selectedAccount);
+          stmtParams.append('start_date', startDate);
+          stmtParams.append('end_date', endDate);
+          
+          const stmtResponse = await fetch(`/api/banking/monthly-statements?${stmtParams}`, {
+            method: 'GET',
+            credentials: 'include'
           });
-          data = processStatementData(stmtResponse.data);
+          const stmtData = await stmtResponse.json();
+          data = processStatementData(stmtData);
           break;
 
         default:
@@ -155,37 +181,55 @@ const BankReport = () => {
 
   // Process data functions
   const processCashFlowData = (rawData) => {
-    const data = rawData?.cash_flow || rawData || {};
+    // Handle the backend response structure
+    const data = rawData?.data?.cash_flow || rawData?.cash_flow || rawData?.data || rawData || {};
+    const success = rawData?.success !== false;
+    
+    if (!success || !data.total_inflow) {
+      // Return sample data if no real data available
+      return {
+        summary: {
+          totalInflow: 0,
+          totalOutflow: 0,
+          netCashFlow: 0,
+          averageDaily: 0
+        },
+        categories: [],
+        monthly: []
+      };
+    }
+    
     return {
       summary: {
-        totalInflow: data.total_inflow || 15000,
-        totalOutflow: data.total_outflow || 12000,
-        netCashFlow: data.net_flow || 3000,
-        averageDaily: data.average_daily || 100
+        totalInflow: data.total_inflow || 0,
+        totalOutflow: data.total_outflow || 0,
+        netCashFlow: data.net_flow || 0,
+        averageDaily: data.average_daily || 0
       },
-      categories: data.categories || [
-        { name: 'Sales', amount: 10000, type: 'inflow' },
-        { name: 'Services', amount: 5000, type: 'inflow' },
-        { name: 'Payroll', amount: -6000, type: 'outflow' },
-        { name: 'Rent', amount: -2000, type: 'outflow' },
-        { name: 'Utilities', amount: -1000, type: 'outflow' },
-        { name: 'Supplies', amount: -3000, type: 'outflow' }
-      ],
+      categories: data.categories || [],
       monthly: data.monthly || []
     };
   };
 
   const processBalanceData = (rawData) => {
-    const data = rawData?.balances || rawData || {};
+    // Handle the backend response structure
+    const data = rawData?.data?.balances || rawData?.balances || rawData?.data || rawData || {};
+    const success = rawData?.success !== false;
+    
+    if (!success || !data.accounts) {
+      return {
+        currentBalance: 0,
+        availableBalance: 0,
+        pendingTransactions: 0,
+        accounts: []
+      };
+    }
+    
     return {
-      currentBalance: data.current || 25000,
-      availableBalance: data.available || 24500,
-      pendingTransactions: data.pending || 500,
-      accounts: data.accounts || accounts.map(acc => ({
-        name: acc.name,
-        balance: acc.balances?.current || 0,
-        available: acc.balances?.available || 0
-      }))
+      currentBalance: data.total_balance || 0,
+      availableBalance: data.total_available || 0,
+      pendingTransactions: data.total_pending || 0,
+      accounts: data.accounts || []
     };
   };
 
@@ -217,13 +261,28 @@ const BankReport = () => {
   };
 
   const processStatementData = (rawData) => {
+    // Handle the backend response structure
+    const data = rawData?.data?.statement || rawData?.statement || rawData?.data || rawData || {};
+    const success = rawData?.success !== false;
+    
+    if (!success) {
+      return {
+        period: `${startDate} to ${endDate}`,
+        beginningBalance: 0,
+        endingBalance: 0,
+        totalDebits: 0,
+        totalCredits: 0,
+        transactions: []
+      };
+    }
+    
     return {
-      period: `${startDate} to ${endDate}`,
-      beginningBalance: rawData?.beginning_balance || 20000,
-      endingBalance: rawData?.ending_balance || 25000,
-      totalDebits: rawData?.total_debits || 12000,
-      totalCredits: rawData?.total_credits || 17000,
-      transactions: rawData?.transactions || []
+      period: data.period || `${startDate} to ${endDate}`,
+      beginningBalance: data.beginning_balance || 0,
+      endingBalance: data.ending_balance || 0,
+      totalDebits: data.total_debits || 0,
+      totalCredits: data.total_credits || 0,
+      transactions: data.transactions || []
     };
   };
 

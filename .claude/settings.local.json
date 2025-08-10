@@ -282,7 +282,9 @@
       "Bash(timeout 60 pnpm build:*)",
       "Bash(./fix_amplify_syntax.sh:*)",
       "Bash(timeout 60 pnpm:*)",
-      "Bash(./initialize_production_accounts.sh:*)"
+      "Bash(./initialize_production_accounts.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/deploy_pos_tenant_fix.sh)",
+      "Bash(/Users/kuoldeng/projectx/deploy_product_fixes.sh)"
     ],
     "deny": []
   }

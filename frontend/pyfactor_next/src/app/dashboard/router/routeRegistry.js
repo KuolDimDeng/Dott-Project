@@ -415,7 +415,7 @@ export const routeRegistry = {
     description: 'Reconcile bank accounts'
   },
   'banking-reports': {
-    component: enhancedLazy(() => import('../components/forms/ReportDisplay'), 'Banking Reports'),
+    component: enhancedLazy(() => import('../components/forms/BankReport'), 'Banking Reports'),
     title: 'Banking Reports',
     description: 'Banking analytics'
   },
