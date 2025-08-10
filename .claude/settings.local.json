@@ -287,7 +287,8 @@
       "Bash(/Users/kuoldeng/projectx/deploy_product_fixes.sh)",
       "Bash(/Users/kuoldeng/projectx/deploy_react_error_fix.sh)",
       "Bash(/Users/kuoldeng/projectx/deploy_security_complete.sh)",
-      "Bash(./scripts/security-env-audit.sh:*)"
+      "Bash(./scripts/security-env-audit.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/deploy_product_supplier.sh:*)"
     ],
     "deny": []
   }
