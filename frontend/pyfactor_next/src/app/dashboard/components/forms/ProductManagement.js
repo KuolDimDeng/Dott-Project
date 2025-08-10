@@ -3173,17 +3173,6 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             Filter
           </button>
           
-          {/* TEST BUTTON - REMOVE AFTER DEBUGGING */}
-          <button
-            className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
-            onClick={() => {
-              console.log('🟡 TEST BUTTON CLICKED!');
-              alert('Test button works! JavaScript is running.');
-            }}
-          >
-            Test JS
-          </button>
-          
           <button
             className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             onClick={() => {

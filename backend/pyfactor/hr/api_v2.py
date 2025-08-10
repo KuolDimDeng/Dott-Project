@@ -49,7 +49,27 @@ def employee_list_v2(request):
     
     if request.method == 'GET':
         try:
-            # Get all employees for this business
+            # CRITICAL SECURITY: Log all employee queries for audit
+            logger.warning(f"🔒 [SECURITY AUDIT] Employee query - User: {request.user.email}, Business ID: {business_id}")
+            
+            # Debug: Check what business_id Monica has
+            if request.user.email == 'jubacargovillage@outlook.com':
+                logger.critical(f"🚨 MONICA DENG QUERY - Business ID: {business_id}, User business_id: {request.user.business_id}")
+                
+                # Check all employees in database
+                all_employees = Employee.objects.all()
+                logger.critical(f"🚨 TOTAL EMPLOYEES IN DB: {all_employees.count()}")
+                
+                # Check employees for Monica's business
+                monica_employees = Employee.objects.filter(business_id=business_id)
+                logger.critical(f"🚨 EMPLOYEES FOR MONICA's BUSINESS: {monica_employees.count()}")
+                
+                # Log first 5 employees found
+                for emp in monica_employees[:5]:
+                    logger.critical(f"🚨 Employee: {emp.email}, Business: {emp.business_id}, Tenant: {emp.tenant_id}")
+            
+            # CRITICAL: Filter by tenant to prevent data leakage
+            # Never use Employee.objects.all() - always filter by business_id
             employees = Employee.objects.filter(business_id=business_id).order_by('-created_at')
             serializer = EmployeeSerializer(employees, many=True)
             
