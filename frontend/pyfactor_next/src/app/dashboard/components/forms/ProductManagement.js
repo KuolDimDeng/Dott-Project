@@ -1,7 +1,7 @@
 'use client';
 
 
-import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo, memo } from 'react';
+import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -3379,6 +3379,6 @@ ProductManagement.propTypes = {
   salesContext: PropTypes.bool
 };
 
-// Make sure component is properly exported with memo to prevent unnecessary re-renders
-const MemoizedProductManagement = memo(ProductManagement);
-export default MemoizedProductManagement;
+// Export the component directly without memoization
+// Memoization was causing issues with lazy loading in the route registry
+export default ProductManagement;
