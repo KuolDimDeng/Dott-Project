@@ -259,8 +259,11 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               sku: product.sku || product.product_code || '',
               barcode: product.barcode || '',
               price: parseFloat(product.calculated_price || product.price || product.unit_price || 0),
-              quantity_in_stock: product.stockQuantity || product.stock_quantity || 0,
-              description: product.description || ''
+              quantity_in_stock: product.quantity || product.stockQuantity || product.stock_quantity || 0,
+              description: product.description || '',
+              pricing_model: product.pricing_model,
+              pricing_model_display: product.pricing_model_display,
+              calculated_price: product.calculated_price
             };
             console.log('[POS] Mapped product:', mapped);
             return mapped;
@@ -268,9 +271,35 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           console.log('[POS] Total products loaded:', mappedProducts.length);
           setProducts(mappedProducts);
         } else if (data.results) {
-          setProducts(data.results);
+          // Map the results to ensure consistent field names
+          const mappedResults = data.results.map(product => ({
+            id: product.id,
+            name: product.name || product.product_name,
+            sku: product.sku || product.product_code || '',
+            barcode: product.barcode || '',
+            price: parseFloat(product.calculated_price || product.price || product.unit_price || 0),
+            quantity_in_stock: product.quantity || product.stockQuantity || product.stock_quantity || product.quantity_in_stock || 0,
+            description: product.description || '',
+            pricing_model: product.pricing_model,
+            pricing_model_display: product.pricing_model_display,
+            calculated_price: product.calculated_price
+          }));
+          setProducts(mappedResults);
         } else if (Array.isArray(data)) {
-          setProducts(data);
+          // Map the array to ensure consistent field names
+          const mappedArray = data.map(product => ({
+            id: product.id,
+            name: product.name || product.product_name,
+            sku: product.sku || product.product_code || '',
+            barcode: product.barcode || '',
+            price: parseFloat(product.calculated_price || product.price || product.unit_price || 0),
+            quantity_in_stock: product.quantity || product.stockQuantity || product.stock_quantity || product.quantity_in_stock || 0,
+            description: product.description || '',
+            pricing_model: product.pricing_model,
+            pricing_model_display: product.pricing_model_display,
+            calculated_price: product.calculated_price
+          }));
+          setProducts(mappedArray);
         } else {
           setProducts([]);
         }
