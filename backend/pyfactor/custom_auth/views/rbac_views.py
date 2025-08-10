@@ -174,6 +174,101 @@ class UserManagementViewSet(viewsets.ModelViewSet):
         user.save()
         
         return Response({"status": "User activated"})
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Industry-standard user deletion with Auth0 cleanup and graceful fallback
+        
+        Process:
+        1. Try to delete from Auth0 identity provider
+        2. If Auth0 deletion fails, log but continue (graceful fallback)
+        3. Deactivate user locally (soft delete for audit trail)
+        4. Clear all active sessions
+        5. Log operation for audit
+        """
+        user = self.get_object()
+        
+        # Prevent deleting owner
+        if user.role == 'OWNER':
+            logger.warning(f"[UserDeletion] Attempt to delete owner user: {user.email}")
+            return Response(
+                {"error": "Cannot delete the business owner"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Prevent non-owners from deleting admins
+        if user.role == 'ADMIN' and request.user.role != 'OWNER':
+            logger.warning(f"[UserDeletion] Non-owner attempt to delete admin: {user.email}")
+            return Response(
+                {"error": "Only owners can delete admin users"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        logger.info(f"[UserDeletion] Starting deletion process for user: {user.email}")
+        
+        # Step 1: Try to delete from Auth0
+        auth0_deleted = False
+        if hasattr(user, 'auth0_sub') and user.auth0_sub:
+            try:
+                from ..auth0_service import delete_auth0_user
+                auth0_deleted = delete_auth0_user(user.auth0_sub)
+                if auth0_deleted:
+                    logger.info(f"[UserDeletion] Successfully deleted user from Auth0: {user.email}")
+                else:
+                    logger.warning(f"[UserDeletion] Failed to delete user from Auth0: {user.email}")
+            except Exception as e:
+                logger.error(f"[UserDeletion] Auth0 deletion error for {user.email}: {str(e)}")
+                # Continue with local deletion even if Auth0 fails
+        else:
+            logger.info(f"[UserDeletion] No Auth0 sub found for user: {user.email}")
+        
+        # Step 2: Clear all active sessions
+        try:
+            from session_manager.models import UserSession
+            sessions_deleted = UserSession.objects.filter(user=user, is_active=True).update(is_active=False)
+            logger.info(f"[UserDeletion] Deactivated {sessions_deleted} sessions for user: {user.email}")
+        except Exception as e:
+            logger.error(f"[UserDeletion] Error clearing sessions for {user.email}: {str(e)}")
+        
+        # Step 3: Soft delete (deactivate) user locally for audit trail
+        try:
+            with db_transaction.atomic():
+                # Mark as inactive instead of hard delete
+                user.is_active = False
+                user.is_deleted = True
+                user.deleted_at = timezone.now()
+                user.deletion_initiated_by = request.user.email
+                user.save()
+                
+                # Clear user permissions
+                UserPageAccess.objects.filter(user=user).delete()
+                
+                # Mark any pending invitations as cancelled
+                UserInvitation.objects.filter(
+                    email=user.email,
+                    status='pending'
+                ).update(
+                    status='cancelled',
+                    updated_at=timezone.now()
+                )
+                
+                logger.info(f"[UserDeletion] Successfully deactivated user: {user.email}")
+                
+        except Exception as e:
+            logger.error(f"[UserDeletion] Error during local user deletion: {str(e)}")
+            return Response(
+                {"error": f"Failed to delete user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Step 4: Audit log
+        logger.info(f"[UserDeletion] AUDIT: User {user.email} deleted by {request.user.email}. Auth0 deleted: {auth0_deleted}")
+        
+        return Response({
+            "message": f"User {user.email} has been successfully removed",
+            "auth0_deleted": auth0_deleted,
+            "local_deactivated": True
+        }, status=status.HTTP_200_OK)
 
 
 class PagePermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -625,6 +720,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
             # Validate request data
             email = request.data.get('email')
+            first_name = request.data.get('first_name', '').strip()
+            last_name = request.data.get('last_name', '').strip()
             role = request.data.get('role', 'USER')
             permissions_raw = request.data.get('permissions', [])
             
@@ -724,6 +821,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             try:
                 user = User.objects.create(
                     email=email,
+                    first_name=first_name,
+                    last_name=last_name,
                     role=role,
                     tenant=request.user.tenant,
                     business_id=request.user.business_id,
@@ -942,6 +1041,16 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     'created_via': 'admin_panel'
                 }
             }
+            
+            # Add name fields if provided
+            if user.first_name:
+                user_payload['given_name'] = user.first_name
+            if user.last_name:
+                user_payload['family_name'] = user.last_name
+            if user.first_name or user.last_name:
+                full_name = f"{user.first_name} {user.last_name}".strip()
+                if full_name:
+                    user_payload['name'] = full_name
             
             headers = {
                 'Authorization': f'Bearer {access_token}',

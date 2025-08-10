@@ -237,6 +237,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteData, setInviteData] = useState({
     email: '',
+    firstName: '',
+    lastName: '',
     role: 'USER',
     permissions: {}, // Now stores { pageId: { canAccess: true, canWrite: false } }
     createEmployee: false,
@@ -980,6 +982,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         body: JSON.stringify({
           email: inviteData.email,
+          first_name: inviteData.firstName,
+          last_name: inviteData.lastName,
           role: inviteData.role,
           page_permissions: pagePermissions,
           create_employee: inviteData.createEmployee,
@@ -1004,6 +1008,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setShowInviteModal(false);
       setInviteData({ 
         email: '', 
+        firstName: '',
+        lastName: '',
         role: 'USER', 
         permissions: {}, 
         createEmployee: false,
@@ -1277,6 +1283,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 setShowInviteModal(false);
                 setInviteData({
                   email: '',
+                  firstName: '',
+                  lastName: '',
                   role: 'USER',
                   permissions: {},
                   createEmployee: false,
@@ -1315,6 +1323,46 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="user@example.com"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      First Name
+                      <FieldTooltip content="User's first name for their profile" />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the user's first name
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    value={inviteData.firstName}
+                    onChange={(e) => setInviteData({ ...inviteData, firstName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="John"
+                  />
+                </div>
+                
+                <div>
+                  <div className="mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Last Name
+                      <FieldTooltip content="User's last name for their profile" />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the user's last name
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    value={inviteData.lastName}
+                    onChange={(e) => setInviteData({ ...inviteData, lastName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Doe"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1578,6 +1626,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 setShowInviteModal(false);
                 setInviteData({
                   email: '',
+                  firstName: '',
+                  lastName: '',
                   role: 'USER',
                   permissions: {},
                   createEmployee: false,
