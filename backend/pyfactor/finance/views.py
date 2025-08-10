@@ -659,32 +659,55 @@ def chart_of_account_detail(request, pk):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def chart_of_accounts(request):
-    user = request.user
-    business_id = getattr(user, 'business_id', None)
-    
-    logger.debug("Chart of Accounts API called")
-    logger.debug("User: %s, Business ID: %s", user.email, business_id)
-
-    if request.method == 'GET':
-        # Filter by business for proper tenant isolation
-        if business_id:
-            chart_accounts = ChartOfAccount.objects.filter(business=business_id)
-        else:
-            chart_accounts = ChartOfAccount.objects.none()
+    try:
+        user = request.user
         
-        serializer = ChartOfAccountSerializer(chart_accounts, many=True)
-        logger.debug("Chart of Accounts count: %s", len(chart_accounts))
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        data = request.data.copy()
-        data['business'] = business_id  # Add business_id to data
+        # Try multiple ways to get the business/tenant ID
+        business_id = getattr(user, 'business_id', None)
+        if not business_id:
+            business_id = getattr(user, 'tenant_id', None)
+        if not business_id:
+            business_id = getattr(request, 'tenant_id', None)
+        if not business_id:
+            # Try to get from X-Business-ID header
+            business_id = request.META.get('HTTP_X_BUSINESS_ID', None)
         
-        serializer = ChartOfAccountSerializer(data=data)
-        if serializer.is_valid():
-            account = serializer.save(business_id=business_id)
-            return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.debug("Chart of Accounts API called")
+        logger.debug("User: %s, Business ID: %s", user.email, business_id)
+        logger.debug("Request tenant_id: %s", getattr(request, 'tenant_id', None))
+        logger.debug("User tenant_id: %s", getattr(user, 'tenant_id', None))
+
+        if request.method == 'GET':
+            # Filter by business for proper tenant isolation
+            if business_id:
+                logger.debug("Filtering ChartOfAccount by business=%s", business_id)
+                chart_accounts = ChartOfAccount.objects.filter(business=business_id)
+            else:
+                logger.warning("No business_id found for user %s", user.email)
+                chart_accounts = ChartOfAccount.objects.none()
+            
+            logger.debug("Chart of Accounts query result: %s", chart_accounts)
+            logger.debug("Chart of Accounts count: %s", len(chart_accounts))
+            
+            serializer = ChartOfAccountSerializer(chart_accounts, many=True)
+            logger.debug("Serializer data: %s", serializer.data)
+            return Response(serializer.data)
+        elif request.method == 'POST':
+            if not business_id:
+                return Response({"error": "No business/tenant ID found"}, status=400)
+                
+            data = request.data.copy()
+            data['business'] = business_id  # Add business_id to data
+            
+            serializer = ChartOfAccountSerializer(data=data)
+            if serializer.is_valid():
+                account = serializer.save(business_id=business_id)
+                return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error("Error in chart_of_accounts view: %s", str(e))
+        logger.exception("Full traceback:")
+        return Response({"error": f"Internal server error: {str(e)}"}, status=500)
     
 
 @api_view(['GET', 'POST'])
