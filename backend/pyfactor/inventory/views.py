@@ -566,9 +566,16 @@ def product_list(request):
         else:
             logger.debug("No tenant_id found in request")
             
-        # Use the TenantManager which automatically filters by tenant
-        # The TenantManager uses the RLS context set by middleware
-        products = Product.objects.all()
+        # Get tenant_id from user for explicit filtering
+        user_tenant_id = getattr(request.user, 'tenant_id', None) or \
+                        getattr(request.user, 'business_id', None)
+        
+        if not user_tenant_id:
+            logger.warning("No tenant_id found for user, returning empty list")
+            return Response({"error": "No tenant context"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Explicitly filter by tenant_id for safety
+        products = Product.objects.filter(tenant_id=user_tenant_id)
         
         # Use a transaction with a timeout to prevent long-running queries
         from django.db import transaction as db_transaction, connection
@@ -651,8 +658,16 @@ def service_list(request):
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
             
-            # Get all services
-            services = Service.objects.all()
+            # Get tenant_id from user for explicit filtering
+            user_tenant_id = getattr(request.user, 'tenant_id', None) or \
+                           getattr(request.user, 'business_id', None)
+            
+            if not user_tenant_id:
+                logger.warning("No tenant_id found for user, returning empty list")
+                return Response({"error": "No tenant context"}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Explicitly filter by tenant_id for safety
+            services = Service.objects.filter(tenant_id=user_tenant_id)
             
             # Apply any filters from query parameters
             if request.query_params.get('is_recurring'):

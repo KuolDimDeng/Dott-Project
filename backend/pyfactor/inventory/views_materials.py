@@ -440,9 +440,9 @@ class MaterialTransactionViewSet(TenantIsolatedViewSet):
     
     def get_queryset(self):
         """Get transactions filtered by tenant and material"""
-        # Get all materials for this tenant
+        # Get all materials for this tenant - NEVER use all_objects
         if hasattr(self.request.user, 'business_id') and self.request.user.business_id:
-            tenant_materials = Material.all_objects.filter(
+            tenant_materials = Material.objects.filter(
                 tenant_id=self.request.user.business_id
             ).values_list('id', flat=True)
             
