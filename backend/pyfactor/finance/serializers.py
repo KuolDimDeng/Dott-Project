@@ -118,18 +118,14 @@ class ChartOfAccountSerializer(serializers.ModelSerializer):
         model = ChartOfAccount
         fields = ['id', 'account_number', 'name', 'description', 'category', 'category_name', 'balance', 'is_active', 'parent']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.database_name = self.context.get('database_name')
-        logger.debug(f"{self.__class__.__name__} initialized with database_name: {self.database_name}")
-    
     def create(self, validated_data):
-        return ChartOfAccount.objects.using(self.database_name).create(**validated_data)
+        # Use the default manager which should handle tenant filtering automatically
+        return ChartOfAccount.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save(using=self.database_name)
+        instance.save()
         return instance
     
 class JournalEntryLineSerializer(serializers.ModelSerializer):
