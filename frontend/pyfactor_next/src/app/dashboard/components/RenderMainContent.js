@@ -51,6 +51,9 @@ const eventToRouteMap = {
   'procurement': 'procurement',
   'purchases-reports': 'purchases-reports',
   
+  // Inventory
+  'inventory-suppliers': 'inventory-suppliers',
+  
   // Accounting
   'accounting-dashboard': 'accounting-dashboard',
   'chart-of-accounts': 'chart-of-accounts',
