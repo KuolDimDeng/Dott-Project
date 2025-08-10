@@ -5,7 +5,7 @@ This service centralizes all subscription-related operations to prevent
 the data consistency issues that occur when multiple sources are used.
 
 Industry Standard Approach:
-1. Single database table (users_subscription)
+1. Single database table (users_subscription) 
 2. Single API endpoint (/api/users/me)
 3. Single frontend hook (useSession)
 4. Real-time updates via webhooks
@@ -180,7 +180,6 @@ class SubscriptionService:
             subscription = SubscriptionService.get_active_subscription(tenant_id)
             if subscription:
                 subscription.is_active = False
-                subscription.status = 'cancelled'
                 subscription.save()
                 
                 logger.info(f"[SubscriptionService] Cancelled subscription for tenant {tenant_id}")
