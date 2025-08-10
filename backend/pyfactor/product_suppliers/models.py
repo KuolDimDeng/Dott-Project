@@ -18,7 +18,7 @@ class ProductSupplier(TenantAwareModel):
     
     # Core fields with security (tenant_id inherited from TenantAwareModel)
     business = models.ForeignKey(
-        'custom_auth.Business',
+        'users.Business',
         on_delete=models.CASCADE,
         related_name='product_suppliers',
         db_index=True,
@@ -150,13 +150,13 @@ class ProductSupplier(TenantAwareModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        'users.User',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         related_name='created_product_suppliers'
     )
     updated_by = models.ForeignKey(
-        'users.User',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         related_name='updated_product_suppliers'
