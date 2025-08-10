@@ -65,7 +65,7 @@ class SubscriptionSaveView(APIView):
         return True, None
     
     def get_business_sync(self, request):
-        """Retrieve business for the current user"""
+        """Retrieve or create business for the current user"""
         try:
             from users.models import Business
             
@@ -84,17 +84,52 @@ class SubscriptionSaveView(APIView):
             if business:
                 return business
                 
-            # Business must be created during onboarding with explicit name
-            logger.error(f"No business found for user {request.user.email} - onboarding incomplete")
-            return None
+            # CRITICAL FIX: Create business if it doesn't exist
+            logger.info(f"No business found for user {request.user.email} - creating default business")
+            
+            # Generate business name from user email
+            business_name = f"{request.user.email.split('@')[0]}'s Business"
+            if request.user.first_name or request.user.last_name:
+                user_name = f"{request.user.first_name} {request.user.last_name}".strip()
+                business_name = f"{user_name}'s Business"
+            
+            # Use user ID as business ID for consistency (same as SaveStep1View logic)
+            business_id = uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}')
+            
+            with db_transaction.atomic():
+                business = Business.objects.create(
+                    id=business_id,
+                    name=business_name,
+                    owner_id=owner_uuid,
+                    is_active=True,
+                    created_at=timezone.now()
+                )
+                
+                # Create or update UserProfile to link to business
+                profile, created = UserProfile.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'business': business,
+                        'business_id': business_id
+                    }
+                )
+                if not created and not profile.business:
+                    profile.business = business
+                    profile.business_id = business_id
+                    profile.save(update_fields=['business', 'business_id'])
+                
+                logger.info(f"Created business {business_id} for user {request.user.email}")
+                return business
             
         except Exception as e:
             logger.error(f"Error retrieving/creating business: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     @sync_to_async
     def get_business(self, request):
-        """Retrieve business for the current user"""
+        """Retrieve or create business for the current user"""
         try:
             from users.models import Business
             
@@ -113,12 +148,47 @@ class SubscriptionSaveView(APIView):
             if business:
                 return business
                 
-            # Business must be created during onboarding with explicit name
-            logger.error(f"No business found for user {request.user.email} - onboarding incomplete")
-            return None
+            # CRITICAL FIX: Create business if it doesn't exist
+            logger.info(f"No business found for user {request.user.email} - creating default business")
+            
+            # Generate business name from user email
+            business_name = f"{request.user.email.split('@')[0]}'s Business"
+            if request.user.first_name or request.user.last_name:
+                user_name = f"{request.user.first_name} {request.user.last_name}".strip()
+                business_name = f"{user_name}'s Business"
+            
+            # Use user ID as business ID for consistency (same as SaveStep1View logic)
+            business_id = uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}')
+            
+            with db_transaction.atomic():
+                business = Business.objects.create(
+                    id=business_id,
+                    name=business_name,
+                    owner_id=owner_uuid,
+                    is_active=True,
+                    created_at=timezone.now()
+                )
+                
+                # Create or update UserProfile to link to business
+                profile, created = UserProfile.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'business': business,
+                        'business_id': business_id
+                    }
+                )
+                if not created and not profile.business:
+                    profile.business = business
+                    profile.business_id = business_id
+                    profile.save(update_fields=['business', 'business_id'])
+                
+                logger.info(f"Created business {business_id} for user {request.user.email}")
+                return business
             
         except Exception as e:
             logger.error(f"Error retrieving/creating business: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     def update_onboarding_progress_sync(self, request, business, selected_plan, billing_cycle):
@@ -493,6 +563,18 @@ class SubscriptionSaveView(APIView):
                                 str(request.user.id), 'active', timezone.now()
                             ])
                     
+                    # CRITICAL FIX: Assign tenant to user model
+                    logger.info(f"[SubscriptionSave] Assigning tenant {tenant_id} to user {request.user.email}")
+                    try:
+                        from custom_auth.models import Tenant
+                        tenant_obj = Tenant.objects.get(id=tenant_id)
+                        request.user.tenant = tenant_obj
+                        request.user.business_id = business.id
+                        request.user.save(update_fields=['tenant', 'business_id'])
+                        logger.info(f"[SubscriptionSave] Successfully assigned tenant to user")
+                    except Exception as tenant_assign_error:
+                        logger.error(f"[SubscriptionSave] Error assigning tenant to user: {str(tenant_assign_error)}")
+                    
                     # Setup RLS for the tenant
                     rls_setup = self.setup_rls_for_free_plan_sync(request, tenant_id)
                     
@@ -527,7 +609,9 @@ class SubscriptionSaveView(APIView):
                         'plan': selected_plan,
                         'message': 'Free plan activated',
                         'redirect': '/onboarding/complete',
-                        'tenant_id': tenant_id
+                        'tenant_id': tenant_id,
+                        'tenantId': tenant_id,  # Also include camelCase version
+                        'business_id': str(business.id)
                     }, status=status.HTTP_200_OK)
                     
                 except Exception as e:
