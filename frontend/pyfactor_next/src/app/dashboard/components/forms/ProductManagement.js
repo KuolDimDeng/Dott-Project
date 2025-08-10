@@ -1203,7 +1203,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         sku: productData.sku || '',
         price: parseFloat(productData.price) || 0,
         cost: parseFloat(productData.cost) || 0,
-        quantity: parseInt(productData.stockQuantity) || 0,
+        quantity: parseInt(productData.stockQuantity) || 1,  // Default to 1 if not specified
         reorder_level: parseInt(productData.reorderLevel) || 0,
         for_sale: productData.forSale,
         for_rent: productData.forRent,
@@ -1462,6 +1462,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               name="stockQuantity"
               type="number"
                 min="0"
+                placeholder="1 (default)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={productData.stockQuantity || ''}
                 onChange={(e) => setProductData({...productData, stockQuantity: e.target.value})}
@@ -1857,7 +1858,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="font-medium text-black mb-2">Inventory Information</h3>
             <div className="grid grid-cols-2 gap-2">
-              <div className="text-sm text-gray-500">Price:</div>
+              <div className="text-sm text-gray-500">
+                {selectedProduct.pricing_model === 'direct' ? 'Price:' : 'Base Price:'}
+              </div>
               <div className="text-sm text-black">${parseFloat(selectedProduct.price || 0).toFixed(2)}</div>
               
               <div className="text-sm text-gray-500">Cost:</div>
@@ -1880,10 +1883,31 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               <div className="text-sm text-gray-500">Model:</div>
               <div className="text-sm text-black">{selectedProduct.pricing_model_display || selectedProduct.pricing_model}</div>
               
-              {selectedProduct.calculated_price !== undefined && (
+              {selectedProduct.calculated_price !== undefined && selectedProduct.pricing_model !== 'direct' && (
                 <>
                   <div className="text-sm text-gray-500">Current Price:</div>
-                  <div className="text-sm text-black font-medium">${parseFloat(selectedProduct.calculated_price || 0).toFixed(2)}</div>
+                  <div className="text-sm">
+                    <div className="text-black font-medium">${parseFloat(selectedProduct.calculated_price || 0).toFixed(2)}</div>
+                    {selectedProduct.price_breakdown && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {selectedProduct.pricing_model === 'time_weight' && selectedProduct.price_breakdown.days && (
+                          <span>
+                            ${selectedProduct.price_breakdown.daily_rate} × {selectedProduct.price_breakdown.days} days × {selectedProduct.price_breakdown.weight} {selectedProduct.price_breakdown.weight_unit}
+                          </span>
+                        )}
+                        {selectedProduct.pricing_model === 'time_only' && selectedProduct.price_breakdown.days && (
+                          <span>
+                            ${selectedProduct.price_breakdown.daily_rate} × {selectedProduct.price_breakdown.days} days
+                          </span>
+                        )}
+                        {selectedProduct.pricing_model === 'weight_only' && (
+                          <span>
+                            ${selectedProduct.price} × {selectedProduct.price_breakdown.weight} {selectedProduct.price_breakdown.weight_unit}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               
@@ -1966,7 +1990,13 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   
   // Render the product edit form
   const renderEditForm = () => {
-    if (!selectedProduct || !editedProduct) return null;
+    if (!selectedProduct || !editedProduct) {
+      return (
+        <div className="flex justify-center items-center h-48">
+          <p className="text-gray-600">Loading product data...</p>
+        </div>
+      );
+    }
     
     return (
       <form onSubmit={(e) => {
@@ -2527,7 +2557,14 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <div className="text-sm text-black">{product.sku || 'N/A'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">${parseFloat(product.price || 0).toFixed(2)}</div>
+                <div className="text-sm text-black">
+                  ${parseFloat(product.calculated_price || product.price || 0).toFixed(2)}
+                  {product.pricing_model !== 'direct' && (
+                    <span className="text-xs text-gray-500 block">
+                      {product.pricing_model_display}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">{product.quantity || 0}</div>
@@ -2590,7 +2627,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     
                     try {
                       const endpoint = product.is_active !== false ? 'deactivate' : 'activate';
-                      const response = await fetch(`/api/products/optimized/${product.id}/${endpoint}/`, {
+                      const response = await fetch(`/api/inventory/optimized/products/${product.id}/${endpoint}/`, {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
@@ -2604,8 +2641,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                         // Refresh the products list
                         fetchProducts();
                       } else {
-                        const error = await response.json();
-                        toast.error(error.message || 'Failed to update product status');
+                        try {
+                          const error = await response.json();
+                          toast.error(error.message || 'Failed to update product status');
+                        } catch (parseError) {
+                          toast.error(`Server error: ${response.status} ${response.statusText}`);
+                        }
                       }
                     } catch (error) {
                       console.error('Error toggling product status:', error);
@@ -2953,7 +2994,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
   // Function to handle saving edits
   const handleSaveEdit = async () => {
-    if (!editedProduct || !selectedProduct) return;
+    if (!editedProduct || !selectedProduct) {
+      console.warn('Cannot save: Missing product data');
+      return;
+    }
     
     try {
       setIsSubmitting(true);

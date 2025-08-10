@@ -258,7 +258,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               name: product.name || product.product_name,
               sku: product.sku || product.product_code || '',
               barcode: product.barcode || '',
-              price: parseFloat(product.price || product.unit_price || 0),
+              price: parseFloat(product.calculated_price || product.price || product.unit_price || 0),
               quantity_in_stock: product.stockQuantity || product.stock_quantity || 0,
               description: product.description || ''
             };
@@ -574,6 +574,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
+    // Show warning for time-based pricing products
+    if (product.pricing_model && product.pricing_model !== 'direct') {
+      const confirmed = window.confirm(
+        `💡 Dynamic Pricing Notice\n\n` +
+        `"${product.name}" uses ${product.pricing_model_display || product.pricing_model} pricing.\n\n` +
+        `Current price: $${(product.calculated_price || product.price).toFixed(2)}\n\n` +
+        `Note: Final price may vary based on actual usage or time.\n\n` +
+        `Continue with this product?`
+      );
+      
+      if (!confirmed) return;
+    }
+
     // Check stock level
     const currentStock = product.stock_quantity || product.quantity || 0;
     const existingInCart = cartItems.find(item => item.id === product.id);
@@ -1454,7 +1467,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                         <tr key={product.id} className={`hover:bg-gray-50 transition-colors ${isOutOfStock ? 'bg-red-50' : ''}`}>
                           <td className="px-4 py-2 text-sm font-medium text-gray-900">{product.name}</td>
                           <td className="px-4 py-2 text-sm text-gray-500">{product.sku || 'N/A'}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900 text-right">${product.price}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 text-right">
+                            ${(product.calculated_price || product.price).toFixed(2)}
+                            {product.pricing_model && product.pricing_model !== 'direct' && (
+                              <div className="text-xs text-gray-500">{product.pricing_model_display || product.pricing_model}</div>
+                            )}
+                          </td>
                           <td className="px-4 py-2 text-sm text-right">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               isOutOfStock 
