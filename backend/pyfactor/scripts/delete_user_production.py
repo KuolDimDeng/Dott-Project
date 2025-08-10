@@ -49,7 +49,14 @@ def delete_user_production(email, dry_run=False):
         print(f"  - Joined: {user[1]}")
         print(f"  - Active: {user[2]}")
         
-        # Count related records
+        # Close the connection after finding user to avoid transaction issues
+        cur.close()
+        conn.close()
+        
+        # Count related records with fresh connection
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
         tables_to_check = [
             ('smart_insights_credittransaction', 'Smart insights transactions'),
             ('smart_insights_usercredit', 'Smart insights credits'),
@@ -78,6 +85,10 @@ def delete_user_production(email, dry_run=False):
                 if "does not exist" not in str(e):
                     print(f"  - {label}: Error ({e})")
         
+        # Close connection again after counting
+        cur.close()
+        conn.close()
+        
         if dry_run:
             print(f"\n🔍 DRY RUN: Would delete {total_records} related records for user {email}")
             print("No data will be deleted in dry run mode.")
@@ -92,6 +103,11 @@ def delete_user_production(email, dry_run=False):
             return False
         
         print("\n🗑️  Deleting user data...")
+        
+        # Create fresh connection for deletion
+        conn = psycopg2.connect(**DB_CONFIG)
+        conn.autocommit = False  # Use transactions
+        cur = conn.cursor()
         
         # Start transaction
         cur.execute("BEGIN")

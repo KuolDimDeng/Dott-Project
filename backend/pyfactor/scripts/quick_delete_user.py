@@ -49,7 +49,14 @@ def delete_user_direct(email):
         print(f"  - Joined: {user[1]}")
         print(f"  - Active: {user[2]}")
         
-        # Count related records
+        # Close connection after finding user to avoid transaction issues
+        cur.close()
+        conn.close()
+        
+        # Count related records with fresh connection
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
         tables_to_check = [
             ('user_sessions', 'Sessions'),
             ('audit_log', 'Audit logs'),
@@ -68,6 +75,10 @@ def delete_user_direct(email):
             except:
                 pass
         
+        # Close connection again after counting
+        cur.close()
+        conn.close()
+        
         # Confirm deletion
         print("\n⚠️  WARNING: This will permanently delete the user and ALL related data!")
         confirm = input(f"\nType 'DELETE' to confirm deletion of {email}: ")
@@ -77,6 +88,11 @@ def delete_user_direct(email):
             return False
         
         print("\n🗑️  Deleting user data...")
+        
+        # Create fresh connection for deletion
+        conn = psycopg2.connect(**DB_CONFIG)
+        conn.autocommit = False  # Use transactions
+        cur = conn.cursor()
         
         # Start transaction
         cur.execute("BEGIN")
