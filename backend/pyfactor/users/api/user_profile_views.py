@@ -69,22 +69,24 @@ class UserProfileMeView(APIView):
                 }
                 return Response(response_data, status=status.HTTP_200_OK)
             
-            # Get onboarding progress to get subscription plan
+            # Get subscription plan from users_subscription table (SINGLE SOURCE OF TRUTH)
             subscription_plan = 'free'
             selected_plan = 'free'
+            
             try:
-                # Try to get onboarding progress for subscription info
-                if profile.tenant_id:
-                    from custom_auth.rls import set_tenant_context
-                    set_tenant_context(str(profile.tenant_id))
+                # Use centralized subscription service (SINGLE SOURCE OF TRUTH)
+                from users.subscription_service import SubscriptionService
                 
-                progress = OnboardingProgress.objects.filter(user=request.user).first()
-                if progress:
-                    subscription_plan = progress.subscription_plan or progress.selected_plan or 'free'
-                    selected_plan = progress.selected_plan or progress.subscription_plan or 'free'
-                    logger.info(f"[UserProfileMeView] Found subscription plan from onboarding: {subscription_plan}")
+                subscription_plan = SubscriptionService.get_subscription_plan(str(profile.tenant_id))
+                selected_plan = subscription_plan
+                
+                logger.info(f"[UserProfileMeView] Subscription service returned: {subscription_plan}")
+                        
             except Exception as e:
-                logger.warning(f"[UserProfileMeView] Could not get onboarding subscription info: {str(e)}")
+                logger.warning(f"[UserProfileMeView] Error getting subscription info: {str(e)}")
+                # Default to free if there are any errors
+                subscription_plan = 'free'
+                selected_plan = 'free'
             
             # Get user's role and page permissions
             user_role = getattr(request.user, 'role', 'USER')

@@ -21,7 +21,7 @@ from .api.checkout.checkout_session import create_checkout_session
 from .api.checkout.checkout_session_v2 import create_checkout_session_v2, get_subscription_pricing
 from .api.checkout.mobile_money_checkout import create_mobile_money_checkout, verify_mobile_money_payment
 from .api.payment_methods import get_payment_methods, check_mobile_money_support
-from .api.subscription_views import subscription_status
+from .api.subscription_views import subscription_status, SubscriptionSaveView, SubscriptionDetailView
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from .api.business_logo_views import upload_business_logo, delete_business_logo, get_business_logo
 from .api.currency_views import get_currency_list_view, get_exchange_rate
@@ -53,6 +53,9 @@ urlpatterns = [
     path('api/subscription/status', subscription_status, name='subscription_status'),
     path('api/subscription/grace-status', grace_period_status, name='grace_period_status'),
     path('api/subscription/retry-payment', retry_payment, name='retry_payment'),
+    # New centralized subscription endpoints
+    path('api/subscriptions/save/', SubscriptionSaveView.as_view(), name='subscription_save'),
+    path('api/subscriptions/detail/', SubscriptionDetailView.as_view(), name='subscription_detail'),
     # Payment methods and mobile money
     path('api/payment-methods', get_payment_methods, name='get_payment_methods'),
     path('api/mobile-money/check-support', check_mobile_money_support, name='check_mobile_money_support'),

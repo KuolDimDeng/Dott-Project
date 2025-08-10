@@ -280,7 +280,7 @@ class SessionV2View(APIView):
             # Try to get and destroy session
             try:
                 session_uuid = uuid.UUID(session_token)
-                session = UserSession.objects.get(session_token=session_uuid)
+                session = UserSession.objects.get(session_id=session_uuid)
                 user_email = session.user.email
                 
                 # Destroy session
