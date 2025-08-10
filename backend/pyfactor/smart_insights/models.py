@@ -8,6 +8,7 @@ User = get_user_model()
 
 class CreditPackage(models.Model):
     """Available credit packages for purchase"""
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     credits = models.IntegerField()

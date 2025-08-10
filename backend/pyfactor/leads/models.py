@@ -29,6 +29,7 @@ class Lead(models.Model):
     ]
     
     # Basic Information
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
     email = models.EmailField()
     first_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100, blank=True, null=True)

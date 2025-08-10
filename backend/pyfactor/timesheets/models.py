@@ -81,6 +81,7 @@ class Timesheet(models.Model):
 
 class TimeEntry(models.Model):
     """Daily time entry within a timesheet"""
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='entries')
     date = models.DateField()

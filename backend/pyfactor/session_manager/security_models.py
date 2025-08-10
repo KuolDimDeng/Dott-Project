@@ -20,6 +20,8 @@ class DeviceFingerprint(models.Model):
     Stores device fingerprints for enhanced security and device tracking
     """
     
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
+    
     fingerprint_id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,

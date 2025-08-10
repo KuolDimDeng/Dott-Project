@@ -2,6 +2,7 @@
 CRITICAL SECURITY FIX: Tenant isolation for CRM views
 This fixes the RLS breach where new users could see all tenant data
 """
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,7 +22,7 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class TenantFilteredViewSet(viewsets.ModelViewSet):
+class TenantFilteredViewSet(TenantIsolatedViewSet):
     """Base ViewSet that ALWAYS filters by tenant"""
     
     def get_queryset(self):
@@ -56,7 +57,7 @@ class TenantFilteredViewSet(viewsets.ModelViewSet):
         serializer.save(tenant_id=tenant_id)
 
 
-class CustomerViewSet(TenantFilteredViewSet):
+class CustomerViewSet(TenantIsolatedViewSet):
     """Customer ViewSet with proper tenant isolation"""
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -88,7 +89,7 @@ class CustomerViewSet(TenantFilteredViewSet):
         })
 
 
-class ContactViewSet(TenantFilteredViewSet):
+class ContactViewSet(TenantIsolatedViewSet):
     """Contact ViewSet with proper tenant isolation"""
     queryset = Contact.objects.all()
     serializer_class = ContactSerializer
@@ -98,7 +99,7 @@ class ContactViewSet(TenantFilteredViewSet):
     ordering_fields = ['first_name', 'last_name', 'created_at']
 
 
-class LeadViewSet(TenantFilteredViewSet):
+class LeadViewSet(TenantIsolatedViewSet):
     """Lead ViewSet with proper tenant isolation"""
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
@@ -133,7 +134,7 @@ class LeadViewSet(TenantFilteredViewSet):
         })
 
 
-class OpportunityViewSet(TenantFilteredViewSet):
+class OpportunityViewSet(TenantIsolatedViewSet):
     """Opportunity ViewSet with proper tenant isolation"""
     queryset = Opportunity.objects.all()
     serializer_class = OpportunitySerializer
@@ -162,7 +163,7 @@ class OpportunityViewSet(TenantFilteredViewSet):
         })
 
 
-class DealViewSet(TenantFilteredViewSet):
+class DealViewSet(TenantIsolatedViewSet):
     """Deal ViewSet with proper tenant isolation"""
     queryset = Deal.objects.all()
     serializer_class = DealSerializer
@@ -191,7 +192,7 @@ class DealViewSet(TenantFilteredViewSet):
         })
 
 
-class ActivityViewSet(TenantFilteredViewSet):
+class ActivityViewSet(TenantIsolatedViewSet):
     """Activity ViewSet with proper tenant isolation"""
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
@@ -201,7 +202,7 @@ class ActivityViewSet(TenantFilteredViewSet):
     ordering_fields = ['scheduled_at', 'created_at']
 
 
-class CampaignViewSet(TenantFilteredViewSet):
+class CampaignViewSet(TenantIsolatedViewSet):
     """Campaign ViewSet with proper tenant isolation"""
     queryset = Campaign.objects.all()
     serializer_class = CampaignSerializer
@@ -229,7 +230,7 @@ class CampaignViewSet(TenantFilteredViewSet):
         })
 
 
-class CampaignMemberViewSet(TenantFilteredViewSet):
+class CampaignMemberViewSet(TenantIsolatedViewSet):
     """CampaignMember ViewSet with proper tenant isolation"""
     queryset = CampaignMember.objects.all()
     serializer_class = CampaignSerializer  # Use CampaignSerializer temporarily

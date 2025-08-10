@@ -732,7 +732,7 @@ Please provide specific insights based on the actual business data above, not ge
             return Response({'allowed': True})
 
 
-class StripeWebhookView(viewsets.ViewSet):
+class StripeWebhookView(TenantIsolatedViewSet):
     """Handle Stripe webhooks"""
     permission_classes = []  # No auth for webhooks
     
