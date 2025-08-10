@@ -22,14 +22,16 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
    * Handle bank disconnection
    */
   const handleDisconnect = async (connection) => {
-    if (!confirm(`Are you sure you want to disconnect ${connection.account_nickname || 'this bank account'}?`)) {
+    if (!confirm(`Are you sure you want to disconnect ${connection.bank_name || connection.account_nickname || 'this bank account'}?`)) {
       return;
     }
 
     setDisconnecting(connection.id);
+    console.log('[ConnectedBanks] Disconnecting bank connection:', connection.id);
     
     try {
-      const response = await fetch(`/api/banking/connections/${connection.id}/`, {
+      // Remove trailing slash from frontend URL (Next.js route)
+      const response = await fetch(`/api/banking/connections/${connection.id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -37,13 +39,19 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
         }
       });
 
+      console.log('[ConnectedBanks] Delete response status:', response.status);
+
       if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || 'Bank account disconnected');
         onDisconnect(connection.id);
       } else {
-        toast.error('Failed to disconnect bank account');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[ConnectedBanks] Delete error:', errorData);
+        toast.error(errorData.error || 'Failed to disconnect bank account');
       }
     } catch (error) {
-      console.error('Error disconnecting bank:', error);
+      console.error('[ConnectedBanks] Error disconnecting bank:', error);
       toast.error('Failed to disconnect bank account');
     } finally {
       setDisconnecting(null);

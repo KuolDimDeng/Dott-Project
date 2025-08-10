@@ -648,9 +648,26 @@ def manage_bank_connection(request, connection_id):
             })
         
         elif request.method == 'DELETE':
-            # Delete connection
+            # Delete connection and related WiseItem if exists
             connection_name = connection.bank_name
+            
+            # Try to delete related WiseItem first
+            try:
+                if connection.integration_type and connection.integration_id:
+                    # The integration property should give us the related WiseItem
+                    if hasattr(connection, 'integration') and connection.integration:
+                        wise_item = connection.integration
+                        logger.info(f"[Delete Connection] Deleting WiseItem {wise_item.id}")
+                        wise_item.delete()
+                    else:
+                        # Fallback: try to find and delete WiseItem directly
+                        WiseItem.objects.filter(id=connection.integration_id).delete()
+            except Exception as e:
+                logger.warning(f"[Delete Connection] Could not delete WiseItem: {e}")
+            
+            # Now delete the BankAccount
             connection.delete()
+            logger.info(f"[Delete Connection] Deleted bank account {connection_id} for user {user.email}")
             
             return Response({
                 'success': True,
