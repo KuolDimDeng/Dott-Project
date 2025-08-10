@@ -49,66 +49,31 @@ def log_request_details(request, method):
     if method == 'PUT' and hasattr(request, 'data'):
         logger.info(f"🌟 [Currency V3] Body: {json.dumps(dict(request.data), indent=2)}")
 
-def get_user_business(user):
-    """Get business for user with improved utilities"""
+def get_user_business_enhanced(user, request=None):
+    """
+    Get business for user with enhanced security and reliability
+    Uses the improved business_utils module with fallback support
+    """
     logger.info(f"🔍 [Currency V3] Getting business for user: {user.email}")
     
-    # Try importing the new business utils first
+    # Always use the improved business utils with request context
     try:
         from users.business_utils import get_user_business as get_business_improved
-        business = get_business_improved(user)
+        business = get_business_improved(user, use_cache=True, request=request)
         if business:
             logger.info(f"✅ [Currency V3] Business found via improved utils: {business.name} (ID: {business.id})")
-            return business, 'improved_utils'
-    except ImportError:
-        logger.debug("Business utils not available yet, using fallback")
+            return business, 'business_utils'
+        else:
+            logger.warning(f"⚠️ [Currency V3] Business utils returned None for user: {user.email}")
+    except ImportError as e:
+        logger.error(f"❌ [Currency V3] Failed to import business_utils: {e}")
     except Exception as e:
-        logger.warning(f"Error using business utils: {e}")
+        logger.error(f"❌ [Currency V3] Error using business utils: {e}", exc_info=True)
     
-    # Fallback to original logic
-    business_id = None
-    method_used = None
-    
-    # Method 1: Direct business_id attribute
-    if hasattr(user, 'business_id') and user.business_id:
-        business_id = user.business_id
-        method_used = 'direct_business_id'
-        logger.info(f"🔍 [Currency V3] Found business_id on user object: {business_id}")
-    
-    # Method 2: Tenant ID (often same as business_id)
-    elif hasattr(user, 'tenant_id') and user.tenant_id:
-        business_id = user.tenant_id
-        method_used = 'tenant_id'
-        logger.info(f"🔍 [Currency V3] Using tenant_id as business_id: {business_id}")
-    
-    # Method 3: UserProfile lookup
-    else:
-        try:
-            profile = UserProfile.objects.filter(user=user).first()
-            if profile and hasattr(profile, 'business_id') and profile.business_id:
-                business_id = profile.business_id
-                method_used = 'user_profile'
-                logger.info(f"🔍 [Currency V3] Found business_id via UserProfile: {business_id}")
-            else:
-                logger.warning(f"🔍 [Currency V3] No UserProfile or business_id for user: {user.email}")
-        except Exception as e:
-            logger.error(f"🔍 [Currency V3] Error querying UserProfile: {str(e)}")
-    
-    if not business_id:
-        logger.error(f"🔍 [Currency V3] No business_id found for user {user.email}")
-        return None, None
-    
-    # Get the Business object
-    try:
-        business = Business.objects.get(id=business_id)
-        logger.info(f"✅ [Currency V3] Business found: {business.name} (ID: {business.id}) via {method_used}")
-        return business, method_used
-    except Business.DoesNotExist:
-        logger.error(f"❌ [Currency V3] Business not found with ID: {business_id}")
-        return None, None
-    except Exception as e:
-        logger.error(f"❌ [Currency V3] Error fetching business: {str(e)}")
-        return None, None
+    # If business_utils fails or returns None, return None
+    # This ensures we don't duplicate logic and maintain single source of truth
+    logger.error(f"❌ [Currency V3] No business found for user {user.email}")
+    return None, None
 
 @api_view(['GET', 'PUT', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -119,8 +84,8 @@ def currency_preferences_v3(request):
     log_request_details(request, request.method)
     
     try:
-        # Get user's business
-        business, method_used = get_user_business(request.user)
+        # Get user's business with request context for session fallback
+        business, method_used = get_user_business_enhanced(request.user, request)
         
         if not business:
             logger.error(f"❌ [Currency V3] No business found for user: {request.user.email}")

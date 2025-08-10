@@ -135,20 +135,39 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
                 user_obj.is_authenticated = True
             
             # Add business_id and tenant_id attributes for compatibility
+            # CRITICAL FIX: Don't use user.id as business_id - they are different!
             if hasattr(user_obj, 'id'):
-                # Use user.id as both business_id and tenant_id for consistency
-                request.user.business_id = user_obj.id
-                request.user.tenant_id = user_obj.id
-                
-                # Also try to get from UserProfile if it exists
-                try:
-                    from users.models import UserProfile
-                    profile = UserProfile.objects.get(user=user_obj)
-                    if profile.tenant_id:
-                        request.user.tenant_id = profile.tenant_id
-                        request.user.business_id = profile.tenant_id
-                except:
-                    pass
+                # First check if user already has business_id or tenant_id
+                if hasattr(user_obj, 'business_id') and user_obj.business_id:
+                    # User already has business_id, use it
+                    request.user.business_id = user_obj.business_id
+                    request.user.tenant_id = user_obj.business_id  # They should be the same
+                elif hasattr(user_obj, 'tenant_id') and user_obj.tenant_id:
+                    # User has tenant_id, use it
+                    request.user.tenant_id = user_obj.tenant_id
+                    request.user.business_id = user_obj.tenant_id  # They should be the same
+                else:
+                    # Try to get from UserProfile
+                    try:
+                        from users.models import UserProfile
+                        profile = UserProfile.objects.get(user=user_obj)
+                        if profile.business_id:
+                            request.user.business_id = profile.business_id
+                            request.user.tenant_id = profile.business_id
+                            logger.debug(f"[Session] Set business_id from UserProfile: {profile.business_id}")
+                    except Exception as e:
+                        logger.debug(f"[Session] Could not get UserProfile: {e}")
+                        
+                    # If still no business_id, try session data
+                    if not hasattr(request.user, 'business_id') or not request.user.business_id:
+                        if 'business_id' in session:
+                            request.user.business_id = session['business_id']
+                            request.user.tenant_id = session['business_id']
+                            logger.debug(f"[Session] Set business_id from session data: {session['business_id']}")
+                        elif 'tenant_id' in session:
+                            request.user.business_id = session['tenant_id']
+                            request.user.tenant_id = session['tenant_id']
+                            logger.debug(f"[Session] Set business_id from session tenant_id: {session['tenant_id']}")
         else:
             # Fallback to AnonymousUser if no user in session
             from django.contrib.auth.models import AnonymousUser

@@ -11,16 +11,23 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 
-def get_user_business(user, use_cache=True) -> Optional['Business']:
+def get_user_business(user, use_cache=True, request=None) -> Optional['Business']:
     """
     Get user's primary business (RLS-aware).
     
     This is the SINGLE SOURCE OF TRUTH for getting a user's business.
     It handles all the complexity of our multi-tenant architecture.
     
+    Industry-standard security enhancements:
+    - Session data fallback for better reliability
+    - UUID validation to prevent injection
+    - Comprehensive audit logging
+    - Data integrity checks
+    
     Args:
         user: User object
         use_cache: Whether to use cache for performance
+        request: Optional request object for session fallback
     
     Returns:
         Business object or None
@@ -37,48 +44,94 @@ def get_user_business(user, use_cache=True) -> Optional['Business']:
             logger.debug(f"get_user_business: Cache hit for user {user.email}")
             return cached
     
-    from users.models import Business
+    from users.models import Business, UserProfile
+    import uuid
+    
     business = None
+    method_used = None
+    
+    # Helper function to validate UUID
+    def is_valid_uuid(val):
+        if not val:
+            return False
+        try:
+            uuid.UUID(str(val))
+            return True
+        except (ValueError, TypeError):
+            return False
     
     # Method 1: User.business_id (most common in your system)
     if hasattr(user, 'business_id') and user.business_id:
-        try:
-            # Don't use select_related('owner') due to schema mismatch
-            business = Business.objects.get(
-                id=user.business_id,
-                is_active=True
-            )
-            logger.debug(f"get_user_business: Found via business_id for {user.email}")
-        except Business.DoesNotExist:
-            logger.warning(f"get_user_business: business_id {user.business_id} not found for {user.email}")
+        if is_valid_uuid(user.business_id):
+            try:
+                business = Business.objects.get(
+                    id=user.business_id,
+                    is_active=True
+                )
+                method_used = 'user.business_id'
+                logger.debug(f"get_user_business: Found via business_id for {user.email}")
+            except Business.DoesNotExist:
+                logger.warning(f"get_user_business: business_id {user.business_id} not found for {user.email}")
+        else:
+            logger.error(f"get_user_business: Invalid UUID in user.business_id: {user.business_id}")
     
     # Method 2: User.tenant_id (tenant = business in our system)
     if not business and hasattr(user, 'tenant_id') and user.tenant_id:
-        try:
-            # Don't use select_related('owner') due to schema mismatch
-            business = Business.objects.get(
-                id=user.tenant_id,
-                is_active=True
-            )
-            logger.debug(f"get_user_business: Found via tenant_id for {user.email}")
-        except Business.DoesNotExist:
-            logger.warning(f"get_user_business: tenant_id {user.tenant_id} not found for {user.email}")
-    
-    # Method 3: Owner relationship (skip due to type mismatch - owner_id is UUID, user.id is int)
-    # This method won't work until we fix the schema mismatch
-    
-    # Method 4: Through UserProfile (legacy)
-    if not business:
-        try:
-            profile = user.profile
-            if profile and profile.business_id:
-                business = Business.objects.select_related('owner').get(
-                    id=profile.business_id,
+        if is_valid_uuid(user.tenant_id):
+            try:
+                business = Business.objects.get(
+                    id=user.tenant_id,
                     is_active=True
                 )
-                logger.debug(f"get_user_business: Found via UserProfile for {user.email}")
+                method_used = 'user.tenant_id'
+                logger.debug(f"get_user_business: Found via tenant_id for {user.email}")
+            except Business.DoesNotExist:
+                logger.warning(f"get_user_business: tenant_id {user.tenant_id} not found for {user.email}")
+        else:
+            logger.error(f"get_user_business: Invalid UUID in user.tenant_id: {user.tenant_id}")
+    
+    # Method 3: Session data fallback (NEW - for session-based auth)
+    if not business and request and hasattr(request, 'session'):
+        session_business_id = request.session.get('business_id') or request.session.get('tenant_id')
+        if session_business_id and is_valid_uuid(session_business_id):
+            try:
+                business = Business.objects.get(
+                    id=session_business_id,
+                    is_active=True
+                )
+                method_used = 'session_data'
+                logger.info(f"get_user_business: Found via session data for {user.email}")
+                # Sync to user for future lookups
+                if hasattr(user, 'business_id') and not user.business_id:
+                    user.business_id = session_business_id
+                    user.save(update_fields=['business_id'])
+                    logger.info(f"get_user_business: Synced business_id to user model")
+            except Business.DoesNotExist:
+                logger.warning(f"get_user_business: session business_id {session_business_id} not found")
+    
+    # Method 4: Through UserProfile (ensure it exists)
+    if not business:
+        try:
+            # Get or create UserProfile
+            profile, created = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={'business_id': getattr(user, 'business_id', None) or getattr(user, 'tenant_id', None)}
+            )
+            if created:
+                logger.info(f"get_user_business: Created UserProfile for {user.email}")
+            
+            if profile.business_id and is_valid_uuid(profile.business_id):
+                try:
+                    business = Business.objects.get(
+                        id=profile.business_id,
+                        is_active=True
+                    )
+                    method_used = 'user_profile'
+                    logger.debug(f"get_user_business: Found via UserProfile for {user.email}")
+                except Business.DoesNotExist:
+                    logger.warning(f"get_user_business: profile.business_id {profile.business_id} not found")
         except Exception as e:
-            logger.debug(f"get_user_business: UserProfile lookup failed: {e}")
+            logger.error(f"get_user_business: UserProfile lookup failed: {e}")
     
     # Method 5: Through BusinessMember (for non-owners)
     if not business:
@@ -87,10 +140,11 @@ def get_user_business(user, use_cache=True) -> Optional['Business']:
             membership = BusinessMember.objects.filter(
                 user=user,
                 is_active=True
-            ).select_related('business', 'business__owner').first()
+            ).select_related('business').first()
             
             if membership:
                 business = membership.business
+                method_used = 'business_member'
                 logger.debug(f"get_user_business: Found via membership for {user.email}")
         except Exception as e:
             logger.debug(f"get_user_business: Membership lookup failed: {e}")
@@ -99,8 +153,11 @@ def get_user_business(user, use_cache=True) -> Optional['Business']:
     if business and use_cache:
         cache.set(cache_key, business, 300)  # Cache for 5 minutes
     
-    if not business:
-        logger.info(f"get_user_business: No business found for user {user.email}")
+    # Log the result for audit trail
+    if business:
+        logger.info(f"get_user_business: SUCCESS - Found business '{business.name}' (ID: {business.id}) for user {user.email} via {method_used}")
+    else:
+        logger.warning(f"get_user_business: FAILED - No business found for user {user.email} after checking all methods")
     
     return business
 
