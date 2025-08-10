@@ -140,10 +140,11 @@ export function SessionTimeoutProvider({ children }) {
       notifyWarning('Your session has expired due to inactivity. Please sign in again.');
       
       // Redirect to login with full page navigation
+      // Use relative URL to stay on current domain (app.dottapps.com)
       window.location.href = '/auth/signin?reason=timeout';
     } catch (error) {
       logger.error('[SessionTimeout] Error during logout:', error);
-      // Force redirect even if logout fails
+      // Force redirect even if logout fails - stay on current domain
       window.location.href = '/auth/signin?reason=timeout';
     }
   }, [logout, router, cancelTimeout, notifyWarning]);

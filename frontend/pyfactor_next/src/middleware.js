@@ -30,7 +30,11 @@ export async function middleware(request) {
     }
     
     // If on app subdomain but accessing marketing path, redirect to marketing domain
-    if (isAppSubdomain && isMarketingPath && pathname !== '/auth/callback') {
+    // EXCEPTION: Don't redirect session timeout or app-specific auth paths
+    const isSessionTimeout = url.search.includes('reason=timeout');
+    const isAppAuthPath = pathname === '/auth/signin' && (isSessionTimeout || url.search.includes('redirect='));
+    
+    if (isAppSubdomain && isMarketingPath && pathname !== '/auth/callback' && !isAppAuthPath) {
       const marketingUrl = `https://dottapps.com${pathname}${url.search}`;
       return NextResponse.redirect(marketingUrl);
     }
