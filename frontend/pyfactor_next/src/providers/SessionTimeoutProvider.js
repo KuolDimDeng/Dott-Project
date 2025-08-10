@@ -139,12 +139,12 @@ export function SessionTimeoutProvider({ children }) {
       // Notify user
       notifyWarning('Your session has expired due to inactivity. Please sign in again.');
       
-      // Redirect to login
-      router.push('/auth/signin?reason=timeout');
+      // Redirect to login with full page navigation
+      window.location.href = '/auth/signin?reason=timeout';
     } catch (error) {
       logger.error('[SessionTimeout] Error during logout:', error);
       // Force redirect even if logout fails
-      router.push('/auth/signin?reason=timeout');
+      window.location.href = '/auth/signin?reason=timeout';
     }
   }, [logout, router, cancelTimeout, notifyWarning]);
 
