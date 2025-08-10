@@ -251,7 +251,7 @@ FRONTEND_URL = 'https://localhost:3000'  # Adjust this to your actual frontend U
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-in-production-1234567890abcdefghijklmnopqrstuvwxyz')
+SECRET_KEY = os.getenv('SECRET_KEY')  # SECURITY: Must be set in environment variables
 
 
 
@@ -437,10 +437,26 @@ if not DEBUG:
     
     # Strict CSP compatible with Cloudflare
     CSP_DEFAULT_SRC = ("'self'",)
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", 
-                      "https://js.stripe.com", "https://client.crisp.chat",
-                      "https://cdn.plaid.com", "https://app.posthog.com")
-    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+    # SECURITY: Removed unsafe-inline and unsafe-eval to prevent XSS attacks
+    # Note: Some inline scripts may need to be refactored to external files
+    CSP_SCRIPT_SRC = ("'self'", 
+                      "https://js.stripe.com", 
+                      "https://client.crisp.chat",
+                      "https://widget.crisp.chat",
+                      "https://cdn.plaid.com", 
+                      "https://app.posthog.com",
+                      "https://cdn.posthog.com",
+                      "https://accounts.google.com",
+                      "https://maps.googleapis.com",
+                      "https://maps.gstatic.com",
+                      "https://auth.dottapps.com",
+                      "https://dev-cbyy63jovi6zrcos.us.auth0.com",
+                      "https://static.cloudflareinsights.com")
+    # SECURITY: Keeping unsafe-inline temporarily for CSS frameworks (Tailwind/MUI)
+    # TODO: Migrate to nonce-based CSS loading in future
+    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", 
+                     "https://fonts.googleapis.com",
+                     "https://client.crisp.chat")
     CSP_FONT_SRC = ("'self'", "data:", "https://fonts.gstatic.com")
     CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
     CSP_CONNECT_SRC = ("'self'", "https://api.dottapps.com", "https://auth.dottapps.com",
@@ -1012,7 +1028,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
         'NAME': os.getenv('DB_NAME', 'dott_production'),
         'USER': os.getenv('DB_USER', 'dott_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),  # SECURITY: No default password
         'HOST': os.getenv('DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'TIME_ZONE': 'UTC',
@@ -1048,7 +1064,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
         'NAME': os.getenv('TAX_DB_NAME', 'dott_production'),
         'USER': os.getenv('TAX_DB_USER', 'dott_user'),
-        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'PASSWORD': os.getenv('TAX_DB_PASSWORD', os.getenv('DB_PASSWORD')),  # SECURITY: Falls back to DB_PASSWORD
         'HOST': os.getenv('TAX_DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
         'PORT': os.getenv('TAX_DB_PORT', '5432'),
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime

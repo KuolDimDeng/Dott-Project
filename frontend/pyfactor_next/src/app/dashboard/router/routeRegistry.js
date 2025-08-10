@@ -695,6 +695,13 @@ export const routeRegistry = {
     title: 'Dott Status',
     description: 'System status'
   },
+  
+  // HR Test Component (temporary for debugging)
+  'hr-test': {
+    component: enhancedLazy(() => import('../components/HRComponentTest'), 'HR Test'),
+    title: 'HR Component Test',
+    description: 'Test HR components'
+  },
 
   // Default fallback
   'home': {

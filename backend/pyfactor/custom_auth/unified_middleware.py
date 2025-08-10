@@ -164,9 +164,88 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """Add security headers to response"""
         
-        # Content Security Policy
+        # Content Security Policy - SECURITY: Removed unsafe-inline and unsafe-eval
         if not settings.DEBUG:
-            response['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline';"
+            # Build CSP from settings if available, otherwise use secure defaults
+            csp_parts = []
+            
+            # Default source
+            csp_parts.append("default-src 'self'")
+            
+            # Script sources - NO unsafe-inline or unsafe-eval for security
+            script_sources = getattr(settings, 'CSP_SCRIPT_SRC', (
+                "'self'",
+                "https://js.stripe.com",
+                "https://client.crisp.chat",
+                "https://cdn.plaid.com",
+                "https://app.posthog.com",
+                "https://accounts.google.com",
+                "https://maps.googleapis.com",
+                "https://auth.dottapps.com"
+            ))
+            csp_parts.append(f"script-src {' '.join(script_sources)}")
+            
+            # Style sources - keeping unsafe-inline temporarily for CSS frameworks
+            style_sources = getattr(settings, 'CSP_STYLE_SRC', (
+                "'self'",
+                "'unsafe-inline'",  # TODO: Remove after migrating to nonce-based CSS
+                "https://fonts.googleapis.com"
+            ))
+            csp_parts.append(f"style-src {' '.join(style_sources)}")
+            
+            # Font sources
+            font_sources = getattr(settings, 'CSP_FONT_SRC', (
+                "'self'",
+                "data:",
+                "https://fonts.gstatic.com"
+            ))
+            csp_parts.append(f"font-src {' '.join(font_sources)}")
+            
+            # Image sources
+            img_sources = getattr(settings, 'CSP_IMG_SRC', (
+                "'self'",
+                "data:",
+                "https:",
+                "blob:"
+            ))
+            csp_parts.append(f"img-src {' '.join(img_sources)}")
+            
+            # Connect sources
+            connect_sources = getattr(settings, 'CSP_CONNECT_SRC', (
+                "'self'",
+                "https://api.dottapps.com",
+                "https://auth.dottapps.com",
+                "https://*.stripe.com",
+                "wss://*.crisp.chat",
+                "https://*.crisp.chat",
+                "https://*.plaid.com",
+                "https://app.posthog.com"
+            ))
+            csp_parts.append(f"connect-src {' '.join(connect_sources)}")
+            
+            # Frame sources
+            frame_sources = getattr(settings, 'CSP_FRAME_SRC', (
+                "'self'",
+                "https://js.stripe.com",
+                "https://auth.dottapps.com",
+                "https://client.crisp.chat",
+                "https://*.plaid.com"
+            ))
+            csp_parts.append(f"frame-src {' '.join(frame_sources)}")
+            
+            # Object source - none for security
+            csp_parts.append("object-src 'none'")
+            
+            # Base URI - self only
+            csp_parts.append("base-uri 'self'")
+            
+            # Form action
+            csp_parts.append("form-action 'self' https://auth.dottapps.com")
+            
+            # Upgrade insecure requests
+            csp_parts.append("upgrade-insecure-requests")
+            
+            response['Content-Security-Policy'] = "; ".join(csp_parts)
         
         # Other security headers
         response['X-Content-Type-Options'] = 'nosniff'

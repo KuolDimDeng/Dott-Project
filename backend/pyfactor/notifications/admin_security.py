@@ -39,11 +39,12 @@ class AdminSecurityConfig:
     SESSION_ABSOLUTE_TIMEOUT_HOURS = 8  # Absolute timeout
     SESSION_WARNING_MINUTES = 5  # Warning before timeout
     
-    # Security headers
+    # Security headers - SECURITY: Removed unsafe-inline and unsafe-eval
+    # Note: Admin panel may need refactoring if inline scripts are used
     CSP_POLICY = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' https://cdn.jsdelivr.net https://js.stripe.com https://accounts.google.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "  # TODO: Remove unsafe-inline for styles
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https:; "
         "connect-src 'self' https://api.dottapps.com wss://api.dottapps.com; "

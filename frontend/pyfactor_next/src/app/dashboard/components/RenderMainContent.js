@@ -67,7 +67,7 @@ const eventToRouteMap = {
   'bank-reconciliation': 'bank-reconciliation',
   'banking-reports': 'banking-reports',
   
-  // HR
+  // HR (support both prefixed and non-prefixed versions)
   'hr-dashboard': 'hr-dashboard',
   'hr-employees': 'employees',
   'hr-timesheets': 'timesheets',
@@ -75,6 +75,12 @@ const eventToRouteMap = {
   'hr-benefits': 'benefits',
   'hr-performance': 'performance',
   'hr-reports': 'hr-reports',
+  // Direct mappings without hr- prefix (for menu events)
+  'employees': 'employees',
+  'timesheets': 'timesheets',
+  'pay': 'pay',
+  'benefits': 'benefits',
+  'performance': 'performance',
   
   // Payroll
   'payroll-dashboard': 'payroll-dashboard',

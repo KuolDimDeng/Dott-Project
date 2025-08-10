@@ -375,11 +375,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // Scripts - still need unsafe-inline for Next.js
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com https://static.cloudflareinsights.com https://*.cloudflareinsights.com",
+              // Scripts - Removed unsafe-inline and unsafe-eval for production security
+              // Note: Some inline scripts may need to be refactored to external files or use nonces
+              "script-src 'self' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com https://static.cloudflareinsights.com https://*.cloudflareinsights.com",
               // Workers - needed for PostHog session recording
               "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
-              // Styles
+              // Styles - keeping unsafe-inline temporarily for Tailwind/MUI (should migrate to nonces)
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
               // Fonts
               "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
