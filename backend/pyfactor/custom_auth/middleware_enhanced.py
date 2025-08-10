@@ -25,7 +25,12 @@ class EnhancedTenantMiddleware:
         '/api/auth/signin',
         '/api/auth/signup',
         '/api/auth/password-reset',
+        '/api/auth/password-login/',
         '/api/auth/session-v2',
+        '/api/auth/session-verify',
+        '/api/auth/session/',
+        '/api/auth/google/',
+        '/api/auth/refresh/',
         '/admin/',
         '/static/',
         '/media/',
@@ -43,7 +48,8 @@ class EnhancedTenantMiddleware:
         tenant_id = None
         
         try:
-            if not is_public and request.user.is_authenticated:
+            # Check if user exists and is authenticated (safely)
+            if not is_public and hasattr(request, 'user') and request.user.is_authenticated:
                 # Get tenant_id from user
                 tenant_id = getattr(request.user, 'tenant_id', None) or \
                            getattr(request.user, 'business_id', None)
@@ -209,10 +215,11 @@ class CrossTenantAccessMonitor:
         if isinstance(data, dict):
             # Check for tenant_id in response
             if 'tenant_id' in data and str(data['tenant_id']) != str(expected_tenant):
+                user_email = getattr(request.user, 'email', 'unknown') if hasattr(request, 'user') else 'anonymous'
                 logger.critical(
                     f"CRITICAL: Cross-tenant data detected! "
                     f"Expected: {expected_tenant}, Got: {data['tenant_id']} "
-                    f"Path: {request.path}, User: {request.user.email}"
+                    f"Path: {request.path}, User: {user_email}"
                 )
                 # This should trigger immediate alerts
                 
@@ -221,9 +228,10 @@ class CrossTenantAccessMonitor:
             for item in data:
                 if isinstance(item, dict) and 'tenant_id' in item:
                     if str(item['tenant_id']) != str(expected_tenant):
+                        user_email = getattr(request.user, 'email', 'unknown') if hasattr(request, 'user') else 'anonymous'
                         logger.critical(
                             f"CRITICAL: Cross-tenant data in list! "
                             f"Expected: {expected_tenant}, Got: {item['tenant_id']} "
-                            f"Path: {request.path}, User: {request.user.email}"
+                            f"Path: {request.path}, User: {user_email}"
                         )
                         # This should trigger immediate alerts
