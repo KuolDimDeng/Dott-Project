@@ -1,4 +1,5 @@
 from rest_framework import viewsets, filters, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -21,7 +22,7 @@ from .serializers import (
     CampaignMemberSerializer
 )
 
-class CustomerViewSet(viewsets.ModelViewSet):
+class CustomerViewSet(TenantIsolatedViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -72,7 +73,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
             'new_customers_30d': new_customers_30d,
         })
 
-class ContactViewSet(viewsets.ModelViewSet):
+class ContactViewSet(TenantIsolatedViewSet):
     queryset = Contact.objects.all()
     serializer_class = ContactSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -80,7 +81,7 @@ class ContactViewSet(viewsets.ModelViewSet):
     search_fields = ['first_name', 'last_name', 'email', 'phone', 'job_title']
     ordering_fields = ['first_name', 'last_name', 'created_at']
 
-class LeadViewSet(viewsets.ModelViewSet):
+class LeadViewSet(TenantIsolatedViewSet):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -138,7 +139,7 @@ class LeadViewSet(viewsets.ModelViewSet):
             'leads_by_source': leads_by_source
         })
 
-class OpportunityViewSet(viewsets.ModelViewSet):
+class OpportunityViewSet(TenantIsolatedViewSet):
     queryset = Opportunity.objects.all()
     serializer_class = OpportunitySerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -173,7 +174,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
             'opportunities_by_stage': opportunities_by_stage
         })
 
-class DealViewSet(viewsets.ModelViewSet):
+class DealViewSet(TenantIsolatedViewSet):
     queryset = Deal.objects.all()
     serializer_class = DealSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -208,7 +209,7 @@ class DealViewSet(viewsets.ModelViewSet):
             'deals_by_status': deals_by_status
         })
 
-class ActivityViewSet(viewsets.ModelViewSet):
+class ActivityViewSet(TenantIsolatedViewSet):
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -237,7 +238,7 @@ class ActivityViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(overdue_activities, many=True)
         return Response(serializer.data)
 
-class CampaignViewSet(viewsets.ModelViewSet):
+class CampaignViewSet(TenantIsolatedViewSet):
     queryset = Campaign.objects.all()
     serializer_class = CampaignSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -271,7 +272,7 @@ class CampaignViewSet(viewsets.ModelViewSet):
             'campaigns_by_status': campaigns_by_status
         })
 
-class CampaignMemberViewSet(viewsets.ModelViewSet):
+class CampaignMemberViewSet(TenantIsolatedViewSet):
     queryset = CampaignMember.objects.all()
     serializer_class = CampaignMemberSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]

@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -21,7 +22,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TimesheetViewSet(viewsets.ModelViewSet):
+class TimesheetViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheets"""
     serializer_class = TimesheetSerializer
     permission_classes = [IsAuthenticated]
@@ -511,7 +512,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         return Response(response_data)
 
 
-class TimeEntryViewSet(viewsets.ModelViewSet):
+class TimeEntryViewSet(TenantIsolatedViewSet):
     """ViewSet for managing time entries"""
     serializer_class = TimeEntrySerializer
     permission_classes = [IsAuthenticated]
@@ -555,7 +556,7 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
         return Response({'entries': updated_entries})
 
 
-class ClockEntryViewSet(viewsets.ModelViewSet):
+class ClockEntryViewSet(TenantIsolatedViewSet):
     """ViewSet for clock in/out entries"""
     serializer_class = ClockEntrySerializer
     permission_classes = [IsAuthenticated]
@@ -737,7 +738,7 @@ class ClockEntryViewSet(viewsets.ModelViewSet):
         time_entry.save()
 
 
-class TimeOffRequestViewSet(viewsets.ModelViewSet):
+class TimeOffRequestViewSet(TenantIsolatedViewSet):
     """ViewSet for time off requests"""
     serializer_class = TimeOffRequestSerializer
     permission_classes = [IsAuthenticated]
@@ -850,7 +851,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
         return Response({'time_off_requests': serializer.data})
 
 
-class GeofenceZoneViewSet(viewsets.ModelViewSet):
+class GeofenceZoneViewSet(TenantIsolatedViewSet):
     """ViewSet for geofence zones"""
     serializer_class = GeofenceZoneSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]

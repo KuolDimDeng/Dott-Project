@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils.decorators import method_decorator
@@ -63,7 +64,7 @@ api_client = plaid.ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
 
 # Bank Account ViewSet
-class BankAccountViewSet(viewsets.ModelViewSet):
+class BankAccountViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = BankAccountSerializer
 
@@ -75,7 +76,7 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         return Response({"message": "Sync initiated"})
 
 # Transaction ViewSet
-class TransactionViewSet(viewsets.ModelViewSet):
+class TransactionViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = BankTransactionSerializer
 
@@ -969,7 +970,7 @@ class BankTransactionImportView(APIView):
 
 
 # Banking Rules ViewSet
-class BankingRuleViewSet(viewsets.ModelViewSet):
+class BankingRuleViewSet(TenantIsolatedViewSet):
     """Manage auto-categorization rules for bank transactions"""
     permission_classes = [IsAuthenticated]
     serializer_class = BankingRuleSerializer

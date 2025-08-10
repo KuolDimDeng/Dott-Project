@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from django.db.models.functions import Cast
 from purchases.models import Expense
 from sales.models import Invoice, InvoiceItem
@@ -89,7 +90,7 @@ def profit_and_loss_analysis(request, time_range):
 
     return Response(data)
 
-class FinancialDataViewSet(viewsets.ModelViewSet):
+class FinancialDataViewSet(TenantIsolatedViewSet):
     queryset = FinancialData.objects.all()
     serializer_class = FinancialDataSerializer
 

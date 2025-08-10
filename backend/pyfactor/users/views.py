@@ -14,6 +14,7 @@ from pyfactor.logging_config import get_logger
 from django.core import serializers
 from rest_framework.renderers import JSONRenderer
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from .models import UserMenuPrivilege, BusinessMember
 from .serializers import UserMenuPrivilegeSerializer
@@ -239,7 +240,7 @@ class ProfileView(APIView):
                 "message": str(e) if settings.DEBUG else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class UserMenuPrivilegeViewSet(viewsets.ModelViewSet):
+class UserMenuPrivilegeViewSet(TenantIsolatedViewSet):
     """
     API endpoints for managing user menu privileges
     """

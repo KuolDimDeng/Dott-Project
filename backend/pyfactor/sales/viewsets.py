@@ -3,6 +3,7 @@ Industry-standard ViewSets for Sales module following tenant-aware patterns.
 These replace the old multi-database views with proper tenant isolation.
 """
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -25,7 +26,7 @@ from pyfactor.logging_config import get_logger
 logger = get_logger()
 
 
-class SalesOrderViewSet(viewsets.ModelViewSet):
+class SalesOrderViewSet(TenantIsolatedViewSet):
     """
     Industry-standard ViewSet for Sales Orders with proper tenant isolation.
     Following the proven pattern from CustomerViewSet.
@@ -89,7 +90,7 @@ class SalesOrderViewSet(viewsets.ModelViewSet):
             )
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(TenantIsolatedViewSet):
     """
     Industry-standard ViewSet for Invoices with proper tenant isolation.
     """
@@ -192,7 +193,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
 
 
-class EstimateViewSet(viewsets.ModelViewSet):
+class EstimateViewSet(TenantIsolatedViewSet):
     """
     Industry-standard ViewSet for Estimates with proper tenant isolation.
     """

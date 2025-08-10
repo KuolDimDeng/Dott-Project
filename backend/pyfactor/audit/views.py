@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, filters
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Count, Q
@@ -8,7 +9,7 @@ from .models import AuditLog
 from .serializers import AuditLogSerializer
 
 
-class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
+class AuditLogViewSet(TenantIsolatedViewSet):
     """
     API endpoint for viewing audit logs.
     Only accessible to staff users.

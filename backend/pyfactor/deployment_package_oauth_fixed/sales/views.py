@@ -6,6 +6,7 @@ import uuid
 from django.shortcuts import get_object_or_404, render
 from psycopg2 import IntegrityError
 from rest_framework import generics, status, serializers, viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

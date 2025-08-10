@@ -9,6 +9,7 @@ from django.db import transaction as db_transaction, models
 from django.db.models import Q, Sum, Count, F
 from django.utils import timezone
 from rest_framework import viewsets, status, permissions
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
@@ -24,7 +25,7 @@ from custom_auth.models import User
 logger = logging.getLogger(__name__)
 
 
-class EmployeeTimesheetViewSet(viewsets.ModelViewSet):
+class EmployeeTimesheetViewSet(TenantIsolatedViewSet):
     """
     ViewSet for employees to manage their own timesheets
     """
@@ -162,7 +163,7 @@ class EmployeeTimesheetViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class TimeOffRequestViewSet(viewsets.ModelViewSet):
+class TimeOffRequestViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing time off requests
     """
@@ -347,7 +348,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
             )
 
 
-class ClockEntryViewSet(viewsets.ModelViewSet):
+class ClockEntryViewSet(TenantIsolatedViewSet):
     """
     ViewSet for clock in/out entries
     """
@@ -548,7 +549,7 @@ class ClockEntryViewSet(viewsets.ModelViewSet):
         return ip
 
 
-class SupervisorApprovalViewSet(viewsets.ViewSet):
+class SupervisorApprovalViewSet(TenantIsolatedViewSet):
     """
     ViewSet for supervisor approval actions
     """

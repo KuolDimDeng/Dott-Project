@@ -1,5 +1,6 @@
 # taxes/views.py
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -13,7 +14,7 @@ from .tasks import populate_tax_rates_for_country
 logger = logging.getLogger(__name__)
 
 
-class GlobalTaxRateViewSet(viewsets.ReadOnlyModelViewSet):
+class GlobalTaxRateViewSet(TenantIsolatedViewSet):
     """
     ViewSet for accessing global tax rates
     """

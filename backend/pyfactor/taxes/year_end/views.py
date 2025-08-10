@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -25,7 +26,7 @@ from custom_auth.permissions import TenantAccessPermission
 logger = logging.getLogger(__name__)
 
 
-class W2FormViewSet(viewsets.ModelViewSet):
+class W2FormViewSet(TenantIsolatedViewSet):
     """ViewSet for W-2 forms"""
     serializer_class = W2FormSerializer
     permission_classes = [IsAuthenticated, TenantAccessPermission]
@@ -264,7 +265,7 @@ class W2FormViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class Form1099ViewSet(viewsets.ModelViewSet):
+class Form1099ViewSet(TenantIsolatedViewSet):
     """ViewSet for 1099 forms"""
     permission_classes = [IsAuthenticated, TenantAccessPermission]
     
@@ -499,7 +500,7 @@ class Form1099ViewSet(viewsets.ModelViewSet):
         )
 
 
-class YearEndTaxGenerationViewSet(viewsets.ReadOnlyModelViewSet):
+class YearEndTaxGenerationViewSet(TenantIsolatedViewSet):
     """ViewSet for tracking year-end tax generation batches"""
     serializer_class = YearEndTaxGenerationSerializer
     permission_classes = [IsAuthenticated, TenantAccessPermission]

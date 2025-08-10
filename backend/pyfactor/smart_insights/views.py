@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -38,7 +39,7 @@ if hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
         redis_client = None
 
 
-class SmartInsightsViewSet(viewsets.ViewSet):
+class SmartInsightsViewSet(TenantIsolatedViewSet):
     """Main viewset for Smart Insights credit management"""
     permission_classes = [IsAuthenticated]
     

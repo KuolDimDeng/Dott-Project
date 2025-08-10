@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.http import HttpRequest
 
 from rest_framework import status, permissions, viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -31,7 +32,7 @@ from .utils import PaymentProcessorFactory, get_client_ip, create_audit_log
 
 logger = logging.getLogger(__name__)
 
-class PaymentGatewayViewSet(viewsets.ModelViewSet):
+class PaymentGatewayViewSet(TenantIsolatedViewSet):
     """ViewSet for managing payment gateways"""
     
     permission_classes = [permissions.IsAuthenticated]
@@ -114,7 +115,7 @@ class PaymentGatewayViewSet(viewsets.ModelViewSet):
                 "message": f"Error retrieving features: {str(e)}"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PaymentMethodViewSet(viewsets.ModelViewSet):
+class PaymentMethodViewSet(TenantIsolatedViewSet):
     """ViewSet for managing payment methods"""
     
     permission_classes = [permissions.IsAuthenticated]
@@ -212,7 +213,7 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
             "message": "Payment method set as default"
         })
 
-class TransactionViewSet(viewsets.ModelViewSet):
+class TransactionViewSet(TenantIsolatedViewSet):
     """ViewSet for managing transactions"""
     
     permission_classes = [permissions.IsAuthenticated]

@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -36,7 +37,7 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
-class JobViewSet(viewsets.ModelViewSet):
+class JobViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing jobs with full CRUD operations
     """
@@ -1179,7 +1180,7 @@ class JobViewSet(viewsets.ModelViewSet):
             # Don't fail the main operation if document save fails
 
 
-class JobMaterialViewSet(viewsets.ModelViewSet):
+class JobMaterialViewSet(TenantIsolatedViewSet):
     """ViewSet for managing job materials"""
     serializer_class = JobMaterialSerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -1198,7 +1199,7 @@ class JobMaterialViewSet(viewsets.ModelViewSet):
         )
 
 
-class JobLaborViewSet(viewsets.ModelViewSet):
+class JobLaborViewSet(TenantIsolatedViewSet):
     """ViewSet for managing job labor entries"""
     serializer_class = JobLaborSerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -1216,7 +1217,7 @@ class JobLaborViewSet(viewsets.ModelViewSet):
         )
 
 
-class JobExpenseViewSet(viewsets.ModelViewSet):
+class JobExpenseViewSet(TenantIsolatedViewSet):
     """ViewSet for managing job expenses"""
     serializer_class = JobExpenseSerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -1235,7 +1236,7 @@ class JobExpenseViewSet(viewsets.ModelViewSet):
         )
 
 
-class VehicleViewSet(viewsets.ModelViewSet):
+class VehicleViewSet(TenantIsolatedViewSet):
     """ViewSet for managing vehicles"""
     serializer_class = VehicleSerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -1336,7 +1337,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
 
 # Additional API endpoints for Job form data
-class JobDataViewSet(viewsets.ViewSet):
+class JobDataViewSet(TenantIsolatedViewSet):
     """ViewSet for providing job form data (customers, employees, supplies)"""
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -1534,7 +1535,7 @@ class JobDataViewSet(viewsets.ViewSet):
             )
 
 
-class JobDocumentViewSet(viewsets.ModelViewSet):
+class JobDocumentViewSet(TenantIsolatedViewSet):
     """ViewSet for managing job documents"""
     serializer_class = JobDocumentSerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -1608,7 +1609,7 @@ class JobDocumentViewSet(viewsets.ModelViewSet):
             )
 
 
-class JobStatusHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+class JobStatusHistoryViewSet(TenantIsolatedViewSet):
     """ViewSet for viewing job status history (read-only)"""
     serializer_class = JobStatusHistorySerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -1619,7 +1620,7 @@ class JobStatusHistoryViewSet(viewsets.ReadOnlyModelViewSet):
         return JobStatusHistory.objects.filter(job_id=job_id).order_by('-changed_at')
 
 
-class JobCommunicationViewSet(viewsets.ModelViewSet):
+class JobCommunicationViewSet(TenantIsolatedViewSet):
     """ViewSet for managing job communications"""
     serializer_class = JobCommunicationSerializer
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]

@@ -7,6 +7,7 @@ from decimal import Decimal
 from django.db import transaction as db_transaction
 from django.utils import timezone
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -29,7 +30,7 @@ from pyfactor.logging_config import get_logger
 logger = get_logger()
 
 
-class POSTransactionViewSet(viewsets.ModelViewSet):
+class POSTransactionViewSet(TenantIsolatedViewSet):
     """
     ViewSet for POS transactions with comprehensive sale processing.
     """
@@ -442,7 +443,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             )
 
 
-class POSRefundViewSet(viewsets.ModelViewSet):
+class POSRefundViewSet(TenantIsolatedViewSet):
     """
     ViewSet for POS refunds and returns.
     """

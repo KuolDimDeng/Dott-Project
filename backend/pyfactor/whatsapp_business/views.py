@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -32,7 +33,7 @@ from custom_auth.models import Tenant
 from inventory.models import Product
 
 
-class WhatsAppBusinessSettingsViewSet(viewsets.ModelViewSet):
+class WhatsAppBusinessSettingsViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Business Settings"""
     serializer_class = WhatsAppBusinessSettingsSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -79,7 +80,7 @@ class WhatsAppBusinessSettingsViewSet(viewsets.ModelViewSet):
             })
 
 
-class WhatsAppCatalogViewSet(viewsets.ModelViewSet):
+class WhatsAppCatalogViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Catalogs"""
     serializer_class = WhatsAppCatalogSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -131,7 +132,7 @@ class WhatsAppCatalogViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class WhatsAppProductViewSet(viewsets.ModelViewSet):
+class WhatsAppProductViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Products"""
     serializer_class = WhatsAppProductSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -234,7 +235,7 @@ class WhatsAppProductViewSet(viewsets.ModelViewSet):
         })
 
 
-class WhatsAppOrderViewSet(viewsets.ModelViewSet):
+class WhatsAppOrderViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Orders"""
     serializer_class = WhatsAppOrderSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -419,7 +420,7 @@ class WhatsAppOrderViewSet(viewsets.ModelViewSet):
             )
 
 
-class WhatsAppAnalyticsViewSet(viewsets.ReadOnlyModelViewSet):
+class WhatsAppAnalyticsViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Analytics"""
     serializer_class = WhatsAppAnalyticsSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]

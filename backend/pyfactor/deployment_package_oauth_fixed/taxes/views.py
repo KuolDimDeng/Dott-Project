@@ -1,5 +1,6 @@
 # taxes/views.py
 from rest_framework import viewsets, status, permissions
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -66,7 +67,7 @@ class StateViewSet(viewsets.ModelViewSet):
         serializer = IncomeTaxRateSerializer(rates, many=True)
         return Response(serializer.data)
 
-class IncomeTaxRateViewSet(viewsets.ModelViewSet):
+class IncomeTaxRateViewSet(TenantIsolatedViewSet):
     queryset = IncomeTaxRate.objects.all().order_by('-tax_year', 'state__code')
     serializer_class = IncomeTaxRateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -105,7 +106,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
             logger.error(f"Error updating tax rates: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
+class PayrollTaxFilingViewSet(TenantIsolatedViewSet):
     queryset = PayrollTaxFiling.objects.all().order_by('-submission_date')
     serializer_class = PayrollTaxFilingSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -220,12 +221,12 @@ class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
         # Implement self-service preparation
         return {"status": "preparation", "notes": "Documents prepared for self-service filing"}
 
-class TaxFilingInstructionViewSet(viewsets.ModelViewSet):
+class TaxFilingInstructionViewSet(TenantIsolatedViewSet):
     queryset = TaxFilingInstruction.objects.all()
     serializer_class = TaxFilingInstructionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class TaxFormViewSet(viewsets.ModelViewSet):
+class TaxFormViewSet(TenantIsolatedViewSet):
     queryset = TaxForm.objects.all().order_by('-submission_date')
     serializer_class = TaxFormSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -360,7 +361,7 @@ class TaxCalculationView(APIView):
                     
             return tax_amount
 
-class GlobalComplianceViewSet(viewsets.ViewSet):
+class GlobalComplianceViewSet(TenantIsolatedViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     @action(detail=True, methods=['get'], url_path='global-compliance/(?P<country_code>[^/.]+)')

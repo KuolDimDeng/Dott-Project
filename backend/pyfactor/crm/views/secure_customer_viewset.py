@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, NotFound
 from django.db import transaction as db_transaction
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class SecureCustomerViewSet(viewsets.ModelViewSet):
+class SecureCustomerViewSet(TenantIsolatedViewSet):
     """
     Industry-standard secure customer viewset with automatic tenant isolation.
     

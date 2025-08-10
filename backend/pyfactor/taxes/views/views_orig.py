@@ -1,5 +1,6 @@
 # taxes/views.py
 from rest_framework import viewsets, status, permissions
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -74,7 +75,7 @@ class StateViewSet(viewsets.ModelViewSet):
         serializer = IncomeTaxRateSerializer(rates, many=True)
         return Response(serializer.data)
 
-class IncomeTaxRateViewSet(viewsets.ModelViewSet):
+class IncomeTaxRateViewSet(TenantIsolatedViewSet):
     queryset = IncomeTaxRate.objects.all().order_by('-tax_year', 'state__code')
     serializer_class = IncomeTaxRateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -189,7 +190,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
             logger.error(f"Error updating tax rates: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
+class PayrollTaxFilingViewSet(TenantIsolatedViewSet):
     queryset = PayrollTaxFiling.objects.all().order_by('-id')
     serializer_class = PayrollTaxFilingSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -346,12 +347,12 @@ class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
         # Implement self-service preparation
         return {"status": "preparation", "notes": "Documents prepared for self-service filing"}
 
-class TaxFilingInstructionViewSet(viewsets.ModelViewSet):
+class TaxFilingInstructionViewSet(TenantIsolatedViewSet):
     queryset = TaxFilingInstruction.objects.all()
     serializer_class = TaxFilingInstructionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class TaxFormViewSet(viewsets.ModelViewSet):
+class TaxFormViewSet(TenantIsolatedViewSet):
     queryset = TaxForm.objects.all().order_by('-id')
     serializer_class = TaxFormSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -682,7 +683,7 @@ class TaxCalculationView(APIView):
                     
             return tax_amount
 
-class GlobalComplianceViewSet(viewsets.ViewSet):
+class GlobalComplianceViewSet(TenantIsolatedViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     @action(detail=True, methods=['get'], url_path='global-compliance/(?P<country_code>[^/.]+)')
@@ -738,7 +739,7 @@ class GlobalComplianceViewSet(viewsets.ViewSet):
             )
 
 
-class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
+class TaxDataEntryControlViewSet(TenantIsolatedViewSet):
     """ViewSet for managing tax data entry controls"""
     queryset = TaxDataEntryControl.objects.all()
     serializer_class = TaxDataEntryControlSerializer
@@ -759,7 +760,7 @@ class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(controls, many=True).data)
 
 
-class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
+class TaxDataEntryLogViewSet(TenantIsolatedViewSet):
     """ViewSet for viewing tax data entry logs"""
     queryset = TaxDataEntryLog.objects.all().order_by('-created_at')
     serializer_class = TaxDataEntryLogSerializer
@@ -818,7 +819,7 @@ class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(stats)
 
 
-class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
+class TaxDataAbuseReportViewSet(TenantIsolatedViewSet):
     """ViewSet for managing tax data abuse reports"""
     queryset = TaxDataAbuseReport.objects.all().order_by('-created_at')
     serializer_class = TaxDataAbuseReportSerializer
@@ -855,7 +856,7 @@ class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(pending_reports, many=True).data)
 
 
-class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
+class TaxDataBlacklistViewSet(TenantIsolatedViewSet):
     """ViewSet for managing tax data blacklist"""
     queryset = TaxDataBlacklist.objects.all().order_by('-created_at')
     serializer_class = TaxDataBlacklistSerializer
@@ -920,7 +921,7 @@ class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
         return Response({"is_blacklisted": is_blacklisted})
 
 
-class TaxSettingsViewSet(viewsets.ModelViewSet):
+class TaxSettingsViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing tenant tax settings.
     Provides CRUD operations for tax configuration.
@@ -997,7 +998,7 @@ class TaxSettingsViewSet(viewsets.ModelViewSet):
             )
 
 
-class TaxApiUsageViewSet(viewsets.ModelViewSet):
+class TaxApiUsageViewSet(TenantIsolatedViewSet):
     """
     ViewSet for tracking tax API usage.
     """

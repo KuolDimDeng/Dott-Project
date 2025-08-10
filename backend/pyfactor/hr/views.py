@@ -44,6 +44,7 @@ import uuid
 from datetime import datetime
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 
 from pyfactor.logging_config import get_logger
@@ -871,7 +872,7 @@ def preboarding_form_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Performance Management Views
-class PerformanceReviewViewSet(viewsets.ModelViewSet):
+class PerformanceReviewViewSet(TenantIsolatedViewSet):
     queryset = PerformanceReview.objects.all()
     serializer_class = PerformanceReviewSerializer
     
@@ -917,7 +918,7 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceMetricViewSet(viewsets.ModelViewSet):
+class PerformanceMetricViewSet(TenantIsolatedViewSet):
     queryset = PerformanceMetric.objects.all()
     serializer_class = PerformanceMetricSerializer
     
@@ -938,7 +939,7 @@ class PerformanceMetricViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceRatingViewSet(viewsets.ModelViewSet):
+class PerformanceRatingViewSet(TenantIsolatedViewSet):
     queryset = PerformanceRating.objects.all()
     serializer_class = PerformanceRatingSerializer
     
@@ -958,7 +959,7 @@ class PerformanceRatingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceGoalViewSet(viewsets.ModelViewSet):
+class PerformanceGoalViewSet(TenantIsolatedViewSet):
     queryset = PerformanceGoal.objects.all()
     serializer_class = PerformanceGoalSerializer
     
@@ -999,7 +1000,7 @@ class PerformanceGoalViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class FeedbackRecordViewSet(viewsets.ModelViewSet):
+class FeedbackRecordViewSet(TenantIsolatedViewSet):
     queryset = FeedbackRecord.objects.all()
     serializer_class = FeedbackRecordSerializer
     
@@ -1035,7 +1036,7 @@ class FeedbackRecordViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceSettingViewSet(viewsets.ModelViewSet):
+class PerformanceSettingViewSet(TenantIsolatedViewSet):
     queryset = PerformanceSetting.objects.all()
     serializer_class = PerformanceSettingSerializer
     
@@ -1050,7 +1051,7 @@ class PerformanceSettingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class TimesheetViewSet(viewsets.ModelViewSet):
+class TimesheetViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheets"""
     queryset = Timesheet.objects.all()
     serializer_class = TimesheetSerializer
@@ -1077,7 +1078,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-period_start')
 
 
-class TimesheetEntryViewSet(viewsets.ModelViewSet):
+class TimesheetEntryViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheet entries"""
     queryset = TimesheetEntry.objects.all()
     serializer_class = TimesheetEntrySerializer
@@ -1093,7 +1094,7 @@ class TimesheetEntryViewSet(viewsets.ModelViewSet):
         return queryset.order_by('date')
 
 
-class TimesheetSettingViewSet(viewsets.ModelViewSet):
+class TimesheetSettingViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheet settings"""
     queryset = TimesheetSetting.objects.all()
     serializer_class = TimesheetSettingSerializer
@@ -1109,7 +1110,7 @@ class TimesheetSettingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class TimeOffRequestViewSet(viewsets.ModelViewSet):
+class TimeOffRequestViewSet(TenantIsolatedViewSet):
     """ViewSet for managing time off requests"""
     queryset = TimeOffRequest.objects.all()
     serializer_class = TimeOffRequestSerializer
@@ -1135,7 +1136,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-created_at')
 
 
-class TimeOffBalanceViewSet(viewsets.ModelViewSet):
+class TimeOffBalanceViewSet(TenantIsolatedViewSet):
     """ViewSet for managing time off balances"""
     queryset = TimeOffBalance.objects.all()
     serializer_class = TimeOffBalanceSerializer
@@ -1156,7 +1157,7 @@ class TimeOffBalanceViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class BenefitsViewSet(viewsets.ModelViewSet):
+class BenefitsViewSet(TenantIsolatedViewSet):
     """ViewSet for managing employee benefits"""
     queryset = Benefits.objects.all()
     serializer_class = BenefitsSerializer
@@ -1180,7 +1181,7 @@ class BenefitsViewSet(viewsets.ModelViewSet):
 
 # Location Tracking ViewSets
 
-class LocationLogViewSet(viewsets.ModelViewSet):
+class LocationLogViewSet(TenantIsolatedViewSet):
     """ViewSet for managing location logs"""
     queryset = LocationLog.objects.all()
     serializer_class = LocationLogSerializer
@@ -1248,7 +1249,7 @@ class LocationLogViewSet(viewsets.ModelViewSet):
             ).update(is_active=False)
 
 
-class EmployeeLocationConsentViewSet(viewsets.ModelViewSet):
+class EmployeeLocationConsentViewSet(TenantIsolatedViewSet):
     """ViewSet for managing employee location consent"""
     queryset = EmployeeLocationConsent.objects.all()
     serializer_class = EmployeeLocationConsentSerializer
@@ -1289,7 +1290,7 @@ class EmployeeLocationConsentViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
 
 
-class LocationCheckInViewSet(viewsets.ModelViewSet):
+class LocationCheckInViewSet(TenantIsolatedViewSet):
     """ViewSet for managing active location check-ins"""
     queryset = LocationCheckIn.objects.all()
     serializer_class = LocationCheckInSerializer
@@ -1506,7 +1507,7 @@ def clock_out_with_location(request):
 
 # Geofencing ViewSets
 
-class GeofenceViewSet(viewsets.ModelViewSet):
+class GeofenceViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing geofences
     """
@@ -2014,7 +2015,7 @@ class GeofenceViewSet(viewsets.ModelViewSet):
             )
 
 
-class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
+class EmployeeGeofenceViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing employee-geofence assignments
     """
@@ -2060,7 +2061,7 @@ class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
         )
 
 
-class GeofenceEventViewSet(viewsets.ReadOnlyModelViewSet):
+class GeofenceEventViewSet(TenantIsolatedViewSet):
     """
     ViewSet for viewing geofence events (read-only)
     """

@@ -28,6 +28,7 @@ import uuid
 from datetime import datetime
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 
 from pyfactor.logging_config import get_logger
 
@@ -495,7 +496,7 @@ def preboarding_form_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Performance Management Views
-class PerformanceReviewViewSet(viewsets.ModelViewSet):
+class PerformanceReviewViewSet(TenantIsolatedViewSet):
     queryset = PerformanceReview.objects.all()
     serializer_class = PerformanceReviewSerializer
     
@@ -541,7 +542,7 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceMetricViewSet(viewsets.ModelViewSet):
+class PerformanceMetricViewSet(TenantIsolatedViewSet):
     queryset = PerformanceMetric.objects.all()
     serializer_class = PerformanceMetricSerializer
     
@@ -562,7 +563,7 @@ class PerformanceMetricViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceRatingViewSet(viewsets.ModelViewSet):
+class PerformanceRatingViewSet(TenantIsolatedViewSet):
     queryset = PerformanceRating.objects.all()
     serializer_class = PerformanceRatingSerializer
     
@@ -582,7 +583,7 @@ class PerformanceRatingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceGoalViewSet(viewsets.ModelViewSet):
+class PerformanceGoalViewSet(TenantIsolatedViewSet):
     queryset = PerformanceGoal.objects.all()
     serializer_class = PerformanceGoalSerializer
     
@@ -623,7 +624,7 @@ class PerformanceGoalViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class FeedbackRecordViewSet(viewsets.ModelViewSet):
+class FeedbackRecordViewSet(TenantIsolatedViewSet):
     queryset = FeedbackRecord.objects.all()
     serializer_class = FeedbackRecordSerializer
     
@@ -659,7 +660,7 @@ class FeedbackRecordViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceSettingViewSet(viewsets.ModelViewSet):
+class PerformanceSettingViewSet(TenantIsolatedViewSet):
     queryset = PerformanceSetting.objects.all()
     serializer_class = PerformanceSettingSerializer
     

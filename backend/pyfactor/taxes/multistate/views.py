@@ -4,6 +4,7 @@ Provides comprehensive endpoints for nexus tracking, apportionment calculation, 
 """
 
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -34,7 +35,7 @@ from .apportionment_calculator import ApportionmentCalculator, MultistateReturnP
 logger = logging.getLogger(__name__)
 
 
-class MultistateNexusProfileViewSet(viewsets.ModelViewSet):
+class MultistateNexusProfileViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing multistate nexus profiles.
     Provides comprehensive nexus management for businesses operating across multiple states.
@@ -439,7 +440,7 @@ class MultistateNexusProfileViewSet(viewsets.ModelViewSet):
         return recommendations
 
 
-class StateNexusStatusViewSet(viewsets.ModelViewSet):
+class StateNexusStatusViewSet(TenantIsolatedViewSet):
     """ViewSet for managing state nexus status records"""
     
     serializer_class = StateNexusStatusSerializer
@@ -467,7 +468,7 @@ class StateNexusStatusViewSet(viewsets.ModelViewSet):
         })
 
 
-class BusinessActivityViewSet(viewsets.ModelViewSet):
+class BusinessActivityViewSet(TenantIsolatedViewSet):
     """ViewSet for managing business activities that affect nexus"""
     
     serializer_class = BusinessActivitySerializer
@@ -479,7 +480,7 @@ class BusinessActivityViewSet(viewsets.ModelViewSet):
         )
 
 
-class ApportionmentFactorsViewSet(viewsets.ModelViewSet):
+class ApportionmentFactorsViewSet(TenantIsolatedViewSet):
     """ViewSet for managing apportionment factors"""
     
     serializer_class = ApportionmentFactorsSerializer
@@ -506,7 +507,7 @@ class ApportionmentFactorsViewSet(viewsets.ModelViewSet):
         })
 
 
-class MultistateReturnViewSet(viewsets.ModelViewSet):
+class MultistateReturnViewSet(TenantIsolatedViewSet):
     """ViewSet for managing multistate tax returns"""
     
     serializer_class = MultistateReturnSerializer
@@ -541,7 +542,7 @@ class MultistateReturnViewSet(viewsets.ModelViewSet):
         })
 
 
-class NexusThresholdMonitoringViewSet(viewsets.ModelViewSet):
+class NexusThresholdMonitoringViewSet(TenantIsolatedViewSet):
     """ViewSet for managing nexus threshold monitoring alerts"""
     
     serializer_class = NexusThresholdMonitoringSerializer
@@ -583,7 +584,7 @@ class NexusThresholdMonitoringViewSet(viewsets.ModelViewSet):
         })
 
 
-class ReciprocityAgreementViewSet(viewsets.ReadOnlyModelViewSet):
+class ReciprocityAgreementViewSet(TenantIsolatedViewSet):
     """ViewSet for viewing reciprocity agreements"""
     
     serializer_class = ReciprocityAgreementSerializer
@@ -591,7 +592,7 @@ class ReciprocityAgreementViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ReciprocityAgreement.objects.filter(is_active=True)
 
 
-class ConsolidatedGroupViewSet(viewsets.ModelViewSet):
+class ConsolidatedGroupViewSet(TenantIsolatedViewSet):
     """ViewSet for managing consolidated group filings"""
     
     serializer_class = ConsolidatedGroupSerializer

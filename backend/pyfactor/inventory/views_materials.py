@@ -2,6 +2,7 @@
 Views for Material management
 """
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -18,7 +19,7 @@ from .serializers_materials import (
 logger = logging.getLogger(__name__)
 
 
-class MaterialViewSet(viewsets.ModelViewSet):
+class MaterialViewSet(TenantIsolatedViewSet):
     """
     ViewSet for Material CRUD operations and inventory management
     """
@@ -430,7 +431,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
         return response
 
 
-class MaterialTransactionViewSet(viewsets.ModelViewSet):
+class MaterialTransactionViewSet(TenantIsolatedViewSet):
     """
     ViewSet for viewing material transaction history
     """

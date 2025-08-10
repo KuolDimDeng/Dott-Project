@@ -3,6 +3,7 @@ Views for Payroll Tax Management
 """
 
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -31,7 +32,7 @@ from .irs_integration import IRSIntegration
 from payroll.models import PayrollRun, PayrollTransaction
 
 
-class Form941ViewSet(viewsets.ModelViewSet):
+class Form941ViewSet(TenantIsolatedViewSet):
     """ViewSet for Form 941 management"""
     serializer_class = Form941Serializer
     permission_classes = [IsAuthenticated]
@@ -236,7 +237,7 @@ class Form941ViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class PayrollTaxDepositViewSet(viewsets.ModelViewSet):
+class PayrollTaxDepositViewSet(TenantIsolatedViewSet):
     """ViewSet for managing payroll tax deposits"""
     serializer_class = PayrollTaxDepositSerializer
     permission_classes = [IsAuthenticated]
@@ -375,7 +376,7 @@ class PayrollTaxDepositViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class PayrollTaxFilingScheduleViewSet(viewsets.ModelViewSet):
+class PayrollTaxFilingScheduleViewSet(TenantIsolatedViewSet):
     """ViewSet for managing payroll tax filing schedules"""
     serializer_class = PayrollTaxFilingScheduleSerializer
     permission_classes = [IsAuthenticated]
@@ -505,7 +506,7 @@ class PayrollTaxFilingScheduleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class EmployerTaxAccountViewSet(viewsets.ModelViewSet):
+class EmployerTaxAccountViewSet(TenantIsolatedViewSet):
     """ViewSet for managing employer tax accounts"""
     serializer_class = EmployerTaxAccountSerializer
     permission_classes = [IsAuthenticated]
@@ -701,7 +702,7 @@ class EmployerTaxAccountViewSet(viewsets.ModelViewSet):
             )
 
 
-class Form940ViewSet(viewsets.ModelViewSet):
+class Form940ViewSet(TenantIsolatedViewSet):
     """ViewSet for Form 940 management"""
     serializer_class = Form940Serializer
     permission_classes = [IsAuthenticated]
@@ -966,7 +967,7 @@ class Form940ViewSet(viewsets.ModelViewSet):
             )
 
 
-class StateTaxAccountViewSet(viewsets.ModelViewSet):
+class StateTaxAccountViewSet(TenantIsolatedViewSet):
     """ViewSet for managing state tax accounts"""
     serializer_class = StateTaxAccountSerializer
     permission_classes = [IsAuthenticated]
@@ -1120,7 +1121,7 @@ class StatePayrollProcessorView(viewsets.ViewSet):
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 
-class StatePayrollConfigViewSet(viewsets.ModelViewSet):
+class StatePayrollConfigViewSet(TenantIsolatedViewSet):
     """ViewSet for state payroll configuration"""
     serializer_class = None  # Will be created in serializers
     permission_classes = [IsAuthenticated]
@@ -1152,7 +1153,7 @@ class StatePayrollConfigViewSet(viewsets.ModelViewSet):
         return Response(data)
 
 
-class StateFilingViewSet(viewsets.ModelViewSet):
+class StateFilingViewSet(TenantIsolatedViewSet):
     """ViewSet for state payroll tax filings"""
     serializer_class = None  # Will be created in serializers
     permission_classes = [IsAuthenticated]
