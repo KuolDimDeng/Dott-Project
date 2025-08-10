@@ -35,7 +35,7 @@ class InventoryItemViewSet(TenantIsolatedViewSet):
     
     def get_queryset(self):
         """
-        Get queryset with proper tenant context and optimized queries
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
         """
         import logging
         import time
@@ -44,17 +44,18 @@ class InventoryItemViewSet(TenantIsolatedViewSet):
         start_time = time.time()
         
         try:
-            # Log tenant information if available
-            tenant_id = getattr(self.request, 'tenant_id', None)
-            if tenant_id:
-                logger.debug(f"Request has tenant_id: {tenant_id}")
-            else:
-                logger.debug("No tenant_id found in request")
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
             
-            # Use select_related to optimize queries
-            queryset = InventoryItem.objects.select_related(
+            # Now apply select_related for optimization
+            queryset = queryset.select_related(
                 'category', 'supplier', 'location'
-            ).all()
+            )
+            
+            # Log tenant information
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.debug(f"[InventoryItemViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
             # Apply any filters from query parameters
             if self.request.query_params.get('category'):
@@ -67,7 +68,7 @@ class InventoryItemViewSet(TenantIsolatedViewSet):
                 except ValueError:
                     pass
             
-            logger.debug(f"InventoryItem queryset fetched in {time.time() - start_time:.4f}s")
+            logger.debug(f"InventoryItem queryset fetched in {time.time() - start_time:.4f}s with {queryset.count()} items")
             return queryset
             
         except Exception as e:
@@ -204,7 +205,7 @@ class ProductViewSet(TenantIsolatedViewSet):
     
     def get_queryset(self):
         """
-        Get queryset with proper tenant context and optimized queries
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
         """
         import logging
         import time
@@ -213,26 +214,15 @@ class ProductViewSet(TenantIsolatedViewSet):
         start_time = time.time()
         
         try:
-            # Import here to avoid circular imports
-            from custom_auth.rls import set_tenant_context
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
             
-            # Set tenant context if available
-            if hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
-                logger.info(f"[ProductViewSet] Setting tenant context from user.tenant_id: {self.request.user.tenant_id}")
-                set_tenant_context(str(self.request.user.tenant_id))
-            elif hasattr(self.request.user, 'business_id') and self.request.user.business_id:
-                logger.info(f"[ProductViewSet] Setting tenant context from user.business_id: {self.request.user.business_id}")
-                set_tenant_context(str(self.request.user.business_id))
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[ProductViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            # Use all_objects to bypass manager filtering and apply manual filtering
-            queryset = Product.all_objects.all()
-            
-            # Filter by user's business_id manually
-            if hasattr(self.request.user, 'business_id') and self.request.user.business_id:
-                queryset = queryset.filter(tenant_id=self.request.user.business_id)
-                logger.info(f"[ProductViewSet] Filtered by business_id: {self.request.user.business_id}, count: {queryset.count()}")
-            
-            # Apply any filters from query parameters
+            # Apply any additional filters from query parameters
             if self.request.query_params.get('is_for_sale'):
                 queryset = queryset.filter(
                     is_for_sale=self.request.query_params.get('is_for_sale').lower() == 'true'
@@ -245,7 +235,7 @@ class ProductViewSet(TenantIsolatedViewSet):
                 except ValueError:
                     pass
             
-            logger.debug(f"Product queryset fetched in {time.time() - start_time:.4f}s")
+            logger.debug(f"Product queryset fetched in {time.time() - start_time:.4f}s with {queryset.count()} items")
             return queryset.order_by('name')
             
         except Exception as e:

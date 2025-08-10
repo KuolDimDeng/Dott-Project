@@ -1379,27 +1379,20 @@ class JobDataViewSet(TenantIsolatedViewSet):
             current_tenant = get_current_tenant_id()
             logger.info(f"👥 [JobDataViewSet] [{request_id}] Current tenant context in DB: {current_tenant}")
             
-            # Try direct query without tenant filtering to debug
-            try:
-                # Query with all_objects to bypass tenant filtering
-                all_customers = Customer.all_objects.all()
-                logger.info(f"👥 [JobDataViewSet] [{request_id}] Total customers in database (all tenants): {all_customers.count()}")
-                
-                # Log tenant_id for each customer
-                for idx, customer in enumerate(all_customers[:5]):
-                    logger.info(f"👥 [JobDataViewSet] [{request_id}] Customer {idx}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
-            except Exception as e:
-                logger.error(f"👥 [JobDataViewSet] [{request_id}] Error querying all_objects: {e}")
+            # CRITICAL: Use proper tenant filtering - NEVER bypass with all_objects
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Starting customer query with tenant filtering...")
             
-            # TEMPORARY FIX: Query using all_objects to bypass tenant filtering
-            # This matches how Employee model works (no tenant filtering)
-            logger.info(f"👥 [JobDataViewSet] [{request_id}] Starting customer query...")
-            customers = Customer.all_objects.all().order_by('business_name', 'first_name', 'last_name')
+            # Get tenant_id from user
+            tenant_id = getattr(request.user, 'tenant_id', None) or \
+                       getattr(request.user, 'business_id', None)
             
-            # Filter by user's business_id manually if needed
-            if hasattr(request.user, 'business_id') and request.user.business_id:
-                customers = customers.filter(tenant_id=request.user.business_id)
-                logger.info(f"👥 [JobDataViewSet] [{request_id}] Filtered by business_id: {request.user.business_id}")
+            if not tenant_id:
+                logger.error(f"👥 [JobDataViewSet] [{request_id}] No tenant_id found for user {request.user.email}")
+                customers = Customer.objects.none()
+            else:
+                # Use regular objects manager which respects tenant filtering
+                customers = Customer.objects.filter(tenant_id=tenant_id).order_by('business_name', 'first_name', 'last_name')
+                logger.info(f"👥 [JobDataViewSet] [{request_id}] Filtered customers for tenant {tenant_id}: {customers.count()} found")
             
             logger.info(f"👥 [JobDataViewSet] [{request_id}] Found {customers.count()} customers")
             
