@@ -32,6 +32,7 @@ def delete_user_direct(email):
     try:
         # Connect to database
         conn = psycopg2.connect(**DB_CONFIG)
+        conn.autocommit = False  # Use transactions
         cur = conn.cursor()
         
         # Find user
@@ -77,6 +78,9 @@ def delete_user_direct(email):
         
         print("\n🗑️  Deleting user data...")
         
+        # Start transaction
+        cur.execute("BEGIN")
+        
         # Delete in correct order
         deletion_queries = [
             "DELETE FROM smart_insights_credittransaction WHERE user_id = %s",
@@ -100,7 +104,15 @@ def delete_user_direct(email):
                     print(f"  Warning: {e}")
         
         # Commit the transaction
-        conn.commit()
+        cur.execute("COMMIT")
+        
+        # Close and reconnect to verify deletion
+        cur.close()
+        conn.close()
+        
+        # Reconnect to verify
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
         
         # Verify deletion
         cur.execute("SELECT COUNT(*) FROM custom_auth_user WHERE email = %s", (email,))
