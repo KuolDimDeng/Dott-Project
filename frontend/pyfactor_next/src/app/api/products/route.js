@@ -55,7 +55,7 @@ export async function GET(request) {
       sku: product.product_code || product.sku || '',
       barcode: product.barcode || '',
       price: parseFloat(product.unit_price || product.price || 0),
-      quantity_in_stock: product.stock_quantity || product.quantity_in_stock || 0,
+      quantity_in_stock: product.quantity || product.stock_quantity || product.quantity_in_stock || 0,
       description: product.description || ''
     })) : [];
 

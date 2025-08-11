@@ -295,7 +295,8 @@
       "Bash(./deploy_data_population_fix.sh:*)",
       "Bash(/Users/kuoldeng/projectx/force_restart_deployment.sh)",
       "Bash(./force_restart_deployment.sh:*)",
-      "Bash(/Users/kuoldeng/projectx/test_dashboard_locally.sh)"
+      "Bash(/Users/kuoldeng/projectx/test_dashboard_locally.sh)",
+      "Bash(PYTHONPATH=/Users/kuoldeng/projectx/backend/pyfactor python3 /tmp/check_tenant_data.py)"
     ],
     "deny": []
   }
