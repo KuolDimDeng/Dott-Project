@@ -80,7 +80,8 @@ class CustomerViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[CustomerViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[CustomerViewSet] Customer queryset with {queryset.count()} items")
+            # Don't call count() in debug as it may cause issues
+            logger.debug(f"[CustomerViewSet] Customer queryset prepared")
             return queryset.order_by('created_at')
             
         except Exception as e:
