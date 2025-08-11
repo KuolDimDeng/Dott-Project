@@ -305,60 +305,93 @@ export const employeeApi = {
   }
 };
 
-// Service related API methods
+// Service related API methods - Using local proxy pattern (industry standard)
 export const serviceApi = {
   async getAll(params = {}) {
-    try {
-      const tenantId = await getTenantId();
-      if (!tenantId) {
-        logger.error('[ServiceApi] No tenant ID available for service fetch');
-        throw new Error('No tenant ID available. Please refresh the page or log in again.');
+    const response = await fetch('/api/inventory/services', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
       }
-      
-      return await apiClient.get('/api/inventory/services', {
-        ...params,
-        tenantId
-      });
-    } catch (error) {
-      logger.error('[ServiceApi] Error fetching services:', error);
-      throw error;
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   },
   
   async getById(id, params = {}) {
-    try {
-      return await apiClient.get(`/api/inventory/services/${id}`, params);
-    } catch (error) {
-      logger.error(`[ServiceApi] Error fetching service ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/inventory/services/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   },
   
   async create(data, params = {}) {
-    try {
-      return await apiClient.post('/api/inventory/services', data, params);
-    } catch (error) {
-      logger.error('[ServiceApi] Error creating service:', error);
-      throw error;
+    const response = await fetch('/api/inventory/services', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   },
   
   async update(id, data, params = {}) {
-    try {
-      return await apiClient.put(`/api/inventory/services/${id}`, data, params);
-    } catch (error) {
-      logger.error(`[ServiceApi] Error updating service ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/inventory/services/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   },
   
   async delete(id, params = {}) {
-    try {
-      return await apiClient.delete(`/api/inventory/services/${id}`, params);
-    } catch (error) {
-      logger.error(`[ServiceApi] Error deleting service ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/inventory/services/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   }
 };
 
