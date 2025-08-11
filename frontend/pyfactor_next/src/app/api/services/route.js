@@ -30,15 +30,20 @@ export async function GET(request) {
         url: request.url,
         headers: Object.fromEntries(request.headers.entries())
       });
+      // Return empty array for failed tenant validation (new users)
       return NextResponse.json({ 
-        success: false,
-        error: tenantValidation.error, 
+        success: true,
+        error: null, 
         services: [],
-        total: 0
-      }, { status: 401 });
+        total: 0,
+        totalPages: 0,
+        currentPage: 1
+      }, { status: 200 });
     }
     
     const { tenantId } = tenantValidation;
+    
+    logger.info('[Services API] Fetching services for tenant:', { tenantId });
     const { searchParams } = new URL(request.url);
     
     // Get query parameters
@@ -118,6 +123,13 @@ export async function GET(request) {
     
     // Execute query
     const result = await db.query(query, params);
+    
+    logger.info('[Services API] Query results:', {
+      tenantId,
+      totalCount: total,
+      returnedCount: result.rows.length,
+      services: result.rows.map(s => ({ id: s.id, name: s.name, tenant_id: s.tenant_id }))
+    });
     
     return NextResponse.json({
       success: true,
