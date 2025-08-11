@@ -49,7 +49,7 @@ class SalesOrderViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[SalesOrderViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[SalesOrderViewSet] Sales order queryset with {queryset.count()} items")
+            logger.debug(f"[SalesOrderViewSet] Sales order queryset prepared")
             return queryset.order_by('-created_at')
             
         except Exception as e:
@@ -134,7 +134,7 @@ class InvoiceViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[InvoiceViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[InvoiceViewSet] Invoice queryset with {queryset.count()} items")
+            logger.debug(f"[InvoiceViewSet] Invoice queryset prepared")
             return queryset.order_by('-created_at')
             
         except Exception as e:
@@ -259,7 +259,7 @@ class EstimateViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[EstimateViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[EstimateViewSet] Estimate queryset with {queryset.count()} items")
+            logger.debug(f"[EstimateViewSet] Estimate queryset prepared")
             return queryset.order_by('-created_at')
             
         except Exception as e:

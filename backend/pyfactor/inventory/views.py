@@ -69,7 +69,7 @@ class InventoryItemViewSet(TenantIsolatedViewSet):
                 except ValueError:
                     pass
             
-            logger.debug(f"InventoryItem queryset fetched in {time.time() - start_time:.4f}s with {queryset.count()} items")
+            logger.debug(f"InventoryItem queryset fetched in {time.time() - start_time:.4f}s")
             return queryset
             
         except Exception as e:
@@ -123,7 +123,7 @@ class SupplierViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[SupplierViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[SupplierViewSet] Supplier queryset with {queryset.count()} items")
+            logger.debug(f"[SupplierViewSet] Supplier queryset prepared")
             return queryset.order_by('name')
             
         except Exception as e:
@@ -292,7 +292,7 @@ class ProductViewSet(TenantIsolatedViewSet):
                 except ValueError:
                     pass
             
-            logger.debug(f"Product queryset fetched in {time.time() - start_time:.4f}s with {queryset.count()} items")
+            logger.debug(f"Product queryset fetched in {time.time() - start_time:.4f}s")
             return queryset.order_by('name')
             
         except Exception as e:
@@ -465,7 +465,7 @@ class ServiceViewSet(TenantIsolatedViewSet):
                     is_recurring=self.request.query_params.get('is_recurring').lower() == 'true'
                 )
             
-            logger.debug(f"[ServiceViewSet] Service queryset with {queryset.count()} items")
+            logger.debug(f"[ServiceViewSet] Service queryset prepared")
             return queryset.order_by('name')
             
         except Exception as e:

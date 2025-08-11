@@ -145,7 +145,7 @@ class ContactViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[ContactViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[ContactViewSet] Contact queryset with {queryset.count()} items")
+            logger.debug(f"[ContactViewSet] Contact queryset prepared")
             return queryset.order_by('created_at')
             
         except Exception as e:
@@ -177,7 +177,7 @@ class LeadViewSet(TenantIsolatedViewSet):
                        getattr(self.request.user, 'business_id', None)
             logger.info(f"[LeadViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
-            logger.debug(f"[LeadViewSet] Lead queryset with {queryset.count()} items")
+            logger.debug(f"[LeadViewSet] Lead queryset prepared")
             return queryset.order_by('-created_at')
             
         except Exception as e:
