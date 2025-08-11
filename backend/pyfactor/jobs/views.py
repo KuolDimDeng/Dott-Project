@@ -46,13 +46,28 @@ class JobViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        """Filter jobs by tenant"""
-        return Job.objects.select_related('customer', 'lead_employee__user', 'vehicle').prefetch_related(
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[JobViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply select_related and prefetch_related for optimization
+        queryset = queryset.select_related('customer', 'lead_employee__user', 'vehicle').prefetch_related(
             'assigned_employees__user',
             'materials__supply',
             'labor_entries__employee__user',
             'expenses'
-        ).order_by('-created_at')
+        )
+        
+        logger.debug(f"[JobViewSet] Job queryset prepared")
+        return queryset.order_by('-created_at')
     
     def get_serializer_class(self):
         """Use detailed serializer for retrieve action"""
