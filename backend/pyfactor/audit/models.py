@@ -24,6 +24,12 @@ class AuditLog(models.Model):
         ('logout', 'Logout'),
         ('permission_changed', 'Permission Changed'),
         ('failed_attempt', 'Failed Attempt'),
+        # POS specific actions
+        ('pos_access_validated', 'POS Access Validated'),
+        ('pos_access_violation', 'POS Access Violation'),
+        ('pos_permission_denied', 'POS Permission Denied'),
+        ('pos_sale_completed', 'POS Sale Completed'),
+        ('pos_sale_voided', 'POS Sale Voided'),
     ]
     
     # Primary fields
@@ -41,7 +47,8 @@ class AuditLog(models.Model):
     tenant_id = models.UUIDField(null=True, blank=True, db_index=True)
     
     # Action information
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES, db_index=True)
+    action = models.CharField(max_length=50, db_index=True)  # Removed choices for flexibility
+    resource = models.CharField(max_length=100, null=True, blank=True, db_index=True)  # Resource type (e.g., 'pos', 'sale')
     model_name = models.CharField(max_length=100, db_index=True)
     object_id = models.CharField(max_length=255, null=True, blank=True)
     object_repr = models.TextField(null=True, blank=True)

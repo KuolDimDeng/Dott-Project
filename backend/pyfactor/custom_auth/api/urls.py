@@ -19,6 +19,7 @@ from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
 from .views.session_v2 import SessionV2View
+from .views.pos_validation_view import ValidatePOSAccessView
 from custom_auth.views.email_views import SendEmailView, ContactFormView
 # Password login is now in auth_views
 # from .views.password_login_view import PasswordLoginView
@@ -47,6 +48,9 @@ urlpatterns = [
     
     # Industry-standard session management v2
     path('auth/session-v2', SessionV2View.as_view(), name='session-v2'),
+    
+    # POS access validation endpoint
+    path('auth/validate-pos-access', ValidatePOSAccessView.as_view(), name='validate-pos-access'),
     
     # Unified profile endpoint (consolidates all profile endpoints)
     path('auth/profile', UnifiedProfileView.as_view(), name='unified-profile'),
