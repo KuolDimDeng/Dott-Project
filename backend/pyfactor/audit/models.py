@@ -47,8 +47,7 @@ class AuditLog(models.Model):
     tenant_id = models.UUIDField(null=True, blank=True, db_index=True)
     
     # Action information
-    action = models.CharField(max_length=50, db_index=True)  # Removed choices for flexibility
-    resource = models.CharField(max_length=100, null=True, blank=True, db_index=True)  # Resource type (e.g., 'pos', 'sale')
+    action = models.CharField(max_length=50, db_index=True)  # Flexible action field
     model_name = models.CharField(max_length=100, db_index=True)
     object_id = models.CharField(max_length=255, null=True, blank=True)
     object_repr = models.TextField(null=True, blank=True)

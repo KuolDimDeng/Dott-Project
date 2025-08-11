@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('audit', '0002_auto_20250131_0000'),  # Replace with actual last migration
+        ('audit', '0002_rename_audit_log_timesta_1b0f0f_idx_audit_log_timesta_be67a1_idx_and_more'),
     ]
 
     operations = [
@@ -15,12 +15,5 @@ class Migration(migrations.Migration):
             model_name='auditlog',
             name='action',
             field=models.CharField(max_length=50, db_index=True),
-        ),
-        
-        # Add resource field for better categorization
-        migrations.AddField(
-            model_name='auditlog',
-            name='resource',
-            field=models.CharField(max_length=100, null=True, blank=True, db_index=True),
         ),
     ]

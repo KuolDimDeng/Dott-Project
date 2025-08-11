@@ -98,23 +98,19 @@ class ValidatePOSAccessView(View):
                 
                 # Log security violation
                 with transaction.atomic():
-                    audit_data = {
-                        'user': user,
-                        'action': 'pos_access_violation',
-                        'model_name': 'POS',
-                        'object_id': tenant_id,
-                        'extra_data': {
+                    AuditLog.objects.create(
+                        user=user,
+                        action='pos_access_violation',
+                        model_name='POS',
+                        object_id=tenant_id,
+                        extra_data={
                             'user_tenant': user_tenant_id,
                             'requested_tenant': tenant_id,
                             'device_fingerprint': x_device_fingerprint,
                             'client_type': x_client_type,
                             'device_info': device_info
                         }
-                    }
-                    # Try to add resource field if it exists
-                    if hasattr(AuditLog, 'resource'):
-                        audit_data['resource'] = 'pos'
-                    AuditLog.objects.create(**audit_data)
+                    )
                 
                 return JsonResponse({
                     'success': False,
@@ -152,19 +148,16 @@ class ValidatePOSAccessView(View):
                 
                 # Log permission denial
                 with transaction.atomic():
-                    audit_data = {
-                        'user': user,
-                        'action': 'pos_permission_denied',
-                        'model_name': 'POS',
-                        'object_id': tenant_id,
-                        'extra_data': {
+                    AuditLog.objects.create(
+                        user=user,
+                        action='pos_permission_denied',
+                        model_name='POS',
+                        object_id=tenant_id,
+                        extra_data={
                             'tenant_id': tenant_id,
                             'device_info': device_info
                         }
-                    }
-                    if hasattr(AuditLog, 'resource'):
-                        audit_data['resource'] = 'pos'
-                    AuditLog.objects.create(**audit_data)
+                    )
                 
                 return JsonResponse({
                     'success': False,
@@ -194,22 +187,19 @@ class ValidatePOSAccessView(View):
             
             # Log successful validation
             with transaction.atomic():
-                audit_data = {
-                    'user': user,
-                    'action': 'pos_access_validated',
-                    'model_name': 'POS',
-                    'object_id': tenant_id,
-                    'extra_data': {
+                AuditLog.objects.create(
+                    user=user,
+                    action='pos_access_validated',
+                    model_name='POS',
+                    object_id=tenant_id,
+                    extra_data={
                         'tenant_id': tenant_id,
                         'permission_source': permission_source,
                         'device_fingerprint': x_device_fingerprint,
                         'client_type': x_client_type,
                         'device_info': device_info
                     }
-                }
-                if hasattr(AuditLog, 'resource'):
-                    audit_data['resource'] = 'pos'
-                AuditLog.objects.create(**audit_data)
+                )
             
             # Return validation response
             response = JsonResponse({
