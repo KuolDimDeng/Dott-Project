@@ -420,6 +420,37 @@ class ServiceViewSet(TenantIsolatedViewSet):
     serializer_class = ServiceSerializer
     permission_classes = [IsAuthenticated]
     
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same as ProductViewSet to ensure consistency
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[ServiceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            # Apply any additional filters from query parameters
+            if self.request.query_params.get('is_recurring'):
+                queryset = queryset.filter(
+                    is_recurring=self.request.query_params.get('is_recurring').lower() == 'true'
+                )
+            
+            logger.debug(f"[ServiceViewSet] Service queryset with {queryset.count()} items")
+            return queryset.order_by('name')
+            
+        except Exception as e:
+            logger.error(f"[ServiceViewSet] Error getting service queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Service.objects.none()
+    
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling and debug logging"""
         import logging

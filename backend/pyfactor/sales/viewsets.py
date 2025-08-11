@@ -98,6 +98,28 @@ class InvoiceViewSet(TenantIsolatedViewSet):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
     
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[InvoiceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[InvoiceViewSet] Invoice queryset with {queryset.count()} items")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[InvoiceViewSet] Error getting invoice queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Invoice.objects.none()
+    
     def perform_create(self, serializer):
         """Create invoice with automatic tenant assignment."""
         invoice = serializer.save()

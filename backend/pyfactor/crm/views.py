@@ -66,17 +66,33 @@ class CustomerViewSet(TenantIsolatedViewSet):
     search_fields = ['business_name', 'first_name', 'last_name', 'email', 'phone']
     ordering_fields = ['business_name', 'first_name', 'last_name', 'created_at']
     
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[CustomerViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[CustomerViewSet] Customer queryset with {queryset.count()} items")
+            return queryset.order_by('created_at')
+            
+        except Exception as e:
+            logger.error(f"[CustomerViewSet] Error getting customer queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Customer.objects.none()
+    
     def list(self, request, *args, **kwargs):
         """Override list to add debugging"""
         logger.info(f"[CustomerViewSet] List called by user: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
-        tenant_id = getattr(request.user, 'business_id', None) or getattr(request.user, 'tenant_id', None)
-        logger.info(f"[CustomerViewSet] Tenant ID: {tenant_id}")
         
         try:
-            # Debug the query
-            from custom_auth.tenant_debug import debug_tenant_query
-            debug_tenant_query(Customer, request.user)
-            
             return super().list(request, *args, **kwargs)
         except Exception as e:
             logger.error(f"[CustomerViewSet] Error listing customers: {str(e)}", exc_info=True)
