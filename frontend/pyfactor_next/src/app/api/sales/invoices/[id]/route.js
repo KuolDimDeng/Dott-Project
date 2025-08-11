@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
     const queryString = searchParams.toString();
     
     // Forward request to Django backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/sales/invoices/${id}/${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/${id}/${queryString ? `?${queryString}` : ''}`;
     logger.info(`[Invoices API] Forwarding to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {
@@ -73,7 +73,7 @@ export async function PUT(request, { params }) {
     logger.info('[Invoices API] Request body:', body);
     
     // Forward request to Django backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/sales/invoices/${id}/`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/${id}/`;
     logger.info(`[Invoices API] Forwarding to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {
@@ -122,7 +122,7 @@ export async function PATCH(request, { params }) {
     logger.info('[Invoices API] Request body:', body);
     
     // Forward request to Django backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/sales/invoices/${id}/`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/${id}/`;
     logger.info(`[Invoices API] Forwarding to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {
@@ -168,7 +168,7 @@ export async function DELETE(request, { params }) {
     }
     
     // Forward request to Django backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/sales/invoices/${id}/`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/${id}/`;
     logger.info(`[Invoices API] Forwarding to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {

@@ -25,7 +25,7 @@ export async function GET(request) {
     const queryString = searchParams.toString();
     
     // Forward request to Django backend (Django requires trailing slash)
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/sales/invoices/${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/${queryString ? `?${queryString}` : ''}`;
     logger.info(`[Invoices API] Forwarding to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {
@@ -71,7 +71,7 @@ export async function POST(request) {
     logger.info('[Invoices API] Request body:', body);
     
     // Forward request to Django backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/sales/invoices/`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/`;
     logger.info(`[Invoices API] Forwarding to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {
