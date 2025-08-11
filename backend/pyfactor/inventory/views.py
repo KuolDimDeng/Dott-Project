@@ -421,11 +421,20 @@ class ServiceViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     
     def list(self, request, *args, **kwargs):
-        """Override list method to add better error handling"""
+        """Override list method to add better error handling and debug logging"""
         import logging
         logger = logging.getLogger(__name__)
         
+        # Debug logging
+        logger.info(f"[ServiceViewSet] List called by user: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
+        tenant_id = getattr(request.user, 'business_id', None) or getattr(request.user, 'tenant_id', None)
+        logger.info(f"[ServiceViewSet] Tenant ID: {tenant_id}")
+        
         try:
+            # Debug the query
+            from custom_auth.tenant_debug import debug_tenant_query
+            debug_tenant_query(Service, request.user)
+            
             return super().list(request, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error listing services: {str(e)}", exc_info=True)

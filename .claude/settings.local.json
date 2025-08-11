@@ -289,7 +289,10 @@
       "Bash(/Users/kuoldeng/projectx/deploy_security_complete.sh)",
       "Bash(./scripts/security-env-audit.sh:*)",
       "Bash(/Users/kuoldeng/projectx/deploy_product_supplier.sh:*)",
-      "Bash(sudo sed:*)"
+      "Bash(sudo sed:*)",
+      "Bash(./test_support_data.sh:*)",
+      "Bash(./deploy_tenant_isolation_fix.sh:*)",
+      "Bash(./deploy_data_population_fix.sh:*)"
     ],
     "deny": []
   }

@@ -66,6 +66,22 @@ class CustomerViewSet(TenantIsolatedViewSet):
     search_fields = ['business_name', 'first_name', 'last_name', 'email', 'phone']
     ordering_fields = ['business_name', 'first_name', 'last_name', 'created_at']
     
+    def list(self, request, *args, **kwargs):
+        """Override list to add debugging"""
+        logger.info(f"[CustomerViewSet] List called by user: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
+        tenant_id = getattr(request.user, 'business_id', None) or getattr(request.user, 'tenant_id', None)
+        logger.info(f"[CustomerViewSet] Tenant ID: {tenant_id}")
+        
+        try:
+            # Debug the query
+            from custom_auth.tenant_debug import debug_tenant_query
+            debug_tenant_query(Customer, request.user)
+            
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"[CustomerViewSet] Error listing customers: {str(e)}", exc_info=True)
+            raise
+    
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return CustomerDetailSerializer
