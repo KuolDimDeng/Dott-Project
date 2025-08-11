@@ -47,6 +47,8 @@ export default function SessionTimeoutModal() {
 
   const handleStaySignedIn = async () => {
     try {
+      console.log('🔐 [SessionTimeoutModal] User clicked Stay Signed In, refreshing session...');
+      
       // Get the current session token from localStorage or cookie
       const sessionToken = localStorage.getItem('sid') || 
                           document.cookie.split('; ').find(row => row.startsWith('sid='))?.split('=')[1];
@@ -70,31 +72,29 @@ export default function SessionTimeoutModal() {
 
       if (!response.ok) {
         console.error('Failed to refresh session:', response.status);
-        // If refresh fails, logout for security
-        await logout();
-        window.location.href = '/auth/signin?error=session_refresh_failed';
+        // If refresh fails, show error but don't redirect immediately
+        // Let the user try again or choose to sign out
+        alert('Unable to extend your session. Please try again or sign out.');
         return;
       }
 
       const data = await response.json();
       console.log('🔐 [SessionTimeoutModal] Session refreshed successfully', data);
       
-      // Then cancel the timeout
+      // Cancel the timeout and close the modal
       cancelTimeout();
       
       // Update last activity time
       localStorage.setItem('sessionTimeoutLastActivity', Date.now().toString());
       
-      // Optional: Force a page refresh to ensure all components get the new session
-      // Comment this out if you don't want a page refresh
-      // setTimeout(() => {
-      //   window.location.reload();
-      // }, 100);
+      // Success! User stays on current page, modal closes
+      // No redirect, no page reload - just continue working
+      console.log('🔐 [SessionTimeoutModal] Session extended, user continues on current page');
+      
     } catch (error) {
       console.error('🔐 [SessionTimeoutModal] Error refreshing session:', error);
-      // On error, logout for security
-      await logout();
-      window.location.href = '/auth/signin?error=session_refresh_failed';
+      // On network error, show alert but don't force logout
+      alert('Network error. Please check your connection and try again.');
     }
   };
 
@@ -147,18 +147,18 @@ export default function SessionTimeoutModal() {
               </div>
 
               <p className="text-sm text-gray-600 mb-2">
-                As a security precaution, you will be signed out in {formatTime(timeRemaining)}
+                For your security, you will be signed out due to inactivity in {formatTime(timeRemaining)}
               </p>
               
               {!showFinalCountdown && (
                 <p className="text-sm text-gray-500">
-                  Remember to save anything you're working on.
+                  Click "Stay signed in" to continue working
                 </p>
               )}
 
               {showFinalCountdown && (
                 <p className="text-sm font-medium text-red-600 animate-pulse">
-                  Final countdown!
+                  Final countdown! Click now to stay signed in
                 </p>
               )}
             </div>
@@ -179,7 +179,7 @@ export default function SessionTimeoutModal() {
                 ${showFinalCountdown ? 'focus:ring-green-500' : 'focus:ring-blue-500'}
               `}
             >
-              {showFinalCountdown ? 'Stay Signed In!' : 'Back to Dott'}
+              Stay signed in
             </button>
             
             <button

@@ -494,6 +494,86 @@ export async function POST(request) {
   }
 }
 
+export async function PATCH(request) {
+  try {
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
+    
+    if (!sessionId) {
+      console.error('[Session-V2] PATCH: No session ID found for refresh');
+      return NextResponse.json({ 
+        error: 'No session found' 
+      }, { status: 401 });
+    }
+    
+    console.log('[Session-V2] PATCH: Refreshing session:', sessionId.value.substring(0, 8) + '...');
+    
+    // Call backend to refresh/extend the session
+    const refreshResponse = await fetch(`${API_URL}/api/auth/session-v2/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sessionId.value}`
+      },
+      body: JSON.stringify({
+        action: 'refresh'
+      })
+    });
+    
+    if (!refreshResponse.ok) {
+      const errorText = await refreshResponse.text();
+      console.error('[Session-V2] PATCH: Session refresh failed:', refreshResponse.status, errorText);
+      return NextResponse.json({ 
+        error: 'Session refresh failed',
+        details: errorText
+      }, { status: refreshResponse.status });
+    }
+    
+    const refreshData = await refreshResponse.json();
+    console.log('[Session-V2] PATCH: Session refreshed successfully:', {
+      expires_at: refreshData.expires_at,
+      message: refreshData.message
+    });
+    
+    // Update cookie expiration if backend provides new expiry
+    if (refreshData.expires_at) {
+      const response = NextResponse.json({ 
+        success: true,
+        message: 'Session refreshed',
+        expires_at: refreshData.expires_at
+      });
+      
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        expires: new Date(refreshData.expires_at),
+        path: '/'
+      };
+      
+      // Refresh both cookies with new expiration
+      response.cookies.set('sid', sessionId.value, cookieOptions);
+      response.cookies.set('session_token', sessionId.value, cookieOptions);
+      
+      return response;
+    }
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Session refreshed'
+    });
+    
+  } catch (error) {
+    console.error('[Session-V2] PATCH error:', error);
+    return NextResponse.json({ 
+      error: 'Server error',
+      message: error.message
+    }, { status: 500 });
+  }
+}
+
 export async function DELETE() {
   try {
     const cookieStore = cookies();
