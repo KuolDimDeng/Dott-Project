@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import transaction
-from session_manager.models import Session
+from session_manager.models import UserSession
 from hr.models import Employee
 from custom_auth.models import Tenant, User
 from audit.models import AuditLog
@@ -61,7 +61,7 @@ class ValidatePOSAccessView(View):
             
             # Validate session
             try:
-                session = Session.objects.get(id=session_id, is_active=True)
+                session = UserSession.objects.get(id=session_id, is_active=True)
                 
                 # Check session expiry
                 if session.is_expired():
@@ -75,7 +75,7 @@ class ValidatePOSAccessView(View):
                 session.last_activity = datetime.now()
                 session.save(update_fields=['last_activity'])
                 
-            except Session.DoesNotExist:
+            except UserSession.DoesNotExist:
                 logger.warning(f"[ValidatePOSAccess] Invalid session: {session_id}")
                 return JsonResponse({
                     'success': False,

@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import transaction
-from session_manager.models import Session
+from session_manager.models import UserSession
 from custom_auth.models import User
 
 logger = logging.getLogger(__name__)
@@ -44,9 +44,9 @@ class AuditLogView(View):
             
             if session_id:
                 try:
-                    session = Session.objects.get(id=session_id, is_active=True)
+                    session = UserSession.objects.get(id=session_id, is_active=True)
                     user = session.user
-                except Session.DoesNotExist:
+                except UserSession.DoesNotExist:
                     pass
             
             # Log to Django logger for now (can be extended to save to database)
