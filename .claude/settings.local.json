@@ -292,7 +292,8 @@
       "Bash(sudo sed:*)",
       "Bash(./test_support_data.sh:*)",
       "Bash(./deploy_tenant_isolation_fix.sh:*)",
-      "Bash(./deploy_data_population_fix.sh:*)"
+      "Bash(./deploy_data_population_fix.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/force_restart_deployment.sh)"
     ],
     "deny": []
   }
