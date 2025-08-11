@@ -5,7 +5,7 @@ import logging
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import get_user_model
-from session_manager.models import Session
+from session_manager.models import UserSession
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -37,7 +37,7 @@ class SessionTokenAuthenticationFixed(BaseAuthentication):
             
             # Try to get session with error handling
             try:
-                session = Session.objects.get(session_id=session_id, is_active=True)
+                session = UserSession.objects.get(session_id=session_id, is_active=True)
                 
                 # Check if session is expired
                 if session.is_expired():
@@ -58,7 +58,7 @@ class SessionTokenAuthenticationFixed(BaseAuthentication):
                 logger.info(f"[SessionAuth Fixed] Authenticated user: {user.email}")
                 return (user, session)
                 
-            except Session.DoesNotExist:
+            except UserSession.DoesNotExist:
                 logger.debug(f"[SessionAuth Fixed] Session {session_id} not found")
                 return None
             except Exception as e:

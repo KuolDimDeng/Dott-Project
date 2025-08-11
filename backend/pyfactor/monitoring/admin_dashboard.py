@@ -138,7 +138,7 @@ class ApplicationMonitor:
     def get_user_metrics():
         """Get user activity metrics"""
         from django.contrib.auth import get_user_model
-        from session_manager.models import Session
+        from session_manager.models import UserSession
         
         User = get_user_model()
         now = timezone.now()
@@ -154,7 +154,7 @@ class ApplicationMonitor:
             'active_month': User.objects.filter(
                 last_login__gte=now - timedelta(days=30)
             ).count(),
-            'active_sessions': Session.objects.filter(
+            'active_sessions': UserSession.objects.filter(
                 is_active=True,
                 expires_at__gt=now
             ).count(),

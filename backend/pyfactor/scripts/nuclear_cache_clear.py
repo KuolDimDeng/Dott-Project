@@ -17,7 +17,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
 from users.models import User, UserProfile, Business, Subscription
-from session_manager.models import Session
+from session_manager.models import UserSession
 from django.utils import timezone
 from django.core.cache import cache
 
@@ -71,8 +71,8 @@ def nuclear_clear():
         
         # 4. Delete ALL sessions (force re-login)
         print('\n🔒 Invalidating ALL sessions...')
-        session_count = Session.objects.all().count()
-        Session.objects.all().delete()
+        session_count = UserSession.objects.all().count()
+        UserSession.objects.all().delete()
         print(f'   ✅ Deleted {session_count} sessions - ALL users must re-login')
         
         # 5. Update subscription

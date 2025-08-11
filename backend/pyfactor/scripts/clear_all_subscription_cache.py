@@ -126,8 +126,8 @@ def clear_all_caches():
             print('\n   Clearing specific session keys...')
             
             # Get all sessions for this user
-            from session_manager.models import Session
-            sessions = Session.objects.filter(user__email=email)
+            from session_manager.models import UserSession
+            sessions = UserSession.objects.filter(user__email=email)
             for session in sessions:
                 session_key = f'session:{session.session_id}'
                 r.delete(session_key)
