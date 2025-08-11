@@ -6,6 +6,7 @@ from . import service_api_views
 from .optimized_service_views import optimized_create_service
 from . import service_api_views
 from .views_materials import MaterialViewSet, MaterialTransactionViewSet
+from .debug_views import debug_tenant_data
 
 # Create a router for standard views
 router = DefaultRouter()
@@ -58,6 +59,9 @@ urlpatterns = [
     
     # Migration status endpoint
     path('check/location-migration/', api_views.check_location_migration_status, name='check-location-migration'),
+    
+    # Debug endpoint for tenant data
+    path('debug/tenant-data/', debug_tenant_data, name='debug-tenant-data'),
     
     # Existing function-based views
     path('products/create/', views.create_product, name='create-product'),

@@ -30,6 +30,7 @@ from pyfactor.analytics import track_event, track_business_metric
 logger = logging.getLogger(__name__)
 
 class InventoryItemViewSet(TenantIsolatedViewSet):
+    queryset = InventoryItem.objects.all()  # Base queryset needed for TenantIsolatedViewSet
     serializer_class = InventoryItemSerializer
     permission_classes = [IsAuthenticated]
     
@@ -142,11 +143,12 @@ class InventoryTransactionViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
 
 class ProductViewSet(TenantIsolatedViewSet):
+    queryset = Product.objects.all()  # Base queryset needed for TenantIsolatedViewSet
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     
     def create(self, request, *args, **kwargs):
-        """Override create method to add logging and handle pricing model"""
+        """Override create to track product creation and handle pricing model"""
         logger.info(f"[ProductViewSet] === PRODUCT CREATION START ===")
         logger.info(f"[ProductViewSet] Request data: {request.data}")
         logger.info(f"[ProductViewSet] Tenant ID: {getattr(request, 'tenant_id', 'Not set')}")
@@ -180,7 +182,40 @@ class ProductViewSet(TenantIsolatedViewSet):
                     )
             
             response = super().create(request, *args, **kwargs)
-            logger.info(f"[ProductViewSet] Product created successfully: {response.data.get('id', 'Unknown ID')}")
+            
+            if response.status_code == status.HTTP_201_CREATED:
+                logger.info(f"[ProductViewSet] Product created successfully: {response.data.get('id', 'Unknown ID')}")
+                user_id = str(request.user.id) if request.user.is_authenticated else None
+                product_data = response.data
+                
+                # Track product creation event
+                track_event(
+                    user_id=user_id,
+                    event_name='product_created_backend',
+                    properties={
+                        'product_id': product_data.get('id'),
+                        'product_name': product_data.get('name'),
+                        'price': product_data.get('price'),
+                        'has_sku': bool(product_data.get('sku')),
+                        'for_sale': product_data.get('for_sale', True),
+                        'for_rent': product_data.get('for_rent', False),
+                        'initial_stock': product_data.get('stock_quantity', 0)
+                    }
+                )
+                
+                # Track inventory value metric
+                if product_data.get('price') and product_data.get('stock_quantity'):
+                    inventory_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
+                    track_business_metric(
+                        user_id=user_id,
+                        metric_name='inventory_value_added',
+                        value=inventory_value,
+                        metadata={
+                            'product_id': product_data.get('id'),
+                            'product_name': product_data.get('name')
+                        }
+                    )
+            
             return response
             
         except Exception as e:
@@ -264,44 +299,6 @@ class ProductViewSet(TenantIsolatedViewSet):
                     {"error": str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-    
-    def create(self, request, *args, **kwargs):
-        """Override create to track product creation"""
-        response = super().create(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_201_CREATED:
-            user_id = str(request.user.id) if request.user.is_authenticated else None
-            product_data = response.data
-            
-            # Track product creation event
-            track_event(
-                user_id=user_id,
-                event_name='product_created_backend',
-                properties={
-                    'product_id': product_data.get('id'),
-                    'product_name': product_data.get('name'),
-                    'price': product_data.get('price'),
-                    'has_sku': bool(product_data.get('sku')),
-                    'for_sale': product_data.get('for_sale', True),
-                    'for_rent': product_data.get('for_rent', False),
-                    'initial_stock': product_data.get('stock_quantity', 0)
-                }
-            )
-            
-            # Track inventory value metric
-            if product_data.get('price') and product_data.get('stock_quantity'):
-                inventory_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
-                track_business_metric(
-                    user_id=user_id,
-                    metric_name='inventory_value_added',
-                    value=inventory_value,
-                    metadata={
-                        'product_id': product_data.get('id'),
-                        'product_name': product_data.get('name')
-                    }
-                )
-        
-        return response
     
     def update(self, request, *args, **kwargs):
         """Override update to track product updates"""
