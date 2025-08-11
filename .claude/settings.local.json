@@ -294,7 +294,8 @@
       "Bash(./deploy_tenant_isolation_fix.sh:*)",
       "Bash(./deploy_data_population_fix.sh:*)",
       "Bash(/Users/kuoldeng/projectx/force_restart_deployment.sh)",
-      "Bash(./force_restart_deployment.sh:*)"
+      "Bash(./force_restart_deployment.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/test_dashboard_locally.sh)"
     ],
     "deny": []
   }

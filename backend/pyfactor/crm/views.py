@@ -71,33 +71,23 @@ class CustomerViewSet(TenantIsolatedViewSet):
         Get queryset with proper tenant context - MUST call parent for tenant filtering
         Same pattern as ProductViewSet to ensure consistency
         """
-        try:
-            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
-            queryset = super().get_queryset()
-            
-            # Log the tenant filtering
-            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
-                       getattr(self.request.user, 'business_id', None)
-            logger.info(f"[CustomerViewSet] Tenant filtering applied for tenant: {tenant_id}")
-            
-            # Don't call count() in debug as it may cause issues
-            logger.debug(f"[CustomerViewSet] Customer queryset prepared")
-            return queryset.order_by('created_at')
-            
-        except Exception as e:
-            logger.error(f"[CustomerViewSet] Error getting customer queryset: {str(e)}", exc_info=True)
-            # Return empty queryset on error
-            return Customer.objects.none()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[CustomerViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Don't call count() in debug as it may cause issues
+        logger.debug(f"[CustomerViewSet] Customer queryset prepared")
+        # Order by business_name or first_name to be safe
+        return queryset.order_by('business_name', 'first_name')
     
     def list(self, request, *args, **kwargs):
         """Override list to add debugging"""
         logger.info(f"[CustomerViewSet] List called by user: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
-        
-        try:
-            return super().list(request, *args, **kwargs)
-        except Exception as e:
-            logger.error(f"[CustomerViewSet] Error listing customers: {str(e)}", exc_info=True)
-            raise
+        return super().list(request, *args, **kwargs)
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
