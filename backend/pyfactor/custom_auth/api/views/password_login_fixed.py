@@ -131,10 +131,11 @@ class PasswordLoginViewFixed(APIView):
                     user=user,
                     tenant=tenant,
                     ip_address=self.get_client_ip(request),
-                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    access_token=access_token  # Add the missing access_token parameter
                 )
                 
-                logger.info(f"Session created: {session.id}")
+                logger.info(f"Session created: {session.session_id}")
                 
             except Exception as e:
                 logger.error(f"Error creating session: {e}", exc_info=True)
@@ -151,7 +152,7 @@ class PasswordLoginViewFixed(APIView):
                         user_agent=request.META.get('HTTP_USER_AGENT', ''),
                         expires_at=timezone.now() + timedelta(hours=24)
                     )
-                    logger.info(f"Fallback session created: {session.id}")
+                    logger.info(f"Fallback session created: {session.session_id}")
                 except Exception as fallback_error:
                     logger.error(f"Fallback session creation failed: {fallback_error}")
                     return Response({
@@ -161,7 +162,7 @@ class PasswordLoginViewFixed(APIView):
             # Prepare response
             response_data = {
                 'success': True,
-                'session_id': str(session.id),
+                'session_id': str(session.session_id),
                 'user': {
                     'id': str(user.id),
                     'email': user.email,
@@ -181,7 +182,7 @@ class PasswordLoginViewFixed(APIView):
             # Set session cookie
             response.set_cookie(
                 'sid',
-                str(session.id),
+                str(session.session_id),
                 max_age=86400,  # 24 hours
                 httponly=True,
                 secure=True,
