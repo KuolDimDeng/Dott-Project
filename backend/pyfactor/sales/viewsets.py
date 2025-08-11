@@ -35,6 +35,28 @@ class SalesOrderViewSet(TenantIsolatedViewSet):
     serializer_class = SalesOrderSerializer
     permission_classes = [IsAuthenticated]
     
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[SalesOrderViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[SalesOrderViewSet] Sales order queryset with {queryset.count()} items")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[SalesOrderViewSet] Error getting sales order queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return SalesOrder.objects.none()
+    
     def perform_create(self, serializer):
         """Create sales order with automatic tenant assignment."""
         order = serializer.save()
@@ -222,6 +244,28 @@ class EstimateViewSet(TenantIsolatedViewSet):
     queryset = Estimate.objects.all()  # TenantManager handles filtering
     serializer_class = EstimateSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[EstimateViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[EstimateViewSet] Estimate queryset with {queryset.count()} items")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[EstimateViewSet] Error getting estimate queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Estimate.objects.none()
     
     def perform_create(self, serializer):
         """Create estimate with automatic tenant assignment."""

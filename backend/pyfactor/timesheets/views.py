@@ -37,13 +37,19 @@ class TimesheetViewSet(TenantIsolatedViewSet):
         logger.info(f"[TimesheetViewSet] Request headers: {dict(self.request.headers)}")
         logger.info(f"[TimesheetViewSet] Request session_obj: {getattr(self.request, 'session_obj', 'NOT_FOUND')}")
         
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
         # Handle AnonymousUser
         if not hasattr(user, 'business_id'):
             logger.warning(f"[TimesheetViewSet] User has no business_id: {user}")
             logger.warning(f"[TimesheetViewSet] This might be an authentication issue")
             return Timesheet.objects.none()
-            
-        queryset = Timesheet.objects.filter(business_id=user.business_id)
         
         # Filter by employee if specified
         employee_id = self.request.query_params.get('employee_id')
@@ -518,9 +524,16 @@ class TimeEntryViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return TimeEntry.objects.filter(
-            timesheet__business_id=self.request.user.business_id
-        )
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeEntryViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Return the filtered queryset
+        return queryset
     
     def update(self, request, *args, **kwargs):
         """Update time entry and recalculate totals"""
@@ -562,9 +575,13 @@ class ClockEntryViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        queryset = ClockEntry.objects.filter(
-            business_id=self.request.user.business_id
-        )
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[ClockEntryViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id')
@@ -745,7 +762,14 @@ class TimeOffRequestViewSet(TenantIsolatedViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        queryset = TimeOffRequest.objects.filter(business_id=user.business_id)
+        
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeOffRequestViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id')
@@ -857,9 +881,15 @@ class GeofenceZoneViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     
     def get_queryset(self):
-        return GeofenceZone.objects.filter(
-            business_id=self.request.user.business_id
-        )
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[GeofenceZoneViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        return queryset
     
     def perform_create(self, serializer):
         serializer.save(business_id=self.request.user.business_id)

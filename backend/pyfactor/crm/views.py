@@ -129,6 +129,28 @@ class ContactViewSet(TenantIsolatedViewSet):
     filterset_fields = ['customer', 'is_primary']
     search_fields = ['first_name', 'last_name', 'email', 'phone', 'job_title']
     ordering_fields = ['first_name', 'last_name', 'created_at']
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[ContactViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[ContactViewSet] Contact queryset with {queryset.count()} items")
+            return queryset.order_by('created_at')
+            
+        except Exception as e:
+            logger.error(f"[ContactViewSet] Error getting contact queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Contact.objects.none()
 
 
 class LeadViewSet(TenantIsolatedViewSet):
@@ -139,6 +161,28 @@ class LeadViewSet(TenantIsolatedViewSet):
     filterset_fields = ['status', 'source', 'assigned_to']
     search_fields = ['first_name', 'last_name', 'company_name', 'email', 'phone']
     ordering_fields = ['first_name', 'last_name', 'created_at', 'status']
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[LeadViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[LeadViewSet] Lead queryset with {queryset.count()} items")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[LeadViewSet] Error getting lead queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Lead.objects.none()
     
     def get_serializer_class(self):
         if self.action == 'retrieve':

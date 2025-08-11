@@ -39,7 +39,16 @@ class PaymentGatewayViewSet(TenantIsolatedViewSet):
     serializer_class = PaymentGatewaySerializer
     
     def get_queryset(self):
-        return PaymentGateway.objects.filter(status='active').order_by('priority')
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PaymentGatewayViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters
+        return queryset.filter(status='active').order_by('priority')
     
     @action(detail=True, methods=['post'])
     def test_credentials(self, request, pk=None):
@@ -122,7 +131,16 @@ class PaymentMethodViewSet(TenantIsolatedViewSet):
     serializer_class = PaymentMethodSerializer
     
     def get_queryset(self):
-        return PaymentMethod.objects.filter(user=self.request.user, is_active=True)
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PaymentMethodViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters - filter by user and active status
+        return queryset.filter(user=self.request.user, is_active=True)
     
     def perform_create(self, serializer):
         """Create payment method with audit logging"""
@@ -220,7 +238,16 @@ class TransactionViewSet(TenantIsolatedViewSet):
     serializer_class = TransactionSerializer
     
     def get_queryset(self):
-        return Transaction.objects.filter(user=self.request.user).select_related(
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TransactionViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters - filter by user and add relationships
+        return queryset.filter(user=self.request.user).select_related(
             'gateway', 'payment_method', 'reconciled_by'
         ).order_by('-created_at')
     

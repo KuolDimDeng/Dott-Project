@@ -37,13 +37,21 @@ class EmployeeTimesheetViewSet(TenantIsolatedViewSet):
         user = self.request.user
         logger.info(f"[EmployeeTimesheetViewSet] Getting timesheets for user: {user.email}")
         
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[EmployeeTimesheetViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
         try:
             # Get employee record for the user
             employee = Employee.objects.get(user=user)
             logger.info(f"[EmployeeTimesheetViewSet] Found employee: {employee.id}")
             
             # Return timesheets for this employee
-            return Timesheet.objects.filter(
+            return queryset.filter(
                 employee=employee
             ).select_related(
                 'employee', 'supervisor', 'approved_by'
@@ -174,11 +182,19 @@ class TimeOffRequestViewSet(TenantIsolatedViewSet):
         """Get time off requests based on user role"""
         user = self.request.user
         
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeOffRequestViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
         try:
             employee = Employee.objects.get(user=user)
             
             # Base queryset for employee's own requests
-            queryset = TimeOffRequest.objects.filter(
+            queryset = queryset.filter(
                 employee=employee
             )
             
@@ -359,9 +375,17 @@ class ClockEntryViewSet(TenantIsolatedViewSet):
         """Get clock entries for the current employee"""
         user = self.request.user
         
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[ClockEntryViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
         try:
             employee = Employee.objects.get(user=user)
-            return ClockEntry.objects.filter(
+            return queryset.filter(
                 employee=employee
             ).order_by('-timestamp')[:100]  # Last 100 entries
             

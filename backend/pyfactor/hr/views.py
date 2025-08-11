@@ -882,9 +882,15 @@ class PerformanceReviewViewSet(TenantIsolatedViewSet):
         return PerformanceReviewSerializer
     
     def get_queryset(self):
-        queryset = PerformanceReview.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceReviewViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -923,9 +929,15 @@ class PerformanceMetricViewSet(TenantIsolatedViewSet):
     serializer_class = PerformanceMetricSerializer
     
     def get_queryset(self):
-        queryset = PerformanceMetric.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceMetricViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -944,7 +956,13 @@ class PerformanceRatingViewSet(TenantIsolatedViewSet):
     serializer_class = PerformanceRatingSerializer
     
     def get_queryset(self):
-        queryset = PerformanceRating.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceRatingViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by review
         review_id = self.request.query_params.get('review_id', None)
@@ -964,9 +982,15 @@ class PerformanceGoalViewSet(TenantIsolatedViewSet):
     serializer_class = PerformanceGoalSerializer
     
     def get_queryset(self):
-        queryset = PerformanceGoal.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceGoalViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1005,9 +1029,15 @@ class FeedbackRecordViewSet(TenantIsolatedViewSet):
     serializer_class = FeedbackRecordSerializer
     
     def get_queryset(self):
-        queryset = FeedbackRecord.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[FeedbackRecordViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1041,9 +1071,15 @@ class PerformanceSettingViewSet(TenantIsolatedViewSet):
     serializer_class = PerformanceSettingSerializer
     
     def get_queryset(self):
-        queryset = PerformanceSetting.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceSettingViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1057,7 +1093,13 @@ class TimesheetViewSet(TenantIsolatedViewSet):
     serializer_class = TimesheetSerializer
     
     def get_queryset(self):
-        queryset = Timesheet.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1084,7 +1126,13 @@ class TimesheetEntryViewSet(TenantIsolatedViewSet):
     serializer_class = TimesheetEntrySerializer
     
     def get_queryset(self):
-        queryset = TimesheetEntry.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetEntryViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by timesheet
         timesheet_id = self.request.query_params.get('timesheet_id', None)
@@ -1100,9 +1148,15 @@ class TimesheetSettingViewSet(TenantIsolatedViewSet):
     serializer_class = TimesheetSettingSerializer
     
     def get_queryset(self):
-        queryset = TimesheetSetting.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id if provided
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetSettingViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1116,7 +1170,13 @@ class TimeOffRequestViewSet(TenantIsolatedViewSet):
     serializer_class = TimeOffRequestSerializer
     
     def get_queryset(self):
-        queryset = TimeOffRequest.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeOffRequestViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1142,7 +1202,13 @@ class TimeOffBalanceViewSet(TenantIsolatedViewSet):
     serializer_class = TimeOffBalanceSerializer
     
     def get_queryset(self):
-        queryset = TimeOffBalance.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeOffBalanceViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1163,7 +1229,13 @@ class BenefitsViewSet(TenantIsolatedViewSet):
     serializer_class = BenefitsSerializer
     
     def get_queryset(self):
-        queryset = Benefits.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[BenefitsViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1187,7 +1259,13 @@ class LocationLogViewSet(TenantIsolatedViewSet):
     serializer_class = LocationLogSerializer
     
     def get_queryset(self):
-        queryset = LocationLog.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[LocationLogViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1255,7 +1333,13 @@ class EmployeeLocationConsentViewSet(TenantIsolatedViewSet):
     serializer_class = EmployeeLocationConsentSerializer
     
     def get_queryset(self):
-        queryset = EmployeeLocationConsent.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[EmployeeLocationConsentViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1296,7 +1380,13 @@ class LocationCheckInViewSet(TenantIsolatedViewSet):
     serializer_class = LocationCheckInSerializer
     
     def get_queryset(self):
-        queryset = LocationCheckIn.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[LocationCheckInViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1633,13 +1723,21 @@ class GeofenceViewSet(TenantIsolatedViewSet):
             logger.info(f"[GeofenceViewSet] User email: {self.request.user.email}")
             logger.info(f"[GeofenceViewSet] Request method: {self.request.method}")
             
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[GeofenceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
             # Check if user has business_id
             if not self.request.user.business_id:
                 logger.error(f"[GeofenceViewSet] User {self.request.user.email} has no business_id!")
                 return Geofence.objects.none()
             
-            queryset = self.queryset.filter(
-                business_id=self.request.user.business_id,
+            # Apply additional filters
+            queryset = queryset.filter(
                 is_active=True
             ).annotate(
                 assigned_employees_count=Count('assigned_employees')
@@ -2029,10 +2127,16 @@ class EmployeeGeofenceViewSet(TenantIsolatedViewSet):
         logger.info(f"🎯 [EmployeeGeofenceViewSet] Business ID: {self.request.user.business_id}")
         logger.info(f"🎯 [EmployeeGeofenceViewSet] Query params: {self.request.query_params}")
         
-        # Filter by business_id for multi-tenant isolation
-        queryset = self.queryset.filter(
-            business_id=self.request.user.business_id
-        ).select_related('employee', 'geofence', 'assigned_by')
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters
+        queryset = queryset.select_related('employee', 'geofence', 'assigned_by')
         
         # Optional filters
         employee_id = self.request.query_params.get('employee_id')
@@ -2070,10 +2174,16 @@ class GeofenceEventViewSet(TenantIsolatedViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        # Filter by business_id for multi-tenant isolation
-        queryset = self.queryset.filter(
-            business_id=self.request.user.business_id
-        ).select_related('employee', 'geofence', 'location_log')
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[GeofenceEventViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters
+        queryset = queryset.select_related('employee', 'geofence', 'location_log')
         
         # Optional filters
         employee_id = self.request.query_params.get('employee_id')

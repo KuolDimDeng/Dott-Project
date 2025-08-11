@@ -109,6 +109,28 @@ class SupplierViewSet(TenantIsolatedViewSet):
     serializer_class = SupplierSerializer
     permission_classes = [IsAuthenticated]
     
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[SupplierViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[SupplierViewSet] Supplier queryset with {queryset.count()} items")
+            return queryset.order_by('name')
+            
+        except Exception as e:
+            logger.error(f"[SupplierViewSet] Error getting supplier queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Supplier.objects.none()
+    
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
         import logging
