@@ -315,7 +315,7 @@ export const serviceApi = {
         throw new Error('No tenant ID available. Please refresh the page or log in again.');
       }
       
-      return await apiClient.get('/api/services', {
+      return await apiClient.get('/api/inventory/services', {
         ...params,
         tenantId
       });
@@ -327,7 +327,7 @@ export const serviceApi = {
   
   async getById(id, params = {}) {
     try {
-      return await apiClient.get(`/api/services/${id}`, params);
+      return await apiClient.get(`/api/inventory/services/${id}`, params);
     } catch (error) {
       logger.error(`[ServiceApi] Error fetching service ${id}:`, error);
       throw error;
@@ -336,7 +336,7 @@ export const serviceApi = {
   
   async create(data, params = {}) {
     try {
-      return await apiClient.post('/api/services', data, params);
+      return await apiClient.post('/api/inventory/services', data, params);
     } catch (error) {
       logger.error('[ServiceApi] Error creating service:', error);
       throw error;
@@ -345,7 +345,7 @@ export const serviceApi = {
   
   async update(id, data, params = {}) {
     try {
-      return await apiClient.put(`/api/services/${id}`, data, params);
+      return await apiClient.put(`/api/inventory/services/${id}`, data, params);
     } catch (error) {
       logger.error(`[ServiceApi] Error updating service ${id}:`, error);
       throw error;
@@ -354,7 +354,7 @@ export const serviceApi = {
   
   async delete(id, params = {}) {
     try {
-      return await apiClient.delete(`/api/services/${id}`, params);
+      return await apiClient.delete(`/api/inventory/services/${id}`, params);
     } catch (error) {
       logger.error(`[ServiceApi] Error deleting service ${id}:`, error);
       throw error;
@@ -665,7 +665,7 @@ export const locationApi = {
 // Invoice related API methods - Using local proxy pattern (industry standard)
 export const invoiceApi = {
   async getAll(params = {}) {
-    const response = await fetch('/api/invoices', {
+    const response = await fetch('/api/sales/invoices', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -682,7 +682,7 @@ export const invoiceApi = {
   },
   
   async getById(id, params = {}) {
-    const response = await fetch(`/api/invoices/${id}`, {
+    const response = await fetch(`/api/sales/invoices/${id}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -701,7 +701,7 @@ export const invoiceApi = {
   async create(data, params = {}) {
     logger.info('[InvoiceApi] Creating invoice with data:', data);
     
-    const response = await fetch('/api/invoices', {
+    const response = await fetch('/api/sales/invoices', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -721,7 +721,7 @@ export const invoiceApi = {
   },
   
   async update(id, data, params = {}) {
-    const response = await fetch(`/api/invoices/${id}`, {
+    const response = await fetch(`/api/sales/invoices/${id}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -739,7 +739,7 @@ export const invoiceApi = {
   },
   
   async delete(id, params = {}) {
-    const response = await fetch(`/api/invoices/${id}`, {
+    const response = await fetch(`/api/sales/invoices/${id}`, {
       method: 'DELETE',
       credentials: 'include',
       headers: {
