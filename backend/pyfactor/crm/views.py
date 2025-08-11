@@ -61,8 +61,8 @@ class CustomerViewSet(TenantIsolatedViewSet):
     """Customer ViewSet with proper tenant isolation"""
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['customer_type', 'is_active']
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    # Removed filterset_fields as customer_type and is_active don't exist in the model
     search_fields = ['business_name', 'first_name', 'last_name', 'email', 'phone']
     ordering_fields = ['business_name', 'first_name', 'last_name', 'created_at']
     
@@ -81,8 +81,8 @@ class CustomerViewSet(TenantIsolatedViewSet):
         
         # Don't call count() in debug as it may cause issues
         logger.debug(f"[CustomerViewSet] Customer queryset prepared")
-        # Order by business_name or first_name to be safe
-        return queryset.order_by('business_name', 'first_name')
+        # Simple ordering by created_at which definitely exists
+        return queryset.order_by('-created_at')
     
     def list(self, request, *args, **kwargs):
         """Override list to add debugging"""
