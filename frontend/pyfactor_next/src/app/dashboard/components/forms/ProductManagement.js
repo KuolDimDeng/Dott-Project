@@ -597,6 +597,45 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   }, []);
 
   // Fetch locations for dropdown
+  // Calculate dynamic price based on pricing model
+  const calculateDynamicPrice = useCallback(() => {
+    const { pricing_model, weight, daily_rate, entry_date } = productData;
+    
+    if (pricing_model === 'direct') {
+      return null; // User enters price manually
+    }
+    
+    if (pricing_model === 'time_weight') {
+      if (weight && daily_rate && entry_date) {
+        const entryDateObj = new Date(entry_date);
+        const today = new Date();
+        const days = Math.max(1, Math.ceil((today - entryDateObj) / (1000 * 60 * 60 * 24)));
+        return (parseFloat(daily_rate) * days * parseFloat(weight)).toFixed(2);
+      }
+    } else if (pricing_model === 'time_only') {
+      if (daily_rate && entry_date) {
+        const entryDateObj = new Date(entry_date);
+        const today = new Date();
+        const days = Math.max(1, Math.ceil((today - entryDateObj) / (1000 * 60 * 60 * 24)));
+        return (parseFloat(daily_rate) * days).toFixed(2);
+      }
+    } else if (pricing_model === 'weight_only') {
+      if (productData.price && weight) {
+        return (parseFloat(productData.price) * parseFloat(weight)).toFixed(2);
+      }
+    }
+    
+    return null;
+  }, [productData]);
+
+  // Update price when pricing model fields change
+  useEffect(() => {
+    const calculatedPrice = calculateDynamicPrice();
+    if (calculatedPrice !== null && productData.pricing_model !== 'direct') {
+      setProductData(prev => ({ ...prev, price: calculatedPrice }));
+    }
+  }, [productData.pricing_model, productData.weight, productData.daily_rate, productData.entry_date, calculateDynamicPrice]);
+
   const fetchLocations = useCallback(async () => {
     try {
       setLoadingLocations(true);
@@ -1173,9 +1212,30 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       setIsCreating(true);
       setCreateError(null);
       
-      // Validate required fields
-      if (!productData.name || !productData.price) {
-        setCreateError('Please fill in required fields (Name, Price)');
+      // Validate required fields based on pricing model
+      if (!productData.name) {
+        setCreateError('Please enter a product name');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Only require price for direct pricing model
+      if (productData.pricing_model === 'direct' && !productData.price) {
+        setCreateError('Please enter a price for direct pricing');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Validate fields for time-based pricing
+      if ((productData.pricing_model === 'time_weight' || productData.pricing_model === 'time_only') && !productData.daily_rate) {
+        setCreateError('Please enter a daily rate for time-based pricing');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Validate fields for weight-based pricing
+      if ((productData.pricing_model === 'time_weight' || productData.pricing_model === 'weight_only') && !productData.weight) {
+        setCreateError('Please enter weight for weight-based pricing');
         setIsCreating(false);
         return;
       }
@@ -1418,8 +1478,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div>
               <label htmlFor="price" className="block text-sm font-medium text-black mb-1">
                 <span className="flex items-center">
-                  Price *
-                  <FieldTooltip text="The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts." />
+                  Price {productData.pricing_model === 'direct' && '*'}
+                  <FieldTooltip text={
+                    productData.pricing_model === 'direct' 
+                      ? "The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts."
+                      : "Price is automatically calculated based on your pricing model settings."
+                  } />
                 </span>
               </label>
               <input
@@ -1428,11 +1492,37 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               type="number"
                 step="0.01"
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  productData.pricing_model !== 'direct' ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                 value={productData.price || ''}
-                onChange={(e) => setProductData({...productData, price: e.target.value})}
-                required
+                onChange={(e) => {
+                  if (productData.pricing_model === 'direct') {
+                    setProductData({...productData, price: e.target.value});
+                  }
+                }}
+                readOnly={productData.pricing_model !== 'direct'}
+                required={productData.pricing_model === 'direct'}
             />
+            {productData.pricing_model !== 'direct' && productData.price && (
+              <p className="mt-1 text-xs text-gray-600">
+                {productData.pricing_model === 'time_weight' && productData.daily_rate && productData.weight && productData.entry_date && (
+                  <>
+                    Calculated: ${productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days × {productData.weight} {productData.weight_unit || 'kg'} = ${productData.price}
+                  </>
+                )}
+                {productData.pricing_model === 'time_only' && productData.daily_rate && productData.entry_date && (
+                  <>
+                    Calculated: ${productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days = ${productData.price}
+                  </>
+                )}
+                {productData.pricing_model === 'weight_only' && productData.weight && (
+                  <>
+                    Calculated: Price per unit × {productData.weight} {productData.weight_unit || 'kg'} = ${productData.price}
+                  </>
+                )}
+              </p>
+            )}
           </div>
           
           <div>
