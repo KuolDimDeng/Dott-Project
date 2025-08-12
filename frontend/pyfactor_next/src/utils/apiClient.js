@@ -590,6 +590,103 @@ export const vendorApi = {
 // Keep supplierApi as alias for backward compatibility
 export const supplierApi = vendorApi;
 
+// Supplies API methods - for repair supplies, materials, and parts used in service jobs
+export const suppliesApi = {
+  async getAll(params = {}) {
+    const response = await fetch('/api/inventory/supplies', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/inventory/supplies/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async create(data, params = {}) {
+    logger.info('[SuppliesApi] Creating supply with data:', data);
+    
+    const response = await fetch('/api/inventory/supplies', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    logger.info('[SuppliesApi] Supply created successfully:', result);
+    return result;
+  },
+  
+  async update(id, data, params = {}) {
+    const response = await fetch(`/api/inventory/supplies/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async delete(id, params = {}) {
+    const response = await fetch(`/api/inventory/supplies/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  }
+};
+
+// Keep materialsApi as alias for backward compatibility
+export const materialsApi = suppliesApi;
+
 // Location related API methods - Using local proxy pattern (industry standard)
 export const locationApi = {
   async getAll(params = {}) {
