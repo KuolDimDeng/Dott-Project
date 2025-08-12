@@ -89,18 +89,17 @@ class Command(BaseCommand):
                 # Update UserProfile if exists
                 try:
                     profile = UserProfile.objects.get(user=user)
-                    if not profile.setup_complete:
+                    if hasattr(profile, 'setup_complete') and not profile.setup_complete:
                         profile.setup_complete = True
                         profile.save(update_fields=['setup_complete'])
                         self.stdout.write(f"  - Updated UserProfile.setup_complete flag")
                 except UserProfile.DoesNotExist:
-                    # Create UserProfile with setup_complete
+                    # Create UserProfile without setup_complete field (doesn't exist)
                     UserProfile.objects.create(
                         user=user,
-                        business_id=user.business_id,
-                        setup_complete=True
+                        business_id=user.business_id
                     )
-                    self.stdout.write(f"  - Created UserProfile with setup_complete=True")
+                    self.stdout.write(f"  - Created UserProfile for invited user")
                     
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Error fixing onboarding for {user.email}: {str(e)}"))
