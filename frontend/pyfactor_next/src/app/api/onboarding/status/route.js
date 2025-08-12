@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getBackendUrl } from '@/utils/backend-url';
 
-const BACKEND_URL = process.env.BACKEND_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = getBackendUrl();
 
 export async function GET(request) {
   try {

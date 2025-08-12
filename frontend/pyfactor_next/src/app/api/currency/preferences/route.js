@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getBackendUrl } from '@/utils/backend-url';
 import { handleAuthError } from '@/utils/api/errorHandlers';
 import { cookies } from 'next/headers';
 

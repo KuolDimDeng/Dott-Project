@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getBackendUrl } from '@/utils/backend-url';
 import { getDiscountPercentage, isDevelopingCountry } from '@/utils/developingCountries';
 
 export async function GET(request) {

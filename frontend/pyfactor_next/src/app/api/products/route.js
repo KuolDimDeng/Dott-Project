@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getBackendUrl } from '@/utils/backend-url';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = getBackendUrl();
 
 /**
  * GET /api/products
