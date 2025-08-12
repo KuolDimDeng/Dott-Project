@@ -281,70 +281,103 @@ function ChartOfAccountsManagement({ onNavigate }) {
     }).format(amount || 0);
   };
 
-  // Summary Cards Component
-  const renderSummaryCards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <CalculatorIcon className="h-8 w-8 text-blue-600" />
+  // Summary Cards Component with proper accounting equation
+  const renderSummaryCards = () => {
+    // Calculate the accounting equation check
+    const isBalanced = Math.abs(stats.totalAssets - (stats.totalLiabilities + stats.totalEquity)) < 0.01;
+    
+    return (
+      <div className="space-y-4 mb-8">
+        {/* Accounting Equation Display */}
+        <div className={`bg-white rounded-lg shadow-sm border-2 ${isBalanced ? 'border-green-500' : 'border-yellow-500'} p-4`}>
+          <div className="flex items-center justify-center space-x-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium">Assets</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(stats.totalAssets)}</p>
+            </div>
+            <span className="text-2xl font-bold text-gray-400">=</span>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium">Liabilities</p>
+              <p className="text-lg font-bold text-red-600">{formatCurrency(stats.totalLiabilities)}</p>
+            </div>
+            <span className="text-2xl font-bold text-gray-400">+</span>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium">Equity</p>
+              <p className="text-lg font-bold text-purple-600">{formatCurrency(stats.totalEquity)}</p>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Accounts</p>
-            <p className="text-3xl font-bold text-blue-600 truncate">{loading ? '-' : stats.totalAccounts}</p>
-          </div>
+          {!isBalanced && (
+            <p className="text-center text-sm text-yellow-600 mt-2">
+              ⚠️ Accounting equation not balanced (difference: {formatCurrency(Math.abs(stats.totalAssets - (stats.totalLiabilities + stats.totalEquity)))})
+            </p>
+          )}
         </div>
-      </div>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CalculatorIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Accounts</p>
+                <p className="text-2xl font-bold text-blue-600">{loading ? '-' : stats.totalAccounts}</p>
+              </div>
+            </div>
+          </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <BanknotesIcon className="h-8 w-8 text-green-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <BanknotesIcon className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Assets</p>
+                <p className="text-xl font-bold text-green-600 break-all">{loading ? '-' : formatCurrency(stats.totalAssets)}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Assets</p>
-            <p className="text-3xl font-bold text-green-600 truncate">{loading ? '-' : formatCurrency(stats.totalAssets)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <BuildingLibraryIcon className="h-8 w-8 text-red-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <BuildingLibraryIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Liabilities</p>
+                <p className="text-xl font-bold text-red-600 break-all">{loading ? '-' : formatCurrency(stats.totalLiabilities)}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Liabilities</p>
-            <p className="text-3xl font-bold text-red-600 truncate">{loading ? '-' : formatCurrency(stats.totalLiabilities)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <ChartBarIcon className="h-8 w-8 text-purple-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ChartBarIcon className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Equity</p>
+                <p className="text-xl font-bold text-purple-600 break-all">{loading ? '-' : formatCurrency(stats.totalEquity)}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Equity</p>
-            <p className="text-3xl font-bold text-purple-600 truncate">{loading ? '-' : formatCurrency(stats.totalEquity)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <DocumentPlusIcon className="h-8 w-8 text-yellow-600" />
-          </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Accounts</p>
-            <p className="text-3xl font-bold text-yellow-600 truncate">{loading ? '-' : stats.activeAccounts}</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <DocumentPlusIcon className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Active Accounts</p>
+                <p className="text-2xl font-bold text-yellow-600">{loading ? '-' : stats.activeAccounts}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Search and Actions Component
   const renderSearchAndActions = () => (

@@ -23,8 +23,8 @@ export async function GET(request) {
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
-    // Try multiple possible endpoints - first try transactions, then journal entries, then general ledger
-    let response = await fetch(`${API_BASE_URL}/api/finance/api/transactions/?${params}`, {
+    // Try the correct journal-entries endpoint first (matches Django URL pattern)
+    let response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/?${params}`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,
@@ -33,9 +33,9 @@ export async function GET(request) {
       cache: 'no-store'
     });
     
-    // If transactions fails, try journal-entries endpoint
+    // If journal-entries fails, try general-ledger endpoint
     if (!response.ok || response.status === 404) {
-      response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/?${params}`, {
+      response = await fetch(`${API_BASE_URL}/api/finance/general-ledger/?${params}`, {
         headers: {
           'Authorization': `Session ${sessionId.value}`,
           'Cookie': `sid=${sessionId.value}`,
@@ -45,9 +45,9 @@ export async function GET(request) {
       });
     }
     
-    // If journal-entries fails, try general-ledger endpoint
+    // If general-ledger fails, try transactions endpoint
     if (!response.ok || response.status === 404) {
-      response = await fetch(`${API_BASE_URL}/api/finance/general-ledger/?${params}`, {
+      response = await fetch(`${API_BASE_URL}/api/finance/api/transactions/?${params}`, {
         headers: {
           'Authorization': `Session ${sessionId.value}`,
           'Cookie': `sid=${sessionId.value}`,
@@ -66,6 +66,12 @@ export async function GET(request) {
     }
     
     const data = await response.json();
+    
+    console.log('[GeneralLedger API] Raw data received:', {
+      isArray: Array.isArray(data),
+      keys: Object.keys(data),
+      sampleEntry: Array.isArray(data) ? data[0] : data.entries?.[0] || data.results?.[0]
+    });
     
     // Transform the data to match frontend expectations
     const entries = Array.isArray(data) ? data : (data.entries || data.results || data.lines || []);

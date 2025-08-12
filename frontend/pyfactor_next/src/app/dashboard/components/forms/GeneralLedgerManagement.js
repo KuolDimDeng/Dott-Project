@@ -433,13 +433,29 @@ function GeneralLedgerManagement({ onNavigate }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEntries.map((entry) => (
+              {filteredEntries.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-6 py-12 text-center text-sm text-gray-500">
+                    No general ledger entries found for the selected criteria. 
+                    Try adjusting your filters or date range.
+                  </td>
+                </tr>
+              ) : (
+                filteredEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(entry.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <span className="font-medium">{entry.accountCode}</span> - {entry.account.split(' - ')[1]}
+                    {entry.accountCode && (
+                      <>
+                        <span className="font-medium">{entry.accountCode}</span>
+                        {entry.account && entry.account.includes(' - ') && 
+                          <> - {entry.account.split(' - ')[1]}</>
+                        }
+                      </>
+                    )}
+                    {!entry.accountCode && entry.account}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {entry.description}
@@ -470,7 +486,7 @@ function GeneralLedgerManagement({ onNavigate }) {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
