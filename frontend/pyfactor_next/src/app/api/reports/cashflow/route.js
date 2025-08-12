@@ -35,39 +35,58 @@ export async function GET(request) {
         // Calculate cash flow from Chart of Accounts
         const accounts = Array.isArray(accountsData) ? accountsData : (accountsData.accounts || []);
         
+        console.log('[CashFlow API] Total accounts:', accounts.length);
+        console.log('[CashFlow API] Sample account:', accounts[0]);
+        
         // Calculate total cash and cash equivalents (asset accounts starting with 1000-1199)
         const cashAccounts = accounts.filter(a => {
-          const code = parseInt(a.account_number || a.code || 0);
+          const code = parseInt(a.code || a.account_number || 0);
           const name = (a.name || '').toLowerCase();
           return (code >= 1000 && code < 1200) || 
                  name.includes('cash') || 
                  name.includes('bank');
         });
         
-        const totalCash = cashAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
+        const totalCash = cashAccounts.reduce((sum, a) => {
+          const balance = parseFloat(a.currentBalance || a.balance || a.current_balance || 0);
+          return sum + (isNaN(balance) ? 0 : balance);
+        }, 0);
         
-        // Calculate revenue (inflow)
+        // Calculate revenue (inflow) - Sales Revenue account has negative balance
         const revenueAccounts = accounts.filter(a => {
-          const code = parseInt(a.account_number || a.code || 0);
+          const code = parseInt(a.code || a.account_number || 0);
           const name = (a.name || '').toLowerCase();
+          // Include the misclassified Sales Revenue at 1002
           return (code >= 4000 && code < 5000) || 
+                 code === 1002 ||
                  name.includes('revenue') || 
                  name.includes('sales') ||
                  name.includes('income');
         });
         
-        const totalRevenue = Math.abs(revenueAccounts.reduce((sum, a) => sum + (a.balance || 0), 0));
+        // Revenue accounts have negative balances, so we make them positive
+        const totalRevenue = Math.abs(revenueAccounts.reduce((sum, a) => {
+          const balance = parseFloat(a.currentBalance || a.balance || a.current_balance || 0);
+          console.log('[CashFlow API] Revenue account:', a.name, 'balance:', balance);
+          return sum + (isNaN(balance) ? 0 : balance);
+        }, 0));
         
         // Calculate expenses (outflow)
         const expenseAccounts = accounts.filter(a => {
-          const code = parseInt(a.account_number || a.code || 0);
+          const code = parseInt(a.code || a.account_number || 0);
           const name = (a.name || '').toLowerCase();
+          // Include the misclassified COGS at 1004
           return (code >= 5000 && code < 6000) || 
+                 code === 1004 ||
                  name.includes('expense') || 
                  name.includes('cost');
         });
         
-        const totalExpenses = Math.abs(expenseAccounts.reduce((sum, a) => sum + (a.balance || 0), 0));
+        const totalExpenses = Math.abs(expenseAccounts.reduce((sum, a) => {
+          const balance = parseFloat(a.currentBalance || a.balance || a.current_balance || 0);
+          console.log('[CashFlow API] Expense account:', a.name, 'balance:', balance);
+          return sum + (isNaN(balance) ? 0 : balance);
+        }, 0));
         
         // Create cash flow data for the current period
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
@@ -79,7 +98,26 @@ export async function GET(request) {
           balance: totalCash
         }];
         
-        console.log('[CashFlow API] Calculated cash flow:', cashFlowData);
+        console.log('[CashFlow API] Calculated cash flow:', {
+          totalCash,
+          totalRevenue,
+          totalExpenses,
+          cashFlowData
+        });
+        
+        // Make sure we have valid numbers
+        if (isNaN(totalRevenue) || isNaN(totalExpenses) || isNaN(totalCash)) {
+          console.error('[CashFlow API] Invalid numbers calculated:', {
+            totalRevenue,
+            totalExpenses,
+            totalCash
+          });
+          return NextResponse.json({ 
+            success: true,
+            data: [],
+            message: 'Invalid data calculated'
+          });
+        }
         
         return NextResponse.json({ 
           success: true,
