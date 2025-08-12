@@ -401,6 +401,16 @@ class Product(AuditMixin, TenantAwareModel):
         breakdown['total'] = self.calculate_price(checkout_date)
         return breakdown
     
+    @property
+    def stock_quantity(self):
+        """Alias for quantity field to maintain compatibility with frontend"""
+        return self.quantity
+    
+    @stock_quantity.setter
+    def stock_quantity(self, value):
+        """Setter for stock_quantity alias"""
+        self.quantity = value
+    
     def __str__(self):
         return self.name
         
