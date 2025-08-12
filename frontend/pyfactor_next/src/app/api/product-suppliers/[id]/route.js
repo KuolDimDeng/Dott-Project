@@ -1,104 +1,157 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 /**
- * Dynamic route for individual ProductSupplier operations
+ * Individual Product Supplier operations
+ * Maps to Django products endpoint for specific product operations
  */
+
 export async function GET(request, { params }) {
   try {
-    const cookieStore = cookies();
-    const { id } = params;
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Forward request to Django backend
-    const response = await fetch(`${API_URL}/api/product-suppliers/${id}/`, {
+    const { id } = params;
+    
+    // Forward to Django backend products endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();
+    
+    // Add quantity_in_stock for frontend compatibility
+    if (data) {
+      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
+      data.stock_quantity = data.quantity || data.stock_quantity || 0;
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(request, { params }) {
   try {
-    const cookieStore = cookies();
-    const { id } = params;
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Get request body
+    const { id } = params;
     const body = await request.json();
     
-    // Forward request to Django backend
-    const response = await fetch(`${API_URL}/api/product-suppliers/${id}/`, {
+    // Transform the data if needed
+    const productData = {
+      ...body,
+      quantity: body.quantity || body.stock_quantity || body.quantity_in_stock || 0,
+    };
+    
+    // Forward to Django backend products endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
+    
+    const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(productData),
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();
+    
+    // Add quantity_in_stock for frontend compatibility
+    if (data) {
+      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
+      data.stock_quantity = data.quantity || data.stock_quantity || 0;
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update product' },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
-    const cookieStore = cookies();
-    const { id } = params;
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Forward request to Django backend
-    const response = await fetch(`${API_URL}/api/product-suppliers/${id}/`, {
+    const { id } = params;
+    
+    // Forward to Django backend products endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
+    
+    const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     // DELETE might return 204 No Content
@@ -110,6 +163,9 @@ export async function DELETE(request, { params }) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete product' },
+      { status: 500 }
+    );
   }
 }

@@ -491,11 +491,12 @@ export const customerApi = {
   }
 };
 
-// Supplier related API methods - Using local proxy pattern (industry standard)
-export const supplierApi = {
+// Vendor related API methods (previously called suppliers)
+// Vendors are businesses that supply products/services TO your business
+export const vendorApi = {
   async getAll(params = {}) {
     // Use local proxy endpoint that handles authentication server-side
-    const response = await fetch('/api/inventory/suppliers', {
+    const response = await fetch('/api/inventory/vendors', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -512,7 +513,7 @@ export const supplierApi = {
   },
   
   async getById(id, params = {}) {
-    const response = await fetch(`/api/inventory/suppliers/${id}`, {
+    const response = await fetch(`/api/inventory/vendors/${id}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -529,9 +530,9 @@ export const supplierApi = {
   },
   
   async create(data, params = {}) {
-    logger.info('[SupplierApi] Creating supplier with data:', data);
+    logger.info('[VendorApi] Creating vendor with data:', data);
     
-    const response = await fetch('/api/inventory/suppliers', {
+    const response = await fetch('/api/inventory/vendors', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -546,12 +547,12 @@ export const supplierApi = {
     }
     
     const result = await response.json();
-    logger.info('[SupplierApi] Supplier created successfully:', result);
+    logger.info('[VendorApi] Vendor created successfully:', result);
     return result;
   },
   
   async update(id, data, params = {}) {
-    const response = await fetch(`/api/inventory/suppliers/${id}`, {
+    const response = await fetch(`/api/inventory/vendors/${id}`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -569,7 +570,7 @@ export const supplierApi = {
   },
   
   async delete(id, params = {}) {
-    const response = await fetch(`/api/inventory/suppliers/${id}`, {
+    const response = await fetch(`/api/inventory/vendors/${id}`, {
       method: 'DELETE',
       credentials: 'include',
       headers: {
@@ -585,6 +586,9 @@ export const supplierApi = {
     return response.json();
   }
 };
+
+// Keep supplierApi as alias for backward compatibility
+export const supplierApi = vendorApi;
 
 // Location related API methods - Using local proxy pattern (industry standard)
 export const locationApi = {

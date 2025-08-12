@@ -35,19 +35,49 @@ export async function GET(request) {
     // Transform the data to match frontend expectations
     const accounts = Array.isArray(data) ? data : (data.accounts || data.results || []);
     
-    const transformedAccounts = accounts.map(account => ({
-      id: account.id,
-      code: account.account_number || account.code,
-      name: account.name || account.account_name,
-      type: account.category?.name?.toLowerCase() || account.account_type || 'asset',
-      description: account.description || '',
-      normalBalance: account.normal_balance || 'debit',
-      currentBalance: parseFloat(account.balance || account.current_balance || 0),
-      isActive: account.is_active !== false,
-      parentAccount: account.parent_account || null,
-      taxRate: account.tax_rate || null,
-      notes: account.notes || ''
-    }));
+    const transformedAccounts = accounts.map(account => {
+      // Determine account type from various possible fields
+      let accountType = 'asset'; // default
+      
+      // Check various possible field names for account type
+      if (account.category?.name) {
+        accountType = account.category.name.toLowerCase();
+      } else if (account.account_type) {
+        accountType = account.account_type.toLowerCase();
+      } else if (account.type) {
+        accountType = account.type.toLowerCase();
+      } else if (account.account_number || account.code) {
+        // Infer type from account code ranges
+        const code = parseInt(account.account_number || account.code);
+        if (code >= 1000 && code < 2000) accountType = 'asset';
+        else if (code >= 2000 && code < 3000) accountType = 'liability';
+        else if (code >= 3000 && code < 4000) accountType = 'equity';
+        else if (code >= 4000 && code < 5000) accountType = 'revenue';
+        else if (code >= 5000 && code < 6000) accountType = 'expense';
+        else if (code >= 6000 && code < 7000) accountType = 'cost_of_goods_sold';
+      }
+      
+      // Normalize account type names
+      if (accountType === 'expenses') accountType = 'expense';
+      if (accountType === 'revenues') accountType = 'revenue';
+      if (accountType === 'liabilities') accountType = 'liability';
+      if (accountType === 'assets') accountType = 'asset';
+      if (accountType === 'cogs' || accountType === 'cost of goods sold') accountType = 'cost_of_goods_sold';
+      
+      return {
+        id: account.id,
+        code: account.account_number || account.code,
+        name: account.name || account.account_name,
+        type: accountType,
+        description: account.description || '',
+        normalBalance: account.normal_balance || (accountType === 'asset' || accountType === 'expense' || accountType === 'cost_of_goods_sold' ? 'debit' : 'credit'),
+        currentBalance: parseFloat(account.balance || account.current_balance || 0),
+        isActive: account.is_active !== false,
+        parentAccount: account.parent_account || null,
+        taxRate: account.tax_rate || null,
+        notes: account.notes || ''
+      };
+    });
     
     return NextResponse.json(transformedAccounts);
   } catch (error) {

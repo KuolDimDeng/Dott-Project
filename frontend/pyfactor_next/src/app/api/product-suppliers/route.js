@@ -1,158 +1,262 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 /**
- * Proxy for ProductSupplier API endpoints
- * Forwards requests to Django backend with proper authentication
+ * Product Suppliers API - for products that the business supplies/sells to customers
+ * This is different from inventory vendors (who supply TO the business)
+ * Maps to the Django products endpoint but adds semantic clarity
  */
+
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Forward request to Django backend
-    // Backend will determine tenant from the session
-    const response = await fetch(`${API_URL}/api/product-suppliers/`, {
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
+    
+    // Forward to Django backend - using products endpoint since these are products for sale
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${queryString ? `?${queryString}` : ''}`;
+    
+    console.log('[Product Suppliers API] Fetching from:', backendUrl);
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Transform the response to match what the frontend expects
+    // Filter to only include products that are marked as supplies/for sale
+    let products = [];
+    if (Array.isArray(data)) {
+      products = data;
+    } else if (data?.results) {
+      products = data.results;
+    }
+    
+    // Add quantity_in_stock field for frontend compatibility
+    products = products.map(product => ({
+      ...product,
+      quantity_in_stock: product.quantity || product.stock_quantity || 0,
+      stock_quantity: product.quantity || product.stock_quantity || 0
+    }));
+    
+    // Return in the expected format
+    const responseData = {
+      results: products,
+      count: data?.count || products.length,
+      next: data?.next || null,
+      previous: data?.previous || null
+    };
+    
+    console.log('[Product Suppliers API] Returning', responseData.results.length, 'products');
+    
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request) {
   try {
-    const cookieStore = cookies();
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Get request body
     const body = await request.json();
     
-    // Forward request to Django backend
-    // Backend will determine tenant from the session
-    const response = await fetch(`${API_URL}/api/product-suppliers/`, {
+    // Transform the data if needed
+    const productData = {
+      ...body,
+      inventory_type: 'product', // Mark as product for sale
+      is_active: true,
+      // Ensure quantity is set - handle various field names
+      quantity: body.quantity || body.stock_quantity || body.quantity_in_stock || 0,
+    };
+    
+    console.log('[Product Suppliers API] Creating product:', productData);
+    
+    // Forward to Django backend products endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/`;
+    
+    const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(productData),
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Add quantity_in_stock for frontend compatibility
+    if (data) {
+      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
+      data.stock_quantity = data.quantity || data.stock_quantity || 0;
+    }
+    
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create product' },
+      { status: 500 }
+    );
   }
 }
 
+// Add support for individual product operations
 export async function PUT(request) {
   try {
-    const cookieStore = cookies();
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Extract supplier ID from URL
+    // Extract product ID from URL
     const url = new URL(request.url);
     const pathParts = url.pathname.split('/');
-    const supplierId = pathParts[pathParts.length - 1];
+    const productId = pathParts[pathParts.length - 1];
     
-    if (!supplierId || supplierId === 'product-suppliers') {
-      return NextResponse.json({ error: 'Supplier ID is required' }, { status: 400 });
+    if (!productId || productId === 'product-suppliers') {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
     
-    // Get request body
     const body = await request.json();
     
-    // Forward request to Django backend
-    const response = await fetch(`${API_URL}/api/product-suppliers/${supplierId}/`, {
+    // Transform the data if needed
+    const productData = {
+      ...body,
+      quantity: body.quantity || body.stock_quantity || body.quantity_in_stock || 0,
+    };
+    
+    // Forward to Django backend
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${productId}/`;
+    
+    const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(productData),
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();
+    
+    // Add quantity_in_stock for frontend compatibility
+    if (data) {
+      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
+      data.stock_quantity = data.quantity || data.stock_quantity || 0;
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update product' },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(request) {
   try {
-    const cookieStore = cookies();
-    
-    // Get session ID from sid cookie
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
     }
     
-    // Extract supplier ID from URL
+    // Extract product ID from URL
     const url = new URL(request.url);
     const pathParts = url.pathname.split('/');
-    const supplierId = pathParts[pathParts.length - 1];
+    const productId = pathParts[pathParts.length - 1];
     
-    if (!supplierId || supplierId === 'product-suppliers') {
-      return NextResponse.json({ error: 'Supplier ID is required' }, { status: 400 });
+    if (!productId || productId === 'product-suppliers') {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
     
-    // Forward request to Django backend
-    const response = await fetch(`${API_URL}/api/product-suppliers/${supplierId}/`, {
+    // Forward to Django backend
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${productId}/`;
+    
+    const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
     });
     
     if (!response.ok) {
       const error = await response.text();
-      return NextResponse.json({ error }, { status: response.status });
+      console.error('[Product Suppliers API] Backend error:', error);
+      return NextResponse.json(
+        { error: error || `HTTP ${response.status}` },
+        { status: response.status }
+      );
     }
     
     // DELETE might return 204 No Content
@@ -164,6 +268,9 @@ export async function DELETE(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('[Product Suppliers API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete product' },
+      { status: 500 }
+    );
   }
 }

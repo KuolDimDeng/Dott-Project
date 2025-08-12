@@ -149,9 +149,15 @@ function ChartOfAccountsManagement({ onNavigate }) {
       const stats = {
         totalAccounts: accountsArray.length,
         activeAccounts: accountsArray.filter(a => a.isActive).length,
-        totalAssets: accountsArray.filter(a => a.type === 'asset').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-        totalLiabilities: accountsArray.filter(a => a.type === 'liability').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-        totalEquity: accountsArray.filter(a => a.type === 'equity').reduce((sum, a) => sum + (a.currentBalance || 0), 0)
+        totalAssets: accountsArray
+          .filter(a => a.type === 'asset')
+          .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0),
+        totalLiabilities: accountsArray
+          .filter(a => a.type === 'liability')
+          .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0),
+        totalEquity: accountsArray
+          .filter(a => a.type === 'equity')
+          .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0)
       };
       setStats(stats);
       
