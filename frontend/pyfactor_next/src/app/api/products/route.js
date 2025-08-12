@@ -49,15 +49,21 @@ export async function GET(request) {
 
     // Transform data to match POS expectations
     const products = data.results || data.products || data;
-    const transformedProducts = Array.isArray(products) ? products.map(product => ({
-      id: product.id,
-      name: product.product_name || product.name,
-      sku: product.product_code || product.sku || '',
-      barcode: product.barcode || '',
-      price: parseFloat(product.unit_price || product.price || 0),
-      quantity_in_stock: product.quantity || product.stock_quantity || product.quantity_in_stock || 0,
-      description: product.description || ''
-    })) : [];
+    const transformedProducts = Array.isArray(products) ? products.map(product => {
+      // Debug logging to see what fields we're getting
+      console.log('[Products API] Raw product fields:', Object.keys(product));
+      console.log('[Products API] Product quantity field:', product.quantity);
+      
+      return {
+        id: product.id,
+        name: product.product_name || product.name,
+        sku: product.product_code || product.sku || '',
+        barcode: product.barcode || '',
+        price: parseFloat(product.unit_price || product.price || 0),
+        quantity_in_stock: parseInt(product.quantity || product.stock_quantity || product.quantity_in_stock || 0),
+        description: product.description || ''
+      };
+    }) : [];
 
     return NextResponse.json({
       success: true,
