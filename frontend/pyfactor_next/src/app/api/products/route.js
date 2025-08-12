@@ -46,24 +46,48 @@ export async function GET(request) {
     }
 
     const data = await response.json();
+    
+    console.log('[Products API] Full backend response structure:', JSON.stringify(data).substring(0, 500));
 
     // Transform data to match POS expectations
     const products = data.results || data.products || data;
-    const transformedProducts = Array.isArray(products) ? products.map(product => {
+    const transformedProducts = Array.isArray(products) ? products.map((product, index) => {
       // Debug logging to see what fields we're getting
-      console.log('[Products API] Raw product fields:', Object.keys(product));
-      console.log('[Products API] Product quantity field:', product.quantity);
+      if (index === 0) {
+        console.log('[Products API] First product full data:', JSON.stringify(product));
+        console.log('[Products API] Product fields available:', Object.keys(product));
+        console.log('[Products API] Looking for quantity fields:');
+        console.log('  - product.quantity:', product.quantity);
+        console.log('  - product.stock_quantity:', product.stock_quantity);
+        console.log('  - product.quantity_in_stock:', product.quantity_in_stock);
+      }
       
-      return {
+      // Try all possible field names
+      const stockQty = product.quantity || 
+                       product.stock_quantity || 
+                       product.quantity_in_stock || 
+                       product.qty ||
+                       product.stock ||
+                       0;
+      
+      const transformed = {
         id: product.id,
-        name: product.product_name || product.name,
-        sku: product.product_code || product.sku || '',
+        name: product.product_name || product.name || 'Unnamed Product',
+        sku: product.product_code || product.sku || product.code || '',
         barcode: product.barcode || '',
-        price: parseFloat(product.unit_price || product.price || 0),
-        quantity_in_stock: parseInt(product.quantity || product.stock_quantity || product.quantity_in_stock || 0),
+        price: parseFloat(product.unit_price || product.price || product.selling_price || 0),
+        quantity_in_stock: parseInt(stockQty),
         description: product.description || ''
       };
+      
+      if (index === 0) {
+        console.log('[Products API] Transformed product:', transformed);
+      }
+      
+      return transformed;
     }) : [];
+    
+    console.log(`[Products API] Transformed ${transformedProducts.length} products`);
 
     return NextResponse.json({
       success: true,

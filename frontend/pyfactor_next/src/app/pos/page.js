@@ -70,6 +70,14 @@ function POSPage() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('[POS] Raw API response:', data);
+        console.log('[POS] Products array:', data.products);
+        
+        if (data.products && data.products.length > 0) {
+          console.log('[POS] First product received:', data.products[0]);
+          console.log('[POS] First product quantity_in_stock:', data.products[0].quantity_in_stock);
+        }
+        
         setProducts(Array.isArray(data.products) ? data.products : []);
       } else if (response.status === 401) {
         console.warn('Authentication required, redirecting to login');
