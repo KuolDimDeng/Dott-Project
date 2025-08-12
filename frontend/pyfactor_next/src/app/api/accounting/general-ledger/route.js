@@ -23,8 +23,8 @@ export async function GET(request) {
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
-    // Fetch from Django backend
-    const response = await fetch(`${API_BASE_URL}/api/finance/general-ledger/?${params}`, {
+    // Try multiple possible endpoints - first try transactions, then journal entries, then general ledger
+    let response = await fetch(`${API_BASE_URL}/api/finance/api/transactions/?${params}`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `sid=${sessionId.value}`,
@@ -32,6 +32,30 @@ export async function GET(request) {
       },
       cache: 'no-store'
     });
+    
+    // If transactions fails, try journal-entries endpoint
+    if (!response.ok || response.status === 404) {
+      response = await fetch(`${API_BASE_URL}/api/finance/journal-entries/?${params}`, {
+        headers: {
+          'Authorization': `Session ${sessionId.value}`,
+          'Cookie': `sid=${sessionId.value}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+    }
+    
+    // If journal-entries fails, try general-ledger endpoint
+    if (!response.ok || response.status === 404) {
+      response = await fetch(`${API_BASE_URL}/api/finance/general-ledger/?${params}`, {
+        headers: {
+          'Authorization': `Session ${sessionId.value}`,
+          'Cookie': `sid=${sessionId.value}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+    }
     
     if (!response.ok) {
       console.error('[GeneralLedger API] Backend error:', response.status);
@@ -44,21 +68,53 @@ export async function GET(request) {
     const data = await response.json();
     
     // Transform the data to match frontend expectations
-    const entries = Array.isArray(data) ? data : (data.entries || data.results || []);
+    const entries = Array.isArray(data) ? data : (data.entries || data.results || data.lines || []);
     
-    const transformedEntries = entries.map(entry => ({
-      id: entry.id,
-      date: entry.date || entry.transaction_date,
-      account: `${entry.account?.account_number || ''} - ${entry.account?.name || entry.account_name || ''}`,
-      accountCode: entry.account?.account_number || entry.account_code,
-      description: entry.description || entry.memo || '',
-      reference: entry.reference || entry.journal_reference || '',
-      journalId: entry.journal_entry_id || entry.journal_id,
-      debit: parseFloat(entry.debit_amount || entry.debit || 0),
-      credit: parseFloat(entry.credit_amount || entry.credit || 0),
-      balance: parseFloat(entry.balance || entry.running_balance || 0),
-      type: entry.debit_amount > 0 ? 'debit' : 'credit'
-    }));
+    // Running balance calculation
+    let runningBalance = 0;
+    
+    const transformedEntries = entries.map(entry => {
+      // Handle journal entry line items format
+      const isJournalLine = entry.journal_entry || entry.journal;
+      
+      let accountInfo = '';
+      let accountCode = '';
+      
+      if (entry.account) {
+        accountCode = entry.account.account_number || entry.account.code || '';
+        accountInfo = `${accountCode} - ${entry.account.name || ''}`;
+      } else if (entry.chart_of_account) {
+        accountCode = entry.chart_of_account.account_number || '';
+        accountInfo = `${accountCode} - ${entry.chart_of_account.name || ''}`;
+      } else {
+        accountCode = entry.account_code || entry.account_number || '';
+        accountInfo = entry.account_name || '';
+      }
+      
+      const debitAmount = parseFloat(entry.debit_amount || entry.debit || 0);
+      const creditAmount = parseFloat(entry.credit_amount || entry.credit || 0);
+      
+      // Calculate running balance
+      runningBalance += debitAmount - creditAmount;
+      
+      return {
+        id: entry.id || entry.journal_entry_id,
+        date: entry.date || entry.transaction_date || entry.created_at || 
+              (isJournalLine ? entry.journal_entry?.date : null),
+        account: accountInfo,
+        accountCode: accountCode,
+        description: entry.description || entry.memo || entry.narration || 
+                    (isJournalLine ? entry.journal_entry?.description : ''),
+        reference: entry.reference || entry.journal_reference || entry.reference_number ||
+                  (isJournalLine ? entry.journal_entry?.reference : ''),
+        journalId: entry.journal_entry_id || entry.journal_id || 
+                  (isJournalLine ? entry.journal_entry?.id : null),
+        debit: debitAmount,
+        credit: creditAmount,
+        balance: entry.balance || entry.running_balance || runningBalance,
+        type: debitAmount > 0 ? 'debit' : 'credit'
+      };
+    });
     
     // Calculate stats
     const stats = {

@@ -170,12 +170,14 @@ function GeneralLedgerManagement({ onNavigate }) {
 
   // Filtered entries based on search and filter
   const filteredEntries = useMemo(() => {
+    if (!ledgerEntries || ledgerEntries.length === 0) return [];
+    
     return ledgerEntries.filter(entry => {
       // Search filter
       const matchesSearch = 
-        entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.account.toLowerCase().includes(searchTerm.toLowerCase());
+        (entry.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.account || '').toLowerCase().includes(searchTerm.toLowerCase());
       
       // Type filter
       const matchesType = 
