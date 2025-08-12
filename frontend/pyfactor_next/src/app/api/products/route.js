@@ -24,7 +24,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    console.log('[Products API] Fetching from backend with session:', sidCookie.value.substring(0, 8) + '...');
+    console.log('[Products API] ========== DEBUG START ==========');
+    console.log('[Products API] Session:', sidCookie.value.substring(0, 8) + '...');
+    console.log('[Products API] Backend URL:', `${BACKEND_URL}/api/inventory/products/`);
     
     // Call backend directly
     const response = await fetch(`${BACKEND_URL}/api/inventory/products/${queryString ? '?' + queryString : ''}`, {
@@ -47,21 +49,38 @@ export async function GET(request) {
 
     const data = await response.json();
     
-    console.log('[Products API] Full backend response structure:', JSON.stringify(data).substring(0, 500));
+    console.log('[Products API] Raw backend response:', {
+      hasData: !!data,
+      dataType: typeof data,
+      isArray: Array.isArray(data),
+      hasResults: !!data.results,
+      resultsIsArray: Array.isArray(data.results),
+      resultsLength: data.results ? data.results.length : 0,
+      keys: Object.keys(data)
+    });
 
     // Transform data to match POS expectations
     const products = data.results || data.products || data;
+    
+    console.log('[Products API] Products array info:', {
+      isArray: Array.isArray(products),
+      length: Array.isArray(products) ? products.length : 0,
+      firstProductKeys: Array.isArray(products) && products.length > 0 ? Object.keys(products[0]) : []
+    });
+    
     const transformedProducts = Array.isArray(products) ? products.map((product, index) => {
-      // Debug logging to see what fields we're getting
-      if (index === 0) {
-        console.log('[Products API] First product full data:', JSON.stringify(product));
-        console.log('[Products API] Product fields available:', Object.keys(product));
-        console.log('[Products API] Looking for quantity fields:');
-        console.log('  - product.quantity:', product.quantity);
-        console.log('  - product.stock_quantity:', product.stock_quantity);
-        console.log('  - product.quantity_in_stock:', product.quantity_in_stock);
-        console.log('  - Using quantity value:', product.quantity !== undefined ? product.quantity : 'NOT FOUND');
-      }
+      // Debug logging for EVERY product
+      console.log(`[Products API] Product ${index + 1}:`, {
+        id: product.id,
+        name: product.name || product.product_name,
+        hasQuantity: 'quantity' in product,
+        quantity: product.quantity,
+        hasStockQuantity: 'stock_quantity' in product,
+        stock_quantity: product.stock_quantity,
+        hasQuantityInStock: 'quantity_in_stock' in product,
+        quantity_in_stock: product.quantity_in_stock,
+        allKeys: Object.keys(product)
+      });
       
       // The backend Product model uses 'quantity' field
       // But frontend often expects 'stock_quantity'
@@ -80,14 +99,22 @@ export async function GET(request) {
         description: product.description || ''
       };
       
-      if (index === 0) {
-        console.log('[Products API] Transformed product:', transformed);
-      }
+      console.log(`[Products API] Transformed product ${index + 1}:`, {
+        name: transformed.name,
+        originalQuantity: product.quantity,
+        stockQty: stockQty,
+        transformedQuantity: transformed.quantity_in_stock
+      });
       
       return transformed;
     }) : [];
     
-    console.log(`[Products API] Transformed ${transformedProducts.length} products`);
+    console.log('[Products API] ========== FINAL RESULT ==========');
+    console.log(`[Products API] Total products transformed: ${transformedProducts.length}`);
+    console.log('[Products API] All quantities:', transformedProducts.map(p => ({
+      name: p.name,
+      quantity_in_stock: p.quantity_in_stock
+    })));
 
     return NextResponse.json({
       success: true,

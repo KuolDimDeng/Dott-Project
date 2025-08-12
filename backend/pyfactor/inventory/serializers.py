@@ -69,6 +69,8 @@ class ProductSerializer(serializers.ModelSerializer):
     # Calculate current price based on pricing model
     calculated_price = serializers.SerializerMethodField()
     price_breakdown = serializers.SerializerMethodField()
+    # Add stock_quantity as an alias for quantity field
+    stock_quantity = serializers.IntegerField(source='quantity', required=False)
 
     class Meta:
         model = Product

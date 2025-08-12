@@ -288,7 +288,7 @@ class ProductViewSet(TenantIsolatedViewSet):
             if self.request.query_params.get('min_stock'):
                 try:
                     min_stock = int(self.request.query_params.get('min_stock'))
-                    queryset = queryset.filter(stock_quantity__gte=min_stock)
+                    queryset = queryset.filter(quantity__gte=min_stock)
                 except ValueError:
                     pass
             
@@ -301,12 +301,44 @@ class ProductViewSet(TenantIsolatedViewSet):
             return Product.objects.none()
     
     def list(self, request, *args, **kwargs):
-        """Override list method to add better error handling"""
+        """Override list method to add better error handling and debug logging"""
         import logging
         logger = logging.getLogger(__name__)
         
+        logger.info("=" * 50)
+        logger.info("[ProductViewSet] DEBUG: List method called")
+        logger.info(f"[ProductViewSet] User: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
+        logger.info(f"[ProductViewSet] Path: {request.path}")
+        
         try:
-            return super().list(request, *args, **kwargs)
+            # Get the queryset
+            queryset = self.get_queryset()
+            logger.info(f"[ProductViewSet] Queryset count: {queryset.count()}")
+            
+            # Log first few products BEFORE serialization
+            for i, product in enumerate(queryset[:3]):
+                logger.info(f"[ProductViewSet] Raw Product {i+1}: {product.name}")
+                logger.info(f"  - Model quantity field: {product.quantity}")
+                logger.info(f"  - Has stock_quantity property: {hasattr(product, 'stock_quantity')}")
+                if hasattr(product, 'stock_quantity'):
+                    logger.info(f"  - stock_quantity property value: {product.stock_quantity}")
+            
+            response = super().list(request, *args, **kwargs)
+            
+            # Log the serialized response
+            if hasattr(response, 'data'):
+                data = response.data
+                if isinstance(data, dict) and 'results' in data:
+                    products = data['results']
+                    logger.info(f"[ProductViewSet] Serialized {len(products)} products")
+                    for i, product in enumerate(products[:3]):
+                        logger.info(f"[ProductViewSet] Serialized Product {i+1}: {product.get('name', 'Unknown')}")
+                        logger.info(f"  - Keys in serialized data: {list(product.keys())}")
+                        logger.info(f"  - 'quantity' in data: {'quantity' in product} = {product.get('quantity', 'N/A')}")
+                        logger.info(f"  - 'stock_quantity' in data: {'stock_quantity' in product} = {product.get('stock_quantity', 'N/A')}")
+            
+            logger.info("=" * 50)
+            return response
         except Exception as e:
             logger.error(f"Error listing products: {str(e)}", exc_info=True)
             
@@ -327,7 +359,7 @@ class ProductViewSet(TenantIsolatedViewSet):
         # Get the existing product data before update
         instance = self.get_object()
         old_price = instance.price
-        old_stock = instance.stock_quantity
+        old_stock = instance.quantity
         
         response = super().update(request, *args, **kwargs)
         
@@ -383,13 +415,13 @@ class ProductViewSet(TenantIsolatedViewSet):
             instance = self.get_object()
             product_id = str(instance.id)
             product_name = instance.name
-            inventory_value = float(instance.price) * int(instance.stock_quantity)
+            inventory_value = float(instance.price) * int(instance.quantity)
             
             logger.info(f"🔴 [BACKEND DELETE] Step 2: Found product to delete:")
             logger.info(f"🔴 [BACKEND DELETE]   - ID: {product_id}")
             logger.info(f"🔴 [BACKEND DELETE]   - Name: {product_name}")
             logger.info(f"🔴 [BACKEND DELETE]   - Price: {instance.price}")
-            logger.info(f"🔴 [BACKEND DELETE]   - Stock: {instance.stock_quantity}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Stock: {instance.quantity}")
             logger.info(f"🔴 [BACKEND DELETE]   - Inventory value: {inventory_value}")
             
             logger.info("🔴 [BACKEND DELETE] Step 3: Calling parent destroy method...")
