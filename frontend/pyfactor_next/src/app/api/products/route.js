@@ -95,7 +95,9 @@ export async function GET(request) {
         sku: product.product_code || product.sku || product.code || '',
         barcode: product.barcode || '',
         price: parseFloat(product.unit_price || product.price || product.selling_price || 0),
-        quantity_in_stock: parseInt(stockQty),
+        quantity: parseInt(stockQty),  // Use 'quantity' to match backend field name
+        quantity_in_stock: parseInt(stockQty),  // Also provide quantity_in_stock for compatibility
+        stock_quantity: parseInt(stockQty),  // Also provide stock_quantity for compatibility
         description: product.description || ''
       };
       
