@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getBackendUrl } from '@/utils/backend-url';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = getBackendUrl();
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 /**
  * GET /api/products
@@ -10,7 +9,7 @@ const BACKEND_URL = getBackendUrl();
  */
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
