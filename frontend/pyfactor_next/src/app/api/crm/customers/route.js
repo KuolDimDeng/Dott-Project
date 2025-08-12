@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 /**
  * Proxy for CRM customer API endpoints
@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
  */
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // Get session ID from sid cookie
     const sidCookie = cookieStore.get('sid');
@@ -23,7 +23,7 @@ export async function GET(request) {
     
     // Forward request to Django backend with query parameters
     // Backend will determine tenant from the session
-    const url = `${API_URL}/api/crm/customers/${queryString ? `?${queryString}` : ''}`;
+    const url = `${BACKEND_URL}/api/crm/customers/${queryString ? `?${queryString}` : ''}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -47,7 +47,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // Get session ID from sid cookie
     const sidCookie = cookieStore.get('sid');
@@ -57,6 +57,8 @@ export async function POST(request) {
     
     // Get request body
     const body = await request.json();
+    
+    console.log('[CRM Customers API] POST request body:', JSON.stringify(body));
     
     // Clean up date fields - convert empty strings to null
     if (body.tax_exempt_expiry === '' || body.tax_exempt_expiry === undefined) {
@@ -68,9 +70,11 @@ export async function POST(request) {
       body.is_tax_exempt = Boolean(body.is_tax_exempt);
     }
     
+    console.log('[CRM Customers API] Forwarding to:', `${BACKEND_URL}/api/crm/customers/`);
+    
     // Forward request to Django backend
     // Backend will determine tenant from the session
-    const response = await fetch(`${API_URL}/api/crm/customers/`, {
+    const response = await fetch(`${BACKEND_URL}/api/crm/customers/`, {
       method: 'POST',
       headers: {
         'Authorization': `Session ${sidCookie.value}`,

@@ -26,10 +26,17 @@ export async function GET(request) {
     
     console.log('[Products API] ========== DEBUG START ==========');
     console.log('[Products API] Session:', sidCookie.value.substring(0, 8) + '...');
-    console.log('[Products API] Backend URL:', `${BACKEND_URL}/api/inventory/products/`);
+    console.log('[Products API] BACKEND_URL env var:', BACKEND_URL);
     
-    // Call backend directly
-    const response = await fetch(`${BACKEND_URL}/api/inventory/products/${queryString ? '?' + queryString : ''}`, {
+    // Call backend directly - ensure proper URL format with trailing slash
+    const backendUrl = queryString 
+      ? `${BACKEND_URL}/api/inventory/products/?${queryString}`
+      : `${BACKEND_URL}/api/inventory/products/`;
+    
+    console.log('[Products API] Fetching from:', backendUrl);
+    console.log('[Products API] Query string:', queryString || 'none');
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
