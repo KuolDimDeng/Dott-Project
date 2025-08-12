@@ -1,0 +1,73 @@
+name: Staging Deployment Workflow
+
+on:
+  push:
+    branches:
+      - staging
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          
+      - name: Install frontend dependencies
+        run: |
+          cd frontend/pyfactor_next
+          npm install
+          
+      - name: Run frontend tests
+        run: |
+          cd frontend/pyfactor_next
+          npm run test --if-present
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install backend dependencies
+        run: |
+          cd backend/pyfactor
+          pip install -r requirements.txt
+          
+      - name: Run backend tests
+        run: |
+          cd backend/pyfactor
+          python manage.py test --settings=pyfactor.settings_test
+          
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    
+    steps:
+      - name: Deploy to Render Staging
+        run: |
+          echo "Render will auto-deploy staging branch"
+          echo "This is a placeholder for additional deployment steps"
+          
+  notify:
+    needs: [test, deploy-staging]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify deployment status
+        run: |
+          if [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+            echo "✅ Staging deployment successful!"
+          else
+            echo "❌ Staging deployment failed"
+          fi
