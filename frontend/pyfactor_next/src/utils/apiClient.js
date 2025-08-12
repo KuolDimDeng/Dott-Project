@@ -883,6 +883,61 @@ export const orderApi = {
   }
 };
 
+// POS Transaction related API methods - Using local proxy pattern
+export const posTransactionApi = {
+  async getAll(params = {}) {
+    const response = await fetch('/api/pos/transactions', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/pos/transactions/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async create(data, params = {}) {
+    const response = await fetch('/api/pos/transactions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  }
+};
+
 // Estimate related API methods - Using local proxy pattern
 export const estimateApi = {
   async getAll(params = {}) {

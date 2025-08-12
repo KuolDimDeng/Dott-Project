@@ -8,7 +8,8 @@ import {
   customerApi, 
   productApi, 
   serviceApi,
-  estimateApi 
+  estimateApi,
+  posTransactionApi 
 } from '@/utils/apiClient';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
@@ -40,7 +41,8 @@ const SalesDashboard = () => {
     orders: { total: 0, pending: 0, completed: 0, totalValue: 0 },
     invoices: { total: 0, paid: 0, unpaid: 0, overdue: 0, totalValue: 0 },
     estimates: { total: 0, draft: 0, sent: 0, accepted: 0, totalValue: 0 },
-    customers: { total: 0, active: 0, new: 0, totalRevenue: 0 }
+    customers: { total: 0, active: 0, new: 0, totalRevenue: 0 },
+    posTransactions: { total: 0, today: 0, week: 0, totalValue: 0 }
   });
 
   // Recent items for quick access
@@ -74,14 +76,16 @@ const SalesDashboard = () => {
         ordersRes,
         invoicesRes,
         estimatesRes,
-        customersRes
+        customersRes,
+        posTransactionsRes
       ] = await Promise.allSettled([
         productApi.getAll(),
         serviceApi.getAll(),
         orderApi.getAll(),
         invoiceApi.getAll(),
         estimateApi.getAll(),
-        customerApi.getAll()
+        customerApi.getAll(),
+        posTransactionApi.getAll()
       ]);
 
       // Process products
@@ -190,6 +194,59 @@ const SalesDashboard = () => {
             date: order.order_date || order.created_at
           }))
         }));
+      }
+
+      // Process POS transactions
+      if (posTransactionsRes.status === 'fulfilled') {
+        try {
+          // Handle both array and paginated responses
+          const posData = posTransactionsRes.value || [];
+          logger.info('[SalesDashboard] POS transactions raw data:', posData);
+          
+          let transactions = [];
+          if (Array.isArray(posData)) {
+            transactions = posData;
+          } else if (posData && typeof posData === 'object' && Array.isArray(posData.results)) {
+            transactions = posData.results;
+          }
+          
+          // Calculate today's and this week's transactions
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          
+          const todayTransactions = transactions.filter(t => {
+            const transDate = new Date(t.created_at || t.transaction_date);
+            return transDate >= today;
+          });
+          
+          const weekTransactions = transactions.filter(t => {
+            const transDate = new Date(t.created_at || t.transaction_date);
+            return transDate >= weekAgo;
+          });
+          
+          const totalValue = transactions.reduce((sum, t) => sum + (parseFloat(t.total_amount) || 0), 0);
+          
+          setMetrics(prev => ({
+            ...prev,
+            posTransactions: {
+              total: transactions.length,
+              today: todayTransactions.length,
+              week: weekTransactions.length,
+              totalValue: totalValue
+            }
+          }));
+          
+          logger.info('[SalesDashboard] POS transactions processed:', {
+            total: transactions.length,
+            today: todayTransactions.length,
+            week: weekTransactions.length,
+            totalValue
+          });
+        } catch (error) {
+          logger.error('[SalesDashboard] Error processing POS transactions:', error);
+        }
       }
 
       // Process invoices
@@ -558,6 +615,13 @@ const SalesDashboard = () => {
           color="green"
         />
         <MetricCard
+          title="POS Sales"
+          value={metrics.posTransactions.total}
+          subValue={`${metrics.posTransactions.today} today`}
+          icon={<Lightning size={28} weight="duotone" />}
+          color="orange"
+        />
+        <MetricCard
           title="Invoices"
           value={metrics.invoices.total}
           subValue={`${metrics.invoices.unpaid} unpaid`}
@@ -591,6 +655,10 @@ const SalesDashboard = () => {
             <div>
               <p className="text-sm text-gray-600">Total Orders Value</p>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(metrics.orders.totalValue)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">POS Transactions</p>
+              <p className="text-xl font-semibold text-orange-600">{formatCurrency(metrics.posTransactions.totalValue)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Outstanding Invoices</p>
