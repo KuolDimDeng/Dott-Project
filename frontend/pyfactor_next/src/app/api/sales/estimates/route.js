@@ -72,6 +72,28 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[Estimates API] Creating estimate with data:', body);
     
+    // Transform frontend data to match backend expectations
+    const backendData = {
+      ...body,
+      customer: body.customer_id || body.customer, // Backend expects 'customer' not 'customer_id'
+      date: body.estimate_date || body.date,       // Backend expects 'date' not 'estimate_date'
+      items: body.items?.map(item => ({
+        ...item,
+        item_type: item.type || item.item_type || 'product',
+        product: item.type === 'product' || item.item_type === 'product' ? (item.item_id || item.product) : null,
+        service: item.type === 'service' || item.item_type === 'service' ? (item.item_id || item.service) : null,
+        description: item.description || item.name || 'Item',
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0
+      })) || []
+    };
+    
+    // Remove frontend-specific fields
+    delete backendData.customer_id;
+    delete backendData.estimate_date;
+    
+    logger.info('[Estimates API] Transformed data for backend:', backendData);
+    
     // Forward request to Django backend (Django requires trailing slash)
     const backendUrl = `${BACKEND_URL}/api/sales/estimates/`;
     
@@ -81,7 +103,7 @@ export async function POST(request) {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(backendData),
     });
     
     const data = await response.json();
