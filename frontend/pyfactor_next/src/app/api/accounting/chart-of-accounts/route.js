@@ -36,11 +36,21 @@ export async function GET(request) {
     const accounts = Array.isArray(data) ? data : (data.accounts || data.results || []);
     
     const transformedAccounts = accounts.map(account => {
-      // Determine account type from various possible fields
+      // First check the account name for specific overrides
+      const accountName = (account.name || account.account_name || '').toLowerCase();
       let accountType = 'asset'; // default
       
-      // Check various possible field names for account type
-      if (account.category?.name) {
+      // Override based on specific account names
+      if (accountName.includes('sales revenue') || accountName === 'sales') {
+        accountType = 'revenue';
+      } else if (accountName.includes('sales tax payable') || accountName.includes('tax payable')) {
+        accountType = 'liability';
+      } else if (accountName.includes('cost of goods sold') || accountName === 'cogs') {
+        accountType = 'expense';
+      } else if (accountName.includes('inventory')) {
+        accountType = 'asset';
+      } else if (account.category?.name) {
+        // Check various possible field names for account type
         accountType = account.category.name.toLowerCase();
       } else if (account.account_type) {
         accountType = account.account_type.toLowerCase();
@@ -54,7 +64,7 @@ export async function GET(request) {
         else if (code >= 3000 && code < 4000) accountType = 'equity';
         else if (code >= 4000 && code < 5000) accountType = 'revenue';
         else if (code >= 5000 && code < 6000) accountType = 'expense';
-        else if (code >= 6000 && code < 7000) accountType = 'cost_of_goods_sold';
+        else if (code >= 6000 && code < 7000) accountType = 'expense'; // COGS is an expense
       }
       
       // Normalize account type names
@@ -62,7 +72,7 @@ export async function GET(request) {
       if (accountType === 'revenues') accountType = 'revenue';
       if (accountType === 'liabilities') accountType = 'liability';
       if (accountType === 'assets') accountType = 'asset';
-      if (accountType === 'cogs' || accountType === 'cost of goods sold') accountType = 'cost_of_goods_sold';
+      if (accountType === 'cogs' || accountType === 'cost of goods sold' || accountType === 'cost_of_goods_sold') accountType = 'expense';
       
       return {
         id: account.id,
@@ -70,7 +80,7 @@ export async function GET(request) {
         name: account.name || account.account_name,
         type: accountType,
         description: account.description || '',
-        normalBalance: account.normal_balance || (accountType === 'asset' || accountType === 'expense' || accountType === 'cost_of_goods_sold' ? 'debit' : 'credit'),
+        normalBalance: account.normal_balance || (accountType === 'asset' || accountType === 'expense' ? 'debit' : 'credit'),
         currentBalance: parseFloat(account.balance || account.current_balance || 0),
         isActive: account.is_active !== false,
         parentAccount: account.parent_account || null,

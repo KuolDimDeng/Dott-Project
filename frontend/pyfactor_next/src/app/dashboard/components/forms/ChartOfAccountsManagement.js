@@ -145,19 +145,45 @@ function ChartOfAccountsManagement({ onNavigate }) {
       
       setAccounts(accountsArray);
       
-      // Calculate stats
+      // Calculate stats with proper accounting equation
+      // Assets should use actual balance (positive for debit balance accounts)
+      const totalAssets = accountsArray
+        .filter(a => a.type === 'asset')
+        .reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+      
+      // Liabilities use absolute value (displayed as positive)
+      const totalLiabilities = accountsArray
+        .filter(a => a.type === 'liability')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      // Calculate retained earnings from revenue and expenses
+      const totalRevenue = accountsArray
+        .filter(a => a.type === 'revenue')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      const totalExpenses = accountsArray
+        .filter(a => a.type === 'expense')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      // Net income (revenue - expenses) flows to retained earnings
+      const retainedEarnings = totalRevenue - totalExpenses;
+      
+      // Equity includes permanent equity accounts plus retained earnings
+      const permanentEquity = accountsArray
+        .filter(a => a.type === 'equity')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      const totalEquity = permanentEquity + retainedEarnings;
+      
       const stats = {
         totalAccounts: accountsArray.length,
         activeAccounts: accountsArray.filter(a => a.isActive).length,
-        totalAssets: accountsArray
-          .filter(a => a.type === 'asset')
-          .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0),
-        totalLiabilities: accountsArray
-          .filter(a => a.type === 'liability')
-          .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0),
-        totalEquity: accountsArray
-          .filter(a => a.type === 'equity')
-          .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0)
+        totalAssets: totalAssets,
+        totalLiabilities: totalLiabilities,
+        totalEquity: totalEquity,
+        totalRevenue: totalRevenue,
+        totalExpenses: totalExpenses,
+        retainedEarnings: retainedEarnings
       };
       setStats(stats);
       
