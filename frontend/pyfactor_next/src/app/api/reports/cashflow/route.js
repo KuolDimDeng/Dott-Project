@@ -17,9 +17,88 @@ export async function GET(request) {
     
     console.log('[CashFlow API] Fetching cash flow data for range:', range);
     
+    // First, get the Chart of Accounts to calculate cash flow
     try {
-      // Try to fetch real cash flow data from backend
-      const response = await fetch(`${API_BASE_URL}/api/analysis/cash-flow-data`, {
+      const accountsResponse = await fetch(`${API_BASE_URL}/api/finance/api/chart-of-accounts/`, {
+        headers: {
+          'Authorization': `Session ${sessionId.value}`,
+          'Cookie': `sid=${sessionId.value}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+      
+      if (accountsResponse.ok) {
+        const accountsData = await accountsResponse.json();
+        console.log('[CashFlow API] Chart of Accounts data received');
+        
+        // Calculate cash flow from Chart of Accounts
+        const accounts = Array.isArray(accountsData) ? accountsData : (accountsData.accounts || []);
+        
+        // Calculate total cash and cash equivalents (asset accounts starting with 1000-1199)
+        const cashAccounts = accounts.filter(a => {
+          const code = parseInt(a.account_number || a.code || 0);
+          const name = (a.name || '').toLowerCase();
+          return (code >= 1000 && code < 1200) || 
+                 name.includes('cash') || 
+                 name.includes('bank');
+        });
+        
+        const totalCash = cashAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
+        
+        // Calculate revenue (inflow)
+        const revenueAccounts = accounts.filter(a => {
+          const code = parseInt(a.account_number || a.code || 0);
+          const name = (a.name || '').toLowerCase();
+          return (code >= 4000 && code < 5000) || 
+                 name.includes('revenue') || 
+                 name.includes('sales') ||
+                 name.includes('income');
+        });
+        
+        const totalRevenue = Math.abs(revenueAccounts.reduce((sum, a) => sum + (a.balance || 0), 0));
+        
+        // Calculate expenses (outflow)
+        const expenseAccounts = accounts.filter(a => {
+          const code = parseInt(a.account_number || a.code || 0);
+          const name = (a.name || '').toLowerCase();
+          return (code >= 5000 && code < 6000) || 
+                 name.includes('expense') || 
+                 name.includes('cost');
+        });
+        
+        const totalExpenses = Math.abs(expenseAccounts.reduce((sum, a) => sum + (a.balance || 0), 0));
+        
+        // Create cash flow data for the current period
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const cashFlowData = [{
+          period: currentMonth,
+          inflow: totalRevenue,
+          outflow: totalExpenses,
+          netFlow: totalRevenue - totalExpenses,
+          balance: totalCash
+        }];
+        
+        console.log('[CashFlow API] Calculated cash flow:', cashFlowData);
+        
+        return NextResponse.json({ 
+          success: true,
+          data: cashFlowData,
+          summary: {
+            totalCash,
+            totalRevenue,
+            totalExpenses,
+            netFlow: totalRevenue - totalExpenses
+          }
+        });
+      }
+    } catch (error) {
+      console.error('[CashFlow API] Error fetching Chart of Accounts:', error);
+    }
+    
+    // Try alternative endpoint for cash flow data
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/finance/api/cash-flow/`, {
         headers: {
           'Authorization': `Session ${sessionId.value}`,
           'Cookie': `sid=${sessionId.value}`,
@@ -30,29 +109,14 @@ export async function GET(request) {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[CashFlow API] Backend data received:', data);
+        console.log('[CashFlow API] Finance cash flow data received:', data);
         
-        // Transform backend data to match widget format
-        if (data.cash_flow_data) {
-          const transformedData = data.cash_flow_data.map(item => ({
-            period: item.month || item.period || 'Unknown',
-            month: item.month || item.period, // For compatibility
-            inflow: item.total_income || item.inflow || 0,
-            outflow: item.total_expenses || item.outflow || 0,
-            netFlow: (item.total_income || 0) - (item.total_expenses || 0),
-            balance: item.net_cash_flow || item.balance || 0
-          }));
-          
-          // Calculate running balance
-          let runningBalance = 0;
-          transformedData.forEach(item => {
-            runningBalance += item.netFlow;
-            item.balance = runningBalance;
-          });
-          
+        // Transform if needed
+        if (data && (data.cash_flow || data.data)) {
+          const cashFlowData = data.cash_flow || data.data || [];
           return NextResponse.json({ 
             success: true,
-            data: transformedData 
+            data: cashFlowData 
           });
         }
       }
