@@ -64,7 +64,8 @@ urlpatterns = [
     path('token/verify/', JWTTokenVerifyView.as_view(), name='token_verify'),
     
     # Status routes
-    path('status/', CheckOnboardingStatusView.as_view(), name='onboarding-status'),
+    # Use the single source of truth OnboardingStatusView from api.status_views
+    path('status/', OnboardingStatusView.as_view(), name='onboarding-status'),
     path('status-update/', UpdateOnboardingStatusView.as_view(), name='update-status'),
     
     # Step routes
@@ -119,7 +120,8 @@ urlpatterns = [
     path('complete-payment/', complete_payment_view, name='complete-payment'),
     
     # Single source of truth status endpoints
-    path('status/', OnboardingStatusView.as_view(), name='onboarding-status'),
+    # NOTE: Removed duplicate - status/ is already defined on line 67
+    # path('status/', OnboardingStatusView.as_view(), name='onboarding-status'),
     path('force-complete/', ForceCompleteOnboardingView.as_view(), name='force-complete-onboarding'),
 ]
 

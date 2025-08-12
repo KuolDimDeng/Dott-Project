@@ -41,6 +41,36 @@ class OnboardingStatusView(APIView):
             # Default response if no progress record
             if not progress:
                 logger.info(f"[OnboardingStatus] No progress record found for {user.email}")
+                
+                # Check if user already has a business (invited user)
+                if hasattr(user, 'business_id') and user.business_id:
+                    logger.info(f"[OnboardingStatus] User {user.email} is an invited user with business_id: {user.business_id}")
+                    
+                    # Create complete onboarding record for invited user
+                    progress = OnboardingProgress.objects.create(
+                        user=user,
+                        tenant_id=user.business_id,
+                        onboarding_status='complete',
+                        setup_completed=True,
+                        payment_completed=True,
+                        current_step='complete',
+                        completed_steps=['business_info', 'subscription', 'payment', 'complete']
+                    )
+                    logger.info(f"[OnboardingStatus] Created complete onboarding record for invited user {user.email}")
+                    
+                    return Response({
+                        'needs_onboarding': False,
+                        'status': 'complete',
+                        'current_step': 'complete',
+                        'tenant_id': str(user.business_id),
+                        'subscription_plan': 'free',
+                        'completed_steps': ['business_info', 'subscription', 'payment', 'complete'],
+                        'is_complete': True,
+                        'setup_completed': True,
+                        'payment_completed': True
+                    })
+                
+                # New user without business needs onboarding
                 return Response({
                     'needs_onboarding': True,
                     'status': 'not_started',
