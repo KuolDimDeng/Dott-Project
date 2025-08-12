@@ -22,8 +22,8 @@ export async function GET(request, { params }) {
     
     const { id } = params;
     
-    // Forward to Django backend products endpoint
-    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
+    // Forward to Django backend suppliers endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/suppliers/${id}/`;
     
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -44,11 +44,6 @@ export async function GET(request, { params }) {
     
     const data = await response.json();
     
-    // Add quantity_in_stock for frontend compatibility
-    if (data) {
-      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
-      data.stock_quantity = data.quantity || data.stock_quantity || 0;
-    }
     
     return NextResponse.json(data);
   } catch (error) {
@@ -81,8 +76,8 @@ export async function PUT(request, { params }) {
       quantity: body.quantity || body.stock_quantity || body.quantity_in_stock || 0,
     };
     
-    // Forward to Django backend products endpoint
-    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
+    // Forward to Django backend suppliers endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/suppliers/${id}/`;
     
     const response = await fetch(backendUrl, {
       method: 'PUT',
@@ -104,11 +99,6 @@ export async function PUT(request, { params }) {
     
     const data = await response.json();
     
-    // Add quantity_in_stock for frontend compatibility
-    if (data) {
-      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
-      data.stock_quantity = data.quantity || data.stock_quantity || 0;
-    }
     
     return NextResponse.json(data);
   } catch (error) {
@@ -134,8 +124,8 @@ export async function DELETE(request, { params }) {
     
     const { id } = params;
     
-    // Forward to Django backend products endpoint
-    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
+    // Forward to Django backend suppliers endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/suppliers/${id}/`;
     
     const response = await fetch(backendUrl, {
       method: 'DELETE',

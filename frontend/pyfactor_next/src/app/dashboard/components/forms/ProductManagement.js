@@ -562,10 +562,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         throw new Error('Authentication required. Valid tenant ID is required.');
       }
       
-      // Make API call to get product suppliers using the new proxy route
+      // Make API call to get product suppliers (businesses that supply products for resale)
       const response = await fetch('/api/product-suppliers', {
+        method: 'GET',
+        credentials: 'include',
         headers: {
-          'x-tenant-id': tenantIdValue
+          'Content-Type': 'application/json'
         }
       });
       
@@ -802,10 +804,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
-      // Make API call to get product supplier details using the new proxy route
+      // Make API call to get product supplier details (businesses that supply products for resale)
       const response = await fetch(`/api/product-suppliers/${supplierId}`, {
+        method: 'GET',
+        credentials: 'include',
         headers: {
-          'x-tenant-id': tenantIdValue
+          'Content-Type': 'application/json'
         }
       });
       

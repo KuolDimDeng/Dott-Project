@@ -4,8 +4,11 @@ import { cookies } from 'next/headers';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
- * Proxy for inventory vendors API endpoints (previously called suppliers)
- * Vendors are businesses that supply products/services TO your business
+ * Proxy for inventory vendors API endpoints
+ * Vendors are utility service providers (electricity, water, internet, etc.)
+ * Different from:
+ * - Product Suppliers (businesses that supply products for resale)
+ * - Supplies (repair materials and parts used in service jobs)
  * Forwards requests to Django backend with proper authentication
  */
 export async function GET(request) {

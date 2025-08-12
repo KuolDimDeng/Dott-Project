@@ -4,9 +4,14 @@ import { cookies } from 'next/headers';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 /**
- * Product Suppliers API - for products that the business supplies/sells to customers
- * This is different from inventory vendors (who supply TO the business)
- * Maps to the Django products endpoint but adds semantic clarity
+ * Product Suppliers API - for businesses that supply products to you for resale
+ * These are the suppliers whose products you buy and then sell for profit
+ * Different from:
+ * - Vendors (utility service providers like electricity, water)
+ * - Supplies (repair materials and parts used in service jobs)
+ * 
+ * Note: Currently maps to Django products endpoint but should eventually
+ * map to a dedicated suppliers endpoint on the backend
  */
 
 export async function GET(request) {
@@ -25,8 +30,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    // Forward to Django backend - using products endpoint since these are products for sale
-    const backendUrl = `${BACKEND_URL}/api/inventory/products/${queryString ? `?${queryString}` : ''}`;
+    // Forward to Django backend - using suppliers endpoint for businesses that supply products
+    const backendUrl = `${BACKEND_URL}/api/inventory/suppliers/${queryString ? `?${queryString}` : ''}`;
     
     console.log('[Product Suppliers API] Fetching from:', backendUrl);
     
@@ -50,30 +55,23 @@ export async function GET(request) {
     const data = await response.json();
     
     // Transform the response to match what the frontend expects
-    // Filter to only include products that are marked as supplies/for sale
-    let products = [];
+    // These are supplier businesses, not products
+    let suppliers = [];
     if (Array.isArray(data)) {
-      products = data;
+      suppliers = data;
     } else if (data?.results) {
-      products = data.results;
+      suppliers = data.results;
     }
-    
-    // Add quantity_in_stock field for frontend compatibility
-    products = products.map(product => ({
-      ...product,
-      quantity_in_stock: product.quantity || product.stock_quantity || 0,
-      stock_quantity: product.quantity || product.stock_quantity || 0
-    }));
     
     // Return in the expected format
     const responseData = {
-      results: products,
-      count: data?.count || products.length,
+      results: suppliers,
+      count: data?.count || suppliers.length,
       next: data?.next || null,
       previous: data?.previous || null
     };
     
-    console.log('[Product Suppliers API] Returning', responseData.results.length, 'products');
+    console.log('[Product Suppliers API] Returning', responseData.results.length, 'product suppliers');
     
     return NextResponse.json(responseData);
   } catch (error) {
@@ -99,19 +97,16 @@ export async function POST(request) {
     
     const body = await request.json();
     
-    // Transform the data if needed
-    const productData = {
+    // Transform the data if needed for supplier creation
+    const supplierData = {
       ...body,
-      inventory_type: 'product', // Mark as product for sale
       is_active: true,
-      // Ensure quantity is set - handle various field names
-      quantity: body.quantity || body.stock_quantity || body.quantity_in_stock || 0,
     };
     
-    console.log('[Product Suppliers API] Creating product:', productData);
+    console.log('[Product Suppliers API] Creating product supplier:', supplierData);
     
-    // Forward to Django backend products endpoint
-    const backendUrl = `${BACKEND_URL}/api/inventory/products/`;
+    // Forward to Django backend suppliers endpoint
+    const backendUrl = `${BACKEND_URL}/api/inventory/suppliers/`;
     
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -119,7 +114,7 @@ export async function POST(request) {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
       },
-      body: JSON.stringify(productData),
+      body: JSON.stringify(supplierData),
     });
     
     if (!response.ok) {
@@ -132,12 +127,6 @@ export async function POST(request) {
     }
     
     const data = await response.json();
-    
-    // Add quantity_in_stock for frontend compatibility
-    if (data) {
-      data.quantity_in_stock = data.quantity || data.stock_quantity || 0;
-      data.stock_quantity = data.quantity || data.stock_quantity || 0;
-    }
     
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
