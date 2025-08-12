@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getSessionFromRequest } from '@/utils/auth';
+import { getSessionFromRequest } from '@/utils/auth-server';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 

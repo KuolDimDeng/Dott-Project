@@ -297,7 +297,8 @@
       "Bash(./force_restart_deployment.sh:*)",
       "Bash(/Users/kuoldeng/projectx/test_dashboard_locally.sh)",
       "Bash(PYTHONPATH=/Users/kuoldeng/projectx/backend/pyfactor python3 /tmp/check_tenant_data.py)",
-      "Bash(/Users/kuoldeng/projectx/test_product_api.sh)"
+      "Bash(/Users/kuoldeng/projectx/test_product_api.sh)",
+      "Bash(./fix_imports.sh)"
     ],
     "deny": []
   }

@@ -23,7 +23,7 @@ export async function GET(request) {
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'Cookie': `sid=${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         // Add Cloudflare headers
