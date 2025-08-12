@@ -60,14 +60,14 @@ export async function GET(request) {
         console.log('  - product.quantity:', product.quantity);
         console.log('  - product.stock_quantity:', product.stock_quantity);
         console.log('  - product.quantity_in_stock:', product.quantity_in_stock);
+        console.log('  - Using quantity value:', product.quantity !== undefined ? product.quantity : 'NOT FOUND');
       }
       
-      // Try all possible field names
-      const stockQty = product.quantity || 
-                       product.stock_quantity || 
-                       product.quantity_in_stock || 
-                       product.qty ||
-                       product.stock ||
+      // The backend Product model uses 'quantity' field
+      // But frontend often expects 'stock_quantity'
+      const stockQty = product.quantity !== undefined ? product.quantity : 
+                       product.stock_quantity !== undefined ? product.stock_quantity :
+                       product.quantity_in_stock !== undefined ? product.quantity_in_stock :
                        0;
       
       const transformed = {
