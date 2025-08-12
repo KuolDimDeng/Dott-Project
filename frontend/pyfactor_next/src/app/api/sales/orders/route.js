@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+
 // Helper function to get session cookie
 async function getSessionCookie() {
   const cookieStore = cookies();
@@ -27,7 +29,7 @@ export async function GET(request) {
     const queryString = searchParams.toString();
     
     // Forward request to Django backend (Django requires trailing slash)
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/orders/${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${BACKEND_URL}/api/sales/orders/${queryString ? `?${queryString}` : ''}`;
     logger.info('[Orders API] Forwarding GET to:', backendUrl);
     
     const response = await fetch(backendUrl, {
@@ -106,7 +108,7 @@ export async function POST(request) {
     let userCurrency = 'USD'; // fallback
     try {
       logger.info('[Orders API] Fetching user currency preference...');
-      const currencyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/currency/preferences/`, {
+      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +157,7 @@ export async function POST(request) {
     logger.info('[Orders API] Transformed data for backend:', backendData);
     
     // Forward request to Django backend (Django requires trailing slash)
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/orders/`;
+    const backendUrl = `${BACKEND_URL}/api/sales/orders/`;
     
     const response = await fetch(backendUrl, {
       method: 'POST',
