@@ -47,9 +47,11 @@ export async function GET(request) {
                  name.includes('bank');
         });
         
+        // Cash account with code 1001 has the actual cash balance
         const totalCash = cashAccounts.reduce((sum, a) => {
           const balance = parseFloat(a.currentBalance || a.balance || a.current_balance || 0);
-          return sum + (isNaN(balance) ? 0 : balance);
+          // Only add positive balances for cash accounts
+          return sum + (balance > 0 ? balance : 0);
         }, 0);
         
         // Calculate revenue (inflow) - Sales Revenue account has negative balance
@@ -88,14 +90,14 @@ export async function GET(request) {
           return sum + (isNaN(balance) ? 0 : balance);
         }, 0));
         
-        // Create cash flow data for the current period
+        // Create cash flow data - even if just for current period
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
         const cashFlowData = [{
           period: currentMonth,
-          inflow: totalRevenue,
-          outflow: totalExpenses,
-          netFlow: totalRevenue - totalExpenses,
-          balance: totalCash
+          inflow: Math.round(totalRevenue * 100) / 100,
+          outflow: Math.round(totalExpenses * 100) / 100,
+          netFlow: Math.round((totalRevenue - totalExpenses) * 100) / 100,
+          balance: Math.round(totalCash * 100) / 100
         }];
         
         console.log('[CashFlow API] Calculated cash flow:', {
