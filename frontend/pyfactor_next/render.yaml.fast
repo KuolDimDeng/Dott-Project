@@ -1,0 +1,69 @@
+services:
+  - type: web
+    name: dott-front-fast
+    runtime: docker
+    dockerfilePath: ./Dockerfile.fast
+    dockerContext: ./frontend/pyfactor_next
+    plan: starter plus
+    region: oregon
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Auto-scaling (if needed)
+    numInstances: 1
+    
+    # Build configuration for speed
+    envVars:
+      # Next.js optimizations
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NEXT_PRIVATE_STANDALONE
+        value: "true"
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=4096"
+      
+      # Build cache
+      - key: NEXT_BUILD_CACHE_DIR
+        value: /cache/.next
+      
+      # API URLs
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.dottapps.com
+      - key: BACKEND_API_URL
+        value: https://api.dottapps.com
+      - key: NEXT_PUBLIC_BASE_URL
+        value: https://www.dottapps.com
+      
+      # Auth0
+      - key: NEXT_PUBLIC_AUTH0_DOMAIN
+        value: dev-cbyy63jovi6zrcos.us.auth0.com
+      - key: NEXT_PUBLIC_AUTH0_CLIENT_ID
+        value: 9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+      - key: NEXT_PUBLIC_AUTH0_AUDIENCE
+        value: https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/
+      
+      # Other services
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CRISP_WEBSITE_ID
+        sync: false
+      - key: NEXT_PUBLIC_POSTHOG_KEY
+        sync: false
+      - key: NEXT_PUBLIC_POSTHOG_HOST
+        value: https://app.posthog.com
+      - key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+        sync: false
+    
+    # Build command override for speed
+    buildCommand: |
+      echo "🚀 Starting fast build process..."
+      # Clean previous builds
+      rm -rf .next node_modules/.cache
+      # Install only production deps
+      pnpm install --prod --frozen-lockfile --prefer-offline
+      # Run fast build
+      pnpm run build:render-fast
+      echo "✅ Build complete!"

@@ -5,7 +5,7 @@ import { appCache } from '@/utils/appCache';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from '@/config/amplifyUnified';
+// Auth0 signout is handled via /api/auth/logout
 import OAuthLoadingScreen from '@/components/auth/OAuthLoadingScreen';
 import { logger } from '@/utils/logger';
 
@@ -56,14 +56,9 @@ export default function SignOut() {
           logger.error("[SignOut] Error clearing storage:", storageError);
         }
         
-        // Try to sign out via Amplify
-        try {
-          await signOut({ global: true });
-          logger.info("[SignOut] Successfully signed out via Amplify");
-        } catch (signOutError) {
-          // Just log the error but continue - we've already cleared storage
-          logger.warn("[SignOut] Error with Amplify signOut:", signOutError);
-        }
+        // Redirect to Auth0 logout
+        logger.info("[SignOut] Redirecting to Auth0 logout");
+        window.location.href = '/api/auth/logout';
         
         // Add a slight delay for visual feedback
         setTimeout(() => {

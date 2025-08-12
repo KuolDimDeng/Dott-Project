@@ -7,6 +7,38 @@ export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const userAgent = request.headers.get('user-agent') || '';
+  const hostname = request.headers.get('host') || '';
+  
+  // Subdomain routing logic
+  const isAppSubdomain = hostname.startsWith('app.');
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Define paths that should be on app subdomain
+  const appPaths = ['/dashboard', '/settings', '/hr', '/sales', '/inventory', '/pos', '/jobs'];
+  const isAppPath = appPaths.some(path => pathname.startsWith(path)) || pathname.includes('/dashboard');
+  
+  // Define paths that should be on marketing domain
+  const marketingPaths = ['/', '/signin', '/signup', '/pricing', '/features', '/about', '/contact'];
+  const isMarketingPath = marketingPaths.some(path => pathname === path || pathname.startsWith('/auth'));
+  
+  // Redirect logic for production only
+  if (isProduction) {
+    // If on marketing domain but accessing app path, redirect to app subdomain
+    if (!isAppSubdomain && isAppPath) {
+      const appUrl = `https://app.dottapps.com${pathname}${url.search}`;
+      return NextResponse.redirect(appUrl);
+    }
+    
+    // If on app subdomain but accessing marketing path, redirect to marketing domain
+    // EXCEPTION: Don't redirect session timeout or app-specific auth paths
+    const isSessionTimeout = url.search.includes('reason=timeout');
+    const isAppAuthPath = pathname === '/auth/signin' && (isSessionTimeout || url.search.includes('redirect='));
+    
+    if (isAppSubdomain && isMarketingPath && pathname !== '/auth/callback' && !isAppAuthPath) {
+      const marketingUrl = `https://dottapps.com${pathname}${url.search}`;
+      return NextResponse.redirect(marketingUrl);
+    }
+  }
   
   // Mobile detection
   const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(userAgent);
@@ -110,7 +142,7 @@ export async function middleware(request) {
   }
   
   // For protected routes, check session cookie
-  const protectedPaths = ['/dashboard', '/tenant/', '/settings'];
+  const protectedPaths = ['/dashboard', '/tenant/', '/settings', '/pos'];
   const publicPaths = ['/', '/about', '/blog', '/status', '/privacy', '/terms', '/cookie-policy'];
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path)) ||
                          pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//);
@@ -153,37 +185,55 @@ export async function middleware(request) {
     console.log('[Middleware] Not a protected path, allowing access');
   }
   
-  // Check for protected dashboard and settings routes
-  if (pathname.includes('/dashboard') || pathname.includes('/settings')) {
+  // Check for protected dashboard, settings, and POS routes
+  if (pathname.includes('/dashboard') || pathname.includes('/settings') || pathname === '/pos') {
     console.log('[Middleware] Checking permissions for protected route');
     
-    // Skip permission check for API routes
-    if (!pathname.startsWith('/api/')) {
+    // Skip permission check for API routes, static files, and if no session cookie
+    if (!pathname.startsWith('/api/') && !pathname.startsWith('/_next') && (sid || sessionToken)) {
       // Get session data to check permissions
       const sessionCookie = cookies.get('sid') || cookies.get('session_token');
       
       if (sessionCookie) {
         try {
-          // Fetch session data from API
+          // Fetch session data from API with timeout
           const baseUrl = request.nextUrl.origin;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          
           const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
             headers: {
               'Cookie': request.headers.get('cookie') || ''
-            }
+            },
+            signal: controller.signal,
+            cache: 'no-store'
+          }).finally(() => {
+            clearTimeout(timeoutId);
           });
           
           if (sessionResponse.ok) {
             const sessionData = await sessionResponse.json();
+            console.log('[Middleware] Session data fetched successfully');
             
-            // Check permissions
-            const permissionResponse = await checkPagePermissions(request, sessionData);
-            if (permissionResponse.status === 307 || permissionResponse.status === 302) {
-              // Permission denied, return redirect response
-              return permissionResponse;
+            // Only check permissions if we have valid session data
+            if (sessionData?.user) {
+              const permissionResponse = await checkPagePermissions(request, sessionData);
+              if (permissionResponse.status === 307 || permissionResponse.status === 302) {
+                console.log('[Middleware] Permission denied, redirecting');
+                return permissionResponse;
+              }
             }
+          } else {
+            console.log('[Middleware] Session API returned non-OK status:', sessionResponse.status);
+            // Don't fail silently, but also don't block the request
           }
         } catch (error) {
-          console.error('[Middleware] Error checking permissions:', error);
+          if (error.name === 'AbortError') {
+            console.warn('[Middleware] Session fetch timed out after 5 seconds');
+          } else {
+            console.error('[Middleware] Error checking permissions:', error.message);
+          }
+          // Continue with request even if permission check fails
         }
       }
     }

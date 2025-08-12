@@ -67,6 +67,41 @@ export async function POST(request) {
     // Get request body
     const body = await request.json();
 
+    // Get user's current currency preference for new estimates
+    let userCurrency = 'USD'; // fallback
+    try {
+      console.log('[Estimates API] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${DJANGO_API_URL}/api/currency/preferences/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          console.log('[Estimates API] Using user preferred currency:', userCurrency);
+        } else {
+          console.warn('[Estimates API] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        console.warn('[Estimates API] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      console.error('[Estimates API] Error fetching currency preference:', currencyError);
+    }
+    
+    // Add user's preferred currency to estimate data if not already specified
+    const enhancedBody = {
+      ...body,
+      currency: body.currency || userCurrency
+    };
+    
+    console.log('[Estimates API] Creating estimate with currency:', enhancedBody.currency);
+
     // Forward request to Django backend
     const response = await fetch(`${DJANGO_API_URL}/api/sales/estimates/`, {
       method: 'POST',
@@ -74,7 +109,7 @@ export async function POST(request) {
         'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(enhancedBody),
     });
 
     if (!response.ok) {

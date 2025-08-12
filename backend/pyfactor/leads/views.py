@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import transaction as db_transaction
 import json
 import logging
 from ipware import get_client_ip

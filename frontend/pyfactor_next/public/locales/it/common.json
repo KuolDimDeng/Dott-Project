@@ -1,0 +1,477 @@
+{
+  "hero": {
+    "tagline": "SOLUZIONI INTELLIGENTI PER LA GESTIONE AZIENDALE",
+    "your": "La Tua",
+    "title": "Piattaforma Aziendale Globale",
+    "subtitle": "Gratis per sempre per le funzionalità di base",
+    "description": "Dott permette a imprenditori come te di creare fatture, accettare pagamenti online, gestire la contabilità e l'inventario, con scansione di codici a barre—tutto in un'unica piattaforma intuitiva.",
+    "button": "Inizia Gratis",
+    "trustedBy": "Scelto da oltre 10.000 aziende in tutto il mondo",
+    "benefit": {
+      "free": "Piano gratuito per sempre",
+      "invoicing": "Fatturazione professionale",
+      "pos": "Sistema di punto vendita",
+      "inventory": "Gestione inventario",
+      "payroll": "Strumenti per buste paga e HR",
+      "tax": "Conformità fiscale",
+      "insights": "Approfondimenti basati su AI",
+      "mobileMoney": "Pagamenti mobile money (M-Pesa)",
+      "cardPayments": "Accetta pagamenti con carta in tutto il mondo",
+      "languages": "Supporto per oltre 30 lingue",
+      "mobilePhone": "App mobile inclusa",
+      "jobManagement": "Gestione lavori e costi",
+      "accounting": "Supporto IFRS e US GAAP"
+    }
+  },
+  "navFeatures": "Funzionalità",
+  "navPricing": "Prezzi",
+  "navAbout": "Chi Siamo",
+  "navBlog": "Blog",
+  "navContact": "Contatti",
+  "navStatus": "Stato del Sistema",
+  "navSignIn": "ACCEDI",
+  "getStarted": "Inizia",
+  "pricing": {
+    "eyebrow": "Prezzi Semplici e Trasparenti",
+    "heading": "Scegli il Piano Giusto per la Tua Azienda",
+    "subheading": "Nessun costo nascosto. Nessuna carta di credito richiesta per il piano Basic. Cancella quando vuoi.",
+    "billing": {
+      "monthly": "Mensile",
+      "sixMonths": "6 Mesi",
+      "annual": "Annuale",
+      "popular": "POPOLARE",
+      "save20": "RISPARMIA 20%"
+    },
+    "period": {
+      "month": "/mese",
+      "sixMonths": "/6 mesi",
+      "year": "/anno"
+    },
+    "mostPopular": "PIÙ POPOLARE",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Perfetto per iniziare",
+        "cta": "Inizia Gratis"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Per aziende in crescita che hanno bisogno di più",
+        "cta": "Ottieni Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Scala illimitata per grandi organizzazioni",
+        "cta": "Inizia Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Soluzione Aziendale Completa",
+    "heading": "Tutto Ciò di Cui Hai Bisogno per Crescere Globalmente",
+    "subheading": "Strumenti potenti progettati per aziende moderne che operano oltre i confini",
+    "operations": {
+      "title": "Gestione Operativa",
+      "description": "Semplifica le operazioni aziendali quotidiane"
+    },
+    "financial": {
+      "title": "Gestione Finanziaria",
+      "description": "Controllo completo sulle finanze aziendali",
+      "heading": "Controllo completo sulle finanze aziendali"
+    },
+    "global": {
+      "title": "Strumenti Aziendali Globali",
+      "description": "Tutto il necessario per operare a livello internazionale",
+      "heading": "Tutto il necessario per le operazioni internazionali"
+    },
+    "trust": {
+      "title": "Costruito per Sicurezza e Conformità"
+    }
+  },
+  "feature": {
+    "inventory": "Gestione Inventario Avanzata",
+    "inventory.description": "Monitoraggio scorte in tempo reale con scansione codici a barre e supporto multi-sede",
+    "barcode": "Codice a Barre e QR",
+    "barcode.description": "Genera e scansiona codici a barre per prodotti e documenti",
+    "pos": "Punto Vendita",
+    "pos.description": "Sistema POS moderno con funzionalità offline",
+    "invoicing": "Fatturazione Multi-Valuta",
+    "invoicing.description": "Fatture professionali in oltre 50 valute con conversione automatica",
+    "tax": "Conformità Fiscale Regionale",
+    "tax.description": "Calcoli fiscali automatizzati per oltre 100 paesi",
+    "reporting": "Analisi Finanziarie",
+    "reporting.description": "Approfondimenti in tempo reale con raccomandazioni basate su AI",
+    "payments": "Gateway di Pagamento Regionali",
+    "payments.description": "Accetta pagamenti tramite metodi locali in ogni paese",
+    "global": "Gestione Import/Export",
+    "global.description": "Gestisci documentazione e conformità del commercio internazionale",
+    "security": "Sicurezza Aziendale",
+    "security.description": "Sicurezza di livello bancario con conformità regionale",
+    "jobs": "Gestione Lavori e Costi",
+    "jobs.description": "Monitoraggio progetti end-to-end con costi in tempo reale, app mobile e analisi redditività",
+    "accounting": "Standard Contabili Doppi",
+    "languages": "Supporto Multilingue",
+    "currencies": "Sistema Multi-Valuta"
+  },
+  "trust": {
+    "soc2Title": "Conforme SOC2",
+    "soc2Desc": "Sicurezza aziendale",
+    "encryptionTitle": "Crittografia a 256 bit",
+    "encryptionDesc": "Sicurezza di livello bancario",
+    "gdprTitle": "Pronto per GDPR",
+    "gdprDesc": "Conforme alla privacy",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Sempre disponibile"
+  },
+  "highlights": {
+    "eyebrow": "Vantaggi Chiave",
+    "heading": "Perché le aziende scelgono Dott",
+    "subheading": "Funzionalità avanzate che ci distinguono dalla concorrenza e aiutano la tua azienda a crescere.",
+    "learnMore": "Scopri di più",
+    "features": {
+      "label": "Caratteristiche principali:"
+    },
+    "mobile": {
+      "title": "Applicazione Mobile",
+      "description": "Accedi ai dati della tua azienda sempre e ovunque con la nostra potente app mobile. Gestisci inventario, elabora vendite e visualizza report in tempo reale ovunque tu sia.",
+      "imageAlt": "Screenshot dell'applicazione mobile"
+    },
+    "pos": {
+      "title": "POS e Scansione Codici a Barre",
+      "description": "Trasforma qualsiasi dispositivo in un potente sistema di punto vendita. Scansiona codici a barre istantaneamente, elabora vendite velocemente, monitora l'inventario in tempo reale e accetta tutti i metodi di pagamento inclusi contanti, carte e mobile money.",
+      "imageAlt": "Sistema POS con funzione di scansione codici a barre",
+      "features": {
+        "quickCheckout": "Checkout veloce",
+        "barcodeScanning": "Scansione codici a barre",
+        "allPaymentTypes": "Tutti i tipi di pagamento",
+        "inventoryTracking": "Monitoraggio inventario",
+        "offlineMode": "Modalità offline",
+        "mobileReady": "Pronto per mobile"
+      }
+    },
+    "ai": {
+      "title": "Approfondimenti Basati su AI",
+      "description": "Ottieni raccomandazioni intelligenti e analisi predittive basate sui dati della tua azienda. La nostra AI ti aiuta a prevedere la domanda, ottimizzare l'inventario e identificare opportunità di crescita.",
+      "imageAlt": "Screenshot del dashboard di analisi AI"
+    },
+    "jobs": {
+      "title": "Gestione Lavori Completa",
+      "description": "Calcolo costi end-to-end dal preventivo al completamento. Monitora materiali, manodopera e spese con analisi di redditività in tempo reale. Perfetto per aziende di servizi, appaltatori e operazioni sul campo con design mobile-first.",
+      "imageAlt": "Interfaccia di gestione e calcolo costi lavori",
+      "features": {
+        "jobCosting": "Calcolo costi lavori in tempo reale",
+        "mobileFieldApp": "App mobile per operatori",
+        "materialTracking": "Monitoraggio materiali",
+        "timeTracking": "Monitoraggio tempo automatico",
+        "photoCapture": "Cattura foto",
+        "digitalSignatures": "Firme digitali",
+        "profitabilityAnalysis": "Analisi redditività",
+        "offlineSupport": "Supporto offline"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing e Monitoraggio Posizione",
+      "description": "Garantisci il monitoraggio accurato del tempo con clock in/out basato su GPS. Perfetto per team sul campo, autisti delle consegne e lavoratori remoti. Imposta confini virtuali per i siti di lavoro e ricevi avvisi quando i dipendenti entrano o escono dalle aree designate.",
+      "imageAlt": "Interfaccia di geofencing e monitoraggio posizione",
+      "features": {
+        "gpsClockInOut": "Clock in/out GPS",
+        "virtualBoundaries": "Confini virtuali",
+        "realTimeAlerts": "Avvisi in tempo reale",
+        "automatedTimesheets": "Timesheet automatizzati",
+        "complianceReady": "Pronto per conformità",
+        "teamManagement": "Gestione team"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pagamenti Mobile Money",
+      "description": "Accetta pagamenti da qualsiasi parte del mondo. L'integrazione M-Pesa è attiva in Kenya, con MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix e Mercado Pago in arrivo. Raggiungi miliardi di clienti che preferiscono il mobile money rispetto al banking tradizionale.",
+      "imageAlt": "Opzioni di pagamento mobile money",
+      "available": "Metodi di pagamento:",
+      "live": "Ora Disponibile:",
+      "coming": "Prossimamente:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Trasforma la comunicazione con i clienti con l'integrazione WhatsApp Business. Crea e gestisci il tuo catalogo prodotti, invia automaticamente fatture e ricevute, fornisci supporto clienti istantaneo e raggiungi i clienti sulla loro piattaforma di messaggistica preferita.",
+      "imageAlt": "Interfaccia di integrazione WhatsApp Business"
+    },
+    "languages": {
+      "title": "30+ Lingue Supportate",
+      "description": "Raggiungi i clienti e gestisci la tua azienda nella tua lingua preferita. Dall'inglese al swahili, dallo spagnolo al mandarino, supportiamo oltre 30 lingue per rendere Dott accessibile alle aziende di tutto il mondo.",
+      "imageAlt": "Dimostrazione interfaccia multilingue",
+      "availableIn": "Disponibile in:"
+    },
+    "vatGst": "Supporto IVA/GST",
+    "taxReports": "Report fiscali",
+    "eFilingReady": "Pronto per l'invio elettronico",
+    "ifrs": "IFRS per oltre 166 paesi",
+    "gaap": "US GAAP per le aziende statunitensi",
+    "autoDetect": "Rilevamento automatico per paese",
+    "autoDetection": "Rilevamento automatico della lingua",
+    "rightToLeft": "Lingue da destra a sinistra",
+    "regionalFormat": "Formati regionali di data/numero",
+    "realTimeRates": "Tassi di cambio in tempo reale",
+    "cryptoCurrency": "Supporto criptovalute",
+    "currencyConversion": "Conversioni automatiche"
+  },
+  "footer": {
+    "home": "Home",
+    "features": "Funzionalità",
+    "pricing": "Prezzi",
+    "blog": "Blog",
+    "contact": "Contatti",
+    "inventory": "Gestione Inventario",
+    "accounting": "Contabilità",
+    "invoicing": "Fatturazione",
+    "payments": "Pagamenti",
+    "pos": "Punto Vendita",
+    "about": "Chi Siamo",
+    "careers": "Carriere",
+    "press": "Stampa",
+    "partners": "Partner",
+    "help": "Centro Assistenza",
+    "docs": "Documentazione",
+    "status": "Stato del Sistema",
+    "security": "Sicurezza",
+    "privacy": "Privacy Policy",
+    "terms": "Termini di Servizio",
+    "cookies": "Cookie Policy",
+    "footerHeading": "Footer",
+    "logoAlt": "Logo Dott",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Domande frequenti",
+    "subheading": "Trova risposte alle domande comuni sulla nostra piattaforma e servizi."
+  },
+  "builtForYou": {
+    "title": "Costruito per Te",
+    "heading": "Gestisci la tua azienda come un professionista!",
+    "subheading": "Costruito per imprenditori come te",
+    "cta": "Unisciti a migliaia di imprenditori in tutto il mondo che si fidano di Dott per gestire la loro attività",
+    "types": {
+      "freelancers": {
+        "title": "Freelancer",
+        "description": "Monitora i progetti, fattura i clienti istantaneamente e gestisci le tue finanze tutto in un posto. Ricevi pagamenti più velocemente con fatture professionali."
+      },
+      "contractors": {
+        "title": "Appaltatori",
+        "description": "Gestisci progetti multipli, monitora i costi di materiali e manodopera, e invia preventivi professionali. Mantieni sano il tuo flusso di cassa."
+      },
+      "entrepreneurs": {
+        "title": "Imprenditori",
+        "description": "Scala la tua startup con potenti strumenti per inventario, vendite e monitoraggio finanziario. Prendi decisioni basate sui dati."
+      },
+      "consultants": {
+        "title": "Consulenti",
+        "description": "Fattura a ore o per progetto, monitora le spese e gestisci clienti multipli senza sforzo. Fatturazione professionale inclusa."
+      },
+      "retail": {
+        "title": "Proprietari di Negozi",
+        "description": "Gestisci l'inventario con scansione codici a barre, monitora le vendite e accetta metodi di pagamento multipli incluso mobile money."
+      },
+      "streetVendors": {
+        "title": "Venditori Ambulanti",
+        "description": "Design mobile-first semplice per monitorare vendite giornaliere, gestire inventario e accettare pagamenti digitali in movimento."
+      },
+      "marketStalls": {
+        "title": "Proprietari di Bancarelle",
+        "description": "Perfetto per giornate di mercato intense. Inserimento vendite rapido, avvisi inventario e monitoraggio profitti giornalieri nella tua valuta locale."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agenti Mobile Money",
+        "description": "Monitora transazioni, gestisci saldi float e genera report per operatori di rete. Costruito per M-Pesa, MTN e altro."
+      },
+      "restaurants": {
+        "title": "Proprietari di Piccoli Ristoranti",
+        "description": "Gestisci ordini, monitora ingredienti, calcola costi alimentari e gestisci sia servizio al tavolo che da asporto efficientemente."
+      },
+      "serviceProviders": {
+        "title": "Fornitori di Servizi",
+        "description": "Per idraulici, elettricisti, meccanici e altro. Programma lavori, monitora parti e fattura al completamento."
+      },
+      "onlineSellers": {
+        "title": "Venditori Online",
+        "description": "Sincronizza inventario su piattaforme, gestisci ordini e monitora spedizioni. Perfetto per venditori sui social media."
+      },
+      "transport": {
+        "title": "Operatori di Trasporto",
+        "description": "Per operatori di taxi, boda boda e tuk-tuk. Monitora guadagni giornalieri, costi carburante e programmi manutenzione."
+      }
+    }
+  },
+  "integrations": {
+    "title": "Integrazioni",
+    "heading": "Connettiti con gli strumenti che ami",
+    "subheading": "Integra senza problemi con popolari strumenti business e piattaforme di pagamento",
+    "availableNow": "Disponibile Ora",
+    "comingSoon": "Prossimamente",
+    "logoAlt": "Logo {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Invia fatture e ricevute direttamente ai clienti"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Accetta pagamenti mobile money senza problemi"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Elabora pagamenti con carta globalmente"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Sincronizza il tuo inventario e-commerce"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Connetti il tuo negozio WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Importa ed esporta dati contabili"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Gestisci il tuo business Amazon"
+    }
+  },
+  "cookieBanner": {
+    "title": "Avviso sui Cookie",
+    "message": "Utilizziamo i cookie per migliorare la tua esperienza, analizzare l'utilizzo e fornire funzionalità essenziali. Continuando a utilizzare il nostro sito, acconsenti all'uso dei cookie.",
+    "learnMore": "Scopri di più",
+    "customize": "Personalizza",
+    "rejectAll": "Rifiuta Tutti",
+    "acceptAll": "Accetta Tutti",
+    "preferencesTitle": "Preferenze Cookie",
+    "alwaysOn": "Sempre Attivo",
+    "savePreferences": "Salva Preferenze",
+    "essential": {
+      "title": "Cookie Essenziali",
+      "description": "Richiesti per il funzionamento e la sicurezza di base del sito"
+    },
+    "functional": {
+      "title": "Cookie Funzionali",
+      "description": "Ricordano le tue preferenze e impostazioni"
+    },
+    "analytics": {
+      "title": "Cookie Analitici",
+      "description": "Ci aiutano a capire come utilizzi il nostro sito"
+    },
+    "marketing": {
+      "title": "Cookie di Marketing",
+      "description": "Utilizzati per mostrarti pubblicità pertinenti"
+    }
+  },
+  "contact": {
+    "eyebrow": "Contattaci",
+    "heading": "Mettiti in contatto",
+    "subheading": "Hai domande su Dott? Il nostro team è qui per aiutarti a trovare la soluzione perfetta per la tua azienda.",
+    "infoTitle": "Informazioni di Contatto",
+    "infoSubtitle": "Compila il modulo o contattaci direttamente utilizzando le informazioni sottostanti.",
+    "email": "Email",
+    "address": "Indirizzo",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "Stati Uniti",
+    "submitting": "Invio del messaggio in corso...",
+    "success": "Grazie per averci contattato! Ti risponderemo presto.",
+    "error": "Impossibile inviare il messaggio. Riprova o inviaci un'email direttamente a support@dottapps.com.",
+    "error.name": "Il nome è obbligatorio",
+    "error.email.required": "L'email è obbligatoria",
+    "error.email.invalid": "Inserisci un indirizzo email valido",
+    "error.message": "Il messaggio è obbligatorio",
+    "form": {
+      "name": "Nome Completo",
+      "email": "Indirizzo Email",
+      "company": "Azienda",
+      "phone": "Numero di Telefono",
+      "message": "Messaggio",
+      "submit": "Invia Messaggio",
+      "sending": "Invio...",
+      "subject": {
+        "label": "In cosa possiamo aiutarti?",
+        "general": "Richiesta Generale",
+        "sales": "Domanda Commerciale",
+        "support": "Supporto Tecnico",
+        "demo": "Richiedi una Demo",
+        "partnership": "Opportunità di Partnership"
+      }
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "Piattaforma di gestione aziendale alimentata da AI che funziona offline.",
+      "cta": {
+        "getStarted": "Inizia Gratis",
+        "signIn": "Accedi"
+      },
+      "noCreditCard": "Nessuna carta di credito richiesta",
+      "freePlan": "Piano gratuito per sempre"
+    },
+    "features": {
+      "title": "Tutto Ciò di Cui Hai Bisogno",
+      "pos": {
+        "title": "Punto Vendita",
+        "description": "Elabora le vendite istantaneamente, anche offline"
+      },
+      "barcode": {
+        "title": "Scanner Codici a Barre",
+        "description": "Scansiona i prodotti con la tua fotocamera"
+      },
+      "invoicing": {
+        "title": "Fatturazione Veloce",
+        "description": "Crea e invia fatture in movimento"
+      },
+      "analytics": {
+        "title": "Analisi in Tempo Reale",
+        "description": "Monitora le prestazioni del tuo business"
+      }
+    },
+    "benefits": {
+      "title": "Costruito per il Tuo Successo",
+      "offline": {
+        "title": "Funziona Offline",
+        "description": "Continua a vendere senza internet"
+      },
+      "fast": {
+        "title": "Velocissimo",
+        "description": "Caricamento istantaneo, nessun ritardo"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Progettato per telefoni e tablet"
+      },
+      "payments": {
+        "title": "Denaro Mobile",
+        "description": "M-Pesa, modalità offline, supporto locale"
+      }
+    },
+    "pricing": {
+      "title": "Prezzi Semplici e Trasparenti"
+    },
+    "cta": {
+      "title": "Pronto a Far Crescere il Tuo Business?",
+      "subtitle": "Inizia a gestire meglio il tuo business oggi",
+      "button": "Inizia Gratis",
+      "terms": "Nessuna carta di credito richiesta • Cancella in qualsiasi momento"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: Piattaforma Aziendale Globale",
+    "ios": "Disponibile sulla tua schermata iniziale",
+    "android": "Installa per un accesso rapido",
+    "tap": "Tocca",
+    "then": "poi",
+    "addToHome": "Aggiungi a Home",
+    "install": "Installa"
+  },
+  "browserTitle": "Dott: Piattaforma Aziendale Globale"
+}

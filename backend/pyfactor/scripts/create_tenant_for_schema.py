@@ -30,7 +30,7 @@ import django
 django.setup()
 
 from django.core.management import call_command
-from django.db import connections, connection, transaction
+from django.db import connections, connection, transaction as db_transaction
 from django.conf import settings
 from custom_auth.models import Tenant, User
 from custom_auth.tasks import migrate_tenant_schema
@@ -159,7 +159,7 @@ def create_tenant_for_schema(tenant_id: uuid.UUID:
                     return False
         
         # Create tenant record
-        with transaction.atomic():
+        with db_transaction.atomic():
             tenant = Tenant.objects.create(
                 id=tenant_id,
                 schema_name=schema_name,

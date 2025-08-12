@@ -24,7 +24,9 @@ const TimesheetsPage = () => {
   console.log('🎯 [TimesheetsPage] Session data:', sessionData);
   console.log('🎯 [TimesheetsPage] Session loading:', sessionData?.loading);
   
-  const { tenantId, user } = sessionData || {};
+  // Extract tenantId from various possible locations
+  const user = sessionData?.user;
+  const tenantId = user?.tenant_id || user?.business_id || user?.tenantId || sessionData?.tenantId;
   console.log('🎯 [TimesheetsPage] Extracted tenantId:', tenantId);
   console.log('🎯 [TimesheetsPage] Extracted user:', user);
   
@@ -301,13 +303,13 @@ const TimesheetsPage = () => {
 
   const filteredTimesheets = timesheets.filter(timesheet => {
     const employee = employees.find(e => e.id === timesheet.employee);
-    const employeeName = employee?.get_full_name || '';
+    const employeeName = employee ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim() : '';
     return employeeName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Add loading state check to prevent crashes
-  if (sessionData?.loading || !tenantId) {
-    console.log('🎯 [TimesheetsPage] Showing loading state - session loading:', sessionData?.loading, 'tenantId:', tenantId);
+  if (!sessionData || sessionData.loading === undefined || sessionData.loading || !tenantId || !user) {
+    console.log('🎯 [TimesheetsPage] Showing loading state - session loading:', sessionData?.loading, 'tenantId:', tenantId, 'user:', user);
     return (
       <div className="flex justify-center items-center h-64">
         <StandardSpinner size="large" />

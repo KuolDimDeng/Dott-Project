@@ -4,7 +4,7 @@
  */
 import { cookies } from 'next/headers';
 import { logger } from './logger-stub';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 
 // Create logger for this module
 const log = logger;
@@ -124,13 +124,14 @@ export async function getUserId(request = null) {
  */
 export const getAuthSession = async () => {
   try {
-    const session = await fetchAuthSession();
+    // Removed Amplify - using Auth0
+    const session = null; // Auth0 session handled elsewhere
     if (!session) {
       return { user: null, authenticated: false };
     }
     
-    const tokens = session.tokens;
-    if (!tokens || !tokens.idToken) {
+    const tokens = session?.tokens;
+    if (!tokens || !tokens?.idToken) {
       return { user: null, authenticated: false };
     }
     

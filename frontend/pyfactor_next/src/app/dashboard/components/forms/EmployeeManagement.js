@@ -27,7 +27,7 @@ import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { DEPARTMENTS, POSITIONS, EMPLOYMENT_TYPES } from '@/utils/employeeConstants';
 import { getAllCountries, getSSNInfoByCountry } from '@/utils/countrySSNMapping';
 import PhoneInput from '@/components/ui/PhoneInput';
-import { getInternationalPhoneNumber, validatePhoneNumber } from '@/utils/countryPhoneCodes';
+import { getInternationalPhoneNumber, validatePhoneNumber, parseInternationalPhoneNumber } from '@/utils/countryPhoneCodes';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -422,6 +422,7 @@ function EmployeeManagement({ onNavigate }) {
         position: emp.job_title,
         employmentType: emp.employment_type,
         compensationType: emp.compensation_type,
+        wagePerHour: emp.wage_per_hour, // Map wage_per_hour to wagePerHour
         zipCode: emp.zip_code,
         emergencyContact: emp.emergency_contact,
         emergencyPhone: emp.emergency_phone,
@@ -439,6 +440,19 @@ function EmployeeManagement({ onNavigate }) {
         // Convert active boolean to status string
         status: emp.active ? 'active' : 'inactive'
       }));
+
+      // Debug: Log wage mapping for support@dottapps.com
+      const supportEmployee = mappedEmployees.find(emp => emp.email === 'support@dottapps.com');
+      if (supportEmployee) {
+        logger.info('💰 [EmployeeManagement] === SUPPORT EMPLOYEE WAGE DEBUG ===');
+        logger.info('💰 [EmployeeManagement] Support employee raw data:', {
+          wage_per_hour: supportEmployee.wage_per_hour,
+          wagePerHour: supportEmployee.wagePerHour,
+          salary: supportEmployee.salary,
+          compensation_type: supportEmployee.compensation_type,
+          compensationType: supportEmployee.compensationType
+        });
+      }
 
       setEmployees(mappedEmployees);
       setStats(statsData);
@@ -640,18 +654,33 @@ function EmployeeManagement({ onNavigate }) {
   };
 
   const handleEdit = (employee) => {
-    logger.info('📝 [EmployeeManagement] Editing employee:', {
-      id: employee.id,
-      name: `${employee.firstName} ${employee.lastName}`
+    logger.info('📝 [EmployeeManagement] === EDIT EMPLOYEE DEBUG START ===');
+    logger.info('📝 [EmployeeManagement] Raw employee object:', employee);
+    logger.info('📝 [EmployeeManagement] Employee wage fields:', {
+      wagePerHour: employee.wagePerHour,
+      wage_per_hour: employee.wage_per_hour,
+      salary: employee.salary,
+      compensationType: employee.compensationType,
+      compensation_type: employee.compensation_type
     });
+    
+    // Parse international phone number if it exists
+    let phoneData = { phoneNumber: '', countryCode: 'US' };
+    if (employee.phone) {
+      phoneData = parseInternationalPhoneNumber(employee.phone);
+      logger.info('📱 [EmployeeManagement] Parsed phone number:', {
+        original: employee.phone,
+        parsed: phoneData
+      });
+    }
     
     setSelectedEmployee(employee);
     setFormData({
       firstName: employee.firstName || '',
       lastName: employee.lastName || '',
       email: employee.email || '',
-      phone: employee.phone || '',
-      phoneCountryCode: employee.phoneCountryCode || employee.phone_country_code || 'US',
+      phone: phoneData.phoneNumber,
+      phoneCountryCode: phoneData.countryCode,
       dateOfBirth: employee.dateOfBirth || '',
       position: employee.position || '',
       department: employee.department || '',
@@ -673,7 +702,7 @@ function EmployeeManagement({ onNavigate }) {
       emergencyContact: employee.emergencyContact || '',
       emergencyPhone: employee.emergencyPhone || '',
       securityNumberType: employee.securityNumberType || 'SSN',
-      securityNumber: '', // Never populate - security best practice
+      securityNumber: '', // Never populate - security best practice (stored in Stripe)
       country: employee.country || 'US',
       
       // Payroll and Benefits
@@ -681,6 +710,16 @@ function EmployeeManagement({ onNavigate }) {
       vacationTime: employee.vacationTime ? 'yes' : 'no',
       vacationDaysPerYear: employee.vacationDaysPerYear || ''
     });
+    
+    logger.info('📝 [EmployeeManagement] Form data set with values:', {
+      compensationType: employee.compensationType || 'SALARY',
+      salary: employee.salary || '',
+      wagePerHour: employee.wagePerHour || employee.wage_per_hour || '',
+      originalWagePerHour: employee.wagePerHour,
+      originalWage_per_hour: employee.wage_per_hour
+    });
+    logger.info('📝 [EmployeeManagement] === EDIT EMPLOYEE DEBUG END ===');
+    
     setActiveTab('create');
   };
 
@@ -738,7 +777,8 @@ function EmployeeManagement({ onNavigate }) {
     if (!formData.email.trim()) errors.email = 'Email is required';
     if (!formData.position.trim()) errors.position = 'Position is required';
     if (!formData.department.trim()) errors.department = 'Department is required';
-    if (!formData.securityNumber.trim()) {
+    // Only require security number for new employees, not when editing
+    if (!selectedEmployee && !formData.securityNumber.trim()) {
       const securityInfo = getSecurityNumberInfo(formData.country);
       errors.securityNumber = `${securityInfo.label} is required for payroll processing`;
     }
@@ -815,10 +855,23 @@ function EmployeeManagement({ onNavigate }) {
         is_supervisor: formData.isSupervisor || false,
         employment_type: formData.employmentType,
         compensation_type: formData.compensationType,
-        wage_per_hour: formData.compensationType === 'HOURLY' ? 
-          (parseFloat(formData.wagePerHour) || 0) : 
-          // Calculate hourly rate for salaried employees (industry standard)
-          Math.min(9999.99, Math.round((parseFloat(formData.salary) / 2080) * 100) / 100), // 52 weeks × 40 hours, rounded and capped at DB limit
+        wage_per_hour: (() => {
+          logger.info('💰 [EmployeeManagement] === WAGE CALCULATION DEBUG ===');
+          logger.info('💰 [EmployeeManagement] Form compensation type:', formData.compensationType);
+          logger.info('💰 [EmployeeManagement] Form wagePerHour value:', formData.wagePerHour);
+          logger.info('💰 [EmployeeManagement] Form salary value:', formData.salary);
+          
+          if (formData.compensationType === 'HOURLY') {
+            const hourlyWage = parseFloat(formData.wagePerHour) || 0;
+            logger.info('💰 [EmployeeManagement] Using HOURLY wage:', hourlyWage);
+            return hourlyWage;
+          } else {
+            // Calculate hourly rate for salaried employees (industry standard)
+            const calculatedRate = Math.min(9999.99, Math.round((parseFloat(formData.salary) / 2080) * 100) / 100);
+            logger.info('💰 [EmployeeManagement] Using calculated SALARY rate:', calculatedRate);
+            return calculatedRate;
+          }
+        })(),
         hire_date: formData.hireDate,
         zip_code: formData.zipCode,
         emergency_contact_name: formData.emergencyContact,
@@ -870,11 +923,14 @@ function EmployeeManagement({ onNavigate }) {
         // Add active field based on status for backend compatibility
         backendData.active = backendData.status === 'active';
         
+        logger.info('📤 [EmployeeManagement] Sending update request with data:', JSON.stringify(backendData, null, 2));
         const result = await hrApi.employees.update(selectedEmployee.id, backendData);
         logger.info('✅ [EmployeeManagement] Employee updated successfully:', {
           id: result?.id,
           active: result?.active,
-          status: result?.status
+          status: result?.status,
+          phone_number: result?.phone_number,
+          response: JSON.stringify(result, null, 2)
         });
         toast.success('Employee updated successfully');
       } else {
@@ -900,12 +956,26 @@ function EmployeeManagement({ onNavigate }) {
       setSelectedEmployee(null);
       setActiveTab('list');
     } catch (error) {
-      logger.error('❌ [EmployeeManagement] Error saving employee:', error);
+      logger.error('❌ [EmployeeManagement] Error saving employee:', {
+        error: error,
+        message: error.message,
+        response: error.response,
+        responseData: error.response?.data,
+        responseStatus: error.response?.status,
+        stack: error.stack
+      });
       
       // Parse error message for user-friendly display
       let userMessage = 'Failed to save employee. Please try again.';
       
-      if (error.message) {
+      // Check for API response errors
+      if (error.response?.data?.detail) {
+        userMessage = error.response.data.detail;
+      } else if (error.response?.data?.error) {
+        userMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        userMessage = error.response.data.message;
+      } else if (error.message) {
         // Check for common error patterns
         if (error.message.includes('does not exist')) {
           userMessage = 'There was a database configuration issue. Please contact support.';
@@ -2048,7 +2118,7 @@ function EmployeeManagement({ onNavigate }) {
   const renderEmployeeList = () => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {loading ? (
-        <CenteredSpinner size="medium" />
+        <CenteredSpinner size="large" text="Loading employees..." showText={true} minHeight="h-96" />
       ) : filteredEmployees.length === 0 ? (
         <div className="text-center py-12">
           <UserGroupIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />

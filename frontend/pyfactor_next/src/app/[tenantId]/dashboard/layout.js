@@ -4,6 +4,10 @@ import { useParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
 import { useEffect } from 'react';
+import { SessionProvider } from '@/contexts/SessionContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
+import SessionTimeoutModal from '@/components/SessionTimeoutModal';
 
 /**
  * Layout for tenant-specific dashboard route
@@ -73,9 +77,16 @@ export default function TenantDashboardLayout({ children }) {
   }, []);
 
   return (
-    <div className="h-full min-h-screen bg-gray-50">
-      {/* Re-rendering issues fixed directly in components - script removed to prevent MIME type errors */}
-      {children}
-    </div>
+    <SessionProvider>
+      <NotificationProvider>
+        <SessionTimeoutProvider>
+          <div className="h-full min-h-screen bg-gray-50">
+            {/* Re-rendering issues fixed directly in components - script removed to prevent MIME type errors */}
+            {children}
+            <SessionTimeoutModal />
+          </div>
+        </SessionTimeoutProvider>
+      </NotificationProvider>
+    </SessionProvider>
   );
 } 

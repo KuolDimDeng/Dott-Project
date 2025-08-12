@@ -6,12 +6,13 @@ import { logger } from '@/utils/logger';
 import { getClientSession } from '@/utils/clientSessionHelper';
 import { onboardingStateMachine, ONBOARDING_STATES } from '@/utils/onboardingStateMachine';
 import OnboardingFlowV2 from '@/components/Onboarding/OnboardingFlow.v2';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { captureEvent } from '@/lib/posthog';
 import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import PageTitle from '@/components/PageTitle';
 
 export default function OnboardingPageV2() {
   const router = useRouter();
@@ -163,11 +164,7 @@ export default function OnboardingPageV2() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="large" text="Loading..." />
-      </div>
-    );
+    return <CenteredSpinner size="large" text="Loading..." showText={true} minHeight="h-screen" />;
   }
 
   if (error) {
@@ -187,5 +184,10 @@ export default function OnboardingPageV2() {
     );
   }
 
-  return <OnboardingFlowV2 initialStep={initialStep} initialCountry={initialCountry} />;
+  return (
+    <>
+      <PageTitle />
+      <OnboardingFlowV2 initialStep={initialStep} initialCountry={initialCountry} />
+    </>
+  );
 }

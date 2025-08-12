@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 # Setup Django
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from hr.models import Employee
 from hr.stripe_ssn_service import StripeSSNService
 import logging
@@ -70,7 +70,7 @@ def migrate_ssns_to_stripe():
                 
                 if success:
                     # Clear the local SSN field after successful migration
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         # Using raw SQL to avoid model save triggering other logic
                         with connection.cursor() as cursor:
                             cursor.execute(

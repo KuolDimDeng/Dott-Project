@@ -1,5 +1,6 @@
 # taxes/views.py
 from rest_framework import viewsets, status, permissions
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,7 +17,7 @@ from ..serializers import (
     TaxDataBlacklistSerializer, TaxSettingsSerializer,
     TaxApiUsageSerializer
 )
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 import logging
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -74,7 +75,7 @@ class StateViewSet(viewsets.ModelViewSet):
         serializer = IncomeTaxRateSerializer(rates, many=True)
         return Response(serializer.data)
 
-class IncomeTaxRateViewSet(viewsets.ModelViewSet):
+class IncomeTaxRateViewSet(TenantIsolatedViewSet):
     queryset = IncomeTaxRate.objects.all().order_by('-tax_year', 'state__code')
     serializer_class = IncomeTaxRateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -160,7 +161,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 updated_rates = []
                 for rate_data in request.data:
                     rate_id = rate_data.pop('id', None)
@@ -189,7 +190,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
             logger.error(f"Error updating tax rates: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
+class PayrollTaxFilingViewSet(TenantIsolatedViewSet):
     queryset = PayrollTaxFiling.objects.all().order_by('-id')
     serializer_class = PayrollTaxFilingSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -346,12 +347,12 @@ class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
         # Implement self-service preparation
         return {"status": "preparation", "notes": "Documents prepared for self-service filing"}
 
-class TaxFilingInstructionViewSet(viewsets.ModelViewSet):
+class TaxFilingInstructionViewSet(TenantIsolatedViewSet):
     queryset = TaxFilingInstruction.objects.all()
     serializer_class = TaxFilingInstructionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class TaxFormViewSet(viewsets.ModelViewSet):
+class TaxFormViewSet(TenantIsolatedViewSet):
     queryset = TaxForm.objects.all().order_by('-id')
     serializer_class = TaxFormSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -408,6 +409,202 @@ class TaxFormViewSet(viewsets.ModelViewSet):
 
 class TaxCalculationView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Calculate sales tax rate for a given location"""
+        try:
+            logger.info(f"[Tax Calculation] === START === User: {getattr(request.user, 'email', 'anonymous')}")
+            logger.info(f"[Tax Calculation] Request headers: {dict(request.headers)}")
+            
+            from ..models import GlobalSalesTaxRate
+            from users.models import UserProfile
+            
+            # Get query parameters - use request.GET for regular Django views
+            country = request.GET.get('country', '').strip().upper()
+            state = request.GET.get('state', '').strip().upper()
+            county = request.GET.get('county', '').strip().upper()
+            
+            logger.info(f"[Tax Calculation] Raw params before processing: country={request.GET.get('country')}, state={request.GET.get('state')}, county={request.GET.get('county')}")
+            logger.info(f"[Tax Calculation] Processed params: country={country}, state={state}, county={county}")
+            logger.info(f"[Tax Calculation] All request params: {dict(request.GET)}")
+            
+            # If no country provided, fall back to business location (for walk-in customers)
+            if not country:
+                logger.info(f"[Tax Calculation] No country provided, falling back to business location")
+                try:
+                    # Try Business model first (new architecture)
+                    from users.models import Business
+                    business = Business.objects.filter(owner_id=request.user.id).first()
+                    if not business:
+                        business = Business.objects.filter(tenant_id=request.user.tenant_id).first()
+                    
+                    if business and business.country:
+                        country = str(business.country).upper()
+                        logger.info(f"[Tax Calculation] Using business location from Business model: {country}")
+                    else:
+                        # Fall back to UserProfile
+                        user_profile = UserProfile.objects.filter(user=request.user).first()
+                        if user_profile and user_profile.country:
+                            country = str(user_profile.country).upper()
+                            state = user_profile.state or ''
+                            county = user_profile.county or ''
+                            logger.info(f"[Tax Calculation] Using business location from UserProfile: {country}, {state}, {county}")
+                        else:
+                            logger.warning(f"[Tax Calculation] No business location found in Business or UserProfile")
+                            return Response({
+                                'tax_rate': 0,
+                                'tax_percentage': 0,
+                                'source': 'no_business_location',
+                                'message': 'No business location configured'
+                            })
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error getting business location: {str(e)}")
+                    return Response(
+                        {"error": "Could not determine tax location"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Check if this is an international sale (export exemption logic)
+            try:
+                # Try Business model first (new architecture)
+                from users.models import Business
+                business = Business.objects.filter(owner_id=request.user.id).first()
+                if not business:
+                    business = Business.objects.filter(tenant_id=request.user.tenant_id).first()
+                
+                if business and business.country:
+                    business_country = str(business.country).upper()
+                else:
+                    # Fall back to UserProfile
+                    user_profile = UserProfile.objects.filter(user=request.user).first()
+                    business_country = str(user_profile.country).upper() if user_profile and user_profile.country else None
+                
+                customer_country = country
+                
+                if business_country and business_country != customer_country:
+                    logger.info(f"[Tax Calculation] International sale detected: {business_country} → {customer_country}. Applying export exemption.")
+                    return Response({
+                        'tax_rate': 0,
+                        'tax_percentage': 0,
+                        'source': 'international_export',
+                        'country': customer_country,
+                        'country_name': customer_country,
+                        'state': state,
+                        'county': county,
+                        'message': 'Export exemption - no tax on international sales',
+                        'exemption_reason': 'International export'
+                    })
+            except Exception as e:
+                logger.warning(f"[Tax Calculation] Could not check for international sale: {str(e)}")
+            
+            # Try to find the most specific tax rate
+            tax_rate = None
+            source = 'global'
+            
+            # Try county level first (most specific)
+            if county and state:
+                logger.info(f"[Tax Calculation] Searching for county-level rate: country={country}, state={state}, county={county}")
+                try:
+                    tax_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        region_code=state,
+                        locality__iexact=county,
+                        is_current=True
+                    ).first()
+                    if tax_rate:
+                        source = 'county'
+                        logger.info(f"[Tax Calculation] Found county-level rate: {tax_rate.rate}% for {county}, {state}")
+                    else:
+                        logger.info(f"[Tax Calculation] No county-level rate found for {county}, {state}")
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error querying county-level rate: {str(e)}")
+            
+            # Try state level
+            if not tax_rate and state:
+                logger.info(f"[Tax Calculation] Searching for state-level rate: country={country}, state={state}")
+                try:
+                    tax_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        region_code=state,
+                        locality='',
+                        is_current=True
+                    ).first()
+                    if tax_rate:
+                        source = 'state'
+                        logger.info(f"[Tax Calculation] Found state-level rate: {tax_rate.rate}% for {state}")
+                    else:
+                        logger.info(f"[Tax Calculation] No state-level rate found for {state}")
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error querying state-level rate: {str(e)}")
+            
+            # Try country level
+            if not tax_rate:
+                logger.info(f"[Tax Calculation] Searching for country-level rate: country={country}")
+                try:
+                    tax_rate = GlobalSalesTaxRate.objects.filter(
+                        country=country,
+                        region_code='',
+                        locality='',
+                        is_current=True
+                    ).first()
+                    if tax_rate:
+                        source = 'country'
+                        logger.info(f"[Tax Calculation] Found country-level rate: {tax_rate.rate}% for {country}")
+                    else:
+                        logger.info(f"[Tax Calculation] No country-level rate found for {country}")
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error querying country-level rate: {str(e)}")
+            
+            if tax_rate:
+                logger.info(f"[Tax Calculation] Building response for tax_rate object")
+                try:
+                    # Safely access attributes
+                    rate_value = float(tax_rate.rate) if tax_rate.rate else 0
+                    country_code = str(tax_rate.country) if tax_rate.country else country
+                    country_name = tax_rate.country_name if hasattr(tax_rate, 'country_name') and tax_rate.country_name else country_code
+                    region_code = tax_rate.region_code if hasattr(tax_rate, 'region_code') and tax_rate.region_code else None
+                    region_name = tax_rate.region_name if hasattr(tax_rate, 'region_name') and tax_rate.region_name else None
+                    locality = tax_rate.locality if hasattr(tax_rate, 'locality') and tax_rate.locality else None
+                    tax_authority = tax_rate.tax_authority_name if hasattr(tax_rate, 'tax_authority_name') else None
+                    
+                    response_data = {
+                        'tax_rate': rate_value,  # Already stored as decimal (0.18 = 18%)
+                        'tax_percentage': rate_value * 100,  # Convert to percentage for display
+                        'source': source,
+                        'country': country_code,
+                        'country_name': country_name,
+                        'state': region_code,
+                        'state_name': region_name,
+                        'county': locality,
+                        'tax_authority': tax_authority
+                    }
+                    
+                    logger.info(f"[Tax Calculation] === SUCCESS === Response: {response_data}")
+                    return Response(response_data)
+                except Exception as e:
+                    logger.error(f"[Tax Calculation] Error building response: {str(e)}")
+                    logger.error(f"[Tax Calculation] Tax rate object type: {type(tax_rate)}")
+                    logger.error(f"[Tax Calculation] Tax rate attributes: {dir(tax_rate)}")
+                    raise
+            else:
+                # No tax rate found
+                logger.warning(f"[Sales Tax] No tax rate found for country={country}, state={state}, county={county}")
+                return Response({
+                    'tax_rate': 0,
+                    'tax_percentage': 0,
+                    'source': 'not_found',
+                    'message': f'No tax rate found for {country}'
+                })
+                
+        except Exception as e:
+            logger.error(f"[Tax Calculation] === ERROR === Exception: {str(e)}")
+            logger.error(f"[Tax Calculation] Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"[Tax Calculation] Traceback:\n{traceback.format_exc()}")
+            return Response(
+                {"error": f"Tax calculation failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     def post(self, request):
         """Calculate taxes for payroll"""
@@ -486,7 +683,7 @@ class TaxCalculationView(APIView):
                     
             return tax_amount
 
-class GlobalComplianceViewSet(viewsets.ViewSet):
+class GlobalComplianceViewSet(TenantIsolatedViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     @action(detail=True, methods=['get'], url_path='global-compliance/(?P<country_code>[^/.]+)')
@@ -542,7 +739,7 @@ class GlobalComplianceViewSet(viewsets.ViewSet):
             )
 
 
-class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
+class TaxDataEntryControlViewSet(TenantIsolatedViewSet):
     """ViewSet for managing tax data entry controls"""
     queryset = TaxDataEntryControl.objects.all()
     serializer_class = TaxDataEntryControlSerializer
@@ -563,7 +760,7 @@ class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(controls, many=True).data)
 
 
-class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
+class TaxDataEntryLogViewSet(TenantIsolatedViewSet):
     """ViewSet for viewing tax data entry logs"""
     queryset = TaxDataEntryLog.objects.all().order_by('-created_at')
     serializer_class = TaxDataEntryLogSerializer
@@ -622,7 +819,7 @@ class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(stats)
 
 
-class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
+class TaxDataAbuseReportViewSet(TenantIsolatedViewSet):
     """ViewSet for managing tax data abuse reports"""
     queryset = TaxDataAbuseReport.objects.all().order_by('-created_at')
     serializer_class = TaxDataAbuseReportSerializer
@@ -659,7 +856,7 @@ class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(pending_reports, many=True).data)
 
 
-class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
+class TaxDataBlacklistViewSet(TenantIsolatedViewSet):
     """ViewSet for managing tax data blacklist"""
     queryset = TaxDataBlacklist.objects.all().order_by('-created_at')
     serializer_class = TaxDataBlacklistSerializer
@@ -724,7 +921,7 @@ class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
         return Response({"is_blacklisted": is_blacklisted})
 
 
-class TaxSettingsViewSet(viewsets.ModelViewSet):
+class TaxSettingsViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing tenant tax settings.
     Provides CRUD operations for tax configuration.
@@ -801,7 +998,7 @@ class TaxSettingsViewSet(viewsets.ModelViewSet):
             )
 
 
-class TaxApiUsageViewSet(viewsets.ModelViewSet):
+class TaxApiUsageViewSet(TenantIsolatedViewSet):
     """
     ViewSet for tracking tax API usage.
     """

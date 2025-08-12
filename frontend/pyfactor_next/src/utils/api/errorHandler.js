@@ -27,6 +27,21 @@ export function handleApiError(error) {
   }
 }
 
+export function handleAuthError(error) {
+  console.error('Auth Error:', error);
+  
+  // Check if it's an authentication error
+  if (error.status === 401 || error.response?.status === 401) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+  
+  // For other auth-related errors
+  return handleApiError(error);
+}
+
 export function createErrorResponse(message, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }

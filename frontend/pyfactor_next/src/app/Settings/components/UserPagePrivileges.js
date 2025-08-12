@@ -60,6 +60,16 @@ const PAGE_CATEGORIES = [
     ]
   },
   {
+    name: 'Jobs',
+    pages: [
+      { id: 'jobs_list', name: 'All Jobs' },
+      { id: 'jobs_costing', name: 'Job Costing' },
+      { id: 'jobs_materials', name: 'Materials Usage' },
+      { id: 'jobs_labor', name: 'Labor Tracking' },
+      { id: 'jobs_profitability', name: 'Profitability Analysis' }
+    ]
+  },
+  {
     name: 'Reports',
     pages: [
       { id: 'reports_sales', name: 'Sales Reports' },

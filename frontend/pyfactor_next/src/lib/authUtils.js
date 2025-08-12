@@ -1,4 +1,3 @@
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 /**
  * Generate a unique request ID for tracking API calls
@@ -131,21 +130,28 @@ export const isPublicRoute = (pathname) => {
  */
 export const refreshSession = async () => {
   try {
-    const session = await fetchAuthSession({ forceRefresh: true });
+    // Use Auth0 session API instead of Amplify
+    const response = await fetch('/api/auth/session-v2', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: true })
+    });
     
-    if (!session.tokens) {
+    if (!response.ok) {
+      logger.warn('[authUtils] Failed to refresh session');
+      return false;
+    }
+    
+    const sessionData = await response.json();
+    
+    if (!sessionData.authenticated || !sessionData.tokens) {
       logger.warn('[authUtils] No tokens found in session');
       return false;
     }
 
-    // Check if tokens are expired
-    const accessToken = session.tokens.accessToken;
-    if (accessToken && accessToken.payload.exp * 1000 < Date.now()) {
-      logger.debug('[authUtils] Access token expired, attempting refresh');
-      await amplifyRefreshSession();
-      return true;
-    }
-
+    // Auth0 session is refreshed server-side, so if we get here, it's successful
+    logger.debug('[authUtils] Session refreshed successfully');
     return true;
   } catch (error) {
     logger.error('[authUtils] Failed to refresh session:', error);

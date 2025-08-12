@@ -46,7 +46,7 @@ async function handleRequest(request, method) {
 
     // Forward the request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-    const fullUrl = `${backendUrl}/api/notifications${apiPath}${url.search}`;
+    const fullUrl = `${backendUrl}/api/notifications/admin${apiPath}${url.search}`;
     
     console.log('[Admin Proxy] Backend URL:', fullUrl);
     

@@ -98,7 +98,7 @@ export async function GET(request) {
 
   // Test 3: Alternative Backend URLs
   const alternativeUrls = [
-    'https://dott-api.onrender.com',
+    'https://api.dottapps.com',
     'https://api.dottapps.com'
   ];
 
@@ -148,13 +148,13 @@ export async function GET(request) {
     results.summary.recommendations.push(
       'Cloudflare Error 1000 detected: DNS for api.dottapps.com may be pointing to Cloudflare IP',
       'Check Cloudflare DNS settings and ensure API subdomain is properly configured',
-      'Consider using direct Render URL: https://dott-api.onrender.com'
+      'Consider using direct Render URL: https://api.dottapps.com'
     );
   }
 
   if (results.tests.some(t => t.test.includes('Alternative') && t.success && t.test.includes('onrender'))) {
     results.summary.recommendations.push(
-      'Direct Render URL is working - consider updating NEXT_PUBLIC_API_URL to https://dott-api.onrender.com'
+      'Direct Render URL is working - consider updating NEXT_PUBLIC_API_URL to https://api.dottapps.com'
     );
   }
 

@@ -13,7 +13,7 @@ from django.db import connections, OperationalError
 from django.apps import apps
 from django.utils import timezone
 from django.core.management import call_command
-from django.db import transaction
+from django.db import transaction as db_transaction
 # Celery has been removed from this project
 from asgiref.sync import sync_to_async
 from pyfactor.logging_config import get_logger
@@ -197,7 +197,7 @@ def create_user_schema(user_id: str, business_id: str) -> str:
                         time.sleep(1 * (2 ** attempt))
 
                 # Update user profile
-                with transaction.atomic():
+                with db_transaction.atomic():
                     user_profile.tenant_id = tenant_id
                     user_profile.database_status = 'active'
                     user_profile.setup_status = 'pending'
@@ -506,7 +506,7 @@ def cleanup_stale_schemas():
     except Exception as e:
         logger.error(f"Stale tenant cleanup failed: {str(e)}")
 
-@transaction.atomic
+@db_transaction.atomic
 def initial_user_registration(validated_data):
     """
     Handle initial user registration including creating UserProfile
@@ -536,7 +536,7 @@ def initial_user_registration(validated_data):
     except Exception as e:
         raise Exception(f"Failed to register user: {str(e)}")
 
-@transaction.atomic
+@db_transaction.atomic
 def validate_user_state(user):
     """Backend equivalent of frontend validateUserState"""
     try:

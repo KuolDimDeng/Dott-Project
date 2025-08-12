@@ -4,7 +4,6 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { axiosInstance } from './axiosConfig';
 import { logger } from './logger';
 import { cookies } from 'next/headers';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 // Fix issue with cookies() not being callable directly in some contexts
 const getCookieStore = async () => {
@@ -142,22 +141,29 @@ export async function getAuth() {
       hasUserId: !!userId
     });
     
-    // If we don't have tokens in cookies, try to get from Amplify
+    // If we don't have tokens in cookies, try to get from Auth0 session
     if (!accessToken || !idToken) {
       try {
-        logger.debug('[Auth] No tokens in cookies, trying Amplify');
-        const { tokens } = await fetchAuthSession();
+        logger.debug('[Auth] No tokens in cookies, trying Auth0 session API');
+        const response = await fetch('/api/auth/session-v2', {
+          credentials: 'include'
+        });
         
-        if (tokens) {
-          accessToken = tokens.accessToken?.toString();
-          idToken = tokens.idToken?.toString();
-          
-          logger.info('[Auth] Retrieved tokens from Amplify');
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData.authenticated && sessionData.tokens) {
+            accessToken = sessionData.tokens.access_token;
+            idToken = sessionData.tokens.id_token;
+            
+            logger.info('[Auth] Retrieved tokens from Auth0 session');
+          } else {
+            logger.warn('[Auth] No authenticated session available');
+          }
         } else {
-          logger.warn('[Auth] No tokens available from Amplify');
+          logger.warn('[Auth] Failed to fetch Auth0 session');
         }
-      } catch (amplifyError) {
-        logger.warn('[Auth] Error fetching Amplify session:', amplifyError);
+      } catch (sessionError) {
+        logger.warn('[Auth] Error fetching Auth0 session:', sessionError);
         // Continue with tokens from cookies (if any)
       }
     }

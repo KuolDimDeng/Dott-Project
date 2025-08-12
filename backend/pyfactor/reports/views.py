@@ -25,6 +25,7 @@ from django.db.models import F, ExpressionWrapper, IntegerField, Case, When, Val
 from django.db.models.functions import Cast, Extract
 from datetime import datetime, timedelta, date
 from django.utils import timezone
+from accounting.services import AccountingStandardsService
 
 logger = get_logger()
 
@@ -33,6 +34,18 @@ REPORT_TYPE_MAPPING = {
     'cash_flow': 'CF',
     'income_statement': 'IS'
 }
+
+def get_report_names(business_id):
+    """Get report names based on accounting standard"""
+    accounting_standard = AccountingStandardsService.get_business_accounting_standard(business_id)
+    financial_formats = AccountingStandardsService.get_financial_statement_format(business_id)
+    
+    return {
+        'balance_sheet': financial_formats['balance_sheet_name'],
+        'income_statement': financial_formats['income_statement_name'],
+        'equity_statement': financial_formats['equity_statement_name'],
+        'cash_flow': 'Statement of Cash Flows'  # Same for both standards
+    }
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -78,13 +91,20 @@ def generate_report(request, report_type):
                 # Add any other fields that are in your UserProfile model
             )
 
+        # Get business_id for accounting standard determination
+        business_id = user_profile.business_id if hasattr(user_profile, 'business_id') else None
+        report_names = get_report_names(business_id)
+        
         # Rest of your code...
         if report_type == 'balance_sheet':
-            data = generate_balance_sheet(database_name)
+            data = generate_balance_sheet(database_name, business_id)
+            data['report_title'] = report_names['balance_sheet']
         elif report_type == 'cash_flow':
-            data = generate_cash_flow(database_name)
+            data = generate_cash_flow(database_name, business_id)
+            data['report_title'] = report_names['cash_flow']
         elif report_type == 'income_statement':
-            data = generate_income_statement(database_name)
+            data = generate_income_statement(database_name, business_id)
+            data['report_title'] = report_names['income_statement']
         else:
             return Response({'error': 'Invalid report type'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -123,19 +143,48 @@ def list_reports(request):
         logger.exception(f"Error listing reports: {str(e)}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-def generate_balance_sheet(database_name):
+def generate_balance_sheet(database_name, business_id=None):
     logger.debug(f"Generating balance sheet for database: {database_name}")
     try:
         router = UserDatabaseRouter()
         router.create_dynamic_database(database_name)
+        
+        # Get accounting standard for proper formatting
+        accounting_standard = 'IFRS'  # Default
+        if business_id:
+            accounting_standard = AccountingStandardsService.get_business_accounting_standard(business_id)
 
         assets = Account.objects.using(database_name).filter(account_type__name='Asset').aggregate(total=models.Sum('balance'))['total'] or 0
         liabilities = Account.objects.using(database_name).filter(account_type__name='Liability').aggregate(total=models.Sum('balance'))['total'] or 0
         equity = Account.objects.using(database_name).filter(account_type__name='Equity').aggregate(total=models.Sum('balance'))['total'] or 0
+        
+        # Get current and non-current breakdowns
+        current_assets = Account.objects.using(database_name).filter(
+            account_type__name='Asset', 
+            name__icontains='current'
+        ).aggregate(total=models.Sum('balance'))['total'] or 0
+        
+        non_current_assets = assets - current_assets
+        
+        current_liabilities = Account.objects.using(database_name).filter(
+            account_type__name='Liability',
+            name__icontains='current'
+        ).aggregate(total=models.Sum('balance'))['total'] or 0
+        
+        non_current_liabilities = liabilities - current_liabilities
 
         data = {
-            'assets': assets,
-            'liabilities': liabilities,
+            'accounting_standard': accounting_standard,
+            'assets': {
+                'total': assets,
+                'current': current_assets,
+                'non_current': non_current_assets
+            },
+            'liabilities': {
+                'total': liabilities,
+                'current': current_liabilities,
+                'non_current': non_current_liabilities
+            },
             'equity': equity,
             'total': assets - liabilities - equity
         }
@@ -147,18 +196,26 @@ def generate_balance_sheet(database_name):
         raise
 
 # Similarly update generate_cash_flow and generate_income_statement
-def generate_cash_flow(database_name):
+def generate_cash_flow(database_name, business_id=None):
     logger.debug(f"Generating cash flow statement for database: {database_name}")
     try:
+        # Get accounting standard
+        accounting_standard = 'IFRS'  # Default
+        if business_id:
+            accounting_standard = AccountingStandardsService.get_business_accounting_standard(business_id)
+        
         operating_activities = FinanceTransaction.objects.using(database_name).filter(account__account_type__name='Operating').aggregate(total=models.Sum('amount'))['total'] or 0
         investing_activities = FinanceTransaction.objects.using(database_name).filter(account__account_type__name='Investing').aggregate(total=models.Sum('amount'))['total'] or 0
         financing_activities = FinanceTransaction.objects.using(database_name).filter(account__account_type__name='Financing').aggregate(total=models.Sum('amount'))['total'] or 0
 
         data = {
+            'accounting_standard': accounting_standard,
             'operating_activities': operating_activities,
             'investing_activities': investing_activities,
             'financing_activities': financing_activities,
-            'net_cash_flow': operating_activities + investing_activities + financing_activities
+            'net_cash_flow': operating_activities + investing_activities + financing_activities,
+            # Both standards use similar categories but may have slight presentation differences
+            'presentation_format': 'direct' if accounting_standard == 'GAAP' else 'indirect'
         }
         logger.debug(f"Cash flow statement generated: {data}")
         console.info(f"Cash flow statement generated.")
@@ -167,16 +224,48 @@ def generate_cash_flow(database_name):
         logger.exception(f"Error generating cash flow statement: {str(e)}")
         raise
 
-def generate_income_statement(database_name):
+def generate_income_statement(database_name, business_id=None):
     logger.debug(f"Generating income statement for database: {database_name}")
     try:
+        # Get accounting standard
+        accounting_standard = 'IFRS'  # Default
+        if business_id:
+            accounting_standard = AccountingStandardsService.get_business_accounting_standard(business_id)
+        
         revenue = Account.objects.using(database_name).filter(account_type__name='Revenue').aggregate(total=models.Sum('balance'))['total'] or 0
         expenses = Account.objects.using(database_name).filter(account_type__name='Expense').aggregate(total=models.Sum('balance'))['total'] or 0
+        
+        # Get more detailed breakdowns
+        operating_revenue = Account.objects.using(database_name).filter(
+            account_type__name='Revenue',
+            name__icontains='sales'
+        ).aggregate(total=models.Sum('balance'))['total'] or 0
+        
+        other_revenue = revenue - operating_revenue
+        
+        operating_expenses = Account.objects.using(database_name).filter(
+            account_type__name='Expense',
+            name__iregex='(wage|salary|rent|utilities|supplies)'
+        ).aggregate(total=models.Sum('balance'))['total'] or 0
+        
+        other_expenses = expenses - operating_expenses
 
         data = {
-            'revenue': revenue,
-            'expenses': expenses,
-            'net_income': revenue - expenses
+            'accounting_standard': accounting_standard,
+            'revenue': {
+                'total': revenue,
+                'operating': operating_revenue,
+                'other': other_revenue
+            },
+            'expenses': {
+                'total': expenses,
+                'operating': operating_expenses,
+                'other': other_expenses
+            },
+            'operating_income': operating_revenue - operating_expenses,
+            'net_income': revenue - expenses,
+            # IFRS allows extraordinary items in some cases, GAAP does not
+            'extraordinary_items_allowed': accounting_standard == 'IFRS'
         }
         logger.debug(f"Income statement generated: {data}")
         console.info(f"Income statement generated.")

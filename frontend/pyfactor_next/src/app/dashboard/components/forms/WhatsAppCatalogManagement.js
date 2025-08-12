@@ -485,7 +485,7 @@ const WhatsAppCatalogManagement = () => {
 
         {/* New Catalog Modal */}
         {showNewCatalogForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <h3 className="text-lg font-semibold mb-4">Create New Catalog</h3>
               <form onSubmit={handleCreateCatalog}>
@@ -530,7 +530,7 @@ const WhatsAppCatalogManagement = () => {
 
         {/* New Product Modal */}
         {showNewProductForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Add New Item</h3>
               <form onSubmit={handleCreateProduct}>
@@ -752,7 +752,7 @@ const WhatsAppCatalogManagement = () => {
 
         {/* Sync Modal */}
         {showSyncModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Sync Products from Inventory</h3>
               

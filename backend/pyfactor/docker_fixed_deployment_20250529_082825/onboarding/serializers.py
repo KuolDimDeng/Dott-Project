@@ -3,7 +3,7 @@ from .models import OnboardingProgress
 from users.models import Business
 from django.utils import timezone
 from users.choices import BUSINESS_TYPES, LEGAL_STRUCTURE_CHOICES
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         cognito_data = validated_data.pop('cognito_attributes', {})
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create/update business
             business, _ = Business.objects.update_or_create(
                 owner=user,
@@ -168,7 +168,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         cognito_data = validated_data.pop('cognito_attributes', {})
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Update business
             if instance.business:
                 instance.business.business_name = validated_data.get('business_name', instance.business.business_name)

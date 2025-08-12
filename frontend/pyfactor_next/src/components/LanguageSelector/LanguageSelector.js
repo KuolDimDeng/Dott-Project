@@ -7,15 +7,38 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { saveLanguagePreference, getLanguagePreference } from '@/utils/userPreferences';
 
-// Language data with flags and native names
+// Language data with native names (all 30 supported languages)
 const languages = [
-  { code: 'en', name: 'English', flag: '🇺🇸', native: 'English' },
-  { code: 'es', name: 'Spanish', flag: '🇪🇸', native: 'Español' },
-  { code: 'fr', name: 'French', flag: '🇫🇷', native: 'Français' },
-  { code: 'de', name: 'German', flag: '🇩🇪', native: 'Deutsch' },
-  { code: 'zh', name: 'Chinese', flag: '🇨🇳', native: '中文' },
-  { code: 'ja', name: 'Japanese', flag: '🇯🇵', native: '日本語' },
-  { code: 'ar', name: 'Arabic', flag: '🇦🇪', native: 'العربية' },
+  { code: 'en', name: 'English', native: 'English' },
+  { code: 'es', name: 'Spanish', native: 'Español' },
+  { code: 'fr', name: 'French', native: 'Français' },
+  { code: 'de', name: 'German', native: 'Deutsch' },
+  { code: 'pt', name: 'Portuguese', native: 'Português' },
+  { code: 'nl', name: 'Dutch', native: 'Nederlands' },
+  { code: 'ru', name: 'Russian', native: 'Русский' },
+  { code: 'zh', name: 'Chinese', native: '中文' },
+  { code: 'ja', name: 'Japanese', native: '日本語' },
+  { code: 'ko', name: 'Korean', native: '한국어' },
+  { code: 'ar', name: 'Arabic', native: 'العربية' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia' },
+  { code: 'vi', name: 'Vietnamese', native: 'Tiếng Việt' },
+  { code: 'tr', name: 'Turkish', native: 'Türkçe' },
+  { code: 'sw', name: 'Swahili', native: 'Kiswahili' },
+  { code: 'ha', name: 'Hausa', native: 'Hausa' },
+  { code: 'am', name: 'Amharic', native: 'አማርኛ' },
+  { code: 'yo', name: 'Yoruba', native: 'Yorùbá' },
+  { code: 'zu', name: 'Zulu', native: 'isiZulu' },
+  { code: 'it', name: 'Italian', native: 'Italiano' },
+  { code: 'pl', name: 'Polish', native: 'Polski' },
+  { code: 'th', name: 'Thai', native: 'ไทย' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা' },
+  { code: 'ur', name: 'Urdu', native: 'اردو' },
+  { code: 'tl', name: 'Tagalog', native: 'Filipino' },
+  { code: 'uk', name: 'Ukrainian', native: 'Українська' },
+  { code: 'fa', name: 'Persian', native: 'فارسی' },
+  { code: 'sn', name: 'Shona', native: 'chiShona' },
+  { code: 'ig', name: 'Igbo', native: 'Igbo' },
 ];
 
 export default function LanguageSelector() {
@@ -95,7 +118,6 @@ export default function LanguageSelector() {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <span className="text-lg">{currentLang.flag}</span>
         <span className="hidden md:inline">{currentLang.native}</span>
         <svg
           className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
@@ -141,9 +163,8 @@ export default function LanguageSelector() {
                             : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       >
-                        <span className="text-lg mr-2">{lang.flag}</span>
                         <span>{lang.native}</span>
-                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({lang.name})</span>
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({lang.name})</span>
                       </button>
                     </li>
                   ))}

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Image from 'next/image';
 import FeatureDetailModal from './FeatureDetailModal';
 
 export default function Highlights() {
@@ -35,12 +34,20 @@ export default function Highlights() {
       reverse: false,
     },
     {
+      key: 'jobs',
+      title: t('highlights.jobs.title', 'Comprehensive Job Management'),
+      description: t('highlights.jobs.description', 'End-to-end job costing from quote to completion. Track materials, labor, and expenses with real-time profitability analysis. Perfect for service businesses, contractors, and field operations with mobile-first design.'),
+      image: '/static/images/job-management.jpg',
+      imageAlt: t('highlights.jobs.imageAlt', 'Job management and costing interface'),
+      reverse: true,
+    },
+    {
       key: 'geofencing',
       title: t('highlights.geofencing.title', 'Geofencing & Location Tracking'),
       description: t('highlights.geofencing.description', 'Ensure accurate time tracking with GPS-based clock in/out. Perfect for field teams, delivery drivers, and remote workers. Set up virtual boundaries for work sites and get alerts when employees enter or leave designated areas.'),
       image: '/static/images/geofencing-screenshot.jpg',
       imageAlt: t('highlights.geofencing.imageAlt', 'Geofencing and location tracking interface'),
-      reverse: true,
+      reverse: false,
     },
     {
       key: 'mobilemoney',
@@ -48,7 +55,7 @@ export default function Highlights() {
       description: t('highlights.mobilemoney.description', 'Accept payments from anywhere in the world. M-Pesa integration is live in Kenya, with MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, and Mercado Pago coming soon. Reach billions of customers who prefer mobile money over traditional banking.'),
       image: '/static/images/mobile-money-screenshot.jpg',
       imageAlt: t('highlights.mobilemoney.imageAlt', 'Mobile money payment options'),
-      reverse: false,
+      reverse: true,
     },
     {
       key: 'whatsapp',
@@ -56,15 +63,15 @@ export default function Highlights() {
       description: t('highlights.whatsapp.description', 'Transform customer communication with WhatsApp Business integration. Create and manage your product catalog, automatically send invoices and receipts, provide instant customer support, and reach customers on their preferred messaging platform.'),
       image: '/static/images/whatsapp-business-screenshot.jpg',
       imageAlt: t('highlights.whatsapp.imageAlt', 'WhatsApp Business integration interface'),
-      reverse: true,
+      reverse: false,
     },
     {
       key: 'languages',
-      title: t('highlights.languages.title', '20+ Languages Supported'),
-      description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
+      title: t('highlights.languages.title', '30+ Languages Supported'),
+      description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 30 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
       imageAlt: t('highlights.languages.imageAlt', 'Multi-language interface demonstration'),
-      reverse: false,
+      reverse: true,
     },
   ];
 
@@ -142,6 +149,63 @@ export default function Highlights() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                           </svg>
                           <span className="text-sm text-gray-700">{t('highlights.pos.features.mobileReady', 'Mobile ready')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show job management features */}
+                  {highlight.title === t('highlights.jobs.title', 'Comprehensive Job Management') && (
+                    <div className="mt-6">
+                      <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.features.label', 'Key features:')}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.jobCosting', 'Real-time job costing')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.mobileFieldApp', 'Mobile field app')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.materialTracking', 'Material tracking')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.timeTracking', 'Auto time tracking')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.photoCapture', 'Photo capture')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.digitalSignatures', 'Digital signatures')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.profitabilityAnalysis', 'Profitability analysis')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{t('highlights.jobs.features.offlineSupport', 'Offline support')}</span>
                         </div>
                       </div>
                     </div>
@@ -239,11 +303,11 @@ export default function Highlights() {
                   )}
                   
                   {/* Show supported languages */}
-                  {highlight.title === t('highlights.languages.title', '20+ Languages Supported') && (
+                  {highlight.title === t('highlights.languages.title', '30+ Languages Supported') && (
                     <div className="mt-6">
                       <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.languages.availableIn', 'Available in:')}</p>
                       <div className="flex flex-wrap gap-2">
-                        {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Русский', '日本語', 'Türkçe', 'Bahasa Indonesia', 'Tiếng Việt', 'Nederlands', 'Hausa', 'Yorùbá', 'አማርኛ', 'isiZulu', '한국어'].map((lang) => (
+                        {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Русский', '日本語', 'Türkçe', 'Bahasa Indonesia', 'Tiếng Việt', 'Nederlands', 'Hausa', 'Yorùbá', 'አማርኛ', 'isiZulu', '한국어', 'Italiano', 'Polski', 'ไทย', 'বাংলা', 'اردو', 'Filipino', 'Українська', 'فارسی', 'chiShona', 'Igbo'].map((lang) => (
                           <span key={lang} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                             {lang}
                           </span>
@@ -276,14 +340,13 @@ export default function Highlights() {
                 </div>
                 
                 <div className={`mt-10 lg:mt-0 ${highlight.reverse ? 'lg:col-start-1' : 'lg:col-start-2'}`}>
-                  <div className="relative overflow-hidden rounded-lg shadow-xl">
-                    <div className="aspect-w-5 aspect-h-3">
-                      <Image
+                  <div className="relative overflow-hidden rounded-lg shadow-xl bg-gray-100">
+                    <div className="relative w-full" style={{ paddingBottom: '60%' }}>
+                      <img
                         src={highlight.image}
                         alt={highlight.imageAlt}
-                        width={800}
-                        height={480}
-                        className="w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        loading={index === 0 ? "eager" : "lazy"}
                       />
                     </div>
                   </div>

@@ -59,122 +59,152 @@ export default function AppBar() {
     {
         "code": "en",
         "name": "English",
-        "native": "English",
-        "flag": "🇺🇸"
+        "native": "English"
     },
     {
         "code": "es",
         "name": "Spanish",
-        "native": "Español",
-        "flag": "🇪🇸"
+        "native": "Español"
     },
     {
         "code": "fr",
         "name": "French",
-        "native": "Français",
-        "flag": "🇫🇷"
+        "native": "Français"
     },
     {
         "code": "pt",
         "name": "Portuguese",
-        "native": "Português",
-        "flag": "🇵🇹"
+        "native": "Português"
     },
     {
         "code": "de",
         "name": "German",
-        "native": "Deutsch",
-        "flag": "🇩🇪"
+        "native": "Deutsch"
     },
     {
         "code": "zh",
         "name": "Chinese",
-        "native": "中文",
-        "flag": "🇨🇳"
+        "native": "中文"
     },
     {
         "code": "ar",
         "name": "Arabic",
-        "native": "العربية",
-        "flag": "🇸🇦"
+        "native": "العربية"
     },
     {
         "code": "hi",
         "name": "Hindi",
-        "native": "हिन्दी",
-        "flag": "🇮🇳"
+        "native": "हिन्दी"
     },
     {
         "code": "ru",
         "name": "Russian",
-        "native": "Русский",
-        "flag": "🇷🇺"
+        "native": "Русский"
     },
     {
         "code": "ja",
         "name": "Japanese",
-        "native": "日本語",
-        "flag": "🇯🇵"
+        "native": "日本語"
     },
     {
         "code": "sw",
         "name": "Swahili",
-        "native": "Kiswahili",
-        "flag": "🇰🇪"
+        "native": "Kiswahili"
     },
     {
         "code": "tr",
         "name": "Turkish",
-        "native": "Türkçe",
-        "flag": "🇹🇷"
+        "native": "Türkçe"
     },
     {
         "code": "id",
         "name": "Indonesian",
-        "native": "Bahasa Indonesia",
-        "flag": "🇮🇩"
+        "native": "Bahasa Indonesia"
     },
     {
         "code": "vi",
         "name": "Vietnamese",
-        "native": "Tiếng Việt",
-        "flag": "🇻🇳"
+        "native": "Tiếng Việt"
     },
     {
         "code": "nl",
         "name": "Dutch",
-        "native": "Nederlands",
-        "flag": "🇳🇱"
+        "native": "Nederlands"
     },
     {
         "code": "ha",
         "name": "Hausa",
-        "native": "Hausa",
-        "flag": "🇳🇬"
+        "native": "Hausa"
     },
     {
         "code": "yo",
         "name": "Yoruba",
-        "native": "Yorùbá",
-        "flag": "🇳🇬"
+        "native": "Yorùbá"
     },
     {
         "code": "am",
         "name": "Amharic",
-        "native": "አማርኛ",
-        "flag": "🇪🇹"
+        "native": "አማርኛ"
     },
     {
         "code": "zu",
         "name": "Zulu",
-        "native": "isiZulu",
-        "flag": "🇿🇦"
+        "native": "isiZulu"
     },
     {
         "code": "ko",
         "name": "Korean",
-        "native": "한국어",
-        "flag": "🇰🇷"
+        "native": "한국어"
+    },
+    {
+        "code": "it",
+        "name": "Italian",
+        "native": "Italiano"
+    },
+    {
+        "code": "pl",
+        "name": "Polish",
+        "native": "Polski"
+    },
+    {
+        "code": "th",
+        "name": "Thai",
+        "native": "ไทย"
+    },
+    {
+        "code": "bn",
+        "name": "Bengali",
+        "native": "বাংলা"
+    },
+    {
+        "code": "ur",
+        "name": "Urdu",
+        "native": "اردو"
+    },
+    {
+        "code": "tl",
+        "name": "Tagalog",
+        "native": "Filipino"
+    },
+    {
+        "code": "uk",
+        "name": "Ukrainian",
+        "native": "Українська"
+    },
+    {
+        "code": "fa",
+        "name": "Persian",
+        "native": "فارسی"
+    },
+    {
+        "code": "sn",
+        "name": "Shona",
+        "native": "chiShona"
+    },
+    {
+        "code": "ig",
+        "name": "Igbo",
+        "native": "Igbo"
     }
 ];
 
@@ -315,20 +345,20 @@ export default function AppBar() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                 </svg>
                 <span className="hidden sm:inline text-sm font-medium">
-                  {supportedLanguages.find(lang => lang.code === i18n.language)?.name || 'English'}
+                  {supportedLanguages.find(lang => lang.code === i18n.language)?.native || 'English'}
                 </span>
               </button>
 
               {/* Language Dropdown */}
               {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5 max-h-96 overflow-y-auto">
                   {supportedLanguages.map(language => (
                     <button
                       key={language.code}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => handleLanguageChange(language)}
                     >
-                      {language.name}
+                      {language.native}
                     </button>
                   ))}
                 </div>

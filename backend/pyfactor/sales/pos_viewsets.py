@@ -4,9 +4,10 @@ Handles complete sales, refunds, and transaction management.
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -21,13 +22,15 @@ from .serializers import (
 )
 from .services.inventory_service import InventoryService
 from .services.accounting_service import AccountingService
+from .services.tax_service import TaxService
 from custom_auth.models import TenantManager
+from users.models import BusinessSettings, UserProfile
 from pyfactor.logging_config import get_logger
 
 logger = get_logger()
 
 
-class POSTransactionViewSet(viewsets.ModelViewSet):
+class POSTransactionViewSet(TenantIsolatedViewSet):
     """
     ViewSet for POS transactions with comprehensive sale processing.
     """
@@ -71,6 +74,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             "amount_tendered": 50.00,
             "discount_percentage": 5.0,
             "tax_rate": 8.5,
+            "use_shipping_address": true,
             "notes": "Optional notes"
         }
         """
@@ -85,19 +89,51 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             payment_method = validated_data['payment_method']
             amount_tendered = validated_data.get('amount_tendered')
             discount_percentage = validated_data.get('discount_percentage', Decimal('0'))
-            tax_rate = validated_data.get('tax_rate', Decimal('0'))
+            manual_tax_rate = validated_data.get('tax_rate')  # Keep for backward compatibility
+            use_shipping_address = validated_data.get('use_shipping_address', True)
             notes = validated_data.get('notes', '')
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Step 1: Validate stock availability
                 logger.info(f"Starting POS sale completion for {len(items)} items")
                 InventoryService.validate_stock_availability(items)
                 
-                # Step 2: Calculate totals
+                # Step 2: Get business settings and user profile
+                business_settings = BusinessSettings.objects.filter(
+                    tenant_id=request.user.tenant_id
+                ).first()
+                
+                user_profile = UserProfile.objects.filter(
+                    user=request.user
+                ).first()
+                
+                # Step 3: Calculate subtotal and discount
                 subtotal = sum(item['quantity'] * item['unit_price'] for item in items)
                 discount_amount = subtotal * discount_percentage / 100
                 after_discount = subtotal - discount_amount
-                tax_total = after_discount * tax_rate / 100
+                
+                # Step 4: Calculate tax using destination-based taxation
+                if manual_tax_rate is not None:
+                    # Use manual tax rate if provided (backward compatibility)
+                    tax_total = after_discount * manual_tax_rate / 100
+                    tax_calculation = {
+                        'total_tax_amount': tax_total,
+                        'tax_rate': manual_tax_rate,
+                        'tax_jurisdiction': {},
+                        'tax_calculation_method': 'manual',
+                        'line_items': []
+                    }
+                else:
+                    # Use the tax service for destination-based taxation
+                    tax_calculation = TaxService.calculate_transaction_tax(
+                        customer=customer,
+                        items=items,
+                        business_settings=business_settings,
+                        user_profile=user_profile,
+                        use_shipping_address=use_shipping_address
+                    )
+                    tax_total = tax_calculation['total_tax_amount']
+                
                 total_amount = after_discount + tax_total
                 
                 # Calculate change for cash payments
@@ -105,8 +141,9 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                 if payment_method == 'cash' and amount_tendered:
                     change_due = max(Decimal('0'), amount_tendered - total_amount)
                 
-                # Step 3: Create POS transaction
+                # Step 5: Create POS transaction with tax jurisdiction info
                 pos_transaction = POSTransaction.objects.create(
+                    tenant_id=request.user.tenant_id,  # CRITICAL: Explicitly set tenant_id
                     customer=customer,
                     subtotal=subtotal,
                     discount_amount=discount_amount,
@@ -118,23 +155,45 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                     change_due=change_due,
                     status='completed',
                     notes=notes,
-                    created_by=request.user
+                    created_by=request.user,
+                    # New tax jurisdiction fields
+                    tax_jurisdiction=tax_calculation.get('tax_jurisdiction', {}),
+                    tax_calculation_method=tax_calculation.get('tax_calculation_method', 'manual'),
+                    shipping_address_used=use_shipping_address if customer else False
                 )
                 
                 logger.info(f"Created POS transaction {pos_transaction.transaction_number}")
                 
-                # Step 4: Create transaction items and collect cost data
+                # Step 6: Create transaction items and collect cost data
                 items_with_cost = []
-                for item_data in items:
+                
+                # Get line item tax details from calculation
+                line_item_taxes = {
+                    item['item_name']: item 
+                    for item in tax_calculation.get('line_items', [])
+                }
+                
+                for idx, item_data in enumerate(items):
                     item_obj = item_data['item']
                     quantity = item_data['quantity']
                     unit_price = item_data['unit_price']
                     
-                    # Calculate tax for this item (proportional)
-                    item_subtotal = quantity * unit_price
-                    item_discount = item_subtotal * discount_percentage / 100
-                    item_after_discount = item_subtotal - item_discount
-                    item_tax = item_after_discount * tax_rate / 100
+                    # Get tax info for this specific item
+                    line_tax_info = line_item_taxes.get(item_obj.name, {})
+                    
+                    # Use calculated tax or fall back to proportional calculation
+                    if line_tax_info:
+                        item_tax = line_tax_info.get('tax_amount', Decimal('0'))
+                        item_tax_rate = line_tax_info.get('tax_rate', Decimal('0'))
+                    else:
+                        # Fallback: Calculate tax for this item (proportional)
+                        item_subtotal = quantity * unit_price
+                        item_discount = item_subtotal * discount_percentage / 100
+                        item_after_discount = item_subtotal - item_discount
+                        # Use the effective tax rate from the total calculation
+                        effective_rate = tax_calculation.get('tax_rate', Decimal('0'))
+                        item_tax = item_after_discount * effective_rate / 100
+                        item_tax_rate = effective_rate
                     
                     # Create transaction item
                     if item_data['type'] == 'product':
@@ -147,7 +206,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                             quantity=quantity,
                             unit_price=unit_price,
                             line_discount_percentage=discount_percentage,
-                            tax_rate=tax_rate,
+                            tax_rate=item_tax_rate,
                             tax_amount=item_tax,
                             cost_price=cost_price
                         )
@@ -170,7 +229,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                             quantity=quantity,
                             unit_price=unit_price,
                             line_discount_percentage=discount_percentage,
-                            tax_rate=tax_rate,
+                            tax_rate=item_tax_rate,
                             tax_amount=item_tax
                         )
                         
@@ -217,7 +276,9 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
                         'change_due': str(pos_transaction.change_due),
                         'status': pos_transaction.status,
                         'created_at': pos_transaction.created_at.isoformat(),
-                        'customer_name': pos_transaction.customer.customerName if pos_transaction.customer else None
+                        'customer_name': pos_transaction.customer.business_name if pos_transaction.customer else None,
+                        'tax_calculation_method': pos_transaction.tax_calculation_method,
+                        'tax_jurisdiction': pos_transaction.tax_jurisdiction
                     },
                     'items': [
                         {
@@ -274,7 +335,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             
             void_reason = request.data.get('reason', 'Transaction voided')
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Prepare items data for inventory restoration
                 items_for_restoration = []
                 for item in pos_transaction.items.all():
@@ -382,7 +443,7 @@ class POSTransactionViewSet(viewsets.ModelViewSet):
             )
 
 
-class POSRefundViewSet(viewsets.ModelViewSet):
+class POSRefundViewSet(TenantIsolatedViewSet):
     """
     ViewSet for POS refunds and returns.
     """
@@ -405,7 +466,7 @@ class POSRefundViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create the refund
                 refund = serializer.save()
                 

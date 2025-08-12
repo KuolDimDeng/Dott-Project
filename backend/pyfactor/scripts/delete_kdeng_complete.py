@@ -21,7 +21,7 @@ sys.path.append('/app')  # Render deployment path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import transaction, connection
+from django.db import transaction as db_transaction, connection
 from custom_auth.models import User, Tenant
 from session_manager.models import UserSession
 from onboarding.models import OnboardingProgress
@@ -47,7 +47,7 @@ try:
     
     tenant = user.tenant
     
-    with transaction.atomic():
+    with db_transaction.atomic():
         # 1. Delete sessions
         try:
             sessions_count = UserSession.objects.filter(user=user).count()

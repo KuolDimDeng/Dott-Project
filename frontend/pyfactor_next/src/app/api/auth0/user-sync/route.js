@@ -36,7 +36,7 @@ export async function POST(request) {
       timestamp: new Date().toISOString()
     });
     
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://dott-api-y26w.onrender.com';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
     
     try {
       // Step 1: Check if user exists in backend

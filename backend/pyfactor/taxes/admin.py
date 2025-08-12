@@ -12,7 +12,7 @@ from .models import (
     TaxApiTransaction, TaxFilingInstruction,
     TaxFiling, FilingDocument, FilingStatusHistory,
     TaxForm, StateFilingRequirement, FilingCalculation,
-    FilingPayment
+    FilingPayment, GlobalSalesTaxRate, GlobalPayrollTax
 )
 from .forms import IncomeTaxRateForm, BulkTaxRateUpdateForm
 
@@ -342,3 +342,143 @@ class FilingDocumentAdmin(admin.ModelAdmin):
         )
         self.message_user(request, f"{queryset.count()} documents verified.")
     verify_documents.short_description = "Verify selected documents"
+
+
+@admin.register(GlobalSalesTaxRate)
+class GlobalSalesTaxRateAdmin(admin.ModelAdmin):
+    list_display = [
+        'country_name', 'region_name', 'locality', 'tax_type', 
+        'rate_percentage', 'is_current', 'ai_confidence_score',
+        'manually_verified', 'ai_last_verified'
+    ]
+    list_filter = [
+        'tax_type', 'is_current', 'manually_verified',
+        'ai_populated', 'country'
+    ]
+    search_fields = ['country_name', 'region_name', 'locality', 'country']
+    readonly_fields = ['created_at', 'updated_at', 'ai_last_verified']
+    
+    def rate_percentage(self, obj):
+        return f"{obj.rate * 100:.2f}%"
+    rate_percentage.short_description = "Rate"
+    
+    actions = ['mark_as_verified', 'mark_as_current']
+    
+    def mark_as_verified(self, request, queryset):
+        queryset.update(manually_verified=True)
+        self.message_user(request, f"{queryset.count()} tax rates marked as verified.")
+    mark_as_verified.short_description = "Mark as manually verified"
+    
+    def mark_as_current(self, request, queryset):
+        queryset.update(is_current=True)
+        self.message_user(request, f"{queryset.count()} tax rates marked as current.")
+    mark_as_current.short_description = "Mark as current"
+
+
+@admin.register(GlobalPayrollTax) 
+class GlobalPayrollTaxAdmin(admin.ModelAdmin):
+    list_display = [
+        'country_name', 'region_name', 
+        'total_employee_rate_display', 'total_employer_rate_display',
+        'filing_frequency', 'online_filing_available',
+        'is_current', 'ai_confidence_score', 'manually_verified'
+    ]
+    list_filter = [
+        'filing_frequency', 'online_filing_available', 
+        'is_current', 'manually_verified', 'has_state_taxes',
+        'requires_registration', 'country'
+    ]
+    search_fields = ['country_name', 'region_name', 'country', 'tax_authority_name']
+    readonly_fields = ['created_at', 'updated_at', 'ai_last_verified']
+    
+    fieldsets = (
+        ('Location', {
+            'fields': ('country', 'country_name', 'region_code', 'region_name')
+        }),
+        ('Employee Tax Rates', {
+            'fields': (
+                'employee_social_security_rate', 'employee_medicare_rate',
+                'employee_unemployment_rate', 'employee_other_rate'
+            )
+        }),
+        ('Employer Tax Rates', {
+            'fields': (
+                'employer_social_security_rate', 'employer_medicare_rate',
+                'employer_unemployment_rate', 'employer_other_rate'
+            )
+        }),
+        ('Tax Thresholds', {
+            'fields': (
+                'social_security_wage_cap', 'medicare_additional_threshold',
+                'medicare_additional_rate'
+            )
+        }),
+        ('Filing Information', {
+            'fields': (
+                'tax_authority_name', 'filing_frequency', 'deposit_schedule',
+                'filing_day_of_month', 'quarter_end_filing_days', 'year_end_filing_days'
+            )
+        }),
+        ('Online Filing', {
+            'fields': (
+                'online_filing_available', 'online_portal_name', 'online_portal_url'
+            )
+        }),
+        ('Forms', {
+            'fields': (
+                'employee_tax_form', 'employer_return_form', 'year_end_employee_form'
+            )
+        }),
+        ('Special Rules', {
+            'fields': (
+                'has_state_taxes', 'has_local_taxes', 'requires_registration',
+                'registration_info'
+            )
+        }),
+        ('Service Pricing', {
+            'fields': ('manual_filing_fee', 'assisted_filing_fee')
+        }),
+        ('Instructions', {
+            'fields': ('filing_instructions', 'common_mistakes')
+        }),
+        ('AI Metadata', {
+            'fields': (
+                'ai_populated', 'ai_confidence_score', 'ai_source_notes',
+                'ai_last_verified'
+            )
+        }),
+        ('Validity', {
+            'fields': (
+                'effective_date', 'end_date', 'is_current',
+                'manually_verified', 'manual_notes'
+            )
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        })
+    )
+    
+    def total_employee_rate_display(self, obj):
+        return f"{obj.total_employee_rate * 100:.2f}%"
+    total_employee_rate_display.short_description = "Total Employee Rate"
+    
+    def total_employer_rate_display(self, obj):
+        return f"{obj.total_employer_rate * 100:.2f}%"
+    total_employer_rate_display.short_description = "Total Employer Rate"
+    
+    actions = ['mark_as_verified', 'mark_as_current', 'enable_online_filing']
+    
+    def mark_as_verified(self, request, queryset):
+        queryset.update(manually_verified=True)
+        self.message_user(request, f"{queryset.count()} payroll tax rates marked as verified.")
+    mark_as_verified.short_description = "Mark as manually verified"
+    
+    def mark_as_current(self, request, queryset):
+        queryset.update(is_current=True)
+        self.message_user(request, f"{queryset.count()} payroll tax rates marked as current.")
+    mark_as_current.short_description = "Mark as current"
+    
+    def enable_online_filing(self, request, queryset):
+        queryset.update(online_filing_available=True)
+        self.message_user(request, f"{queryset.count()} countries marked as having online filing.")
+    enable_online_filing.short_description = "Enable online filing"

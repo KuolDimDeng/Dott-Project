@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "事業主を招待",
     "analytics": "分析",
     "smartInsights": "スマートインサイト",
-    "dottStatus": "Dottステータス"
+    "dottStatus": "Dottステータス",
+    "jobs": "ジョブ"
   },
   "subMenu": {
     "dashboard": "ダッシュボード",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "勘定科目表",
     "journalEntries": "仕訳帳",
     "generalLedger": "総勘定元帳",
-    "trialBalance": "試算表"
+    "trialBalance": "試算表",
+    "jobsList": "すべてのジョブ",
+    "jobCosting": "ジョブ原価計算",
+    "jobMaterials": "資材使用量",
+    "jobLabor": "労働時間追跡",
+    "jobProfitability": "収益性分析",
+    "services": "サービス",
+    "jobs": "ジョブ"
   },
   "actions": {
     "viewAll": "すべて表示",

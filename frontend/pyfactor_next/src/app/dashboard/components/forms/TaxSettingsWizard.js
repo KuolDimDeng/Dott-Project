@@ -160,6 +160,17 @@ export default function TaxSettingsWizard({ onNavigate }) {
     hasProgressiveTax: false,
     flatPersonalIncomeTaxRate: '',
     
+    // Payroll Tax Overrides
+    overridePayrollTaxRates: false,
+    overrideEmployeeSocialSecurityRate: '',
+    overrideEmployeeMedicareRate: '',
+    overrideEmployeeUnemploymentRate: '',
+    overrideEmployerSocialSecurityRate: '',
+    overrideEmployerMedicareRate: '',
+    overrideEmployerUnemploymentRate: '',
+    payrollTaxRegistrationNumber: '',
+    payrollFilingFrequency: '',
+    
     // Step 3: Benefits & Insurance
     healthInsuranceRate: '',
     healthInsuranceEmployerRate: '',
@@ -368,7 +379,17 @@ export default function TaxSettingsWizard({ onNavigate }) {
           corporateIncomeTaxRate: formData.corporateIncomeTaxRate,
           personalIncomeTaxBrackets: formData.personalIncomeTaxBrackets,
           hasProgressiveTax: formData.hasProgressiveTax,
-          flatPersonalIncomeTaxRate: formData.flatPersonalIncomeTaxRate
+          flatPersonalIncomeTaxRate: formData.flatPersonalIncomeTaxRate,
+          // Payroll tax overrides
+          overridePayrollTaxRates: formData.overridePayrollTaxRates,
+          overrideEmployeeSocialSecurityRate: formData.overrideEmployeeSocialSecurityRate,
+          overrideEmployeeMedicareRate: formData.overrideEmployeeMedicareRate,
+          overrideEmployeeUnemploymentRate: formData.overrideEmployeeUnemploymentRate,
+          overrideEmployerSocialSecurityRate: formData.overrideEmployerSocialSecurityRate,
+          overrideEmployerMedicareRate: formData.overrideEmployerMedicareRate,
+          overrideEmployerUnemploymentRate: formData.overrideEmployerUnemploymentRate,
+          payrollTaxRegistrationNumber: formData.payrollTaxRegistrationNumber,
+          payrollFilingFrequency: formData.payrollFilingFrequency
         };
         stepKey = 'taxRates';
         setTaxRates(stepData);
@@ -853,6 +874,160 @@ export default function TaxSettingsWizard({ onNavigate }) {
                   )}
                 </div>
               )}
+              
+              {/* Payroll Tax Overrides */}
+              <div>
+                <h3 className="text-md font-medium text-gray-800 mb-3">Payroll Tax Overrides</h3>
+                <div className="mb-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.overridePayrollTaxRates}
+                      onChange={(e) => setFormData({ ...formData, overridePayrollTaxRates: e.target.checked })}
+                      className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Override default payroll tax rates</span>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1 ml-6">
+                    Check this box if your payroll tax rates differ from the standard rates for your location
+                  </p>
+                </div>
+                
+                {formData.overridePayrollTaxRates && (
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Employee Tax Rates (%)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Social Security
+                            <FieldTooltip text="The percentage of wages withheld from employee paychecks for social security/pension" />
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.overrideEmployeeSocialSecurityRate}
+                            onChange={(e) => setFormData({ ...formData, overrideEmployeeSocialSecurityRate: e.target.value })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Medicare/Healthcare
+                            <FieldTooltip text="The percentage of wages withheld for healthcare/medicare programs" />
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.overrideEmployeeMedicareRate}
+                            onChange={(e) => setFormData({ ...formData, overrideEmployeeMedicareRate: e.target.value })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Unemployment Insurance
+                            <FieldTooltip text="The percentage of wages withheld for unemployment insurance (if applicable)" />
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.overrideEmployeeUnemploymentRate}
+                            onChange={(e) => setFormData({ ...formData, overrideEmployeeUnemploymentRate: e.target.value })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Employer Tax Rates (%)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Social Security
+                            <FieldTooltip text="The percentage of wages paid by the employer for social security/pension" />
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.overrideEmployerSocialSecurityRate}
+                            onChange={(e) => setFormData({ ...formData, overrideEmployerSocialSecurityRate: e.target.value })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Medicare/Healthcare
+                            <FieldTooltip text="The percentage of wages paid by the employer for healthcare/medicare" />
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.overrideEmployerMedicareRate}
+                            onChange={(e) => setFormData({ ...formData, overrideEmployerMedicareRate: e.target.value })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Unemployment Insurance
+                            <FieldTooltip text="The percentage of wages paid by the employer for unemployment insurance" />
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.overrideEmployerUnemploymentRate}
+                            onChange={(e) => setFormData({ ...formData, overrideEmployerUnemploymentRate: e.target.value })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Employer Tax ID/Registration Number
+                          <FieldTooltip text="Your employer identification number for payroll tax purposes" />
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.payrollTaxRegistrationNumber}
+                          onChange={(e) => setFormData({ ...formData, payrollTaxRegistrationNumber: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter tax ID"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Filing Frequency Override
+                          <FieldTooltip text="Override the default filing frequency if your requirements are different" />
+                        </label>
+                        <select
+                          value={formData.payrollFilingFrequency}
+                          onChange={(e) => setFormData({ ...formData, payrollFilingFrequency: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Use Default</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="bi_weekly">Bi-Weekly</option>
+                          <option value="semi_monthly">Semi-Monthly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="quarterly">Quarterly</option>
+                          <option value="annual">Annual</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );

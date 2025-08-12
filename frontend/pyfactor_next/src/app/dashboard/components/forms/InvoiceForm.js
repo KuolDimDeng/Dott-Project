@@ -42,7 +42,36 @@ const InvoiceForm = ({ mode = 'create' }) => {
   useEffect(() => {
     logger.info('[InvoiceForm] Component mounted');
     fetchUserProfile();
+    loadBusinessLogo();
   }, []);
+
+  const loadBusinessLogo = async () => {
+    try {
+      const response = await fetch('/api/business/logo');
+      if (response.ok) {
+        const data = await response.json();
+        // Check for logo_data or logo_url (API now returns logo_data: null for no logo)
+        const logoData = data.logo_data || data.logo_url;
+        if (logoData) {
+          // Convert backend URL to full URL if needed
+          const fullUrl = logoData.startsWith('http') 
+            ? logoData 
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${logoData}`;
+          setLogo(fullUrl);
+        } else {
+          // No logo found
+          console.log('[InvoiceForm] No business logo found');
+          setLogo(null);
+        }
+      } else {
+        console.log('[InvoiceForm] Failed to fetch business logo');
+        setLogo(null);
+      }
+    } catch (error) {
+      console.log('[InvoiceForm] Business logo fetch failed (expected for users without logos):', error.message);
+      setLogo(null);
+    }
+  };
 
   useEffect(() => {
     if (userDatabase) {
@@ -850,7 +879,7 @@ const InvoiceForm = ({ mode = 'create' }) => {
       </ModernFormLayout>
       
       {showPreview && previewData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-medium">Invoice Preview</h3>

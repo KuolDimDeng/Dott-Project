@@ -15,6 +15,7 @@ import api from '@/utils/api';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
 import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
+import InlineEmployeeAssignment from './InlineEmployeeAssignment';
 
 // Google Maps Integration - Simplified Version
 const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
@@ -23,19 +24,45 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
   const [mapError, setMapError] = useState(null);
+  const [businessLocations, setBusinessLocations] = useState([]);
+  const [locationMarkers, setLocationMarkers] = useState([]);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const [geofenceData, setGeofenceData] = useState({
     name: '',
+    description: '',  // Add description field (optional but good to include)
     location_type: 'OFFICE',  // Changed from geofence_type to location_type (backend field name)
+    shape_type: 'CIRCLE',  // Add shape_type field (required by backend)
     center_latitude: null,
     center_longitude: null,
-    radius: 100,
+    radius_meters: 100,  // Changed from radius to radius_meters (backend field name)
     require_for_clock_in: true,  // Changed from enforce_clock_in (backend field name)
     require_for_clock_out: false,  // Changed from enforce_clock_out (backend field name)
     auto_clock_out_on_exit: false,  // Changed from auto_clock_out (backend field name)
-    alert_on_unexpected_exit: false
+    alert_on_unexpected_exit: false,
+    is_active: true  // Explicitly set is_active
   });
+
+  // Fetch business locations
+  const fetchBusinessLocations = async () => {
+    try {
+      console.log('[GoogleMaps] Fetching business locations...');
+      const response = await api.get('/api/inventory/locations');
+      const locations = response.results || response.data || response || [];
+      
+      // Filter locations that have coordinates
+      const locationsWithCoords = locations.filter(loc => 
+        loc.latitude && loc.longitude && loc.is_active
+      );
+      
+      console.log('[GoogleMaps] Found', locationsWithCoords.length, 'locations with coordinates');
+      setBusinessLocations(locationsWithCoords);
+      return locationsWithCoords;
+    } catch (error) {
+      console.error('[GoogleMaps] Error fetching locations:', error);
+      return [];
+    }
+  };
 
   // Load Google Maps script
   const loadGoogleMapsScript = () => {
@@ -96,7 +123,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
         mapRef.current = googleMap;
         setMap(googleMap);
-        setLoading(false);
         
         console.log('[GoogleMaps] Initialized successfully');
         
@@ -118,6 +144,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           });
         }
         
+        // Fetch and display business locations
+        const locations = await fetchBusinessLocations();
+        displayLocationMarkers(googleMap, locations);
+        
+        setLoading(false);
+        
       } catch (error) {
         console.error('[GoogleMaps] Init error:', error);
         setMapError(error.message);
@@ -133,6 +165,114 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     };
   }, [isVisible]);
 
+  const displayLocationMarkers = (googleMap, locations) => {
+    // Clear existing markers
+    locationMarkers.forEach(marker => marker.setMap(null));
+    const newMarkers = [];
+    
+    locations.forEach(location => {
+      const marker = new window.google.maps.Marker({
+        position: {
+          lat: parseFloat(location.latitude),
+          lng: parseFloat(location.longitude)
+        },
+        map: googleMap,
+        title: location.name,
+        icon: {
+          url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          scaledSize: new window.google.maps.Size(40, 40)
+        }
+      });
+      
+      // Create info window
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px;">
+            <h3 style="margin: 0 0 8px 0; font-weight: 600;">${location.name}</h3>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+              ${location.street_address || ''}<br/>
+              ${location.city ? location.city + ', ' : ''}${location.state_province || ''} ${location.postal_code || ''}
+            </p>
+            <button 
+              style="margin-top: 8px; padding: 4px 12px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;"
+              onclick="window.createGeofenceAtLocation(${location.latitude}, ${location.longitude}, '${location.name}')"
+            >
+              Create Geofence Here
+            </button>
+          </div>
+        `
+      });
+      
+      marker.addListener('click', () => {
+        infoWindow.open(googleMap, marker);
+      });
+      
+      newMarkers.push(marker);
+    });
+    
+    setLocationMarkers(newMarkers);
+  };
+
+  // Make function available globally for info window buttons
+  useEffect(() => {
+    window.createGeofenceAtLocation = (lat, lng, name) => {
+      if (map && window.google) {
+        const center = { lat: parseFloat(lat), lng: parseFloat(lng) };
+        
+        // Remove existing geofence if any
+        if (geofence) {
+          geofence.setMap(null);
+        }
+        
+        // Create new geofence
+        const newGeofence = new window.google.maps.Circle({
+          center: center,
+          radius: geofenceData.radius_meters,
+          fillColor: '#2563eb',
+          fillOpacity: 0.35,
+          strokeColor: '#1d4ed8',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          editable: true,
+          draggable: true
+        });
+        
+        newGeofence.setMap(map);
+        setGeofence(newGeofence);
+        
+        // Pre-fill the name based on location
+        setGeofenceData(prev => ({
+          ...prev,
+          name: `${name} - Geofence`,
+          center_latitude: parseFloat(lat.toFixed(7)),
+          center_longitude: parseFloat(lng.toFixed(7))
+        }));
+        
+        // Listen for changes
+        window.google.maps.event.addListener(newGeofence, 'radius_changed', () => {
+          setGeofenceData(prev => ({ ...prev, radius_meters: Math.round(newGeofence.getRadius()) }));
+        });
+        
+        window.google.maps.event.addListener(newGeofence, 'center_changed', () => {
+          const newCenter = newGeofence.getCenter();
+          setGeofenceData(prev => ({
+            ...prev,
+            center_latitude: parseFloat(newCenter.lat().toFixed(7)),
+            center_longitude: parseFloat(newCenter.lng().toFixed(7))
+          }));
+        });
+        
+        // Center map on the location
+        map.setCenter(center);
+        map.setZoom(16);
+      }
+    };
+    
+    return () => {
+      delete window.createGeofenceAtLocation;
+    };
+  }, [map, geofence, geofenceData.radius_meters]);
+
   const handleMapClick = (event, googleMap) => {
     if (geofence) {
       geofence.setMap(null);
@@ -145,7 +285,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
     const newGeofence = new window.google.maps.Circle({
       center: center,
-      radius: geofenceData.radius,
+      radius: geofenceData.radius_meters,
       fillColor: '#2563eb',
       fillOpacity: 0.35,
       strokeColor: '#1d4ed8',
@@ -160,13 +300,13 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     
     setGeofenceData(prev => ({
       ...prev,
-      center_latitude: center.lat,
-      center_longitude: center.lng
+      center_latitude: parseFloat(center.lat.toFixed(7)),
+      center_longitude: parseFloat(center.lng.toFixed(7))
     }));
 
     // Listen for radius changes
     window.google.maps.event.addListener(newGeofence, 'radius_changed', () => {
-      setGeofenceData(prev => ({ ...prev, radius: Math.round(newGeofence.getRadius()) }));
+      setGeofenceData(prev => ({ ...prev, radius_meters: Math.round(newGeofence.getRadius()) }));
     });
 
     // Listen for center changes
@@ -174,8 +314,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       const newCenter = newGeofence.getCenter();
       setGeofenceData(prev => ({
         ...prev,
-        center_latitude: newCenter.lat(),
-        center_longitude: newCenter.lng()
+        center_latitude: parseFloat(newCenter.lat().toFixed(7)),
+        center_longitude: parseFloat(newCenter.lng().toFixed(7))
       }));
     });
   };
@@ -207,13 +347,57 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     setSaving(true);
     try {
       console.log('[GeofenceSetup] Saving geofence:', geofenceData);
-      const response = await api.post('/api/hr/geofences', geofenceData);
-      console.log('[GeofenceSetup] Geofence created - Full response:', response);
-      console.log('[GeofenceSetup] Geofence created - Response data:', response.data);
-      console.log('[GeofenceSetup] Geofence created - Response data type:', typeof response.data);
-      console.log('[GeofenceSetup] Geofence created - Response data keys:', Object.keys(response.data || {}));
+      console.log('[GeofenceSetup] Geofence data being sent:', JSON.stringify(geofenceData, null, 2));
       
-      toast.success('Geofence created successfully');
+      // First test with debug endpoint
+      console.log('[GeofenceSetup] Testing with debug_create endpoint first...');
+      try {
+        const debugResponse = await api.post('/api/hr/geofences/debug_create', geofenceData);
+        console.log('[GeofenceSetup] Debug validation response:', debugResponse);
+        
+        if (debugResponse && debugResponse.status === 'invalid') {
+          console.error('[GeofenceSetup] Validation failed:', debugResponse.errors);
+          toast.error('Validation failed. Check console for details.');
+          setSaving(false);
+          return;
+        }
+      } catch (debugError) {
+        console.error('[GeofenceSetup] Debug validation failed:', debugError);
+        console.error('[GeofenceSetup] Debug error response:', debugError.response);
+        console.error('[GeofenceSetup] Debug error data:', debugError.response?.data);
+      }
+      
+      const response = await api.post('/api/hr/geofences/', geofenceData);
+      console.log('[GeofenceSetup] POST response:', response);
+      console.log('[GeofenceSetup] Response type:', typeof response);
+      
+      // Handle different response structures
+      let responseData = response;
+      if (response && response.data) {
+        responseData = response.data;
+      }
+      
+      console.log('[GeofenceSetup] Response data:', responseData);
+      console.log('[GeofenceSetup] Response data type:', typeof responseData);
+      console.log('[GeofenceSetup] Response data keys:', Object.keys(responseData || {}));
+      
+      // Check if it's actually a geofence object
+      if (responseData && responseData.id) {
+        console.log('[GeofenceSetup] Created geofence details:', {
+          id: responseData.id,
+          name: responseData.name,
+          business_id: responseData.business_id,
+          is_active: responseData.is_active
+        });
+      } else {
+        console.error('[GeofenceSetup] Response does not contain expected geofence data');
+      }
+      
+      // Check if response is an error wrapped in data
+      if (response.data && response.data.error) {
+        console.error('[GeofenceSetup] Server returned error in data:', response.data);
+        throw new Error(response.data.error || 'Server error');
+      }
       
       // Clear the map circle
       if (geofence) {
@@ -222,21 +406,67 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       
       // Call the callback if provided
       if (onGeofenceCreated) {
-        console.log('[GeofenceSetup] Calling onGeofenceCreated with:', response.data);
-        onGeofenceCreated(response.data);
+        console.log('[GeofenceSetup] Calling onGeofenceCreated with:', responseData);
+        onGeofenceCreated(responseData);
       } else {
         console.warn('[GeofenceSetup] No onGeofenceCreated callback provided');
+        toast.success('Geofence created successfully');
       }
     } catch (error) {
       console.error('[GeofenceSetup] Error creating geofence:', error);
+      console.error('[GeofenceSetup] Full error object:', JSON.stringify(error, null, 2));
+      console.error('[GeofenceSetup] Error response:', error.response);
+      console.error('[GeofenceSetup] Error response data:', error.response?.data);
+      console.error('[GeofenceSetup] Error response status:', error.response?.status);
+      
       // Safely access error properties
       let errorMessage = 'Failed to create geofence';
       if (error && error.response && error.response.data) {
-        errorMessage = error.response.data.detail || error.response.data.error || errorMessage;
+        console.error('[GeofenceSetup] Backend error response data:', JSON.stringify(error.response.data, null, 2));
+        
+        // Check if detail is an object with more specific error info
+        if (error.response.data.detail && typeof error.response.data.detail === 'object') {
+          console.error('[GeofenceSetup] Detail object:', error.response.data.detail);
+          // Extract the actual error message from nested detail
+          if (error.response.data.detail.detail) {
+            errorMessage = error.response.data.detail.detail;
+          } else if (error.response.data.detail.error) {
+            errorMessage = error.response.data.detail.error;
+          } else {
+            errorMessage = JSON.stringify(error.response.data.detail);
+          }
+        } else {
+          errorMessage = error.response.data.detail || error.response.data.error || errorMessage;
+        }
+        
+        // Check for field-specific validation errors
+        const fieldErrors = [];
+        Object.keys(error.response.data).forEach(field => {
+          if (field !== 'detail' && field !== 'error' && field !== 'status') {
+            const fieldError = error.response.data[field];
+            if (Array.isArray(fieldError)) {
+              fieldErrors.push(`${field}: ${fieldError.join(', ')}`);
+            } else if (typeof fieldError === 'string') {
+              fieldErrors.push(`${field}: ${fieldError}`);
+            }
+          }
+        });
+        
+        if (fieldErrors.length > 0) {
+          errorMessage = `Validation errors: ${fieldErrors.join('; ')}`;
+        }
       } else if (error && error.message) {
         errorMessage = error.message;
       }
+      
+      console.error('[GeofenceSetup] Final error message:', errorMessage);
       toast.error(errorMessage);
+      
+      // Refresh the list in case it was actually created despite the error
+      if (onGeofenceCreated) {
+        console.log('[GeofenceSetup] Refreshing list after error...');
+        onGeofenceCreated(null);
+      }
     } finally {
       setSaving(false);
     }
@@ -287,10 +517,10 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         <div className="mt-1 flex items-center space-x-2">
           <input
             type="number"
-            value={geofenceData.radius}
+            value={geofenceData.radius_meters}
             onChange={(e) => {
               const newRadius = parseInt(e.target.value) || 100;
-              setGeofenceData(prev => ({ ...prev, radius: newRadius }));
+              setGeofenceData(prev => ({ ...prev, radius_meters: newRadius }));
               if (geofence) {
                 geofence.setRadius(newRadius);
               }
@@ -352,6 +582,28 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         </label>
       </div>
 
+      {/* Business Locations */}
+      {businessLocations.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Business Locations
+          </label>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-700 mb-2">
+              <strong>{businessLocations.length} location{businessLocations.length > 1 ? 's' : ''}</strong> found. 
+              Click a blue marker on the map to create a geofence at that location.
+            </p>
+            <div className="space-y-1">
+              {businessLocations.map((loc, idx) => (
+                <div key={loc.id} className="text-xs text-blue-600">
+                  • {loc.name} - {loc.city}, {loc.state_province}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Map */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -397,7 +649,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         </div>
         {geofenceData.center_latitude && geofenceData.center_longitude && (
           <p className="text-xs text-gray-600 mt-1">
-            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
+            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius_meters}m
           </p>
         )}
       </div>
@@ -430,15 +682,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   );
 };
 
-// Main GeofencingSettings component
+// Main GeofencingSettings component - Updated 2025-07-26
 const GeofencingSettings = () => {
   console.log('[GeofencingSettings] === COMPONENT MOUNT START ===');
   const [geofences, setGeofences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [hasAcceptedCompliance, setHasAcceptedCompliance] = useState(true); // Set to true for now to bypass compliance
-  const [selectedGeofence, setSelectedGeofence] = useState(null);
-  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [expandedGeofenceId, setExpandedGeofenceId] = useState(null);
   
   console.log('[GeofencingSettings] State initialized:', {
     hasAcceptedCompliance,
@@ -452,23 +703,64 @@ const GeofencingSettings = () => {
     try {
       setLoading(true);
       console.log('[GeofencingSettings] 📡 Making API request to /api/hr/geofences');
-      const response = await api.get('/api/hr/geofences');
+      
+      // Add a timestamp to avoid caching and force refresh
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/api/hr/geofences?t=${timestamp}&_=${Math.random()}`);
+      
       console.log('[GeofencingSettings] ✅ API Response:', response);
       console.log('[GeofencingSettings] Response type:', typeof response);
       console.log('[GeofencingSettings] Response keys:', Object.keys(response || {}));
+      console.log('[GeofencingSettings] Full response data:', JSON.stringify(response, null, 2));
       
       // Handle different response formats
       let geofenceData = [];
       if (response && response.results) {
+        console.log('[GeofencingSettings] Found paginated response with results');
         geofenceData = response.results;
       } else if (Array.isArray(response)) {
+        console.log('[GeofencingSettings] Response is array');
         geofenceData = response;
       } else if (response && response.data) {
+        console.log('[GeofencingSettings] Found data property in response');
         geofenceData = response.data;
+      } else {
+        console.log('[GeofencingSettings] ⚠️ Unexpected response format, treating as empty array');
+        console.log('[GeofencingSettings] Raw response was:', response);
+        
+        // Try to extract data from any nested structure
+        if (response && typeof response === 'object') {
+          const keys = Object.keys(response);
+          console.log('[GeofencingSettings] Response object keys:', keys);
+          // Check if there's a key that might contain the data
+          for (const key of keys) {
+            if (Array.isArray(response[key])) {
+              console.log(`[GeofencingSettings] Found array in response.${key}, using that`);
+              geofenceData = response[key];
+              break;
+            }
+          }
+        }
       }
       
       console.log('[GeofencingSettings] 📍 Processed geofences:', geofenceData);
       console.log('[GeofencingSettings] 📍 Geofences count:', geofenceData.length);
+      
+      // Log each geofence for debugging
+      if (geofenceData.length > 0) {
+        geofenceData.forEach((g, index) => {
+          console.log(`[GeofencingSettings] Geofence ${index}:`, {
+            id: g.id,
+            name: g.name,
+            business_id: g.business_id,
+            is_active: g.is_active,
+            location_type: g.location_type,
+            center: `${g.center_latitude}, ${g.center_longitude}`,
+            radius: g.radius_meters
+          });
+        });
+      }
+      
       setGeofences(geofenceData);
     } catch (error) {
       console.error('[GeofencingSettings] ❌ Error loading geofences:', error);
@@ -501,10 +793,34 @@ const GeofencingSettings = () => {
     };
   }, [hasAcceptedCompliance]);
 
-  const handleGeofenceCreated = (newGeofence) => {
+  const handleGeofenceCreated = async (newGeofence) => {
     console.log('[GeofencingSettings] Geofence created:', newGeofence);
+    console.log('[GeofencingSettings] New geofence details:', {
+      id: newGeofence?.id,
+      name: newGeofence?.name,
+      is_active: newGeofence?.is_active,
+      business_id: newGeofence?.business_id
+    });
     setShowCreateForm(false);
-    loadGeofences();
+    
+    // Add a small delay before refreshing to ensure backend has processed the creation
+    if (newGeofence) {
+      toast.success('Geofence created! Refreshing list...');
+      
+      // Force immediate refresh, then another after delay
+      console.log('[GeofencingSettings] Doing immediate refresh...');
+      await loadGeofences();
+      
+      // Also do a delayed refresh in case of any propagation delay
+      setTimeout(async () => {
+        console.log('[GeofencingSettings] Doing delayed refresh...');
+        await loadGeofences();
+      }, 2000);
+    } else {
+      // This is called on error - immediate refresh to check if it was created anyway
+      console.log('[GeofencingSettings] Error case - refreshing to check if created anyway...');
+      loadGeofences();
+    }
   };
 
   console.log('[GeofencingSettings] 🎨 Rendering component, hasAcceptedCompliance:', hasAcceptedCompliance);
@@ -556,13 +872,106 @@ const GeofencingSettings = () => {
             Set up location-based zones for employee time tracking
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <PlusCircleIcon className="h-5 w-5 mr-2" />
-          Add Geofence
-        </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <PlusCircleIcon className="h-5 w-5 mr-2" />
+            Add Geofence
+          </button>
+          <button
+            onClick={() => {
+              console.log('[GeofencingSettings] Manual refresh clicked');
+              loadGeofences();
+            }}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+          <button
+            onClick={async () => {
+              console.log('[DEBUG] Testing simple endpoint...');
+              try {
+                const testResponse = await api.post('/api/hr/test-geofence/', {
+                  test: 'data',
+                  name: 'Test Geofence Simple'
+                });
+                console.log('[DEBUG] Simple test response:', testResponse);
+                alert(`Simple Test Results:\n${JSON.stringify(testResponse, null, 2)}`);
+              } catch (error) {
+                console.error('[DEBUG] Simple test error:', error);
+                console.error('[DEBUG] Error response:', error.response);
+                alert(`Simple Test Error: ${error.message}`);
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50"
+          >
+            Test Simple
+          </button>
+          <button
+            onClick={async () => {
+              console.log('[DEBUG] Testing create and list...');
+              try {
+                const testResponse = await api.post('/api/hr/geofences/test_create_and_list', {});
+                console.log('[DEBUG] Test create and list response:', testResponse);
+                alert(`Test Results:\n${JSON.stringify(testResponse, null, 2)}`);
+                // Refresh the list after test
+                await loadGeofences();
+              } catch (error) {
+                console.error('[DEBUG] Test error:', error);
+                alert(`Test Error: ${error.message}`);
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50"
+          >
+            Test Create & List
+          </button>
+          <button
+            onClick={async () => {
+              console.log('[DEBUG] Testing geofence API...');
+              try {
+                const response = await api.get('/api/hr/geofences/debug_list');
+                console.log('[DEBUG] Debug list response:', response);
+                console.log('[DEBUG] Debug list data:', JSON.stringify(response, null, 2));
+                
+                // Get session info to check business_id
+                const session = await api.get('/api/auth/session-v2');
+                console.log('[DEBUG] Current session:', session);
+                
+                const debugInfo = `
+Debug Information:
+=================
+Total Geofences in DB: ${response.total_geofences_in_db || 0}
+User Business ID: ${response.user_business_id || 'N/A'}
+User Geofences Count: ${response.user_geofences_count || 0}
+Active User Geofences: ${response.active_user_geofences_count || 0}
+
+Session Business ID: ${session?.user?.business_id || 'N/A'}
+Session User: ${session?.user?.email || 'N/A'}
+
+All Geofences:
+${JSON.stringify(response.all_geofences || [], null, 2)}
+
+User Geofences:
+${JSON.stringify(response.user_geofences || [], null, 2)}
+                `;
+                
+                console.log('[DEBUG] Full debug info:', debugInfo);
+                alert(debugInfo);
+              } catch (error) {
+                console.error('[DEBUG] Debug list error:', error);
+                toast.error('Debug endpoint error');
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Debug API
+          </button>
+        </div>
       </div>
 
       {/* Create Form */}
@@ -580,17 +989,18 @@ const GeofencingSettings = () => {
           <StandardSpinner size="medium" />
         </div>
       ) : geofences.length > 0 ? (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {geofences.map((geofence) => (
-              <li key={geofence.id} className="px-6 py-4">
+        <div className="space-y-4">
+          {geofences.map((geofence) => (
+            <div key={geofence.id} className="bg-white shadow overflow-hidden sm:rounded-md">
+              {/* Geofence Header */}
+              <div className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <MapPinIcon className="h-10 w-10 text-gray-400 mr-4" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{geofence.name}</p>
                       <p className="text-sm text-gray-500">
-                        {geofence.location_type} • Radius: {geofence.radius}m
+                        {geofence.location_type} • Radius: {geofence.radius_meters}m
                       </p>
                     </div>
                   </div>
@@ -600,20 +1010,29 @@ const GeofencingSettings = () => {
                         Active
                       </span>
                     )}
-                    <button
-                      onClick={() => {
-                        setSelectedGeofence(geofence);
-                        setShowAssignModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      Assign Employees
-                    </button>
                   </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+              
+              {/* Inline Employee Assignment */}
+              <div className="px-6 pb-4">
+                <InlineEmployeeAssignment
+                  geofence={geofence}
+                  onAssignmentComplete={(assignedIds) => {
+                    console.log('🎯 [GeofencingSettings] Assignment complete for geofence:', geofence.id);
+                    console.log('🎯 [GeofencingSettings] Assigned employee IDs:', assignedIds);
+                    // Optionally refresh the geofences list
+                    loadGeofences();
+                  }}
+                  isExpanded={expandedGeofenceId === geofence.id}
+                  onToggleExpand={() => {
+                    console.log('🎯 [GeofencingSettings] Toggling expansion for:', geofence.id);
+                    setExpandedGeofenceId(expandedGeofenceId === geofence.id ? null : geofence.id);
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -624,6 +1043,7 @@ const GeofencingSettings = () => {
           </p>
         </div>
       )}
+
     </div>
   );
 };

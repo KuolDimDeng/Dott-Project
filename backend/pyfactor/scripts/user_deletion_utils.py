@@ -2,7 +2,7 @@
 Utility functions for safe user deletion that handle missing tables gracefully
 """
 import logging
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -111,7 +111,7 @@ def delete_user_safely(email):
         deleted_tables = []
         skipped_tables = []
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connection.cursor() as cursor:
                 # Process each deletion query
                 for query, table_name, params in deletion_queries:

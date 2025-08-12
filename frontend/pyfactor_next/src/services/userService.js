@@ -5,7 +5,6 @@ import { appCache } from '@/utils/appCache';
 
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { signOut } from '@/config/amplifyUnified';
 
 // Add global window-level cache to ensure cross-component deduplication
 if (typeof window !== 'undefined') {
@@ -148,8 +147,10 @@ export const logout = async () => {
     appCache.set('userProfile', null);
   }
   
-  // Call Auth API to complete logout
-  return await signOut();
+  // Call Auth0 logout API 
+  if (typeof window !== 'undefined') {
+    window.location.href = '/api/auth/logout';
+  }
 };
 
 /**

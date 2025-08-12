@@ -83,14 +83,13 @@ export default async function TenantLayout({ children, params, searchParams }) {
     // For client-side session verification, we'll handle it in a client component
     // This allows us to check for pending sessions from recent logins
     if (!session || !session.user) {
-      // Import the client-side session check component
-      const SessionCheck = (await import('./SessionCheck.jsx')).default;
-      
+      // Don't use client component in server layout
+      // Just render without session check - let individual pages handle auth
       return (
-        <SessionCheck>
+        <>
           <TenantInitializer tenantId={tenantId} />
           {children}
-        </SessionCheck>
+        </>
       );
     }
     

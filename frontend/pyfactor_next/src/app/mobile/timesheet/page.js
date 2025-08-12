@@ -29,6 +29,7 @@ import {
   getGeofenceStatus
 } from '@/utils/locationServices';
 import toast from 'react-hot-toast';
+import timesheetApi from '@/utils/api/timesheetApi';
 
 export default function MobileTimesheetPage() {
   const { session, loading } = useSession();
@@ -39,6 +40,8 @@ export default function MobileTimesheetPage() {
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weekDays, setWeekDays] = useState([]);
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loadingEmployee, setLoadingEmployee] = useState(true);
   
   // Location tracking states
   const [showLocationConsent, setShowLocationConsent] = useState(false);
@@ -50,6 +53,10 @@ export default function MobileTimesheetPage() {
   const [employeeGeofences, setEmployeeGeofences] = useState([]);
   const [geofenceCheckResult, setGeofenceCheckResult] = useState(null);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState(false);
+  
+  // Clock status states
+  const [clockStatus, setClockStatus] = useState(null);
+  const [clockInTime, setClockInTime] = useState(null);
   const [lastClockInLocation, setLastClockInLocation] = useState(null);
   const randomCheckTimeoutRef = useRef(null);
 
@@ -77,30 +84,164 @@ export default function MobileTimesheetPage() {
     }
   }, [session, loading, router]);
 
-  // Load timesheet data
-  useEffect(() => {
-    if (session?.employee?.id && session?.tenantId) {
-      loadTimesheetData();
-      checkLocationPermissions();
-      loadEmployeeGeofences();
+  // Fetch employee data for the current user
+  const fetchEmployeeData = async () => {
+    console.log('🎯 [MobileTimesheet] === FETCHING EMPLOYEE DATA ===');
+    console.log('🎯 [MobileTimesheet] User email:', session?.user?.email);
+    console.log('🎯 [MobileTimesheet] Full session:', session);
+    console.log('🎯 [MobileTimesheet] Tenant ID from session:', session?.user?.tenant_id || session?.user?.tenantId);
+    
+    if (!session?.user?.email) {
+      console.log('🎯 [MobileTimesheet] No user email in session, skipping employee fetch');
+      return;
     }
-  }, [session]);
-  
-  // Load employee geofences
-  const loadEmployeeGeofences = async () => {
+    
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    if (!tenantId) {
+      console.error('🎯 [MobileTimesheet] No tenant ID found in session');
+      return;
+    }
+    
+    setLoadingEmployee(true);
     try {
-      const response = await fetch(`/api/hr/employee-geofences/?employee_id=${session.employee.id}`, {
+      // Try to get all employees and filter by email
+      const response = await fetch('/api/hr/v2/employees/', {
+        credentials: 'include',
         headers: {
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
       });
       
+      console.log('🎯 [MobileTimesheet] Employees API response status:', response.status);
+      console.log('🎯 [MobileTimesheet] Employees API response headers:', Object.fromEntries(response.headers));
+      
+      if (response.ok) {
+        const responseText = await response.text();
+        console.log('🎯 [MobileTimesheet] Raw employees response:', responseText.substring(0, 500));
+        
+        try {
+          const data = JSON.parse(responseText);
+          console.log('🎯 [MobileTimesheet] Parsed employees data:', {
+            dataType: typeof data,
+            isArray: Array.isArray(data),
+            count: Array.isArray(data) ? data.length : 'N/A',
+            hasResults: data?.results ? data.results.length : 'N/A'
+          });
+          
+          // Handle different response formats
+          let employeesList = data;
+          if (data && typeof data === 'object' && 'results' in data) {
+            employeesList = data.results;
+          } else if (data && typeof data === 'object' && 'data' in data) {
+            employeesList = data.data;
+          }
+          
+          // Find employee by email
+          if (Array.isArray(employeesList)) {
+            console.log('🎯 [MobileTimesheet] Searching for employee with email:', session.user.email);
+            const currentUserEmployee = employeesList.find(emp => 
+              emp.email === session.user.email || 
+              emp.user?.email === session.user.email
+            );
+            
+            if (currentUserEmployee) {
+              console.log('🎯 [MobileTimesheet] Found employee:', currentUserEmployee);
+              setEmployeeData(currentUserEmployee);
+            } else {
+              console.error('🎯 [MobileTimesheet] No employee found with email:', session.user.email);
+              console.log('🎯 [MobileTimesheet] Available employees:', employeesList.map(e => ({
+                id: e.id,
+                email: e.email,
+                userEmail: e.user?.email
+              })));
+            }
+          } else {
+            console.error('🎯 [MobileTimesheet] Employees response is not an array:', employeesList);
+          }
+        } catch (parseError) {
+          console.error('🎯 [MobileTimesheet] Failed to parse employees JSON:', parseError);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('🎯 [MobileTimesheet] Failed to fetch employees data:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText.substring(0, 500)
+        });
+      }
+    } catch (error) {
+      console.error('🎯 [MobileTimesheet] Error fetching employee:', error);
+    } finally {
+      setLoadingEmployee(false);
+    }
+  };
+
+  // Load employee data on session change
+  useEffect(() => {
+    console.log('🎯 [MobileTimesheet] === SESSION CHECK ===');
+    console.log('🎯 [MobileTimesheet] Full session:', session);
+    console.log('🎯 [MobileTimesheet] User:', session?.user);
+    
+    // Check if user is authenticated
+    if (session?.user?.email) {
+      fetchEmployeeData();
+    }
+  }, [session]);
+  
+  // Load timesheet data when employee is loaded
+  useEffect(() => {
+    console.log('🎯 [MobileTimesheet] === EMPLOYEE DATA LOADED ===');
+    console.log('🎯 [MobileTimesheet] Employee:', employeeData);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.user?.tenant_id || session?.user?.tenantId);
+    
+    if (employeeData?.id && session?.user) {
+      loadTimesheetData();
+      fetchClockStatus();
+      checkLocationPermissions();
+      loadEmployeeGeofences();
+    }
+  }, [employeeData, session]);
+  
+  // Load employee geofences
+  const loadEmployeeGeofences = async () => {
+    console.log('🎯 [MobileTimesheet] === LOADING GEOFENCES START ===');
+    console.log('🎯 [MobileTimesheet] Employee ID:', employeeData?.id);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.user?.tenant_id || session?.user?.tenantId);
+    
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
+    if (!employeeData?.id || !tenantId) return;
+    
+    try {
+      const response = await fetch(`/api/hr/employee-geofences/?employee_id=${employeeData.id}`, {
+        headers: {
+          'X-Tenant-ID': tenantId,
+        },
+      });
+      
+      console.log('🎯 [MobileTimesheet] Geofences response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        const activeGeofences = data
-          .filter(eg => eg.is_active && eg.geofence?.is_active)
-          .map(eg => eg.geofence);
-        setEmployeeGeofences(activeGeofences);
+        console.log('🎯 [MobileTimesheet] Geofences data:', data);
+        
+        // Handle different response formats and ensure data is an array
+        let geofencesList = data;
+        if (data && typeof data === 'object' && 'results' in data) {
+          geofencesList = data.results;
+        } else if (data && typeof data === 'object' && 'data' in data) {
+          geofencesList = data.data;
+        }
+        
+        if (Array.isArray(geofencesList)) {
+          const activeGeofences = geofencesList
+            .filter(eg => eg.is_active && eg.geofence?.is_active)
+            .map(eg => eg.geofence);
+          setEmployeeGeofences(activeGeofences);
+        } else {
+          console.error('🎯 [MobileTimesheet] Geofences response is not an array:', geofencesList);
+          setEmployeeGeofences([]);
+        }
       }
     } catch (error) {
       console.error('Error loading geofences:', error);
@@ -110,12 +251,16 @@ export default function MobileTimesheetPage() {
   // Check location permissions and consent
   const checkLocationPermissions = async () => {
     const availability = await checkLocationAvailability();
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
+    if (!employeeData?.id || !tenantId) return;
+    
     if (availability.supported && availability.permission === 'granted') {
       // Check if user has given consent in our system
       try {
-        const response = await fetch(`/api/hr/location-consents/check/${session.employee.id}/`, {
+        const response = await fetch(`/api/hr/location-consents/check/${employeeData.id}/`, {
           headers: {
-            'X-Tenant-ID': session.tenantId,
+            'X-Tenant-ID': tenantId,
           },
         });
         
@@ -140,16 +285,36 @@ export default function MobileTimesheetPage() {
     };
   }, []);
 
+  const fetchClockStatus = async () => {
+    try {
+      const result = await timesheetApi.getCurrentClockStatus();
+      console.log('🕐 [Mobile Timesheet] Clock status:', result);
+      
+      setClockStatus(result);
+      if (result.is_clocked_in && result.last_clock_in) {
+        setClockInTime(new Date(result.last_clock_in));
+      } else {
+        setClockInTime(null);
+      }
+    } catch (error) {
+      console.error('Error fetching clock status:', error);
+    }
+  };
+
   const loadTimesheetData = async () => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
+    if (!employeeData?.id || !tenantId) return;
+    
     setLoadingTimesheet(true);
     try {
       // Get current timesheet
       const currentDate = format(new Date(), 'yyyy-MM-dd');
       const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
       
-      const response = await fetch(`/api/hr/timesheets/?employee=${session.employee.id}&week_start=${weekStart}`, {
+      const response = await fetch(`/api/hr/timesheets/?employee=${employeeData.id}&week_start=${weekStart}`, {
         headers: {
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
       });
 
@@ -169,10 +334,12 @@ export default function MobileTimesheetPage() {
   };
 
   const loadTimesheetEntries = async (timesheetId) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
     try {
       const response = await fetch(`/api/hr/timesheets/${timesheetId}/entries/`, {
         headers: {
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
       });
 
@@ -190,16 +357,41 @@ export default function MobileTimesheetPage() {
   };
 
   const handleClockInOut = async () => {
-    if (!session?.employee?.id || !session?.tenantId) return;
+    console.log('🎯 [MobileTimesheet] === CLOCK IN/OUT START ===');
+    console.log('🎯 [MobileTimesheet] Session:', session);
+    console.log('🎯 [MobileTimesheet] User email:', session?.user?.email);
+    console.log('🎯 [MobileTimesheet] Employee ID:', employeeData?.id);
+    console.log('🎯 [MobileTimesheet] Business ID:', session?.user?.business_id);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.user?.tenant_id || session?.user?.tenantId);
+    
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    const userEmail = session?.user?.email;
+    
+    if (!userEmail || !tenantId || !employeeData?.id) {
+      console.error('🎯 [MobileTimesheet] Missing required data');
+      console.error('🎯 [MobileTimesheet] User email:', userEmail);
+      console.error('🎯 [MobileTimesheet] Tenant ID:', tenantId);
+      console.error('🎯 [MobileTimesheet] Employee:', employeeData);
+      toast.error('Employee profile not found. Please contact support.');
+      return;
+    }
     
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayEntry = timesheetEntries[today];
     const currentHours = todayEntry?.regular_hours || 0;
-    const isClockingOut = currentHours > 0;
+    // Check actual clock status first, then fall back to timesheet hours
+    const isClockingOut = clockStatus?.is_clocked_in || currentHours > 0;
+    
+    console.log('🎯 [MobileTimesheet] Is clocking out:', isClockingOut);
+    console.log('🎯 [MobileTimesheet] Location enabled:', locationEnabled);
+    console.log('🎯 [MobileTimesheet] Employee geofences:', employeeGeofences);
     
     // Check if location consent is needed
     if (!locationEnabled && !isClockingOut) {
+      console.log('🎯 [MobileTimesheet] No location consent - showing modal');
+      console.log('🎯 [MobileTimesheet] Current showLocationConsent state:', showLocationConsent);
       setShowLocationConsent(true);
+      console.log('🎯 [MobileTimesheet] Called setShowLocationConsent(true)');
       return;
     }
     
@@ -212,7 +404,10 @@ export default function MobileTimesheetPage() {
     if (locationEnabled) {
       setIsCapturingLocation(true);
       try {
+        console.log('🎯 [MobileTimesheet] Capturing location...');
         const location = await captureLocation();
+        console.log('🎯 [MobileTimesheet] Location captured:', location);
+        
         const address = await reverseGeocode(location.latitude, location.longitude);
         const deviceInfo = getDeviceInfo();
         
@@ -222,12 +417,15 @@ export default function MobileTimesheetPage() {
           ...deviceInfo,
         };
         
+        console.log('🎯 [MobileTimesheet] Location data:', locationData);
+        
         if (!isClockingOut) {
           setLastClockInLocation(locationData);
         }
         
         // Check geofences if we have them
         if (employeeGeofences.length > 0) {
+          console.log('🎯 [MobileTimesheet] Checking geofences:', employeeGeofences.length);
           const checkResults = [];
           let insideAnyGeofence = false;
           
@@ -267,7 +465,7 @@ export default function MobileTimesheetPage() {
           if (insideAnyGeofence) {
             const insideGeofence = checkResults.find(r => r.isInside);
             await logGeofenceEvent({
-              employee_id: session.employee.id,
+              employee_id: employeeData.id,
               geofence_id: insideGeofence.geofence.id,
               event_type: isClockingOut ? 'CLOCK_OUT' : 'CLOCK_IN',
               latitude: location.latitude,
@@ -288,84 +486,95 @@ export default function MobileTimesheetPage() {
     }
     
     try {
-      if (!currentTimesheet) {
-        // Create new timesheet for this week
-        const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-        const createResponse = await fetch('/api/hr/timesheets/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': session.tenantId,
-          },
-          body: JSON.stringify({
-            employee: session.employee.id,
-            week_start: weekStart,
-            status: 'DRAFT',
-          }),
-        });
-        
-        if (createResponse.ok) {
-          const newTimesheet = await createResponse.json();
-          setCurrentTimesheet(newTimesheet);
-        }
-      }
+      // Use the clock API directly
+      console.log('🎯 [MobileTimesheet] Calling clock API...');
       
+      const clockData = {
+        location_enabled: !!locationData,
+        ...(locationData && {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          location_accuracy: locationData.accuracy
+        })
+      };
+      
+      let result;
       if (isClockingOut) {
-        // Clock out
-        const newHours = Math.min(currentHours + 0.5, 8); // Add 30 minutes, max 8 hours
-        await updateTimesheetEntry(today, newHours);
-        
-        // Save clock out location
-        if (locationData) {
-          await saveLocationLog({
-            ...locationData,
-            location_type: 'CLOCK_OUT',
-            timesheet_entry: todayEntry?.id,
-          });
-        }
-        
-        // Cancel any pending random checks
-        if (randomCheckTimeoutRef.current) {
-          clearTimeout(randomCheckTimeoutRef.current);
-          randomCheckTimeoutRef.current = null;
-        }
+        console.log('🎯 [MobileTimesheet] Clocking out...');
+        result = await timesheetApi.clockOut(clockData);
       } else {
-        // Clock in
-        await updateTimesheetEntry(today, 0.5);
-        
-        // Save clock in location
-        if (locationData) {
-          await saveLocationLog({
-            ...locationData,
-            location_type: 'CLOCK_IN',
-          });
-          
-          // Schedule a random location check
-          scheduleRandomCheck();
-        }
+        console.log('🎯 [MobileTimesheet] Clocking in...');
+        result = await timesheetApi.clockIn(clockData);
       }
       
+      console.log('🎯 [MobileTimesheet] Clock API result:', result);
+      
+      // Success! Refresh the timesheet data and clock status
       await loadTimesheetData();
-      toast.success(isClockingOut ? 'Clocked out successfully' : 'Clocked in successfully');
+      await fetchClockStatus();
+      
+      // Clear the location consent modal state
+      setShowLocationConsent(false);
+      
+      // Show success message
+      toast.success(
+        isClockingOut 
+          ? '✅ Clocked out successfully!' 
+          : '✅ Clocked in successfully!',
+        {
+          duration: 4000,
+          style: {
+            background: '#10B981',
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: '600',
+          },
+        }
+      );
+      
+      // If location was captured, show location info
+      if (locationData) {
+        setTimeout(() => {
+          toast.success(
+            `📍 Location recorded: ${locationData.address || 'GPS coordinates captured'}`,
+            {
+              duration: 3000,
+              style: {
+                background: '#3B82F6',
+                color: 'white',
+              },
+            }
+          );
+        }, 500);
+      }
     } catch (error) {
       console.error('Error clocking in/out:', error);
-      toast.error('Failed to clock ' + (isClockingOut ? 'out' : 'in'));
+      toast.error('Failed to clock ' + (isClockingOut ? 'out' : 'in'), {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: 'white',
+        },
+      });
     } finally {
       setIsClockingIn(false);
+      setShowLocationConsent(false); // Ensure modal is closed
     }
   };
   
   // Save location log to backend
   const saveLocationLog = async (locationData) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
     try {
       const response = await fetch('/api/hr/location-logs/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
         body: JSON.stringify({
-          employee: session.employee.id,
+          employee: employeeData.id,
           ...locationData,
           captured_at: new Date().toISOString(),
         }),
@@ -381,12 +590,14 @@ export default function MobileTimesheetPage() {
   
   // Log geofence event
   const logGeofenceEvent = async (eventData) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
     try {
       const response = await fetch('/api/hr/geofence-events/log_event/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
         body: JSON.stringify(eventData),
       });
@@ -460,6 +671,7 @@ export default function MobileTimesheetPage() {
   };
 
   const updateTimesheetEntry = async (date, hours) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
     const entry = timesheetEntries[date];
     const method = entry ? 'PUT' : 'POST';
     const url = entry ? 
@@ -470,7 +682,7 @@ export default function MobileTimesheetPage() {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-ID': session.tenantId,
+        'X-Tenant-ID': tenantId,
       },
       body: JSON.stringify({
         timesheet: currentTimesheet.id,
@@ -489,19 +701,37 @@ export default function MobileTimesheetPage() {
   };
 
   const getTodayStatus = () => {
+    // First check actual clock status
+    if (clockStatus?.is_clocked_in) {
+      // Calculate hours since clock in
+      const hoursWorked = clockInTime ? ((new Date() - clockInTime) / 1000 / 60 / 60).toFixed(1) : 0;
+      return { 
+        status: 'clocked_in', 
+        text: `Clocked In (${hoursWorked}h)`, 
+        color: 'text-green-600',
+        isActuallyClocked: true 
+      };
+    }
+    
+    // Fall back to timesheet hours if not clocked in
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayEntry = timesheetEntries[today];
     const hours = todayEntry?.regular_hours || 0;
     
-    if (hours === 0) return { status: 'not_started', text: 'Not Clocked In', color: 'text-gray-500' };
-    if (hours < 8) return { status: 'clocked_in', text: `Clocked In (${hours}h)`, color: 'text-green-600' };
-    return { status: 'completed', text: `Completed (${hours}h)`, color: 'text-blue-600' };
+    if (hours === 0) return { status: 'not_started', text: 'Not Clocked In', color: 'text-gray-500', isActuallyClocked: false };
+    if (hours < 8) return { status: 'in_progress', text: `In Progress (${hours}h)`, color: 'text-blue-600', isActuallyClocked: false };
+    return { status: 'completed', text: `Completed (${hours}h)`, color: 'text-blue-600', isActuallyClocked: false };
   };
 
-  if (loading || loadingTimesheet) {
+  if (loading || loadingEmployee || loadingTimesheet) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">
+            {loading ? 'Loading session...' : loadingEmployee ? 'Loading employee profile...' : 'Loading timesheet...'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -542,6 +772,24 @@ export default function MobileTimesheetPage() {
           <div className={`text-sm font-medium mt-2 ${todayStatus.color}`}>
             {todayStatus.text}
           </div>
+          
+          {/* Live timer when clocked in */}
+          {clockStatus?.is_clocked_in && clockInTime && (
+            <div className="mt-3">
+              <div className="text-2xl font-bold text-green-600">
+                {(() => {
+                  const elapsed = (currentTime - clockInTime) / 1000;
+                  const hours = Math.floor(elapsed / 3600);
+                  const minutes = Math.floor((elapsed % 3600) / 60);
+                  const seconds = Math.floor(elapsed % 60);
+                  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                })()}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Time worked today
+              </div>
+            </div>
+          )}
           
           {/* Location indicator */}
           {locationEnabled && todayStatus.status === 'clocked_in' && (
@@ -595,11 +843,9 @@ export default function MobileTimesheetPage() {
           onClick={handleClockInOut}
           disabled={isClockingIn || isCapturingLocation}
           className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-2 transition-colors ${
-            todayStatus.status === 'not_started' || todayStatus.status === 'clocked_in'
-              ? todayStatus.status === 'not_started'
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            clockStatus?.is_clocked_in
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-green-600 hover:bg-green-700 text-white'
           }`}
         >
           {isClockingIn || isCapturingLocation ? (
@@ -611,13 +857,13 @@ export default function MobileTimesheetPage() {
             </div>
           ) : (
             <>
-              {todayStatus.status === 'not_started' ? (
-                <PlayIcon className="w-6 h-6" />
-              ) : (
+              {clockStatus?.is_clocked_in ? (
                 <StopIcon className="w-6 h-6" />
+              ) : (
+                <PlayIcon className="w-6 h-6" />
               )}
               <span>
-                {todayStatus.status === 'not_started' ? 'Clock In' : 'Clock Out'}
+                {clockStatus?.is_clocked_in ? 'Clock Out' : 'Clock In'}
               </span>
               {locationEnabled && (
                 <MapPinIcon className="w-4 h-4" />
@@ -711,13 +957,14 @@ export default function MobileTimesheetPage() {
       </div>
       
       {/* Location Consent Dialog */}
+      {console.log('🎯 [MobileTimesheet] Rendering consent modal check:', { showLocationConsent, employeeId: employeeData?.id, tenantId: session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id })}
       {showLocationConsent && (
         <LocationConsent
           onAccept={() => handleLocationConsent(true)}
           onDecline={() => handleLocationConsent(false)}
           showAlways={false}
-          employeeId={session.employee?.id}
-          tenantId={session.tenantId}
+          employeeId={employeeData?.id}
+          tenantId={session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id}
         />
       )}
     </div>

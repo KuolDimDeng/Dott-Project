@@ -15,7 +15,7 @@ sys.path.append('/app')  # Render deployment path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dott_project.settings')
 django.setup()
 
-from django.db import transaction, connection
+from django.db import transaction as db_transaction, connection
 from custom_auth.models import User
 from session_manager.models import UserSession
 from onboarding.models import OnboardingProgress
@@ -32,7 +32,7 @@ try:
     print(f"   - User ID: {user.id}")
     print(f"   - Tenant: {user.tenant.name if user.tenant else 'None'}")
     
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Delete related objects manually to avoid missing table errors
         
         # Delete user sessions

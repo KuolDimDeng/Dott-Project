@@ -3,11 +3,12 @@ Industry-standard ViewSets for Sales module following tenant-aware patterns.
 These replace the old multi-database views with proper tenant isolation.
 """
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import transaction as db_transaction
 from decimal import Decimal
 from django.utils import timezone
 from django.http import FileResponse, HttpResponse
@@ -25,7 +26,7 @@ from pyfactor.logging_config import get_logger
 logger = get_logger()
 
 
-class SalesOrderViewSet(viewsets.ModelViewSet):
+class SalesOrderViewSet(TenantIsolatedViewSet):
     """
     Industry-standard ViewSet for Sales Orders with proper tenant isolation.
     Following the proven pattern from CustomerViewSet.
@@ -33,6 +34,28 @@ class SalesOrderViewSet(viewsets.ModelViewSet):
     queryset = SalesOrder.objects.all()  # TenantManager handles filtering
     serializer_class = SalesOrderSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[SalesOrderViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[SalesOrderViewSet] Sales order queryset prepared")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[SalesOrderViewSet] Error getting sales order queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return SalesOrder.objects.none()
     
     def perform_create(self, serializer):
         """Create sales order with automatic tenant assignment."""
@@ -89,13 +112,35 @@ class SalesOrderViewSet(viewsets.ModelViewSet):
             )
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(TenantIsolatedViewSet):
     """
     Industry-standard ViewSet for Invoices with proper tenant isolation.
     """
     queryset = Invoice.objects.all()  # TenantManager handles filtering
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[InvoiceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[InvoiceViewSet] Invoice queryset prepared")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[InvoiceViewSet] Error getting invoice queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Invoice.objects.none()
     
     def perform_create(self, serializer):
         """Create invoice with automatic tenant assignment."""
@@ -192,13 +237,35 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
 
 
-class EstimateViewSet(viewsets.ModelViewSet):
+class EstimateViewSet(TenantIsolatedViewSet):
     """
     Industry-standard ViewSet for Estimates with proper tenant isolation.
     """
     queryset = Estimate.objects.all()  # TenantManager handles filtering
     serializer_class = EstimateSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[EstimateViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[EstimateViewSet] Estimate queryset prepared")
+            return queryset.order_by('-created_at')
+            
+        except Exception as e:
+            logger.error(f"[EstimateViewSet] Error getting estimate queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Estimate.objects.none()
     
     def perform_create(self, serializer):
         """Create estimate with automatic tenant assignment."""

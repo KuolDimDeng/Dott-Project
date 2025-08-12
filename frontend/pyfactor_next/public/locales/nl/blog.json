@@ -1,0 +1,49 @@
+{
+  "backToHome": "Terug naar Home",
+  "hero": {
+    "title": "Dott Zakelijke Blog",
+    "subtitle": "Leer hoe u uw bedrijfsfinanciën beheert met Dott. Krijg tips, inzichten en strategieën om uw bedrijf te laten groeien."
+  },
+  "newsletter": {
+    "title": "Meld u aan voor onze nieuwsbrief voor productupdates en nieuwe blogposts!",
+    "placeholder": "Uw e-mailadres",
+    "button": "Abonneren"
+  },
+  "categories": {
+    "all": "Alle Artikelen",
+    "accounting": "Boekhouding & Belastingen",
+    "business": "Zakelijk"
+  },
+  "search": {
+    "placeholder": "Zoek artikelen..."
+  },
+  "featured": "Uitgelicht",
+  "readTime": "{{minutes}} min leestijd",
+  "noArticles": "Geen artikelen gevonden die aan uw criteria voldoen.",
+  "articles": {
+    "profitLoss": {
+      "title": "Winst & Verlies Begrijpen: Een Leuke Gids voor Ondernemers",
+      "excerpt": "Ontdek hoe u uw W&V-overzicht kunt lezen en begrijpen zonder in slaap te vallen. We beloven het interessant te maken!"
+    },
+    "expenses": {
+      "title": "Volg Zakelijke Uitgaven als een Professional: 5 Eenvoudige Stappen",
+      "excerpt": "Leer hoe u elke cent kunt volgen zonder gek te worden. Plus, ontdek welke uitgaven u geld kunnen besparen bij de belasting!"
+    },
+    "taxDeductions": {
+      "title": "Verborgen Belastingaftrekposten die Elke Kleine Onderneming Moet Kennen",
+      "excerpt": "Stop met geld op tafel laten liggen! Ontdek legitieme belastingaftrekposten die de meeste ondernemers missen."
+    },
+    "inventory": {
+      "title": "Transformeer Uw Voorraadbeheer met Barcode Scannen",
+      "excerpt": "Zeg vaarwel tegen handmatig tellen! Leer hoe barcode scannen een revolutie kan brengen in uw voorraadbeheer."
+    },
+    "mobile": {
+      "title": "Beheer Uw Hele Bedrijf vanaf Uw Telefoon: De Mobiele Revolutie",
+      "excerpt": "Ontdek hoe u facturen beheert, voorraad bijhoudt en betalingen afhandelt - allemaal vanaf uw smartphone!"
+    },
+    "customerRelationships": {
+      "title": "Bouw Duurzame Klantrelaties: CRM Eenvoudig Gemaakt",
+      "excerpt": "Leer hoe u klanten laat terugkomen zonder ingewikkelde software of dure tools."
+    }
+  }
+}

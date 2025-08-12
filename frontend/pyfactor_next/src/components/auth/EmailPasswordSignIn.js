@@ -1,5 +1,7 @@
 'use client';
 
+import api from '@/utils/apiFetch';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -12,12 +14,13 @@ import { anomalyDetector } from '@/utils/anomalyDetection';
 import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 import { useSession } from '@/hooks/useSession-v2';
+import PageTitle from '@/components/PageTitle';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
-  const { t, i18n } = useTranslation('auth');
+  const { t, i18n, ready } = useTranslation('auth');
   const { session, loading: sessionLoading, isAuthenticated } = useSession();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,10 +95,17 @@ export default function EmailPasswordSignIn() {
   // Check for error from URL params (e.g., from Google OAuth)
   useEffect(() => {
     // Set initial page title based on mode
-    document.title = isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
+    // Title is now handled by PageTitle component
     
     const errorParam = searchParams.get('error');
     const emailParam = searchParams.get('email');
+    const reasonParam = searchParams.get('reason');
+    
+    // Check for timeout reason
+    if (reasonParam === 'timeout') {
+      setError('Your session expired due to inactivity. Please sign in again.');
+      setErrorType('error');
+    }
     
     if (errorParam === 'email_not_verified' && emailParam) {
       setError(t('signin.errors.emailNotVerified'));
@@ -129,7 +139,7 @@ export default function EmailPasswordSignIn() {
     setShowPassword(false);
     setShowConfirmPassword(false);
     // Update page title based on mode
-    document.title = !isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
+    // Title is now handled by PageTitle component
     
     // Preserve language parameter in URL
     const langParam = searchParams.get('lang');
@@ -214,12 +224,9 @@ export default function EmailPasswordSignIn() {
     }
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-        body: JSON.stringify({ email: formData.email })
-      });
+      const response = await api.post('/api/auth/forgot-password', 
+        { email: formData.email }
+      );
 
       if (response.ok) {
         showError(t('signin.errors.passwordResetSent'));
@@ -239,12 +246,9 @@ export default function EmailPasswordSignIn() {
 
     try {
       setIsLoading(true);
-      const response = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-        body: JSON.stringify({ email: formData.email })
-      });
+      const response = await api.post('/api/auth/resend-verification', 
+        { email: formData.email }
+      );
 
       if (response.ok) {
         showError(t('signup.verificationEmail.sent'), 'success');
@@ -282,17 +286,12 @@ export default function EmailPasswordSignIn() {
 
     try {
       // First create the account
-      const signupResponse = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-        body: JSON.stringify({
-          email,
-          password,
-          given_name: firstName,
-          family_name: lastName,
-          name: `${firstName} ${lastName}`
-        })
+      const signupResponse = await api.post('/api/auth/signup', {
+        email,
+        password,
+        given_name: firstName,
+        family_name: lastName,
+        name: `${firstName} ${lastName}`
       });
 
       const signupData = await signupResponse.json();
@@ -324,32 +323,38 @@ export default function EmailPasswordSignIn() {
   const handleLogin = async () => {
     const { email, password } = formData;
 
-    console.log('[EmailPasswordSignIn] handleLogin called with email:', email);
-    console.log('[EmailPasswordSignIn] Password length:', password?.length);
+    console.log('🔐 [EmailPasswordSignIn] ===== LOGIN ATTEMPT STARTED =====');
+    console.log('🔐 [EmailPasswordSignIn] Email:', email);
+    console.log('🔐 [EmailPasswordSignIn] Password length:', password?.length);
+    console.log('🔐 [EmailPasswordSignIn] Timestamp:', new Date().toISOString());
+    console.log('🔐 [EmailPasswordSignIn] Browser:', navigator.userAgent);
 
     // Track sign in started
     trackEvent(posthog, EVENTS.SIGN_IN_STARTED, { email });
 
     try {
-      console.log('[EmailPasswordSignIn] Attempting login via /api/auth/consolidated-login');
+      console.log('📡 [EmailPasswordSignIn] Calling /api/auth/consolidated-login');
+      console.log('📡 [EmailPasswordSignIn] Request payload:', { email, passwordLength: password?.length });
       
-      // Use consolidated login endpoint for atomic operation
-      const loginResponse = await fetch('/api/auth/consolidated-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email,
-          password
-        })
+      // Use consolidated login endpoint for atomic operation with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for login
+      
+      const loginResponse = await api.post('/api/auth/consolidated-login', 
+        { email, password }, 
+        { signal: controller.signal }
+      ).finally(() => {
+        clearTimeout(timeoutId);
       });
 
-      console.log('[EmailPasswordSignIn] Login response status:', loginResponse.status);
-      console.log('[EmailPasswordSignIn] Login response headers:', loginResponse.headers);
+      console.log('📨 [EmailPasswordSignIn] Response received');
+      console.log('📨 [EmailPasswordSignIn] Status:', loginResponse.status);
+      console.log('📨 [EmailPasswordSignIn] Status Text:', loginResponse.statusText);
+      console.log('📨 [EmailPasswordSignIn] Headers:', Object.fromEntries(loginResponse.headers.entries()));
 
       const loginResult = await loginResponse.json();
-      console.log('[EmailPasswordSignIn] Login result:', loginResult);
-      console.log('[EmailPasswordSignIn] Login result details:', {
+      console.log('📋 [EmailPasswordSignIn] Parsed response body:', loginResult);
+      console.log('📋 [EmailPasswordSignIn] Response breakdown:', {
         success: loginResult.success,
         hasSessionToken: !!loginResult.sessionToken,
         hasSession_token: !!loginResult.session_token,
@@ -379,9 +384,26 @@ export default function EmailPasswordSignIn() {
         await securityLogger.loginFailed(email, loginResult.error || 'Authentication failed', 'email-password');
         
         // If high-risk anomalies detected, show additional security message
-        if (anomalies.some(a => a.severity === 'high')) {
+        // Temporarily bypass for support@dottapps.com to allow debugging
+        if (anomalies.some(a => a.severity === 'high') && email !== 'support@dottapps.com') {
           showError('Multiple failed login attempts detected. Your account may be temporarily locked for security.');
           return;
+        }
+        
+        // For support@dottapps.com, log but don't block
+        if (anomalies.some(a => a.severity === 'high') && email === 'support@dottapps.com') {
+          console.warn('⚠️ [EmailPasswordSignIn] Bypassing lockout for support@dottapps.com (debugging mode)');
+          console.warn('⚠️ [EmailPasswordSignIn] Anomalies detected:', anomalies);
+        }
+        
+        // DEBUG: Log the exact error for support@dottapps.com
+        if (email === 'support@dottapps.com') {
+          console.error('❌ [EmailPasswordSignIn] LOGIN FAILED FOR SUPPORT');
+          console.error('❌ [EmailPasswordSignIn] Status:', loginResponse.status);
+          console.error('❌ [EmailPasswordSignIn] Error:', loginResult.error);
+          console.error('❌ [EmailPasswordSignIn] Debug Log:', loginResult.debugLog);
+          console.error('❌ [EmailPasswordSignIn] Backend URL:', loginResult.backendUrl);
+          console.error('❌ [EmailPasswordSignIn] Env API URL:', loginResult.envApiUrl);
         }
         
         // Check for backend unavailable errors
@@ -588,7 +610,16 @@ export default function EmailPasswordSignIn() {
       setIsLoading(false);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
-      showError(error.message || t('signin.errors.invalidCredentials'));
+      
+      // Handle timeout errors
+      if (error.name === 'AbortError') {
+        showError('The request timed out. Please check your internet connection and try again.');
+      } else if (error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
+        showError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        showError(error.message || t('signin.errors.invalidCredentials'));
+      }
+      
       setIsLoading(false);
     }
   };
@@ -614,9 +645,9 @@ export default function EmailPasswordSignIn() {
     }
   };
 
-  // Show loading spinner while checking session
-  if (sessionLoading) {
-    console.log('🔍 [EmailPasswordSignIn] Showing session loading state');
+  // Show loading spinner while checking session or loading translations
+  if (sessionLoading || !ready) {
+    console.log('🔍 [EmailPasswordSignIn] Showing loading state', { sessionLoading, translationsReady: ready });
     return (
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
@@ -626,7 +657,7 @@ export default function EmailPasswordSignIn() {
               src="https://dottapps.com/static/images/PyfactorLandingpage.png" 
               alt="Dott" 
             />
-            <h2 className="mt-6 text-2xl font-bold text-gray-900">{t('oauth.processing')}</h2>
+            <h2 className="mt-6 text-2xl font-bold text-gray-900">Loading...</h2>
             <div className="mt-4 flex justify-center">
               <div className="loader"></div>
             </div>
@@ -638,6 +669,7 @@ export default function EmailPasswordSignIn() {
 
   return (
     <>
+      <PageTitle />
       <style jsx>{`
         .loader {
           border: 3px solid #f3f3f3;

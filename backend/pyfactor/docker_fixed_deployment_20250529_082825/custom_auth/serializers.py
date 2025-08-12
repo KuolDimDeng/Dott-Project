@@ -28,7 +28,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from pyfactor.logging_config import get_logger
 from users.models import UserProfile  # Adjust the import path as necessary
-from django.db import transaction
+from django.db import transaction as db_transaction
 from users.choices import SUBSCRIPTION_TYPES  # Import from users.choices
 
 
@@ -107,7 +107,7 @@ class CustomRegisterSerializer(RegisterSerializer):
             'last_name': self.validated_data.get('last_name', ''),
         }
 
-    @transaction.atomic
+    @db_transaction.atomic
     def save(self, request):
         user = super().save(request)
         try:

@@ -1,7 +1,7 @@
 'use client';
 
 
-import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo, memo } from 'react';
+import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -406,6 +406,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const notifyInfo = (message) => toast.loading(message);
   const notifyWarning = (message) => toast.error(message, { icon: '⚠️' });
   
+  // Track if component is mounted on client side
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  
   // Add isMounted ref to track component mounting status
   const isMounted = useRef(true);
   // Add refs for tracking network requests and timeouts
@@ -414,11 +417,16 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   
   // Effect to track component mount status
   useEffect(() => {
+    // Set client mounted flag
+    setIsClientMounted(true);
+    console.log('🔵 [ProductManagement] Component mounted on client');
+    
     // Set to true on mount (though it's already initialized as true)
     isMounted.current = true;
     // Cleanup function sets to false when component unmounts
     return () => {
       isMounted.current = false;
+      console.log('🔵 [ProductManagement] Component unmounting');
     };
   }, []);
   
@@ -467,7 +475,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forRent: false,
     search: '',
     supplier_id: '',  // Add supplier_id field
-    location_id: ''   // Add location_id field
+    location_id: '',   // Add location_id field
+    pricing_model: 'direct',  // Default pricing model
+    weight: '',
+    weight_unit: 'kg',
+    daily_rate: '',
+    entry_date: new Date().toISOString().split('T')[0]  // Default to today
   });
 
   // Initialize tenantId from session
@@ -549,15 +562,17 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         throw new Error('Authentication required. Valid tenant ID is required.');
       }
       
-      // Make API call to get suppliers using the proxy route
-      const response = await fetch('/api/inventory/suppliers', {
+      // Make API call to get product suppliers (businesses that supply products for resale)
+      const response = await fetch('/api/product-suppliers', {
+        method: 'GET',
+        credentials: 'include',
         headers: {
-          'x-tenant-id': tenantIdValue
+          'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch suppliers: ${response.status}`);
+        throw new Error(`Failed to fetch product suppliers: ${response.status}`);
       }
       
       const data = await response.json();
@@ -574,14 +589,53 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       
       setSuppliers(supplierList);
     } catch (error) {
-      console.error('[ProductManagement] Error fetching suppliers:', error);
-      setSupplierError(error.message || 'Failed to load suppliers');
+      console.error('[ProductManagement] Error fetching product suppliers:', error);
+      setSupplierError(error.message || 'Failed to load product suppliers');
     } finally {
       setLoadingSuppliers(false);
     }
   }, []);
 
   // Fetch locations for dropdown
+  // Calculate dynamic price based on pricing model
+  const calculateDynamicPrice = useCallback(() => {
+    const { pricing_model, weight, daily_rate, entry_date } = productData;
+    
+    if (pricing_model === 'direct') {
+      return null; // User enters price manually
+    }
+    
+    if (pricing_model === 'time_weight') {
+      if (weight && daily_rate && entry_date) {
+        const entryDateObj = new Date(entry_date);
+        const today = new Date();
+        const days = Math.max(1, Math.ceil((today - entryDateObj) / (1000 * 60 * 60 * 24)));
+        return (parseFloat(daily_rate) * days * parseFloat(weight)).toFixed(2);
+      }
+    } else if (pricing_model === 'time_only') {
+      if (daily_rate && entry_date) {
+        const entryDateObj = new Date(entry_date);
+        const today = new Date();
+        const days = Math.max(1, Math.ceil((today - entryDateObj) / (1000 * 60 * 60 * 24)));
+        return (parseFloat(daily_rate) * days).toFixed(2);
+      }
+    } else if (pricing_model === 'weight_only') {
+      if (productData.price && weight) {
+        return (parseFloat(productData.price) * parseFloat(weight)).toFixed(2);
+      }
+    }
+    
+    return null;
+  }, [productData]);
+
+  // Update price when pricing model fields change
+  useEffect(() => {
+    const calculatedPrice = calculateDynamicPrice();
+    if (calculatedPrice !== null && productData.pricing_model !== 'direct') {
+      setProductData(prev => ({ ...prev, price: calculatedPrice }));
+    }
+  }, [productData.pricing_model, productData.weight, productData.daily_rate, productData.entry_date, calculateDynamicPrice]);
+
   const fetchLocations = useCallback(async () => {
     try {
       setLoadingLocations(true);
@@ -789,15 +843,17 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
-      // Make API call to get supplier details using the proxy route
-      const response = await fetch(`/api/inventory/suppliers/${supplierId}`, {
+      // Make API call to get product supplier details (businesses that supply products for resale)
+      const response = await fetch(`/api/product-suppliers/${supplierId}`, {
+        method: 'GET',
+        credentials: 'include',
         headers: {
-          'x-tenant-id': tenantIdValue
+          'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch supplier: ${response.status}`);
+        throw new Error(`Failed to fetch product supplier: ${response.status}`);
       }
       
       const data = await response.json();
@@ -1027,23 +1083,44 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
   // Handle product deletion
   const handleDeleteProduct = useCallback(async () => {
-    if (!productToDelete?.id) return;
+    console.log('🔴 [DELETE] === START DELETE PRODUCT ===');
+    console.log('🔴 [DELETE] Product to delete:', productToDelete);
+    
+    if (!productToDelete?.id) {
+      console.error('🔴 [DELETE] No product ID provided');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
-      console.log(`[ProductManagement] Attempting to delete product with ID: ${productToDelete.id}`);
+      console.log(`🔴 [DELETE] Step 1: Starting deletion for product ID: ${productToDelete.id}`);
+      console.log(`🔴 [DELETE] Product details:`, {
+        id: productToDelete.id,
+        name: productToDelete.name,
+        product_code: productToDelete.product_code
+      });
       
       const tenantId = await getUserTenantId();
+      console.log(`🔴 [DELETE] Step 2: Got tenant ID: ${tenantId}`);
       
-      // Use RLS for deletion with tenant ID in headers
-      await axios.delete(`/api/inventory/products/${productToDelete.id}`, {
+      // Build the delete URL
+      const deleteUrl = `/api/inventory/products/${productToDelete.id}`;
+      console.log(`🔴 [DELETE] Step 3: Delete URL: ${deleteUrl}`);
+      
+      console.log('🔴 [DELETE] Step 4: Sending DELETE request...');
+      const response = await axios.delete(deleteUrl, {
         headers: {
-          'x-tenant-id': tenantId
+          'x-tenant-id': tenantId,
+          'Content-Type': 'application/json'
         }
       });
       
-      console.log(`[ProductManagement] Successfully deleted product with ID: ${productToDelete.id}`);
+      console.log('🔴 [DELETE] Step 5: Delete response:', response);
+      console.log(`🔴 [DELETE] Response status: ${response.status}`);
+      console.log(`🔴 [DELETE] Response data:`, response.data);
+      
       toast.success('Product deleted successfully');
+      console.log('🔴 [DELETE] Step 6: Product deleted successfully');
       
       // Track product deletion
       captureEvent('product_deleted', {
@@ -1052,20 +1129,44 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       });
       
       // Update products list without refetching
-      setProducts(prev => prev.filter(prod => prod.id !== productToDelete.id));
+      console.log('🔴 [DELETE] Step 7: Updating local product list');
+      setProducts(prev => {
+        const filtered = prev.filter(prod => prod.id !== productToDelete.id);
+        console.log(`🔴 [DELETE] Products before: ${prev.length}, after: ${filtered.length}`);
+        return filtered;
+      });
+      
       setDeleteDialogOpen(false);
       setProductToDelete(null);
       
       // If deleted product was selected, clear selection
       if (selectedProduct && selectedProduct.id === productToDelete.id) {
+        console.log('🔴 [DELETE] Step 8: Clearing selected product');
         setSelectedProduct(null);
         setActiveTab(2); // Go back to list view
       }
+      
+      console.log('🔴 [DELETE] === DELETE COMPLETE ===');
     } catch (error) {
-      console.error('[ProductManagement] Error deleting product:', error);
-      toast.error(error.response?.data?.error || 'Failed to delete product');
+      console.error('🔴 [DELETE] ❌ Error deleting product:', error);
+      console.error('🔴 [DELETE] Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to delete product';
+      
+      console.error('🔴 [DELETE] Showing error toast:', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
+      console.log('🔴 [DELETE] === END DELETE PRODUCT ===');
     }
   }, [productToDelete, selectedProduct]);
 
@@ -1111,9 +1212,30 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       setIsCreating(true);
       setCreateError(null);
       
-      // Validate required fields
-      if (!productData.name || !productData.price) {
-        setCreateError('Please fill in required fields (Name, Price)');
+      // Validate required fields based on pricing model
+      if (!productData.name) {
+        setCreateError('Please enter a product name');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Only require price for direct pricing model
+      if (productData.pricing_model === 'direct' && !productData.price) {
+        setCreateError('Please enter a price for direct pricing');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Validate fields for time-based pricing
+      if ((productData.pricing_model === 'time_weight' || productData.pricing_model === 'time_only') && !productData.daily_rate) {
+        setCreateError('Please enter a daily rate for time-based pricing');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Validate fields for weight-based pricing
+      if ((productData.pricing_model === 'time_weight' || productData.pricing_model === 'weight_only') && !productData.weight) {
+        setCreateError('Please enter weight for weight-based pricing');
         setIsCreating(false);
         return;
       }
@@ -1145,13 +1267,18 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         sku: productData.sku || '',
         price: parseFloat(productData.price) || 0,
         cost: parseFloat(productData.cost) || 0,
-        quantity: parseInt(productData.stockQuantity) || 0,
+        quantity: parseInt(productData.stockQuantity) || 1,  // Default to 1 if not specified
         reorder_level: parseInt(productData.reorderLevel) || 0,
         for_sale: productData.forSale,
         for_rent: productData.forRent,
         supplier_id: productData.supplier_id || null,  // Add supplier_id to the API data
         location_id: productData.location_id || null,  // Add location_id to the API data
-        tenant_id: secureTenantId  // Use secure tenant ID explicitly
+        tenant_id: secureTenantId,  // Use secure tenant ID explicitly
+        pricing_model: productData.pricing_model,
+        weight: productData.pricing_model !== 'direct' && productData.weight ? parseFloat(productData.weight) : null,
+        weight_unit: productData.weight_unit || 'kg',
+        daily_rate: productData.pricing_model !== 'direct' && productData.daily_rate ? parseFloat(productData.daily_rate) : null,
+        entry_date: productData.pricing_model !== 'direct' && productData.entry_date ? productData.entry_date : null
       };
       
       console.log('Creating product with data:', apiData);
@@ -1190,7 +1317,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         forRent: false,
         search: '',
         supplier_id: '',  // Add supplier_id field
-        location_id: ''   // Add location_id field
+        location_id: '',   // Add location_id field
+        pricing_model: 'direct',  // Reset to default
+        weight: '',
+        weight_unit: 'kg',
+        daily_rate: '',
+        entry_date: new Date().toISOString().split('T')[0]
       });
       
       setShowForm(false);
@@ -1346,8 +1478,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div>
               <label htmlFor="price" className="block text-sm font-medium text-black mb-1">
                 <span className="flex items-center">
-                  Price *
-                  <FieldTooltip text="The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts." />
+                  Price {productData.pricing_model === 'direct' && '*'}
+                  <FieldTooltip text={
+                    productData.pricing_model === 'direct' 
+                      ? "The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts."
+                      : "Price is automatically calculated based on your pricing model settings."
+                  } />
                 </span>
               </label>
               <input
@@ -1356,11 +1492,37 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               type="number"
                 step="0.01"
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  productData.pricing_model !== 'direct' ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                 value={productData.price || ''}
-                onChange={(e) => setProductData({...productData, price: e.target.value})}
-                required
+                onChange={(e) => {
+                  if (productData.pricing_model === 'direct') {
+                    setProductData({...productData, price: e.target.value});
+                  }
+                }}
+                readOnly={productData.pricing_model !== 'direct'}
+                required={productData.pricing_model === 'direct'}
             />
+            {productData.pricing_model !== 'direct' && productData.price && (
+              <p className="mt-1 text-xs text-gray-600">
+                {productData.pricing_model === 'time_weight' && productData.daily_rate && productData.weight && productData.entry_date && (
+                  <>
+                    Calculated: ${productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days × {productData.weight} {productData.weight_unit || 'kg'} = ${productData.price}
+                  </>
+                )}
+                {productData.pricing_model === 'time_only' && productData.daily_rate && productData.entry_date && (
+                  <>
+                    Calculated: ${productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days = ${productData.price}
+                  </>
+                )}
+                {productData.pricing_model === 'weight_only' && productData.weight && (
+                  <>
+                    Calculated: Price per unit × {productData.weight} {productData.weight_unit || 'kg'} = ${productData.price}
+                  </>
+                )}
+              </p>
+            )}
           </div>
           
           <div>
@@ -1394,6 +1556,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               name="stockQuantity"
               type="number"
                 min="0"
+                placeholder="1 (default)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={productData.stockQuantity || ''}
                 onChange={(e) => setProductData({...productData, stockQuantity: e.target.value})}
@@ -1421,8 +1584,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             <div>
               <label htmlFor="supplier_id" className="block text-sm font-medium text-black mb-1">
                 <span className="flex items-center">
-                  Supplier
-                  <FieldTooltip text="Select the supplier or vendor from whom you purchase this product. This helps track your purchasing history and manage supplier relationships." />
+                  Product Supplier
+                  <FieldTooltip text="Select the product supplier from whom you purchase this product for resale. This helps track your purchasing history and manage supplier relationships." />
                 </span>
               </label>
               <select
@@ -1432,9 +1595,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 value={productData.supplier_id || ''}
                 onChange={(e) => setProductData({...productData, supplier_id: e.target.value})}
               >
-                <option value="">Select a supplier</option>
+                <option value="">Select a product supplier</option>
                 {loadingSuppliers ? (
-                  <option disabled>Loading suppliers...</option>
+                  <option disabled>Loading product suppliers...</option>
                 ) : suppliers.length > 0 ? (
                   suppliers.map(supplier => (
                     <option key={supplier.id} value={supplier.id}>
@@ -1442,7 +1605,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     </option>
                   ))
                 ) : (
-                  <option disabled>{supplierError || 'No suppliers available'}</option>
+                  <option disabled>{supplierError || 'No product suppliers available'}</option>
                 )}
               </select>
               {!loadingSuppliers && suppliers.length === 0 && (
@@ -1451,20 +1614,20 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    No suppliers found. 
+                    No product suppliers found. 
                     <button
                       onClick={() => {
-                        // Navigate to suppliers management
+                        // Navigate to product suppliers management
                         if (tenantId) {
                           // Save current form data to localStorage to restore later
                           localStorage.setItem('pendingProductData', JSON.stringify(productData));
-                          // Navigate to suppliers page
+                          // Navigate to product suppliers page
                           window.location.href = `/${tenantId}/dashboard?view=inventory-suppliers`;
                         }
                       }}
                       className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
                     >
-                      Create a supplier
+                      Create a product supplier
                     </button>
                     first to assign products to them.
                   </p>
@@ -1575,6 +1738,144 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             </label>
           </div>
           
+          {/* Pricing Model Section */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-md font-medium text-black mb-4">Pricing Model</h3>
+            
+            <div className="mb-4">
+              <label htmlFor="pricing_model" className="block text-sm font-medium text-black mb-1">
+                <span className="flex items-center">
+                  How is this product priced? *
+                  <FieldTooltip text="Select how customers will be charged for this product. Direct pricing charges a fixed amount, while time/weight based pricing calculates the cost based on duration and/or weight." />
+                </span>
+              </label>
+              <select
+                id="pricing_model"
+                name="pricing_model"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.pricing_model || 'direct'}
+                onChange={(e) => setProductData({...productData, pricing_model: e.target.value})}
+              >
+                <option value="direct">Direct (One-time price)</option>
+                <option value="time_weight">Time & Weight (Price × Days × Weight)</option>
+                <option value="time_only">Time Only (Price × Days)</option>
+                <option value="weight_only">Weight Only (Price × Weight)</option>
+              </select>
+            </div>
+            
+            {/* Conditional fields based on pricing model */}
+            {productData.pricing_model !== 'direct' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Weight fields - shown for time_weight and weight_only */}
+                {(productData.pricing_model === 'time_weight' || productData.pricing_model === 'weight_only') && (
+                  <>
+                    <div>
+                      <label htmlFor="weight" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Weight *
+                          <FieldTooltip text="Enter the weight of the item. This will be used to calculate the price based on weight." />
+                        </span>
+                      </label>
+                      <input
+                        id="weight"
+                        name="weight"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.weight || ''}
+                        onChange={(e) => setProductData({...productData, weight: e.target.value})}
+                        required={productData.pricing_model === 'time_weight' || productData.pricing_model === 'weight_only'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="weight_unit" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Weight Unit *
+                          <FieldTooltip text="Select the unit of measurement for the weight." />
+                        </span>
+                      </label>
+                      <select
+                        id="weight_unit"
+                        name="weight_unit"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.weight_unit || 'kg'}
+                        onChange={(e) => setProductData({...productData, weight_unit: e.target.value})}
+                      >
+                        <option value="kg">Kilograms (kg)</option>
+                        <option value="lbs">Pounds (lbs)</option>
+                        <option value="g">Grams (g)</option>
+                        <option value="oz">Ounces (oz)</option>
+                        <option value="mt">Metric Tons (mt)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+                
+                {/* Time-based fields - shown for time_weight and time_only */}
+                {(productData.pricing_model === 'time_weight' || productData.pricing_model === 'time_only') && (
+                  <>
+                    <div>
+                      <label htmlFor="daily_rate" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Daily Rate *
+                          <FieldTooltip text="Enter the rate charged per day. This will be multiplied by the number of days to calculate the time-based portion of the price." />
+                        </span>
+                      </label>
+                      <input
+                        id="daily_rate"
+                        name="daily_rate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.daily_rate || ''}
+                        onChange={(e) => setProductData({...productData, daily_rate: e.target.value})}
+                        required={productData.pricing_model === 'time_weight' || productData.pricing_model === 'time_only'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="entry_date" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Entry Date
+                          <FieldTooltip text="The date when the item entered storage. This is used to calculate the number of days for pricing. Defaults to today if not specified." />
+                        </span>
+                      </label>
+                      <input
+                        id="entry_date"
+                        name="entry_date"
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.entry_date || new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setProductData({...productData, entry_date: e.target.value})}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            
+            {/* Price calculation preview for non-direct pricing */}
+            {productData.pricing_model !== 'direct' && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <strong>Pricing Formula:</strong> 
+                  {productData.pricing_model === 'time_weight' && ' Price = Daily Rate × Days × Weight'}
+                  {productData.pricing_model === 'time_only' && ' Price = Daily Rate × Days'}
+                  {productData.pricing_model === 'weight_only' && ' Price × Weight'}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  The final price will be calculated automatically at checkout based on the current date.
+                </p>
+              </div>
+            )}
+          </div>
+          
           <div className="flex justify-end space-x-3">
             <button
               type="button"
@@ -1640,7 +1941,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               <div className="text-sm text-gray-500">Description:</div>
               <div className="text-sm text-black">{selectedProduct.description || 'N/A'}</div>
               
-              <div className="text-sm text-gray-500">Supplier:</div>
+              <div className="text-sm text-gray-500">Product Supplier:</div>
               <div className="text-sm text-black">{supplierName || 'None assigned'}</div>
               
               <div className="text-sm text-gray-500">Location:</div>
@@ -1651,7 +1952,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="font-medium text-black mb-2">Inventory Information</h3>
             <div className="grid grid-cols-2 gap-2">
-              <div className="text-sm text-gray-500">Price:</div>
+              <div className="text-sm text-gray-500">
+                {selectedProduct.pricing_model === 'direct' ? 'Price:' : 'Base Price:'}
+              </div>
               <div className="text-sm text-black">${parseFloat(selectedProduct.price || 0).toFixed(2)}</div>
               
               <div className="text-sm text-gray-500">Cost:</div>
@@ -1665,6 +1968,78 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             </div>
           </div>
         </div>
+        
+        {/* Pricing Model Information */}
+        {selectedProduct.pricing_model && selectedProduct.pricing_model !== 'direct' && (
+          <div className="border border-gray-200 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-black mb-2">Pricing Model</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-sm text-gray-500">Model:</div>
+              <div className="text-sm text-black">{selectedProduct.pricing_model_display || selectedProduct.pricing_model}</div>
+              
+              {selectedProduct.calculated_price !== undefined && selectedProduct.pricing_model !== 'direct' && (
+                <>
+                  <div className="text-sm text-gray-500">Current Price:</div>
+                  <div className="text-sm">
+                    <div className="text-black font-medium">${parseFloat(selectedProduct.calculated_price || 0).toFixed(2)}</div>
+                    {selectedProduct.price_breakdown && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {selectedProduct.pricing_model === 'time_weight' && selectedProduct.price_breakdown.days && (
+                          <span>
+                            ${selectedProduct.price_breakdown.daily_rate} × {selectedProduct.price_breakdown.days} days × {selectedProduct.price_breakdown.weight} {selectedProduct.price_breakdown.weight_unit}
+                          </span>
+                        )}
+                        {selectedProduct.pricing_model === 'time_only' && selectedProduct.price_breakdown.days && (
+                          <span>
+                            ${selectedProduct.price_breakdown.daily_rate} × {selectedProduct.price_breakdown.days} days
+                          </span>
+                        )}
+                        {selectedProduct.pricing_model === 'weight_only' && (
+                          <span>
+                            ${selectedProduct.price} × {selectedProduct.price_breakdown.weight} {selectedProduct.price_breakdown.weight_unit}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+              
+              {selectedProduct.weight && (
+                <>
+                  <div className="text-sm text-gray-500">Weight:</div>
+                  <div className="text-sm text-black">{selectedProduct.weight} {selectedProduct.weight_unit || 'kg'}</div>
+                </>
+              )}
+              
+              {selectedProduct.daily_rate && (
+                <>
+                  <div className="text-sm text-gray-500">Daily Rate:</div>
+                  <div className="text-sm text-black">${parseFloat(selectedProduct.daily_rate || 0).toFixed(2)}</div>
+                </>
+              )}
+              
+              {selectedProduct.entry_date && (
+                <>
+                  <div className="text-sm text-gray-500">Entry Date:</div>
+                  <div className="text-sm text-black">{new Date(selectedProduct.entry_date).toLocaleDateString()}</div>
+                </>
+              )}
+            </div>
+            
+            {selectedProduct.price_breakdown && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                <p className="text-xs text-gray-600">
+                  <strong>Breakdown:</strong>
+                  {selectedProduct.price_breakdown.days && ` ${selectedProduct.price_breakdown.days} days`}
+                  {selectedProduct.price_breakdown.weight && ` × ${selectedProduct.price_breakdown.weight} ${selectedProduct.price_breakdown.weight_unit}`}
+                  {selectedProduct.price_breakdown.daily_rate && ` × $${selectedProduct.price_breakdown.daily_rate}`}
+                  {` = $${selectedProduct.price_breakdown.total}`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="border border-gray-200 rounded-lg p-4 mb-6">
           <h3 className="font-medium text-black mb-2">Product Status</h3>
@@ -1709,7 +2084,13 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   
   // Render the product edit form
   const renderEditForm = () => {
-    if (!selectedProduct || !editedProduct) return null;
+    if (!selectedProduct || !editedProduct) {
+      return (
+        <div className="flex justify-center items-center h-48">
+          <p className="text-gray-600">Loading product data...</p>
+        </div>
+      );
+    }
     
     return (
       <form onSubmit={(e) => {
@@ -1827,7 +2208,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
           <div>
             <label htmlFor="edit-supplier_id" className="block text-sm font-medium text-black mb-1">
-              Supplier
+              Product Supplier
             </label>
             <select
               id="edit-supplier_id"
@@ -1836,9 +2217,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               value={editedProduct.supplier_id || ''}
               onChange={(e) => setEditedProduct({...editedProduct, supplier_id: e.target.value})}
             >
-              <option value="">Select a supplier</option>
+              <option value="">Select a product supplier</option>
               {loadingSuppliers ? (
-                <option disabled>Loading suppliers...</option>
+                <option disabled>Loading product suppliers...</option>
               ) : suppliers.length > 0 ? (
                 suppliers.map(supplier => (
                   <option key={supplier.id} value={supplier.id}>
@@ -1846,7 +2227,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   </option>
                 ))
               ) : (
-                <option disabled>{supplierError || 'No suppliers available'}</option>
+                <option disabled>{supplierError || 'No product suppliers available'}</option>
               )}
             </select>
             {!loadingSuppliers && suppliers.length === 0 && (
@@ -1855,7 +2236,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
-                  No suppliers found. 
+                  No product suppliers found. 
                   <button
                     onClick={() => {
                       if (tenantId) {
@@ -1864,7 +2245,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     }}
                     className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
                   >
-                    Create a supplier
+                    Create a product supplier
                   </button>
                   first.
                 </p>
@@ -1992,48 +2373,89 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       {
         Header: 'Actions',
         id: 'actions',
-        Cell: ({ row }) => (
-          <div className="flex space-x-2">
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-blue-700 text-blue-700 hover:bg-blue-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails(row.original);
-              }}
-            >
-              View
-            </button>
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-purple-700 text-purple-700 hover:bg-purple-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditClick(row.original);
-              }}
-            >
-              Edit
-            </button>
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                setProductToDelete(row.original);
-                setDeleteDialogOpen(true);
-              }}
-            >
-              Delete
-            </button>
-            <button 
-              className="px-2 py-1 text-xs font-medium rounded border border-green-700 text-green-700 hover:bg-green-50 flex items-center"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleGenerateBarcode(row.original);
-              }}
-            >
-              <QrCodeIcon />
-              <span className="ml-1">QR</span>
-            </button>
-          </div>
-        ),
+        Cell: ({ row }) => {
+          // Create a simple inline delete handler for each row
+          const handleDelete = () => {
+            console.log('🔴 DELETE: Button clicked');
+            console.log('🔴 DELETE: Product:', row.original);
+            
+            // Direct API call without complex state management
+            if (window.confirm(`Are you sure you want to delete "${row.original.name}"?`)) {
+              console.log('🔴 DELETE: User confirmed deletion');
+              
+              // Make the delete API call directly
+              fetch(`/api/inventory/products/${row.original.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+              .then(response => {
+                console.log('🔴 DELETE: Response status:', response.status);
+                if (response.ok) {
+                  console.log('🔴 DELETE: Product deleted successfully');
+                  toast.success('Product deleted successfully');
+                  // Refresh the products list
+                  fetchProducts();
+                } else {
+                  throw new Error('Failed to delete product');
+                }
+              })
+              .catch(error => {
+                console.error('🔴 DELETE: Error:', error);
+                toast.error('Failed to delete product');
+              });
+            }
+          };
+          
+          return (
+            <div className="flex space-x-2">
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-blue-700 text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails(row.original);
+                }}
+              >
+                View
+              </button>
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-purple-700 text-purple-700 hover:bg-purple-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(row.original);
+                }}
+              >
+                Edit
+              </button>
+              
+              {/* Simplified Delete Button */}
+              <button 
+                type="button"
+                className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                Delete
+              </button>
+              
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-green-700 text-green-700 hover:bg-green-50 flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleGenerateBarcode(row.original);
+                }}
+              >
+                <QrCodeIcon />
+                <span className="ml-1">QR</span>
+              </button>
+            </div>
+          );
+        },
       },
     ],
     []
@@ -2098,14 +2520,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const renderProductsList = () => {
     // Show loading state
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <StandardSpinner size="large" />
-            <p className="mt-4 text-gray-600">Loading products...</p>
-          </div>
-        </div>
-      );
+      return <CenteredSpinner size="large" text="Loading products..." showText={true} minHeight="h-screen" />;
     }
     
     // Show fetch error message if there is one
@@ -2236,19 +2651,37 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <div className="text-sm text-black">{product.sku || 'N/A'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">${parseFloat(product.price || 0).toFixed(2)}</div>
+                <div className="text-sm text-black">
+                  ${parseFloat(product.calculated_price || product.price || 0).toFixed(2)}
+                  {product.pricing_model !== 'direct' && (
+                    <span className="text-xs text-gray-500 block">
+                      {product.pricing_model_display}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">{product.quantity || 0}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  product.quantity > 0 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {(product.quantity || product.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    product.is_active !== false
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {product.is_active !== false ? 'Active' : 'Inactive'}
+                  </span>
+                  {product.is_active !== false && (
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      (product.quantity || product.stock_quantity || 0) > 0 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {(product.quantity || product.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
@@ -2281,15 +2714,51 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   </svg>
                 </button>
                 <button
-                  onClick={() => {
-                    setProductToDelete(product);
-                    setDeleteDialogOpen(true);
+                  type="button"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                      const endpoint = product.is_active !== false ? 'deactivate' : 'activate';
+                      const response = await fetch(`/api/inventory/optimized/products/${product.id}/${endpoint}/`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                      });
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        toast.success(data.message);
+                        // Refresh the products list
+                        fetchProducts();
+                      } else {
+                        try {
+                          const error = await response.json();
+                          toast.error(error.message || 'Failed to update product status');
+                        } catch (parseError) {
+                          toast.error(`Server error: ${response.status} ${response.statusText}`);
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error toggling product status:', error);
+                      toast.error('Failed to update product status');
+                    }
                   }}
-                  className="text-red-600 hover:text-red-900 mr-3"
+                  className={product.is_active !== false ? "text-yellow-600 hover:text-yellow-900 mr-3 focus:outline-none" : "text-green-600 hover:text-green-900 mr-3 focus:outline-none"}
+                  title={product.is_active !== false ? "Deactivate Product" : "Activate Product"}
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  {product.is_active !== false ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </button>
                 <button
                   onClick={() => handleGenerateBarcode(product)}
@@ -2372,10 +2841,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          <div className="fixed inset-0 z-10 w-screen overflow-y-auto pt-16"> {/* Added pt-16 to push content below the appbar */}
+          <div className="absolute inset-0 z-10 w-screen overflow-y-auto pt-16"> {/* Added pt-16 to push content below the appbar */}
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
@@ -2619,7 +3088,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
   // Function to handle saving edits
   const handleSaveEdit = async () => {
-    if (!editedProduct || !selectedProduct) return;
+    if (!editedProduct || !selectedProduct) {
+      console.warn('Cannot save: Missing product data');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
@@ -2687,6 +3159,20 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   };
 
   // Update the main render function
+  // Show loading state during server-side rendering
+  if (!isClientMounted) {
+    return (
+      <div className="p-6 bg-gray-50">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading Product Management...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="p-6 bg-gray-50">
       {/* Print styles for QR code printing */}
@@ -2780,6 +3266,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             </svg>
             Filter
           </button>
+          
           <button
             className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             onClick={() => {
@@ -2899,10 +3386,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="absolute inset-0 z-10 overflow-y-auto">
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
@@ -2975,6 +3462,6 @@ ProductManagement.propTypes = {
   salesContext: PropTypes.bool
 };
 
-// Make sure component is properly exported with memo to prevent unnecessary re-renders
-const MemoizedProductManagement = memo(ProductManagement);
-export default MemoizedProductManagement;
+// Export the component directly without memoization
+// Memoization was causing issues with lazy loading in the route registry
+export default ProductManagement;

@@ -10,7 +10,7 @@ from rest_framework import status
 
 from payroll.paystack_integration import paystack_service, PaystackError
 from users.models import UserProfile, Subscription, Business
-from payments.models import PaymentTransaction, PaymentProvider, WebhookEvent
+from payments.models import Transaction, PaymentProvider, WebhookEvent
 from django.utils import timezone
 from datetime import timedelta
 
@@ -169,16 +169,18 @@ def handle_charge_success(event_data, webhook_event=None):
             # Record the payment transaction
             if webhook_event:
                 try:
-                    payment_transaction = PaymentTransaction.objects.create(
-                        business=business,
-                        transaction_type='other',
+                    payment_transaction = Transaction.objects.create(
+                        user=business.owner,  # Transaction needs user, not business
+                        tenant_id=business.id,  # Set tenant_id for TenantAwareModel
+                        transaction_type='payment',
                         amount=event_data.get('amount', 0) / 100,  # Convert from smallest unit
+                        gross_amount=event_data.get('amount', 0) / 100,
                         currency=event_data.get('currency', 'KES'),
                         description=f"Subscription payment - {plan_type} ({billing_cycle})",
-                        provider=webhook_event.provider,
+                        gateway=webhook_event.gateway,  # Use gateway instead of provider
                         status='completed',
-                        provider_transaction_id=event_data.get('id'),
-                        provider_reference=reference,
+                        gateway_transaction_id=event_data.get('id'),
+                        gateway_reference=reference,
                         processed_at=timezone.now(),
                         metadata={
                             'plan_type': plan_type,

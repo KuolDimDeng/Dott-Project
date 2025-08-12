@@ -5,6 +5,8 @@ from . import api_views
 from . import service_api_views
 from .optimized_service_views import optimized_create_service
 from . import service_api_views
+from .views_materials import MaterialViewSet, MaterialTransactionViewSet
+from .debug_views import debug_tenant_data
 
 # Create a router for standard views
 router = DefaultRouter()
@@ -17,6 +19,10 @@ router.register(r'products', views.ProductViewSet, basename='product')
 router.register(r'services', views.ServiceViewSet, basename='service')
 router.register(r'departments', views.DepartmentViewSet)
 router.register(r'charge-plans', views.CustomChargePlanViewSet)
+router.register(r'bill-of-materials', views.BillOfMaterialsViewSet, basename='bill-of-materials')
+router.register(r'service-materials', views.ServiceMaterialsViewSet, basename='service-materials')
+router.register(r'materials', MaterialViewSet, basename='material')
+router.register(r'material-transactions', MaterialTransactionViewSet, basename='material-transaction')
 
 # Create routers for optimized views
 optimized_router = DefaultRouter()
@@ -50,6 +56,12 @@ urlpatterns = [
     path('ultra/services', service_api_views.ultra_fast_services, name='ultra-fast-services-no-slash'),
     path('ultra/services/stats/', service_api_views.service_stats, name='service-stats'),
     path('ultra/services/code/<str:code>/', service_api_views.service_by_code, name='service-by-code'),
+    
+    # Migration status endpoint
+    path('check/location-migration/', api_views.check_location_migration_status, name='check-location-migration'),
+    
+    # Debug endpoint for tenant data
+    path('debug/tenant-data/', debug_tenant_data, name='debug-tenant-data'),
     
     # Existing function-based views
     path('products/create/', views.create_product, name='create-product'),

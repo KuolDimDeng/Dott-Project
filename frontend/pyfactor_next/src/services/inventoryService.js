@@ -3,7 +3,7 @@
 
 import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
-import { fetchData } from './apiService';
+import { fetchData, putData } from './apiService';
 import { inventoryCache } from '@/utils/enhancedCache';
 import { checkAndFixTenantId } from '@/utils/fixTenantId';
 import { axiosInstance } from '@/lib/axiosConfig';
@@ -49,143 +49,10 @@ const CACHE_CONFIG = {
   STATS_TTL: 5 * 60 * 1000,      // 5 minutes for stats
 };
 
-// Mock data for offline/demo mode
-const MOCK_PRODUCTS = [
-  {
-    id: '1',
-    name: 'Sample Product 1',
-    product_code: 'SP001',
-    description: 'This is a sample product for development',
-    stock_quantity: 25,
-    reorder_level: 5,
-    price: 19.99,
-    is_for_sale: true
-  },
-  {
-    id: '2',
-    name: 'Sample Product 2',
-    product_code: 'SP002',
-    description: 'Another sample product for testing',
-    stock_quantity: 10,
-    reorder_level: 3,
-    price: 29.99,
-    is_for_sale: true
-  },
-  {
-    id: '3',
-    name: 'Office Supplies',
-    product_code: 'OS003',
-    description: 'Various office supplies including pens, paper, and staplers',
-    stock_quantity: 150,
-    reorder_level: 30,
-    price: 12.50,
-    is_for_sale: true
-  },
-  {
-    id: '4',
-    name: 'Desk Chair',
-    product_code: 'DC004',
-    description: 'Ergonomic office chair with adjustable height',
-    stock_quantity: 8,
-    reorder_level: 2,
-    price: 199.99,
-    is_for_sale: true
-  },
-  {
-    id: '5',
-    name: 'Laptop Stand',
-    product_code: 'LS005',
-    description: 'Adjustable laptop stand for better ergonomics',
-    stock_quantity: 15,
-    reorder_level: 5,
-    price: 49.99,
-    is_for_sale: true
-  }
-];
+// All mock data has been removed - the service will now throw errors instead of returning mock data
 
-// Mock business and user data for development environment
-const MOCK_BUSINESS_INFO = {
-  businessName: "Development Business",
-  businessType: "Technology",
-  businessSubtypes: "software,consulting",
-  businessId: "dev-tenant-123",
-  country: "US",
-  businessState: "California",
-  legalStructure: "LLC",
-  dateFounded: "2022-01-15",
-  address: "123 Tech Blvd, San Francisco, CA 94105",
-  phoneNumber: "415-555-1234",
-  taxId: "12-3456789"
-};
 
-// Mock user data for development environment
-const MOCK_USER_INFO = {
-  userId: "dev-user-id",
-  email: "kuoldimdeng@outlook.com",
-  firstName: "Kuol",
-  lastName: "Deng",
-  fullName: "Kuol Deng",
-  role: "OWNER",
-  createdAt: new Date(Date.now() - 30*24*60*60*1000).toISOString(),
-  lastLogin: new Date().toISOString()
-};
 
-// Mock subscription data for development environment
-const MOCK_SUBSCRIPTION_INFO = {
-  plan: "PROFESSIONAL", // Options: FREE, BASIC, PROFESSIONAL, ENTERPRISE
-  interval: "MONTHLY", // Options: MONTHLY, ANNUAL
-  price: 49.99,
-  status: "ACTIVE",
-  features: [
-    "inventory_management",
-    "invoicing",
-    "customer_management",
-    "reporting",
-    "multi_user",
-    "advanced_analytics"
-  ],
-  startDate: new Date().toISOString(),
-  nextBillingDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
-  paymentMethod: {
-    type: "credit_card",
-    last4: "4242",
-    expiry: "12/25"
-  }
-};
-
-/**
- * Get mock products for testing and fallback
- * @returns {Array} List of mock products
- */
-export const getMockProducts = () => {
-  return [...MOCK_PRODUCTS];
-};
-
-/**
- * Get business, user, and subscription data for development environment
- * This function combines all development values into a single object
- * @returns {Object} Combined development values
- */
-export const getDevelopmentValues = () => {
-  return {
-    business: { ...MOCK_BUSINESS_INFO },
-    user: { ...MOCK_USER_INFO },
-    subscription: { ...MOCK_SUBSCRIPTION_INFO },
-    products: [...MOCK_PRODUCTS],
-    // Include system information
-    system: {
-      environment: "development",
-      version: "1.0.0",
-      timestamp: new Date().toISOString(),
-      features: {
-        inventory: true,
-        accounting: true,
-        crm: true,
-        reports: true
-      }
-    }
-  };
-};
 
 /**
  * Get products with optional filtering
@@ -284,7 +151,7 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
     }
 
     // Try the ultra-optimized endpoint first for faster loading
-    let response = await fetchData('/api/inventory/ultra/products/', {
+    let response = await fetchData('/inventory/ultra/products/', {
       ...mergedOptions,
       headers: {
         ...(mergedOptions.headers || {}),
@@ -315,7 +182,7 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
 
     // If ultra endpoint failed or returned empty, try standard API endpoint
     logger.info('Ultra endpoint returned no data, trying standard endpoint');
-    response = await fetchData('/api/inventory/products/', {
+    response = await fetchData('/inventory/products/', {
       ...mergedOptions,
       headers: {
         ...(mergedOptions.headers || {}),
@@ -423,9 +290,9 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       return offlineData;
     }
 
-    // If all else fails, return mock data
-    logger.info('No data available, using mock data');
-    return getMockProducts();
+    // Throw error instead of returning mock data
+    logger.error('No data available from any source');
+    throw new Error('Unable to load inventory data. Please check your connection and try again.');
   } catch (error) {
     logger.error('Error fetching products:', error);
     
@@ -436,9 +303,9 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       return offlineData;
     }
     
-    // If no offline data, use mock data as last resort
-    logger.info('No offline data available after error, using mock data');
-    return getMockProducts();
+    // Re-throw the error instead of returning mock data
+    logger.error('No offline data available after error');
+    throw error;
   }
 };
 
@@ -477,7 +344,7 @@ export const getProductStats = async (options = {}) => {
       }
     };
     
-    const response = await fetchData('/api/inventory/ultra/products/stats/', optionsWithHeaders);
+    const response = await fetchData('/inventory/ultra/products/stats/', optionsWithHeaders);
     
     if (response && typeof response === 'object') {
       logger.info('Successfully retrieved product stats');
@@ -495,8 +362,13 @@ export const getProductStats = async (options = {}) => {
       return generateStatsFromProducts(offlineProducts);
     }
     
-    // Fall back to mock stats
-    return generateStatsFromProducts(MOCK_PRODUCTS);
+    // Return empty stats if no data available
+    return {
+      total_products: 0,
+      low_stock_count: 0,
+      total_value: 0,
+      avg_price: 0
+    };
   }
 };
 
@@ -535,7 +407,7 @@ export const getProductById = async (id, options = {}) => {
       }
     };
     
-    const response = await fetchData(`/api/inventory/products/${id}/`, optionsWithHeaders);
+    const response = await fetchData(`/inventory/products/${id}/`, optionsWithHeaders);
     
     if (response && typeof response === 'object') {
       logger.info(`Successfully retrieved product ${id}`);
@@ -556,16 +428,9 @@ export const getProductById = async (id, options = {}) => {
       return offlineProduct;
     }
     
-    // Try to find in mock data
-    const mockProduct = MOCK_PRODUCTS.find(p => p.id === id);
-    
-    if (mockProduct) {
-      logger.info(`Using mock data for product ${id}`);
-    } else {
-      logger.error(`Product ${id} not found in any data source`);
-    }
-    
-    return mockProduct || null;
+    // Product not found in any data source
+    logger.error(`Product ${id} not found in any data source`);
+    throw new Error(`Product with ID ${id} not found`);
   }
 };
 
@@ -588,7 +453,7 @@ export const getProductByCode = async (code, options = {}) => {
   };
   
   try {
-    return await fetchData(`/api/inventory/ultra/products/code/${code}/`, defaultOptions);
+    return await fetchData(`/inventory/ultra/products/code/${code}/`, defaultOptions);
   } catch (error) {
     logger.error(`Error fetching product by code ${code}:`, error);
     
@@ -600,10 +465,8 @@ export const getProductByCode = async (code, options = {}) => {
       return offlineProduct;
     }
     
-    // Try to find in mock data
-    const mockProduct = MOCK_PRODUCTS.find(p => p.product_code === code);
-    
-    return mockProduct || null;
+    // Product not found
+    throw new Error(`Product with code ${code} not found`);
   }
 };
 
@@ -815,13 +678,17 @@ export const updateProduct = async (id, productData) => {
   try {
     logger.info(`Updating product ${id}:`, productData);
     
-    const response = await fetchData(`/api/inventory/products/${id}/`, {
+    // Get tenant headers to ensure proper tenant context
+    const tenantHeaders = getTenantHeaders();
+    
+    const response = await putData(`/inventory/products/${id}/`, productData, {
+      headers: tenantHeaders,
       invalidateCache: [
-        '/api/inventory/products/',
-        '/api/inventory/ultra/products/',
-        `/api/inventory/products/${id}/`
+        '/inventory/products/',
+        '/inventory/ultra/products/',
+        `/inventory/products/${id}/`
       ]
-    }, productData);
+    });
     
     return response;
   } catch (error) {
@@ -844,17 +711,94 @@ export const deleteProduct = async (id) => {
   try {
     logger.info(`Deleting product ${id}`);
     
-    await fetchData(`/api/inventory/products/${id}/`, {
-      invalidateCache: [
-        '/api/inventory/products/',
-        '/api/inventory/ultra/products/',
-        `/api/inventory/products/${id}/`
-      ]
+    // Get tenant headers to ensure proper tenant context
+    const tenantHeaders = getTenantHeaders();
+    
+    await axiosInstance.delete(`/inventory/products/${id}/`, {
+      headers: tenantHeaders
     });
+    
+    // Invalidate cache after successful deletion
+    if (inventoryCache) {
+      inventoryCache.invalidateStartingWith('/inventory/products/');
+      inventoryCache.invalidateStartingWith('/inventory/ultra/products/');
+    }
     
     return true;
   } catch (error) {
     logger.error(`Error deleting product ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get bill of materials for a product
+ * @param {string} productId - Product ID to get BOM for
+ * @returns {Promise<Array>} Bill of materials list
+ */
+export const getBillOfMaterials = async (productId) => {
+  try {
+    logger.info(`Fetching bill of materials for product ${productId}`);
+    
+    const params = productId ? { product: productId } : {};
+    const response = await fetchData('/inventory/bill-of-materials/', {
+      params,
+      headers: getTenantHeaders()
+    });
+    
+    return response;
+  } catch (error) {
+    logger.error('Error fetching bill of materials:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new bill of materials entry
+ * @param {Object} bomData - Bill of materials data
+ * @returns {Promise<Object>} Created BOM object
+ */
+export const createBillOfMaterials = async (bomData) => {
+  try {
+    logger.info('Creating bill of materials entry:', bomData);
+    
+    const response = await axiosInstance.post('/inventory/bill-of-materials/', bomData, {
+      headers: getTenantHeaders()
+    });
+    
+    // Invalidate cache
+    if (inventoryCache) {
+      inventoryCache.invalidateStartingWith('/inventory/bill-of-materials/');
+    }
+    
+    return response.data;
+  } catch (error) {
+    logger.error('Error creating bill of materials:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a bill of materials entry
+ * @param {string} bomId - BOM ID to delete
+ * @returns {Promise<void>}
+ */
+export const deleteBillOfMaterials = async (bomId) => {
+  try {
+    logger.info(`Deleting bill of materials entry ${bomId}`);
+    
+    await axiosInstance.delete(`/inventory/bill-of-materials/${bomId}/`, {
+      headers: getTenantHeaders()
+    });
+    
+    // Invalidate cache
+    if (inventoryCache) {
+      inventoryCache.invalidateStartingWith('/inventory/bill-of-materials/');
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('Error deleting bill of materials:', error);
     throw error;
   }
 };
@@ -1293,7 +1237,7 @@ export const printProductBarcode = async (productId) => {
       headers['X-Business-ID'] = correctTenantId;
     }
     
-    const response = await fetchData(`/api/inventory/products/${productId}/print-barcode/`, {
+    const response = await fetchData(`/inventory/products/${productId}/print-barcode/`, {
       responseType: 'blob',
       headers: headers
     });
@@ -1318,11 +1262,13 @@ export const inventoryService = {
   createProduct,
   updateProduct,
   deleteProduct,
+  getBillOfMaterials,
+  createBillOfMaterials,
+  deleteBillOfMaterials,
   prefetchEssentialData,
   clearInventoryCache,
   storeProductsOffline,
   getOfflineProducts,
-  getMockProducts,
   printProductBarcode
 };
 

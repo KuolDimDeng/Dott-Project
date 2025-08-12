@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 import json
 import logging
-from django.db import models, transaction
+from django.db import models, transaction as db_transaction
 from django.db.models import Sum, Q, F
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -145,10 +145,10 @@ class Form940Processor:
         ).select_related('employee', 'payroll_run')
         
         for transaction in payroll_transactions:
-            employee_id = str(transaction.employee_id)
+            employee_id = str(db_transaction.employee_id)
             if employee_id not in self._employee_wage_data:
                 self._employee_wage_data[employee_id] = {
-                    'employee': transaction.employee,
+                    'employee': db_transaction.employee,
                     'total_wages': Decimal('0'),
                     'taxable_futa_wages': Decimal('0'),
                     'quarters': {1: Decimal('0'), 2: Decimal('0'), 
@@ -157,14 +157,14 @@ class Form940Processor:
                 }
             
             # Track wages by quarter
-            quarter = (transaction.payroll_run.pay_date.month - 1) // 3 + 1
-            wage_amount = Decimal(str(transaction.gross_pay))
+            quarter = (db_transaction.payroll_run.pay_date.month - 1) // 3 + 1
+            wage_amount = Decimal(str(db_transaction.gross_pay))
             
             self._employee_wage_data[employee_id]['total_wages'] += wage_amount
             self._employee_wage_data[employee_id]['quarters'][quarter] += wage_amount
             
             # Track state wages
-            state = transaction.state_code if hasattr(transaction, 'state_code') else self._get_default_state()
+            state = db_transaction.state_code if hasattr(transaction, 'state_code') else self._get_default_state()
             if state not in self._employee_wage_data[employee_id]['states']:
                 self._employee_wage_data[employee_id]['states'][state] = Decimal('0')
             self._employee_wage_data[employee_id]['states'][state] += wage_amount

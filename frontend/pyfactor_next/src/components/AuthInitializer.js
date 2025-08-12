@@ -9,7 +9,7 @@
  */
 
 import { useEffect } from 'react';
-import { initAmplify } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 
 export default function AuthInitializer() {

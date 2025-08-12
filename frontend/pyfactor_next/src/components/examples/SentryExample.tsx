@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import * as Sentry from '@sentry/nextjs';
-import { ErrorBoundary } from '@sentry/nextjs';
+
+
 import { logger, trackEvent } from '@/utils/sentry';
 
 // Component that might throw an error
@@ -19,78 +19,79 @@ export const SentryExample: React.FC = () => {
   const [apiResponse, setApiResponse] = useState<string>('');
 
   // Example of button click with performance monitoring
-  const handleButtonClick = () => {
-    // Start a transaction for the button click
-    const transaction = Sentry.startTransaction({
-      name: 'button-click',
-      op: 'user-interaction',
-    });
+  const handleButtonClick = async () => {
+    await Sentry.startSpan(
+      {
+        name: 'button-click',
+        op: 'user-interaction',
+      },
+      async (span) => {
+        try {
+          // Track the event
+          trackEvent('example_button_clicked', {
+            timestamp: new Date().toISOString(),
+          });
 
-    try {
-      // Track the event
-      trackEvent('example_button_clicked', {
-        timestamp: new Date().toISOString(),
-      });
+          logger.info('Button clicked', {
+            component: 'SentryExample',
+            action: 'test-click',
+          });
 
-      logger.info('Button clicked', {
-        component: 'SentryExample',
-        action: 'test-click',
-      });
+          // Simulate some work
+          await Sentry.startSpan(
+            {
+              op: 'process',
+              name: 'Process button click',
+            },
+            async () => {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          );
 
-      // Simulate some work
-      const span = transaction.startChild({
-        op: 'process',
-        description: 'Process button click',
-      });
-
-      setTimeout(() => {
-        span.finish();
-        transaction.finish();
-      }, 100);
-
-      alert('Button clicked! Check Sentry for the transaction.');
-    } catch (error) {
-      logger.error('Error in button click handler', error);
-      transaction.setStatus('internal_error');
-      transaction.finish();
-    }
+          alert('Button clicked! Check Sentry for the transaction.');
+        } catch (error) {
+          logger.error('Error in button click handler', error);
+          throw error;
+        }
+      }
+    );
   };
 
   // Example API call with error handling
   const handleApiCall = async (triggerError: boolean = false) => {
-    const transaction = Sentry.startTransaction({
-      name: 'api-call-example',
-      op: 'http.client',
-    });
+    await Sentry.startSpan(
+      {
+        name: 'api-call-example',
+        op: 'http.client',
+      },
+      async () => {
+        try {
+          logger.info('Making API call', { triggerError });
 
-    try {
-      logger.info('Making API call', { triggerError });
+          const response = await fetch('/api/example-sentry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'Test User',
+              email: 'test@example.com',
+              triggerError,
+            }),
+          });
 
-      const response = await fetch('/api/example-sentry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Test User',
-          email: 'test@example.com',
-          triggerError,
-        }),
-      });
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'API call failed');
+          }
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'API call failed');
+          setApiResponse(JSON.stringify(data, null, 2));
+        } catch (error) {
+          logger.error('API call failed', error);
+          setApiResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          throw error;
+        }
       }
-
-      setApiResponse(JSON.stringify(data, null, 2));
-      transaction.setStatus('ok');
-    } catch (error) {
-      logger.error('API call failed', error);
-      setApiResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      transaction.setStatus('internal_error');
-    } finally {
-      transaction.finish();
-    }
+    );
   };
 
   // Example of manual error capture

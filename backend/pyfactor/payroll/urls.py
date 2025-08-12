@@ -19,6 +19,10 @@ from .universal_views import (
     calculate_payroll_cost, check_payment_setup_status
 )
 from .stripe_webhooks import stripe_payroll_webhook
+from .views_fees import (
+    calculate_payroll_fees, process_payroll_with_fees,
+    approve_payroll_with_payment, get_payroll_fee_breakdown
+)
 
 urlpatterns = [
     path('run/', RunPayrollView.as_view(), name='run_payroll'),
@@ -65,4 +69,10 @@ urlpatterns = [
     path('statements/', PayStatementListView.as_view(), name='statements-list'),
     path('statements/<uuid:pk>/', PayStatementDetailView.as_view(), name='statement-detail'),
     path('stats/', PayrollStatsView.as_view(), name='payroll-stats'),
+    
+    # Fee-based payroll endpoints
+    path('calculate-fees/', calculate_payroll_fees, name='calculate-payroll-fees'),
+    path('process-with-fees/', process_payroll_with_fees, name='process-payroll-with-fees'),
+    path('approve-with-payment/<uuid:payroll_run_id>/', approve_payroll_with_payment, name='approve-payroll-payment'),
+    path('fee-breakdown/<uuid:payroll_run_id>/', get_payroll_fee_breakdown, name='payroll-fee-breakdown'),
 ]

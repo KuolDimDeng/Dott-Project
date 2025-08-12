@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { getCacheValue } from '@/utils/appCache';

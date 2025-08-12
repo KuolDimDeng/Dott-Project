@@ -28,7 +28,7 @@ export default function CurrencySelector() {
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 z-10" 
+            className="absolute inset-0 z-10" 
             onClick={() => setIsOpen(false)}
           />
           

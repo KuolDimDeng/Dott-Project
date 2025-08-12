@@ -4,7 +4,8 @@ from .models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
     TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder, TaxFiling, FilingDocument,
-    FilingConfirmation, FilingNotification, NotificationType, NotificationStatus
+    FilingConfirmation, FilingNotification, NotificationType, NotificationStatus,
+    GlobalSalesTaxRate, SalesTaxJurisdictionOverride
 )
 import logging
 
@@ -48,368 +49,174 @@ class IncomeTaxRateSerializer(serializers.ModelSerializer):
 
 class PayrollTaxFilingSerializer(serializers.ModelSerializer):
     state_code = serializers.CharField(source='state.code', read_only=True)
+    state_name = serializers.CharField(source='state.name', read_only=True)
     
     class Meta:
         model = PayrollTaxFiling
         fields = '__all__'
-        read_only_fields = ('submission_date', 'confirmation_number')
 
 class TaxFilingInstructionSerializer(serializers.ModelSerializer):
-    state_code = serializers.CharField(source='state.code', read_only=True)
-    state_name = serializers.CharField(source='state.name', read_only=True)
-    
     class Meta:
         model = TaxFilingInstruction
         fields = '__all__'
 
 class TaxFormSerializer(serializers.ModelSerializer):
-    employee_name = serializers.CharField(source='employee.__str__', read_only=True)
-    ssn_last_four = serializers.SerializerMethodField()
+    download_url = serializers.SerializerMethodField()
     
     class Meta:
         model = TaxForm
-        fields = [
-            'id', 'employee', 'employee_name', 'form_type', 'tax_year', 
-            'filing_status', 'submission_date', 'employer_id_number', 
-            'file', 'state_code', 'state_employer_id', 'is_verified',
-            'verified_by', 'verification_date', 'was_filed', 
-            'filing_confirmation', 'ssn_last_four'
-        ]
-        read_only_fields = [
-            'id', 'submission_date', 'ssn_last_four', 'is_verified',
-            'verified_by', 'verification_date'
-        ]
-        
-    def get_ssn_last_four(self, obj):
-        """Get the SSN last four digits from employee through Stripe"""
-        return obj.get_ssn_last_four()
-
+        fields = ['id', 'form_name', 'form_number', 'form_year', 'state', 'agency', 
+                  'description', 'filing_frequency', 'due_date_rule', 'is_active',
+                  'last_updated', 'download_url', 'official_url', 'instructions_url']
+    
+    def get_download_url(self, obj):
+        """Generate download URL for the tax form"""
+        request = self.context.get('request')
+        if request and obj.form_file:
+            return request.build_absolute_uri(obj.form_file.url)
+        return None
 
 class TaxDataEntryControlSerializer(serializers.ModelSerializer):
+    """Serializer for tax data entry control policies"""
     class Meta:
         model = TaxDataEntryControl
-        fields = [
-            'id', 'control_type', 'max_entries_per_hour', 'max_entries_per_day',
-            'max_entries_per_month', 'is_active', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
 
 class TaxDataEntryLogSerializer(serializers.ModelSerializer):
-    user_email = serializers.CharField(source='user.email', read_only=True)
-    
+    """Serializer for tax data entry logs"""
     class Meta:
         model = TaxDataEntryLog
-        fields = [
-            'id', 'control_type', 'entry_type', 'user', 'user_email',
-            'ip_address', 'user_agent', 'status', 'entry_count',
-            'details', 'created_at'
-        ]
-        read_only_fields = ['id', 'created_at']
-
+        fields = '__all__'
+        read_only_fields = ['created_at']
 
 class TaxDataAbuseReportSerializer(serializers.ModelSerializer):
-    user_email = serializers.CharField(source='user.email', read_only=True)
-    resolved_by_email = serializers.CharField(source='resolved_by.email', read_only=True)
-    
+    """Serializer for tax data abuse reports"""
     class Meta:
         model = TaxDataAbuseReport
-        fields = [
-            'id', 'report_type', 'severity', 'status', 'user', 'user_email',
-            'description', 'evidence', 'action_taken', 'created_at',
-            'updated_at', 'resolved_at', 'resolved_by', 'resolved_by_email'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'resolved_at', 'resolved_by']
 
 class TaxDataBlacklistSerializer(serializers.ModelSerializer):
-    created_by_email = serializers.CharField(source='created_by.email', read_only=True)
-    
+    """Serializer for tax data blacklist entries"""
     class Meta:
         model = TaxDataBlacklist
-        fields = [
-            'id', 'blacklist_type', 'identifier', 'reason', 'is_active',
-            'created_at', 'expires_at', 'created_by', 'created_by_email'
-        ]
-        read_only_fields = ['id', 'created_at']
-
+        fields = '__all__'
+        read_only_fields = ['created_at', 'created_by']
 
 class TaxSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for tenant tax settings"""
     class Meta:
         model = TaxSettings
-        fields = [
-            'id', 'business_name', 'business_type', 'country', 'state_province',
-            'city', 'postal_code', 'sales_tax_rate', 'income_tax_rate',
-            'payroll_tax_rate', 'filing_website', 'filing_address',
-            'filing_deadlines', 'ai_suggested', 'ai_confidence_score',
-            'approved_by_name', 'approved_by_signature', 'approved_at',
-            'approval_ip_address', 'confirmation_email_sent',
-            'confirmation_email_sent_at', 'confirmation_email_sent_to',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
 
 class TaxApiUsageSerializer(serializers.ModelSerializer):
-    resets_at = serializers.SerializerMethodField()
-    
+    """Serializer for tax API usage tracking"""
     class Meta:
         model = TaxApiUsage
-        fields = [
-            'id', 'month_year', 'api_calls_count', 'cache_hits_count',
-            'monthly_limit', 'plan_type', 'resets_at', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_resets_at(self, obj):
-        """Calculate when the monthly usage resets"""
-        from datetime import datetime
-        from dateutil.relativedelta import relativedelta
-        
-        # Parse month_year (YYYY-MM format)
-        year, month = map(int, obj.month_year.split('-'))
-        current_date = datetime(year, month, 1)
-        
-        # Get first day of next month
-        next_month = current_date + relativedelta(months=1)
-        return next_month.isoformat()
-
+        fields = '__all__'
+        read_only_fields = ['created_at']
 
 class TaxFilingLocationSerializer(serializers.ModelSerializer):
-    is_stale = serializers.ReadOnlyField()
-    
+    """Serializer for Tax Filing Locations"""
     class Meta:
         model = TaxFilingLocation
-        fields = [
-            'id', 'country', 'state_province', 'city', 'postal_code',
-            'federal_website', 'federal_name', 'federal_address', 'federal_phone', 'federal_email',
-            'state_website', 'state_name', 'state_address', 'state_phone', 'state_email',
-            'local_website', 'local_name', 'local_address', 'local_phone', 'local_email',
-            'filing_deadlines', 'special_instructions', 'tax_types',
-            'last_updated', 'created_at', 'verified', 'lookup_count', 'is_stale'
-        ]
-        read_only_fields = ['id', 'last_updated', 'created_at', 'lookup_count', 'is_stale']
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
 
+    def validate(self, data):
+        """Validate the filing location data"""
+        # Ensure required fields are present based on location type
+        location_type = data.get('location_type')
+        
+        if location_type == 'mail':
+            if not data.get('mailing_address'):
+                raise serializers.ValidationError({
+                    'mailing_address': 'Mailing address is required for mail filing locations'
+                })
+        elif location_type == 'online':
+            if not data.get('portal_url'):
+                raise serializers.ValidationError({
+                    'portal_url': 'Portal URL is required for online filing locations'
+                })
+        elif location_type == 'office':
+            if not data.get('office_address'):
+                raise serializers.ValidationError({
+                    'office_address': 'Office address is required for in-person filing locations'
+                })
+        
+        return data
 
 class TaxReminderSerializer(serializers.ModelSerializer):
+    """Serializer for Tax Reminders"""
+    days_until_due = serializers.SerializerMethodField()
     is_overdue = serializers.SerializerMethodField()
     
     class Meta:
         model = TaxReminder
-        fields = [
-            'id', 'title', 'description', 'reminder_type', 'due_date',
-            'status', 'created_at', 'updated_at', 'is_overdue'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'completed_at', 'days_until_due', 'is_overdue']
+    
+    def get_days_until_due(self, obj):
+        """Calculate days until the reminder is due"""
+        from datetime import date
+        if obj.due_date:
+            days = (obj.due_date - date.today()).days
+            return max(0, days)
+        return None
     
     def get_is_overdue(self, obj):
-        """Check if reminder is overdue"""
-        from django.utils import timezone
-        return obj.status == 'pending' and obj.due_date < timezone.now().date()
-
+        """Check if the reminder is overdue"""
+        from datetime import date
+        if obj.due_date and obj.status == 'pending':
+            return obj.due_date < date.today()
+        return False
 
 class FilingDocumentSerializer(serializers.ModelSerializer):
-    """
-    Serializer for tax filing documents.
-    """
-    file_url = serializers.SerializerMethodField()
-    uploaded_by_name = serializers.SerializerMethodField()
-    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+    """Serializer for filing documents."""
+    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
     
     class Meta:
         model = FilingDocument
         fields = [
-            'id',
+            'document_id',
             'filing',
             'document_type',
-            'document_type_display',
             'file_name',
             'file_path',
-            'file_url',
             'file_size',
-            'mime_type',
+            'uploaded_at',
             'uploaded_by',
             'uploaded_by_name',
-            'description',
-            'is_verified',
-            'verified_by',
-            'verified_at',
-            'created_at',
-            'updated_at'
+            'status',
+            'notes'
         ]
-        read_only_fields = [
-            'id',
-            'file_path',
-            'file_url',
-            'uploaded_by',
-            'uploaded_by_name',
-            'is_verified',
-            'verified_by',
-            'verified_at',
-            'created_at',
-            'updated_at'
-        ]
-    
-    def get_file_url(self, obj):
-        """Generate URL for accessing the file."""
-        if obj.file_path:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f'/media/{obj.file_path}')
-        return None
-    
-    def get_uploaded_by_name(self, obj):
-        """Get the name of the user who uploaded the document."""
-        if obj.created_by:
-            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
-        return obj.uploaded_by
-
-
-class FilingDocumentUploadSerializer(serializers.Serializer):
-    """
-    Serializer for document upload requests.
-    """
-    filing_id = serializers.UUIDField(required=True)
-    documents = serializers.ListField(
-        child=serializers.FileField(),
-        required=True,
-        allow_empty=False
-    )
-    document_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=FilingDocument.DOCUMENT_TYPE_CHOICES),
-        required=True,
-        allow_empty=False
-    )
-    descriptions = serializers.ListField(
-        child=serializers.CharField(max_length=500, allow_blank=True),
-        required=False,
-        allow_empty=True
-    )
-    
-    def validate(self, attrs):
-        """Validate that number of files matches number of document types."""
-        documents = attrs.get('documents', [])
-        document_types = attrs.get('document_types', [])
-        
-        if len(documents) != len(document_types):
-            raise serializers.ValidationError(
-                "Number of documents must match number of document types"
-            )
-        
-        return attrs
-
+        read_only_fields = ['document_id', 'uploaded_at', 'uploaded_by', 'uploaded_by_name']
 
 class TaxFilingSerializer(serializers.ModelSerializer):
-    """
-    Serializer for tax filings with nested documents.
-    """
+    """Serializer for tax filing records."""
     documents = FilingDocumentSerializer(many=True, read_only=True)
     document_count = serializers.SerializerMethodField()
-    verified_document_count = serializers.SerializerMethodField()
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
     tax_type_display = serializers.CharField(source='get_tax_type_display', read_only=True)
     service_type_display = serializers.CharField(source='get_service_type_display', read_only=True)
-    can_cancel = serializers.BooleanField(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:
         model = TaxFiling
-        fields = [
-            'filing_id',
-            'tax_type',
-            'tax_type_display',
-            'service_type',
-            'service_type_display',
-            'status',
-            'status_display',
-            'price',
-            'complexity_multiplier',
-            'filing_period',
-            'filing_year',
-            'filing_month',
-            'filing_quarter',
-            'due_date',
-            'payment_status',
-            'payment_session_id',
-            'payment_completed_at',
-            'submitted_at',
-            'accepted_at',
-            'confirmation_number',
-            'locations',
-            'total_sales',
-            'taxable_sales',
-            'tax_collected',
-            'tax_due',
-            'filing_data',
-            'notes',
-            'user_email',
-            'preparer_email',
-            'documents',
-            'document_count',
-            'verified_document_count',
-            'can_cancel',
-            'created_at',
-            'updated_at'
-        ]
-        read_only_fields = [
-            'filing_id',
-            'payment_status',
-            'payment_completed_at',
-            'submitted_at',
-            'accepted_at',
-            'confirmation_number',
-            'user_email',
-            'documents',
-            'document_count',
-            'verified_document_count',
-            'can_cancel',
-            'created_at',
-            'updated_at'
-        ]
-    
-    def get_document_count(self, obj):
-        """Get total number of documents."""
-        return obj.documents.count()
-    
-    def get_verified_document_count(self, obj):
-        """Get number of verified documents."""
-        return obj.documents.filter(is_verified=True).count()
-    
-    def create(self, validated_data):
-        """Create a new tax filing."""
-        # Remove any nested data that might have been included
-        validated_data.pop('documents', None)
-        
-        # Create the filing
-        filing = TaxFiling.objects.create(**validated_data)
-        
-        logger.info(f"Created tax filing {filing.filing_id} for tenant {filing.tenant_id}")
-        
-        return filing
-    
-    def update(self, instance, validated_data):
-        """Update an existing tax filing."""
-        # Remove any nested data that might have been included
-        validated_data.pop('documents', None)
-        
-        # Update the filing
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        
-        instance.save()
-        
-        logger.info(f"Updated tax filing {instance.filing_id}")
-        
-        return instance
+        fields = '__all__'
+        read_only_fields = ['filing_id', 'created_at', 'updated_at', 'created_by']
 
+    def get_document_count(self, obj):
+        """Get the count of documents."""
+        return obj.documents.count()
 
 class TaxFilingListSerializer(serializers.ModelSerializer):
-    """
-    Lightweight serializer for tax filing lists.
-    """
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    """Lightweight serializer for tax filing list views."""
+    document_count = serializers.SerializerMethodField()
     tax_type_display = serializers.CharField(source='get_tax_type_display', read_only=True)
     service_type_display = serializers.CharField(source='get_service_type_display', read_only=True)
-    document_count = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:
         model = TaxFiling
@@ -432,3 +239,234 @@ class TaxFilingListSerializer(serializers.ModelSerializer):
     def get_document_count(self, obj):
         """Get total number of documents."""
         return obj.documents.count()
+
+
+class GlobalSalesTaxRateSerializer(serializers.ModelSerializer):
+    """Serializer for GlobalSalesTaxRate model"""
+    rate_percentage = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = GlobalSalesTaxRate
+        fields = [
+            'id', 'country', 'country_name', 'region_code', 'region_name',
+            'locality', 'tax_type', 'rate', 'rate_percentage',
+            'effective_date', 'end_date', 'is_current',
+            'ai_populated', 'ai_confidence_score', 'ai_source_notes',
+            'ai_last_verified', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'ai_populated', 'ai_confidence_score', 'ai_source_notes',
+            'ai_last_verified', 'created_at', 'updated_at'
+        ]
+    
+    def get_rate_percentage(self, obj):
+        """Convert decimal rate to percentage"""
+        return float(obj.rate * 100) if obj.rate else 0.0
+
+
+# Filing Service Serializers
+class FilingServiceCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating new filing service requests"""
+    
+    class Meta:
+        model = TaxFiling
+        fields = [
+            'country', 'region_code', 'period_type', 'filing_year',
+            'period_month', 'period_quarter', 'filing_type_service',
+            'special_instructions', 'total_sales', 'taxable_sales',
+            'tax_collected', 'tax_rate', 'filing_fee'
+        ]
+        
+    def validate(self, data):
+        """Validate filing data"""
+        # Validate period data
+        if data.get('period_type') == 'monthly' and not data.get('period_month'):
+            raise serializers.ValidationError("Month is required for monthly filings")
+        if data.get('period_type') == 'quarterly' and not data.get('period_quarter'):
+            raise serializers.ValidationError("Quarter is required for quarterly filings")
+            
+        return data
+        
+    def create(self, validated_data):
+        """Create filing with additional fields"""
+        # Set tax type to sales for filing service
+        validated_data['tax_type'] = 'sales'
+        validated_data['service_type'] = 'full'
+        
+        # Set period dates based on period type
+        year = validated_data['filing_year']
+        if validated_data['period_type'] == 'monthly':
+            month = validated_data['period_month']
+            validated_data['period_start'] = f"{year}-{month:02d}-01"
+            if month == 12:
+                validated_data['period_end'] = f"{year}-12-31"
+            else:
+                validated_data['period_end'] = f"{year}-{month+1:02d}-01"
+        elif validated_data['period_type'] == 'quarterly':
+            quarter = validated_data['period_quarter']
+            quarter_months = {1: (1, 3), 2: (4, 6), 3: (7, 9), 4: (10, 12)}
+            start_month, end_month = quarter_months[quarter]
+            validated_data['period_start'] = f"{year}-{start_month:02d}-01"
+            validated_data['period_end'] = f"{year}-{end_month:02d}-30"
+        else:  # annual
+            validated_data['period_start'] = f"{year}-01-01"
+            validated_data['period_end'] = f"{year}-12-31"
+            
+        # Set filing period display
+        if validated_data['period_type'] == 'monthly':
+            month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][validated_data['period_month']-1]
+            validated_data['filing_period'] = f"{month_name} {year}"
+        elif validated_data['period_type'] == 'quarterly':
+            validated_data['filing_period'] = f"Q{validated_data['period_quarter']} {year}"
+        else:
+            validated_data['filing_period'] = f"{year}"
+            
+        # Set due date (placeholder - should be calculated based on country/state rules)
+        from datetime import datetime, timedelta
+        validated_data['due_date'] = datetime.now().date() + timedelta(days=30)
+        
+        # Set jurisdiction
+        country = validated_data.get('country', 'US')
+        region = validated_data.get('region_code', '')
+        validated_data['jurisdiction'] = f"{country}-{region}" if region else country
+        
+        return super().create(validated_data)
+
+
+class FilingServiceListSerializer(serializers.ModelSerializer):
+    """Serializer for listing filing service requests"""
+    period_display = serializers.CharField(source='filing_period', read_only=True)
+    location_display = serializers.SerializerMethodField()
+    filing_type_display = serializers.CharField(source='get_filing_type_service_display', read_only=True)
+    payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
+    
+    class Meta:
+        model = TaxFiling
+        fields = [
+            'filing_id', 'period_display', 'location_display', 'filing_type_service',
+            'filing_type_display', 'status', 'filing_fee', 'due_date',
+            'payment_status', 'payment_status_display', 'tax_report_url',
+            'created_at'
+        ]
+        
+    def get_location_display(self, obj):
+        """Format location display"""
+        if obj.region_code:
+            return f"{obj.country} - {obj.region_code}"
+        return obj.country or "Unknown"
+
+
+class FilingServiceStatsSerializer(serializers.Serializer):
+    """Serializer for filing service statistics"""
+    total = serializers.IntegerField()
+    pending = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    overdue = serializers.IntegerField()
+
+
+class SalesTaxOverrideSerializer(serializers.ModelSerializer):
+    """
+    Serializer for SalesTaxJurisdictionOverride model.
+    Handles tenant-specific tax rate overrides with validation.
+    """
+    
+    # Read-only fields
+    tenant_id = serializers.CharField(read_only=True)
+    created_by = serializers.CharField(source='created_by.email', read_only=True)
+    updated_by = serializers.CharField(source='updated_by.email', read_only=True)
+    total_rate = serializers.DecimalField(max_digits=6, decimal_places=4, read_only=True)
+    
+    # Display fields
+    total_rate_percentage = serializers.ReadOnlyField()
+    country_rate_percentage = serializers.ReadOnlyField()
+    state_rate_percentage = serializers.ReadOnlyField()
+    county_rate_percentage = serializers.ReadOnlyField()
+    jurisdiction_display = serializers.ReadOnlyField(source='get_jurisdiction_display')
+    
+    class Meta:
+        model = SalesTaxJurisdictionOverride
+        fields = [
+            'id', 'tenant_id', 'country', 'region_code', 'region_name',
+            'locality', 'locality_name', 'country_rate', 'state_rate', 
+            'county_rate', 'total_rate', 'override_reason', 'is_active',
+            'created_at', 'updated_at', 'created_by', 'updated_by',
+            'original_global_rates', 'total_rate_percentage', 
+            'country_rate_percentage', 'state_rate_percentage', 
+            'county_rate_percentage', 'jurisdiction_display'
+        ]
+        read_only_fields = [
+            'id', 'tenant_id', 'total_rate', 'created_at', 'updated_at',
+            'created_by', 'updated_by', 'original_global_rates'
+        ]
+    
+    def validate(self, data):
+        """Validate tax rate data"""
+        country_rate = data.get('country_rate', 0)
+        state_rate = data.get('state_rate', 0)
+        county_rate = data.get('county_rate', 0)
+        
+        # Ensure rates are not negative
+        if country_rate < 0 or state_rate < 0 or county_rate < 0:
+            raise serializers.ValidationError("Tax rates cannot be negative")
+        
+        # Ensure total rate is reasonable (less than 50%)
+        total = country_rate + state_rate + county_rate
+        if total > 0.5:  # 50%
+            raise serializers.ValidationError(
+                f"Total tax rate ({total*100:.2f}%) seems unusually high. "
+                "Please verify your rates."
+            )
+        
+        # Require override reason
+        if not data.get('override_reason', '').strip():
+            raise serializers.ValidationError(
+                "Override reason is required for audit compliance"
+            )
+        
+        return data
+    
+    def validate_country_rate(self, value):
+        """Validate country rate (usually 0 for US)"""
+        if value > 0.3:  # 30%
+            raise serializers.ValidationError(
+                "Country tax rate seems unusually high"
+            )
+        return value
+    
+    def validate_state_rate(self, value):
+        """Validate state rate"""
+        if value > 0.2:  # 20%
+            raise serializers.ValidationError(
+                "State tax rate seems unusually high"
+            )
+        return value
+    
+    def validate_county_rate(self, value):
+        """Validate county rate"""
+        if value > 0.15:  # 15%
+            raise serializers.ValidationError(
+                "County tax rate seems unusually high"
+            )
+        return value
+    
+    def to_representation(self, instance):
+        """Customize output representation"""
+        data = super().to_representation(instance)
+        
+        # Add formatted display values
+        data['formatted_rates'] = {
+            'country': f"{instance.country_rate_percentage:.2f}%",
+            'state': f"{instance.state_rate_percentage:.2f}%",
+            'county': f"{instance.county_rate_percentage:.2f}%",
+            'total': f"{instance.total_rate_percentage:.2f}%"
+        }
+        
+        # Add location hierarchy
+        data['location_hierarchy'] = {
+            'country': str(instance.country),
+            'state': instance.region_name or instance.region_code or '',
+            'county': instance.locality_name or instance.locality or ''
+        }
+        
+        return data

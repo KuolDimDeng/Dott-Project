@@ -2,6 +2,7 @@
 Tenant-aware ViewSets for secure multi-tenant operations
 """
 from rest_framework import viewsets, permissions
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import QuerySet
@@ -11,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class SecureCustomerViewSet(viewsets.ModelViewSet):
+class SecureCustomerViewSet(TenantIsolatedViewSet):
     """
     Base ViewSet that enforces tenant isolation for all operations.
     

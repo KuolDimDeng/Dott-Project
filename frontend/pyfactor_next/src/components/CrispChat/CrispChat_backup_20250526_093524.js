@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { getCurrentUser  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import CrispErrorBoundary from './CrispErrorBoundary';
 
 function CrispChat({ isAuthenticated }) {

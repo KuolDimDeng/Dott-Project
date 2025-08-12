@@ -16,9 +16,13 @@ import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
-import BankConnections from './sections/BankConnections';
+import BankingSettings from '../banking/page';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettingsSimple';
+import MainMenuSettings from './sections/MainMenuSettings';
+import TaxSettings from './sections/TaxSettings';
+import CurrencySettings from './sections/CurrencySettings';
+import Accounting from './sections/Accounting';
 // import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
@@ -31,7 +35,11 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
   MapPinIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  Squares2X2Icon,
+  CalculatorIcon,
+  BuildingLibraryIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -50,7 +58,7 @@ const SettingsManagement = () => {
   const settingsSections = [
     {
       id: 'company-profile',
-      title: 'Company Profile', // Changed from General Settings
+      title: 'Business', // Changed from Company Profile
       icon: BuildingOfficeIcon,
       description: t('general.businessInfo'),
       component: CompanyProfile,
@@ -58,24 +66,56 @@ const SettingsManagement = () => {
     },
     {
       id: 'user-management',
-      title: t('tabs.userManagement'),
+      title: 'Users', // Changed from User Management
       icon: UserGroupIcon,
       description: t('userManagement.title'),
       component: UserManagement,
       requiredRole: 'admin' // Admin and Owner can access
     },
     {
+      id: 'main-menu',
+      title: 'Main Menu',
+      icon: Squares2X2Icon,
+      description: 'Customize which menu items are visible',
+      component: MainMenuSettings,
+      requiredRole: 'admin' // Admin and Owner can configure
+    },
+    {
       id: 'bank-connections',
-      title: t('tabs.bankConnections'),
-      icon: BanknotesIcon,
-      description: t('bankConnections.title'),
-      component: BankConnections,
+      title: 'Banking', // Changed from Bank Connections
+      icon: BuildingLibraryIcon,
+      description: 'Connect and manage bank accounts for payments and payroll',
+      component: BankingSettings,
+      requiredRole: 'admin' // Only admin and owner can access
+    },
+    {
+      id: 'currency',
+      title: 'Currency',
+      icon: CurrencyDollarIcon,
+      description: 'Set your business currency for invoices and reports',
+      component: CurrencySettings,
+      requiredRole: 'user' // All users can view their currency
+    },
+    {
+      id: 'accounting',
+      title: 'Accounting',
+      icon: DocumentTextIcon,
+      description: 'Configure accounting standards and financial reporting settings',
+      component: Accounting,
+      requiredRole: 'admin' // Only admin and owner can access
+    },
+    {
+      id: 'taxes',
+      title: 'Taxes',
+      icon: CalculatorIcon,
+      description: 'Configure sales tax rates and settings',
+      component: TaxSettings,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
       id: 'payroll',
       title: t('tabs.payroll'),
-      icon: CurrencyDollarIcon,
+      icon: BanknotesIcon,
       description: t('payroll.title'),
       component: PayrollSettings,
       requiredRole: 'admin' // Only admin and owner can access
@@ -155,7 +195,7 @@ const SettingsManagement = () => {
         {/* Tab Navigation - Responsive Grid */}
         <div className="bg-white shadow-sm rounded-lg mb-6">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8" aria-label="Settings tabs">
+            <nav className="-mb-px flex flex-wrap" aria-label="Settings tabs">
               {availableSections.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
@@ -165,8 +205,8 @@ const SettingsManagement = () => {
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
                     className={`
-                      group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 border-b-2 font-medium text-xs sm:text-sm
-                      transition-all duration-200
+                      group flex items-center whitespace-nowrap gap-2 py-4 px-3 sm:px-4 border-b-2 font-medium text-sm
+                      transition-all duration-200 flex-grow sm:flex-grow-0
                       ${isActive 
                         ? 'border-blue-500 text-blue-600' 
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -180,7 +220,7 @@ const SettingsManagement = () => {
                           : 'text-gray-400 group-hover:text-gray-500'
                       }`} 
                     />
-                    <span className="text-center">{section.title}</span>
+                    <span className="text-center text-xs sm:text-sm">{section.title}</span>
                   </button>
                 );
               })}

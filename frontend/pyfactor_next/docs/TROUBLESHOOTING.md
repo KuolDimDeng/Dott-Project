@@ -11,6 +11,8 @@
 - [Calendar/Event Management](#calendarevent-management)
 - [HR Employee Management](#hr-employee-management)
 - [API Integration Issues](#api-integration-issues)
+- [POS System Issues](#pos-system-issues) ⬅️ **NEW**
+  - [Customers Not Loading in POS Dropdown](#customers-not-loading-in-pos-dropdown)
 - [Performance Issues](#performance-issues)
 
 ---
@@ -3193,5 +3195,83 @@ python manage.py check_kenya_discount  # Verify Kenya is configured
 
 ---
 
-*Last Updated: 2025-01-09*
+# POS System Issues
+
+## Customers Not Loading in POS Dropdown
+
+**Issue**: POS system shows only "Walk-in Customer" option, real customers from database don't appear in the dropdown.
+
+**Symptoms**:
+- Customer dropdown only shows "Walk-in Customer"
+- Console shows successful `/api/crm/customers` request with 200 status
+- Customer Management page shows customers correctly
+- No console errors related to customer loading
+
+**Root Cause**: The POS was using `/api/customers/` which performs its own database query instead of properly forwarding to the backend CRM API where customer data is stored with proper tenant isolation.
+
+**Solution**:
+
+1. **Create Direct Backend Route** (`/src/app/api/backend/crm/customers/route.js`):
+   ```javascript
+   import { NextResponse } from 'next/server';
+   import { cookies } from 'next/headers';
+
+   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+
+   export async function GET(request) {
+     try {
+       const cookieStore = cookies();
+       const sidCookie = cookieStore.get('sid');
+       
+       if (!sidCookie?.value) {
+         return NextResponse.json({ error: 'No session found' }, { status: 401 });
+       }
+
+       // Call backend directly
+       const response = await fetch(`${BACKEND_URL}/api/crm/customers/`, {
+         method: 'GET',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Session ${sidCookie.value}`,
+         },
+       });
+
+       const data = await response.json();
+       return NextResponse.json(data);
+     } catch (error) {
+       console.error('[Backend CRM Customers] Error:', error);
+       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+     }
+   }
+   ```
+
+2. **Update POS to Use Backend Route**:
+   ```javascript
+   // In POSSystemInline.js
+   const response = await fetch('/api/backend/crm/customers/', {
+     method: 'GET',
+     headers: { 'Content-Type': 'application/json' },
+     credentials: 'include',
+   });
+   ```
+
+3. **Add Searchable Customer Dropdown** (Enhancement):
+   - Replace `<select>` with searchable input field
+   - Filter customers by name or email as user types
+   - Show dropdown with filtered results
+   - Maintain "Walk-in Customer" as default option
+
+**Key Insights**:
+- Frontend should not directly query database for security reasons
+- Always use backend API endpoints that enforce tenant isolation
+- Session authentication must be properly forwarded to backend
+- Customer data structure may use either `name` or `company_name` fields
+
+**Files Modified**:
+- `/src/app/api/backend/crm/customers/route.js` - New backend forwarding route
+- `/src/app/dashboard/components/pos/POSSystemInline.js` - Updated to use backend route and searchable dropdown
+
+---
+
+*Last Updated: 2025-08-02*
 *Next Review: When new patterns emerge*

@@ -1,0 +1,49 @@
+{
+  "backToHome": "返回首页",
+  "hero": {
+    "title": "Dott 商业博客",
+    "subtitle": "学习如何使用 Dott 管理您的企业财务。获取提示、见解和策略来发展您的业务。"
+  },
+  "newsletter": {
+    "title": "订阅我们的新闻通讯，获取产品更新和新博客文章！",
+    "placeholder": "您的电子邮件地址",
+    "button": "订阅"
+  },
+  "categories": {
+    "all": "所有文章",
+    "accounting": "会计与税务",
+    "business": "商业"
+  },
+  "search": {
+    "placeholder": "搜索文章..."
+  },
+  "featured": "精选",
+  "readTime": "{{minutes}} 分钟阅读",
+  "noArticles": "没有找到符合您标准的文章。",
+  "articles": {
+    "profitLoss": {
+      "title": "理解损益：企业主的趣味指南",
+      "excerpt": "发现如何阅读和理解您的损益表而不会打瞌睡。我们保证会让它变得有趣！"
+    },
+    "expenses": {
+      "title": "像专业人士一样跟踪业务支出：5个简单步骤",
+      "excerpt": "学习如何跟踪每一分钱而不失去理智。另外，发现哪些支出可以在税务时为您省钱！"
+    },
+    "taxDeductions": {
+      "title": "每个小企业都应该知道的隐藏税收减免",
+      "excerpt": "停止在桌子上留下金钱！发现大多数企业主错过的合法税收减免。"
+    },
+    "inventory": {
+      "title": "使用条形码扫描转变您的库存管理",
+      "excerpt": "告别手动计数！了解条形码扫描如何彻底改变您的库存管理。"
+    },
+    "mobile": {
+      "title": "从您的手机运营整个业务：移动革命",
+      "excerpt": "发现如何管理发票、跟踪库存和处理付款 - 全部都从您的智能手机完成！"
+    },
+    "customerRelationships": {
+      "title": "建立持久的客户关系：简化 CRM",
+      "excerpt": "学习如何让客户回头，无需复杂的软件或昂贵的工具。"
+    }
+  }
+}

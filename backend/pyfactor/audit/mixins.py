@@ -32,6 +32,7 @@ class AuditMixin(models.Model):
     
     def get_field_value(self, field_name):
         """Get serializable value for a field."""
+        from decimal import Decimal
         value = getattr(self, field_name)
         
         # Convert model instances to their ID
@@ -44,6 +45,10 @@ class AuditMixin(models.Model):
         
         # Convert UUID to string
         if hasattr(value, 'hex'):
+            return str(value)
+        
+        # Convert Decimal to string for JSON serialization
+        if isinstance(value, Decimal):
             return str(value)
         
         return value

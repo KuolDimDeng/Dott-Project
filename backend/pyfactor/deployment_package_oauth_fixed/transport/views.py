@@ -1,4 +1,5 @@
 from rest_framework import viewsets, filters, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -20,7 +21,7 @@ from .serializers import (
     ComplianceSerializer
 )
 
-class EquipmentViewSet(viewsets.ModelViewSet):
+class EquipmentViewSet(TenantIsolatedViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -85,7 +86,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             'compliance_expiring': compliance_expiring
         })
 
-class DriverViewSet(viewsets.ModelViewSet):
+class DriverViewSet(TenantIsolatedViewSet):
     queryset = Driver.objects.all()
     serializer_class = DriverSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -134,7 +135,7 @@ class DriverViewSet(viewsets.ModelViewSet):
             'compliance_expiring': compliance_expiring
         })
 
-class RouteViewSet(viewsets.ModelViewSet):
+class RouteViewSet(TenantIsolatedViewSet):
     queryset = Route.objects.all()
     serializer_class = RouteSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -177,7 +178,7 @@ class RouteViewSet(viewsets.ModelViewSet):
             'most_used_routes': most_used_data
         })
 
-class LoadViewSet(viewsets.ModelViewSet):
+class LoadViewSet(TenantIsolatedViewSet):
     queryset = Load.objects.all()
     serializer_class = LoadSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -227,7 +228,7 @@ class LoadViewSet(viewsets.ModelViewSet):
             'total_revenue': total_revenue
         })
 
-class ExpenseViewSet(viewsets.ModelViewSet):
+class ExpenseViewSet(TenantIsolatedViewSet):
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -259,7 +260,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             'expenses_by_month': expenses_by_month
         })
 
-class MaintenanceViewSet(viewsets.ModelViewSet):
+class MaintenanceViewSet(TenantIsolatedViewSet):
     queryset = Maintenance.objects.all()
     serializer_class = MaintenanceSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -303,7 +304,7 @@ class MaintenanceViewSet(viewsets.ModelViewSet):
             'overdue_count': overdue_count
         })
 
-class ComplianceViewSet(viewsets.ModelViewSet):
+class ComplianceViewSet(TenantIsolatedViewSet):
     queryset = Compliance.objects.all()
     serializer_class = ComplianceSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]

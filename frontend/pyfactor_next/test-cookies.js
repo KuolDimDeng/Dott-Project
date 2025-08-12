@@ -1,5 +1,5 @@
 // Test script to check cookie handling
-const API_URL = 'https://dott-api-y26w.onrender.com';
+const API_URL = 'https://api.dottapps.com';
 
 async function testConsolidatedAuth() {
   console.log('Testing consolidated auth endpoint...\n');

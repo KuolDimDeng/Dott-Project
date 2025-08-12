@@ -11,16 +11,40 @@ import { logger } from '@/utils/logger';
  */
 export const validateTenantAccess = async (request) => {
   try {
-    // In a real implementation, this would:
-    // 1. Get the session from Auth0
-    // 2. Extract the tenant ID from user metadata
-    // 3. Validate the tenant exists and is active
+    // Get session cookie
+    const cookies = request.cookies;
+    const sessionId = cookies.get('sid');
     
-    // For now, return a placeholder response
+    if (!sessionId) {
+      return {
+        success: false,
+        error: 'No session found'
+      };
+    }
+    
+    // Forward the session validation to Django backend
+    const response = await fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/auth/profile/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: 'Authentication failed'
+      };
+    }
+    
+    const userData = await response.json();
+    
     return {
       success: true,
-      tenantId: 'placeholder-tenant-id',
-      userId: 'placeholder-user-id'
+      tenantId: userData.tenant_id || userData.tenantId,
+      userId: userData.user?.id || userData.userId,
+      userData
     };
   } catch (error) {
     logger.error('[Auth] Error validating tenant access:', error);

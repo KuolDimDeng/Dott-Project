@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+
 
 export function withSentry(handler: (request: NextRequest) => Promise<NextResponse>) {
   return async (request: NextRequest) => {

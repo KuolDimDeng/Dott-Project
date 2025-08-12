@@ -1,17 +1,19 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import (
     InventoryItem, Category, Supplier, Location, InventoryTransaction,
-    Product, Service, Department, CustomChargePlan
+    Product, Service, Department, CustomChargePlan, BillOfMaterials, ServiceMaterials
 )
 from .serializers import (
     InventoryItemSerializer, CategorySerializer, SupplierSerializer,
     LocationSerializer, InventoryTransactionSerializer, ProductSerializer,
-    ServiceSerializer, DepartmentSerializer, CustomChargePlanSerializer
+    ServiceSerializer, DepartmentSerializer, CustomChargePlanSerializer,
+    BillOfMaterialsSerializer, ServiceMaterialsSerializer
 )
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -27,13 +29,14 @@ from pyfactor.analytics import track_event, track_business_metric
 # Get logger
 logger = logging.getLogger(__name__)
 
-class InventoryItemViewSet(viewsets.ModelViewSet):
+class InventoryItemViewSet(TenantIsolatedViewSet):
+    queryset = InventoryItem.objects.all()  # Base queryset needed for TenantIsolatedViewSet
     serializer_class = InventoryItemSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         """
-        Get queryset with proper tenant context and optimized queries
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
         """
         import logging
         import time
@@ -42,17 +45,18 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
         start_time = time.time()
         
         try:
-            # Log tenant information if available
-            tenant_id = getattr(self.request, 'tenant_id', None)
-            if tenant_id:
-                logger.debug(f"Request has tenant_id: {tenant_id}")
-            else:
-                logger.debug("No tenant_id found in request")
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
             
-            # Use select_related to optimize queries
-            queryset = InventoryItem.objects.select_related(
+            # Now apply select_related for optimization
+            queryset = queryset.select_related(
                 'category', 'supplier', 'location'
-            ).all()
+            )
+            
+            # Log tenant information
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.debug(f"[InventoryItemViewSet] Tenant filtering applied for tenant: {tenant_id}")
             
             # Apply any filters from query parameters
             if self.request.query_params.get('category'):
@@ -95,15 +99,37 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(TenantIsolatedViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
-class SupplierViewSet(viewsets.ModelViewSet):
+class SupplierViewSet(TenantIsolatedViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same pattern as ProductViewSet to ensure consistency
+        """
+        try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[SupplierViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            logger.debug(f"[SupplierViewSet] Supplier queryset prepared")
+            return queryset.order_by('name')
+            
+        except Exception as e:
+            logger.error(f"[SupplierViewSet] Error getting supplier queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Supplier.objects.none()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -128,23 +154,115 @@ class SupplierViewSet(viewsets.ModelViewSet):
                 )
     
 
-class LocationViewSet(viewsets.ModelViewSet):
+class LocationViewSet(TenantIsolatedViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
     permission_classes = [IsAuthenticated]
 
-class InventoryTransactionViewSet(viewsets.ModelViewSet):
+class InventoryTransactionViewSet(TenantIsolatedViewSet):
     queryset = InventoryTransaction.objects.all()
     serializer_class = InventoryTransactionSerializer
     permission_classes = [IsAuthenticated]
 
-class ProductViewSet(viewsets.ModelViewSet):
+class ProductViewSet(TenantIsolatedViewSet):
+    queryset = Product.objects.all()  # Base queryset needed for TenantIsolatedViewSet
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     
+    def create(self, request, *args, **kwargs):
+        """Override create to track product creation and handle pricing model"""
+        logger.info(f"[ProductViewSet] === PRODUCT CREATION START ===")
+        logger.info(f"[ProductViewSet] Request data: {request.data}")
+        logger.info(f"[ProductViewSet] Tenant ID: {getattr(request, 'tenant_id', 'Not set')}")
+        
+        try:
+            # Log specific pricing model fields
+            logger.info(f"[ProductViewSet] Pricing model: {request.data.get('pricing_model', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Weight: {request.data.get('weight', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Weight unit: {request.data.get('weight_unit', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Daily rate: {request.data.get('daily_rate', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Entry date: {request.data.get('entry_date', 'Not provided')}")
+            
+            # Check if the pricing model columns exist in the database
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'inventory_product' 
+                    AND column_name = 'pricing_model'
+                """)
+                if not cursor.fetchone():
+                    logger.error("[ProductViewSet] pricing_model column does not exist in database!")
+                    return Response(
+                        {
+                            "error": "Database schema not up to date", 
+                            "details": "Pricing model fields are not available. Please run migrations.",
+                            "migrations_needed": ["inventory.0011_add_pricing_model_fields"]
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+            
+            response = super().create(request, *args, **kwargs)
+            
+            if response.status_code == status.HTTP_201_CREATED:
+                logger.info(f"[ProductViewSet] Product created successfully: {response.data.get('id', 'Unknown ID')}")
+                user_id = str(request.user.id) if request.user.is_authenticated else None
+                product_data = response.data
+                
+                # Track product creation event
+                track_event(
+                    user_id=user_id,
+                    event_name='product_created_backend',
+                    properties={
+                        'product_id': product_data.get('id'),
+                        'product_name': product_data.get('name'),
+                        'price': product_data.get('price'),
+                        'has_sku': bool(product_data.get('sku')),
+                        'for_sale': product_data.get('for_sale', True),
+                        'for_rent': product_data.get('for_rent', False),
+                        'initial_stock': product_data.get('stock_quantity', 0)
+                    }
+                )
+                
+                # Track inventory value metric
+                if product_data.get('price') and product_data.get('stock_quantity'):
+                    inventory_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
+                    track_business_metric(
+                        user_id=user_id,
+                        metric_name='inventory_value_added',
+                        value=inventory_value,
+                        metadata={
+                            'product_id': product_data.get('id'),
+                            'product_name': product_data.get('name')
+                        }
+                    )
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"[ProductViewSet] Error creating product: {str(e)}", exc_info=True)
+            
+            # Check if it's a database column error
+            error_str = str(e).lower()
+            if 'column' in error_str and ('pricing_model' in error_str or 'weight' in error_str or 'daily_rate' in error_str):
+                return Response(
+                    {
+                        "error": "Database schema error", 
+                        "details": "Pricing model fields are missing. Migrations need to be applied.",
+                        "specific_error": str(e)
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            return Response(
+                {"error": str(e), "details": "Failed to create product with pricing model"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def get_queryset(self):
         """
-        Get queryset with proper tenant context and optimized queries
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
         """
         import logging
         import time
@@ -153,10 +271,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         start_time = time.time()
         
         try:
-            # Use the TenantManager which automatically filters by tenant
-            queryset = Product.objects.all()
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
             
-            # Apply any filters from query parameters
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[ProductViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            # Apply any additional filters from query parameters
             if self.request.query_params.get('is_for_sale'):
                 queryset = queryset.filter(
                     is_for_sale=self.request.query_params.get('is_for_sale').lower() == 'true'
@@ -165,12 +288,12 @@ class ProductViewSet(viewsets.ModelViewSet):
             if self.request.query_params.get('min_stock'):
                 try:
                     min_stock = int(self.request.query_params.get('min_stock'))
-                    queryset = queryset.filter(stock_quantity__gte=min_stock)
+                    queryset = queryset.filter(quantity__gte=min_stock)
                 except ValueError:
                     pass
             
             logger.debug(f"Product queryset fetched in {time.time() - start_time:.4f}s")
-            return queryset
+            return queryset.order_by('name')
             
         except Exception as e:
             logger.error(f"Error getting product queryset: {str(e)}", exc_info=True)
@@ -178,12 +301,44 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Product.objects.none()
     
     def list(self, request, *args, **kwargs):
-        """Override list method to add better error handling"""
+        """Override list method to add better error handling and debug logging"""
         import logging
         logger = logging.getLogger(__name__)
         
+        logger.info("=" * 50)
+        logger.info("[ProductViewSet] DEBUG: List method called")
+        logger.info(f"[ProductViewSet] User: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
+        logger.info(f"[ProductViewSet] Path: {request.path}")
+        
         try:
-            return super().list(request, *args, **kwargs)
+            # Get the queryset
+            queryset = self.get_queryset()
+            logger.info(f"[ProductViewSet] Queryset count: {queryset.count()}")
+            
+            # Log first few products BEFORE serialization
+            for i, product in enumerate(queryset[:3]):
+                logger.info(f"[ProductViewSet] Raw Product {i+1}: {product.name}")
+                logger.info(f"  - Model quantity field: {product.quantity}")
+                logger.info(f"  - Has stock_quantity property: {hasattr(product, 'stock_quantity')}")
+                if hasattr(product, 'stock_quantity'):
+                    logger.info(f"  - stock_quantity property value: {product.stock_quantity}")
+            
+            response = super().list(request, *args, **kwargs)
+            
+            # Log the serialized response
+            if hasattr(response, 'data'):
+                data = response.data
+                if isinstance(data, dict) and 'results' in data:
+                    products = data['results']
+                    logger.info(f"[ProductViewSet] Serialized {len(products)} products")
+                    for i, product in enumerate(products[:3]):
+                        logger.info(f"[ProductViewSet] Serialized Product {i+1}: {product.get('name', 'Unknown')}")
+                        logger.info(f"  - Keys in serialized data: {list(product.keys())}")
+                        logger.info(f"  - 'quantity' in data: {'quantity' in product} = {product.get('quantity', 'N/A')}")
+                        logger.info(f"  - 'stock_quantity' in data: {'stock_quantity' in product} = {product.get('stock_quantity', 'N/A')}")
+            
+            logger.info("=" * 50)
+            return response
         except Exception as e:
             logger.error(f"Error listing products: {str(e)}", exc_info=True)
             
@@ -199,50 +354,12 @@ class ProductViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
     
-    def create(self, request, *args, **kwargs):
-        """Override create to track product creation"""
-        response = super().create(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_201_CREATED:
-            user_id = str(request.user.id) if request.user.is_authenticated else None
-            product_data = response.data
-            
-            # Track product creation event
-            track_event(
-                user_id=user_id,
-                event_name='product_created_backend',
-                properties={
-                    'product_id': product_data.get('id'),
-                    'product_name': product_data.get('name'),
-                    'price': product_data.get('price'),
-                    'has_sku': bool(product_data.get('sku')),
-                    'for_sale': product_data.get('for_sale', True),
-                    'for_rent': product_data.get('for_rent', False),
-                    'initial_stock': product_data.get('stock_quantity', 0)
-                }
-            )
-            
-            # Track inventory value metric
-            if product_data.get('price') and product_data.get('stock_quantity'):
-                inventory_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
-                track_business_metric(
-                    user_id=user_id,
-                    metric_name='inventory_value_added',
-                    value=inventory_value,
-                    metadata={
-                        'product_id': product_data.get('id'),
-                        'product_name': product_data.get('name')
-                    }
-                )
-        
-        return response
-    
     def update(self, request, *args, **kwargs):
         """Override update to track product updates"""
         # Get the existing product data before update
         instance = self.get_object()
         old_price = instance.price
-        old_stock = instance.stock_quantity
+        old_stock = instance.quantity
         
         response = super().update(request, *args, **kwargs)
         
@@ -286,52 +403,123 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, *args, **kwargs):
         """Override destroy to track product deletion"""
-        instance = self.get_object()
-        product_id = instance.id
-        product_name = instance.name
-        inventory_value = float(instance.price) * int(instance.stock_quantity)
+        logger.info("🔴 [BACKEND DELETE] === START PRODUCT DELETION ===")
+        logger.info(f"🔴 [BACKEND DELETE] Request path: {request.path}")
+        logger.info(f"🔴 [BACKEND DELETE] Request method: {request.method}")
+        logger.info(f"🔴 [BACKEND DELETE] Request user: {request.user}")
+        logger.info(f"🔴 [BACKEND DELETE] Tenant ID: {getattr(request, 'tenant_id', 'Not set')}")
+        logger.info(f"🔴 [BACKEND DELETE] URL kwargs: {kwargs}")
         
-        response = super().destroy(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            user_id = str(request.user.id) if request.user.is_authenticated else None
+        try:
+            logger.info("🔴 [BACKEND DELETE] Step 1: Getting product instance...")
+            instance = self.get_object()
+            product_id = str(instance.id)
+            product_name = instance.name
+            inventory_value = float(instance.price) * int(instance.quantity)
             
-            # Track product deletion event
-            track_event(
-                user_id=user_id,
-                event_name='product_deleted_backend',
-                properties={
-                    'product_id': product_id,
-                    'product_name': product_name,
-                    'inventory_value_removed': inventory_value
-                }
-            )
+            logger.info(f"🔴 [BACKEND DELETE] Step 2: Found product to delete:")
+            logger.info(f"🔴 [BACKEND DELETE]   - ID: {product_id}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Name: {product_name}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Price: {instance.price}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Stock: {instance.quantity}")
+            logger.info(f"🔴 [BACKEND DELETE]   - Inventory value: {inventory_value}")
             
-            # Track inventory value reduction
-            if inventory_value > 0:
-                track_business_metric(
+            logger.info("🔴 [BACKEND DELETE] Step 3: Calling parent destroy method...")
+            response = super().destroy(request, *args, **kwargs)
+            
+            logger.info(f"🔴 [BACKEND DELETE] Step 4: Delete response status: {response.status_code}")
+            
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                logger.info("🔴 [BACKEND DELETE] ✅ Product deleted successfully")
+                user_id = str(request.user.id) if request.user.is_authenticated else None
+                
+                # Track product deletion event
+                track_event(
                     user_id=user_id,
-                    metric_name='inventory_value_removed',
-                    value=inventory_value,
-                    metadata={
+                    event_name='product_deleted_backend',
+                    properties={
                         'product_id': product_id,
+                        'product_name': product_name,
+                        'inventory_value_removed': inventory_value
+                    }
+                )
+                
+                # Track inventory value reduction
+                if inventory_value > 0:
+                    track_business_metric(
+                        user_id=user_id,
+                        metric_name='inventory_value_removed',
+                        value=inventory_value,
+                        metadata={
+                            'product_id': product_id,
                         'product_name': product_name
                     }
                 )
-        
-        return response
+            else:
+                logger.error(f"🔴 [BACKEND DELETE] ❌ Delete failed with status: {response.status_code}")
+            
+            logger.info("🔴 [BACKEND DELETE] === END PRODUCT DELETION ===")
+            return response
+            
+        except Exception as e:
+            logger.error(f"🔴 [BACKEND DELETE] ❌ Exception during deletion: {str(e)}", exc_info=True)
+            logger.error(f"🔴 [BACKEND DELETE] Exception type: {type(e).__name__}")
+            logger.error("🔴 [BACKEND DELETE] === END PRODUCT DELETION (ERROR) ===")
+            
+            # Re-raise the exception to let DRF handle it
+            raise
 
-class ServiceViewSet(viewsets.ModelViewSet):
+class ServiceViewSet(TenantIsolatedViewSet):
     queryset = Service.objects.all()  # TenantManager handles filtering automatically
     serializer_class = ServiceSerializer
     permission_classes = [IsAuthenticated]
     
-    def list(self, request, *args, **kwargs):
-        """Override list method to add better error handling"""
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context - MUST call parent for tenant filtering
+        Same as ProductViewSet to ensure consistency
+        """
         import logging
         logger = logging.getLogger(__name__)
         
         try:
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[ServiceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
+            # Apply any additional filters from query parameters
+            if self.request.query_params.get('is_recurring'):
+                queryset = queryset.filter(
+                    is_recurring=self.request.query_params.get('is_recurring').lower() == 'true'
+                )
+            
+            logger.debug(f"[ServiceViewSet] Service queryset prepared")
+            return queryset.order_by('name')
+            
+        except Exception as e:
+            logger.error(f"[ServiceViewSet] Error getting service queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Service.objects.none()
+    
+    def list(self, request, *args, **kwargs):
+        """Override list method to add better error handling and debug logging"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Debug logging
+        logger.info(f"[ServiceViewSet] List called by user: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
+        tenant_id = getattr(request.user, 'business_id', None) or getattr(request.user, 'tenant_id', None)
+        logger.info(f"[ServiceViewSet] Tenant ID: {tenant_id}")
+        
+        try:
+            # Debug the query
+            from custom_auth.tenant_debug import debug_tenant_query
+            debug_tenant_query(Service, request.user)
+            
             return super().list(request, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error listing services: {str(e)}", exc_info=True)
@@ -348,12 +536,12 @@ class ServiceViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-class DepartmentViewSet(viewsets.ModelViewSet):
+class DepartmentViewSet(TenantIsolatedViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]
 
-class CustomChargePlanViewSet(viewsets.ModelViewSet):
+class CustomChargePlanViewSet(TenantIsolatedViewSet):
     queryset = CustomChargePlan.objects.all()
     serializer_class = CustomChargePlanSerializer
     permission_classes = [IsAuthenticated]
@@ -469,13 +657,20 @@ def product_list(request):
         else:
             logger.debug("No tenant_id found in request")
             
-        # Use the TenantManager which automatically filters by tenant
-        # The TenantManager uses the RLS context set by middleware
-        products = Product.objects.all()
+        # Get tenant_id from user for explicit filtering
+        user_tenant_id = getattr(request.user, 'tenant_id', None) or \
+                        getattr(request.user, 'business_id', None)
+        
+        if not user_tenant_id:
+            logger.warning("No tenant_id found for user, returning empty list")
+            return Response({"error": "No tenant context"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Explicitly filter by tenant_id for safety
+        products = Product.objects.filter(tenant_id=user_tenant_id)
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction, connection
-        with transaction.atomic():
+        from django.db import transaction as db_transaction, connection
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 15000')  # 15 seconds (increased from 10)
@@ -548,14 +743,22 @@ def service_list(request):
             logger.debug("No tenant_id found in request")
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction
-        with transaction.atomic():
+        from django.db import transaction as db_transaction
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
             
-            # Get all services
-            services = Service.objects.all()
+            # Get tenant_id from user for explicit filtering
+            user_tenant_id = getattr(request.user, 'tenant_id', None) or \
+                           getattr(request.user, 'business_id', None)
+            
+            if not user_tenant_id:
+                logger.warning("No tenant_id found for user, returning empty list")
+                return Response({"error": "No tenant context"}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Explicitly filter by tenant_id for safety
+            services = Service.objects.filter(tenant_id=user_tenant_id)
             
             # Apply any filters from query parameters
             if request.query_params.get('is_recurring'):
@@ -656,3 +859,63 @@ def print_barcode(request, product_id):
         return HttpResponse(barcode_image, content_type='image/png')
     except Product.DoesNotExist:
         return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class BillOfMaterialsViewSet(TenantIsolatedViewSet):
+    serializer_class = BillOfMaterialsSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = BillOfMaterials.objects.all()
+        product_id = self.request.query_params.get('product', None)
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Track analytics when BOM is created"""
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_201_CREATED:
+            user_id = str(request.user.id) if request.user.is_authenticated else 'anonymous'
+            track_event(
+                user_id=user_id,
+                event_name='bill_of_materials_created',
+                properties={
+                    'product_id': response.data.get('product'),
+                    'material_id': response.data.get('material'),
+                    'quantity': response.data.get('quantity_required')
+                }
+            )
+        
+        return response
+
+
+class ServiceMaterialsViewSet(TenantIsolatedViewSet):
+    serializer_class = ServiceMaterialsSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = ServiceMaterials.objects.all()
+        service_id = self.request.query_params.get('service', None)
+        if service_id:
+            queryset = queryset.filter(service_id=service_id)
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Track analytics when service materials are created"""
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_201_CREATED:
+            user_id = str(request.user.id) if request.user.is_authenticated else 'anonymous'
+            track_event(
+                user_id=user_id,
+                event_name='service_materials_created',
+                properties={
+                    'service_id': response.data.get('service'),
+                    'material_id': response.data.get('material'),
+                    'quantity': response.data.get('quantity_required')
+                }
+            )
+        
+        return response

@@ -7,7 +7,7 @@ Main purpose: Sync session onboarding status with OnboardingProgress table.
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db import transaction
+from django.db import transaction as db_transaction
 import logging
 
 from .models import UserSession
@@ -28,7 +28,7 @@ def sync_session_onboarding_status(sender, instance, created, **kwargs):
     if created:  # Only for newly created sessions
         try:
             # Use select_for_update to avoid race conditions
-            with transaction.atomic():
+            with db_transaction.atomic():
                 progress = OnboardingProgress.objects.select_for_update().get(user=instance.user)
                 
                 # Determine the correct onboarding status

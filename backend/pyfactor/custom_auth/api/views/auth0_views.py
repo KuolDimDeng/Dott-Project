@@ -8,7 +8,7 @@ import uuid
 import traceback
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from custom_auth.rls import set_tenant_context, clear_tenant_context
@@ -508,6 +508,46 @@ class Auth0UserProfileView(APIView):
                 except Exception as e:
                     logger.warning(f"🔥 [USER_PROFILE] Failed to get business name from Business record: {str(e)}")
             
+            # Get business details including country/state information
+            # Don't hardcode defaults - let the system determine based on user's actual location
+            business_country = None
+            business_state = ''
+            business_country_name = None
+            
+            if onboarding_progress and onboarding_progress.business:
+                try:
+                    from users.models import Business, BusinessDetails
+                    business_obj = Business.objects.filter(id=onboarding_progress.business_id).first()
+                    if business_obj:
+                        # First check if country is stored directly on the business
+                        if hasattr(business_obj, 'country') and business_obj.country:
+                            business_country = str(business_obj.country)
+                            logger.info(f"🔥 [USER_PROFILE] Found country directly on business: {business_country}")
+                            # Try to get the country name from django-countries
+                            try:
+                                from django_countries import countries
+                                country_dict = dict(countries)
+                                if business_country in country_dict:
+                                    business_country_name = country_dict[business_country]
+                                    logger.info(f"🔥 [USER_PROFILE] Country name: {business_country_name}")
+                            except Exception as e:
+                                logger.warning(f"🔥 [USER_PROFILE] Failed to get country name: {str(e)}")
+                        
+                        # If not found directly, try to get from business details
+                        if not business_country:
+                            try:
+                                business_details = business_obj.details
+                                if business_details and business_details.country:
+                                    business_country = str(business_details.country.code)
+                                    business_country_name = str(business_details.country.name)
+                                    logger.info(f"🔥 [USER_PROFILE] Found business country from details: {business_country} ({business_country_name})")
+                            except BusinessDetails.DoesNotExist:
+                                logger.warning(f"🔥 [USER_PROFILE] No BusinessDetails found for business {business_obj.id}")
+                            except Exception as e:
+                                logger.warning(f"🔥 [USER_PROFILE] Error accessing BusinessDetails: {str(e)}")
+                except Exception as e:
+                    logger.warning(f"🔥 [USER_PROFILE] Failed to get business country: {str(e)}")
+            
             # Get user's subscription plan
             user_subscription = 'free'
             if onboarding_progress and onboarding_progress.subscription_plan:
@@ -543,6 +583,9 @@ class Auth0UserProfileView(APIView):
                 'tenant_id': str(tenant.id) if tenant else None,  # Include both formats
                 'businessName': business_name,  # Use the actual business name
                 'business_name': business_name,  # Include both formats
+                'country': business_country,  # Add country code
+                'state': business_state,  # Add state
+                'country_name': business_country_name,  # Add country name
                 'onboarding_status': onboarding_progress.onboarding_status if onboarding_progress else 'business_info',
                 'setup_done': setup_done,
                 # Add these fields at top level for frontend compatibility
@@ -601,7 +644,7 @@ class Auth0OnboardingBusinessInfoView(APIView):
             # Extract business data
             business_name = data.get('business_name') or data.get('businessName')
             business_type = data.get('business_type') or data.get('businessType')
-            country = data.get('country', 'US')
+            country = data.get('country')  # No default value, let it be None if not provided
             
             if not business_name:
                 return Response({
@@ -609,7 +652,7 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     'error': 'Business name is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create or get tenant
                 # Convert user.id to string for proper CharField storage
                 user_id_str = str(user.id)
@@ -636,15 +679,11 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     user.save(update_fields=['tenant'])
                 
                 # Create or get Business record
-                from users.models import Business
+                from users.models import Business, BusinessDetails
                 business, business_created = Business.objects.get_or_create(
-                    tenant_id=tenant.id,
-                    created_by=user,
+                    owner_id=str(user.id),
                     defaults={
                         'name': business_name,
-                        'business_type': business_type or '',
-                        'country': country,
-                        'legal_structure': data.get('legal_structure', ''),
                         'created_at': timezone.now(),
                         'updated_at': timezone.now()
                     }
@@ -653,11 +692,25 @@ class Auth0OnboardingBusinessInfoView(APIView):
                 if not business_created:
                     # Update existing business
                     business.name = business_name
-                    business.business_type = business_type or business.business_type
-                    business.country = country
-                    business.legal_structure = data.get('legal_structure', business.legal_structure)
                     business.updated_at = timezone.now()
                     business.save()
+                
+                # Create or update BusinessDetails with country and other info
+                business_details, details_created = BusinessDetails.objects.get_or_create(
+                    business=business,
+                    defaults={
+                        'business_type': business_type or '',
+                        'country': country,
+                        'legal_structure': data.get('legal_structure', 'SOLE_PROPRIETORSHIP'),
+                    }
+                )
+                
+                if not details_created:
+                    # Update existing business details
+                    business_details.business_type = business_type or business_details.business_type
+                    business_details.country = country
+                    business_details.legal_structure = data.get('legal_structure', business_details.legal_structure)
+                    business_details.save()
                 
                 logger.info(f"Created/updated business {business.id} with name: {business_name}")
                 

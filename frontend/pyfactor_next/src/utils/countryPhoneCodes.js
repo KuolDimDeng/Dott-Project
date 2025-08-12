@@ -127,6 +127,35 @@ export const getInternationalPhoneNumber = (phoneNumber, countryCode) => {
 };
 
 /**
+ * Parse international phone number to extract country code and local number
+ */
+export const parseInternationalPhoneNumber = (internationalNumber) => {
+  if (!internationalNumber) return { countryCode: 'US', phoneNumber: '' };
+  
+  // Remove any non-numeric characters except the leading +
+  const cleanNumber = internationalNumber.replace(/[^\d+]/g, '');
+  
+  // Try to match country codes (sorted by length to match longest first)
+  const sortedCountries = [...COUNTRY_PHONE_CODES].sort((a, b) => 
+    b.phoneCode.length - a.phoneCode.length
+  );
+  
+  for (const country of sortedCountries) {
+    const countryPhoneCode = country.phoneCode.replace('+', '');
+    if (cleanNumber.startsWith(countryPhoneCode) || cleanNumber.startsWith('+' + countryPhoneCode)) {
+      const localNumber = cleanNumber.replace(new RegExp(`^\\+?${countryPhoneCode}`), '');
+      return {
+        countryCode: country.code,
+        phoneNumber: localNumber
+      };
+    }
+  }
+  
+  // Default to US if no country code found
+  return { countryCode: 'US', phoneNumber: cleanNumber };
+};
+
+/**
  * Validate phone number based on country-specific rules
  */
 export const validatePhoneNumber = (phoneNumber, countryCode) => {

@@ -1,6 +1,6 @@
 # Management command to fix tenant_id column issue in hr_employee table
 from django.core.management.base import BaseCommand, CommandError
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from pyfactor.logging_config import get_logger
 import traceback
 
@@ -44,7 +44,7 @@ class Command(BaseCommand):
                 else:
                     logger.info('⚠️ [Fix Tenant ID] Column tenant_id does not exist, creating it...')
                     
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         # Add the column
                         cursor.execute("""
                             ALTER TABLE hr_employee 

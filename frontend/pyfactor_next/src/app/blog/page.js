@@ -104,30 +104,21 @@ function BlogPageContent() {
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">{t('blog.hero.title', 'Dott Business Blog')}</h1>
+          <div className="flex justify-between items-start mb-4">
+            <h1 className="text-4xl sm:text-5xl font-bold">{t('blog.hero.title', 'Dott Business Blog')}</h1>
+            <button
+              onClick={() => router.push('/')}
+              className="px-6 py-2 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              {t('blog.backToHome', 'Back to Home')}
+            </button>
+          </div>
           <p className="text-xl opacity-90 max-w-2xl">
             {t('blog.hero.subtitle', 'Learn about managing your business finances with Dott. Get tips, insights, and strategies to grow your business.')}
           </p>
-          
-          {/* Newsletter Signup */}
-          <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-lg p-6 max-w-md">
-            <p className="text-sm font-medium mb-3">
-              {t('blog.newsletter.title', 'Sign up for our newsletter for product updates and new blog posts!')}
-            </p>
-            <form className="flex gap-2">
-              <input
-                type="email"
-                placeholder={t('blog.newsletter.placeholder', 'Your email address')}
-                className="flex-1 px-4 py-2 rounded-md text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition-colors"
-              >
-                {t('blog.newsletter.button', 'Subscribe')}
-              </button>
-            </form>
-          </div>
         </div>
       </div>
 

@@ -12,21 +12,40 @@ export function useSession() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  
+  // Throttle session fetching - don't fetch more than once every 30 seconds
+  const shouldFetch = Date.now() - lastFetchTime > 30000;
 
-  // Load session on mount
+  // Load session on mount, but only if we haven't fetched recently
   useEffect(() => {
-    loadSession();
-  }, []);
+    if (shouldFetch || !session) {
+      loadSession();
+    }
+  }, []); // Remove dependencies to prevent excessive re-fetching
 
   const loadSession = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const sessionData = await sessionManagerEnhanced.getSession();
-      console.log('[useSession] Session data loaded:', sessionData);
-      console.log('[useSession] User data:', sessionData?.user);
-      console.log('[useSession] User role:', sessionData?.user?.role);
+      // Update fetch time to prevent excessive calls
+      const currentTime = Date.now();
+      setLastFetchTime(currentTime);
+      
+      // Add timeout to prevent endless loading
+      const sessionPromise = sessionManagerEnhanced.getSession();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Session load timeout')), 8000); // Reduced to 8 seconds
+      });
+      
+      const sessionData = await Promise.race([sessionPromise, timeoutPromise]);
+      
+      // Only log occasionally to prevent spam
+      if (currentTime % 60000 < 1000) { // Log roughly once per minute
+        console.log('[useSession] Session data loaded:', sessionData?.authenticated);
+      }
+      
       setSession(sessionData);
       
       // Identify user in Sentry if session exists
@@ -38,9 +57,10 @@ export function useSession() {
         });
       }
     } catch (err) {
-      console.error('[useSession] Error loading session:', err);
+      console.error('[useSession] Error loading session:', err.message);
       setError(err.message);
-      setSession(null);
+      // Set session to unauthenticated state on timeout or error
+      setSession({ authenticated: false, user: null });
     } finally {
       setLoading(false);
     }

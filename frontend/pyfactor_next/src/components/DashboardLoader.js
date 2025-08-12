@@ -434,26 +434,10 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     setTenantAttribute
   ]);
   
-  // Return the loader UI
+  // Return the loader UI - just spinner, no text
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-100 bg-opacity-70 backdrop-blur-sm">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-4 text-center">
-        <div className="mb-4">
-          <CenteredSpinner size="large" minHeight="h-12" />
-        </div>
-        
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          {status}
-        </h3>
-        
-        {errorDetails && (
-          <div className="mt-3 bg-red-50 p-3 rounded-md">
-            <p className="text-red-700 text-sm">
-              Error loading dashboard components. Attempting to recover...
-            </p>
-          </div>
-        )}
-      </div>
+    <div className="absolute inset-0 flex items-center justify-center z-50 bg-white">
+      <CenteredSpinner size="large" minHeight="h-screen" showText={false} />
     </div>
   );
 } 

@@ -22,7 +22,7 @@ import {
 import { hrApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import api from '@/utils/api';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -898,6 +898,11 @@ function PayManagement({ onNavigate }) {
     }
   };
 
+  // Show loading spinner while data is loading
+  if (loading) {
+    return <CenteredSpinner size="large" text="Loading pay management..." showText={true} minHeight="h-screen" />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header with Heroicon */}
@@ -926,10 +931,10 @@ function PayManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}

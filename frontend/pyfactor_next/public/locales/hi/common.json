@@ -1,7 +1,88 @@
 {
-  "about": "हमारे बारे में",
+  "about": {
+    "backToHome": "घर वापस जाएं",
+    "hero": {
+      "title": "व्यवसायों को सशक्त बनाना",
+      "subtitle": "वैश्विक स्तर पर फलने-फूलने के लिए",
+      "description": "हम आधुनिक छोटे व्यवसायों के लिए ऑपरेटिंग सिस्टम बना रहे हैं, एंटरप्राइज-ग्रेड टूल्स को हर किसी के लिए सुलभ बना रहे हैं।"
+    },
+    "story": {
+      "title": "हमारी कहानी",
+      "paragraph1": "Dott का जन्म एक सरल अवलोकन से हुआ: छोटे व्यवसाय जटिलता में डूब रहे थे। कई टूल्स, असंबद्ध डेटा, और उद्यमों के लिए डिज़ाइन की गई प्रक्रियाएं दुनिया भर के उद्यमियों को पीछे रोक रही थीं।",
+      "paragraph2": "2023 में स्थापित, हमने कुछ अलग बनाने की ठानी। एक मंच जो छोटे व्यवसायों की अनूठी चुनौतियों को समझता है, विशेष रूप से उभरते बाजारों में जहां पारंपरिक समाधान विफल होते हैं।",
+      "paragraph3": "आज, हमें दुनिया भर के व्यवसायों की सेवा करने पर गर्व है। लेकिन हम अभी शुरू कर रहे हैं।"
+    },
+    "timeline": {
+      "beginning": {
+        "title": "शुरुआत",
+        "description": "SMBs के लिए एकीकृत व्यावसायिक प्रबंधन टूल्स की आवश्यकता की पहचान की"
+      },
+      "launch": {
+        "title": "उत्पाद लॉन्च",
+        "description": "वित्तीय और इन्वेंटरी प्रबंधन के साथ कोर प्लेटफॉर्म लॉन्च किया"
+      },
+      "expansion": {
+        "title": "वैश्विक विस्तार",
+        "description": "स्थानीयकृत सुविधाओं के साथ 25+ देशों तक विस्तारित"
+      },
+      "ai": {
+        "title": "AI एकीकरण",
+        "description": "बुद्धिमान अंतर्दृष्टि और स्वचालन का परिचय"
+      }
+    },
+    "mission": {
+      "title": "हमारा मिशन",
+      "description": "छोटे व्यवसायों को शक्तिशाली, किफायती टूल्स प्रदान करके व्यावसायिक प्रबंधन को लोकतांत्रिक बनाना जो संचालन को सरल बनाते हैं और विकास को सक्षम बनाते हैं, स्थान या तकनीकी विशेषज्ञता की परवाह किए बिना।"
+    },
+    "vision": {
+      "title": "हमारी दृष्टि",
+      "description": "एक दुनिया जहां हर छोटे व्यवसाय को Fortune 500 कंपनियों के समान गुणवत्ता वाले प्रबंधन टूल्स तक पहुंच हो, 2030 तक एक मिलियन व्यवसायों को फलने-फूलने में सक्षम बनाना।"
+    },
+    "journey": {
+      "title": "हमारी यात्रा"
+    },
+    "values": {
+      "title": "हमारे मूल्य",
+      "subtitle": "वे सिद्धांत जो हमारे हर निर्णय का मार्गदर्शन करते हैं",
+      "simplicity": {
+        "title": "सरलता पहले",
+        "description": "सहज डिजाइन के माध्यम से जटिल व्यावसायिक संचालन को सरल बनाया गया"
+      },
+      "innovation": {
+        "title": "निरंतर नवाचार",
+        "description": "आधुनिक व्यवसायों की बदलती जरूरतों के साथ विकसित होना"
+      },
+      "success": {
+        "title": "ग्राहक सफलता",
+        "description": "आपकी वृद्धि हमारी सफलता है - जब आप जीतते हैं तो हम जीतते हैं"
+      },
+      "empowerment": {
+        "title": "वैश्विक सशक्तिकरण",
+        "description": "दुनिया भर के व्यवसायों के लिए बाधाओं को तोड़ना"
+      }
+    },
+    "differentiators": {
+      "title": "Dott को क्या अलग बनाता है",
+      "unified": {
+        "title": "एकीकृत मंच",
+        "description": "आपके सभी व्यावसायिक टूल्स एक ही स्थान पर"
+      },
+      "global": {
+        "title": "वैश्विक, फिर भी स्थानीय",
+        "description": "स्थानीय अनुपालन के साथ अंतर्राष्ट्रीय मानक"
+      },
+      "security": {
+        "title": "उद्यम सुरक्षा",
+        "description": "आपके डेटा के लिए बैंक-स्तर की सुरक्षा"
+      },
+      "insights": {
+        "title": "स्मार्ट इनसाइट्स",
+        "description": "बेहतर निर्णयों के लिए AI-संचालित विश्लेषण"
+      }
+    }
+  },
   "features": {
-    "eyebrow": "पूर्ण बिजनेस समाधान",
+    "eyebrow": "संपूर्ण व्यावसायिक समाधान",
     "heading": "वैश्विक विकास के लिए सब कुछ",
     "subheading": "सीमाओं के पार काम करने वाले आधुनिक बिजनेस के लिए डिज़ाइन किए गए शक्तिशाली उपकरण",
     "operations": {
@@ -10,11 +91,13 @@
     },
     "financial": {
       "title": "वित्तीय प्रबंधन",
-      "description": "अपने बिजनेस वित्त पर पूर्ण नियंत्रण"
+      "description": "अपने बिजनेस वित्त पर पूर्ण नियंत्रण",
+      "heading": "अपने व्यवसाय वित्त पर पूर्ण नियंत्रण"
     },
     "global": {
       "title": "वैश्विक बिजनेस उपकरण",
-      "description": "अंतर्राष्ट्रीय संचालन के लिए जरूरी सब कुछ"
+      "description": "अंतर्राष्ट्रीय संचालन के लिए जरूरी सब कुछ",
+      "heading": "अंतर्राष्ट्रीय संचालन के लिए आवश्यक सब कुछ"
     },
     "trust": {
       "title": "सुरक्षा और अनुपालन के लिए बनाया गया"
@@ -160,33 +243,98 @@
     }
   },
   "highlights": {
-    "bluetooth": "ब्लूटूथ स्कैनर एकीकरण",
-    "printBarcodes": "कस्टम बारकोड प्रिंट करें",
-    "lowStock": "कम स्टॉक अलर्ट",
-    "customLabel": "कस्टम लेबल प्रिंटिंग",
-    "mobileScanning": "मोबाइल स्कैनिंग",
-    "batchProcessing": "बैच प्रोसेसिंग",
-    "offlineMode": "ऑफ़लाइन मोड",
-    "multiplePayments": "कई भुगतान विधियां",
-    "receiptCustom": "रसीद अनुकूलन",
-    "recurringInvoices": "आवर्ती चालान",
-    "paymentReminders": "भुगतान अनुस्मारक",
-    "invoiceFactoring": "चालान फैक्टरिंग",
+    "eyebrow": "मुख्य लाभ",
+    "heading": "व्यवसाय Dott को क्यों चुनते हैं",
+    "subheading": "उन्नत सुविधाएँ जो हमें प्रतिस्पर्धा से अलग करती हैं और आपके व्यवसाय को बढ़ने में मदद करती हैं।",
+    "mobile": {
+      "title": "मोबाइल एप्लिकेशन",
+      "description": "हमारे शक्तिशाली मोबाइल ऐप के साथ कभी भी, कहीं भी अपने व्यवसाय के डेटा तक पहुंचें। इन्वेंटरी प्रबंधित करें, बिक्री प्रोसेस करें और चलते-फिरते रियल-टाइम रिपोर्ट देखें।",
+      "imageAlt": "मोबाइल एप्लिकेशन स्क्रीनशॉट"
+    },
+    "pos": {
+      "title": "POS और बारकोड स्कैनिंग",
+      "description": "किसी भी डिवाइस को शक्तिशाली पॉइंट-ऑफ-सेल सिस्टम में बदलें। बारकोड को तुरंत स्कैन करें, बिक्री को तेज़ी से प्रोसेस करें, रियल-टाइम में इन्वेंटरी ट्रैक करें और नकद, कार्ड और मोबाइल मनी सहित सभी भुगतान विधियों को स्वीकार करें।",
+      "imageAlt": "बारकोड स्कैनिंग सुविधा के साथ POS सिस्टम",
+      "features": {
+        "quickCheckout": "त्वरित चेकआउट",
+        "barcodeScanning": "बारकोड स्कैनिंग",
+        "allPaymentTypes": "सभी भुगतान प्रकार",
+        "inventoryTracking": "इन्वेंटरी ट्रैकिंग",
+        "offlineMode": "ऑफलाइन मोड",
+        "mobileReady": "मोबाइल तैयार"
+      }
+    },
+    "ai": {
+      "title": "AI-संचालित अंतर्दृष्टि",
+      "description": "अपने व्यवसाय डेटा के आधार पर स्मार्ट सिफारिशें और भविष्यवाणी विश्लेषण प्राप्त करें। हमारा AI मांग पूर्वानुमान, इन्वेंटरी अनुकूलन और विकास के अवसरों की पहचान में मदद करता है।",
+      "imageAlt": "AI विश्लेषण डैशबोर्ड स्क्रीनशॉट"
+    },
+    "geofencing": {
+      "title": "जियोफेंसिंग और स्थान ट्रैकिंग",
+      "description": "GPS-आधारित क्लॉक इन/आउट के साथ सटीक समय ट्रैकिंग सुनिश्चित करें। फील्ड टीमों, डिलीवरी ड्राइवरों और रिमोट वर्करों के लिए परफेक्ट। कार्यक्षेत्रों के लिए वर्चुअल बाउंड्री सेट करें और जब कर्मचारी निर्धारित क्षेत्रों में प्रवेश करते या छोड़ते हैं तो अलर्ट प्राप्त करें।",
+      "imageAlt": "जियोफेंसिंग और स्थान ट्रैकिंग इंटरफेस",
+      "features": {
+        "gpsClockInOut": "GPS क्लॉक इन/आउट",
+        "virtualBoundaries": "वर्चुअल बाउंड्री",
+        "realTimeAlerts": "रियल-टाइम अलर्ट",
+        "automatedTimesheets": "स्वचालित टाइमशीट",
+        "complianceReady": "अनुपालन तैयार",
+        "teamManagement": "टीम प्रबंधन"
+      }
+    },
+    "mobilemoney": {
+      "title": "मोबाइल मनी भुगतान",
+      "description": "दुनिया में कहीं से भी भुगतान स्वीकार करें। M-Pesa एकीकरण केन्या में लाइव है, MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix और Mercado Pago जल्द आ रहे हैं। अरबों ग्राहकों तक पहुंचें जो पारंपरिक बैंकिंग सेवाओं पर मोबाइल मनी को प्राथमिकता देते हैं।",
+      "imageAlt": "मोबाइल मनी भुगतान विकल्प",
+      "available": "भुगतान विधियां:",
+      "live": "अब उपलब्ध:",
+      "coming": "जल्द आ रहा है:"
+    },
+    "whatsapp": {
+      "title": "व्हाट्सएप बिजनेस",
+      "description": "व्हाट्सएप बिजनेस एकीकरण के साथ ग्राहक संचार को बदलें। अपना उत्पाद कैटलॉग बनाएं और प्रबंधित करें, स्वचालित रूप से चालान और रसीदें भेजें, तत्काल ग्राहक सहायता प्रदान करें, और उनके पसंदीदा मैसेजिंग प्लेटफॉर्म पर उनसे जुड़ें।",
+      "learnMore": "और जानें"
+    },
+    "languages": {
+      "title": "20+ भाषाओं का समर्थन",
+      "description": "अपनी पसंदीदा भाषा में ग्राहकों तक पहुंचें और अपने व्यवसाय का प्रबंधन करें। अंग्रेजी से स्वाहिली तक, स्पेनिश से मंदारिन तक, हम 20+ भाषाओं का समर्थन करते हैं ताकि Dott को दुनिया भर के व्यवसायों के लिए सुलभ बनाया जा सके।",
+      "imageAlt": "बहुभाषी इंटरफेस प्रदर्शन",
+      "availableIn": "इसमें उपलब्ध:"
+    },
+    "features": {
+      "label": "मुख्य विशेषताएं:"
+    },
+    "learnMore": "और जानें",
+    "jobs": {
+      "title": "व्यापक कार्य प्रबंधन",
+      "description": "कोटेशन से पूर्णता तक एंड-टू-एंड जॉब कॉस्टिंग। रीयल-टाइम लाभप्रदता विश्लेषण के साथ सामग्री, श्रम और खर्चों को ट्रैक करें। मोबाइल-फर्स्ट डिज़ाइन के साथ सेवा व्यवसायों, ठेकेदारों और फील्ड ऑपरेशन के लिए बिल्कुल सही।",
+      "imageAlt": "कार्य प्रबंधन और लागत निर्धारण इंटरफ़ेस",
+      "features": {
+        "jobCosting": "रीयल-टाइम जॉब कॉस्टिंग",
+        "mobileFieldApp": "मोबाइल फील्ड ऐप",
+        "materialTracking": "सामग्री ट्रैकिंग",
+        "timeTracking": "ऑटो टाइम ट्रैकिंग",
+        "photoCapture": "फोटो कैप्चर",
+        "digitalSignatures": "डिजिटल हस्ताक्षर",
+        "profitabilityAnalysis": "लाभप्रदता विश्लेषण",
+        "offlineSupport": "ऑफ़लाइन समर्थन"
+      }
+    },
+    "jobCosting": "रीयल-टाइम जॉब कॉस्टिंग",
+    "mobileFieldApp": "फील्ड वर्कर्स के लिए मोबाइल ऐप",
+    "materialLaborTracking": "सामग्री और श्रम ट्रैकिंग",
     "vatGst": "VAT/GST समर्थन",
     "taxReports": "कर रिपोर्ट",
     "eFilingReady": "ई-फाइलिंग तैयार",
-    "customDashboards": "कस्टम डैशबोर्ड",
-    "profitAnalysis": "लाभ विश्लेषण",
-    "cashFlowForecast": "नकदी प्रवाह पूर्वानुमान",
-    "mobileMoney": "मोबाइल मनी",
-    "bankTransfers": "बैंक ट्रांसफर",
-    "digitalWallets": "डिजिटल वॉलेट",
-    "customsDocuments": "सीमा शुल्क दस्तावेज",
-    "shippingIntegration": "शिपिंग एकीकरण",
-    "tradeCompliance": "व्यापार अनुपालन",
-    "soc2Compliant": "SOC2 अनुपालक",
-    "dataEncryption": "डेटा एन्क्रिप्शन",
-    "gdprReady": "GDPR तैयार"
+    "ifrs": "166+ देशों के लिए IFRS",
+    "gaap": "US व्यवसायों के लिए US GAAP",
+    "autoDetect": "देश के आधार पर स्वतः पता लगाना",
+    "autoDetection": "स्वचालित भाषा पहचान",
+    "rightToLeft": "दाएं से बाएं भाषाएं",
+    "regionalFormat": "क्षेत्रीय तिथि/संख्या प्रारूप",
+    "realTimeRates": "वास्तविक समय विनिमय दरें",
+    "cryptoCurrency": "क्रिप्टोकरेंसी समर्थन",
+    "currencyConversion": "स्वचालित रूपांतरण"
   },
   "contact": {
     "eyebrow": "संपर्क करें",
@@ -237,8 +385,297 @@
   "socialImpact": "हमारा सामाजिक प्रभाव",
   "getInTouch": "हमारी टीम से संपर्क करें",
   "termsOfUse": "उपयोग की शर्तें",
-  "privacyPolicy": "गोपनीयता नीति",
-  "cookiePolicy": "कुकी नीति",
+  "privacyPolicy": {
+    "title": "Privacy Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "introduction": "At Dott LLC, we value your trust and respect your privacy. We exist to provide businesses with comprehensive financial management tools. This Privacy Policy explains—in clear and plain language—what information we collect, how we use it, and the choices you have regarding your personal information, so you can feel confident about using our platform.",
+    "navigation": {
+      "backToDashboard": "Back to Dashboard",
+      "backToHome": "Back to Home"
+    },
+    "sections": {
+      "scope": {
+        "title": "A. Scope",
+        "content": "Protecting your personal information is important to us. This privacy policy applies to our products and services offered under the Dott brand, our websites, and our mobile applications that incorporate this privacy policy. Our products and services are offered by Dott LLC. This policy covers how we collect, use, store, process, and share your information in connection with our financial management platform, including accounting, payroll, payment processing, invoicing, and other services."
+      },
+      "personalInfo": {
+        "title": "B. Personal Information",
+        "content": "As part of providing our services, we may collect personal information about you, your business, your employees, and your customers. 'Personal Information' is data that can be used to identify a person individually. This policy outlines our collection, protection, use, retention, disclosure and other processing of Personal Information and your rights relating to these activities.",
+        "businessInfo": {
+          "title": "B.1 Business Information",
+          "content": "This includes your business name, address, tax identification numbers, industry type, business entity type, and other information necessary to provide our services."
+        },
+        "individualInfo": {
+          "title": "B.2 Individual Information",
+          "content": "This includes information about you as a business owner, your employees, contractors, and your customers, as necessary to provide our services."
+        }
+      },
+      "categories": {
+        "title": "C. Categories of Personal Information Collected",
+        "content": "The information we may collect includes, but is not limited to:",
+        "identification": {
+          "title": "C.1 Identification Information",
+          "content": "Contact Information (name, email address, phone number, postal address), Government Identification Numbers (EIN, SSN, tax IDs), Date of Birth, photographic ID, and business documentation."
+        },
+        "financial": {
+          "title": "C.2 Financial Information",
+          "content": "Bank account details, payment card information, transaction history, account balances, payment records, credit history, financial statements, and payroll information."
+        },
+        "employee": {
+          "title": "C.3 Employee Information",
+          "content": "For payroll services, we collect information about your employees including their names, contact details, salary information, tax withholding information, bank details for direct deposit, and other employment-related data."
+        },
+        "technical": {
+          "title": "C.4 Technical Information",
+          "content": "Device Information (IP address, device type, operating system), Browser Information, Geo-Location Data, Usage Data, Login Information, and Application Interaction Data."
+        },
+        "customer": {
+          "title": "C.5 Customer Information",
+          "content": "When you use our invoicing or payment processing features, we may collect information about your customers necessary to process these transactions."
+        },
+        "tax": {
+          "title": "C.6 Tax Information",
+          "content": "When you use our tax features, we collect your business location, tax rates you enter, tax settings preferences, and tax calculation history. We may also process tax-related queries when you use our AI-powered tax suggestion features. This information is used solely to provide tax calculation services and is not used for tax filing or reporting on your behalf."
+        }
+      },
+      "collection": {
+        "title": "D. How We Collect Your Information",
+        "content": "We collect information from various sources:",
+        "direct": {
+          "title": "D.1 Direct Collection",
+          "content": "Information you provide when you register for our services, set up your account, connect your financial accounts, process payments, or communicate with us."
+        },
+        "automated": {
+          "title": "D.2 Automated Collection",
+          "content": "Information collected automatically through cookies, web beacons, and similar technologies when you use our services."
+        },
+        "thirdParty": {
+          "title": "D.3 Third-Party Sources",
+          "content": "Information we receive from third-party service providers, business partners, identity verification services, credit bureaus, and other publicly available sources."
+        },
+        "financial": {
+          "title": "D.4 Financial Institutions",
+          "content": "When you connect your bank accounts or other financial services to Dott, we collect information from these financial institutions with your authorization."
+        }
+      },
+      "usage": {
+        "title": "E. How We Use Your Information",
+        "content": "We use your information for the following purposes:",
+        "services": {
+          "title": "E.1 Providing and Improving Our Services",
+          "content": "To deliver the financial management services you request, process transactions, facilitate payments, manage invoices, process payroll, provide technical support, and improve our platform."
+        },
+        "security": {
+          "title": "E.2 Authentication and Security",
+          "content": "To verify your identity, secure your account, prevent fraud, and ensure the security of our platform."
+        },
+        "communications": {
+          "title": "E.3 Communications",
+          "content": "To communicate with you about your account, provide customer support, send service updates, and, with your consent, send marketing communications."
+        },
+        "compliance": {
+          "title": "E.4 Legal Compliance",
+          "content": "To comply with our legal obligations, including anti-money laundering regulations, tax reporting requirements, and other financial services regulations."
+        },
+        "analytics": {
+          "title": "E.5 Analytics and Improvements",
+          "content": "To analyze usage patterns, troubleshoot technical issues, and develop new features and services."
+        }
+      },
+      "sharing": {
+        "title": "F. Information Sharing and Disclosure",
+        "content": "We may share your information with the following categories of recipients:",
+        "providers": {
+          "title": "F.1 Service Providers",
+          "content": "Third-party service providers who help us deliver our services, including payment processors (Stripe, Flutterwave, DLocal, Wise, PayPal), hosting providers, customer support services, and analytics providers."
+        },
+        "partners": {
+          "title": "F.2 Financial Partners",
+          "content": "Banks and financial institutions necessary to process transactions, facilitate payments, and provide invoice factoring services."
+        },
+        "authorities": {
+          "title": "F.3 Legal and Regulatory Authorities",
+          "content": "Government authorities, law enforcement, and other third parties where required by law, to comply with legal process, or to protect our rights."
+        },
+        "transfers": {
+          "title": "F.4 Business Transfers",
+          "content": "In connection with any merger, acquisition, or sale of company assets, your information may be transferred as a business asset."
+        },
+        "consent": {
+          "title": "F.5 With Your Consent",
+          "content": "We may share your information with other third parties when you have given your consent to do so."
+        }
+      },
+      "rights": {
+        "title": "G. Your Choices and Rights",
+        "content": "Depending on your jurisdiction, you may have the following rights regarding your personal information:",
+        "access": {
+          "title": "G.1 Access and Portability",
+          "content": "You may request access to your personal information and receive a copy in a structured, commonly used format."
+        },
+        "correction": {
+          "title": "G.2 Correction",
+          "content": "You may request that we correct inaccurate or incomplete personal information."
+        },
+        "deletion": {
+          "title": "G.3 Deletion",
+          "content": "You may request that we delete your personal information, subject to certain exceptions."
+        },
+        "objection": {
+          "title": "G.4 Objection and Restriction",
+          "content": "You may object to or request restriction of processing of your personal information."
+        },
+        "withdraw": {
+          "title": "G.5 Withdraw Consent",
+          "content": "Where we rely on your consent to process your personal information, you may withdraw your consent at any time."
+        },
+        "exercise": {
+          "title": "G.6 How to Exercise Your Rights",
+          "content": "To exercise your rights, please contact us at support@dottapps.com We may need to verify your identity before fulfilling your request."
+        }
+      },
+      "security": {
+        "title": "H. Data Security",
+        "content": "We implement appropriate technical and organizational measures to protect your personal information:",
+        "measures": {
+          "title": "H.1 Security Measures",
+          "content": "We use industry-standard security measures including encryption, access controls, firewalls, and regular security assessments."
+        },
+        "payment": {
+          "title": "H.2 Payment Information",
+          "content": "Payment information is processed in compliance with the Payment Card Industry Data Security Standard (PCI DSS)."
+        },
+        "access": {
+          "title": "H.3 Employee Access",
+          "content": "We restrict employee access to personal information to those who need it to perform their job functions."
+        },
+        "breach": {
+          "title": "H.4 Data Breach Procedures",
+          "content": "We have procedures in place to respond to suspected data security breaches and will notify you and applicable regulators of breaches as required by law."
+        },
+        "tax": {
+          "title": "H.5 Tax Data Security",
+          "content": "Tax rates and settings you enter are encrypted and stored securely. AI-powered tax suggestions are processed without storing your specific queries. We do not share your tax configuration data with third parties except as necessary to provide our services or as required by law. You remain responsible for the accuracy of all tax information entered into our system."
+        }
+      },
+      "retention": {
+        "title": "I. Data Retention",
+        "content": "We retain your personal information for as long as necessary to provide our services and for legitimate business purposes, such as maintaining business records, complying with legal obligations, resolving disputes, and enforcing our agreements. When we no longer need your personal information, we will securely delete or anonymize it."
+      },
+      "transfers": {
+        "title": "J. International Data Transfers",
+        "content": "Your information may be transferred to and processed in countries other than the country you live in, including the United States, Rwanda, and other countries where Dott LLC or its service providers operate. These countries may have data protection laws different from the laws of your country. We implement appropriate safeguards to protect your information when transferred internationally, such as standard contractual clauses approved by relevant data protection authorities."
+      },
+      "children": {
+        "title": "K. Children's Privacy",
+        "content": "Our services are not directed to children under the age of 18. We do not knowingly collect personal information from children. If you are a parent or guardian and believe that your child has provided us with personal information, please contact us so that we can delete the information."
+      },
+      "cookies": {
+        "title": "L. Cookies and Similar Technologies",
+        "content": "We use cookies and similar technologies to collect information about how you interact with our services, to remember your preferences, and to optimize your experience. You can manage your cookie preferences through your browser settings.",
+        "types": {
+          "title": "L.1 Types of Cookies We Use",
+          "content": "Essential cookies (necessary for the functionality of our services), Analytical cookies (to understand how users interact with our services), and Marketing cookies (to deliver relevant advertisements)."
+        },
+        "choices": {
+          "title": "L.2 Your Cookie Choices",
+          "content": "Most web browsers allow you to control cookies through their settings. However, if you reject certain cookies, you may not be able to use all features of our services."
+        }
+      },
+      "ai": {
+        "title": "M. AI and Automated Processing",
+        "content": "We use artificial intelligence and automated systems to enhance our services and provide features like tax rate suggestions, financial insights, and fraud detection.",
+        "features": {
+          "title": "M.1 AI-Powered Features",
+          "content": "Our AI features analyze your location and business type to suggest tax rates and provide other business insights. These suggestions are generated based on publicly available information and general tax rules."
+        },
+        "advice": {
+          "title": "M.2 No Professional Advice",
+          "content": "AI-generated suggestions, including tax rate recommendations, are provided for informational purposes only and do not constitute professional tax, legal, or financial advice. You should independently verify all suggestions before using them."
+        },
+        "review": {
+          "title": "M.3 Human Review",
+          "content": "Significant automated decisions that may have legal or similarly significant effects on you are subject to human review upon request."
+        }
+      },
+      "changes": {
+        "title": "N. Changes to This Privacy Policy",
+        "content": "We may update this privacy policy from time to time to reflect changes in our practices or legal requirements. We will notify you of any material changes by posting the new version on our website and updating the effective date. We encourage you to review our privacy policy periodically."
+      },
+      "contact": {
+        "title": "O. Contact Us",
+        "content": "If you have any questions about this Privacy Policy or our data practices, or if you wish to exercise your rights regarding your personal information, please contact us at:"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "United States",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
+  "cookiePolicy": {
+    "title": "Cookie Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "navigation": {
+      "backToHome": "Back to Home"
+    },
+    "introduction": "This Cookie Policy explains how Dott LLC uses cookies and similar technologies to recognize you when you visit our website and use our services. It explains what these technologies are and why we use them, as well as your rights to control our use of them.",
+    "sections": {
+      "whatAreCookies": {
+        "title": "What are cookies?",
+        "content": "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information."
+      },
+      "howWeUseCookies": {
+        "title": "How we use cookies",
+        "content": "We use cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as \"essential\" or \"strictly necessary\" cookies. Other cookies enable us to track and target the interests of our users to enhance the experience on our website."
+      },
+      "typesOfCookies": {
+        "title": "Types of cookies we use",
+        "content": "The specific types of first and third party cookies served through our website and the purposes they perform are described below:",
+        "essential": {
+          "title": "Essential cookies",
+          "content": "These cookies are strictly necessary to provide you with services available through our website and to use some of its features, such as access to secure areas."
+        },
+        "functional": {
+          "title": "Functional cookies",
+          "content": "These cookies enable the website to provide enhanced functionality and personalization. They may be set by us or by third party providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics cookies",
+          "content": "These cookies allow us to count visits and traffic sources, so we can measure and improve the performance of our site. They help us know which pages are the most and least popular and see how visitors move around the site."
+        },
+        "marketing": {
+          "title": "Marketing cookies",
+          "content": "These cookies may be set through our site by our advertising partners. They may be used by those companies to build a profile of your interests and show you relevant adverts on other sites."
+        }
+      },
+      "managingCookies": {
+        "title": "Managing cookies",
+        "content": "Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you. It may also stop you from saving customized settings like login information."
+      },
+      "thirdPartyCookies": {
+        "title": "Third-party cookies",
+        "content": "In addition to our own cookies, we may also use various third-party cookies to report usage statistics of our service and deliver advertisements on and through our service."
+      },
+      "changes": {
+        "title": "Changes to this Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time in order to reflect changes to the cookies we use or for other operational, legal or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies."
+      },
+      "contact": {
+        "title": "Contact us",
+        "content": "If you have any questions about our use of cookies or other technologies, please contact us."
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
   "simplicity": "सरलता",
   "innovation": "नवाचार",
   "empowerment": "सशक्तिकरण",
@@ -273,7 +710,9 @@
       "mobileMoney": "मोबाइल मनी भुगतान",
       "cardPayments": "दुनिया भर में कार्ड भुगतान",
       "languages": "20+ भाषाओं का समर्थन",
-      "mobilePhone": "मोबाइल फोन एप शामिल"
+      "mobilePhone": "मोबाइल फोन एप शामिल",
+      "jobManagement": "कार्य प्रबंधन और लागत निर्धारण",
+      "accounting": "IFRS और US GAAP समर्थन"
     }
   },
   "heroTitle": "ऑल-इन-वन बिज़नेस सॉफ़्टवेयर",
@@ -319,35 +758,6 @@
     "company": "कंपनी",
     "support": "सहायता",
     "legal": "कानूनी"
-  },
-  "highlights": {
-    "bluetooth": "Bluetooth स्कैनर इंटिग्रेशन",
-    "printBarcodes": "कस्टम बारकोड प्रिंट करें",
-    "lowStock": "कम स्टॉक अलर्ट",
-    "customLabel": "कस्टम लेबल प्रिंटिंग",
-    "mobileScanning": "मोबाइल स्कैनिंग",
-    "batchProcessing": "बैच प्रोसेसिंग",
-    "offlineMode": "ऑफलाइन मोड",
-    "multiplePayments": "मल्टिपल पेमेंट मेथड",
-    "receiptCustom": "रसीद कस्टमाइजेशन",
-    "recurringInvoices": "रिकरिंग इन्वॉयस",
-    "paymentReminders": "पेमेंट रिमाइंडर",
-    "invoiceFactoring": "इन्वॉयस फैक्टरिंग",
-    "vatGst": "VAT/GST सपोर्ट",
-    "taxReports": "टैक्स रिपोर्ट्स",
-    "eFilingReady": "E-filing रेडी",
-    "customDashboards": "कस्टम डैशबोर्ड",
-    "profitAnalysis": "प्रॉफिट एनालिसिस",
-    "cashFlowForecast": "कैश फ्लो फोरकास्टिंग",
-    "mobileMoney": "मोबाइल मनी",
-    "bankTransfers": "बैंक ट्रांसफर",
-    "digitalWallets": "डिजिटल वॉलेट्स",
-    "customsDocuments": "कस्टम्स दस्तावेज",
-    "shippingIntegration": "शिपिंग इंटिग्रेशन",
-    "tradeCompliance": "ट्रेड कंप्लायंस",
-    "soc2Compliant": "SOC2 कंप्लायंट",
-    "dataEncryption": "डेटा एन्क्रिप्शन",
-    "gdprReady": "GDPR रेडी"
   },
   "faq": {
     "eyebrow": "अक्सर पूछे जाने वाले प्रश्न",
@@ -706,7 +1116,12 @@
     "global": "इम्पोर्ट/एक्सपोर्ट मैनेजमेंट",
     "global.description": "अंतर्राष्ट्रीय व्यापार दस्तावेज़ और अनुपालन को संभालें",
     "security": "एंटरप्राइज सिक्योरिटी",
-    "security.description": "क्षेत्रीय अनुपालन के साथ बैंक-ग्रेड सिक्योरिटी"
+    "security.description": "क्षेत्रीय अनुपालन के साथ बैंक-ग्रेड सिक्योरिटी",
+    "jobs": "कार्य प्रबंधन और लागत निर्धारण",
+    "jobs.description": "रीयल-टाइम कॉस्टिंग, मोबाइल फील्ड ऐप और लाभप्रदता विश्लेषण के साथ एंड-टू-एंड प्रोजेक्ट ट्रैकिंग",
+    "accounting": "दोहरे लेखांकन मानक",
+    "languages": "बहु-भाषा समर्थन",
+    "currencies": "बहु-मुद्रा प्रणाली"
   },
   "trust": {
     "soc2Title": "SOC2 कंप्लायंट",
@@ -717,88 +1132,6 @@
     "gdprDesc": "प्राइवेसी कंप्लायंट",
     "uptimeTitle": "99.9% अपटाइम",
     "uptimeDesc": "हमेशा उपलब्ध"
-  },
-  "about": {
-    "backToHome": "घर वापस जाएं",
-    "hero": {
-      "title": "व्यवसायों को सशक्त बनाना",
-      "subtitle": "वैश्विक स्तर पर फलने-फूलने के लिए",
-      "description": "हम आधुनिक छोटे व्यवसायों के लिए ऑपरेटिंग सिस्टम बना रहे हैं, एंटरप्राइज-ग्रेड टूल्स को हर किसी के लिए सुलभ बना रहे हैं।"
-    },
-    "story": {
-      "title": "हमारी कहानी",
-      "paragraph1": "Dott का जन्म एक सरल अवलोकन से हुआ: छोटे व्यवसाय जटिलता में डूब रहे थे। कई टूल्स, असंबद्ध डेटा, और उद्यमों के लिए डिज़ाइन की गई प्रक्रियाएं दुनिया भर के उद्यमियों को पीछे रोक रही थीं।",
-      "paragraph2": "2023 में स्थापित, हमने कुछ अलग बनाने की ठानी। एक मंच जो छोटे व्यवसायों की अनूठी चुनौतियों को समझता है, विशेष रूप से उभरते बाजारों में जहां पारंपरिक समाधान विफल होते हैं।",
-      "paragraph3": "आज, हमें दुनिया भर के व्यवसायों की सेवा करने पर गर्व है। लेकिन हम अभी शुरू कर रहे हैं।"
-    },
-    "timeline": {
-      "beginning": {
-        "title": "शुरुआत",
-        "description": "SMBs के लिए एकीकृत व्यावसायिक प्रबंधन टूल्स की आवश्यकता की पहचान की"
-      },
-      "launch": {
-        "title": "उत्पाद लॉन्च",
-        "description": "वित्तीय और इन्वेंटरी प्रबंधन के साथ कोर प्लेटफॉर्म लॉन्च किया"
-      },
-      "expansion": {
-        "title": "वैश्विक विस्तार",
-        "description": "स्थानीयकृत सुविधाओं के साथ 25+ देशों तक विस्तारित"
-      },
-      "ai": {
-        "title": "AI एकीकरण",
-        "description": "बुद्धिमान अंतर्दृष्टि और स्वचालन का परिचय"
-      }
-    },
-    "mission": {
-      "title": "हमारा मिशन",
-      "description": "छोटे व्यवसायों को शक्तिशाली, किफायती टूल्स प्रदान करके व्यावसायिक प्रबंधन को लोकतांत्रिक बनाना जो संचालन को सरल बनाते हैं और विकास को सक्षम बनाते हैं, स्थान या तकनीकी विशेषज्ञता की परवाह किए बिना।"
-    },
-    "vision": {
-      "title": "हमारी दृष्टि",
-      "description": "एक दुनिया जहां हर छोटे व्यवसाय को Fortune 500 कंपनियों के समान गुणवत्ता वाले प्रबंधन टूल्स तक पहुंच हो, 2030 तक एक मिलियन व्यवसायों को फलने-फूलने में सक्षम बनाना।"
-    },
-    "journey": {
-      "title": "हमारी यात्रा"
-    },
-    "values": {
-      "title": "हमारे मूल्य",
-      "subtitle": "वे सिद्धांत जो हमारे हर निर्णय का मार्गदर्शन करते हैं",
-      "simplicity": {
-        "title": "सरलता पहले",
-        "description": "सहज डिजाइन के माध्यम से जटिल व्यावसायिक संचालन को सरल बनाया गया"
-      },
-      "innovation": {
-        "title": "निरंतर नवाचार",
-        "description": "आधुनिक व्यवसायों की बदलती जरूरतों के साथ विकसित होना"
-      },
-      "success": {
-        "title": "ग्राहक सफलता",
-        "description": "आपकी वृद्धि हमारी सफलता है - जब आप जीतते हैं तो हम जीतते हैं"
-      },
-      "empowerment": {
-        "title": "वैश्विक सशक्तिकरण",
-        "description": "दुनिया भर के व्यवसायों के लिए बाधाओं को तोड़ना"
-      }
-    },
-    "differentiators": {
-      "title": "Dott को क्या अलग बनाता है",
-      "unified": {
-        "title": "एकीकृत मंच",
-        "description": "आपके सभी व्यावसायिक टूल्स एक ही स्थान पर"
-      },
-      "global": {
-        "title": "वैश्विक, फिर भी स्थानीय",
-        "description": "स्थानीय अनुपालन के साथ अंतर्राष्ट्रीय मानक"
-      },
-      "security": {
-        "title": "उद्यम सुरक्षा",
-        "description": "आपके डेटा के लिए बैंक-स्तर की सुरक्षा"
-      },
-      "insights": {
-        "title": "स्मार्ट इनसाइट्स",
-        "description": "बेहतर निर्णयों के लिए AI-संचालित विश्लेषण"
-      }
-    }
   },
   "blog": {
     "hero": {
@@ -865,70 +1198,6 @@
     "allRightsReserved": "सर्वाधिकार सुरक्षित।",
     "privacyPolicy": "गोपनीयता नीति",
     "termsOfService": "सेवा की शर्तें"
-  },
-  "highlights": {
-    "eyebrow": "मुख्य लाभ",
-    "heading": "व्यवसाय Dott को क्यों चुनते हैं",
-    "subheading": "उन्नत सुविधाएँ जो हमें प्रतिस्पर्धा से अलग करती हैं और आपके व्यवसाय को बढ़ने में मदद करती हैं।",
-    "mobile": {
-      "title": "मोबाइल एप्लिकेशन",
-      "description": "हमारे शक्तिशाली मोबाइल ऐप के साथ कभी भी, कहीं भी अपने व्यवसाय के डेटा तक पहुंचें। इन्वेंटरी प्रबंधित करें, बिक्री प्रोसेस करें और चलते-फिरते रियल-टाइम रिपोर्ट देखें।",
-      "imageAlt": "मोबाइल एप्लिकेशन स्क्रीनशॉट"
-    },
-    "pos": {
-      "title": "POS और बारकोड स्कैनिंग",
-      "description": "किसी भी डिवाइस को शक्तिशाली पॉइंट-ऑफ-सेल सिस्टम में बदलें। बारकोड को तुरंत स्कैन करें, बिक्री को तेज़ी से प्रोसेस करें, रियल-टाइम में इन्वेंटरी ट्रैक करें और नकद, कार्ड और मोबाइल मनी सहित सभी भुगतान विधियों को स्वीकार करें।",
-      "imageAlt": "बारकोड स्कैनिंग सुविधा के साथ POS सिस्टम",
-      "features": {
-        "quickCheckout": "त्वरित चेकआउट",
-        "barcodeScanning": "बारकोड स्कैनिंग",
-        "allPaymentTypes": "सभी भुगतान प्रकार",
-        "inventoryTracking": "इन्वेंटरी ट्रैकिंग",
-        "offlineMode": "ऑफलाइन मोड",
-        "mobileReady": "मोबाइल तैयार"
-      }
-    },
-    "ai": {
-      "title": "AI-संचालित अंतर्दृष्टि",
-      "description": "अपने व्यवसाय डेटा के आधार पर स्मार्ट सिफारिशें और भविष्यवाणी विश्लेषण प्राप्त करें। हमारा AI मांग पूर्वानुमान, इन्वेंटरी अनुकूलन और विकास के अवसरों की पहचान में मदद करता है।",
-      "imageAlt": "AI विश्लेषण डैशबोर्ड स्क्रीनशॉट"
-    },
-    "geofencing": {
-      "title": "जियोफेंसिंग और स्थान ट्रैकिंग",
-      "description": "GPS-आधारित क्लॉक इन/आउट के साथ सटीक समय ट्रैकिंग सुनिश्चित करें। फील्ड टीमों, डिलीवरी ड्राइवरों और रिमोट वर्करों के लिए परफेक्ट। कार्यक्षेत्रों के लिए वर्चुअल बाउंड्री सेट करें और जब कर्मचारी निर्धारित क्षेत्रों में प्रवेश करते या छोड़ते हैं तो अलर्ट प्राप्त करें।",
-      "imageAlt": "जियोफेंसिंग और स्थान ट्रैकिंग इंटरफेस",
-      "features": {
-        "gpsClockInOut": "GPS क्लॉक इन/आउट",
-        "virtualBoundaries": "वर्चुअल बाउंड्री",
-        "realTimeAlerts": "रियल-टाइम अलर्ट",
-        "automatedTimesheets": "स्वचालित टाइमशीट",
-        "complianceReady": "अनुपालन तैयार",
-        "teamManagement": "टीम प्रबंधन"
-      }
-    },
-    "mobilemoney": {
-      "title": "मोबाइल मनी भुगतान",
-      "description": "दुनिया में कहीं से भी भुगतान स्वीकार करें। M-Pesa एकीकरण केन्या में लाइव है, MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix और Mercado Pago जल्द आ रहे हैं। अरबों ग्राहकों तक पहुंचें जो पारंपरिक बैंकिंग सेवाओं पर मोबाइल मनी को प्राथमिकता देते हैं।",
-      "imageAlt": "मोबाइल मनी भुगतान विकल्प",
-      "available": "भुगतान विधियां:",
-      "live": "अब उपलब्ध:",
-      "coming": "जल्द आ रहा है:"
-    },
-    "whatsapp": {
-      "title": "व्हाट्सएप बिजनेस",
-      "description": "व्हाट्सएप बिजनेस एकीकरण के साथ ग्राहक संचार को बदलें। अपना उत्पाद कैटलॉग बनाएं और प्रबंधित करें, स्वचालित रूप से चालान और रसीदें भेजें, तत्काल ग्राहक सहायता प्रदान करें, और उनके पसंदीदा मैसेजिंग प्लेटफॉर्म पर उनसे जुड़ें।",
-      "learnMore": "और जानें"
-    },
-    "languages": {
-      "title": "20+ भाषाओं का समर्थन",
-      "description": "अपनी पसंदीदा भाषा में ग्राहकों तक पहुंचें और अपने व्यवसाय का प्रबंधन करें। अंग्रेजी से स्वाहिली तक, स्पेनिश से मंदारिन तक, हम 20+ भाषाओं का समर्थन करते हैं ताकि Dott को दुनिया भर के व्यवसायों के लिए सुलभ बनाया जा सके।",
-      "imageAlt": "बहुभाषी इंटरफेस प्रदर्शन",
-      "availableIn": "इसमें उपलब्ध:"
-    },
-    "features": {
-      "label": "मुख्य विशेषताएं:"
-    },
-    "learnMore": "और जानें"
   },
   "builtForYou": {
     "title": "आपके लिए बनाया गया",
@@ -1048,5 +1317,165 @@
       "name": "Amazon Seller",
       "description": "अपने Amazon व्यवसाय का प्रबंधन करें"
     }
-  }
+  },
+  "termsOfService": {
+    "title": "Terms of Use",
+    "effectiveDate": "Effective as of: {{date}}",
+    "introduction": "Welcome to Dott, a service provided by Dott LLC. This Terms of Use Agreement (\"Agreement\") governs your use of the Dott website, mobile applications, and all related services offered by Dott LLC. By accessing or using our service, you acknowledge that you have read, understood, and agree to be bound by these terms.",
+    "navigation": {
+      "backToDashboard": "Back to Dashboard",
+      "backToHome": "Back to Home"
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By registering for and/or using Dott in any manner, including but not limited to visiting or browsing the website or downloading the application, you agree to be bound by this Agreement, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws. If you do not agree with any of these terms, you are prohibited from using or accessing Dott. The materials contained in Dott are protected by applicable copyright and trademark law."
+      },
+      "service": {
+        "title": "2. Description of Service",
+        "content": "Dott is a comprehensive financial management platform that provides businesses with tools for accounting, payroll, payment processing, invoicing, and financial insights. Our services include subscription-based access to our software, payment processing capabilities, payroll services, and invoice factoring in select regions. The specific features available to you may depend on your subscription level, geographical location, and applicable laws and regulations."
+      },
+      "accounts": {
+        "title": "3. User Accounts",
+        "content": "To access most features of Dott, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete. You are responsible for safeguarding your password and for all activities that occur under your account. You agree to notify Dott LLC immediately of any unauthorized use of your account. Dott LLC cannot and will not be liable for any loss or damage arising from your failure to comply with the above requirements."
+      },
+      "payments": {
+        "title": "4. Subscription and Payments",
+        "content": "Dott offers various subscription plans and payment services. By subscribing to our services, you agree to pay the applicable fees as they become due. Subscription fees are billed in advance on a monthly or annual basis depending on your selected billing cycle. When you register for a paid service, you must provide accurate and complete information for a valid payment method that you are authorized to use.",
+        "recurring": {
+          "title": "4.1 Recurring Billing",
+          "content": "By subscribing to Dott services, you authorize us to charge the payment method you provide to us on a recurring basis. If we are unable to charge your payment method for any reason, we reserve the right to terminate or suspend your access to the paid services."
+        },
+        "processing": {
+          "title": "4.2 Payment Processing",
+          "content": "Dott uses third-party payment processors including Stripe, Flutterwave, DLocal, Wise, PayPal, and others to process transactions. Your use of these payment services is subject to the applicable payment processor's terms of service and privacy policy. Dott charges a transaction fee for payment processing services as outlined in our pricing page."
+        },
+        "refunds": {
+          "title": "4.3 Refunds",
+          "content": "All fees are non-refundable unless otherwise specified or required by applicable law. If you believe you've been charged in error, please contact our customer support team."
+        }
+      },
+      "conduct": {
+        "title": "5. User Conduct",
+        "content": "You agree to use Dott only for lawful purposes and in accordance with this Agreement. You agree not to use Dott:",
+        "violations": {
+          "law": "In any way that violates any applicable federal, state, local, or international law or regulation.",
+          "material": "To transmit any material that is unlawful, threatening, abusive, libelous, defamatory, obscene, or otherwise objectionable.",
+          "impersonation": "To impersonate or attempt to impersonate Dott LLC, a Dott LLC employee, another user, or any other person or entity.",
+          "interference": "To engage in any activity that interferes with or disrupts the services (or the servers and networks connected to the services).",
+          "security": "To attempt to circumvent any security measures implemented by Dott LLC.",
+          "financial": "For money laundering, terrorist financing, or any other illegal financial activities."
+        }
+      },
+      "financial": {
+        "title": "6. Payment and Financial Services",
+        "content": "Dott enables users to process payments, manage payroll, and access financial services through various third-party providers. When using these services, you agree to comply with all applicable laws and regulations, including those related to financial transactions, anti-money laundering requirements, and data privacy.",
+        "processing": {
+          "title": "6.1 Payment Processing",
+          "content": "Use of our payment processing features is subject to the terms of service of our payment partners. You are responsible for ensuring all payment information provided is accurate and that you are authorized to use the payment methods you provide."
+        },
+        "factoring": {
+          "title": "6.2 Invoice Factoring",
+          "content": "Where available, Dott offers invoice factoring services subject to additional terms and eligibility requirements. These services are currently only available in the United States and Canada. By using our invoice factoring services, you authorize Dott LLC to verify your business information, credit history, and other relevant details."
+        },
+        "international": {
+          "title": "6.3 International Transactions",
+          "content": "For international transactions, you acknowledge that currency conversion rates and additional fees may apply. Dott LLC is not responsible for any fees charged by your financial institution or any third-party payment processors."
+        }
+      },
+      "data": {
+        "title": "7. Data and Content",
+        "content": "You retain all rights to your data uploaded to Dott. By using our services, you grant Dott LLC a non-exclusive, worldwide, royalty-free license to use, process, and display your data solely for the purpose of providing and improving our services. We will maintain appropriate administrative, physical, and technical safeguards to protect your data.",
+        "processing": {
+          "title": "7.1 Data Processing",
+          "content": "As part of providing our services, Dott processes financial and personal data in accordance with our Privacy Policy. You acknowledge that Dott may use third-party service providers to process data on our behalf."
+        },
+        "security": {
+          "title": "7.2 Data Security",
+          "content": "You are responsible for maintaining the confidentiality of your account information and for restricting access to your computer or device. You agree to accept responsibility for all activities that occur under your account."
+        }
+      },
+      "contact": {
+        "title": "21. Contact Information",
+        "content": "If you have any questions about this Agreement, please contact us at:"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "United States",
+      "email": "Email: support@dottapps.com"
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "AI-संचालित व्यवसाय प्रबंधन प्लेटफ़ॉर्म जो ऑफ़लाइन काम करता है।",
+      "cta": {
+        "getStarted": "मुफ़्त में शुरू करें",
+        "signIn": "साइन इन करें"
+      },
+      "noCreditCard": "क्रेडिट कार्ड की आवश्यकता नहीं",
+      "freePlan": "हमेशा के लिए मुफ़्त योजना"
+    },
+    "features": {
+      "title": "आपकी ज़रूरत की हर चीज़",
+      "pos": {
+        "title": "बिक्री केंद्र",
+        "description": "तुरंत बिक्री प्रोसेस करें, ऑफ़लाइन भी"
+      },
+      "barcode": {
+        "title": "बारकोड स्कैनर",
+        "description": "अपने कैमरे से उत्पाद स्कैन करें"
+      },
+      "invoicing": {
+        "title": "त्वरित इनवॉइसिंग",
+        "description": "चलते-फिरते इनवॉइस बनाएं और भेजें"
+      },
+      "analytics": {
+        "title": "रीयल-टाइम एनालिटिक्स",
+        "description": "अपने व्यवसाय के प्रदर्शन को ट्रैक करें"
+      }
+    },
+    "benefits": {
+      "title": "आपकी सफलता के लिए बनाया गया",
+      "offline": {
+        "title": "ऑफ़लाइन काम करता है",
+        "description": "इंटरनेट के बिना बेचना जारी रखें"
+      },
+      "fast": {
+        "title": "बिजली की गति",
+        "description": "तुरंत लोडिंग, कोई देरी नहीं"
+      },
+      "mobile": {
+        "title": "मोबाइल फर्स्ट",
+        "description": "फोन और टैबलेट के लिए डिज़ाइन किया गया"
+      },
+      "payments": {
+        "title": "मोबाइल मनी",
+        "description": "M-Pesa, ऑफ़लाइन मोड, स्थानीय समर्थन"
+      }
+    },
+    "pricing": {
+      "title": "सरल, पारदर्शी मूल्य निर्धारण"
+    },
+    "cta": {
+      "title": "अपना व्यवसाय बढ़ाने के लिए तैयार हैं?",
+      "subtitle": "आज ही अपने व्यवसाय को बेहतर तरीके से प्रबंधित करना शुरू करें",
+      "button": "मुफ़्त में शुरू करें",
+      "terms": "क्रेडिट कार्ड की आवश्यकता नहीं • कभी भी रद्द करें"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: वैश्विक व्यापार मंच",
+    "ios": "आपकी होम स्क्रीन पर उपलब्ध",
+    "android": "त्वरित पहुंच के लिए इंस्टॉल करें",
+    "tap": "टैप करें",
+    "then": "फिर",
+    "addToHome": "होम में जोड़ें",
+    "install": "इंस्टॉल करें"
+  },
+  "browserTitle": "डॉट: वैश्विक व्यापार मंच"
 }

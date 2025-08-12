@@ -11,6 +11,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
+# Try to import openpyxl for Excel export
+try:
+    import openpyxl
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    HAS_OPENPYXL = True
+except ImportError:
+    HAS_OPENPYXL = False
+
 from inventory.models import Product
 from crm.models import Customer
 from sales.models import Invoice, InvoiceItem
@@ -30,6 +39,12 @@ class DataExportView(View):
     def post(self, request):
         """Export data based on selected types and format"""
         try:
+            # Debug logging
+            print(f"[DataExportView] Request headers: {dict(request.headers)}")
+            print(f"[DataExportView] Request cookies: {request.COOKIES}")
+            print(f"[DataExportView] Has user: {hasattr(request, 'user')}")
+            print(f"[DataExportView] User authenticated: {request.user.is_authenticated if hasattr(request, 'user') else 'No user'}")
+            
             # Check if user is authenticated (middleware should have set this)
             if not hasattr(request, 'user') or not request.user or not request.user.is_authenticated:
                 return JsonResponse({'error': 'User not authenticated'}, status=401)
@@ -167,16 +182,14 @@ class DataExportView(View):
                     ))
                     export_data['Chart of Accounts'] = data
             
-            # For now, we'll only support CSV export (Excel requires additional libraries)
-            if export_format in ['csv', 'excel']:
+            # Generate export file based on format
+            if export_format == 'excel' and HAS_OPENPYXL:
+                response = self._generate_excel_file(export_data)
+            elif export_format in ['csv', 'excel']:
                 # For CSV, export only the first data type
                 first_key = list(export_data.keys())[0] if export_data else None
                 if first_key:
                     response = self._generate_csv_file(export_data[first_key], first_key)
-                    if export_format == 'excel':
-                        # Note: returning CSV even when Excel is requested
-                        # TODO: Add proper Excel support with openpyxl
-                        response['Content-Type'] = 'text/csv'
                 else:
                     return JsonResponse({'error': 'No data to export'}, status=400)
             else:
@@ -184,7 +197,10 @@ class DataExportView(View):
             
             # Set filename
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"dott_export_{timestamp}.{export_format if export_format != 'excel' else 'xlsx'}"
+            if export_format == 'excel' and HAS_OPENPYXL:
+                filename = f"dott_export_{timestamp}.xlsx"
+            else:
+                filename = f"dott_export_{timestamp}.csv"
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
             
             return response
@@ -238,4 +254,57 @@ class DataExportView(View):
         
         output.seek(0)
         response = HttpResponse(output.getvalue(), content_type='text/csv')
+        return response
+    
+    def _generate_excel_file(self, export_data):
+        """Generate Excel file with multiple sheets"""
+        wb = Workbook()
+        
+        # Remove default sheet
+        wb.remove(wb.active)
+        
+        # Create a sheet for each data type
+        for sheet_name, data in export_data.items():
+            if data and len(data) > 0:
+                ws = wb.create_sheet(title=sheet_name[:31])  # Excel sheet names max 31 chars
+                
+                # Get headers from first row
+                headers = list(data[0].keys())
+                
+                # Write headers
+                for col_idx, header in enumerate(headers, 1):
+                    cell = ws.cell(row=1, column=col_idx, value=header)
+                    cell.font = openpyxl.styles.Font(bold=True)
+                
+                # Write data
+                for row_idx, row_data in enumerate(data, 2):
+                    for col_idx, header in enumerate(headers, 1):
+                        value = row_data.get(header, '')
+                        # Convert datetime objects to string
+                        if hasattr(value, 'strftime'):
+                            value = value.strftime('%Y-%m-%d %H:%M:%S')
+                        ws.cell(row=row_idx, column=col_idx, value=value)
+                
+                # Auto-adjust column widths
+                for column in ws.columns:
+                    max_length = 0
+                    column_letter = get_column_letter(column[0].column)
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 50)
+                    ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to BytesIO
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
         return response

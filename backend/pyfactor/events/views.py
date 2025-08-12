@@ -1,8 +1,9 @@
 from rest_framework import viewsets, permissions, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.decorators import action
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class EventViewSet(viewsets.ModelViewSet):
+class EventViewSet(TenantIsolatedViewSet):
     """
     Industry-standard secure event viewset with automatic tenant isolation.
     

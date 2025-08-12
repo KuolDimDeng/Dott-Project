@@ -1,7 +1,7 @@
 'use client';
 
-
 import React, { useState } from 'react';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 /**
  * HR Reports Management Component
@@ -9,6 +9,11 @@ import React, { useState } from 'react';
  */
 const ReportsManagement = () => {
   const [loading, setLoading] = useState(false);
+  
+  // Show loading spinner while data is loading
+  if (loading) {
+    return <CenteredSpinner size="large" text="Loading reports..." showText={true} minHeight="h-screen" />;
+  }
   
   return (
     <div className="p-4">

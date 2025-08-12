@@ -384,7 +384,6 @@ axiosInstance.interceptors.request.use(
         try {
           // Dynamically import client-side only modules
           const { getTenantId } = await import('@/utils/tenantUtils');
-          const { fetchAuthSession } = await import('@/config/amplifyUnified');
           
           // Use AWS AppCache for tenant ID - prioritize this over other sources
           if (appCache.getAll()) {
@@ -394,15 +393,8 @@ axiosInstance.interceptors.request.use(
               logger.debug('[AxiosConfig] Using auth token from APP_CACHE');
             }
           } else {
-            // Fall back to Amplify Auth
-            try {
-              const session = await fetchAuthSession();
-              if (session?.tokens?.accessToken) {
-                config.headers.Authorization = `Bearer ${session.tokens.accessToken.toString()}`;
-              }
-            } catch (authError) {
-              logger.warn('[AxiosConfig] Auth session error:', authError.message);
-            }
+            // Removed Amplify Auth - using Auth0
+            logger.debug('[AxiosConfig] Using Auth0 for authentication');
           }
         } catch (importError) {
           logger.warn('[AxiosConfig] Import error in request interceptor:', importError.message);
@@ -532,7 +524,7 @@ serverSafeAxiosInstance.interceptors.request.use(
       // Always use HTTPS to avoid CORS issues
       const backendUrl = process.env.BACKEND_API_URL || 
         process.env.NEXT_PUBLIC_API_URL || 
-        'https://127.0.0.1:8000';
+        'https://api.dottapps.com';
       
       if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
         console.log(`[ServerAxiosConfig] Using backend URL: ${backendUrl} for request: ${config.url}`);
@@ -592,7 +584,7 @@ const enhancedAxiosInstance = axios.create({
 enhancedAxiosInstance.interceptors.request.use(
   async (config) => {
     try {
-      const authSession = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
       if (authSession?.tokens?.accessToken) {
         config.headers['Authorization'] = `Bearer ${authSession.tokens.accessToken.toString()}`;
         config.headers['x-id-token'] = authSession.tokens.accessToken.toString();

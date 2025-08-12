@@ -42,15 +42,20 @@ class SessionMiddleware(MiddlewareMixin):
         # Get session token from cookie or header
         session_token = None
         
-        # Check cookie first
-        if 'session_token' in request.COOKIES:
+        # Check cookie first - support both 'sid' and 'session_token' for compatibility
+        if 'sid' in request.COOKIES:
+            session_token = request.COOKIES['sid']
+            logger.debug(f"[SessionMiddleware] Found sid cookie: {session_token[:8]}...")
+        elif 'session_token' in request.COOKIES:
             session_token = request.COOKIES['session_token']
+            logger.debug(f"[SessionMiddleware] Found session_token cookie: {session_token[:8]}...")
         
         # Check Authorization header as fallback
         if not session_token:
             auth_header = request.headers.get('Authorization', '')
             if auth_header.startswith('Session '):
                 session_token = auth_header[8:]
+                logger.debug(f"[SessionMiddleware] Found session in Authorization header")
         
         if session_token:
             # Validate session

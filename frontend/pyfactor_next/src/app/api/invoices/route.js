@@ -120,6 +120,33 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
+    // Get user's current currency preference for new invoices
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[Invoices API] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/currency/preferences/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          logger.info('[Invoices API] Using user preferred currency:', userCurrency);
+        } else {
+          logger.warn('[Invoices API] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        logger.warn('[Invoices API] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      logger.error('[Invoices API] Error fetching currency preference:', currencyError);
+    }
+    
     // Transform frontend data to match backend expectations
     const backendData = {
       customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
@@ -128,7 +155,7 @@ export async function POST(request) {
       status: body.status || 'draft',
       totalAmount: totalAmount.toFixed(2), // Django expects 2 decimal places
       discount: parseFloat(body.discount_amount || 0).toFixed(2),
-      currency: body.currency || 'USD',
+      currency: body.currency || userCurrency, // Use user's preferred currency instead of USD
       notes: body.notes || '',
       terms: body.terms || '',
       items: body.items?.map(item => ({

@@ -370,22 +370,24 @@ def verify_paystack_payment(request):
                     logger.info(f"Created new subscription for business {business.id}: plan={plan_type}, cycle={billing_cycle}")
                 
                 # Record the payment transaction
-                from payments.models import PaymentTransaction, PaymentProvider
+                from payments.models import Transaction, PaymentProvider
                 try:
                     # Get Paystack provider
                     paystack_provider = PaymentProvider.objects.get(code='paystack')
                     
                     # Create transaction record
-                    payment_transaction = PaymentTransaction.objects.create(
-                        business=business,
-                        transaction_type='other',
+                    payment_transaction = Transaction.objects.create(
+                        user=business.owner,  # Transaction needs user, not business
+                        tenant_id=business.id,  # Set tenant_id for TenantAwareModel
+                        transaction_type='payment',
                         amount=transaction.get('amount', 0) / 100,  # Convert from smallest unit
+                        gross_amount=transaction.get('amount', 0) / 100,
                         currency=transaction.get('currency', 'KES'),
                         description=f"Subscription payment - {plan_type} ({billing_cycle})",
-                        provider=paystack_provider,
+                        gateway=None,  # We need to get the PaymentGateway, not PaymentProvider
                         status='completed',
-                        provider_transaction_id=transaction.get('id'),
-                        provider_reference=reference,
+                        gateway_transaction_id=transaction.get('id'),
+                        gateway_reference=reference,
                         processed_at=timezone.now(),
                         metadata={
                             'plan_type': plan_type,

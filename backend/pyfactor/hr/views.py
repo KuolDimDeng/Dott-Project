@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from decimal import Decimal
+from django.views.decorators.csrf import csrf_exempt
 from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn, Geofence, EmployeeGeofence, GeofenceEvent
 from .serializers import (
     EmployeeSerializer, 
@@ -42,6 +44,7 @@ import uuid
 from datetime import datetime
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 
 from pyfactor.logging_config import get_logger
@@ -869,7 +872,7 @@ def preboarding_form_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Performance Management Views
-class PerformanceReviewViewSet(viewsets.ModelViewSet):
+class PerformanceReviewViewSet(TenantIsolatedViewSet):
     queryset = PerformanceReview.objects.all()
     serializer_class = PerformanceReviewSerializer
     
@@ -879,9 +882,15 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         return PerformanceReviewSerializer
     
     def get_queryset(self):
-        queryset = PerformanceReview.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceReviewViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -915,14 +924,20 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceMetricViewSet(viewsets.ModelViewSet):
+class PerformanceMetricViewSet(TenantIsolatedViewSet):
     queryset = PerformanceMetric.objects.all()
     serializer_class = PerformanceMetricSerializer
     
     def get_queryset(self):
-        queryset = PerformanceMetric.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceMetricViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -936,12 +951,18 @@ class PerformanceMetricViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceRatingViewSet(viewsets.ModelViewSet):
+class PerformanceRatingViewSet(TenantIsolatedViewSet):
     queryset = PerformanceRating.objects.all()
     serializer_class = PerformanceRatingSerializer
     
     def get_queryset(self):
-        queryset = PerformanceRating.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceRatingViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by review
         review_id = self.request.query_params.get('review_id', None)
@@ -956,14 +977,20 @@ class PerformanceRatingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceGoalViewSet(viewsets.ModelViewSet):
+class PerformanceGoalViewSet(TenantIsolatedViewSet):
     queryset = PerformanceGoal.objects.all()
     serializer_class = PerformanceGoalSerializer
     
     def get_queryset(self):
-        queryset = PerformanceGoal.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceGoalViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -997,14 +1024,20 @@ class PerformanceGoalViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class FeedbackRecordViewSet(viewsets.ModelViewSet):
+class FeedbackRecordViewSet(TenantIsolatedViewSet):
     queryset = FeedbackRecord.objects.all()
     serializer_class = FeedbackRecordSerializer
     
     def get_queryset(self):
-        queryset = FeedbackRecord.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[FeedbackRecordViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1033,14 +1066,20 @@ class FeedbackRecordViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PerformanceSettingViewSet(viewsets.ModelViewSet):
+class PerformanceSettingViewSet(TenantIsolatedViewSet):
     queryset = PerformanceSetting.objects.all()
     serializer_class = PerformanceSettingSerializer
     
     def get_queryset(self):
-        queryset = PerformanceSetting.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[PerformanceSettingViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1048,13 +1087,19 @@ class PerformanceSettingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class TimesheetViewSet(viewsets.ModelViewSet):
+class TimesheetViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheets"""
     queryset = Timesheet.objects.all()
     serializer_class = TimesheetSerializer
     
     def get_queryset(self):
-        queryset = Timesheet.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1075,13 +1120,19 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-period_start')
 
 
-class TimesheetEntryViewSet(viewsets.ModelViewSet):
+class TimesheetEntryViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheet entries"""
     queryset = TimesheetEntry.objects.all()
     serializer_class = TimesheetEntrySerializer
     
     def get_queryset(self):
-        queryset = TimesheetEntry.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetEntryViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by timesheet
         timesheet_id = self.request.query_params.get('timesheet_id', None)
@@ -1091,15 +1142,21 @@ class TimesheetEntryViewSet(viewsets.ModelViewSet):
         return queryset.order_by('date')
 
 
-class TimesheetSettingViewSet(viewsets.ModelViewSet):
+class TimesheetSettingViewSet(TenantIsolatedViewSet):
     """ViewSet for managing timesheet settings"""
     queryset = TimesheetSetting.objects.all()
     serializer_class = TimesheetSettingSerializer
     
     def get_queryset(self):
-        queryset = TimesheetSetting.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
         
-        # Filter by business_id if provided
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimesheetSettingViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Filter by business_id if explicitly provided
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
@@ -1107,13 +1164,19 @@ class TimesheetSettingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class TimeOffRequestViewSet(viewsets.ModelViewSet):
+class TimeOffRequestViewSet(TenantIsolatedViewSet):
     """ViewSet for managing time off requests"""
     queryset = TimeOffRequest.objects.all()
     serializer_class = TimeOffRequestSerializer
     
     def get_queryset(self):
-        queryset = TimeOffRequest.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeOffRequestViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1133,13 +1196,19 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-created_at')
 
 
-class TimeOffBalanceViewSet(viewsets.ModelViewSet):
+class TimeOffBalanceViewSet(TenantIsolatedViewSet):
     """ViewSet for managing time off balances"""
     queryset = TimeOffBalance.objects.all()
     serializer_class = TimeOffBalanceSerializer
     
     def get_queryset(self):
-        queryset = TimeOffBalance.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[TimeOffBalanceViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1154,13 +1223,19 @@ class TimeOffBalanceViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class BenefitsViewSet(viewsets.ModelViewSet):
+class BenefitsViewSet(TenantIsolatedViewSet):
     """ViewSet for managing employee benefits"""
     queryset = Benefits.objects.all()
     serializer_class = BenefitsSerializer
     
     def get_queryset(self):
-        queryset = Benefits.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[BenefitsViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1178,13 +1253,19 @@ class BenefitsViewSet(viewsets.ModelViewSet):
 
 # Location Tracking ViewSets
 
-class LocationLogViewSet(viewsets.ModelViewSet):
+class LocationLogViewSet(TenantIsolatedViewSet):
     """ViewSet for managing location logs"""
     queryset = LocationLog.objects.all()
     serializer_class = LocationLogSerializer
     
     def get_queryset(self):
-        queryset = LocationLog.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[LocationLogViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1246,13 +1327,19 @@ class LocationLogViewSet(viewsets.ModelViewSet):
             ).update(is_active=False)
 
 
-class EmployeeLocationConsentViewSet(viewsets.ModelViewSet):
+class EmployeeLocationConsentViewSet(TenantIsolatedViewSet):
     """ViewSet for managing employee location consent"""
     queryset = EmployeeLocationConsent.objects.all()
     serializer_class = EmployeeLocationConsentSerializer
     
     def get_queryset(self):
-        queryset = EmployeeLocationConsent.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[EmployeeLocationConsentViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1287,13 +1374,19 @@ class EmployeeLocationConsentViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
 
 
-class LocationCheckInViewSet(viewsets.ModelViewSet):
+class LocationCheckInViewSet(TenantIsolatedViewSet):
     """ViewSet for managing active location check-ins"""
     queryset = LocationCheckIn.objects.all()
     serializer_class = LocationCheckInSerializer
     
     def get_queryset(self):
-        queryset = LocationCheckIn.objects.all()
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[LocationCheckInViewSet] Tenant filtering applied for tenant: {tenant_id}")
         
         # Filter by employee
         employee_id = self.request.query_params.get('employee_id', None)
@@ -1329,6 +1422,31 @@ class LocationCheckInViewSet(viewsets.ModelViewSet):
         
         serializer = LocationCheckInSerializer(active_checkins, many=True)
         return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def test_geofence_creation(request):
+    """Simple test endpoint for geofence creation"""
+    logger.info(f"[test_geofence_creation] Called by {request.user.email}")
+    logger.info(f"[test_geofence_creation] Request data: {request.data}")
+    logger.info(f"[test_geofence_creation] Request headers: {request.headers}")
+    
+    try:
+        # Just return success for now
+        return Response({
+            'status': 'success',
+            'message': 'Test endpoint working',
+            'user': request.user.email,
+            'business_id': str(request.user.business_id),
+            'data_received': request.data
+        })
+    except Exception as e:
+        logger.error(f"[test_geofence_creation] Error: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
 
 
 @api_view(['POST'])
@@ -1479,7 +1597,7 @@ def clock_out_with_location(request):
 
 # Geofencing ViewSets
 
-class GeofenceViewSet(viewsets.ModelViewSet):
+class GeofenceViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing geofences
     """
@@ -1491,38 +1609,112 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] === LIST REQUEST START ===")
         logger.info(f"[GeofenceViewSet] User: {request.user.email}")
         logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
+        logger.info(f"[GeofenceViewSet] Request path: {request.path}")
         
-        # Debug: Check all geofences in database
-        all_geofences = Geofence.objects.all()
-        logger.info(f"[GeofenceViewSet] Total geofences in DB: {all_geofences.count()}")
-        for g in all_geofences[:5]:  # Log first 5
-            logger.info(f"[GeofenceViewSet] Geofence: ID={g.id}, Name={g.name}, Business={g.business_id}, Active={g.is_active}")
-        
-        # Debug: Check filtered geofences
-        filtered_geofences = self.get_queryset()
-        logger.info(f"[GeofenceViewSet] Filtered geofences for business {request.user.business_id}: {filtered_geofences.count()}")
-        
-        response = super().list(request, *args, **kwargs)
-        
-        logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
-        logger.info(f"[GeofenceViewSet] Response data: {response.data}")
-        logger.info(f"[GeofenceViewSet] === LIST REQUEST END ===")
-        
-        return response
+        try:
+            # Debug: Check all geofences in database
+            all_geofences = Geofence.objects.all()
+            logger.info(f"[GeofenceViewSet] Total geofences in DB: {all_geofences.count()}")
+            
+            # Log ALL geofences to see what's in DB
+            for i, g in enumerate(all_geofences):
+                logger.info(f"[GeofenceViewSet] Geofence [{i}]: ID={g.id}, Name={g.name}, Business={g.business_id}, Active={g.is_active}, Created={g.created_at}")
+            
+            # Debug: Check filtered geofences
+            filtered_geofences = self.get_queryset()
+            logger.info(f"[GeofenceViewSet] Filtered geofences for business {request.user.business_id}: {filtered_geofences.count()}")
+            
+            # Log filtered results
+            for i, g in enumerate(filtered_geofences):
+                logger.info(f"[GeofenceViewSet] Filtered [{i}]: ID={g.id}, Name={g.name}")
+            
+            response = super().list(request, *args, **kwargs)
+            
+            logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
+            logger.info(f"[GeofenceViewSet] Response data: {response.data}")
+            
+            # If it's paginated, check the results
+            if isinstance(response.data, dict) and 'results' in response.data:
+                logger.info(f"[GeofenceViewSet] Paginated results count: {len(response.data['results'])}")
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in list: {str(e)}")
+            logger.error(f"[GeofenceViewSet] Error type: {type(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': str(e), 'type': str(type(e))},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        finally:
+            logger.info(f"[GeofenceViewSet] === LIST REQUEST END ===")
     
     def create(self, request, *args, **kwargs):
         logger.info(f"[GeofenceViewSet] === CREATE REQUEST START ===")
         logger.info(f"[GeofenceViewSet] User: {request.user.email}")
         logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
         logger.info(f"[GeofenceViewSet] Request data: {request.data}")
+        logger.info(f"[GeofenceViewSet] Request method: {request.method}")
+        logger.info(f"[GeofenceViewSet] Request path: {request.path}")
         
-        response = super().create(request, *args, **kwargs)
-        
-        logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
-        logger.info(f"[GeofenceViewSet] Response data: {response.data}")
-        logger.info(f"[GeofenceViewSet] === CREATE REQUEST END ===")
-        
-        return response
+        try:
+            # Create a mutable copy of request data
+            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+            logger.info(f"[GeofenceViewSet] Data copy created: {data}")
+            
+            # Log each field
+            logger.info(f"[GeofenceViewSet] Field values:")
+            for field, value in data.items():
+                logger.info(f"  - {field}: {value} (type: {type(value)})")
+            
+            # Get the serializer
+            serializer = self.get_serializer(data=data)
+            logger.info(f"[GeofenceViewSet] Serializer created with class: {serializer.__class__.__name__}")
+            
+            # Validate
+            is_valid = serializer.is_valid()
+            logger.info(f"[GeofenceViewSet] Serializer is_valid: {is_valid}")
+            
+            if not is_valid:
+                logger.error(f"[GeofenceViewSet] Validation errors: {serializer.errors}")
+                # Log each error in detail
+                for field, errors in serializer.errors.items():
+                    logger.error(f"[GeofenceViewSet] Field '{field}' errors: {errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+            logger.info(f"[GeofenceViewSet] Validated data: {serializer.validated_data}")
+            
+            # Perform create
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            
+            logger.info(f"[GeofenceViewSet] Create successful, returning data: {serializer.data}")
+            
+            # Verify it was saved
+            created_id = serializer.data.get('id')
+            if created_id:
+                try:
+                    verify = Geofence.objects.get(id=created_id)
+                    logger.info(f"[GeofenceViewSet] Verified geofence exists: ID={verify.id}, Name={verify.name}, Business={verify.business_id}")
+                except Geofence.DoesNotExist:
+                    logger.error(f"[GeofenceViewSet] ERROR: Geofence with ID {created_id} not found after creation!")
+                    
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in create: {str(e)}")
+            logger.error(f"[GeofenceViewSet] Error type: {type(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            
+            return Response(
+                {'error': str(e), 'type': str(type(e))},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        finally:
+            logger.info(f"[GeofenceViewSet] === CREATE REQUEST END ===")
     
     def get_queryset(self):
         # Filter by business_id for multi-tenant isolation
@@ -1531,13 +1723,21 @@ class GeofenceViewSet(viewsets.ModelViewSet):
             logger.info(f"[GeofenceViewSet] User email: {self.request.user.email}")
             logger.info(f"[GeofenceViewSet] Request method: {self.request.method}")
             
+            # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+            queryset = super().get_queryset()
+            
+            # Log the tenant filtering
+            tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                       getattr(self.request.user, 'business_id', None)
+            logger.info(f"[GeofenceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+            
             # Check if user has business_id
             if not self.request.user.business_id:
                 logger.error(f"[GeofenceViewSet] User {self.request.user.email} has no business_id!")
                 return Geofence.objects.none()
             
-            queryset = self.queryset.filter(
-                business_id=self.request.user.business_id,
+            # Apply additional filters
+            queryset = queryset.filter(
                 is_active=True
             ).annotate(
                 assigned_employees_count=Count('assigned_employees')
@@ -1556,7 +1756,9 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         logger.info(f"[GeofenceViewSet] Performing create with data: {serializer.validated_data}")
         logger.info(f"[GeofenceViewSet] Request user business_id: {self.request.user.business_id}")
+        logger.info(f"[GeofenceViewSet] Request user email: {self.request.user.email}")
         
+        # Save with the current user as created_by
         instance = serializer.save(
             business_id=self.request.user.business_id,
             created_by=self.request.user
@@ -1566,23 +1768,159 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] Created geofence business_id: {instance.business_id}")
         logger.info(f"[GeofenceViewSet] Created geofence name: {instance.name}")
         logger.info(f"[GeofenceViewSet] Created geofence is_active: {instance.is_active}")
+        logger.info(f"[GeofenceViewSet] Created by: {instance.created_by if instance.created_by else 'None'}")
         
+    @action(detail=False, methods=['post'])
+    def test_create_and_list(self, request):
+        """Test endpoint to create a geofence and immediately list it"""
+        import time
+        from django.db import transaction as db_transaction
+        
+        logger.info(f"[GeofenceViewSet] test_create_and_list called by {request.user.email}")
+        logger.info(f"[GeofenceViewSet] User business_id: {request.user.business_id}")
+        
+        test_name = f"Test Geofence {int(time.time())}"
+        
+        try:
+            # Create a test geofence
+            with db_transaction.atomic():
+                geofence = Geofence.objects.create(
+                    name=test_name,
+                    business_id=request.user.business_id,
+                    created_by=request.user,
+                    location_type='OFFICE',
+                    shape_type='CIRCLE',
+                    center_latitude=Decimal('40.7128'),
+                    center_longitude=Decimal('-74.0060'),
+                    radius_meters=100,
+                    is_active=True
+                )
+                logger.info(f"[GeofenceViewSet] Created test geofence: {geofence.id}")
+            
+            # Immediately query for it
+            found_by_id = Geofence.objects.filter(id=geofence.id).exists()
+            found_by_name = Geofence.objects.filter(name=test_name).exists()
+            found_by_business = Geofence.objects.filter(business_id=request.user.business_id, name=test_name).exists()
+            found_by_active = Geofence.objects.filter(business_id=request.user.business_id, is_active=True, name=test_name).exists()
+            
+            # Try the exact query used in get_queryset
+            queryset_result = self.get_queryset().filter(name=test_name).exists()
+            
+            result = {
+                'created_geofence': {
+                    'id': str(geofence.id),
+                    'name': geofence.name,
+                    'business_id': str(geofence.business_id),
+                    'is_active': geofence.is_active
+                },
+                'found_by_id': found_by_id,
+                'found_by_name': found_by_name,
+                'found_by_business': found_by_business,
+                'found_by_active': found_by_active,
+                'found_in_viewset_queryset': queryset_result,
+                'total_count_after_create': Geofence.objects.count(),
+                'business_count_after_create': Geofence.objects.filter(business_id=request.user.business_id).count(),
+                'active_business_count': Geofence.objects.filter(business_id=request.user.business_id, is_active=True).count()
+            }
+            
+            logger.info(f"[GeofenceViewSet] Test results: {result}")
+            
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in test_create_and_list: {str(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            return Response({'error': str(e)}, status=500)
+    
+    @action(detail=False, methods=['post']) 
+    def debug_create(self, request):
+        """Debug endpoint to test creation flow"""
+        logger.info(f"[GeofenceViewSet] debug_create called")
+        logger.info(f"[GeofenceViewSet] Request data: {request.data}")
+        logger.info(f"[GeofenceViewSet] User: {request.user.email}")
+        logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
+        
+        # Just validate the data without saving
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            logger.info(f"[GeofenceViewSet] Data is valid: {serializer.validated_data}")
+            return Response({
+                'status': 'valid',
+                'validated_data': serializer.validated_data,
+                'user_business_id': str(request.user.business_id)
+            })
+        else:
+            logger.error(f"[GeofenceViewSet] Validation errors: {serializer.errors}")
+            return Response({
+                'status': 'invalid',
+                'errors': serializer.errors
+            }, status=400)
+    
     @action(detail=False, methods=['get'])
     def debug_list(self, request):
         """Debug endpoint to check all geofences"""
         try:
             logger.info(f"[GeofenceViewSet] debug_list called by {request.user.email}")
+            logger.info(f"[GeofenceViewSet] debug_list user business_id: {request.user.business_id}")
             
-            all_geofences = Geofence.objects.all().values('id', 'name', 'business_id', 'is_active', 'created_at')
-            user_geofences = Geofence.objects.filter(business_id=request.user.business_id).values('id', 'name', 'business_id', 'is_active', 'created_at')
+            # Get all geofences with more details
+            all_geofences = Geofence.objects.all().values(
+                'id', 'name', 'business_id', 'is_active', 'created_at',
+                'center_latitude', 'center_longitude', 'radius_meters'
+            )
             
-            return Response({
+            # Get user's geofences
+            user_geofences = Geofence.objects.filter(
+                business_id=request.user.business_id
+            ).values(
+                'id', 'name', 'business_id', 'is_active', 'created_at',
+                'center_latitude', 'center_longitude', 'radius_meters'
+            )
+            
+            # Also check with is_active filter
+            active_user_geofences = Geofence.objects.filter(
+                business_id=request.user.business_id,
+                is_active=True
+            ).values('id', 'name')
+            
+            # Check for any database issues
+            from django.db import connection
+            cursor = connection.cursor()
+            cursor.execute("SELECT COUNT(*) FROM hr_geofence")
+            raw_count = cursor.fetchone()[0]
+            
+            # Check specific geofence by name if provided
+            geofence_name = request.query_params.get('name', None)
+            specific_geofence = None
+            if geofence_name:
+                try:
+                    specific_geofence = Geofence.objects.get(name=geofence_name)
+                    logger.info(f"[GeofenceViewSet] Found geofence with name '{geofence_name}': {specific_geofence.id}")
+                except Geofence.DoesNotExist:
+                    logger.info(f"[GeofenceViewSet] No geofence found with name '{geofence_name}'")
+            
+            result = {
                 'user_business_id': str(request.user.business_id),
                 'total_geofences_in_db': Geofence.objects.count(),
+                'raw_table_count': raw_count,
                 'user_geofences_count': user_geofences.count(),
-                'all_geofences': list(all_geofences[:10]),  # First 10
-                'user_geofences': list(user_geofences)
-            })
+                'active_user_geofences_count': active_user_geofences.count(),
+                'specific_geofence': {
+                    'id': str(specific_geofence.id),
+                    'name': specific_geofence.name,
+                    'business_id': str(specific_geofence.business_id),
+                    'is_active': specific_geofence.is_active,
+                    'created_by': specific_geofence.created_by.email if specific_geofence.created_by else None
+                } if specific_geofence else None,
+                'all_geofences': list(all_geofences),
+                'user_geofences': list(user_geofences),
+                'active_user_geofences': list(active_user_geofences)
+            }
+            
+            logger.info(f"[GeofenceViewSet] debug_list result: {result}")
+            
+            return Response(result)
         except Exception as e:
             logger.error(f"[GeofenceViewSet] Error in debug_list: {str(e)}")
             import traceback
@@ -1595,47 +1933,88 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def assign_employees(self, request, pk=None):
         """Assign multiple employees to a geofence"""
-        geofence = self.get_object()
-        employee_ids = request.data.get('employee_ids', [])
+        logger.info(f"🎯 [assign_employees] === START ===")
+        logger.info(f"🎯 [assign_employees] User: {request.user.email}")
+        logger.info(f"🎯 [assign_employees] Business ID: {request.user.business_id}")
+        logger.info(f"🎯 [assign_employees] Geofence ID: {pk}")
+        logger.info(f"🎯 [assign_employees] Request data: {request.data}")
         
-        if not employee_ids:
+        geofence = self.get_object()
+        logger.info(f"🎯 [assign_employees] Geofence found: {geofence.name} (ID: {geofence.id})")
+        
+        employee_ids = request.data.get('employee_ids', [])
+        logger.info(f"🎯 [assign_employees] Employee IDs to assign: {employee_ids}")
+        
+        if not isinstance(employee_ids, list):
+            logger.error(f"🎯 [assign_employees] employee_ids is not a list: {type(employee_ids)}")
             return Response(
-                {'error': 'No employee IDs provided'},
+                {'error': 'employee_ids must be a list'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # First, remove all existing assignments for this geofence
+        existing = EmployeeGeofence.objects.filter(
+            geofence=geofence,
+            business_id=request.user.business_id
+        )
+        existing_count = existing.count()
+        logger.info(f"🎯 [assign_employees] Removing {existing_count} existing assignments")
+        existing.delete()
         
         created = []
         errors = []
         
+        # Now create new assignments
         for employee_id in employee_ids:
             try:
+                logger.info(f"🎯 [assign_employees] Processing employee ID: {employee_id}")
+                
                 employee = Employee.objects.get(
                     id=employee_id,
                     business_id=request.user.business_id
                 )
+                logger.info(f"🎯 [assign_employees] Found employee: {employee.first_name} {employee.last_name}")
                 
-                employee_geofence, was_created = EmployeeGeofence.objects.get_or_create(
+                employee_geofence = EmployeeGeofence.objects.create(
                     employee=employee,
                     geofence=geofence,
-                    defaults={
-                        'business_id': request.user.business_id,
-                        'assigned_by': request.user
-                    }
+                    business_id=request.user.business_id,
+                    assigned_by=request.user
                 )
                 
-                if was_created:
-                    created.append(EmployeeGeofenceSerializer(employee_geofence).data)
+                logger.info(f"🎯 [assign_employees] Created assignment: {employee_geofence.id}")
+                created.append(EmployeeGeofenceSerializer(employee_geofence).data)
                 
             except Employee.DoesNotExist:
-                errors.append(f"Employee {employee_id} not found")
+                error_msg = f"Employee {employee_id} not found"
+                logger.error(f"🎯 [assign_employees] {error_msg}")
+                errors.append(error_msg)
             except Exception as e:
-                errors.append(f"Error assigning employee {employee_id}: {str(e)}")
+                error_msg = f"Error assigning employee {employee_id}: {str(e)}"
+                logger.error(f"🎯 [assign_employees] {error_msg}")
+                logger.error(f"🎯 [assign_employees] Exception type: {type(e)}")
+                import traceback
+                logger.error(f"🎯 [assign_employees] Traceback: {traceback.format_exc()}")
+                errors.append(error_msg)
         
-        return Response({
+        # Verify assignments were saved
+        final_count = EmployeeGeofence.objects.filter(
+            geofence=geofence,
+            business_id=request.user.business_id
+        ).count()
+        logger.info(f"🎯 [assign_employees] Final assignment count: {final_count}")
+        
+        result = {
             'created': created,
             'errors': errors,
-            'total_assigned': len(created)
-        })
+            'total_assigned': len(created),
+            'final_count': final_count
+        }
+        
+        logger.info(f"🎯 [assign_employees] Result: {result}")
+        logger.info(f"🎯 [assign_employees] === END ===")
+        
+        return Response(result)
     
     @action(detail=True, methods=['get'])
     def events(self, request, pk=None):
@@ -1734,7 +2113,7 @@ class GeofenceViewSet(viewsets.ModelViewSet):
             )
 
 
-class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
+class EmployeeGeofenceViewSet(TenantIsolatedViewSet):
     """
     ViewSet for managing employee-geofence assignments
     """
@@ -1743,19 +2122,39 @@ class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        # Filter by business_id for multi-tenant isolation
-        queryset = self.queryset.filter(
-            business_id=self.request.user.business_id
-        ).select_related('employee', 'geofence', 'assigned_by')
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] get_queryset called")
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] User: {self.request.user.email}")
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Business ID: {self.request.user.business_id}")
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Query params: {self.request.query_params}")
+        
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters
+        queryset = queryset.select_related('employee', 'geofence', 'assigned_by')
         
         # Optional filters
         employee_id = self.request.query_params.get('employee_id')
         if employee_id:
+            logger.info(f"🎯 [EmployeeGeofenceViewSet] Filtering by employee_id: {employee_id}")
             queryset = queryset.filter(employee_id=employee_id)
         
         geofence_id = self.request.query_params.get('geofence_id')
         if geofence_id:
+            logger.info(f"🎯 [EmployeeGeofenceViewSet] Filtering by geofence_id: {geofence_id}")
             queryset = queryset.filter(geofence_id=geofence_id)
+            
+        count = queryset.count()
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Returning {count} assignments")
+        
+        # Log first few results for debugging
+        for i, assignment in enumerate(queryset[:3]):
+            logger.info(f"🎯 [EmployeeGeofenceViewSet] Assignment {i}: Employee={assignment.employee.id}, Geofence={assignment.geofence.id}")
         
         return queryset
     
@@ -1766,7 +2165,7 @@ class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
         )
 
 
-class GeofenceEventViewSet(viewsets.ReadOnlyModelViewSet):
+class GeofenceEventViewSet(TenantIsolatedViewSet):
     """
     ViewSet for viewing geofence events (read-only)
     """
@@ -1775,10 +2174,16 @@ class GeofenceEventViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        # Filter by business_id for multi-tenant isolation
-        queryset = self.queryset.filter(
-            business_id=self.request.user.business_id
-        ).select_related('employee', 'geofence', 'location_log')
+        # CRITICAL: Call parent's get_queryset() which applies tenant filtering
+        queryset = super().get_queryset()
+        
+        # Log the tenant filtering
+        tenant_id = getattr(self.request.user, 'tenant_id', None) or \
+                   getattr(self.request.user, 'business_id', None)
+        logger.info(f"[GeofenceEventViewSet] Tenant filtering applied for tenant: {tenant_id}")
+        
+        # Apply additional filters
+        queryset = queryset.select_related('employee', 'geofence', 'location_log')
         
         # Optional filters
         employee_id = self.request.query_params.get('employee_id')

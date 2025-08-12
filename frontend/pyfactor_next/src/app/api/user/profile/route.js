@@ -102,6 +102,11 @@ export async function GET(request) {
             registrationNumber: businessInfo.registrationNumber || '',
             yearEstablished: businessInfo.yearEstablished || '',
             address: businessInfo.address || {},
+            // Add business location from session data (new architecture)
+            // Don't default to US - let the actual country come through
+            country: sessionData.business_country || sessionData.country || businessInfo.country || '',
+            state: sessionData.business_state || sessionData.state || businessInfo.state || '',
+            county: sessionData.business_county || sessionData.county || businessInfo.county || '',
             subscriptionPlan: sessionData.subscription_plan || 'free',
             needsOnboarding: sessionData.needs_onboarding || false,
             onboardingCompleted: sessionData.onboarding_completed || true,

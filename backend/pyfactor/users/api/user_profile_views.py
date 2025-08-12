@@ -16,6 +16,7 @@ from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from core.authentication.session_token_auth import SessionTokenAuthentication
 from users.models import UserProfile
 from onboarding.models import OnboardingProgress
+from core.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,13 @@ class UserProfileMeView(APIView):
         try:
             logger.info(f"[UserProfileMeView] Getting profile for user: {request.user.email}")
             
+            # Check cache first
+            cached_profile = cache_service.get_user_profile(request.user.id)
+            if cached_profile:
+                logger.info(f"[UserProfileMeView] Returning cached profile")
+                cached_profile['request_id'] = request_id  # Add fresh request ID
+                return Response(cached_profile, status=status.HTTP_200_OK)
+            
             # Get user profile
             try:
                 profile = UserProfile.objects.get(user=request.user)
@@ -49,7 +57,7 @@ class UserProfileMeView(APIView):
             except UserProfile.DoesNotExist:
                 logger.warning(f"[UserProfileMeView] No user profile found for user {request.user.id}")
                 # Create basic response with user data only
-                return Response({
+                response_data = {
                     'id': request.user.id,
                     'email': request.user.email,
                     'first_name': request.user.first_name,
@@ -58,24 +66,27 @@ class UserProfileMeView(APIView):
                     'selected_plan': 'free',
                     'subscription_type': 'free',
                     'request_id': request_id
-                }, status=status.HTTP_200_OK)
+                }
+                return Response(response_data, status=status.HTTP_200_OK)
             
-            # Get onboarding progress to get subscription plan
+            # Get subscription plan from users_subscription table (SINGLE SOURCE OF TRUTH)
             subscription_plan = 'free'
             selected_plan = 'free'
+            
             try:
-                # Try to get onboarding progress for subscription info
-                if profile.tenant_id:
-                    from custom_auth.rls import set_tenant_context
-                    set_tenant_context(str(profile.tenant_id))
+                # Use centralized subscription service (SINGLE SOURCE OF TRUTH)
+                from users.subscription_service import SubscriptionService
                 
-                progress = OnboardingProgress.objects.filter(user=request.user).first()
-                if progress:
-                    subscription_plan = progress.subscription_plan or progress.selected_plan or 'free'
-                    selected_plan = progress.selected_plan or progress.subscription_plan or 'free'
-                    logger.info(f"[UserProfileMeView] Found subscription plan from onboarding: {subscription_plan}")
+                subscription_plan = SubscriptionService.get_subscription_plan(str(profile.tenant_id))
+                selected_plan = subscription_plan
+                
+                logger.info(f"[UserProfileMeView] Subscription service returned: {subscription_plan}")
+                        
             except Exception as e:
-                logger.warning(f"[UserProfileMeView] Could not get onboarding subscription info: {str(e)}")
+                logger.warning(f"[UserProfileMeView] Error getting subscription info: {str(e)}")
+                # Default to free if there are any errors
+                subscription_plan = 'free'
+                selected_plan = 'free'
             
             # Get user's role and page permissions
             user_role = getattr(request.user, 'role', 'USER')
@@ -115,7 +126,7 @@ class UserProfileMeView(APIView):
                 user_access = UserPageAccess.objects.filter(
                     user=request.user,
                     tenant=request.user.tenant
-                ).select_related('page')
+                ).select_related('page').prefetch_related('page__children')
                 for access in user_access:
                     page_permissions.append({
                         'path': access.page.path,
@@ -127,7 +138,34 @@ class UserProfileMeView(APIView):
                         'can_delete': access.can_delete
                     })
             
+            # Get employee data if user has an employee record
+            employee_data = None
+            try:
+                from hr.models import Employee
+                employee = Employee.objects.filter(user=request.user).first()
+                if employee:
+                    employee_data = {
+                        'id': str(employee.id),
+                        'employee_number': employee.employee_number,
+                        'first_name': employee.first_name,
+                        'last_name': employee.last_name,
+                        'job_title': employee.job_title,
+                        'department': employee.department,
+                        'hire_date': employee.hire_date.isoformat() if employee.hire_date else None,
+                        'employee_type': employee.employee_type,
+                        'can_approve_timesheets': employee.can_approve_timesheets,
+                        'exempt_status': employee.exempt_status,
+                        'hourly_rate': float(employee.hourly_rate) if employee.hourly_rate else 0,
+                        'salary': float(employee.salary) if employee.salary else 0,
+                    }
+                    logger.info(f"[UserProfileMeView] Found employee record for user: {employee.id}")
+            except Exception as e:
+                logger.warning(f"[UserProfileMeView] Could not get employee data: {str(e)}")
+            
             # Build response data
+            user_country = str(profile.country) if profile.country else 'US'
+            logger.info(f"[UserProfileMeView] Profile country: {profile.country}, Returning: {user_country}")
+            
             response_data = {
                 'id': request.user.id,
                 'email': request.user.email,
@@ -141,11 +179,13 @@ class UserProfileMeView(APIView):
                 'is_business_owner': profile.is_business_owner,
                 'tenant_id': str(profile.tenant_id) if profile.tenant_id else None,
                 'business_id': str(profile.business_id) if profile.business_id else None,
-                'country': str(profile.country) if profile.country else 'US',
+                'country': user_country,
                 'phone_number': profile.phone_number,
                 'occupation': profile.occupation,
                 'show_whatsapp_commerce': profile.get_whatsapp_commerce_preference(),
                 'whatsapp_commerce_explicit': profile.show_whatsapp_commerce,  # Explicit user setting (null if using default)
+                'display_legal_structure': profile.display_legal_structure,
+                'employee': employee_data,  # Add employee data
                 'request_id': request_id
             }
             
@@ -155,9 +195,15 @@ class UserProfileMeView(APIView):
                 response_data.update({
                     'business_name': business.name,
                     'business_type': business.business_type,
+                    'legal_structure': getattr(business, 'legal_structure', ''),
                 })
             
             logger.info(f"[UserProfileMeView] Returning profile data with subscription_plan: {subscription_plan}")
+            
+            # Cache the profile data (excluding request_id for caching)
+            cache_data = response_data.copy()
+            cache_data.pop('request_id', None)
+            cache_service.set_user_profile(request.user.id, cache_data)
             
             return Response(response_data, status=status.HTTP_200_OK)
             
@@ -195,6 +241,9 @@ class UserProfileMeView(APIView):
                     'request_id': request_id
                 }, status=status.HTTP_404_NOT_FOUND)
             
+            # Track if any updates were made
+            updated = False
+            
             # Update WhatsApp commerce preference if provided
             if 'show_whatsapp_commerce' in request.data:
                 whatsapp_preference = request.data['show_whatsapp_commerce']
@@ -210,8 +259,27 @@ class UserProfileMeView(APIView):
                         'request_id': request_id
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
-                profile.save()
+                updated = True
                 logger.info(f"[UserProfileMeView] Updated WhatsApp preference to: {profile.show_whatsapp_commerce}")
+            
+            # Update legal structure display preference if provided
+            if 'display_legal_structure' in request.data:
+                display_preference = request.data['display_legal_structure']
+                
+                if isinstance(display_preference, bool):
+                    profile.display_legal_structure = display_preference
+                else:
+                    return Response({
+                        'error': 'display_legal_structure must be a boolean',
+                        'request_id': request_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                updated = True
+                logger.info(f"[UserProfileMeView] Updated legal structure display preference to: {profile.display_legal_structure}")
+            
+            # Save profile if any updates were made
+            if updated:
+                profile.save()
             
             # Return updated profile data (reuse the GET logic)
             return self.get(request)

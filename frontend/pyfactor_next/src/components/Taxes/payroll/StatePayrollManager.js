@@ -383,7 +383,7 @@ const StatePayrollManager = () => {
 
       {/* Withholding Calculator Modal */}
       {showWithholdingCalc && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">

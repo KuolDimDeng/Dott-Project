@@ -8,7 +8,7 @@ Usage:
 """
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from datetime import timedelta
 import logging
@@ -123,7 +123,7 @@ class Command(BaseCommand):
                 
                 if not dry_run:
                     # Update session
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         UserSession.objects.filter(pk=session.pk).update(
                             needs_onboarding=needs_onboarding,
                             onboarding_completed=onboarding_completed,

@@ -1,9 +1,9 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from django.db import connection, transaction, models
+from django.db import connection, transaction as db_transaction, models
 from django.db.models import Q, F, Case, When, Sum, Count, Avg
 from django.utils.decorators import method_decorator
 from functools import wraps
@@ -98,6 +98,11 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         """
         params = self.request.query_params
         
+        # Filter by active status (default to active only unless specified)
+        show_inactive = params.get('show_inactive', 'false').lower() == 'true'
+        if not show_inactive:
+            queryset = queryset.filter(is_active=True)
+        
         # Apply filters based on parameters
         if params.get('is_for_sale') is not None:
             is_for_sale = params.get('is_for_sale').lower() == 'true'
@@ -131,7 +136,7 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         start_time = time.time()
         
         # Use a transaction with a timeout to prevent long-running queries
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
@@ -180,6 +185,56 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         Override destroy method to add better error handling
         """
         return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """
+        Toggle the active status of a product
+        """
+        product = self.get_object()
+        product.is_active = not product.is_active
+        product.save(update_fields=['is_active', 'updated_at'])
+        
+        action_text = "activated" if product.is_active else "deactivated"
+        
+        return Response({
+            'success': True,
+            'message': f'Product {action_text} successfully',
+            'is_active': product.is_active,
+            'product': ProductSerializer(product).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """
+        Activate a product
+        """
+        product = self.get_object()
+        product.is_active = True
+        product.save(update_fields=['is_active', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Product activated successfully',
+            'is_active': product.is_active,
+            'product': ProductSerializer(product).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        """
+        Deactivate a product
+        """
+        product = self.get_object()
+        product.is_active = False
+        product.save(update_fields=['is_active', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Product deactivated successfully',
+            'is_active': product.is_active,
+            'product': ProductSerializer(product).data
+        })
 
 class SmallPagination(PageNumberPagination):
     page_size = 20
@@ -393,7 +448,7 @@ def products_with_department(request):
     schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Set timeout for the transaction
         with connection.cursor() as cursor:
             cursor.execute('SET LOCAL statement_timeout = 8000')  # 8 seconds
@@ -455,7 +510,7 @@ def product_stats(request):
     schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Set timeout for the transaction
         with connection.cursor() as cursor:
             cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
@@ -483,7 +538,7 @@ def product_by_code(request, code):
     schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Set timeout for the transaction
         with connection.cursor() as cursor:
             cursor.execute('SET LOCAL statement_timeout = 5000')  # 5 seconds
@@ -505,3 +560,114 @@ def product_by_code(request, code):
                 {"error": "Product not found", "detail": f"No product found with code {code}"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_location_migration_status(request):
+    """
+    Check if the location structured address migration has been applied
+    """
+    from .models import Location
+    from django.core.exceptions import FieldDoesNotExist
+    
+    try:
+        # Check database columns
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns 
+                WHERE table_name = 'inventory_location'
+                AND column_name IN ('street_address', 'street_address_2', 'city', 
+                                  'state_province', 'postal_code', 'country', 
+                                  'latitude', 'longitude')
+                ORDER BY column_name;
+            """)
+            
+            db_columns = cursor.fetchall()
+            
+            # Check Django migration status
+            cursor.execute("""
+                SELECT name, applied 
+                FROM django_migrations 
+                WHERE app = 'inventory' 
+                AND name = '0010_add_structured_address_to_location'
+                LIMIT 1;
+            """)
+            
+            migration_record = cursor.fetchone()
+        
+        # Check model fields
+        new_fields = [
+            'street_address', 'street_address_2', 'city', 
+            'state_province', 'postal_code', 'country',
+            'latitude', 'longitude'
+        ]
+        
+        model_fields = {}
+        for field_name in new_fields:
+            try:
+                field = Location._meta.get_field(field_name)
+                model_fields[field_name] = field.__class__.__name__
+            except FieldDoesNotExist:
+                model_fields[field_name] = "NOT_FOUND"
+        
+        # Test location creation
+        try:
+            test_location = Location(
+                name="Test Location",
+                street_address="123 Test St",
+                city="Test City",
+                state_province="Test State",
+                postal_code="12345",
+                country="US"
+            )
+            test_location.full_clean()  # Validate without saving
+            location_test_passed = True
+            test_error = None
+        except Exception as e:
+            location_test_passed = False
+            test_error = str(e)
+        
+        # Compile results
+        db_field_names = [col[0] for col in db_columns]
+        missing_db_fields = [field for field in new_fields if field not in db_field_names]
+        
+        migration_applied = migration_record[1] if migration_record else False
+        
+        missing_model_fields = [field for field, type_name in model_fields.items() 
+                               if type_name == "NOT_FOUND"]
+        
+        status_ok = (
+            len(missing_db_fields) == 0 and 
+            migration_applied and 
+            len(missing_model_fields) == 0 and 
+            location_test_passed
+        )
+        
+        return Response({
+            "status": "ok" if status_ok else "issues_detected",
+            "migration_applied": migration_applied,
+            "database_fields": {
+                "existing": db_field_names,
+                "missing": missing_db_fields,
+                "total_expected": len(new_fields)
+            },
+            "model_fields": model_fields,
+            "location_test": {
+                "passed": location_test_passed,
+                "error": test_error
+            },
+            "recommendations": [] if status_ok else [
+                "Run migration: python manage.py migrate inventory 0010" if missing_db_fields or not migration_applied else None,
+                "Check model file updates" if missing_model_fields else None,
+                "Restart Django application" if not status_ok else None
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking location migration status: {str(e)}", exc_info=True)
+        return Response({
+            "status": "error",
+            "error": str(e),
+            "detail": "Failed to check migration status"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

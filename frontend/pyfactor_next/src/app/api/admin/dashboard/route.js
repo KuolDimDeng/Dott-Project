@@ -14,7 +14,7 @@ export async function GET(request) {
 
     // Forward the request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${backendUrl}/api/notifications/admin/dashboard/`, {
+    const response = await fetch(`${backendUrl}/api/notifications/admin/dashboard`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

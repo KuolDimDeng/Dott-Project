@@ -17,20 +17,56 @@ export async function OPTIONS(request) {
 }
 
 export async function POST(request) {
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    headers: {},
+    env: {},
+    errors: []
+  };
+  
   try {
+    // Log all headers for debugging
+    const headers = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    debugInfo.headers = headers;
+    
+    // Log environment variables (sanitized)
+    debugInfo.env = {
+      hasApiUrl: !!process.env.NEXT_PUBLIC_API_URL,
+      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      hasAuth0Secret: !!process.env.AUTH0_SECRET,
+      hasAuth0ClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    };
+    
     const { email, password } = await request.json();
     const host = request.headers.get('host');
     
+    debugInfo.requestData = {
+      hasEmail: !!email,
+      hasPassword: !!password,
+      host
+    };
+    
     if (!email || !password) {
+      debugInfo.errors.push('Missing email or password');
+      console.error('[ConsolidatedLogin] Debug info:', debugInfo);
       return NextResponse.json({ 
-        error: 'Email and password are required' 
+        error: 'Email and password are required',
+        debug: debugInfo
       }, { status: 400 });
     }
     
-    console.log('[ConsolidatedLogin] Starting atomic login flow for:', email);
-    console.log('[ConsolidatedLogin] Environment:', {
+    console.log('🔄 [ConsolidatedLogin] ===== CONSOLIDATED LOGIN START =====');
+    console.log('🔄 [ConsolidatedLogin] Email:', email);
+    console.log('🔄 [ConsolidatedLogin] Password length:', password?.length);
+    console.log('🔄 [ConsolidatedLogin] Timestamp:', new Date().toISOString());
+    console.log('🔄 [ConsolidatedLogin] Environment:', {
       baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
       apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      auth0Domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
       hasAuth0ClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
       hasAuth0Secret: !!process.env.AUTH0_SECRET
     });
@@ -38,13 +74,24 @@ export async function POST(request) {
     // Step 1: Authenticate with Auth0
     // In production/staging, Next.js API routes are relative to the current domain
     const authUrl = '/api/auth/authenticate';
-    console.log('[ConsolidatedLogin] Auth endpoint:', authUrl);
+    console.log('🎯 [ConsolidatedLogin] Step 1: Calling Auth0 authenticate endpoint');
+    console.log('🎯 [ConsolidatedLogin] Auth endpoint:', authUrl);
     
     // When running in a server-side Next.js API route, we need the full URL
     const protocol = request.headers.get('x-forwarded-proto') || 'https';
     const fullAuthUrl = `${protocol}://${host}${authUrl}`;
-    console.log('[ConsolidatedLogin] Full auth URL:', fullAuthUrl);
+    console.log('🌐 [ConsolidatedLogin] Full auth URL:', fullAuthUrl);
+    console.log('🌐 [ConsolidatedLogin] Protocol:', protocol);
+    console.log('🌐 [ConsolidatedLogin] Host:', host);
     
+    debugInfo.authRequest = {
+      url: fullAuthUrl,
+      method: 'POST',
+      hasForwardedFor: !!request.headers.get('x-forwarded-for'),
+      hasCfIp: !!request.headers.get('cf-connecting-ip')
+    };
+    
+    console.log('📤 [ConsolidatedLogin] Making auth request...');
     const authResponse = await fetch(fullAuthUrl, {
       method: 'POST',
       headers: {
@@ -53,6 +100,15 @@ export async function POST(request) {
       },
       body: JSON.stringify({ email, password })
     });
+    console.log('📥 [ConsolidatedLogin] Auth response received');
+    console.log('📥 [ConsolidatedLogin] Auth status:', authResponse.status);
+    console.log('📥 [ConsolidatedLogin] Auth status text:', authResponse.statusText);
+    
+    debugInfo.authResponse = {
+      status: authResponse.status,
+      statusText: authResponse.statusText,
+      headers: Object.fromEntries(authResponse.headers)
+    };
     
     if (!authResponse.ok) {
       const errorText = await authResponse.text();
@@ -69,7 +125,13 @@ export async function POST(request) {
         error = { error: 'Authentication failed', message: errorText };
       }
       
-      return NextResponse.json(error, { status: authResponse.status });
+      debugInfo.errors.push(`Auth failed: ${authResponse.status}`);
+      debugInfo.authError = error;
+      console.error('[ConsolidatedLogin] Auth failure debug:', debugInfo);
+      return NextResponse.json({
+        ...error,
+        debug: debugInfo
+      }, { status: authResponse.status });
     }
     
     const authData = await authResponse.json();
@@ -91,7 +153,7 @@ export async function POST(request) {
       console.log('[ConsolidatedLogin] 🔴 SKIPPING consolidated-auth to avoid duplicate session creation');
       
       // Fetch the existing session details using public endpoint
-      const API_URL = host && host.includes('staging') ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
       console.log('[ConsolidatedLogin] Fetching existing session from public endpoint:', `${API_URL}/api/sessions/public/${authData.backend_session_id}/`);
       const sessionResponse = await fetch(`${API_URL}/api/sessions/public/${authData.backend_session_id}/`, {
         method: 'GET',
@@ -138,7 +200,7 @@ export async function POST(request) {
     
     // Step 3: Call consolidated backend endpoint only if no existing session
     // Determine API URL based on environment
-    const API_URL = host && host.includes('staging') ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     console.log('[ConsolidatedLogin] No existing backend session, creating new one...');
     console.log('[ConsolidatedLogin] Using API URL:', API_URL);
     console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
@@ -250,10 +312,14 @@ export async function POST(request) {
     return NextResponse.json(responseData);
     
   } catch (error) {
+    debugInfo.errors.push(`Unexpected error: ${error.message}`);
+    debugInfo.errorStack = error.stack;
     console.error('[ConsolidatedLogin] Unexpected error:', error);
+    console.error('[ConsolidatedLogin] Debug info:', debugInfo);
     return NextResponse.json({ 
       error: 'Login failed',
-      message: error.message 
+      message: error.message,
+      debug: debugInfo
     }, { status: 500 });
   }
 }

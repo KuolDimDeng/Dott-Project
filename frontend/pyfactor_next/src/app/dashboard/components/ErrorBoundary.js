@@ -30,9 +30,42 @@ class ErrorBoundary extends React.Component {
     
     this.setState({ errorInfo });
     
-    // Check for memory-related errors
     const errorString = error.toString();
+    
+    // Check for hydration errors (React Error #418)
     if (
+      errorString.includes('Hydration failed') ||
+      errorString.includes('hydration') ||
+      errorString.includes('Text content does not match') ||
+      error.digest?.includes('418')
+    ) {
+      console.warn('[ErrorBoundary] Detected hydration mismatch, clearing cache');
+      
+      // Clear cache to prevent hydration mismatches
+      try {
+        sessionStorage.removeItem('pendingSchemaSetup');
+        sessionStorage.removeItem('onboarding_status');
+        sessionStorage.removeItem('tenantId');
+        localStorage.removeItem('sidebar-collapsed');
+        
+        // Clear any appCache if available
+        if (window.__appCache) {
+          window.__appCache = {};
+        }
+      } catch (e) {
+        console.warn('Failed to clear storage:', e);
+      }
+      
+      // Auto-retry hydration errors once
+      if (this.state.retryCount === 0) {
+        setTimeout(() => {
+          this.handleRetry();
+        }, 100);
+      }
+    }
+    
+    // Check for memory-related errors
+    else if (
       errorString.includes('out of memory') ||
       errorString.includes('heap') ||
       errorString.includes('allocation failed')

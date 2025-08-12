@@ -14,7 +14,7 @@ Usage:
 import logging
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +37,7 @@ def soft_delete_user(email, reason='User requested account closure'):
     try:
         user = User.objects.get(email=email)
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Mark user as deleted
             user.is_deleted = True
             user.deleted_at = timezone.now()
@@ -115,7 +115,7 @@ def restore_user(email):
     try:
         user = User.objects.get(email=email, is_deleted=True)
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Restore user
             user.is_deleted = False
             user.deleted_at = None

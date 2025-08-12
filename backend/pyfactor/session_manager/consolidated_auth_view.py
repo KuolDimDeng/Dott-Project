@@ -9,7 +9,7 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.cache import cache
 
 from custom_auth.models import User
@@ -27,7 +27,7 @@ class ConsolidatedAuthView(View):
     Combines authentication, user sync, and session creation.
     """
     
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request):
         """Handle authentication and session creation atomically."""
         try:
@@ -262,11 +262,11 @@ class ConsolidatedAuthView(View):
                 profile = UserProfile.objects.get(user=user)
                 response_data['user']['show_whatsapp_commerce'] = profile.get_whatsapp_commerce_preference()
                 response_data['user']['whatsapp_commerce_explicit'] = profile.show_whatsapp_commerce
-                response_data['user']['country'] = str(profile.country) if profile.country else 'US'
+                response_data['user']['country'] = str(profile.country) if profile.country else None
             except Exception as e:
                 logger.debug(f"[ConsolidatedAuth] Could not fetch UserProfile data: {e}")
                 response_data['user']['show_whatsapp_commerce'] = False
-                response_data['user']['country'] = 'US'
+                response_data['user']['country'] = None
             
             # Add tenant info if available
             if tenant:

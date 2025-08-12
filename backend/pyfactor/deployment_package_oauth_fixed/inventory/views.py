@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,7 +27,7 @@ import logging
 # Get logger
 logger = logging.getLogger(__name__)
 
-class InventoryItemViewSet(viewsets.ModelViewSet):
+class InventoryItemViewSet(TenantIsolatedViewSet):
     serializer_class = InventoryItemSerializer
     permission_classes = [IsAuthenticated]
     
@@ -108,12 +109,12 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(TenantIsolatedViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
-class SupplierViewSet(viewsets.ModelViewSet):
+class SupplierViewSet(TenantIsolatedViewSet):
     serializer_class = SupplierSerializer
     permission_classes = [IsAuthenticated]
     queryset = Supplier.objects.all()
@@ -197,17 +198,17 @@ class SupplierViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-class LocationViewSet(viewsets.ModelViewSet):
+class LocationViewSet(TenantIsolatedViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
     permission_classes = [IsAuthenticated]
 
-class InventoryTransactionViewSet(viewsets.ModelViewSet):
+class InventoryTransactionViewSet(TenantIsolatedViewSet):
     queryset = InventoryTransaction.objects.all()
     serializer_class = InventoryTransactionSerializer
     permission_classes = [IsAuthenticated]
 
-class ProductViewSet(viewsets.ModelViewSet):
+class ProductViewSet(TenantIsolatedViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     
@@ -282,7 +283,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-class ServiceViewSet(viewsets.ModelViewSet):
+class ServiceViewSet(TenantIsolatedViewSet):
     serializer_class = ServiceSerializer
     permission_classes = [IsAuthenticated]
     
@@ -357,12 +358,12 @@ class ServiceViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-class DepartmentViewSet(viewsets.ModelViewSet):
+class DepartmentViewSet(TenantIsolatedViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]
 
-class CustomChargePlanViewSet(viewsets.ModelViewSet):
+class CustomChargePlanViewSet(TenantIsolatedViewSet):
     queryset = CustomChargePlan.objects.all()
     serializer_class = CustomChargePlanSerializer
     permission_classes = [IsAuthenticated]
@@ -485,8 +486,8 @@ def product_list(request):
             products = Product.objects.select_related('department').all()
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction, connection
-        with transaction.atomic():
+        from django.db import transaction as db_transaction, connection
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 15000')  # 15 seconds (increased from 10)
@@ -567,8 +568,8 @@ def service_list(request):
             logger.debug("No tenant found in request, using current schema")
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction
-        with transaction.atomic():
+        from django.db import transaction as db_transaction
+        with db_transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds

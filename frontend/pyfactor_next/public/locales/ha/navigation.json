@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Gayyaci Mai Kasuwanci",
     "analytics": "Bincike",
     "smartInsights": "Basirar Wayo",
-    "dottStatus": "Matsayin Dott"
+    "dottStatus": "Matsayin Dott",
+    "jobs": "Ayyuka"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Tsarin Asusu",
     "journalEntries": "Shigarwar Jarida",
     "generalLedger": "Babban Littafi",
-    "trialBalance": "Ma'auni na Gwaji"
+    "trialBalance": "Ma'auni na Gwaji",
+    "jobsList": "Duk Ayyuka",
+    "jobCosting": "Farashin Aiki",
+    "jobMaterials": "Amfani da Kayan Aiki",
+    "jobLabor": "Bin Diddigin Aiki",
+    "jobProfitability": "Binciken Riba",
+    "services": "Ayyuka",
+    "jobs": "Ayyuka"
   },
   "actions": {
     "viewAll": "Duba Duka",

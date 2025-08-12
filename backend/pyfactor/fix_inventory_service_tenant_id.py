@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 def fix_inventory_service_tenant_id():
     """Add tenant_id column to inventory_service table if missing"""
@@ -44,7 +44,7 @@ def fix_inventory_service_tenant_id():
             print("Adding tenant_id column...")
             
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     # Add the tenant_id column
                     cursor.execute("""
                         ALTER TABLE inventory_service 

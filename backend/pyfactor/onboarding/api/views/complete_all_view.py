@@ -5,7 +5,7 @@ Created to fix redirect loop issue
 
 from django.utils import timezone
 from custom_auth.rls import set_tenant_context, clear_tenant_context
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -27,7 +27,7 @@ def complete_all_onboarding(request):
     try:
         user = request.user
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # 1. Ensure user has a tenant
             if not user.tenant:
                 return Response({

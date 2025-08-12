@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { isDevelopingCountry } from '@/services/countryDetectionService';
 
@@ -31,23 +31,67 @@ const PRICE_IDS = {
 };
 
 export async function POST(request) {
+  console.log('🔍 [create-session] === API ROUTE CALLED ===');
+  
   try {
-    // Get the current authenticated user
-    let user;
+    // Get the session cookie
+    console.log('🔍 [create-session] Getting session cookie...');
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('sid') || cookieStore.get('session_token');
+    console.log('🔍 [create-session] Session cookie:', sessionCookie ? { name: sessionCookie.name, exists: true } : 'not found');
+    
+    if (!sessionCookie) {
+      logger.error('No session cookie found');
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Fetch user data from the session endpoint
+    let userData;
     try {
-      const session = await fetchAuthSession();
-      user = await getCurrentUser();
+      console.log('🔍 [create-session] Validating session with backend...');
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      const sessionUrl = `${API_URL}/api/sessions/validate/${sessionCookie.value}/`;
+      console.log('🔍 [create-session] Session validation URL:', sessionUrl);
       
-      if (!session || !user) {
+      const sessionResponse = await fetch(sessionUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      });
+
+      if (!sessionResponse.ok) {
+        logger.error('Failed to fetch session:', sessionResponse.status);
         return NextResponse.json(
           { error: 'Authentication required' },
           { status: 401 }
         );
       }
+
+      const sessionData = await sessionResponse.json();
+      console.log('🔍 [create-session] Session data received:', {
+        hasUser: !!sessionData.user,
+        hasTenant: !!sessionData.tenant,
+        keys: Object.keys(sessionData)
+      });
+      
+      // Extract user data (similar to sessionHelper.js)
+      userData = sessionData.user || sessionData;
+      
+      // Add business name and country from tenant data if available
+      if (sessionData.tenant) {
+        userData.business_name = userData.business_name || sessionData.tenant.name;
+        userData.business_country = userData.business_country || userData.country || sessionData.tenant.country;
+      }
       
       logger.debug('User authenticated:', { 
-        username: user.username,
-        email: user.attributes?.email 
+        email: userData?.email,
+        business_name: userData?.business_name
       });
     } catch (authError) {
       logger.error('Failed to authenticate user:', authError);
@@ -58,7 +102,10 @@ export async function POST(request) {
     }
 
     // Parse request body
+    console.log('🔍 [create-session] Parsing request body...');
     const requestData = await request.json();
+    console.log('🔍 [create-session] Raw request data:', requestData);
+    
     const { 
       planId = 'professional', 
       billingCycle = 'monthly',
@@ -66,16 +113,17 @@ export async function POST(request) {
       country = null // Allow country to be passed from frontend
     } = requestData;
     
+    console.log('🔍 [create-session] Parsed request data:', { planId, billingCycle, priceId, country });
     logger.debug('Checkout request data:', { planId, billingCycle, priceId, country });
     
     // Determine user's country for regional pricing
     let userCountry = country; // Use passed country first
     
-    // Try to get country from user attributes if not provided
-    if (!userCountry && user.attributes) {
-      userCountry = user.attributes['custom:businesscountry'] || 
-                   user.attributes['custom:country'] ||
-                   user.attributes.country;
+    // Try to get country from user data if not provided
+    if (!userCountry && userData) {
+      userCountry = userData.business_country || 
+                   userData.country ||
+                   userData.businessCountry;
     }
     
     // Check if user is eligible for developing country discount
@@ -138,6 +186,7 @@ export async function POST(request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000';
     
     // Create Stripe checkout session
+    console.log('🔍 [create-session] Creating Stripe session with price ID:', finalPriceId);
     const stripeSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -149,9 +198,10 @@ export async function POST(request) {
       mode: 'subscription',
       success_url: `${appUrl}/dashboard?subscription_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/dashboard?subscription_cancelled=true`,
-      customer_email: user.attributes?.email,
+      customer_email: userData?.email,
       metadata: {
-        userId: user.username,
+        userId: userData?.id || userData?.email,
+        userEmail: userData?.email,
         planId: requestData.planId || 'professional',
         billingCycle: requestData.billingCycle || 'monthly',
         country: userCountry || 'unknown',
@@ -159,22 +209,36 @@ export async function POST(request) {
         discountPercentage: isEligibleForDiscount ? '50' : '0',
         timestamp: new Date().toISOString()
       },
-      client_reference_id: user.username,
+      client_reference_id: userData?.id || userData?.email,
       allow_promotion_codes: true
     });
 
+    console.log('🔍 [create-session] Stripe session created successfully:', stripeSession.id);
+    
     logger.debug('Stripe checkout session created:', {
       sessionId: stripeSession.id,
-      userId: user.username,
+      userId: userData?.email || userData?.id,
       priceId: finalPriceId,
       timestamp: new Date().toISOString()
     });
 
-    return NextResponse.json({ 
+    const responseData = { 
       sessionId: stripeSession.id,
       success: true
-    });
+    };
+    
+    console.log('🔍 [create-session] Returning response:', responseData);
+    return NextResponse.json(responseData);
   } catch (error) {
+    console.error('🚨 [create-session] Error occurred:', error);
+    console.error('🚨 [create-session] Error details:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+      stack: error.stack
+    });
+    
     logger.error('Failed to create checkout session:', error);
     
     // Check if it's a Stripe API error
@@ -182,8 +246,11 @@ export async function POST(request) {
       'Invalid payment configuration. Please contact support.' : 
       (error.message || 'Failed to create checkout session');
     
+    const errorResponse = { error: errorMessage, success: false };
+    console.error('🚨 [create-session] Returning error response:', errorResponse);
+    
     return NextResponse.json(
-      { error: errorMessage, success: false },
+      errorResponse,
       { status: error.statusCode || 500 }
     );
   }

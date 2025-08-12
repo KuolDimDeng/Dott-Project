@@ -103,24 +103,10 @@ function GeneralLedgerManagement({ onNavigate }) {
     if (!tenantId) return;
 
     try {
-      const response = await accountingApi.chartOfAccounts.getAll().catch(err => {
-        logger.warn('[GeneralLedger] Accounts API error, using demo data:', err);
-        return null;
-      });
-
-      // Demo accounts fallback
-      const demoAccounts = [
-        { id: '1001', code: '1001', name: 'Cash - Operating Account', type: 'asset' },
-        { id: '1002', code: '1002', name: 'Cash - Savings Account', type: 'asset' },
-        { id: '1200', code: '1200', name: 'Accounts Receivable', type: 'asset' },
-        { id: '1500', code: '1500', name: 'Equipment', type: 'asset' },
-        { id: '2100', code: '2100', name: 'Accounts Payable', type: 'liability' },
-        { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'equity' },
-        { id: '4000', code: '4000', name: 'Sales Revenue', type: 'revenue' },
-        { id: '5100', code: '5100', name: 'Rent Expense', type: 'expense' }
-      ];
-
-      setAccounts(response?.accounts || demoAccounts);
+      const response = await fetch('/api/accounting/chart-of-accounts');
+      const data = await response.json();
+      // Use real data from backend
+      setAccounts(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error('[GeneralLedger] Error fetching accounts:', error);
     }
@@ -140,112 +126,12 @@ function GeneralLedgerManagement({ onNavigate }) {
         end_date: dateRange.endDate
       };
 
-      const response = selectedAccount 
-        ? await accountingApi.generalLedger.getByAccount(selectedAccount, params).catch(err => {
-            logger.warn('[GeneralLedger] API error, using demo data:', err);
-            return null;
-          })
-        : await accountingApi.generalLedger.getAll(params).catch(err => {
-            logger.warn('[GeneralLedger] API error, using demo data:', err);
-            return null;
-          });
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`/api/accounting/general-ledger?${queryString}`);
+      const data = await response.json();
 
-      // Demo data fallback
-      const demoEntries = [
-        {
-          id: 1,
-          date: '2025-01-01',
-          account: '1001 - Cash - Operating Account',
-          accountCode: '1001',
-          description: 'Opening Balance',
-          reference: 'OB-2025',
-          journalId: null,
-          debit: 50000,
-          credit: 0,
-          balance: 50000,
-          type: 'debit'
-        },
-        {
-          id: 2,
-          date: '2025-01-05',
-          account: '1001 - Cash - Operating Account',
-          accountCode: '1001',
-          description: 'Office rent payment',
-          reference: 'JE-2025-001',
-          journalId: 1,
-          debit: 0,
-          credit: 5000,
-          balance: 45000,
-          type: 'credit'
-        },
-        {
-          id: 3,
-          date: '2025-01-05',
-          account: '5100 - Rent Expense',
-          accountCode: '5100',
-          description: 'Office rent payment',
-          reference: 'JE-2025-001',
-          journalId: 1,
-          debit: 5000,
-          credit: 0,
-          balance: 5000,
-          type: 'debit'
-        },
-        {
-          id: 4,
-          date: '2025-01-06',
-          account: '1001 - Cash - Operating Account',
-          accountCode: '1001',
-          description: 'Customer payment received',
-          reference: 'JE-2025-002',
-          journalId: 2,
-          debit: 12000,
-          credit: 0,
-          balance: 57000,
-          type: 'debit'
-        },
-        {
-          id: 5,
-          date: '2025-01-06',
-          account: '1200 - Accounts Receivable',
-          accountCode: '1200',
-          description: 'Customer payment received',
-          reference: 'JE-2025-002',
-          journalId: 2,
-          debit: 0,
-          credit: 12000,
-          balance: 38000,
-          type: 'credit'
-        },
-        {
-          id: 6,
-          date: '2025-01-08',
-          account: '1500 - Equipment',
-          accountCode: '1500',
-          description: 'Computer equipment purchase',
-          reference: 'JE-2025-003',
-          journalId: 3,
-          debit: 8500,
-          credit: 0,
-          balance: 23500,
-          type: 'debit'
-        },
-        {
-          id: 7,
-          date: '2025-01-08',
-          account: '2100 - Accounts Payable',
-          accountCode: '2100',
-          description: 'Computer equipment purchase',
-          reference: 'JE-2025-003',
-          journalId: 3,
-          debit: 0,
-          credit: 8500,
-          balance: 43500,
-          type: 'credit'
-        }
-      ];
-
-      const entries = response?.entries || demoEntries;
+      // Use real data from backend
+      const entries = data?.entries || [];
       setLedgerEntries(entries);
 
       // Calculate statistics
@@ -284,12 +170,14 @@ function GeneralLedgerManagement({ onNavigate }) {
 
   // Filtered entries based on search and filter
   const filteredEntries = useMemo(() => {
+    if (!ledgerEntries || ledgerEntries.length === 0) return [];
+    
     return ledgerEntries.filter(entry => {
       // Search filter
       const matchesSearch = 
-        entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.account.toLowerCase().includes(searchTerm.toLowerCase());
+        (entry.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.account || '').toLowerCase().includes(searchTerm.toLowerCase());
       
       // Type filter
       const matchesType = 
@@ -545,13 +433,29 @@ function GeneralLedgerManagement({ onNavigate }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEntries.map((entry) => (
+              {filteredEntries.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-6 py-12 text-center text-sm text-gray-500">
+                    No general ledger entries found for the selected criteria. 
+                    Try adjusting your filters or date range.
+                  </td>
+                </tr>
+              ) : (
+                filteredEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(entry.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <span className="font-medium">{entry.accountCode}</span> - {entry.account.split(' - ')[1]}
+                    {entry.accountCode && (
+                      <>
+                        <span className="font-medium">{entry.accountCode}</span>
+                        {entry.account && entry.account.includes(' - ') && 
+                          <> - {entry.account.split(' - ')[1]}</>
+                        }
+                      </>
+                    )}
+                    {!entry.accountCode && entry.account}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {entry.description}
@@ -582,7 +486,7 @@ function GeneralLedgerManagement({ onNavigate }) {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
@@ -617,10 +521,10 @@ function GeneralLedgerManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}

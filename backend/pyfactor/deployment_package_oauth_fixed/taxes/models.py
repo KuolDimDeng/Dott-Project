@@ -3,6 +3,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django_countries.fields import CountryField
 from django.conf import settings
+from django.utils import timezone
 
 import uuid
 
@@ -213,3 +214,79 @@ class TaxForm(models.Model):
         # if self.employee.ssn_stored_in_stripe and self.employee.ssn_last_four:
         #     return self.employee.ssn_last_four
         return None
+
+
+class GlobalSalesTaxRate(models.Model):
+    """Global sales tax rates for all countries/regions - AI populated"""
+    TAX_TYPE_CHOICES = [
+        ('sales_tax', 'Sales Tax'),
+        ('vat', 'VAT'),
+        ('gst', 'GST'),
+        ('hst', 'HST'),
+        ('pst', 'PST'),
+        ('qst', 'QST'),
+        ('consumption_tax', 'Consumption Tax'),
+        ('service_tax', 'Service Tax'),
+    ]
+    
+    # Location fields
+    country = CountryField(db_index=True)
+    country_name = models.CharField(max_length=100)
+    region_code = models.CharField(max_length=10, blank=True, help_text="State/Province code")
+    region_name = models.CharField(max_length=100, blank=True, help_text="State/Province name")
+    locality = models.CharField(max_length=100, blank=True, help_text="City/County")
+    
+    # Tax information
+    tax_type = models.CharField(max_length=20, choices=TAX_TYPE_CHOICES)
+    rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Tax rate as decimal (0.075 = 7.5%)"
+    )
+    
+    # AI metadata
+    ai_populated = models.BooleanField(default=True)
+    ai_confidence_score = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="AI confidence in this rate (0-1)"
+    )
+    ai_source_notes = models.TextField(
+        blank=True,
+        help_text="Where AI found this information"
+    )
+    ai_last_verified = models.DateTimeField(default=timezone.now)
+    
+    # Validity
+    effective_date = models.DateField(default=timezone.now)
+    is_current = models.BooleanField(default=True)
+    manually_verified = models.BooleanField(default=False)
+    manual_notes = models.TextField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        unique_together = ('country', 'region_code', 'locality', 'tax_type', 'effective_date')
+        indexes = [
+            models.Index(fields=['country', 'is_current']),
+            models.Index(fields=['country', 'region_code', 'is_current']),
+        ]
+    
+    def __str__(self):
+        location = self.country_name
+        if self.region_name:
+            location += f", {self.region_name}"
+        if self.locality:
+            location += f", {self.locality}"
+        return f"{location}: {self.tax_type} {self.rate*100}%"
+    
+    @property
+    def rate_percentage(self):
+        """Return rate as percentage string"""
+        return f"{self.rate * 100:.2f}%"

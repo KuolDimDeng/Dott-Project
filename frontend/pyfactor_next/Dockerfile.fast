@@ -1,0 +1,86 @@
+# OPTIMIZED FOR 5-7 MINUTE BUILDS ON RENDER
+# ========================================
+# Stage 1: Dependencies ONLY (cached aggressively)
+# ========================================
+FROM node:18-alpine AS deps
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@8.10.0 --activate
+
+# Copy ONLY package files for maximum cache hits
+COPY package.json pnpm-lock.yaml ./
+
+# Install production deps with aggressive caching
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --prod --frozen-lockfile --prefer-offline
+
+# ========================================
+# Stage 2: Build (optimized for speed)
+# ========================================
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@8.10.0 --activate
+
+# Copy deps from previous stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml ./
+
+# Install ALL deps (including dev) for build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
+
+# Copy source files
+COPY . .
+
+# Build environment setup
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NEXT_PRIVATE_STANDALONE=true
+
+# Build arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_BASE_URL
+ARG NEXT_PUBLIC_AUTH0_DOMAIN
+ARG NEXT_PUBLIC_AUTH0_CLIENT_ID
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+
+# Set build envs
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+ENV NEXT_PUBLIC_AUTH0_DOMAIN=${NEXT_PUBLIC_AUTH0_DOMAIN}
+ENV NEXT_PUBLIC_AUTH0_CLIENT_ID=${NEXT_PUBLIC_AUTH0_CLIENT_ID}
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+
+# Run FAST build with custom config
+RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
+    pnpm next build --experimental-turbo -c next.config.render-fast.js
+
+# ========================================
+# Stage 3: Minimal production runner
+# ========================================
+FROM node:18-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy only what's needed
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Fast startup
+CMD ["node", "--max-old-space-size=512", "server.js"]

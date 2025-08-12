@@ -237,12 +237,12 @@ const getFeatureDetails = (t) => ({
     ]
   },
   languages: {
-    title: t('featureDetails.languages.title', '20+ Languages Supported'),
+    title: t('featureDetails.languages.title', '30+ Languages Supported'),
     subtitle: t('featureDetails.languages.subtitle', 'Speak Your Customer\'s Language'),
     sections: [
       {
         heading: t('featureDetails.languages.overview.heading', 'True Global Accessibility'),
-        content: t('featureDetails.languages.overview.content', 'Dott is available in over 20 languages, making it accessible to businesses worldwide. Every feature, button, and message is fully translated by native speakers to ensure clarity and cultural appropriateness.')
+        content: t('featureDetails.languages.overview.content', 'Dott is available in over 30 languages, making it accessible to businesses worldwide. Every feature, button, and message is fully translated by native speakers to ensure clarity and cultural appropriateness.')
       },
       {
         heading: t('featureDetails.languages.supported.heading', 'Supported Languages'),
@@ -251,7 +251,10 @@ const getFeatureDetails = (t) => ({
           'Deutsch (German), 中文 (Chinese), العربية (Arabic), Kiswahili (Swahili)',
           'हिन्दी (Hindi), Русский (Russian), 日本語 (Japanese), Türkçe (Turkish)',
           'Bahasa Indonesia, Tiếng Việt (Vietnamese), Nederlands (Dutch)',
-          'Hausa, Yorùbá, አማርኛ (Amharic), isiZulu, 한국어 (Korean)'
+          'Hausa, Yorùbá, አማርኛ (Amharic), isiZulu, 한국어 (Korean)',
+          'Italiano (Italian), Polski (Polish), ไทย (Thai), বাংলা (Bengali)',
+          'اردو (Urdu), Filipino (Tagalog), Українська (Ukrainian)',
+          'فارسی (Persian), chiShona (Shona), Igbo'
         ]
       },
       {
@@ -287,11 +290,11 @@ export default function FeatureDetailModal({ isOpen, onClose, featureKey }) {
   if (!isOpen || !feature) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="absolute inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
         <div 
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          className="absolute inset-0 transition-opacity bg-gray-500 bg-opacity-75"
           onClick={onClose}
         />
 

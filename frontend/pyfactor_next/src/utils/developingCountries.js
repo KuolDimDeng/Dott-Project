@@ -58,13 +58,10 @@ export const DEVELOPING_COUNTRIES = {
   'EC': { name: 'Ecuador', discount: 50 },
   'BO': { name: 'Bolivia', discount: 50 },
   'PY': { name: 'Paraguay', discount: 50 },
-  'UY': { name: 'Uruguay', discount: 50 },
   'GT': { name: 'Guatemala', discount: 50 },
   'HN': { name: 'Honduras', discount: 50 },
   'SV': { name: 'El Salvador', discount: 50 },
   'NI': { name: 'Nicaragua', discount: 50 },
-  'CR': { name: 'Costa Rica', discount: 50 },
-  'PA': { name: 'Panama', discount: 50 },
   'DO': { name: 'Dominican Republic', discount: 50 },
   'HT': { name: 'Haiti', discount: 50 },
   'JM': { name: 'Jamaica', discount: 50 },
@@ -94,6 +91,62 @@ export const DEVELOPING_COUNTRIES = {
   'TO': { name: 'Tonga', discount: 50 },
   'VU': { name: 'Vanuatu', discount: 50 },
   'SB': { name: 'Solomon Islands', discount: 50 },
+  
+  // Additional African countries
+  'SS': { name: 'South Sudan', discount: 50 },
+  'BJ': { name: 'Benin', discount: 50 },
+  'BF': { name: 'Burkina Faso', discount: 50 },
+  'BI': { name: 'Burundi', discount: 50 },
+  'CV': { name: 'Cape Verde', discount: 50 },
+  'CF': { name: 'Central African Republic', discount: 50 },
+  'TD': { name: 'Chad', discount: 50 },
+  'KM': { name: 'Comoros', discount: 50 },
+  'DJ': { name: 'Djibouti', discount: 50 },
+  'GQ': { name: 'Equatorial Guinea', discount: 50 },
+  'ER': { name: 'Eritrea', discount: 50 },
+  'GM': { name: 'Gambia', discount: 50 },
+  'GN': { name: 'Guinea', discount: 50 },
+  'GW': { name: 'Guinea-Bissau', discount: 50 },
+  'LS': { name: 'Lesotho', discount: 50 },
+  'LR': { name: 'Liberia', discount: 50 },
+  'MG': { name: 'Madagascar', discount: 50 },
+  'ML': { name: 'Mali', discount: 50 },
+  'MR': { name: 'Mauritania', discount: 50 },
+  'NE': { name: 'Niger', discount: 50 },
+  'ST': { name: 'São Tomé and Príncipe', discount: 50 },
+  'SL': { name: 'Sierra Leone', discount: 50 },
+  'SO': { name: 'Somalia', discount: 50 },
+  'SZ': { name: 'Eswatini', discount: 50 },
+  'TG': { name: 'Togo', discount: 50 },
+  
+  // Additional Asian countries
+  'AM': { name: 'Armenia', discount: 50 },
+  'AZ': { name: 'Azerbaijan', discount: 50 },
+  'BT': { name: 'Bhutan', discount: 50 },
+  'GE': { name: 'Georgia', discount: 50 },
+  'IR': { name: 'Iran', discount: 50 },
+  'KZ': { name: 'Kazakhstan', discount: 50 },
+  'KG': { name: 'Kyrgyzstan', discount: 50 },
+  'MV': { name: 'Maldives', discount: 50 },
+  'MN': { name: 'Mongolia', discount: 50 },
+  'TJ': { name: 'Tajikistan', discount: 50 },
+  'TL': { name: 'Timor-Leste', discount: 50 },
+  'TM': { name: 'Turkmenistan', discount: 50 },
+  'UZ': { name: 'Uzbekistan', discount: 50 },
+  
+  // Additional Latin American countries
+  'BZ': { name: 'Belize', discount: 50 },
+  'CU': { name: 'Cuba', discount: 50 },
+  'GY': { name: 'Guyana', discount: 50 },
+  'SR': { name: 'Suriname', discount: 50 },
+  
+  // Additional European countries
+  'BY': { name: 'Belarus', discount: 50 },
+  
+  // Additional Pacific countries
+  'KI': { name: 'Kiribati', discount: 50 },
+  'FM': { name: 'Micronesia', discount: 50 },
+  'TV': { name: 'Tuvalu', discount: 50 },
 };
 
 /**

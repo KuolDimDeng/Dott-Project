@@ -5,7 +5,7 @@ import jwt
 import json
 from datetime import datetime, timedelta
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.db.models import Q, Count, F
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -526,7 +526,7 @@ class SendNotificationView(APIView):
         
         # Mock sending - in production, this would create NotificationRecipient records
         # based on target_type and target_criteria
-        with transaction.atomic():
+        with db_transaction.atomic():
             notification.status = 'sent'
             notification.sent_at = timezone.now()
             notification.total_recipients = 100  # Mock count

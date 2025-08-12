@@ -2,7 +2,7 @@
 import os
 import sys
 import django
-from django.db import connections, connection, transaction
+from django.db import connections, connection, transaction as db_transaction
 
 # Add the current directory and its parent to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -102,7 +102,7 @@ def create_all_missing_tables():
     
     try:
         # Use transaction to ensure all tables are created together
-        with transaction.atomic():
+        with db_transaction.atomic():
             for table_name, sql in tables.items():
                 execute_sql(sql)
                 print(f"✅ {table_name} table created")

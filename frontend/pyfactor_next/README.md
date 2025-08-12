@@ -308,3 +308,5 @@ The application uses Tailwind CSS for styling, providing:
 - Spinner indicators for loading states
 # Environment update: Wed Jun  4 18:51:47 MDT 2025
 # Force deployment: Wed Jun  4 19:13:13 MDT 2025
+# Rebuild trigger: Mon Jul 28 00:55:41 MDT 2025
+# Rebuild trigger: Mon Jul 28 09:12:32 MDT 2025

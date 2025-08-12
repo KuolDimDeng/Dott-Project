@@ -7,7 +7,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from users.models import Business
 from hr.models import Employee, Timesheet
 from banking.models import BankAccount
@@ -26,7 +26,7 @@ class PayrollService:
         """
         Step 1: Calculate how much each employee should receive
         """
-        with transaction.atomic():
+        with db_transaction.atomic():
             payroll_run = PayrollRun.objects.create(
                 tenant_id=tenant_id,
                 start_date=pay_period_start,

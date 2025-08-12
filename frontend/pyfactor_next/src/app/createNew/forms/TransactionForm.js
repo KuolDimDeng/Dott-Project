@@ -198,7 +198,7 @@ const TransactionForm = () => {
     switch (openModal) {
       case 'sales':
         return (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
             <div className={`bg-white rounded-lg shadow-xl p-6 m-4 max-w-lg w-full max-h-[90vh] overflow-auto ${isMobile ? 'w-[90%]' : ''}`}>
               <h2 className="text-xl font-semibold mb-4">Create Sale</h2>
               <SalesForm onClose={handleCloseModal} accounts={accounts} userDatabase={userDatabase} />
@@ -207,7 +207,7 @@ const TransactionForm = () => {
         );
       case 'refund':
         return (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
             <div className={`bg-white rounded-lg shadow-xl p-6 m-4 max-w-lg w-full max-h-[90vh] overflow-auto ${isMobile ? 'w-[90%]' : ''}`}>
               <h2 className="text-xl font-semibold mb-4">Create Refund</h2>
               <RefundForm onClose={handleCloseModal} accounts={accounts} userDatabase={userDatabase} />
@@ -216,7 +216,7 @@ const TransactionForm = () => {
         );
       case 'income':
         return (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
             <div className={`bg-white rounded-lg shadow-xl p-6 m-4 max-w-lg w-full max-h-[90vh] overflow-auto ${isMobile ? 'w-[90%]' : ''}`}>
               <h2 className="text-xl font-semibold mb-4">Add Income</h2>
               <AddIncomeForm onClose={handleCloseModal} accounts={accounts} userDatabase={userDatabase} />
@@ -225,7 +225,7 @@ const TransactionForm = () => {
         );
       case 'expense':
         return (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
             <div className={`bg-white rounded-lg shadow-xl p-6 m-4 max-w-lg w-full max-h-[90vh] overflow-auto ${isMobile ? 'w-[90%]' : ''}`}>
               <h2 className="text-xl font-semibold mb-4">Add Expense</h2>
               <AddExpenseForm onClose={handleCloseModal} accounts={accounts} userDatabase={userDatabase} />

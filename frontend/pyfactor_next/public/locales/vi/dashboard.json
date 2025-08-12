@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Xin chào 👋\n\n{{name}} đã mời bạn thử Dott, một công cụ tất cả trong một để đơn giản hóa hoạt động kinh doanh.\n\n✓ Tự động hóa lập hóa đơn\n✓ Lên lịch hẹn\n✓ Quản lý tồn kho\n✓ Xử lý bảng lương\n✓ Phân tích kinh doanh\n\nBắt đầu dùng thử miễn phí: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Chào buổi sáng",
+      "afternoon": "Chào buổi chiều",
+      "evening": "Chào buổi tối"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}} của bạn đang hoạt động",
+      "activeDescription": "Bạn có quyền truy cập vào tất cả các tính năng có trong gói của mình.",
+      "expired": "Đăng ký {{previousPlan}} của bạn đã hết hạn",
+      "expiredDescription": "Tài khoản của bạn đã được hạ cấp xuống gói miễn phí. Bây giờ bạn có quyền truy cập hạn chế vào các tính năng.",
+      "renewButton": "Gia hạn đăng ký",
+      "viewDetailsButton": "Xem chi tiết gói"
+    },
+    "gettingStarted": {
+      "title": "Bắt đầu",
+      "progress": "Đã hoàn thành {{completed}} trong số {{total}}",
+      "description": "Hoàn thành các bước này để tận dụng tối đa tài khoản của bạn:",
+      "loading": "Đang tải tiến trình của bạn...",
+      "congratulations": "Chúc mừng! Bạn đã hoàn thành tất cả các bước thiết lập.",
+      "steps": {
+        "profile": {
+          "title": "Hoàn thành hồ sơ doanh nghiệp của bạn",
+          "description": "Thêm chi tiết doanh nghiệp và logo của bạn"
+        },
+        "customer": {
+          "titleEmpty": "Thêm khách hàng đầu tiên của bạn",
+          "titleWithCount": "Đã thêm {{count}} khách hàng",
+          "descriptionEmpty": "Bắt đầu xây dựng cơ sở khách hàng của bạn",
+          "descriptionWithCount": "Quản lý khách hàng của bạn"
+        },
+        "product": {
+          "titleEmpty": "Tạo sản phẩm đầu tiên của bạn",
+          "titleWithCount": "Đã tạo {{count}} sản phẩm",
+          "descriptionEmpty": "Thêm sản phẩm vào kho của bạn",
+          "descriptionWithCount": "Quản lý sản phẩm của bạn"
+        },
+        "service": {
+          "titleEmpty": "Tạo dịch vụ đầu tiên của bạn",
+          "titleWithCount": "Đã tạo {{count}} dịch vụ",
+          "descriptionEmpty": "Xác định các dịch vụ bạn cung cấp",
+          "descriptionWithCount": "Quản lý dịch vụ của bạn"
+        },
+        "supplier": {
+          "titleEmpty": "Thêm nhà cung cấp đầu tiên của bạn",
+          "titleWithCount": "Đã thêm {{count}} nhà cung cấp",
+          "descriptionEmpty": "Theo dõi chuỗi cung ứng của bạn",
+          "descriptionWithCount": "Quản lý nhà cung cấp của bạn"
+        },
+        "invoice": {
+          "titleEmpty": "Tạo hóa đơn đầu tiên của bạn",
+          "titleWithCount": "Đã tạo {{count}} hóa đơn",
+          "descriptionEmpty": "Bắt đầu lập hóa đơn cho khách hàng của bạn",
+          "descriptionWithCount": "Quản lý hóa đơn của bạn"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Cập nhật gần đây",
+      "noUpdates": "Không có cập nhật gần đây để hiển thị.",
+      "description": "Cập nhật về hoạt động tài khoản của bạn sẽ xuất hiện ở đây.",
+      "activities": {
+        "salesToday": "${{amount}} doanh số hôm nay",
+        "unpaidInvoices": "{{count}} hóa đơn chưa thanh toán{{plural}} đang chờ xử lý",
+        "overdueInvoices": "{{count}} hóa đơn quá hạn{{plural}} cần chú ý",
+        "newCustomers": "{{count}} khách hàng mới{{plural}} tháng này"
+      }
+    },
+    "quickStats": {
+      "title": "Thống kê nhanh",
+      "customers": "Khách hàng",
+      "products": "Sản phẩm",
+      "services": "Dịch vụ",
+      "invoices": "Hóa đơn"
+    },
+    "planDetails": {
+      "title": "Chi tiết đăng ký của bạn",
+      "perMonth": "mỗi tháng",
+      "active": "Hoạt động",
+      "currentPlan": "Gói hiện tại",
+      "featuresIncluded": "Tính năng bao gồm",
+      "limitations": "Hạn chế trên gói miễn phí",
+      "upgradePrompt": "Nâng cấp ngay để mở khóa tất cả các tính năng và loại bỏ hạn chế!",
+      "upgradeButton": "Nâng cấp tại đây",
+      "upgradeToEnterprise": "Nâng cấp lên Enterprise",
+      "close": "Đóng"
+    },
+    "plans": {
+      "free": {
+        "name": "Gói miễn phí",
+        "description": "Tính năng cơ bản cho doanh nghiệp nhỏ mới bắt đầu",
+        "features": [
+          "Lập hóa đơn cơ bản",
+          "Tối đa 5 khách hàng",
+          "Báo cáo cơ bản",
+          "Hỗ trợ qua email",
+          "2GB lưu trữ"
+        ],
+        "limitations": [
+          "Giới hạn 5 hóa đơn mỗi tháng",
+          "Không có thương hiệu tùy chỉnh",
+          "Chỉ báo cáo cơ bản",
+          "Không có quyền truy cập API",
+          "Chỉ một người dùng"
+        ]
+      },
+      "professional": {
+        "name": "Gói Chuyên nghiệp",
+        "description": "Tính năng nâng cao cho doanh nghiệp đang phát triển",
+        "features": [
+          "Lập hóa đơn không giới hạn",
+          "Khách hàng không giới hạn",
+          "Báo cáo nâng cao",
+          "Hỗ trợ ưu tiên",
+          "Thương hiệu tùy chỉnh",
+          "15GB lưu trữ",
+          "Tối đa 3 người dùng"
+        ]
+      },
+      "enterprise": {
+        "name": "Gói Enterprise",
+        "description": "Bộ công cụ đầy đủ cho doanh nghiệp đã thành lập",
+        "features": [
+          "Mọi thứ trong Chuyên nghiệp",
+          "Lưu trữ không giới hạn",
+          "Người dùng không giới hạn",
+          "Quản lý tài khoản chuyên dụng",
+          "Quyền truy cập API nâng cao",
+          "Vai trò và quyền tùy chỉnh",
+          "Tính năng bảo mật nâng cao",
+          "Tỷ lệ giao dịch ưu đãi"
+        ]
+      }
+    }
   }
 }

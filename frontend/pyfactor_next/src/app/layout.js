@@ -3,6 +3,10 @@ import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
 import ChunkErrorHandler from '@/components/ChunkErrorHandler';
+import GlobalErrorInitializer from '@/components/GlobalErrorInitializer';
+import '@/utils/bindPolyfill';
+import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
+// Security notification removed - CSP now handled properly
 import Providers from '@/providers';
 import { headers } from 'next/headers';
 
@@ -31,13 +35,11 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
-  // Get the pathname from headers
-  const headersList = headers();
-  const pathname = headersList.get('x-pathname') || '';
-  const isAdminRoute = pathname.startsWith('/admin');
+  // Don't use headers for client-side logic to prevent hydration mismatch
+  // Admin routes will handle their own logic
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Security headers for device fingerprinting */}
         <meta httpEquiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
@@ -46,6 +48,13 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
+        
+        {/* Plaid CDN preconnect for faster loading */}
+        <link rel="preconnect" href="https://cdn.plaid.com" />
+        <link rel="dns-prefetch" href="https://cdn.plaid.com" />
+        
+        {/* Plaid Link SDK - Static loading as recommended by Plaid */}
+        <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
         
         {/* iOS Splash Screens */}
         <link rel="apple-touch-startup-image" href="/static/images/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
@@ -59,25 +68,27 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-startup-image" href="/static/images/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
       <body className={inter.className}>
-        {/* Admin routes bypass providers */}
-        {isAdminRoute ? (
-          children
-        ) : (
-          <>
-            {/* Session Heartbeat Component */}
-            <SessionHeartbeat interval={60000} />
-            
-            {/* Chunk Error Handler */}
-            <ChunkErrorHandler />
-            
-            <Providers>
-              {children}
-            </Providers>
-          </>
-        )}
         
-        {/* Crisp Chat Widget - only for non-admin routes */}
-        {!isAdminRoute && process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
+        {/* Global Error Handler */}
+        <GlobalErrorInitializer />
+        
+        {/* Session Heartbeat Component */}
+        <SessionHeartbeat interval={60000} />
+        
+        {/* Chunk Error Handler */}
+        <ChunkErrorHandler />
+        
+        {/* TDZ Protection Initializer */}
+        <TDZProtectionInitializer />
+        
+        <Providers>
+          {children}
+        </Providers>
+        
+        {/* Plaid script is loaded statically above as recommended by Plaid documentation */}
+        
+        {/* Crisp Chat Widget */}
+        {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
           <Script
             id="crisp-chat"
             strategy="afterInteractive"

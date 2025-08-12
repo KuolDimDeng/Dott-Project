@@ -20,13 +20,14 @@ import { v4 as uuidv4 } from 'uuid';
 import cls from '@/utils/cls';
 import styles from '@/styles/DashboardClient.module.css';
 import { useSafeSearchParams } from '@/utils/searchParamsUtils';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Import HttpsConfig component for HTTPS support
 import HttpsConfig from '@/components/HttpsConfig';
 
 // Dynamically import DatabaseAdmin component to avoid loading it until needed
 const DatabaseAdmin = dynamic(() => import('@/components/DatabaseAdmin'), {
-  loading: () => <div>Loading database tools...</div>,
+  loading: () => <CenteredSpinner size="large" text="Loading database tools..." showText={true} minHeight="h-screen" />,
   ssr: false
 });
 
@@ -378,13 +379,12 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
   
   // Dashboard loading component
   const DashboardLoadingState = () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <h2 className="text-xl font-semibold mb-2">Loading your dashboard...</h2>
-        <p className="text-gray-500">Please wait while we retrieve your data.</p>
-      </div>
-    </div>
+    <CenteredSpinner 
+      size="large" 
+      text="Loading your dashboard..." 
+      showText={true} 
+      minHeight="h-screen" 
+    />
   );
 
   // Dashboard error component

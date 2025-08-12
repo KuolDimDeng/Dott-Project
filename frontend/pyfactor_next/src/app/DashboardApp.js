@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
-import { fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
@@ -209,8 +209,8 @@ const DashboardApp = ({ children, params }) => {
             // Then try server API
             try {
               // Force refresh the auth session first
-              const { fetchAuthSession } = await import('@/config/amplifyUnified');
-              await fetchAuthSession({ forceRefresh: true });
+              // Removed Amplify - using Auth0
+              // await fetchAuthSession({ forceRefresh: true });
               
               const apiResponse = await fetch('/api/user/update-attributes', {
                 method: 'POST',
@@ -249,8 +249,9 @@ const DashboardApp = ({ children, params }) => {
       try {
         // Get the user attributes from Cognito
         logger.debug('[DashboardApp] Checking Cognito attributes for onboarding status');
-        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-        const userAttributes = await fetchUserAttributes();
+        // Removed Amplify - using Auth0
+        // const userAttributes = await fetchUserAttributes();
+        const userAttributes = {}; // Using Auth0 now
         
         // Basic validation to check if the onboarding flow needs to be completed
         const onboardingStatus = userAttributes['custom:onboarding'] || '';

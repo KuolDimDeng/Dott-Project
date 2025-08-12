@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('custom_auth', '0018_passwordresettoken'),  # Latest custom_auth migration
+        ('custom_auth', '0019_passwordresettoken'),  # Latest custom_auth migration
         ('inventory', '0008_remove_service_inventory_s_name_80acbf_idx_and_more'),  # Latest inventory migration
     ]
 

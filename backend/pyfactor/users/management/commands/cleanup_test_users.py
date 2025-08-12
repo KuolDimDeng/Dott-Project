@@ -4,7 +4,7 @@ Usage: python manage.py cleanup_test_users
 """
 import logging
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from users.models import Business, UserProfile, Subscription
 from crm.models import Customer
@@ -107,7 +107,7 @@ class Command(BaseCommand):
         }
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for user in users_to_delete:
                     self.stdout.write(f'\n{self.style.HTTP_INFO}Processing user: {user.email}')
                     

@@ -16,7 +16,7 @@ export async function GET(request) {
     const year = searchParams.get('year') || new Date().getFullYear();
     
     // Forward request to Django backend
-    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-v1.onrender.com';
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
     const response = await fetch(`${backendUrl}/api/payroll/paystubs/?year=${year}`, {
       headers: {
         'Content-Type': 'application/json',

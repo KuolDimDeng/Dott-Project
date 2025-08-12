@@ -14,10 +14,9 @@ import {
 } from '@heroicons/react/24/outline';
 import ReceiptGenerator from '@/utils/receiptGenerator';
 
-const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
+const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo, onReceiptHandled }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [receiptGenerator, setReceiptGenerator] = useState(null);
   const [receiptData, setReceiptData] = useState(null);
 
@@ -33,7 +32,6 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       // Pre-fill customer contact if available
       if (saleData.customer) {
         setCustomerEmail(saleData.customer.email || '');
-        setCustomerPhone(saleData.customer.phone || '');
       }
     }
   }, [isOpen, saleData, businessInfo]);
@@ -58,6 +56,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       };
       
       toast.success('Receipt sent to printer');
+      
+      // Auto-close after successful print and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('Print error:', error);
       toast.error('Failed to print receipt');
@@ -76,6 +81,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
       pdf.save(`Receipt-${receiptData.receipt.number}.pdf`);
       
       toast.success('PDF receipt downloaded');
+      
+      // Auto-close after successful download and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF');
@@ -93,9 +105,7 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
 
     setIsGenerating(true);
     try {
-      const emailData = receiptGenerator.generateEmailReceipt(receiptData);
-      
-      // Send email via API
+      // Call frontend API proxy to send email (handles auth properly)
       const response = await fetch('/api/pos/send-receipt', {
         method: 'POST',
         headers: {
@@ -106,15 +116,33 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
           type: 'email',
           to: customerEmail,
           receipt: receiptData,
-          emailContent: emailData
+          emailContent: {
+            subject: `Receipt #${receiptData?.receipt?.number || 'N/A'}`,
+            html: true
+          }
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send email');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 503) {
+          toast.error('Email service is being configured. Please download the PDF receipt instead.');
+        } else if (response.status === 401) {
+          toast.error('Authentication required. Please sign in again.');
+        } else {
+          toast.error(errorData.error || errorData.message || 'Failed to send email');
+        }
+        return;
       }
 
       toast.success(`Receipt emailed to ${customerEmail}`);
+      
+      // Auto-close after successful email and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('Email error:', error);
       toast.error('Failed to send email receipt');
@@ -123,32 +151,6 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
     }
   };
 
-  // WhatsApp receipt
-  const handleWhatsAppReceipt = async () => {
-    if (!receiptGenerator || !receiptData) return;
-
-    try {
-      const whatsappMessage = receiptGenerator.generateWhatsAppMessage(receiptData);
-      let whatsappUrl;
-
-      if (customerPhone.trim()) {
-        // Clean phone number (remove non-digits)
-        const cleanPhone = customerPhone.replace(/\D/g, '');
-        whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
-      } else {
-        // Open WhatsApp without specific number
-        whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
-      }
-
-      // Open WhatsApp
-      window.open(whatsappUrl, '_blank');
-      
-      toast.success('WhatsApp opened with receipt');
-    } catch (error) {
-      console.error('WhatsApp error:', error);
-      toast.error('Failed to open WhatsApp');
-    }
-  };
 
   // Share receipt (Web Share API or fallback)
   const handleShareReceipt = async () => {
@@ -168,6 +170,13 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
         await navigator.clipboard.writeText(textReceipt);
         toast.success('Receipt copied to clipboard');
       }
+      
+      // Auto-close after successful share and reset POS
+      setTimeout(() => {
+        onClose();
+        if (onReceiptHandled) onReceiptHandled();
+      }, 1500);
+      
     } catch (error) {
       console.error('Share error:', error);
       toast.error('Failed to share receipt');
@@ -302,30 +311,16 @@ const ReceiptDialog = ({ isOpen, onClose, saleData, businessInfo }) => {
                       />
                     </div>
 
-                    {/* WhatsApp Receipt */}
-                    <div className="space-y-2">
-                      <input
-                        type="tel"
-                        placeholder="Customer WhatsApp number (optional)"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      />
-                      <ReceiptOption
-                        icon={ShareIcon}
-                        title="WhatsApp Receipt"
-                        description="Share receipt via WhatsApp"
-                        onClick={handleWhatsAppReceipt}
-                        disabled={isGenerating}
-                      />
-                    </div>
                   </div>
 
                   {/* Footer */}
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex space-x-3">
                       <button
-                        onClick={onClose}
+                        onClick={() => {
+                          onClose();
+                          if (onReceiptHandled) onReceiptHandled();
+                        }}
                         className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         Skip Receipt

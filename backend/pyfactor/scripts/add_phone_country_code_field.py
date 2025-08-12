@@ -13,7 +13,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 # Setup Django
 django.setup()
 
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.core.management import call_command
 import logging
 
@@ -72,7 +72,7 @@ def main():
     logger.info("🚀 Starting phone_country_code field addition...")
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             success = add_phone_country_code_field()
             
             if success:

@@ -1,9 +1,10 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.conf import settings
 from decimal import Decimal
 import stripe
@@ -38,7 +39,7 @@ if hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
         redis_client = None
 
 
-class SmartInsightsViewSet(viewsets.ViewSet):
+class SmartInsightsViewSet(TenantIsolatedViewSet):
     """Main viewset for Smart Insights credit management"""
     permission_classes = [IsAuthenticated]
     
@@ -104,7 +105,7 @@ class SmartInsightsViewSet(viewsets.ViewSet):
                 status=status.HTTP_402_PAYMENT_REQUIRED
             )
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Deduct credits
             user_credit.deduct_credits(amount)
             
@@ -311,7 +312,7 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             # Add credits to user account
             user_credit, _ = UserCredit.objects.get_or_create(user=request.user)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 user_credit.add_credits(credits)
                 
                 # Record transaction
@@ -515,7 +516,7 @@ Please provide specific insights based on the actual business data above, not ge
             print(f"[Smart Insights] Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             print(f"[Smart Insights] API cost: ${total_api_cost:.6f}, Credits charged: {credits_used}")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Deduct credits
                 user_credit.deduct_credits(credits_used)
                 
@@ -731,7 +732,7 @@ Please provide specific insights based on the actual business data above, not ge
             return Response({'allowed': True})
 
 
-class StripeWebhookView(viewsets.ViewSet):
+class StripeWebhookView(TenantIsolatedViewSet):
     """Handle Stripe webhooks"""
     permission_classes = []  # No auth for webhooks
     
@@ -768,7 +769,7 @@ class StripeWebhookView(viewsets.ViewSet):
                     # Add credits to user account
                     user_credit, _ = UserCredit.objects.get_or_create(user=user)
                     
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         user_credit.add_credits(credits)
                         
                         # Record transaction

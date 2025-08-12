@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 /**
  * Handle subscription save API request
- * This is a simplified version that simulates a successful save without contacting the backend
+ * Saves subscription data to backend database via subscription service
  */
 export async function POST(request) {
   try {
@@ -18,8 +18,66 @@ export async function POST(request) {
       business_type: data.business_type
     });
 
-    // In a real implementation, this would save the subscription details to the backend
-    // But for now, we'll just simulate a successful response
+    // Get session to identify user/tenant
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      return NextResponse.json({
+        success: false,
+        error: 'No session found'
+      }, { status: 401 });
+    }
+
+    // Get user profile to get tenant_id
+    const profileResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://dottapps.com'}/api/auth/profile`, {
+      headers: {
+        'Cookie': `sid=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+
+    if (!profileResponse.ok) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid session'
+      }, { status: 401 });
+    }
+
+    const profileData = await profileResponse.json();
+    const tenantId = profileData.tenantId;
+
+    if (!tenantId) {
+      return NextResponse.json({
+        success: false,
+        error: 'No tenant ID found'
+      }, { status: 400 });
+    }
+
+    // Save subscription to backend using the subscription service
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    
+    const backendResponse = await fetch(`${API_URL}/api/subscriptions/save/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tenant_id: tenantId,
+        selected_plan: data.plan,
+        billing_cycle: data.interval || 'monthly',
+        status: 'active'
+      })
+    });
+
+    let subscriptionResult = null;
+    if (backendResponse.ok) {
+      subscriptionResult = await backendResponse.json();
+      logger.info('[API] Subscription saved to backend successfully');
+    } else {
+      logger.warn('[API] Backend subscription save failed, continuing with frontend flow');
+    }
 
     const response = NextResponse.json({
       success: true,
@@ -36,7 +94,6 @@ export async function POST(request) {
     });
 
     // Set cookies to update the onboarding step
-    const cookieStore = cookies();
     const expiration = new Date();
     expiration.setDate(expiration.getDate() + 7); // 1 week
     

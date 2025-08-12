@@ -22,7 +22,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 // Tooltip component for field help
 const FieldTooltip = ({ text }) => {
   const [isVisible, setIsVisible] = useState(false);

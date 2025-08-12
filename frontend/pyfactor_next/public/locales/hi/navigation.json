@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "व्यवसाय स्वामी को आमंत्रित करें",
     "analytics": "विश्लेषण",
     "smartInsights": "स्मार्ट अंतर्दृष्टि",
-    "dottStatus": "Dott स्थिति"
+    "dottStatus": "Dott स्थिति",
+    "jobs": "कार्य"
   },
   "subMenu": {
     "dashboard": "डैशबोर्ड",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "खातों का चार्ट",
     "journalEntries": "जर्नल प्रविष्टियां",
     "generalLedger": "सामान्य खाता बही",
-    "trialBalance": "परीक्षण संतुलन"
+    "trialBalance": "परीक्षण संतुलन",
+    "jobsList": "सभी कार्य",
+    "jobCosting": "कार्य लागत निर्धारण",
+    "jobMaterials": "सामग्री उपयोग",
+    "jobLabor": "श्रम ट्रैकिंग",
+    "jobProfitability": "लाभप्रदता विश्लेषण",
+    "services": "सेवाएं",
+    "jobs": "नौकरियां"
   },
   "actions": {
     "viewAll": "सभी देखें",

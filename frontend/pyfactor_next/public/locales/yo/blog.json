@@ -1,0 +1,49 @@
+{
+  "backToHome": "Pada si Ojulé",
+  "hero": {
+    "title": "Bulọọu Iṣọwọ Dott",
+    "subtitle": "Kọ ẹkọ bi o ṣe le ṣakoso owo iṣowo rẹ pẹlu Dott. Gba imọran, oye ati awọn ilana lati mu iṣowo rẹ dagba."
+  },
+  "newsletter": {
+    "title": "Forukọsilẹ fun iwe irohin wa fun awọn imudojuiwọn ọja ati awọn ifiweṣile bulọọu tuntun!",
+    "placeholder": "Adiresi imeeli rẹ",
+    "button": "Alabapin"
+  },
+  "categories": {
+    "all": "Gbogbo Awọn Nkan",
+    "accounting": "Iṣiro ati Owó-ori",
+    "business": "Iṣọwọ"
+  },
+  "search": {
+    "placeholder": "Wa awọn nkan..."
+  },
+  "featured": "Ti a ṣafihan",
+  "readTime": "Iṣẹju {{minutes}} kika",
+  "noArticles": "Ko si awọn nkan ti a ri ti o baamu pẹlu ibeere rẹ.",
+  "articles": {
+    "profitLoss": {
+      "title": "Oye Èrè ati Padánu: Itopase Igbadun fun Awọn Oniṣowo",
+      "excerpt": "Ṣawari bii o ṣe le ka ati loye aláyé P&L rẹ lai sun. A ṣe ileri lati jẹ ki o nifẹsi!"
+    },
+    "expenses": {
+      "title": "Tẹle Awọn Inawo Iṣowo Bi Ọgbẹni: Awọn Igbẹsẹ 5 Ti o Rọrọ",
+      "excerpt": "Kọ ẹkọ bi o ṣe le tẹle gbogbo kobo lai sọnu ọkan inu rẹ. Pari, ṣawari eyi ti awọn inawo le fi owo pamọ fun ọ ni akoko owo-ori!"
+    },
+    "taxDeductions": {
+      "title": "Awọn Iyọkúrò Owó-ori ti o Farapamọ Ti Gbogbo Iṣowo Kekere Yẹ Ki o Mọ",
+      "excerpt": "Dawọ fi owo silẹ lori tabili! Ṣawari awọn iyọkúrò owó-ori to tọ ti ọpọlọpọ awọn oniṣowo padanu."
+    },
+    "inventory": {
+      "title": "Yi Iṣakoso Ọja Rẹ Pada pẹlu Ọwọn Barcode",
+      "excerpt": "Sọ o dabọ si kika pẹlu ọwọ! Kọ ẹkọ bii ọwọn barcode ṣe le ṣe iyipada nla ni iṣakoso ọja rẹ."
+    },
+    "mobile": {
+      "title": "Ṣakoso Gbogbo Iṣowo Rẹ Lati Fóònù Rẹ: Iyipada Alagbeka",
+      "excerpt": "Ṣawari bii o ṣe le ṣakoso awọn iwe-owo, tẹle ọja ati mu awọn isanwo - gbogbo rẹ lati ori foonu alagbeka rẹ!"
+    },
+    "customerRelationships": {
+      "title": "Kọ Awọn Ibasepọ Alabára Ti o Duro: CRM Ti a Mu Rọrọ",
+      "excerpt": "Kọ ẹkọ bi o ṣe le jẹ ki awọn alabára pada wa lai lo software ti o nira tabi awọn irinse gbowolori."
+    }
+  }
+}

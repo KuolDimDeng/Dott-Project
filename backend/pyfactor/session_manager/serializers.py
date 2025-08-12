@@ -17,6 +17,7 @@ class SessionSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     tenant = serializers.SerializerMethodField()
     session_token = serializers.SerializerMethodField()
+    subscription_plan = serializers.SerializerMethodField()  # Override to use single source of truth
     
     class Meta:
         model = UserSession
@@ -50,13 +51,40 @@ class SessionSerializer(serializers.ModelSerializer):
         """Return session ID as token"""
         return str(obj.session_id)
     
+    def get_subscription_plan(self, obj):
+        """Return subscription plan from single source of truth"""
+        from users.subscription_service import SubscriptionService
+        
+        # Get subscription from single source of truth
+        if obj.user.business_id:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.user.business_id))
+            logger.info(f"[SessionSerializer] Top-level subscription for business {obj.user.business_id}: {subscription_plan}")
+        elif obj.tenant:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.tenant.id))
+            logger.info(f"[SessionSerializer] Top-level subscription for tenant {obj.tenant.id}: {subscription_plan}")
+        else:
+            subscription_plan = 'free'
+            logger.info(f"[SessionSerializer] No business/tenant found, defaulting to free")
+        
+        # Update the session's subscription_plan field for consistency
+        if obj.subscription_plan != subscription_plan:
+            obj.subscription_plan = subscription_plan
+            obj.save(update_fields=['subscription_plan'])
+            logger.info(f"[SessionSerializer] Updated session subscription_plan field to: {subscription_plan}")
+        
+        return subscription_plan
+    
     def get_user(self, obj):
         """Return user information including business details"""
+        # Import subscription service for single source of truth
+        from users.subscription_service import SubscriptionService
+        
         # Log user role for tracking
         user_role = getattr(obj.user, 'role', 'OWNER')  # Default to OWNER for new users
         logger.info(f"🚨 [ROLE_TRACKING] SessionSerializer - user {obj.user.email} role: {user_role}")
         
         # Get page permissions for the user
+        logger.info(f"[SessionSerializer] DEBUG - Loading permissions for user {obj.user.email} with role {user_role}")
         page_permissions = []
         if user_role == 'OWNER':
             # Owners have access to all pages
@@ -93,7 +121,9 @@ class SessionSerializer(serializers.ModelSerializer):
                 user=obj.user,
                 tenant=obj.user.tenant
             ).select_related('page')
+            logger.info(f"[SessionSerializer] DEBUG - Found {user_access.count()} UserPageAccess records for user {obj.user.email}")
             for access in user_access:
+                logger.info(f"[SessionSerializer] DEBUG - Adding permission for page: {access.page.name} (path: {access.page.path})")
                 page_permissions.append({
                     'path': access.page.path,
                     'name': access.page.name,
@@ -104,6 +134,23 @@ class SessionSerializer(serializers.ModelSerializer):
                     'can_delete': access.can_delete
                 })
         
+        logger.info(f"[SessionSerializer] DEBUG - Total permissions loaded: {len(page_permissions)}")
+        
+        # Get subscription plan from single source of truth (SubscriptionService)
+        subscription_plan = 'free'  # Default
+        if obj.user.business_id:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.user.business_id))
+            logger.info(f"[SessionSerializer] Subscription from SubscriptionService for business {obj.user.business_id}: {subscription_plan}")
+        elif obj.tenant:
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.tenant.id))
+            logger.info(f"[SessionSerializer] Subscription from SubscriptionService for tenant {obj.tenant.id}: {subscription_plan}")
+        
+        # Also update the session object's subscription_plan field for consistency
+        if obj.subscription_plan != subscription_plan:
+            obj.subscription_plan = subscription_plan
+            obj.save(update_fields=['subscription_plan'])
+            logger.info(f"[SessionSerializer] Updated session subscription_plan to: {subscription_plan}")
+        
         user_data = {
             'id': obj.user.id,
             'email': obj.user.email,
@@ -113,7 +160,7 @@ class SessionSerializer(serializers.ModelSerializer):
             'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', ''),
-            'subscription_plan': getattr(obj.user, 'subscription_plan', 'free'),
+            'subscription_plan': subscription_plan,  # Single source of truth
             'business_id': str(obj.user.business_id) if obj.user.business_id else None,
             'tenantId': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None,
             'tenant_id': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None
@@ -146,42 +193,59 @@ class SessionSerializer(serializers.ModelSerializer):
                     user_data['business_name'] = onboarding.business.name
                     user_data['businessName'] = onboarding.business.name  # Both formats for compatibility
                 
-                # Get business type and country from BusinessDetails
+                # Get business type and country from consolidated Business model (new architecture)
                 business_country = None
                 business_type = None
+                business_state = None
+                business_county = None
+                
                 if onboarding.business:
                     business_type = onboarding.business.business_type
                     if business_type:
                         user_data['business_type'] = business_type
                         user_data['businessType'] = business_type
                     
-                    # Get country from business details (correct location)
+                    # Get country from Business model directly (new consolidated architecture)
                     try:
-                        # Country is stored in BusinessDetails.country
-                        business_details = onboarding.business.details
-                        if business_details and business_details.country:
-                            business_country = str(business_details.country)
-                            logger.debug(f"Found country from BusinessDetails: {business_country}")
+                        # Country is now stored directly in Business.country
+                        if hasattr(onboarding.business, 'country') and onboarding.business.country:
+                            business_country = str(onboarding.business.country)
+                            logger.debug(f"Found country from Business model: {business_country}")
+                            
+                            # Also get state and county if available
+                            if hasattr(onboarding.business, 'state'):
+                                business_state = str(onboarding.business.state) if onboarding.business.state else None
+                            if hasattr(onboarding.business, 'county'):
+                                business_county = str(onboarding.business.county) if onboarding.business.county else None
+                        else:
+                            # Fallback to BusinessDetails if Business.country not available (backward compatibility)
+                            try:
+                                business_details = onboarding.business.details
+                                if business_details and business_details.country:
+                                    business_country = str(business_details.country)
+                                    logger.debug(f"Fallback: Found country from BusinessDetails: {business_country}")
+                            except Exception as e:
+                                logger.debug(f"Could not fetch country from business details: {e}")
                     except Exception as e:
-                        logger.debug(f"Could not fetch country from business details: {e}")
-                        # Fallback: try to get from onboarding.business directly if it has a country field
-                        try:
-                            if hasattr(onboarding.business, 'country') and onboarding.business.country:
-                                business_country = str(onboarding.business.country)
-                                logger.debug(f"Found country from Business fallback: {business_country}")
-                        except Exception as fallback_e:
-                            logger.debug(f"Fallback country lookup also failed: {fallback_e}")
+                        logger.debug(f"Could not fetch country from Business model: {e}")
                 
                 # Include full onboarding progress data
                 user_data['onboardingProgress'] = {
                     'businessName': onboarding.business.name if onboarding.business else None,
                     'businessType': business_type,
-                    'country': business_country,  # Now correctly from BusinessDetails
+                    'country': business_country,  # Now correctly from Business model
+                    'state': business_state,
+                    'county': business_county,
                     'legalStructure': onboarding.legal_structure,
                     'dateFounded': onboarding.date_founded.isoformat() if onboarding.date_founded else None,
                     'currentStep': onboarding.current_step,
                     'onboardingStatus': onboarding.onboarding_status
                 }
+                
+                # Also add business location at root level for POS
+                user_data['business_country'] = business_country
+                user_data['business_state'] = business_state
+                user_data['business_county'] = business_county
         except Exception as e:
             # Don't fail if onboarding info is not available
             logger.debug(f"Could not fetch onboarding info: {e}")
@@ -229,11 +293,15 @@ class SessionSerializer(serializers.ModelSerializer):
             else:
                 logger.debug(f"[SessionSerializer] Using cached business name: {business_name}")
             
+            # Get subscription from single source of truth
+            from users.subscription_service import SubscriptionService
+            subscription_plan = SubscriptionService.get_subscription_plan(str(obj.tenant.id))
+            
             return {
                 'id': str(obj.tenant.id),
                 'name': business_name,  # Use the actual business name
                 'business_name': business_name,  # Use the actual business name
-                'subscription_plan': obj.user.subscription_plan if hasattr(obj.user, 'subscription_plan') else obj.subscription_plan
+                'subscription_plan': subscription_plan  # Single source of truth
             }
         return None
 

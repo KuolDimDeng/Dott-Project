@@ -122,52 +122,11 @@ function JournalEntryManagement({ onNavigate }) {
     setLoading(true);
 
     try {
-      const response = await accountingApi.journalEntries.getAll().catch(err => {
-        logger.warn('[JournalEntryManagement] API error, using demo data:', err);
-        return null;
-      });
-
-      // Demo data fallback
-      const demoEntries = [
-        {
-          id: 1,
-          date: '2025-01-05',
-          reference: 'JE-2025-001',
-          description: 'Office rent payment for January',
-          status: 'posted',
-          total: 5000,
-          lines: [
-            { account: '5100 - Rent Expense', debit: 5000, credit: 0 },
-            { account: '1001 - Bank Account', debit: 0, credit: 5000 }
-          ]
-        },
-        {
-          id: 2,
-          date: '2025-01-04',
-          reference: 'JE-2025-002',
-          description: 'Customer payment received',
-          status: 'posted',
-          total: 12000,
-          lines: [
-            { account: '1001 - Bank Account', debit: 12000, credit: 0 },
-            { account: '1200 - Accounts Receivable', debit: 0, credit: 12000 }
-          ]
-        },
-        {
-          id: 3,
-          date: '2025-01-03',
-          reference: 'JE-2025-003',
-          description: 'Equipment purchase',
-          status: 'draft',
-          total: 8500,
-          lines: [
-            { account: '1500 - Equipment', debit: 8500, credit: 0 },
-            { account: '2100 - Accounts Payable', debit: 0, credit: 8500 }
-          ]
-        }
-      ];
-
-      const entries = response?.entries || demoEntries;
+      const response = await fetch('/api/accounting/journal-entries');
+      const data = await response.json();
+      
+      // Use real data from backend
+      const entries = data?.entries || [];
       setJournalEntries(entries);
 
       // Calculate stats
@@ -215,24 +174,11 @@ function JournalEntryManagement({ onNavigate }) {
     if (!tenantId) return;
 
     try {
-      const response = await accountingApi.chartOfAccounts.getAll().catch(err => {
-        logger.warn('[JournalEntryManagement] Accounts API error, using demo data:', err);
-        return null;
-      });
-
-      // Demo accounts fallback
-      const demoAccounts = [
-        { id: '1001', code: '1001', name: 'Bank Account', type: 'asset', normalBalance: 'debit' },
-        { id: '1200', code: '1200', name: 'Accounts Receivable', type: 'asset', normalBalance: 'debit' },
-        { id: '1500', code: '1500', name: 'Equipment', type: 'asset', normalBalance: 'debit' },
-        { id: '2100', code: '2100', name: 'Accounts Payable', type: 'liability', normalBalance: 'credit' },
-        { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'equity', normalBalance: 'credit' },
-        { id: '4000', code: '4000', name: 'Sales Revenue', type: 'revenue', normalBalance: 'credit' },
-        { id: '5100', code: '5100', name: 'Rent Expense', type: 'expense', normalBalance: 'debit' },
-        { id: '5200', code: '5200', name: 'Utilities Expense', type: 'expense', normalBalance: 'debit' }
-      ];
-
-      setAccounts(response?.accounts || demoAccounts);
+      const response = await fetch('/api/accounting/chart-of-accounts');
+      const data = await response.json();
+      
+      // Use real data from backend only
+      setAccounts(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error('[JournalEntryManagement] Error fetching accounts:', error);
     }
@@ -421,10 +367,18 @@ function JournalEntryManagement({ onNavigate }) {
       };
 
       if (selectedEntry) {
-        await accountingApi.journalEntries.update(selectedEntry.id, entryData);
+        await fetch(`/api/accounting/journal-entries?id=${selectedEntry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entryData)
+        });
         toast.success('Journal entry updated successfully');
       } else {
-        await accountingApi.journalEntries.create(entryData);
+        await fetch('/api/accounting/journal-entries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entryData)
+        });
         toast.success('Journal entry created successfully');
       }
 
@@ -440,7 +394,9 @@ function JournalEntryManagement({ onNavigate }) {
   // Handle confirm delete
   const handleConfirmDelete = async () => {
     try {
-      await accountingApi.journalEntries.delete(selectedEntry.id);
+      await fetch(`/api/accounting/journal-entries?id=${selectedEntry.id}`, {
+        method: 'DELETE'
+      });
       toast.success('Journal entry deleted successfully');
       setIsDeleteModalOpen(false);
       fetchJournalEntries();
@@ -458,7 +414,11 @@ function JournalEntryManagement({ onNavigate }) {
     }
 
     try {
-      await accountingApi.journalEntries.update(entry.id, { ...entry, status: 'posted' });
+      await fetch(`/api/accounting/journal-entries?id=${entry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...entry, status: 'posted' })
+      });
       toast.success('Journal entry posted successfully');
       fetchJournalEntries();
     } catch (error) {
@@ -666,10 +626,10 @@ function JournalEntryManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}
@@ -910,10 +870,10 @@ function JournalEntryManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}
@@ -1017,10 +977,10 @@ function JournalEntryManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}

@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.conf import settings
 from datetime import timedelta
@@ -36,6 +36,11 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     """ViewSet for managing users within a tenant"""
     serializer_class = UserListSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    
+    @action(detail=False, methods=['get'])
+    def test(self, request):
+        """Test endpoint to verify the API is working"""
+        return Response({"message": "RBAC API is working", "user": request.user.email if request.user else None})
     
     def get_queryset(self):
         """Get users for the current tenant only"""
@@ -85,7 +90,12 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def update_permissions(self, request, pk=None):
         """Update user role and permissions"""
+        logger.info(f"[RBAC] update_permissions called for pk={pk}")
+        logger.info(f"[RBAC] Request data: {request.data}")
+        logger.info(f"[RBAC] Request user: {request.user.email if request.user else 'None'}")
+        
         user = self.get_object()
+        logger.info(f"[RBAC] Target user: {user.email}")
         
         # Prevent changing owner role
         if user.role == 'OWNER':
@@ -102,9 +112,14 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             )
         
         serializer = UpdateUserPermissionsSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            logger.error(f"[RBAC] Serializer validation failed: {serializer.errors}")
+            return Response(
+                {"error": "Invalid data", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Update role if provided
             new_role = serializer.validated_data.get('role')
             if new_role and new_role != user.role:
@@ -159,6 +174,101 @@ class UserManagementViewSet(viewsets.ModelViewSet):
         user.save()
         
         return Response({"status": "User activated"})
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Industry-standard user deletion with Auth0 cleanup and graceful fallback
+        
+        Process:
+        1. Try to delete from Auth0 identity provider
+        2. If Auth0 deletion fails, log but continue (graceful fallback)
+        3. Deactivate user locally (soft delete for audit trail)
+        4. Clear all active sessions
+        5. Log operation for audit
+        """
+        user = self.get_object()
+        
+        # Prevent deleting owner
+        if user.role == 'OWNER':
+            logger.warning(f"[UserDeletion] Attempt to delete owner user: {user.email}")
+            return Response(
+                {"error": "Cannot delete the business owner"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Prevent non-owners from deleting admins
+        if user.role == 'ADMIN' and request.user.role != 'OWNER':
+            logger.warning(f"[UserDeletion] Non-owner attempt to delete admin: {user.email}")
+            return Response(
+                {"error": "Only owners can delete admin users"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        logger.info(f"[UserDeletion] Starting deletion process for user: {user.email}")
+        
+        # Step 1: Try to delete from Auth0
+        auth0_deleted = False
+        if hasattr(user, 'auth0_sub') and user.auth0_sub:
+            try:
+                from ..auth0_service import delete_auth0_user
+                auth0_deleted = delete_auth0_user(user.auth0_sub)
+                if auth0_deleted:
+                    logger.info(f"[UserDeletion] Successfully deleted user from Auth0: {user.email}")
+                else:
+                    logger.warning(f"[UserDeletion] Failed to delete user from Auth0: {user.email}")
+            except Exception as e:
+                logger.error(f"[UserDeletion] Auth0 deletion error for {user.email}: {str(e)}")
+                # Continue with local deletion even if Auth0 fails
+        else:
+            logger.info(f"[UserDeletion] No Auth0 sub found for user: {user.email}")
+        
+        # Step 2: Clear all active sessions
+        try:
+            from session_manager.models import UserSession
+            sessions_deleted = UserSession.objects.filter(user=user, is_active=True).update(is_active=False)
+            logger.info(f"[UserDeletion] Deactivated {sessions_deleted} sessions for user: {user.email}")
+        except Exception as e:
+            logger.error(f"[UserDeletion] Error clearing sessions for {user.email}: {str(e)}")
+        
+        # Step 3: Soft delete (deactivate) user locally for audit trail
+        try:
+            with db_transaction.atomic():
+                # Mark as inactive instead of hard delete
+                user.is_active = False
+                user.is_deleted = True
+                user.deleted_at = timezone.now()
+                user.deletion_initiated_by = request.user.email
+                user.save()
+                
+                # Clear user permissions
+                UserPageAccess.objects.filter(user=user).delete()
+                
+                # Mark any pending invitations as cancelled
+                UserInvitation.objects.filter(
+                    email=user.email,
+                    status='pending'
+                ).update(
+                    status='cancelled',
+                    updated_at=timezone.now()
+                )
+                
+                logger.info(f"[UserDeletion] Successfully deactivated user: {user.email}")
+                
+        except Exception as e:
+            logger.error(f"[UserDeletion] Error during local user deletion: {str(e)}")
+            return Response(
+                {"error": f"Failed to delete user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Step 4: Audit log
+        logger.info(f"[UserDeletion] AUDIT: User {user.email} deleted by {request.user.email}. Auth0 deleted: {auth0_deleted}")
+        
+        return Response({
+            "message": f"User {user.email} has been successfully removed",
+            "auth0_deleted": auth0_deleted,
+            "local_deactivated": True
+        }, status=status.HTTP_200_OK)
 
 
 class PagePermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -423,7 +533,7 @@ class UserInvitationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Update user with tenant and role
                 user = request.user
                 user.tenant = invitation.tenant
@@ -600,7 +710,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
         return Response({"exists": exists})
     
     @action(detail=False, methods=['post'], url_path='create')
-    @transaction.atomic
+    @db_transaction.atomic
     def create_user(self, request):
         """Create user directly in Auth0 and backend"""
         try:
@@ -610,6 +720,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
             # Validate request data
             email = request.data.get('email')
+            first_name = request.data.get('first_name', '').strip()
+            last_name = request.data.get('last_name', '').strip()
             role = request.data.get('role', 'USER')
             permissions_raw = request.data.get('permissions', [])
             
@@ -709,6 +821,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             try:
                 user = User.objects.create(
                     email=email,
+                    first_name=first_name,
+                    last_name=last_name,
                     role=role,
                     tenant=request.user.tenant,
                     business_id=request.user.business_id,
@@ -732,26 +846,75 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     logger.warning(f"[DirectUserCreation] Permissions is not a list: {type(permissions)}")
                     permissions = []
                 
-                for perm in permissions:
+                logger.info(f"[DirectUserCreation] DEBUG - Processing {len(permissions)} permissions")
+                
+                for i, perm in enumerate(permissions):
                     # Skip if perm is not a dict
                     if not isinstance(perm, dict):
                         logger.warning(f"[DirectUserCreation] Skipping non-dict permission: {perm}")
                         continue
-                        
-                    page_id = perm.get('pageId')
+                    
+                    logger.info(f"[DirectUserCreation] DEBUG - Permission {i}: {perm}")
+                    
+                    # Check both camelCase and snake_case
+                    page_id = perm.get('pageId') or perm.get('page_id')
                     if page_id:
                         try:
-                            page = PagePermission.objects.get(id=page_id)
-                            UserPageAccess.objects.create(
+                            # First try as UUID
+                            import uuid
+                            try:
+                                uuid.UUID(str(page_id))
+                                page = PagePermission.objects.get(id=page_id)
+                            except (ValueError, TypeError):
+                                # Not a UUID, try to find by path patterns
+                                page = None
+                                
+                                # Try different path patterns
+                                path_patterns = [
+                                    f"/dashboard/{page_id}",
+                                    f"/dashboard/{page_id.replace('-', '/')}",  # Convert sales-products to sales/products
+                                    f"/dashboard/products/{page_id}",
+                                    f"/dashboard/services/{page_id}",
+                                    f"/dashboard/customers/{page_id}",
+                                    f"/dashboard/vendors/{page_id}",
+                                ]
+                                
+                                for pattern in path_patterns:
+                                    page = PagePermission.objects.filter(path=pattern, is_active=True).first()
+                                    if page:
+                                        break
+                                
+                                # If still not found, try flexible matching
+                                if not page:
+                                    from django.db.models import Q
+                                    page = PagePermission.objects.filter(
+                                        Q(path__icontains=str(page_id)) | 
+                                        Q(name__iexact=str(page_id)) |
+                                        Q(path__endswith=f"/{page_id}"),
+                                        is_active=True
+                                    ).first()
+                                
+                                if not page:
+                                    raise PagePermission.DoesNotExist(f"No page found for identifier: {page_id}")
+                            
+                            logger.info(f"[DirectUserCreation] DEBUG - Found page: {page.name} (id: {page.id})")
+                            
+                            # Create page access with both formats
+                            access = UserPageAccess.objects.create(
                                 user=user,
                                 page=page,
-                                can_read=perm.get('canRead', True),
-                                can_write=perm.get('canWrite', False),
-                                can_edit=perm.get('canEdit', False),
-                                can_delete=perm.get('canDelete', False)
+                                can_read=perm.get('canRead', True) or perm.get('can_read', True),
+                                can_write=perm.get('canWrite', False) or perm.get('can_write', False),
+                                can_edit=perm.get('canEdit', False) or perm.get('can_edit', False),
+                                can_delete=perm.get('canDelete', False) or perm.get('can_delete', False),
+                                tenant=request.user.tenant,
+                                granted_by=request.user
                             )
+                            logger.info(f"[DirectUserCreation] DEBUG - Created UserPageAccess: {access.id} for page {page.name}")
                         except PagePermission.DoesNotExist:
                             logger.warning(f"Page permission {page_id} not found")
+                    else:
+                        logger.warning(f"[DirectUserCreation] No page_id found in permission: {perm}")
             except Exception as perm_error:
                 logger.error(f"[DirectUserCreation] Error processing permissions: {str(perm_error)}")
                 # Don't fail user creation just because of permissions
@@ -812,7 +975,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
         except Exception as e:
             logger.error(f"[DirectUserCreation] Error creating user: {str(e)}")
             logger.info(f"[DirectUserCreation] Transaction will be rolled back due to error")
-            # @transaction.atomic ensures all database changes are rolled back automatically
+            # @db_transaction.atomic ensures all database changes are rolled back automatically
             return Response(
                 {"error": f"Failed to create user: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -879,6 +1042,16 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 }
             }
             
+            # Add name fields if provided
+            if user.first_name:
+                user_payload['given_name'] = user.first_name
+            if user.last_name:
+                user_payload['family_name'] = user.last_name
+            if user.first_name or user.last_name:
+                full_name = f"{user.first_name} {user.last_name}".strip()
+                if full_name:
+                    user_payload['name'] = full_name
+            
             headers = {
                 'Authorization': f'Bearer {access_token}',
                 'Content-Type': 'application/json'
@@ -899,7 +1072,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     
                     # Use a savepoint to handle token creation separately
                     from django.db import transaction
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         # Store token with 24 hour expiry
                         PasswordResetToken.objects.create(
                             user=user,

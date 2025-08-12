@@ -7,7 +7,7 @@ import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import ErrorBoundaryHandler from '@/components/ErrorBoundaryHandler';
 import { useRouter } from 'next/navigation';
-import { fetchAuthSession, signOut } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { SessionProvider } from '@/contexts/SessionContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ClientDataSync } from '@/app/dashboard/DashboardClient';
@@ -16,7 +16,10 @@ import { fetchCurrentUserMenuPrivileges } from '@/utils/menuPrivileges';
 import { loadStripeScript } from '@/utils/stripeUtils';
 import { storeNormalizedRole } from '@/utils/userRoleUtils';
 import { I18nextProvider } from 'react-i18next';
-import i18nInstance from '@/i18n';
+import i18nInstance from '@/i18n-optimized';
+import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
+import SessionTimeoutModal from '@/components/SessionTimeoutModal';
+import PageTitle from '@/components/PageTitle';
 
 // Use a more direct approach for dynamic imports
 const KeyboardFixerLoader = dynamic(
@@ -159,13 +162,18 @@ export default function ClientLayout({ children }) {
         }
       `}</style>
       <I18nextProvider i18n={i18nInstance}>
+        <PageTitle />
         <SessionProvider>
           <ThemeProvider>
             <NotificationProvider>
-              <DynamicComponents>
-                <ClientDataSync />
-                {children}
-              </DynamicComponents>
+              <SessionTimeoutProvider>
+                {console.log('🔐 [DashboardClientLayout] SessionTimeoutProvider wrapped')}
+                <DynamicComponents>
+                  <ClientDataSync />
+                  {children}
+                  <SessionTimeoutModal />
+                </DynamicComponents>
+              </SessionTimeoutProvider>
             </NotificationProvider>
           </ThemeProvider>
         </SessionProvider>

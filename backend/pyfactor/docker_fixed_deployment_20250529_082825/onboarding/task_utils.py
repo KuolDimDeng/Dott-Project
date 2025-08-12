@@ -4,7 +4,7 @@ import asyncio
 import psycopg2
 from django.utils import timezone  # Add this at the top
 from django.conf import settings
-from django.db import connections, transaction
+from django.db import connections, transaction as db_transaction
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from contextlib import contextmanager

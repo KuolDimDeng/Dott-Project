@@ -1,0 +1,49 @@
+{
+  "backToHome": "Koma Gida",
+  "hero": {
+    "title": "Shafin Blog na Kasuwanci na Dott",
+    "subtitle": "Koyi yadda za ka sarrafa kuɗin kasuwancinka ta hanyar Dott. Ka sami shawarwari, hangen nesa da dabarun haɓaka kasuwancinka."
+  },
+  "newsletter": {
+    "title": "Yi rajista don samun sabon kayan aiki da sabbin abubuwan da aka wallafa a shafin blog!",
+    "placeholder": "Adireshin imel ɗinka",
+    "button": "Yi Rajista"
+  },
+  "categories": {
+    "all": "Duk Labaran",
+    "accounting": "Lissafi da Haraji",
+    "business": "Kasuwanci"
+  },
+  "search": {
+    "placeholder": "Nemo labarai..."
+  },
+  "featured": "Fitaccen",
+  "readTime": "Mintuna {{minutes}} na karatu",
+  "noArticles": "Ba a sami labaran da suka dace da abin da kake nema ba.",
+  "articles": {
+    "profitLoss": {
+      "title": "Fahimtar Riba da Hasara: Jagora Mai Niɗa ga Masu Kasuwanci",
+      "excerpt": "Gano yadda za ka karanta kuma ka fahimci bayanin P&L ɗinka ba tare da barci ba. Mun yi alkawarin sa ya zama mai ban sha'awa!"
+    },
+    "expenses": {
+      "title": "Bi Kashe Kuɗin Kasuwanci Kamar ƚwararren: Matakai 5 Masu Sauƙi",
+      "excerpt": "Koyi yadda za ka bi duk kobo ba tare da ka rasa hankalinka ba. Bugu da ƙari, gano waɗanne kashe kuɗi za su iya ajiye maka kuɗi a lokacin haraji!"
+    },
+    "taxDeductions": {
+      "title": "Ɓoyayyun Rage Haraji Wanda Kowane ƚananan Kasuwanci Ya Kamata Ya Sani",
+      "excerpt": "Daina barin kuɗi a kan tebur! Gano halaltattun rage haraji da yawancin masu kasuwanci ke rasa."
+    },
+    "inventory": {
+      "title": "Canza Sarrafa Kayayyaki ta Hanyar Duba Lambar Sanduna",
+      "excerpt": "Yi bankwana da ƙirga hannu! Koyi yadda duba lambar sanduna za ta iya kawo sauyi ga sarrafa kayayyakin ka."
+    },
+    "mobile": {
+      "title": "Gudanar da Dukan Kasuwancinka daga Wayarka: Juyin Juya Halin Wayar Hannu",
+      "excerpt": "Gano yadda za ka sarrafa takardun kuɗi, bi kayayyaki da sarrafa biɗa - duk daga wayar salula!"
+    },
+    "customerRelationships": {
+      "title": "Gina Ɓalakar Abokan Ciniki Mai Ɖorewa: An Sauƙaƙa CRM",
+      "excerpt": "Koyi yadda za ka sa abokan ciniki su dawo ba tare da software mai rikitarwa ko kayan aiki masu tsada ba."
+    }
+  }
+}

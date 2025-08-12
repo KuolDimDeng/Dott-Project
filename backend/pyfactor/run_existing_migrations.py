@@ -7,7 +7,7 @@ This avoids issues with missing tables that new migrations are trying to modify.
 import os
 import django
 from django.core.management import call_command
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')

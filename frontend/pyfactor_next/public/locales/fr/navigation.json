@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Inviter un Propriétaire d'Entreprise",
     "analytics": "Analytique",
     "smartInsights": "Aperçus Intelligents",
-    "dottStatus": "Statut Dott"
+    "dottStatus": "Statut Dott",
+    "jobs": "Travaux"
   },
   "subMenu": {
     "dashboard": "Tableau de Bord",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Plan Comptable",
     "journalEntries": "Écritures Comptables",
     "generalLedger": "Grand Livre",
-    "trialBalance": "Balance de Vérification"
+    "trialBalance": "Balance de Vérification",
+    "jobsList": "Tous les Travaux",
+    "jobCosting": "Coûts des Travaux",
+    "jobMaterials": "Utilisation des Matériaux",
+    "jobLabor": "Suivi de la Main-d'œuvre",
+    "jobProfitability": "Analyse de Rentabilité",
+    "services": "Services",
+    "jobs": "Emplois"
   },
   "actions": {
     "viewAll": "Voir Tout",

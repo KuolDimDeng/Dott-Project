@@ -20,6 +20,8 @@ class Integration(models.Model):
         ('3dcart', '3dcart (Shift4Shop)'),
     ]
 
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
+
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='integrations')
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
     is_active = models.BooleanField(default=False)

@@ -1,0 +1,49 @@
+{
+  "backToHome": "Buyela Ekhaya",
+  "hero": {
+    "title": "Ibhulogi Yebhizinisi ye-Dott",
+    "subtitle": "Funda ukuthi ungawuphatha kanjani umnotho webhizinisi lakho nge-Dott. Thola amathiphu, ukuqonda namasu okukhulisa ibhizinisi lakho."
+  },
+  "newsletter": {
+    "title": "Bhalisa ukuthola iphephandaba lethu mayelana nezibuyekezo zomkhiqizo namabhulogi amasha!",
+    "placeholder": "Ikheli lakho le-imeyili",
+    "button": "Bhalisa"
+  },
+  "categories": {
+    "all": "Zonke Izihloko",
+    "accounting": "Ukubala Imali Nentela",
+    "business": "Ibhizinisi"
+  },
+  "search": {
+    "placeholder": "Sesha izihloko..."
+  },
+  "featured": "Okugqamile",
+  "readTime": "Imizuzu engu-{{minutes}} yokufunda",
+  "noArticles": "Azikho izihloko ezitholakele ezihambisana nezinto ozifunayo.",
+  "articles": {
+    "profitLoss": {
+      "title": "Ukuqonda Inzuzo Nokulahlekelwa: Umhlahlandlela Ojabulisayo Wabanikazi Bamabhizinisi",
+      "excerpt": "Thola ukuthi ungasifunda futhi usiqonde kanjani isitatimende sakho se-P&L ngaphandle kokulala. Sithembisa ukwenza kube mnandi!"
+    },
+    "expenses": {
+      "title": "Landelela Izindleko Zebhizinisi Njengochwepheshe: Izinyathelo ezi-5 Ezilula",
+      "excerpt": "Funda ukuthi ungalandelela kanjani yonke into ngaphandle kokulahlekelwa umqondo. Futhi, thola ukuthi yiziphi izindleko ezingakonga imali ngesikhathi sentela!"
+    },
+    "taxDeductions": {
+      "title": "Izinciphiso Zentela Ezifihliwe Okufanele Zonke Amabhizinisi Amancane Azazi",
+      "excerpt": "Yeka ukushiya imali etafuleni! Thola izinciphiso zentela ezisemthethweni eziphoswa abaningi abanikazi bamabhizinisi."
+    },
+    "inventory": {
+      "title": "Guqula Ukuphathwa Kwempahla Yakho Ngokuskena Amabhakhodi",
+      "excerpt": "Valelisa ekubaleni ngesandla! Funda ukuthi ukuskena kwebhakhodi kungaguqula kanjani ukuphathwa kwempahla yakho."
+    },
+    "mobile": {
+      "title": "Qhuba Ibhizinisi Lakho Lonke Kusuka Ocingweni Lwakho: Inguquko Yeselula",
+      "excerpt": "Thola ukuthi ungalawula kanjani ama-invoyisi, ulandelele impahla, futhi uphathe izinkokhelo - konke kusuka ku-smartphone yakho!"
+    },
+    "customerRelationships": {
+      "title": "Ukwakha Ubudlelwane Bamakhasimende Obuhlala Isikhathi Eside: I-CRM Yenziwe Lula",
+      "excerpt": "Funda ukuthi ungenza kanjani amakhasimende abuye ngaphandle kwesoftware eyinkimbinkimbi noma amathuluzi abizayo."
+    }
+  }
+}

@@ -16,9 +16,12 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from taxes.models import TaxFiling, FilingStatusHistory
+from taxes.models import TaxFiling
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from decimal import Decimal
+from banking.models import PaymentSettlement, WiseItem
+from custom_auth.models import User
 
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -70,6 +73,16 @@ def stripe_webhook_handler(request):
         payment_intent = event['data']['object']
         handle_failed_payment(payment_intent)
     
+    elif event['type'] == 'payment_intent.succeeded':
+        # Payment succeeded - create settlement for Wise transfer
+        payment_intent = event['data']['object']
+        handle_payment_intent_for_settlement(payment_intent)
+    
+    elif event['type'] == 'charge.succeeded':
+        # Charge succeeded - alternative for older integrations
+        charge = event['data']['object']
+        handle_charge_for_settlement(charge)
+    
     else:
         # Unexpected event type
         logger.info(f"Unhandled Stripe event type: {event['type']}")
@@ -110,14 +123,8 @@ def handle_successful_payment(session):
         filing.status = 'documents_pending'
         filing.save()
         
-        # Create status history record
-        FilingStatusHistory.objects.create(
-            filing=filing,
-            previous_status=previous_status,
-            new_status='documents_pending',
-            changed_by='system',
-            notes=f"Payment completed via Stripe session: {session['id']}"
-        )
+        # Log status change
+        logger.info(f"Filing status changed from {previous_status} to documents_pending for filing {filing_id}")
         
         # Send confirmation email (placeholder)
         send_payment_confirmation_email(filing, session)
@@ -256,3 +263,226 @@ def send_payment_failure_email(filing, payment_intent):
         
     except Exception as e:
         logger.error(f"Error sending payment failure email: {str(e)}", exc_info=True)
+
+
+def handle_payment_intent_for_settlement(payment_intent):
+    """
+    Handle successful payment intent from Stripe for Wise settlements.
+    Creates a PaymentSettlement for processing.
+    """
+    try:
+        # Extract metadata to identify the user
+        metadata = payment_intent.get('metadata', {})
+        user_id = metadata.get('user_id')
+        pos_transaction_id = metadata.get('pos_transaction_id')
+        
+        if not user_id:
+            logger.info(f"No user_id in payment intent metadata: {payment_intent['id']} - skipping settlement")
+            return
+        
+        # Get the user
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            logger.error(f"User not found: {user_id}")
+            return
+        
+        # Check if user has Wise account set up (don't require verified for now)
+        wise_item = WiseItem.objects.filter(user=user).first()
+        if not wise_item:
+            logger.info(f"User {user_id} doesn't have Wise account set up. Creating settlement anyway for future processing.")
+            # Still create the settlement so it can be processed once bank account is added
+        
+        # Check if settlement already exists
+        if PaymentSettlement.objects.filter(stripe_payment_intent_id=payment_intent['id']).exists():
+            logger.info(f"Settlement already exists for payment intent: {payment_intent['id']}")
+            return
+        
+        # Create settlement record
+        amount = Decimal(str(payment_intent['amount'] / 100))  # Convert from cents
+        currency = payment_intent['currency'].upper()
+        
+        # Get user's tenant
+        from users.models import UserProfile
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            tenant = user_profile.tenant
+        except UserProfile.DoesNotExist:
+            logger.error(f"UserProfile not found for user: {user_id}")
+            return
+        
+        settlement = PaymentSettlement.objects.create(
+            user=user,
+            tenant=tenant,
+            stripe_payment_intent_id=payment_intent['id'],
+            original_amount=amount,
+            currency=currency,
+            pos_transaction_id=pos_transaction_id or '',
+            customer_email=payment_intent.get('receipt_email', ''),
+            notes=f"Auto-created from Stripe payment {payment_intent['id']}"
+        )
+        
+        # Calculate fees
+        settlement.calculate_fees()
+        
+        logger.info(f"Created settlement {settlement.id} for payment {payment_intent['id']}")
+        
+        # Process immediately if amount is above threshold
+        if settlement.settlement_amount >= 10:  # $10 minimum for immediate processing
+            process_settlement_async(str(settlement.id))
+        
+    except Exception as e:
+        logger.error(f"Error handling payment intent for settlement: {str(e)}", exc_info=True)
+
+
+def handle_charge_for_settlement(charge):
+    """
+    Handle successful charge from Stripe for Wise settlements.
+    Alternative to payment_intent for older integrations.
+    """
+    try:
+        # If there's an associated payment intent, skip (handled by payment_intent webhook)
+        if charge.get('payment_intent'):
+            return
+        
+        metadata = charge.get('metadata', {})
+        user_id = metadata.get('user_id')
+        
+        if not user_id:
+            logger.info(f"No user_id in charge metadata: {charge['id']} - skipping settlement")
+            return
+        
+        # Similar processing as payment_intent
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            logger.error(f"User not found: {user_id}")
+            return
+        
+        # Check if user has Wise account (don't require verified for now)
+        wise_item = WiseItem.objects.filter(user=user).first()
+        if not wise_item:
+            logger.info(f"User {user_id} doesn't have Wise account set up. Creating settlement anyway for future processing.")
+            # Still create the settlement so it can be processed once bank account is added
+        
+        # Check if settlement exists (use charge ID as unique identifier)
+        if PaymentSettlement.objects.filter(stripe_payment_intent_id=charge['id']).exists():
+            return
+        
+        amount = Decimal(str(charge['amount'] / 100))
+        currency = charge['currency'].upper()
+        
+        # Get user's tenant
+        from users.models import UserProfile
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            tenant = user_profile.tenant
+        except UserProfile.DoesNotExist:
+            logger.error(f"UserProfile not found for user: {user_id}")
+            return
+        
+        settlement = PaymentSettlement.objects.create(
+            user=user,
+            tenant=tenant,
+            stripe_payment_intent_id=charge['id'],  # Using charge ID
+            original_amount=amount,
+            currency=currency,
+            customer_email=charge.get('receipt_email', ''),
+            notes=f"Auto-created from Stripe charge {charge['id']}"
+        )
+        
+        settlement.calculate_fees()
+        
+        logger.info(f"Created settlement {settlement.id} for charge {charge['id']}")
+        
+    except Exception as e:
+        logger.error(f"Error handling charge for settlement: {str(e)}", exc_info=True)
+
+
+def process_settlement_async(settlement_id):
+    """
+    Process settlement asynchronously.
+    In production, this should be queued to Celery.
+    """
+    try:
+        from threading import Thread
+        
+        def process():
+            try:
+                from banking.services.wise_service import WiseSettlementService
+                settlement = PaymentSettlement.objects.get(id=settlement_id)
+                service = WiseSettlementService()
+                service.process_settlement(settlement)
+            except Exception as e:
+                logger.error(f"Error processing settlement {settlement_id}: {str(e)}")
+        
+        # Start in background thread (use Celery in production)
+        thread = Thread(target=process)
+        thread.daemon = True
+        thread.start()
+        
+    except Exception as e:
+        logger.error(f"Error starting settlement processing: {str(e)}")
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def stripe_pos_settlement_webhook(request):
+    """
+    Dedicated webhook handler for POS payment settlements.
+    This handles payments from POS sales that need to be settled to users via Wise.
+    
+    Webhook URL: /api/payments/webhooks/stripe/pos-settlements/
+    Configure in Stripe Dashboard with events:
+    - payment_intent.succeeded
+    - charge.succeeded
+    """
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    event = None
+    
+    logger.info(f"Received POS settlement webhook")
+    
+    # Use POS-specific webhook secret if available, otherwise fall back to default
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET_POS', settings.STRIPE_WEBHOOK_SECRET)
+    
+    try:
+        # Verify webhook signature
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, webhook_secret
+        )
+    except ValueError as e:
+        logger.error(f"Invalid POS webhook payload: {str(e)}")
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"Invalid POS webhook signature: {str(e)}")
+        return HttpResponse(status=400)
+    
+    # Log the event
+    logger.info(f"Processing POS settlement event: {event['type']} - ID: {event['id']}")
+    
+    # Handle POS payment events
+    if event['type'] == 'payment_intent.succeeded':
+        payment_intent = event['data']['object']
+        
+        # Check if this is a POS payment (has specific metadata)
+        metadata = payment_intent.get('metadata', {})
+        if metadata.get('source') == 'pos' or metadata.get('pos_transaction_id'):
+            handle_payment_intent_for_settlement(payment_intent)
+        else:
+            logger.info(f"Payment intent {payment_intent['id']} is not a POS transaction, skipping")
+    
+    elif event['type'] == 'charge.succeeded':
+        charge = event['data']['object']
+        
+        # Check if this is a POS charge
+        metadata = charge.get('metadata', {})
+        if metadata.get('source') == 'pos' or metadata.get('pos_transaction_id'):
+            handle_charge_for_settlement(charge)
+        else:
+            logger.info(f"Charge {charge['id']} is not a POS transaction, skipping")
+    
+    else:
+        logger.info(f"Unhandled POS webhook event type: {event['type']}")
+    
+    return HttpResponse(status=200)

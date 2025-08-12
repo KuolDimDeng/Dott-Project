@@ -14,7 +14,7 @@ export default function FAQ() {
     },
     {
       question: t('faq.cost.question', 'How much does it cost?'),
-      answer: t('faq.cost.answer', 'We offer different pricing tiers based on your business needs. Our basic plan starts at $9.99/month, while our premium plan with advanced features costs $29.99/month. All plans include core features like inventory management, invoicing, and basic reporting. Visit our pricing page for a detailed comparison.')
+      answer: t('faq.cost.answer', 'We offer a free Basic plan that includes core features. Our Professional plan is $35/month for growing businesses, and our Enterprise plan is $95/month for large organizations with unlimited users. We also offer 50% discounts for businesses in developing countries. Visit our pricing page for a detailed comparison.')
     },
     {
       question: t('faq.onboarding.question', 'How long does it take to set up?'),

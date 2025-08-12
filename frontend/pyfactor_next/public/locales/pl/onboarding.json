@@ -1,0 +1,261 @@
+{
+  "businessInfo": {
+    "title": "Informacje o Firmie",
+    "subtitle": "Opowiedz nam o swojej firmie",
+    "step": "Krok 1 z 3",
+    "businessNameLabel": "Nazwa Firmy",
+    "businessNamePlaceholder": "Wprowadź nazwę swojej firmy",
+    "businessTypeLabel": "Typ Firmy",
+    "businessTypePlaceholder": "Wybierz typ firmy",
+    "industryLabel": "Branża",
+    "industryPlaceholder": "Wybierz branżę",
+    "legalStructureLabel": "Struktura Prawna",
+    "legalStructurePlaceholder": "Wybierz strukturę prawną",
+    "countryLabel": "Kraj",
+    "countryPlaceholder": "Wybierz swój kraj",
+    "stateLabel": "Stan/Województwo",
+    "statePlaceholder": "Wybierz swój stan",
+    "dateFoundedLabel": "Data Założenia",
+    "addressLabel": "Adres Firmy",
+    "addressPlaceholder": "Wprowadź adres swojej firmy",
+    "phoneLabel": "Telefon Firmowy",
+    "phonePlaceholder": "+48 123 456 789",
+    "emailLabel": "Email Firmowy",
+    "emailPlaceholder": "firma@przykład.com",
+    "websiteLabel": "Strona Internetowa (opcjonalna)",
+    "websitePlaceholder": "https://www.przykład.com",
+    "nextButton": "Przejdź do Subskrypcji",
+    "skipButton": "Pomiń na teraz",
+    "businessTypes": {
+      "retail": "Handel Detaliczny",
+      "restaurant": "Restauracja",
+      "services": "Usługi",
+      "manufacturing": "Produkcja",
+      "technology": "Technologia",
+      "healthcare": "Opieka Zdrowotna",
+      "construction": "Budownictwo",
+      "realestate": "Nieruchomości",
+      "nonprofit": "Organizacja Non-Profit",
+      "other": "Inne"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Działalność Jednoosobowa",
+      "partnership": "Spółka Osobowa",
+      "llc": "Sp. z o.o.",
+      "corporation": "Spółka Akcyjna",
+      "nonprofit": "Organizacja Non-Profit",
+      "other": "Inne"
+    },
+    "errors": {
+      "businessNameRequired": "Nazwa firmy jest wymagana",
+      "businessNameTooShort": "Nazwa firmy musi mieć co najmniej 2 znaki",
+      "businessTypeRequired": "Wybierz typ firmy",
+      "legalStructureRequired": "Wybierz strukturę prawną",
+      "countryRequired": "Wybierz kraj",
+      "emailInvalid": "Wprowadź prawidłowy adres email",
+      "phoneInvalid": "Wprowadź prawidłowy numer telefonu",
+      "websiteInvalid": "Wprowadź prawidłowy URL strony internetowej"
+    },
+    "saving": "Zapisywanie..."
+  },
+  "subscription": {
+    "title": "Wybierz Swój Plan",
+    "subtitle": "Wybierz plan, który najlepiej odpowiada potrzebom Twojej firmy",
+    "step": "Krok 2 z 3",
+    "billingCycle": {
+      "monthly": "Miesięcznie",
+      "sixMonth": "6 Miesięcy",
+      "yearly": "Rocznie",
+      "popular": "POPULARNE",
+      "save": "Oszczędź {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Idealne dla małych firm rozpoczynających działalność",
+        "price": "Darmowy",
+        "features": [
+          "Śledzenie przychodów i wydatków",
+          "Tworzenie faktur i przypomnienia",
+          "Płatności Stripe i PayPal",
+          "Mobile money (M-Pesa, itp.)",
+          "Podstawowe śledzenie zapasów",
+          "Skanowanie kodów kreskowych",
+          "Limit przechowywania 3GB",
+          "Tylko 1 użytkownik"
+        ],
+        "buttonText": "Zacznij za Darmo"
+      },
+      "basic": {
+        "name": "Basic",
+        "description": "Idealne dla małych firm rozpoczynających działalność",
+        "price": "Darmowy",
+        "features": [
+          "Śledzenie przychodów i wydatków",
+          "Tworzenie faktur i przypomnienia",
+          "Płatności Stripe i PayPal",
+          "Mobile money (M-Pesa, itp.)",
+          "Podstawowe śledzenie zapasów",
+          "Skanowanie kodów kreskowych",
+          "Limit przechowywania 3GB",
+          "Tylko 1 użytkownik"
+        ],
+        "buttonText": "Zacznij za Darmo"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Wszystko, czego potrzebują rozwijające się firmy",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "NAJPOPULARNIEJSZY",
+        "features": [
+          "Wszystko z Basic",
+          "Do 3 użytkowników",
+          "Nieograniczone przechowywanie",
+          "Priorytetowe wsparcie",
+          "Wszystkie funkcje włączone",
+          "{{discount}}% zniżki na 6 miesięcy",
+          "{{yearlyDiscount}}% zniżki rocznej"
+        ],
+        "buttonText": "Wybierz Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Nieograniczona skala dla ambitnych organizacji",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "PREMIUM",
+        "features": [
+          "Wszystko z Professional",
+          "Nieograniczeni użytkownicy",
+          "Spersonalizowane wdrożenie",
+          "Dedykowane wsparcie",
+          "Wszystkie funkcje włączone",
+          "{{discount}}% zniżki na 6 miesięcy",
+          "{{yearlyDiscount}}% zniżki rocznej"
+        ],
+        "buttonText": "Wybierz Enterprise"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% zniżki na wszystkie plany!",
+      "description": "Specjalne ceny dla firm w {{country}}",
+      "percentOff": "{{percentage}}% zniżki",
+      "yourRegion": "Twój region"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "Płatność M-Pesa dostępna!",
+        "description": "Płać wygodnie mobile money za subskrypcję",
+        "payInCurrency": "Płać w {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Oszczędź ${{amount}} (${{monthly}}/miesiąc)",
+      "yearly": "Oszczędź ${{amount}} rocznie"
+    },
+    "backButton": "Wróć do Informacji o Firmie",
+    "processing": "Przetwarzanie...",
+    "note": "* Dostępne ceny regionalne. Ceny automatycznie dostosowane do Twojej lokalizacji."
+  },
+  "payment": {
+    "title": "Dokończ Subskrypcję",
+    "subtitle": "Plan {{plan}} • ${{price}}/{{period}}",
+    "step": "Krok 3 z 3",
+    "discountBadge": "{{percentage}}% ZNIŻKI",
+    "originalPrice": "Oryginalna: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% zniżka regionalna zastosowana!",
+      "subtitle": "Specjalne ceny dla firm w {{country}}"
+    },
+    "paymentMethod": {
+      "title": "Wybierz Metodę Płatności",
+      "card": {
+        "name": "Karta Kredytowa/Debetowa",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Mobile Money",
+        "payInCurrency": "Płać w {{currency}}"
+      },
+      "flutterwave": {
+        "name": "Przelew Bankowy",
+        "description": "Płać przez przelew bankowy"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Płatność Mobile Money"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Nazwa Posiadacza Karty",
+      "cardholderNamePlaceholder": "Jan Kowalski",
+      "cardNumber": "Numer Karty",
+      "expiryDate": "Data Ważności",
+      "cvc": "CVC",
+      "postalCode": "Kod Pocztowy",
+      "postalCodePlaceholder": "12345"
+    },
+    "mobilePayment": {
+      "phoneNumber": "Numer Telefonu {{provider}}",
+      "phoneNumberPlaceholder": "123456789",
+      "phoneNumberHint": "Wprowadź swój zarejestrowany numer telefonu {{provider}}",
+      "localPrice": "Cena w {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Kurs wymiany: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "Jak działa płatność {{provider}}:",
+        "steps": [
+          "Kliknij \"Płać przez {{provider}}\" poniżej",
+          "Otrzymasz powiadomienie o płatności na telefon",
+          "Wprowadź swój PIN {{provider}}, aby dokończyć płatność",
+          "Zostaniesz przekierowany po potwierdzeniu płatności"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Subskrybuj za ${{price}}/{{period}}",
+      "mobile": "Płać przez {{provider}} - {{symbol}}{{amount}}",
+      "processing": "Przetwarzanie Płatności..."
+    },
+    "securityBadge": "Zabezpieczone przez Stripe",
+    "cancelNote": "Możesz anulować lub zmienić plan w każdej chwili z panelu.",
+    "errors": {
+      "cardholderNameRequired": "Wprowadź nazwę posiadacza karty",
+      "postalCodeRequired": "Wprowadź swój kod pocztowy",
+      "phoneRequired": "Wprowadź swój numer telefonu {{provider}}",
+      "businessInfoMissing": "Brakuje informacji o firmie. Najpierw ukończ krok konfiguracji firmy.",
+      "paymentFailed": "Płatność nie powiodła się. Spróbuj ponownie.",
+      "cardDeclined": "Twoja karta została odrzucona. Spróbuj inną kartę.",
+      "insufficientFunds": "Niewystarczające środki. Sprawdź saldo.",
+      "networkError": "Błąd sieci. Sprawdź połączenie."
+    },
+    "success": {
+      "title": "Płatność Udana!",
+      "message": "Przekierowywanie do panelu...",
+      "mpesaTitle": "Płatność M-Pesa Zainicjowana!",
+      "mpesaMessage": "Sprawdź telefon pod kątem powiadomienia o płatności M-Pesa",
+      "mpesaHint": "Wprowadź PIN, aby dokończyć płatność",
+      "redirecting": "Przekierowywanie do panelu..."
+    }
+  },
+  "completion": {
+    "title": "Witamy w Dott!",
+    "subtitle": "Twoje konto jest już skonfigurowane",
+    "message": "Jesteś gotowy, aby zacząć zarządzać finansami swojej firmy",
+    "dashboardButton": "Przejdź do Panelu",
+    "setupComplete": "Konfiguracja Ukończona"
+  },
+  "errors": {
+    "sessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",
+    "networkError": "Błąd sieci. Sprawdź połączenie.",
+    "genericError": "Wystąpił błąd. Spróbuj ponownie.",
+    "requiredField": "To pole jest wymagane"
+  },
+  "navigation": {
+    "back": "Wstecz",
+    "next": "Dalej",
+    "skip": "Pomiń",
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "continue": "Kontynuuj"
+  }
+}

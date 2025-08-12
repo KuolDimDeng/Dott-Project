@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
 import PricingDisplay from './PricingDisplay';
 import { getCountryCode, getCountryName } from '@/utils/countryMapping';
-import { getCurrencyForCountry, formatCurrency, convertFromUSD } from '@/services/wiseApiService';
+import { getCurrencyForCountry, formatCurrency, convertFromUSD } from '@/utils/simpleCurrencyUtils';
 import { isDevelopingCountry, getDiscountPercentage } from '@/utils/developingCountries';
 
 // Subscription plans with updated pricing
@@ -34,10 +34,10 @@ const PLANS = [
     id: 'professional',
     name: 'Professional',
     description: 'Everything growing businesses need to thrive',
-    price: '$15/mo',
-    monthlyPrice: 15,
-    sixMonthPrice: 75, // 17% discount
-    yearlyPrice: 144, // 20% discount
+    price: '$35/mo',
+    monthlyPrice: 35,
+    sixMonthPrice: 175, // 17% discount
+    yearlyPrice: 336, // 20% discount
     features: [
       'Everything in Basic',
       'Up to 3 users',
@@ -54,10 +54,10 @@ const PLANS = [
     id: 'enterprise',
     name: 'Enterprise',
     description: 'Unlimited scale for ambitious organizations',
-    price: '$45/mo',
-    monthlyPrice: 45,
-    sixMonthPrice: 225, // 17% discount
-    yearlyPrice: 432, // 20% discount
+    price: '$95/mo',
+    monthlyPrice: 95,
+    sixMonthPrice: 475, // 17% discount
+    yearlyPrice: 912, // 20% discount
     features: [
       'Everything in Professional',
       'Unlimited users',

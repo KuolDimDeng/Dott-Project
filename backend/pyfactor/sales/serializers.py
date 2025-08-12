@@ -228,7 +228,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
         try:
             customer = Customer.objects.using(database_name).get(pk=value)
-            logger.debug(f"Customer retrieved: {customer.id}: {customer.customerName}")
+            logger.debug(f"Customer retrieved: {customer.id}: {customer.business_name}")
             return customer
         except Customer.DoesNotExist:
             logger.error(f"Customer with id {value} does not exist in database {database_name}.")
@@ -238,8 +238,59 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         database_name = self.context.get('database_name')
+        
+        # Get user from context
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        logger.info(f"[CURRENCY-INVOICE] Creating invoice for user: {user.email if user else 'Unknown'}")
+        
+        # Get business currency preference if not provided
+        if 'currency' not in validated_data or validated_data['currency'] == 'USD':
+            try:
+                from users.models import Business, BusinessDetails
+                from currency.exchange_rate_service import exchange_rate_service
+                
+                # Get user's business
+                if hasattr(user, 'business_id') and user.business_id:
+                    business_id = user.business_id
+                elif hasattr(user, 'tenant_id') and user.tenant_id:
+                    business_id = user.tenant_id
+                else:
+                    # Try to get from profile
+                    from users.models import UserProfile
+                    profile = UserProfile.objects.filter(user=user).first()
+                    business_id = profile.business_id if profile else None
+                
+                if business_id:
+                    business = Business.objects.get(id=business_id)
+                    business_details = BusinessDetails.objects.filter(business=business).first()
+                    
+                    if business_details and business_details.preferred_currency_code:
+                        validated_data['currency'] = business_details.preferred_currency_code
+                        logger.info(f"[CURRENCY-INVOICE] Set invoice currency to business preference: {business_details.preferred_currency_code}")
+                        
+                        # Get exchange rate if not USD
+                        if business_details.preferred_currency_code != 'USD':
+                            try:
+                                # Get exchange rate from business currency to USD
+                                rate = exchange_rate_service.get_exchange_rate(
+                                    business_details.preferred_currency_code, 
+                                    'USD'
+                                )
+                                if rate:
+                                    validated_data['exchange_rate'] = rate
+                                    validated_data['exchange_rate_date'] = timezone.now()
+                                    logger.info(f"[CURRENCY-INVOICE] Set exchange rate: {rate} for {business_details.preferred_currency_code} to USD")
+                            except Exception as e:
+                                logger.error(f"[CURRENCY-INVOICE] Error getting exchange rate: {str(e)}")
+            except Exception as e:
+                logger.error(f"[CURRENCY-INVOICE] Error getting business currency preference: {str(e)}")
+                # Default to USD if there's any error
+                validated_data['currency'] = 'USD'
 
         with db_transaction.atomic(using=database_name):
+            logger.info(f"[CURRENCY-INVOICE] Creating invoice with currency: {validated_data.get('currency', 'USD')}")
             invoice = Invoice.objects.using(database_name).create(**validated_data)
             total_amount = Decimal('0.00')
             total_cost = Decimal('0.00')
@@ -477,6 +528,58 @@ class EstimateSerializer(serializers.ModelSerializer):
 
         items_data = validated_data.pop('items', [])  # Extract items data
         logger.debug(f"Extracted items data: {items_data}")
+        
+        # Get user from context
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        logger.info(f"[CURRENCY-ESTIMATE] Creating estimate for user: {user.email if user else 'Unknown'}")
+        
+        # Get business currency preference if not provided
+        if 'currency' not in validated_data or validated_data['currency'] == 'USD':
+            try:
+                from users.models import Business, BusinessDetails
+                from currency.exchange_rate_service import exchange_rate_service
+                
+                # Get user's business
+                if hasattr(user, 'business_id') and user.business_id:
+                    business_id = user.business_id
+                elif hasattr(user, 'tenant_id') and user.tenant_id:
+                    business_id = user.tenant_id
+                else:
+                    # Try to get from profile
+                    from users.models import UserProfile
+                    profile = UserProfile.objects.filter(user=user).first()
+                    business_id = profile.business_id if profile else None
+                
+                if business_id:
+                    business = Business.objects.get(id=business_id)
+                    business_details = BusinessDetails.objects.filter(business=business).first()
+                    
+                    if business_details and business_details.preferred_currency_code:
+                        validated_data['currency'] = business_details.preferred_currency_code
+                        logger.info(f"[CURRENCY-ESTIMATE] Set estimate currency to business preference: {business_details.preferred_currency_code}")
+                        
+                        # Get exchange rate if not USD
+                        if business_details.preferred_currency_code != 'USD':
+                            try:
+                                # Get exchange rate from business currency to USD
+                                rate = exchange_rate_service.get_exchange_rate(
+                                    business_details.preferred_currency_code, 
+                                    'USD'
+                                )
+                                if rate:
+                                    validated_data['exchange_rate'] = rate
+                                    validated_data['exchange_rate_date'] = timezone.now()
+                                    logger.info(f"[CURRENCY-ESTIMATE] Set exchange rate: {rate} for {business_details.preferred_currency_code} to USD")
+                            except Exception as e:
+                                logger.error(f"[CURRENCY-ESTIMATE] Error getting exchange rate: {str(e)}")
+            except Exception as e:
+                logger.error(f"[CURRENCY-ESTIMATE] Error getting business currency preference: {str(e)}")
+                # Default to USD if there's any error
+                validated_data['currency'] = 'USD'
+        
+        logger.info(f"[CURRENCY-ESTIMATE] Creating estimate with currency: {validated_data.get('currency', 'USD')}")
         estimate = Estimate.objects.using(self.database_name).create(**validated_data)
         logger.debug(f"Created Estimate {estimate.estimate_num} with data: {validated_data}")
         
@@ -646,7 +749,7 @@ class SalesOrderSerializer(serializers.ModelSerializer):
         
         try:
             customer = Customer.objects.using(database_name).get(pk=value)
-            logger.debug(f"Customer retrieved: {customer.id}: {customer.customerName}")
+            logger.debug(f"Customer retrieved: {customer.id}: {customer.business_name}")
             return customer
         except Customer.DoesNotExist:
             logger.error(f"Customer with id {value} does not exist in database {database_name}.")
@@ -948,7 +1051,8 @@ class POSTransactionDetailSerializer(serializers.ModelSerializer):
             'subtotal', 'discount_amount', 'discount_percentage',
             'tax_total', 'total_amount', 'payment_method',
             'amount_tendered', 'change_due', 'status', 'notes',
-            'items', 'created_at', 'created_by_name'
+            'items', 'created_at', 'created_by_name',
+            'tax_jurisdiction', 'tax_calculation_method', 'shipping_address_used'
         ]
 
 
@@ -1064,7 +1168,8 @@ class POSSaleCompletionSerializer(serializers.Serializer):
     
     # Discounts and tax
     discount_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, default=0, required=False)
-    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, default=0, required=False)
+    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
+    use_shipping_address = serializers.BooleanField(default=True, required=False)
     
     # Optional fields
     notes = serializers.CharField(required=False, allow_blank=True)
@@ -1114,7 +1219,7 @@ class POSSaleCompletionSerializer(serializers.Serializer):
                         'type': 'product',
                         'item': product,
                         'quantity': quantity,
-                        'unit_price': item.get('unit_price', product.price or 0),
+                        'unit_price': Decimal(str(item.get('unit_price', product.price or 0))),
                     })
                 except Product.DoesNotExist:
                     raise serializers.ValidationError(f"Product with id {item_id} does not exist")
@@ -1126,7 +1231,7 @@ class POSSaleCompletionSerializer(serializers.Serializer):
                         'type': 'service',
                         'item': service,
                         'quantity': quantity,
-                        'unit_price': item.get('unit_price', service.price or 0),
+                        'unit_price': Decimal(str(item.get('unit_price', service.price or 0))),
                     })
                 except Service.DoesNotExist:
                     raise serializers.ValidationError(f"Service with id {item_id} does not exist")

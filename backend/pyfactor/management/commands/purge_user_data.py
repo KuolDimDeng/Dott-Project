@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
@@ -18,7 +18,7 @@ class Command(BaseCommand):
             return
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Show counts before deletion
                 user_count = User.objects.count()
                 tenant_count = Tenant.objects.count()

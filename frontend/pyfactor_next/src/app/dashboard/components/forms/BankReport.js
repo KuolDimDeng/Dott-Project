@@ -1,306 +1,752 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { axiosInstance } from '@/lib/axiosConfig';
-import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
+'use client';
 
-const BankingReport = () => {
-  const [bankAccounts, setBankAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [reportData, setReportData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+import React, { useState, useEffect, useCallback } from 'react';
+import { bankAccountsApi, bankingReportsApi, bankTransactionsApi } from '@/services/api/banking';
+import { logger } from '@/utils/logger';
+import { toast } from 'react-hot-toast';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import { 
+  ChartBarIcon,
+  DocumentArrowDownIcon,
+  CalendarDaysIcon,
+  CurrencyDollarIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  BanknotesIcon,
+  ArrowPathIcon,
+  QuestionMarkCircleIcon
+} from '@heroicons/react/24/outline';
 
-  useEffect(() => {
-    fetchBankAccounts();
-  }, []);
-
-  useEffect(() => {
-    console.log('Selected account updated:', selectedAccount);
-  }, [selectedAccount]);
-
-  const fetchBankAccounts = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await axiosInstance.get('/api/banking/accounts/');
-      console.log('Bank accounts response:', response.data);
-      if (Array.isArray(response.data)) {
-        setBankAccounts(response.data);
-      } else if (response.data && Array.isArray(response.data.accounts)) {
-        setBankAccounts(response.data.accounts);
-      } else {
-        console.error('Unexpected response format:', response.data);
-        setBankAccounts([]);
-        setError('Unexpected response format from server');
-      }
-    } catch (error) {
-      console.error('Error fetching bank accounts:', error);
-      setBankAccounts([]);
-      setError('Failed to fetch bank accounts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchReportData = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      console.log('Fetching report for account:', selectedAccount);
-      const response = await axiosInstance.get('/api/banking/report/', {
-        params: {
-          account_id: selectedAccount,
-          start_date: startDate,
-          end_date: endDate,
-        },
-      });
-      console.log('Report data:', response.data);
-      setReportData(response.data);
-    } catch (error) {
-      console.error('Error fetching report data:', error);
-      setError('Failed to fetch report data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAccountChange = (event) => {
-    const value = event.target.value;
-    console.log('Account selected:', value);
-    setSelectedAccount(value);
-  };
-
-  const handleGenerateReport = () => {
-    console.log('Generate report clicked. Selected account:', selectedAccount);
-    if (!selectedAccount) {
-      setError('Please select a bank account');
-      return;
-    }
-    if (!startDate || !endDate) {
-      setError('Please select both start and end dates');
-      return;
-    }
-    fetchReportData();
-  };
-
-  const handleExport = (format) => {
-    // Implement export functionality (PDF or CSV)
-    console.log(`Exporting report as ${format}`);
-  };
-
+// Tooltip component
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
   return (
-    <div className="bg-gray-50 p-6 rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Banking Report</h1>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Filters and Controls */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center">
-          <div>
-            <select
-              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              value={selectedAccount}
-              onChange={handleAccountChange}
-            >
-              <option value="" disabled>
-                Select Bank Account
-              </option>
-              {Array.isArray(bankAccounts) && bankAccounts.length > 0 ? (
-                bankAccounts.map((account) => (
-                  <option key={account.account_id} value={account.account_id}>
-                    {account.name} - {account.mask}
-                  </option>
-                ))
-              ) : (
-                <option disabled>No bank accounts available</option>
-              )}
-            </select>
-          </div>
-          <div>
-            <input
-              type="date"
-              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              value={startDate}
-              onChange={(e) => {
-                console.log('Start date changed:', e.target.value);
-                setStartDate(e.target.value);
-              }}
-              placeholder="Start Date"
-            />
-          </div>
-          <div>
-            <input
-              type="date"
-              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              value={endDate}
-              onChange={(e) => {
-                console.log('End date changed:', e.target.value);
-                setEndDate(e.target.value);
-              }}
-              placeholder="End Date"
-            />
-          </div>
-          <div>
-            <button
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleGenerateReport}
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <ButtonSpinner />
-                  <span>Generating...</span>
-                </div>
-              ) : (
-                'Generate Report'
-              )}
-            </button>
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
           </div>
         </div>
-        <div className="mt-4">
-          <button
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => handleExport('PDF')}
-            disabled={!reportData}
-          >
-            <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Export PDF
-          </button>
-          <button
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => handleExport('CSV')}
-            disabled={!reportData}
-          >
-            <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Export CSV
-          </button>
-        </div>
-      </div>
-
-      {reportData && (
-        <>
-          {/* Header Section */}
-          <div className="bg-white p-4 rounded-lg shadow mb-6">
-            <h2 className="text-lg font-semibold mb-3">Report Summary</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-gray-800">Bank: {reportData.bank_name}</p>
-              </div>
-              <div>
-                <p className="text-gray-800">Account: {reportData.account_number}</p>
-              </div>
-              <div>
-                <p className="text-gray-800">
-                  Beginning Balance: ${reportData.beginning_balance.toFixed(2)}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-800">Ending Balance: ${reportData.ending_balance.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Transactions Section */}
-          <div className="bg-white rounded-lg shadow mb-6 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Check Number
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Debit
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Credit
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Balance
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData.transactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.description}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.check_number || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                        {transaction.debit ? `$${transaction.debit.toFixed(2)}` : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                        {transaction.credit ? `$${transaction.credit.toFixed(2)}` : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                        ${transaction.balance.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Reconciliation Summary */}
-          <div className="bg-white p-4 rounded-lg shadow mb-6">
-            <h2 className="text-lg font-semibold mb-3">Reconciliation Summary</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-800">
-                  Outstanding Checks: ${reportData.outstanding_checks.toFixed(2)}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-800">
-                  Deposits in Transit: ${reportData.deposits_in_transit.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary Section */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-3">Summary</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <p className="text-gray-800">Total Debits: ${reportData.total_debits.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-gray-800">Total Credits: ${reportData.total_credits.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-gray-800">Net Change: ${reportData.net_change.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-        </>
       )}
     </div>
   );
 };
 
-export default BankingReport;
+const BankReport = () => {
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [reportType, setReportType] = useState('cash-flow');
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState(null);
+
+  // Initialize dates to last 3 months
+  useEffect(() => {
+    const today = new Date();
+    const threeMonthsAgo = subMonths(today, 3);
+    setEndDate(format(today, 'yyyy-MM-dd'));
+    setStartDate(format(startOfMonth(threeMonthsAgo), 'yyyy-MM-dd'));
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  // Fetch connected bank accounts
+  const fetchAccounts = useCallback(async () => {
+    try {
+      logger.info('🎯 [BankReport] === FETCHING ACCOUNTS ===');
+      const response = await fetch('/api/banking/accounts', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch accounts');
+      }
+      
+      const data = await response.json();
+      const connectedAccounts = (data.accounts || data.data || data || []).filter(account => 
+        account.status === 'connected' || account.is_active !== false
+      );
+      
+      logger.info('🎯 [BankReport] Connected accounts:', connectedAccounts);
+      setAccounts(connectedAccounts);
+    } catch (error) {
+      logger.error('🎯 [BankReport] Error fetching accounts:', error);
+      toast.error('Failed to fetch bank accounts');
+      // Set some sample accounts for development
+      setAccounts([]);
+    }
+  }, []);
+
+  const generateReport = async () => {
+    if (!startDate || !endDate) {
+      toast.error('Please select date range');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      logger.info('🎯 [BankReport] === GENERATING REPORT ===');
+      logger.info('🎯 [BankReport] Report params:', {
+        type: reportType,
+        account: selectedAccount,
+        start_date: startDate,
+        end_date: endDate
+      });
+
+      let data = null;
+
+      switch (reportType) {
+        case 'cash-flow':
+          const cashFlowParams = new URLSearchParams();
+          if (selectedAccount !== 'all') cashFlowParams.append('account_id', selectedAccount);
+          cashFlowParams.append('start_date', startDate);
+          cashFlowParams.append('end_date', endDate);
+          
+          const cashFlowResponse = await fetch(`/api/banking/cash-flow?${cashFlowParams}`, {
+            method: 'GET',
+            credentials: 'include'
+          });
+          const cashFlowData = await cashFlowResponse.json();
+          data = processCashFlowData(cashFlowData);
+          break;
+
+        case 'account-balance':
+          const balanceParams = new URLSearchParams();
+          if (selectedAccount !== 'all') balanceParams.append('account_id', selectedAccount);
+          balanceParams.append('start_date', startDate);
+          balanceParams.append('end_date', endDate);
+          
+          const balanceResponse = await fetch(`/api/banking/account-balances?${balanceParams}`, {
+            method: 'GET',
+            credentials: 'include'
+          });
+          const balanceData = await balanceResponse.json();
+          data = processBalanceData(balanceData);
+          break;
+
+        case 'transaction-summary':
+          const txnResponse = await bankTransactionsApi.getAll({
+            account_id: selectedAccount === 'all' ? undefined : selectedAccount,
+            start_date: startDate,
+            end_date: endDate
+          });
+          data = processTransactionData(txnResponse.data);
+          break;
+
+        case 'monthly-statement':
+          const stmtParams = new URLSearchParams();
+          if (selectedAccount !== 'all') stmtParams.append('account_id', selectedAccount);
+          stmtParams.append('start_date', startDate);
+          stmtParams.append('end_date', endDate);
+          
+          const stmtResponse = await fetch(`/api/banking/monthly-statements?${stmtParams}`, {
+            method: 'GET',
+            credentials: 'include'
+          });
+          const stmtData = await stmtResponse.json();
+          data = processStatementData(stmtData);
+          break;
+
+        default:
+          throw new Error('Invalid report type');
+      }
+
+      logger.info('🎯 [BankReport] Report data generated:', data);
+      setReportData(data);
+      toast.success('Report generated successfully');
+
+    } catch (error) {
+      logger.error('🎯 [BankReport] Error generating report:', error);
+      toast.error('Failed to generate report');
+      
+      // Use sample data for demo
+      setReportData(getSampleReportData(reportType));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Process data functions
+  const processCashFlowData = (rawData) => {
+    // Handle the backend response structure
+    const data = rawData?.data?.cash_flow || rawData?.cash_flow || rawData?.data || rawData || {};
+    const success = rawData?.success !== false;
+    
+    if (!success || !data.total_inflow) {
+      // Return sample data if no real data available
+      return {
+        summary: {
+          totalInflow: 0,
+          totalOutflow: 0,
+          netCashFlow: 0,
+          averageDaily: 0
+        },
+        categories: [],
+        monthly: []
+      };
+    }
+    
+    return {
+      summary: {
+        totalInflow: data.total_inflow || 0,
+        totalOutflow: data.total_outflow || 0,
+        netCashFlow: data.net_flow || 0,
+        averageDaily: data.average_daily || 0
+      },
+      categories: data.categories || [],
+      monthly: data.monthly || []
+    };
+  };
+
+  const processBalanceData = (rawData) => {
+    // Handle the backend response structure
+    const data = rawData?.data?.balances || rawData?.balances || rawData?.data || rawData || {};
+    const success = rawData?.success !== false;
+    
+    if (!success || !data.accounts) {
+      return {
+        currentBalance: 0,
+        availableBalance: 0,
+        pendingTransactions: 0,
+        accounts: []
+      };
+    }
+    
+    return {
+      currentBalance: data.total_balance || 0,
+      availableBalance: data.total_available || 0,
+      pendingTransactions: data.total_pending || 0,
+      accounts: data.accounts || []
+    };
+  };
+
+  const processTransactionData = (rawData) => {
+    const transactions = rawData?.transactions || [];
+    const categories = {};
+    
+    transactions.forEach(txn => {
+      const cat = txn.category?.[0] || 'Uncategorized';
+      if (!categories[cat]) {
+        categories[cat] = { count: 0, total: 0 };
+      }
+      categories[cat].count++;
+      categories[cat].total += Math.abs(txn.amount);
+    });
+
+    return {
+      totalTransactions: transactions.length,
+      totalVolume: transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      categories: Object.entries(categories).map(([name, data]) => ({
+        name,
+        count: data.count,
+        total: data.total
+      })),
+      topTransactions: transactions
+        .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+        .slice(0, 10)
+    };
+  };
+
+  const processStatementData = (rawData) => {
+    // Handle the backend response structure
+    const data = rawData?.data?.statement || rawData?.statement || rawData?.data || rawData || {};
+    const success = rawData?.success !== false;
+    
+    if (!success) {
+      return {
+        period: `${startDate} to ${endDate}`,
+        beginningBalance: 0,
+        endingBalance: 0,
+        totalDebits: 0,
+        totalCredits: 0,
+        transactions: []
+      };
+    }
+    
+    return {
+      period: data.period || `${startDate} to ${endDate}`,
+      beginningBalance: data.beginning_balance || 0,
+      endingBalance: data.ending_balance || 0,
+      totalDebits: data.total_debits || 0,
+      totalCredits: data.total_credits || 0,
+      transactions: data.transactions || []
+    };
+  };
+
+  const getSampleReportData = (type) => {
+    switch (type) {
+      case 'cash-flow':
+        return processCashFlowData({});
+      case 'account-balance':
+        return processBalanceData({});
+      case 'transaction-summary':
+        return processTransactionData({});
+      case 'monthly-statement':
+        return processStatementData({});
+      default:
+        return null;
+    }
+  };
+
+  const downloadReport = () => {
+    if (!reportData) {
+      toast.error('No report data to download');
+      return;
+    }
+
+    logger.info('🎯 [BankReport] === DOWNLOADING REPORT ===');
+
+    let csv = '';
+    const reportTitle = `${reportType.replace('-', ' ').toUpperCase()} REPORT\n`;
+    const dateRange = `Period: ${startDate} to ${endDate}\n\n`;
+    
+    csv += reportTitle + dateRange;
+
+    switch (reportType) {
+      case 'cash-flow':
+        csv += 'CASH FLOW SUMMARY\n';
+        csv += `Total Inflow,Total Outflow,Net Cash Flow\n`;
+        csv += `$${reportData.summary.totalInflow},$${reportData.summary.totalOutflow},$${reportData.summary.netCashFlow}\n\n`;
+        csv += 'CATEGORY BREAKDOWN\n';
+        csv += 'Category,Amount,Type\n';
+        reportData.categories.forEach(cat => {
+          csv += `${cat.name},$${Math.abs(cat.amount)},${cat.type}\n`;
+        });
+        break;
+
+      case 'account-balance':
+        csv += 'ACCOUNT BALANCES\n';
+        csv += `Current Balance: $${reportData.currentBalance}\n`;
+        csv += `Available Balance: $${reportData.availableBalance}\n`;
+        csv += `Pending: $${reportData.pendingTransactions}\n\n`;
+        if (reportData.accounts?.length > 0) {
+          csv += 'ACCOUNT DETAILS\n';
+          csv += 'Account,Balance,Available\n';
+          reportData.accounts.forEach(acc => {
+            csv += `${acc.name},$${acc.balance},$${acc.available}\n`;
+          });
+        }
+        break;
+
+      case 'transaction-summary':
+        csv += 'TRANSACTION SUMMARY\n';
+        csv += `Total Transactions: ${reportData.totalTransactions}\n`;
+        csv += `Total Volume: $${reportData.totalVolume.toFixed(2)}\n\n`;
+        csv += 'CATEGORY BREAKDOWN\n';
+        csv += 'Category,Count,Total\n';
+        reportData.categories.forEach(cat => {
+          csv += `${cat.name},${cat.count},$${cat.total.toFixed(2)}\n`;
+        });
+        break;
+
+      case 'monthly-statement':
+        csv += 'MONTHLY STATEMENT\n';
+        csv += `Beginning Balance: $${reportData.beginningBalance}\n`;
+        csv += `Ending Balance: $${reportData.endingBalance}\n`;
+        csv += `Total Debits: $${reportData.totalDebits}\n`;
+        csv += `Total Credits: $${reportData.totalCredits}\n`;
+        break;
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${reportType}_${startDate}_${endDate}.csv`;
+    a.click();
+    
+    toast.success('Report downloaded');
+  };
+
+  const renderReportContent = () => {
+    if (!reportData) return null;
+
+    switch (reportType) {
+      case 'cash-flow':
+        return (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Inflow</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${reportData.summary.totalInflow.toLocaleString()}
+                    </p>
+                  </div>
+                  <ArrowTrendingUpIcon className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Outflow</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      ${reportData.summary.totalOutflow.toLocaleString()}
+                    </p>
+                  </div>
+                  <ArrowTrendingDownIcon className="h-8 w-8 text-red-600" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Net Cash Flow</p>
+                    <p className={`text-2xl font-bold ${reportData.summary.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ${Math.abs(reportData.summary.netCashFlow).toLocaleString()}
+                    </p>
+                  </div>
+                  <CurrencyDollarIcon className="h-8 w-8 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Category Breakdown */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Category Breakdown</h3>
+              <div className="space-y-3">
+                {reportData.categories.map((cat, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <span className="font-medium">{cat.name}</span>
+                    <span className={cat.type === 'inflow' ? 'text-green-600' : 'text-red-600'}>
+                      {cat.type === 'inflow' ? '+' : '-'}${Math.abs(cat.amount).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'account-balance':
+        return (
+          <div className="space-y-6">
+            {/* Balance Overview */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Balance Overview</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Current Balance</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    ${reportData.currentBalance.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Available Balance</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    ${reportData.availableBalance.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Pending</p>
+                  <p className="text-3xl font-bold text-yellow-600">
+                    ${reportData.pendingTransactions.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Details */}
+            {reportData.accounts?.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold mb-4">Account Details</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Available</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {reportData.accounts.map((acc, idx) => (
+                        <tr key={idx}>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{acc.name}</td>
+                          <td className="px-6 py-4 text-sm text-right">${acc.balance.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-sm text-right">${acc.available.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'transaction-summary':
+        return (
+          <div className="space-y-6">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-sm text-gray-600">Total Transactions</p>
+                <p className="text-3xl font-bold text-blue-600">{reportData.totalTransactions}</p>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-sm text-gray-600">Total Volume</p>
+                <p className="text-3xl font-bold text-green-600">
+                  ${reportData.totalVolume.toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            {/* Category Summary */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Transaction Categories</h3>
+              <div className="space-y-2">
+                {reportData.categories.map((cat, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                      <span className="font-medium">{cat.name}</span>
+                      <span className="text-sm text-gray-500 ml-2">({cat.count} transactions)</span>
+                    </div>
+                    <span className="font-medium">${cat.total.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Transactions */}
+            {reportData.topTransactions?.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold mb-4">Top Transactions</h3>
+                <div className="space-y-2">
+                  {reportData.topTransactions.map((txn, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div>
+                        <p className="font-medium">{txn.name || txn.description}</p>
+                        <p className="text-sm text-gray-500">{new Date(txn.date).toLocaleDateString()}</p>
+                      </div>
+                      <span className={`font-medium ${txn.amount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        ${Math.abs(txn.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'monthly-statement':
+        return (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-6">Monthly Statement</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Statement Period</p>
+                  <p className="font-medium">{reportData.period}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Account</p>
+                  <p className="font-medium">
+                    {selectedAccount === 'all' ? 'All Accounts' : 
+                     accounts.find(a => a.id === selectedAccount)?.name || 'Unknown'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Beginning Balance</p>
+                    <p className="text-xl font-semibold">${reportData.beginningBalance.toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Ending Balance</p>
+                    <p className="text-xl font-semibold">${reportData.endingBalance.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Credits</p>
+                    <p className="text-lg font-semibold text-green-600">
+                      +${reportData.totalCredits.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Total Debits</p>
+                    <p className="text-lg font-semibold text-red-600">
+                      -${reportData.totalDebits.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-600">Net Change</p>
+                <p className={`text-xl font-semibold ${
+                  reportData.endingBalance - reportData.beginningBalance >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {reportData.endingBalance - reportData.beginningBalance >= 0 ? '+' : ''}
+                  ${(reportData.endingBalance - reportData.beginningBalance).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
+            <ChartBarIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Banking Reports
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Generate comprehensive reports from your connected bank accounts
+          </p>
+        </div>
+      </div>
+
+      {/* Report Configuration */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Report Configuration</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Report Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Report Type
+              <FieldTooltip text="Select the type of report you want to generate. Each report provides different insights into your banking data." />
+            </label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="cash-flow">Cash Flow Report</option>
+              <option value="account-balance">Account Balance Report</option>
+              <option value="transaction-summary">Transaction Summary</option>
+              <option value="monthly-statement">Monthly Statement</option>
+            </select>
+          </div>
+
+          {/* Account Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account
+              <FieldTooltip text="Select a specific account or all accounts to include in the report." />
+            </label>
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Accounts</option>
+              {accounts.map((account) => (
+                <option key={account.id || account.account_id} value={account.id || account.account_id}>
+                  {account.bank_name} - {account.name || account.account_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Date Range */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Start Date
+              <FieldTooltip text="Select the start date for the report period." />
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              End Date
+              <FieldTooltip text="Select the end date for the report period." />
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <button
+            onClick={generateReport}
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center"
+          >
+            {loading ? (
+              <>
+                <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <ChartBarIcon className="h-5 w-5 mr-2" />
+                Generate Report
+              </>
+            )}
+          </button>
+          
+          {reportData && (
+            <button
+              onClick={downloadReport}
+              className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center"
+            >
+              <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
+              Download CSV
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Report Results */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <CenteredSpinner size="large" />
+        </div>
+      ) : (
+        reportData && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">
+              {reportType.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')} Results
+            </h2>
+            {renderReportContent()}
+          </div>
+        )
+      )}
+    </div>
+  );
+};
+
+export default BankReport;

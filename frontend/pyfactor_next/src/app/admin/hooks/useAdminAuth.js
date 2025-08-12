@@ -71,7 +71,7 @@ export function useAdminAuth() {
       // Otherwise, if it's a username/password object, perform login
       // (this case shouldn't happen with current implementation)
       if (loginData && loginData.username && loginData.password) {
-        const response = await fetch('/api/admin/login', {
+        const response = await fetch('/api/notifications/admin/login/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

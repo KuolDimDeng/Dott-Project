@@ -84,7 +84,7 @@ export async function initPostHog() {
         isIdentifiedID: false
       },
       // Additional configuration for better compatibility
-      disable_session_recording: false,
+      disable_session_recording: true,  // Disable session recording to fix cross-origin errors
       session_recording: {
         maskAllInputs: false,
         maskTextContent: false,

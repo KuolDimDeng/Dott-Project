@@ -13,49 +13,64 @@ async function getAuthHeaders() {
     // First try to get backend session token
     const session = await sessionManagerEnhanced.getSession();
     
+    // Build headers object
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    // Add authentication
     if (session?.sessionToken) {
       logger.debug('[API] Using backend session token for auth');
-      return {
-        'Authorization': `Session ${session.sessionToken}`,
-        'Content-Type': 'application/json'
-      };
-    }
-    
-    // Fallback to legacy Auth0/cookie-based approach
-    let idToken = null;
-    let accessToken = null;
-    
-    // Try to get session data from the session API (legacy)
-    if (session?.authenticated && session?.user) {
-      // Check if we have tokens stored in session data
-      const response = await fetch('/api/auth/access-token');
-      if (response.ok) {
-        const tokenData = await response.json();
-        accessToken = tokenData.access_token;
-        idToken = tokenData.id_token || accessToken;
-      }
-    }
-    
-    // If no token from session, try AppCache
-    if (!idToken && typeof window !== 'undefined') {
-      idToken = getCacheValue('idToken');
-      accessToken = getCacheValue('accessToken');
+      headers['Authorization'] = `Session ${session.sessionToken}`;
+    } else {
+      // Fallback to legacy Auth0/cookie-based approach
+      let idToken = null;
+      let accessToken = null;
       
-      if (idToken) {
-        logger.debug('[API] Using cached auth tokens');
+      // Try to get session data from the session API (legacy)
+      if (session?.authenticated && session?.user) {
+        // Check if we have tokens stored in session data
+        const response = await fetch('/api/auth/access-token');
+        if (response.ok) {
+          const tokenData = await response.json();
+          accessToken = tokenData.access_token;
+          idToken = tokenData.id_token || accessToken;
+        }
+      }
+      
+      // If no token from session, try AppCache
+      if (!idToken && typeof window !== 'undefined') {
+        idToken = getCacheValue('idToken');
+        accessToken = getCacheValue('accessToken');
+        
+        if (idToken) {
+          logger.debug('[API] Using cached auth tokens');
+        }
+      }
+      
+      // If we have a token, use Bearer auth (legacy)
+      if (idToken || accessToken) {
+        headers['Authorization'] = `Bearer ${idToken || accessToken}`;
+      } else {
+        // No authentication available
+        throw new Error('No valid authentication token available');
       }
     }
     
-    // If we have a token, use Bearer auth (legacy)
-    if (idToken || accessToken) {
-      return {
-        'Authorization': `Bearer ${idToken || accessToken}`,
-        'Content-Type': 'application/json'
-      };
+    // Add tenant ID header if available
+    if (session?.user?.tenantId) {
+      headers['X-Tenant-ID'] = session.user.tenantId;
+      logger.debug('[API] Added tenant ID header:', session.user.tenantId);
+    } else if (typeof window !== 'undefined') {
+      // Fallback to localStorage
+      const tenantId = localStorage.getItem('tenantId');
+      if (tenantId) {
+        headers['X-Tenant-ID'] = tenantId;
+        logger.debug('[API] Added tenant ID header from localStorage:', tenantId);
+      }
     }
     
-    // No authentication available
-    throw new Error('No valid authentication token available');
+    return headers;
   } catch (error) {
     logger.error('[API] Failed to get auth headers:', error);
     throw error;
@@ -130,7 +145,16 @@ export async function post(url, data) {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  return response.json();
+  const responseData = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && responseData) {
+    const error = new Error(responseData.error || responseData.detail || 'Request failed');
+    error.response = { data: responseData, status: response.status };
+    throw error;
+  }
+  
+  return responseData;
 }
 
 /**
@@ -144,7 +168,16 @@ export async function put(url, data) {
     method: 'PUT',
     body: JSON.stringify(data),
   });
-  return response.json();
+  const responseData = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && responseData) {
+    const error = new Error(responseData.error || responseData.detail || 'Request failed');
+    error.response = { data: responseData, status: response.status };
+    throw error;
+  }
+  
+  return responseData;
 }
 
 /**
@@ -156,7 +189,124 @@ export async function del(url) {
   const response = await fetchWithAuth(url, {
     method: 'DELETE',
   });
-  return response.json();
+  const responseData = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && responseData) {
+    const error = new Error(responseData.error || responseData.detail || 'Request failed');
+    error.response = { data: responseData, status: response.status };
+    throw error;
+  }
+  
+  return responseData;
+}
+
+// Enhanced makeRequest function for Django backend integration
+export async function makeRequest(endpoint, options = {}, serverRequest = null) {
+  try {
+    // Build the full URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const url = `${baseUrl}/api/${endpoint.replace(/^\//, '')}`;
+    
+    console.log('[API] makeRequest:', { 
+      endpoint, 
+      url, 
+      method: options.method || 'GET',
+      isServerSide: !!serverRequest 
+    });
+    
+    let headers = {};
+    
+    // Handle authentication differently for server-side vs client-side
+    if (serverRequest) {
+      // Server-side: Extract auth from the incoming request
+      console.log('[API] Server-side request - extracting auth from request');
+      const authHeader = serverRequest.headers.get('authorization');
+      const cookieHeader = serverRequest.headers.get('cookie');
+      
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+        console.log('[API] Using Authorization header from request');
+      }
+      
+      if (cookieHeader) {
+        headers['Cookie'] = cookieHeader;
+        console.log('[API] Using Cookie header from request');
+      }
+      
+      // Extract session ID from cookies for backend auth
+      if (cookieHeader) {
+        const sessionMatch = cookieHeader.match(/sid=([^;]+)/);
+        if (sessionMatch) {
+          headers['X-Session-ID'] = sessionMatch[1];
+          console.log('[API] Extracted session ID:', sessionMatch[1].substring(0, 8) + '...');
+        }
+      }
+      
+      headers['Content-Type'] = 'application/json';
+    } else {
+      // Client-side: Use the existing auth method
+      console.log('[API] Client-side request - using getAuthHeaders');
+      const authHeaders = await getAuthHeaders();
+      headers = {
+        ...authHeaders,
+        ...(options.headers || {})
+      };
+    }
+    
+    console.log('[API] Request headers:', {
+      hasAuth: !!(headers['Authorization'] || headers['X-Session-ID']),
+      hasContentType: !!headers['Content-Type'],
+      headerKeys: Object.keys(headers)
+    });
+    
+    // Execute the request
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
+    
+    console.log('[API] makeRequest response:', { 
+      status: response.status, 
+      ok: response.ok,
+      url: response.url 
+    });
+    
+    // Parse response
+    const data = await response.json();
+    
+    // Handle errors
+    if (!response.ok) {
+      console.error('[API] Request failed:', {
+        status: response.status,
+        data,
+        endpoint,
+        url
+      });
+      
+      const error = new Error(data.error || data.detail || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.response = data;
+      throw error;
+    }
+    
+    console.log('[API] Request successful:', {
+      endpoint,
+      dataKeys: data ? Object.keys(data) : [],
+      hasData: !!data
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('[API] makeRequest error:', {
+      endpoint,
+      error: error.message,
+      status: error.status,
+      stack: error.stack
+    });
+    throw error;
+  }
 }
 
 // Export as a namespace for ease of use

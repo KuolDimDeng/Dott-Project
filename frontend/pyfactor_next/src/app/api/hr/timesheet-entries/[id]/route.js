@@ -21,7 +21,7 @@ export async function PATCH(request, { params }) {
     const body = await request.json();
 
     // Forward to Django backend
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const response = await fetch(`${API_URL}/api/hr/timesheet-entries/${id}/`, {
       method: 'PATCH',
       headers: {

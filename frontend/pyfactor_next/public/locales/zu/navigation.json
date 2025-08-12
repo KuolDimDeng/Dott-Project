@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Mema Umnikazi Webhizinisi",
     "analytics": "Ukuhlaziya",
     "smartInsights": "Ukuqonda Okuhlakaniphile",
-    "dottStatus": "Isimo se-Dott"
+    "dottStatus": "Isimo se-Dott",
+    "jobs": "Imisebenzi"
   },
   "subMenu": {
     "dashboard": "Ideshbhodi",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Ishadi Lama-akhawunti",
     "journalEntries": "Okungeniswayo Kujenali",
     "generalLedger": "Ileja Jikelele",
-    "trialBalance": "Ibhalansi Yokuzama"
+    "trialBalance": "Ibhalansi Yokuzama",
+    "jobsList": "Yonke Imisebenzi",
+    "jobCosting": "Izindleko Zomsebenzi",
+    "jobMaterials": "Ukusetshenziswa Kwezinto",
+    "jobLabor": "Ukulandelela Umsebenzi",
+    "jobProfitability": "Ukuhlaziya Inzuzo",
+    "services": "Izinsiza",
+    "jobs": "Imisebenzi"
   },
   "actions": {
     "viewAll": "Buka Konke",

@@ -1,399 +1,108 @@
 {
-  "about": "Acerca de",
-  "features": "Características",
-  "pricing": "Precios",
-  "contact": "Contacto",
-  "getStarted": "Comenzar",
-  "login": "Iniciar Sesión",
-  "signUp": "Registrarse",
-  "welcome": "Bienvenido a Dott",
-  "welcomeMessage": "La plataforma todo en uno para pequeñas empresas",
-  "learnMore": "Más Información",
-  "ourMission": "Nuestra Misión",
-  "ourVision": "Nuestra Visión",
-  "coreValues": "Nuestros Valores Fundamentales",
-  "socialImpact": "Nuestro Impacto Social",
-  "getInTouch": "Contacta con Nuestro Equipo",
-  "termsOfUse": "Términos de Uso",
-  "privacyPolicy": "Política de Privacidad",
-  "cookiePolicy": "Política de Cookies",
-  "simplicity": "Simplicidad",
-  "innovation": "Innovación",
-  "empowerment": "Empoderamiento",
-  "customerFocus": "Enfoque al Cliente",
-  "allInOneSolution": "Solución Todo en Uno",
-  "localGlobalPerspective": "Perspectiva Local y Global",
-  "scalableSolutions": "Soluciones Escalables",
-  "aboutDott": "Acerca de Dott",
-  "aboutDescription1": "Fundada en 2023, Dott es una plataforma integral de gestión empresarial diseñada específicamente para pequeñas empresas, freelancers, consultores y microempresas.",
-  "aboutDescription2": "Lo que distingue a Dott es nuestra profunda comprensión de los desafíos únicos que enfrentan las pequeñas empresas, especialmente en mercados emergentes.",
-  "missionStatement": "En Dott, nuestra misión es empoderar a las pequeñas empresas para que prosperen proporcionándoles herramientas de gestión asequibles, accesibles y potentes que simplifiquen las operaciones diarias.",
-  "visionStatement": "Visualizamos un mundo donde las pequeñas empresas tengan acceso a la misma calidad de herramientas de gestión que las grandes corporaciones, pero adaptadas a sus necesidades y escala específicas.",
-  "hero": {
-    "tagline": "SOLUCIONES INTELIGENTES DE GESTIÓN EMPRESARIAL",
-    "your": "Tu",
-    "title": "Plataforma Empresarial Global",
-    "subtitle": "Gratis para siempre con funciones básicas",
-    "description": "Dott te permite crear facturas, aceptar pagos en línea, gestionar tu contabilidad e inventario, con escaneo de códigos de barras, todo en una plataforma intuitiva.",
-    "button": "Comienza gratis",
-    "trustedBy": "Confianza de más de 10,000 empresas en todo el mundo",
-    "imageAlt": "Ilustración de Gestión Empresarial",
-    "videoTitle": "Demostración del Software Dott",
-    "paymentNote": "Pueden aplicarse tarifas de procesamiento de pagos para ciertos tipos de transacciones",
-    "benefit": {
-      "free": "Plan gratis para siempre",
-      "invoicing": "Facturación profesional",
-      "pos": "Sistema de punto de venta",
-      "inventory": "Gestión de inventario",
-      "payroll": "Herramientas de nómina y RRHH",
-      "tax": "Cumplimiento fiscal",
-      "insights": "Análisis con IA",
-      "mobileMoney": "Pagos con dinero móvil (M-Pesa)",
-      "cardPayments": "Acepta pagos con tarjeta en todo el mundo",
-      "languages": "Más de 20 idiomas soportados",
-      "mobilePhone": "Aplicación móvil incluida"
-    }
-  },
-  "builtForYou": {
-    "title": "Hecho Para Ti",
-    "heading": "¡Gestiona tu negocio como un Pro!",
-    "subheading": "Creado para dueños de negocios como tú",
-    "cta": "Únete a miles de dueños de negocios en todo el mundo que confían en Dott para gestionar su negocio",
-    "types": {
-      "freelancers": {
-        "title": "Freelancers",
-        "description": "Rastrea proyectos, factura a clientes al instante y gestiona tus finanzas todo en un solo lugar. Cobra más rápido con facturas profesionales."
+  "about": {
+    "backToHome": "Volver al Inicio",
+    "hero": {
+      "title": "Empoderando a las empresas para",
+      "subtitle": "prosperar globalmente",
+      "description": "Estamos construyendo el sistema operativo para pequeñas empresas modernas, haciendo accesibles a todos las herramientas de nivel empresarial."
+    },
+    "story": {
+      "title": "Nuestra Historia",
+      "paragraph1": "Dott nació de una simple observación: las pequeñas empresas se estaban ahogando en la complejidad. Múltiples herramientas, datos desconectados y procesos diseñados para empresas estaban frenando a los emprendedores en todo el mundo.",
+      "paragraph2": "Fundada en 2023, nos propusimos construir algo diferente. Una plataforma que comprende los desafíos únicos de las pequeñas empresas, especialmente en mercados emergentes donde las soluciones tradicionales fallan.",
+      "paragraph3": "Hoy, estamos orgullosos de servir a empresas en todo el mundo. Pero apenas estamos comenzando."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "El Comienzo",
+        "description": "Identificamos la necesidad de herramientas unificadas de gestión empresarial para PYMES"
       },
-      "contractors": {
-        "title": "Contratistas",
-        "description": "Gestiona múltiples proyectos, rastrea materiales y costos laborales, y envía cotizaciones profesionales. Mantén tu flujo de efectivo saludable."
+      "launch": {
+        "title": "Lanzamiento del Producto",
+        "description": "Lanzamos la plataforma principal con gestión financiera e inventario"
       },
-      "entrepreneurs": {
-        "title": "Emprendedores",
-        "description": "Escala tu startup con herramientas potentes para inventario, ventas y seguimiento financiero. Toma decisiones basadas en datos."
+      "expansion": {
+        "title": "Expansión Global",
+        "description": "Extendimos a más de 25 países con características localizadas"
       },
-      "consultants": {
-        "title": "Consultores",
-        "description": "Factura por hora o proyecto, rastrea gastos y gestiona múltiples clientes sin esfuerzo. Facturación profesional incluida."
+      "ai": {
+        "title": "Integración de IA",
+        "description": "Introduciendo perspectivas inteligentes y automatización"
+      }
+    },
+    "mission": {
+      "title": "Nuestra Misión",
+      "description": "Democratizar la gestión empresarial proporcionando a las pequeñas empresas herramientas potentes y asequibles que simplifiquen las operaciones y permitan el crecimiento, independientemente de la ubicación o experiencia técnica."
+    },
+    "vision": {
+      "title": "Nuestra Visión",
+      "description": "Un mundo donde cada pequeña empresa tiene acceso a la misma calidad de herramientas de gestión que las empresas Fortune 500, empoderando a un millón de empresas para prosperar para 2030."
+    },
+    "journey": {
+      "title": "Nuestro Viaje"
+    },
+    "values": {
+      "title": "Nuestros Valores",
+      "subtitle": "Los principios que guían cada decisión que tomamos",
+      "simplicity": {
+        "title": "Simplicidad Primero",
+        "description": "Operaciones empresariales complejas simplificadas a través del diseño intuitivo"
       },
-      "retail": {
-        "title": "Dueños de Tiendas",
-        "description": "Gestiona inventario con escaneo de códigos de barras, rastrea ventas y acepta múltiples métodos de pago incluyendo dinero móvil."
+      "innovation": {
+        "title": "Innovación Continua",
+        "description": "Evolucionando con las necesidades cambiantes de las empresas modernas"
       },
-      "streetVendors": {
-        "title": "Vendedores Ambulantes",
-        "description": "Diseño móvil simple para rastrear ventas diarias, gestionar inventario y aceptar pagos digitales sobre la marcha."
+      "success": {
+        "title": "Éxito del Cliente",
+        "description": "Tu crecimiento es nuestro éxito: ganamos cuando tú ganas"
       },
-      "marketStalls": {
-        "title": "Dueños de Puestos de Mercado",
-        "description": "Perfecto para días ocupados de mercado. Entrada rápida de ventas, alertas de inventario y seguimiento de ganancias diarias en tu moneda local."
+      "empowerment": {
+        "title": "Empoderamiento Global",
+        "description": "Rompiendo barreras para empresas en todo el mundo"
+      }
+    },
+    "differentiators": {
+      "title": "Lo que Hace a Dott Diferente",
+      "unified": {
+        "title": "Plataforma Unificada",
+        "description": "Todas tus herramientas empresariales en un solo lugar"
       },
-      "mobileMoneyAgents": {
-        "title": "Agentes de Dinero Móvil",
-        "description": "Rastrea transacciones, gestiona saldos flotantes y genera informes para operadores de red. Creado para M-Pesa, MTN y más."
+      "global": {
+        "title": "Global, pero Local",
+        "description": "Estándares internacionales con cumplimiento local"
       },
-      "restaurants": {
-        "title": "Dueños de Pequeños Restaurantes",
-        "description": "Gestiona pedidos, rastrea ingredientes, calcula costos de alimentos y maneja tanto comedor como para llevar eficientemente."
+      "security": {
+        "title": "Seguridad Empresarial",
+        "description": "Protección de nivel bancario para tus datos"
       },
-      "serviceProviders": {
-        "title": "Proveedores de Servicios",
-        "description": "Para plomeros, electricistas, mecánicos y más. Programa trabajos, rastrea piezas y factura al completar."
-      },
-      "onlineSellers": {
-        "title": "Vendedores en Línea",
-        "description": "Sincroniza inventario a través de plataformas, gestiona pedidos y rastrea envíos. Perfecto para vendedores de redes sociales."
-      },
-      "transport": {
-        "title": "Operadores de Transporte",
-        "description": "Para operadores de taxi, boda boda y tuk-tuk. Rastrea ganancias diarias, costos de combustible y horarios de mantenimiento."
+      "insights": {
+        "title": "Perspectivas Inteligentes",
+        "description": "Análisis impulsado por IA para mejores decisiones"
       }
     }
   },
-  "heroTitle": "Software empresarial todo en uno",
-  "heroSubtitle": "Gratis para siempre con funciones básicas",
-  "heroDescription": "Gestión empresarial global con inventario avanzado, escaneo de códigos de barras y soluciones de pago regionales, todo en una plataforma intuitiva para empresas de todo el mundo.",
-  "heroButton": "Comienza gratis",
-  "heroTrustedBy": "Confianza de más de 10,000 empresas en todo el mundo",
-  "heroImageAlt": "Ilustración de Gestión Empresarial",
-  "heroVideoTitle": "Demostración del Software Dott",
-  "searchLanguages": "Buscar idiomas...",
-  "navFeatures": "Características",
-  "navPricing": "Precios",
-  "navAbout": "Acerca de",
-  "navBlog": "Blog",
-  "navContact": "Contacto",
-  "navStatus": "Estado del Sistema",
-  "navSignIn": "INICIAR SESIÓN",
-  "footer": {
-    "home": "Inicio",
-    "features": "Características",
-    "pricing": "Precios",
-    "about": "Sobre Nosotros",
-    "blog": "Blog",
-    "contact": "Contacto",
-    "inventory": "Gestión de Inventario",
-    "accounting": "Contabilidad",
-    "invoicing": "Facturación",
-    "payments": "Pagos",
-    "pos": "Punto de Venta",
-    "careers": "Carreras",
-    "press": "Prensa",
-    "partners": "Socios",
-    "privacy": "Política de Privacidad",
-    "terms": "Términos de Servicio",
-    "help": "Centro de Ayuda",
-    "docs": "Documentación",
-    "status": "Estado del Sistema",
-    "security": "Seguridad",
-    "cookies": "Política de Cookies",
-    "rights": "Todos los derechos reservados.",
-    "tagline": "Haciendo la gestión empresarial simple y eficiente para empresas de todo el mundo.",
-    "product": "Producto",
-    "company": "Empresa",
-    "support": "Soporte",
-    "legal": "Legal"
-  },
-  "highlights": {
-    "eyebrow": "Beneficios Clave",
-    "heading": "Por qué las empresas eligen Dott",
-    "subheading": "Características avanzadas que nos distinguen de la competencia y ayudan a crecer tu negocio.",
-    "mobile": {
-      "title": "Aplicación Móvil",
-      "description": "Accede a los datos de tu negocio en cualquier momento y lugar con nuestra potente aplicación móvil. Gestiona inventario, procesa ventas y ve informes en tiempo real sobre la marcha.",
-      "imageAlt": "Captura de pantalla de la aplicación móvil"
+  "features": {
+    "eyebrow": "Solución Empresarial Completa",
+    "heading": "Todo lo que Necesitas para Crecer Globalmente",
+    "subheading": "Herramientas poderosas diseñadas para empresas modernas que operan a través de fronteras",
+    "operations": {
+      "title": "Gestión de Operaciones",
+      "description": "Simplifica tus operaciones comerciales diarias"
     },
-    "integration": {
-      "title": "Integraciones Perfectas",
-      "description": "Conecta con tus herramientas y servicios favoritos. Nuestra plataforma se integra con procesadores de pago, software de contabilidad, plataformas de comercio electrónico y más."
+    "financial": {
+      "title": "Gestión Financiera",
+      "description": "Control completo sobre las finanzas de tu negocio",
+      "heading": "Control total sobre las finanzas de tu negocio"
     },
-    "pos": {
-      "title": "TPV y Escaneado de Códigos de Barras",
-      "description": "Transforma cualquier dispositivo en un potente sistema de punto de venta. Escanea códigos de barras al instante, procesa ventas rápidamente, rastrea inventario en tiempo real y acepta todos los métodos de pago incluyendo efectivo, tarjetas y dinero móvil.",
-      "imageAlt": "Sistema TPV con funcionalidad de escaneado de códigos de barras",
-      "features": {
-        "quickCheckout": "Pago rápido",
-        "barcodeScanning": "Escaneado de códigos",
-        "allPaymentTypes": "Todos los tipos de pago",
-        "inventoryTracking": "Seguimiento de inventario",
-        "offlineMode": "Modo sin conexión",
-        "mobileReady": "Listo para móvil"
-      }
-    },
-    "ai": {
-      "title": "Análisis con IA",
-      "description": "Obtén recomendaciones inteligentes y análisis predictivos basados en los datos de tu negocio. Nuestra IA te ayuda a pronosticar la demanda, optimizar el inventario e identificar oportunidades de crecimiento.",
-      "imageAlt": "Captura de pantalla del panel de análisis con IA"
-    },
-    "geofencing": {
-      "title": "Geovallado y Seguimiento de Ubicación",
-      "description": "Garantiza un seguimiento preciso del tiempo con fichar entrada/salida basado en GPS. Perfecto para equipos de campo, conductores de reparto y trabajadores remotos. Configura límites virtuales para sitios de trabajo y recibe alertas cuando los empleados entren o salgan de áreas designadas.",
-      "imageAlt": "Interfaz de geovallado y seguimiento de ubicación",
-      "features": {
-        "gpsClockInOut": "Fichar con GPS",
-        "virtualBoundaries": "Límites virtuales",
-        "realTimeAlerts": "Alertas en tiempo real",
-        "automatedTimesheets": "Partes de horas automatizados",
-        "complianceReady": "Listo para cumplimiento",
-        "teamManagement": "Gestión de equipo"
-      }
-    },
-    "mobilemoney": {
-      "title": "Pagos con Dinero Móvil",
-      "description": "Acepta pagos desde cualquier parte del mundo. La integración con M-Pesa está activa en Kenia, con MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix y Mercado Pago próximamente. Alcanza miles de millones de clientes que prefieren el dinero móvil sobre la banca tradicional.",
-      "imageAlt": "Opciones de pago con dinero móvil",
-      "available": "Métodos de pago:",
-      "live": "Disponible Ahora:",
-      "coming": "Próximamente:"
-    },
-    "whatsapp": {
-      "title": "WhatsApp Business",
-      "description": "Transforma la comunicación con clientes mediante integración de WhatsApp Business. Crea y gestiona tu catálogo de productos, envía automáticamente facturas y recibos, brinda soporte instantáneo al cliente, y conecta con ellos en su plataforma de mensajería preferida.",
-      "learnMore": "Más Información"
-    },
-    "languages": {
-      "title": "Más de 20 Idiomas Soportados",
-      "description": "Llega a clientes y gestiona tu negocio en tu idioma preferido. Desde inglés hasta suajili, español hasta mandarín, soportamos más de 20 idiomas para hacer Dott accesible a empresas en todo el mundo.",
-      "imageAlt": "Demostración de interfaz multiidioma",
-      "availableIn": "Disponible en:"
-    },
-    "features": {
-      "label": "Características clave:"
-    },
-    "learnMore": "Más información"
-  },
-  "faq": {
-    "eyebrow": "FAQ",
-    "heading": "Preguntas frecuentes",
-    "subheading": "Encuentra respuestas a preguntas comunes sobre nuestra plataforma y servicios.",
     "global": {
-      "question": "¿Funciona Dott para empresas fuera de EE.UU.?",
-      "answer": "Sí, Dott está diseñado para funcionar globalmente. Admitimos múltiples monedas, idiomas y métodos de pago regionales. Nuestra plataforma cumple con las regulaciones fiscales en varios países, lo que te permite gestionar tu negocio en cualquier parte del mundo."
+      "title": "Herramientas de Negocio Global",
+      "description": "Todo lo que necesitas para operar internacionalmente",
+      "heading": "Todo lo que necesitas para operaciones internacionales"
     },
-    "cost": {
-      "question": "¿Cuánto cuesta?",
-      "answer": "Ofrecemos diferentes niveles de precios basados en las necesidades de tu negocio. Nuestro plan básico comienza en $9.99/mes, mientras que nuestro plan premium con características avanzadas cuesta $29.99/mes. Todos los planes incluyen características principales como gestión de inventario, facturación e informes básicos. Visita nuestra página de precios para una comparación detallada."
-    },
-    "onboarding": {
-      "question": "¿Cuánto tiempo lleva configurarlo?",
-      "answer": "La mayoría de las empresas se ponen en marcha con Dott en menos de un día. Nuestro asistente de configuración intuitivo te guía a través del proceso, y nuestro equipo de éxito del cliente está disponible para ayudarte si necesitas asistencia. Si estás migrando desde otro sistema, ofrecemos herramientas para importar tus datos existentes."
-    },
-    "support": {
-      "question": "¿Qué tipo de soporte ofrecen?",
-      "answer": "Proporcionamos soporte al cliente 24/7 a través de chat, correo electrónico y teléfono. Nuestro equipo está disponible en múltiples idiomas para ayudar a empresas en diferentes zonas horarias. Los planes premium incluyen gerentes de cuenta dedicados y soporte prioritario."
-    },
-    "data": {
-      "question": "¿Están seguros mis datos empresariales?",
-      "answer": "Sí, nos tomamos la seguridad en serio. Dott utiliza encriptación de nivel bancario para proteger tus datos, auditorías de seguridad regulares y cumple con GDPR y otras regulaciones regionales de protección de datos. Tus datos empresariales se respaldan regularmente y se almacenan de forma segura en la nube."
-    },
-    "integration": {
-      "question": "¿Puedo integrar con otras herramientas que uso?",
-      "answer": "Absolutamente. Dott se integra con procesadores de pago populares, software de contabilidad, plataformas de comercio electrónico y otras herramientas empresariales. También ofrecemos una API para integraciones personalizadas. Consulta nuestra página de integraciones para ver una lista completa de servicios compatibles."
+    "trust": {
+      "title": "Diseñado para Seguridad y Cumplimiento"
     }
   },
-  "contact": {
-    "eyebrow": "Contáctanos",
-    "heading": "Ponte en contacto",
-    "subheading": "¿Tienes preguntas sobre Dott? Nuestro equipo está aquí para ayudarte a encontrar la solución perfecta para tu negocio.",
-    "infoTitle": "Información de Contacto",
-    "infoSubtitle": "Completa el formulario o contáctanos directamente usando la información a continuación.",
-    "email": "Correo electrónico",
-    "address": "Dirección",
-    "social": "Síguenos",
-    "submitting": "Enviando tu mensaje...",
-    "success": "¡Gracias por contactarnos! Te responderemos pronto.",
-    "error": "Error al enviar tu mensaje. Por favor, inténtalo de nuevo o escríbenos directamente a support@dottapps.com.",
-    "form": {
-      "name": "Nombre Completo",
-      "email": "Dirección de Correo",
-      "company": "Empresa",
-      "phone": "Número de Teléfono",
-      "subject": "¿En qué podemos ayudarte?",
-      "message": "Mensaje",
-      "submit": "Enviar Mensaje",
-      "sending": "Enviando...",
-      "subject": {
-        "general": "Consulta General",
-        "sales": "Pregunta de Ventas",
-        "support": "Soporte Técnico",
-        "demo": "Solicitar una Demostración",
-        "partnership": "Oportunidad de Asociación"
-      }
-    },
-    "error": {
-      "name": "El nombre es obligatorio",
-      "email": {
-        "required": "El correo electrónico es obligatorio",
-        "invalid": "Por favor, introduce una dirección de correo válida"
-      },
-      "message": "El mensaje es obligatorio"
-    }
-  },
-  "featuresTitle": "Características Comerciales Globales",
-  "featuresSubtitle": "Todo lo que necesitas para gestionar eficientemente tu negocio en más de 100 países",
-  "countriesSupported": "Más de 100 países compatibles",
-  "globalPaymentOptions": "Opciones de pago globales",
-  "advancedInventory": "Gestión avanzada de inventario",
-  "new": "Nuevo",
-  "pricingTitle": "Todo incluido en nuestro plan Profesional por solo $15/mes",
-  "pricingDescription": "Sin cargos ocultos. Sin cargos adicionales por impresión de códigos de barras o integración de escáneres.",
-  "feature_inventory": "Gestión de Inventario",
-  "feature_inventory_desc": "Rastrea niveles de stock, genera códigos de barras y gestiona múltiples ubicaciones con actualizaciones en tiempo real.",
-  "feature_pos": "Punto de Venta",
-  "feature_pos_desc": "Acepta pagos, gestiona ventas y rastrea inventario desde un sistema POS fácil de usar.",
-  "feature_invoicing": "Facturación y Presupuestos",
-  "feature_invoicing_desc": "Crea facturas profesionales, cotizaciones y facturas recurrentes en segundos. Cobra más rápido.",
-  "feature_payroll": "Nómina y RRHH",
-  "feature_payroll_desc": "Paga a empleados, gestiona beneficios, rastrea tiempo libre y maneja todas las necesidades de RRHH en un solo lugar.",
-  "feature_accounting": "Contabilidad e Informes",
-  "feature_accounting_desc": "Rastrea ingresos, gastos y genera informes financieros. Mantente preparado para impuestos todo el año.",
-  "feature_payments": "Pagos Globales",
-  "feature_payments_desc": "Acepta tarjetas de crédito, transferencias bancarias, dinero móvil y más de 50 métodos de pago en todo el mundo.",
-  "feature_crm": "Gestión de Clientes",
-  "feature_crm_desc": "Construye relaciones duraderas con datos organizados de clientes, notas e historial de comunicación.",
-  "feature_analytics": "Análisis con IA",
-  "feature_analytics_desc": "Obtén información inteligente y predicciones para tomar mejores decisiones comerciales con análisis impulsados por IA.",
-  "highlights_title": "Por Qué Elegir Nuestra Plataforma Global",
-  "highlights_subtitle": "Diseñada para apoyar a empresas a través de fronteras con potente gestión de inventario",
-  "highlight_title_global_business_solution": "Solución Empresarial Global",
-  "highlight_desc_global_business_solution": "Diseñada para empresas en todo el mundo con soporte para más de 100 países, múltiples monedas y métodos de pago específicos por región.",
-  "highlight_title_advanced_inventory_tools": "Herramientas Avanzadas de Inventario",
-  "highlight_desc_advanced_inventory_tools": "Impresión de códigos de barras e integración de escáneres Bluetooth incluidos en nuestro plan Profesional sin cargos adicionales.",
-  "highlight_title_fast_&_efficient": "Rápido y Eficiente",
-  "highlight_desc_fast_&_efficient": "Plataforma basada en la nube optimizada para velocidad y eficiencia, ayudándote a gestionar tu negocio más rápido dondequiera que estés.",
-  "highlight_title_secure_&_compliant": "Seguro y Conforme",
-  "highlight_desc_secure_&_compliant": "Seguridad de nivel bancario y características de cumplimiento regional aseguran que tus datos empresariales estén seguros y cumplan con las regulaciones locales.",
-  "highlight_title_global_support": "Soporte Global",
-  "highlight_desc_global_support": "Nuestro equipo de soporte dedicado comprende los entornos empresariales locales y está disponible en múltiples zonas horarias e idiomas.",
-  "highlights_pricing_title": "Todas las características, incluida la impresión de códigos de barras e integración de escáneres, incluidas en nuestro plan Profesional por solo $15/mes",
-  "highlights_pricing_subtitle": "Sin cargos ocultos. Sin niveles de precios complicados. Solo un plan simple para empresas globales.",
-  "faq_title": "Preguntas Frecuentes",
-  "faq_subtitle": "¿Tienes preguntas sobre nuestra plataforma empresarial global? Tenemos respuestas.",
-  "chip_countries": "Más de 100 Países",
-  "chip_barcode": "Integración de Códigos de Barras",
-  "chip_currency": "Multi-Moneda",
-  "key_info": "Información Clave",
-  "faq_category_general": "General",
-  "faq_category_pricing": "Precios y Planes",
-  "faq_category_global": "Negocio Global",
-  "faq_category_features": "Características",
-  "faq_category_payments": "Opciones de Pago",
-  "faq_category_security": "Seguridad y Cumplimiento",
-  "faq_category_support": "Soporte y Ayuda",
-  "faq_q_what_is_dott": "¿Qué es Dott?",
-  "faq_a_what_is_dott": "Dott es una plataforma de gestión empresarial global que apoya a empresas en más de 100 países. Combina contabilidad, nómina, RRHH, gestión de inventario con funcionalidad de códigos de barras, y varias opciones de pago, incluyendo dinero móvil, en una solución intuitiva.",
-  "faq_q_is_it_really_free": "¿Es Dott realmente gratis?",
-  "faq_a_is_it_really_free": "¡Sí! Nuestro plan Básico es gratis para siempre sin necesidad de tarjeta de crédito. Incluye funciones esenciales para freelancers y pequeñas startups. Puedes actualizar en cualquier momento a medida que crece tu negocio.",
-  "faq_q_how_much_does_it_cost": "¿Cuánto cuesta?",
-  "faq_a_how_much_does_it_cost": "Ofrecemos un plan Básico gratuito para startups y un plan Profesional a $15/mes ($150/año). El plan Profesional incluye todas las características, incluida la impresión de códigos de barras e integración de escáneres, sin cargos ocultos. Puedes actualizar o reducir en cualquier momento.",
-  "faq_q_which_countries_do_you_support": "¿Qué países admiten?",
-  "faq_a_which_countries_do_you_support": "Dott apoya a empresas en más de 100 países en todo el mundo, con características especiales para regiones específicas como integración de dinero móvil en África, factoring de facturas en EE.UU. y Canadá, y herramientas de cumplimiento para diversos entornos regulatorios.",
-  "faq_q_does_dott_support_mobile_money_payments": "¿Dott admite pagos con dinero móvil?",
-  "faq_a_does_dott_support_mobile_money_payments": "¡Sí! Admitimos integración con plataformas populares de dinero móvil como M-Pesa, MTN Mobile Money, Airtel Money y otras en África y Asia. Esto permite que tu negocio acepte y procese fácilmente métodos de pago locales.",
-  "faq_q_can_i_switch_plans": "¿Puedo cambiar de plan en cualquier momento?",
-  "faq_a_can_i_switch_plans": "¡Por supuesto! Puedes actualizar o bajar tu plan en cualquier momento. Los cambios entran en vigor inmediatamente y prorratearemos cualquier pago. Sin contratos a largo plazo ni tarifas de cancelación.",
-  "faq_q_do_you_offer_mobile_apps": "¿Ofrecen aplicaciones móviles?",
-  "faq_a_do_you_offer_mobile_apps": "¡Sí! Dott funciona perfectamente en cualquier dispositivo a través de tu navegador web. También tenemos aplicaciones dedicadas para iOS y Android para administrar tu negocio sobre la marcha. Todas las funciones se sincronizan en tiempo real entre dispositivos.",
-  "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "¿Cómo funciona la característica de escáner de códigos de barras e inventario?",
-  "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Nuestro plan Profesional incluye la capacidad de generar e imprimir códigos de barras para tus artículos de inventario y sincronizar con escáneres de códigos de barras Bluetooth para una gestión de inventario más rápida. Esta característica está incluida sin costo adicional y funciona perfectamente con nuestro sistema de gestión de inventario.",
-  "faq_q_is_my_data_secure": "¿Están seguros mis datos?",
-  "faq_a_is_my_data_secure": "Absolutamente. Utilizamos encriptación de seguridad de nivel bancario y seguimos las mejores prácticas de la industria para proteger tus datos. Nuestra plataforma está alojada en infraestructura de nube segura con múltiples capas de seguridad, características de cumplimiento regional y copias de seguridad regulares.",
-  "faq_q_can_i_import_data_from_other_systems": "¿Puedo importar datos de otros sistemas?",
-  "faq_a_can_i_import_data_from_other_systems": "Sí, puedes importar datos desde varios formatos, incluyendo Excel, CSV y otras plataformas de contabilidad. También proporcionamos asistencia de migración para empresas que cambian desde otras plataformas, con soporte para formatos de datos internacionales.",
-  "faq_q_what_kind_of_support_do_you_offer": "¿Qué tipo de soporte ofrecen?",
-  "faq_a_what_kind_of_support_do_you_offer": "Proporcionamos soporte al cliente a través de múltiples zonas horarias mediante chat, correo electrónico y llamadas programadas. Nuestro equipo incluye expertos familiarizados con prácticas empresariales regionales para proporcionar asistencia relevante, sin importar dónde opere tu negocio.",
-  "faq_q_how_does_multi-currency_support_work": "¿Cómo funciona el soporte multi-moneda?",
-  "faq_a_how_does_multi-currency_support_work": "Dott te permite operar en múltiples monedas simultáneamente, con actualizaciones automáticas de tipos de cambio. Puedes facturar a tus clientes en su moneda local, realizar seguimiento de gastos en diferentes monedas y generar informes en tu moneda base preferida.",
-  "still_have_questions": "¿Todavía tienes preguntas?",
-  "contact_support": "Contacta con nuestro equipo de soporte global en support@dottapps.com",
-  "cta_title": "¿Listo para hacer crecer tu negocio?",
-  "cta_subtitle": "Únete a más de 10,000 negocios que ya usan Dott",
-  "cta_button": "Comienza prueba gratis",
-  "cta_no_credit_card": "No se requiere tarjeta de crédito",
-  "testimonial_title": "Lo que dicen nuestros clientes",
-  "testimonial_subtitle": "Únete a miles de negocios felices",
-  "integration_title": "Funciona con las herramientas que ya usas",
-  "integration_subtitle": "Conecta Dott con tus aplicaciones favoritas",
-  "security_badge_1": "Encriptación de nivel bancario",
-  "security_badge_2": "Cumple con GDPR",
-  "security_badge_3": "99.9% de tiempo activo",
-  "copyright_text": "Dott, LLC. Todos los derechos reservados.",
-  "footer_product": "Producto",
-  "footer_company": "Empresa",
-  "footer_legal": "Legal",
-  "footer_link_features": "Características",
-  "footer_link_testimonials": "Testimonios",
-  "footer_link_highlights": "Destacados",
-  "footer_link_pricing": "Precios",
-  "footer_link_faqs": "FAQs",
-  "footer_link_about_us": "Sobre Nosotros",
-  "footer_link_careers": "Carreras",
-  "footer_link_press": "Prensa",
-  "footer_link_blog": "Blog",
-  "footer_link_terms_of_use": "Términos de Uso",
-  "footer_link_privacy_policy": "Política de Privacidad",
-  "footer_link_cookie_policy": "Política de Cookies",
-  "footer_link_contact": "Contacto",
   "pricing": {
     "eyebrow": "Precios Simples y Transparentes",
     "heading": "Elige el Plan Adecuado para Tu Negocio",
@@ -533,6 +242,674 @@
       "customSecurity": "Políticas de Seguridad Personalizadas"
     }
   },
+  "contact": {
+    "eyebrow": "Contáctanos",
+    "heading": "Ponte en contacto",
+    "subheading": "¿Tienes preguntas sobre Dott? Nuestro equipo está aquí para ayudarte a encontrar la solución perfecta para tu negocio.",
+    "infoTitle": "Información de Contacto",
+    "infoSubtitle": "Completa el formulario o contáctanos directamente usando la información a continuación.",
+    "email": "Correo electrónico",
+    "address": "Dirección",
+    "social": "Síguenos",
+    "submitting": "Enviando tu mensaje...",
+    "success": "¡Gracias por contactarnos! Te responderemos pronto.",
+    "error": {
+      "name": "El nombre es obligatorio",
+      "email": {
+        "required": "El correo electrónico es obligatorio",
+        "invalid": "Por favor, introduce una dirección de correo válida"
+      },
+      "message": "El mensaje es obligatorio"
+    },
+    "form": {
+      "name": "Nombre Completo",
+      "email": "Dirección de Correo",
+      "company": "Empresa",
+      "phone": "Número de Teléfono",
+      "subject": {
+        "general": "Consulta General",
+        "sales": "Pregunta de Ventas",
+        "support": "Soporte Técnico",
+        "demo": "Solicitar una Demostración",
+        "partnership": "Oportunidad de Asociación"
+      },
+      "message": "Mensaje",
+      "submit": "Enviar Mensaje",
+      "sending": "Enviando..."
+    }
+  },
+  "getStarted": "Comenzar",
+  "login": "Iniciar Sesión",
+  "signUp": "Registrarse",
+  "welcome": "Bienvenido a Dott",
+  "welcomeMessage": "La plataforma todo en uno para pequeñas empresas",
+  "learnMore": "Más Información",
+  "ourMission": "Nuestra Misión",
+  "ourVision": "Nuestra Visión",
+  "coreValues": "Nuestros Valores Fundamentales",
+  "socialImpact": "Nuestro Impacto Social",
+  "getInTouch": "Contacta con Nuestro Equipo",
+  "termsOfUse": "Términos de Uso",
+  "privacyPolicy": {
+    "title": "Política de Privacidad",
+    "effectiveDate": "Vigente a partir de: {{date}}",
+    "introduction": "En Dott LLC, valoramos su confianza y respetamos su privacidad. Existimos para proporcionar a las empresas herramientas integrales de gestión financiera. Esta Política de Privacidad explica, en un lenguaje claro y sencillo, qué información recopilamos, cómo la usamos y las opciones que tiene con respecto a su información personal, para que pueda sentirse seguro al usar nuestra plataforma.",
+    "navigation": {
+      "backToDashboard": "Volver al Panel",
+      "backToHome": "Volver al Inicio"
+    },
+    "sections": {
+      "scope": {
+        "title": "A. Alcance",
+        "content": "Proteger su información personal es importante para nosotros. Esta política de privacidad se aplica a nuestros productos y servicios ofrecidos bajo la marca Dott, nuestros sitios web y nuestras aplicaciones móviles que incorporan esta política de privacidad. Nuestros productos y servicios son ofrecidos por Dott LLC. Esta política cubre cómo recopilamos, usamos, almacenamos, procesamos y compartimos su información en conexión con nuestra plataforma de gestión financiera, incluyendo contabilidad, nómina, procesamiento de pagos, facturación y otros servicios."
+      },
+      "personalInfo": {
+        "title": "B. Información Personal",
+        "content": "Como parte de la prestación de nuestros servicios, podemos recopilar información personal sobre usted, su negocio, sus empleados y sus clientes. 'Información Personal' son datos que pueden usarse para identificar a una persona individualmente. Esta política describe nuestra recopilación, protección, uso, retención, divulgación y otro procesamiento de Información Personal y sus derechos relacionados con estas actividades.",
+        "businessInfo": {
+          "title": "B.1 Información Comercial",
+          "content": "Esto incluye el nombre de su empresa, dirección, números de identificación fiscal, tipo de industria, tipo de entidad comercial y otra información necesaria para proporcionar nuestros servicios."
+        },
+        "individualInfo": {
+          "title": "B.2 Información Individual",
+          "content": "Esto incluye información sobre usted como propietario de un negocio, sus empleados, contratistas y sus clientes, según sea necesario para proporcionar nuestros servicios."
+        }
+      },
+      "categories": {
+        "title": "C. Categorías de Información Personal Recopilada",
+        "content": "La información que podemos recopilar incluye, pero no se limita a:",
+        "identification": {
+          "title": "C.1 Información de Identificación",
+          "content": "Información de contacto (nombre, dirección de correo electrónico, número de teléfono, dirección postal), Números de Identificación Gubernamentales (EIN, SSN, IDs fiscales), Fecha de nacimiento, identificación fotográfica y documentación comercial."
+        },
+        "financial": {
+          "title": "C.2 Información Financiera",
+          "content": "Detalles de cuentas bancarias, información de tarjetas de pago, historial de transacciones, saldos de cuentas, registros de pago, historial crediticio, estados financieros e información de nómina."
+        },
+        "employee": {
+          "title": "C.3 Información de Empleados",
+          "content": "Para los servicios de nómina, recopilamos información sobre sus empleados incluyendo sus nombres, detalles de contacto, información salarial, información de retención de impuestos, detalles bancarios para depósito directo y otros datos relacionados con el empleo."
+        },
+        "technical": {
+          "title": "C.4 Información Técnica",
+          "content": "Información del dispositivo (dirección IP, tipo de dispositivo, sistema operativo), Información del navegador, Datos de geolocalización, Datos de uso, Información de inicio de sesión y Datos de interacción de la aplicación."
+        },
+        "customer": {
+          "title": "C.5 Información del Cliente",
+          "content": "Cuando usa nuestras funciones de facturación o procesamiento de pagos, podemos recopilar información sobre sus clientes necesaria para procesar estas transacciones."
+        },
+        "tax": {
+          "title": "C.6 Información Fiscal",
+          "content": "Cuando usa nuestras funciones fiscales, recopilamos la ubicación de su negocio, las tasas de impuestos que ingresa, las preferencias de configuración fiscal y el historial de cálculo de impuestos. También podemos procesar consultas relacionadas con impuestos cuando usa nuestras funciones de sugerencias fiscales impulsadas por IA. Esta información se usa únicamente para proporcionar servicios de cálculo de impuestos y no se usa para la presentación o reporte de impuestos en su nombre."
+        }
+      },
+      "collection": {
+        "title": "D. Cómo Recopilamos Su Información",
+        "content": "Recopilamos información de varias fuentes:",
+        "direct": {
+          "title": "D.1 Recopilación Directa",
+          "content": "Información que proporciona cuando se registra para nuestros servicios, configura su cuenta, conecta sus cuentas financieras, procesa pagos o se comunica con nosotros."
+        },
+        "automated": {
+          "title": "D.2 Recopilación Automatizada",
+          "content": "Información recopilada automáticamente a través de cookies, web beacons y tecnologías similares cuando usa nuestros servicios."
+        },
+        "thirdParty": {
+          "title": "D.3 Fuentes de Terceros",
+          "content": "Información que recibimos de proveedores de servicios de terceros, socios comerciales, servicios de verificación de identidad, bureaus de crédito y otras fuentes disponibles públicamente."
+        },
+        "financial": {
+          "title": "D.4 Instituciones Financieras",
+          "content": "Cuando conecta sus cuentas bancarias u otros servicios financieros a Dott, recopilamos información de estas instituciones financieras con su autorización."
+        }
+      },
+      "usage": {
+        "title": "E. Cómo Usamos Su Información",
+        "content": "Usamos su información para los siguientes propósitos:",
+        "services": {
+          "title": "E.1 Proporcionar y Mejorar Nuestros Servicios",
+          "content": "Para entregar los servicios de gestión financiera que solicita, procesar transacciones, facilitar pagos, gestionar facturas, procesar nóminas, proporcionar soporte técnico y mejorar nuestra plataforma."
+        },
+        "security": {
+          "title": "E.2 Autenticación y Seguridad",
+          "content": "Para verificar su identidad, asegurar su cuenta, prevenir fraudes y asegurar la seguridad de nuestra plataforma."
+        },
+        "communications": {
+          "title": "E.3 Comunicaciones",
+          "content": "Para comunicarnos con usted sobre su cuenta, proporcionar soporte al cliente, enviar actualizaciones del servicio y, con su consentimiento, enviar comunicaciones de marketing."
+        },
+        "compliance": {
+          "title": "E.4 Cumplimiento Legal",
+          "content": "Para cumplir con nuestras obligaciones legales, incluyendo regulaciones anti-lavado de dinero, requisitos de reporte fiscal y otras regulaciones de servicios financieros."
+        },
+        "analytics": {
+          "title": "E.5 Análisis y Mejoras",
+          "content": "Para analizar patrones de uso, solucionar problemas técnicos y desarrollar nuevas características y servicios."
+        }
+      },
+      "sharing": {
+        "title": "F. Compartir y Divulgación de Información",
+        "content": "Podemos compartir su información con las siguientes categorías de destinatarios:",
+        "providers": {
+          "title": "F.1 Proveedores de Servicios",
+          "content": "Proveedores de servicios de terceros que nos ayudan a entregar nuestros servicios, incluyendo procesadores de pagos (Stripe, Flutterwave, DLocal, Wise, PayPal), proveedores de hosting, servicios de soporte al cliente y proveedores de análisis."
+        },
+        "partners": {
+          "title": "F.2 Socios Financieros",
+          "content": "Bancos e instituciones financieras necesarias para procesar transacciones, facilitar pagos y proporcionar servicios de factoraje de facturas."
+        },
+        "authorities": {
+          "title": "F.3 Autoridades Legales y Regulatorias",
+          "content": "Autoridades gubernamentales, fuerzas del orden y otros terceros cuando sea requerido por ley, para cumplir con procesos legales o para proteger nuestros derechos."
+        },
+        "transfers": {
+          "title": "F.4 Transferencias Comerciales",
+          "content": "En conexión con cualquier fusión, adquisición o venta de activos de la empresa, su información puede ser transferida como un activo comercial."
+        },
+        "consent": {
+          "title": "F.5 Con Su Consentimiento",
+          "content": "Podemos compartir su información con otros terceros cuando haya dado su consentimiento para hacerlo."
+        }
+      },
+      "rights": {
+        "title": "G. Sus Opciones y Derechos",
+        "content": "Dependiendo de su jurisdicción, puede tener los siguientes derechos con respecto a su información personal:",
+        "access": {
+          "title": "G.1 Acceso y Portabilidad",
+          "content": "Puede solicitar acceso a su información personal y recibir una copia en un formato estructurado y de uso común."
+        },
+        "correction": {
+          "title": "G.2 Corrección",
+          "content": "Puede solicitar que corrijamos información personal inexacta o incompleta."
+        },
+        "deletion": {
+          "title": "G.3 Eliminación",
+          "content": "Puede solicitar que eliminemos su información personal, sujeto a ciertas excepciones."
+        },
+        "objection": {
+          "title": "G.4 Objeción y Restricción",
+          "content": "Puede objetar o solicitar restricción del procesamiento de su información personal."
+        },
+        "withdraw": {
+          "title": "G.5 Retirar Consentimiento",
+          "content": "Donde dependemos de su consentimiento para procesar su información personal, puede retirar su consentimiento en cualquier momento."
+        },
+        "exercise": {
+          "title": "G.6 Cómo Ejercer Sus Derechos",
+          "content": "Para ejercer sus derechos, póngase en contacto con nosotros en support@dottapps.com Podemos necesitar verificar su identidad antes de cumplir con su solicitud."
+        }
+      },
+      "security": {
+        "title": "H. Seguridad de Datos",
+        "content": "Implementamos medidas técnicas y organizacionales apropiadas para proteger su información personal:",
+        "measures": {
+          "title": "H.1 Medidas de Seguridad",
+          "content": "Usamos medidas de seguridad estándar de la industria incluyendo encriptación, controles de acceso, firewalls y evaluaciones de seguridad regulares."
+        },
+        "payment": {
+          "title": "H.2 Información de Pago",
+          "content": "La información de pago se procesa en cumplimiento con el Estándar de Seguridad de Datos de la Industria de Tarjetas de Pago (PCI DSS)."
+        },
+        "access": {
+          "title": "H.3 Acceso de Empleados",
+          "content": "Restringimos el acceso de empleados a información personal a aquellos que lo necesitan para realizar sus funciones laborales."
+        },
+        "breach": {
+          "title": "H.4 Procedimientos de Violación de Datos",
+          "content": "Tenemos procedimientos establecidos para responder a violaciones sospechosas de seguridad de datos y le notificaremos a usted y a los reguladores aplicables de violaciones según lo requiera la ley."
+        },
+        "tax": {
+          "title": "H.5 Seguridad de Datos Fiscales",
+          "content": "Las tasas y configuraciones fiscales que ingresa están encriptadas y almacenadas de forma segura. Las sugerencias fiscales impulsadas por IA se procesan sin almacenar sus consultas específicas. No compartimos sus datos de configuración fiscal con terceros excepto según sea necesario para proporcionar nuestros servicios o según lo requiera la ley. Usted sigue siendo responsable de la precisión de toda la información fiscal ingresada en nuestro sistema."
+        }
+      },
+      "retention": {
+        "title": "I. Retención de Datos",
+        "content": "Retenemos su información personal durante el tiempo necesario para proporcionar nuestros servicios y para propósitos comerciales legítimos, como mantener registros comerciales, cumplir con obligaciones legales, resolver disputas y hacer cumplir nuestros acuerdos. Cuando ya no necesitemos su información personal, la eliminaremos de forma segura o la anonimizaremos."
+      },
+      "transfers": {
+        "title": "J. Transferencias Internacionales de Datos",
+        "content": "Su información puede ser transferida y procesada en países distintos al país donde vive, incluyendo Estados Unidos, Ruanda y otros países donde Dott LLC o sus proveedores de servicios operan. Estos países pueden tener leyes de protección de datos diferentes a las leyes de su país. Implementamos salvaguardas apropiadas para proteger su información cuando se transfiere internacionalmente, como cláusulas contractuales estándar aprobadas por las autoridades de protección de datos relevantes."
+      },
+      "children": {
+        "title": "K. Privacidad de Menores",
+        "content": "Nuestros servicios no están dirigidos a menores de 18 años. No recopilamos intencionalmente información personal de menores. Si es padre o tutor y cree que su hijo nos ha proporcionado información personal, póngase en contacto con nosotros para que podamos eliminar la información."
+      },
+      "cookies": {
+        "title": "L. Cookies y Tecnologías Similares",
+        "content": "Usamos cookies y tecnologías similares para recopilar información sobre cómo interactúa con nuestros servicios, recordar sus preferencias y optimizar su experiencia. Puede gestionar sus preferencias de cookies a través de la configuración de su navegador.",
+        "types": {
+          "title": "L.1 Tipos de Cookies que Usamos",
+          "content": "Cookies esenciales (necesarias para la funcionalidad de nuestros servicios), Cookies analíticas (para entender cómo los usuarios interactúan con nuestros servicios) y Cookies de marketing (para entregar anuncios relevantes)."
+        },
+        "choices": {
+          "title": "L.2 Sus Opciones de Cookies",
+          "content": "La mayoría de navegadores web le permiten controlar las cookies a través de su configuración. Sin embargo, si rechaza ciertas cookies, es posible que no pueda usar todas las características de nuestros servicios."
+        }
+      },
+      "ai": {
+        "title": "M. IA y Procesamiento Automatizado",
+        "content": "Usamos inteligencia artificial y sistemas automatizados para mejorar nuestros servicios y proporcionar características como sugerencias de tasas fiscales, perspectivas financieras y detección de fraudes.",
+        "features": {
+          "title": "M.1 Características Impulsadas por IA",
+          "content": "Nuestras características de IA analizan su ubicación y tipo de negocio para sugerir tasas fiscales y proporcionar otras perspectivas comerciales. Estas sugerencias se generan basándose en información disponible públicamente y reglas fiscales generales."
+        },
+        "advice": {
+          "title": "M.2 Sin Asesoramiento Profesional",
+          "content": "Las sugerencias generadas por IA, incluyendo recomendaciones de tasas fiscales, se proporcionan solo con fines informativos y no constituyen asesoramiento fiscal, legal o financiero profesional. Debe verificar independientemente todas las sugerencias antes de usarlas."
+        },
+        "review": {
+          "title": "M.3 Revisión Humana",
+          "content": "Las decisiones automatizadas significativas que pueden tener efectos legales o similarmente significativos en usted están sujetas a revisión humana bajo solicitud."
+        }
+      },
+      "changes": {
+        "title": "N. Cambios a Esta Política de Privacidad",
+        "content": "Podemos actualizar esta política de privacidad de vez en cuando para reflejar cambios en nuestras prácticas o requisitos legales. Le notificaremos de cualquier cambio material publicando la nueva versión en nuestro sitio web y actualizando la fecha efectiva. Le alentamos a revisar nuestra política de privacidad periódicamente."
+      },
+      "contact": {
+        "title": "O. Contáctenos",
+        "content": "Si tiene alguna pregunta sobre esta Política de Privacidad o nuestras prácticas de datos, o si desea ejercer sus derechos con respecto a su información personal, póngase en contacto con nosotros en:"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "Estados Unidos",
+      "email": "Correo electrónico: support@dottapps.com",
+      "website": "Sitio web: www.dottapps.com"
+    }
+  },
+  "cookiePolicy": {
+    "title": "Cookie Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "navigation": {
+      "backToHome": "Back to Home"
+    },
+    "introduction": "This Cookie Policy explains how Dott LLC uses cookies and similar technologies to recognize you when you visit our website and use our services. It explains what these technologies are and why we use them, as well as your rights to control our use of them.",
+    "sections": {
+      "whatAreCookies": {
+        "title": "What are cookies?",
+        "content": "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information."
+      },
+      "howWeUseCookies": {
+        "title": "How we use cookies",
+        "content": "We use cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as \"essential\" or \"strictly necessary\" cookies. Other cookies enable us to track and target the interests of our users to enhance the experience on our website."
+      },
+      "typesOfCookies": {
+        "title": "Types of cookies we use",
+        "content": "The specific types of first and third party cookies served through our website and the purposes they perform are described below:",
+        "essential": {
+          "title": "Essential cookies",
+          "content": "These cookies are strictly necessary to provide you with services available through our website and to use some of its features, such as access to secure areas."
+        },
+        "functional": {
+          "title": "Functional cookies",
+          "content": "These cookies enable the website to provide enhanced functionality and personalization. They may be set by us or by third party providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics cookies",
+          "content": "These cookies allow us to count visits and traffic sources, so we can measure and improve the performance of our site. They help us know which pages are the most and least popular and see how visitors move around the site."
+        },
+        "marketing": {
+          "title": "Marketing cookies",
+          "content": "These cookies may be set through our site by our advertising partners. They may be used by those companies to build a profile of your interests and show you relevant adverts on other sites."
+        }
+      },
+      "managingCookies": {
+        "title": "Managing cookies",
+        "content": "Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you. It may also stop you from saving customized settings like login information."
+      },
+      "thirdPartyCookies": {
+        "title": "Third-party cookies",
+        "content": "In addition to our own cookies, we may also use various third-party cookies to report usage statistics of our service and deliver advertisements on and through our service."
+      },
+      "changes": {
+        "title": "Changes to this Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time in order to reflect changes to the cookies we use or for other operational, legal or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies."
+      },
+      "contact": {
+        "title": "Contact us",
+        "content": "If you have any questions about our use of cookies or other technologies, please contact us."
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
+  "simplicity": "Simplicidad",
+  "innovation": "Innovación",
+  "empowerment": "Empoderamiento",
+  "customerFocus": "Enfoque al Cliente",
+  "allInOneSolution": "Solución Todo en Uno",
+  "localGlobalPerspective": "Perspectiva Local y Global",
+  "scalableSolutions": "Soluciones Escalables",
+  "aboutDott": "Acerca de Dott",
+  "aboutDescription1": "Fundada en 2023, Dott es una plataforma integral de gestión empresarial diseñada específicamente para pequeñas empresas, freelancers, consultores y microempresas.",
+  "aboutDescription2": "Lo que distingue a Dott es nuestra profunda comprensión de los desafíos únicos que enfrentan las pequeñas empresas, especialmente en mercados emergentes.",
+  "missionStatement": "En Dott, nuestra misión es empoderar a las pequeñas empresas para que prosperen proporcionándoles herramientas de gestión asequibles, accesibles y potentes que simplifiquen las operaciones diarias.",
+  "visionStatement": "Visualizamos un mundo donde las pequeñas empresas tengan acceso a la misma calidad de herramientas de gestión que las grandes corporaciones, pero adaptadas a sus necesidades y escala específicas.",
+  "hero": {
+    "tagline": "SOLUCIONES INTELIGENTES DE GESTIÓN EMPRESARIAL",
+    "your": "Tu",
+    "title": "Plataforma Empresarial Global",
+    "subtitle": "Gratis para siempre con funciones básicas",
+    "description": "Dott te permite crear facturas, aceptar pagos en línea, gestionar tu contabilidad e inventario, con escaneo de códigos de barras, todo en una plataforma intuitiva.",
+    "button": "Comienza gratis",
+    "trustedBy": "Confianza de más de 10,000 empresas en todo el mundo",
+    "imageAlt": "Ilustración de Gestión Empresarial",
+    "videoTitle": "Demostración del Software Dott",
+    "paymentNote": "Pueden aplicarse tarifas de procesamiento de pagos para ciertos tipos de transacciones",
+    "benefit": {
+      "free": "Plan gratis para siempre",
+      "invoicing": "Facturación profesional",
+      "pos": "Sistema de punto de venta",
+      "inventory": "Gestión de inventario",
+      "payroll": "Herramientas de nómina y RRHH",
+      "tax": "Cumplimiento fiscal",
+      "insights": "Análisis con IA",
+      "mobileMoney": "Pagos con dinero móvil (M-Pesa)",
+      "cardPayments": "Acepta pagos con tarjeta en todo el mundo",
+      "languages": "Más de 20 idiomas soportados",
+      "mobilePhone": "Aplicación móvil incluida",
+      "jobManagement": "Gestión y costeo de trabajos",
+      "accounting": "Soporte IFRS y US GAAP"
+    }
+  },
+  "builtForYou": {
+    "title": "Hecho Para Ti",
+    "heading": "¡Gestiona tu negocio como un Pro!",
+    "subheading": "Creado para dueños de negocios como tú",
+    "cta": "Únete a miles de dueños de negocios en todo el mundo que confían en Dott para gestionar su negocio",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Rastrea proyectos, factura a clientes al instante y gestiona tus finanzas todo en un solo lugar. Cobra más rápido con facturas profesionales."
+      },
+      "contractors": {
+        "title": "Contratistas",
+        "description": "Gestiona múltiples proyectos, rastrea materiales y costos laborales, y envía cotizaciones profesionales. Mantén tu flujo de efectivo saludable."
+      },
+      "entrepreneurs": {
+        "title": "Emprendedores",
+        "description": "Escala tu startup con herramientas potentes para inventario, ventas y seguimiento financiero. Toma decisiones basadas en datos."
+      },
+      "consultants": {
+        "title": "Consultores",
+        "description": "Factura por hora o proyecto, rastrea gastos y gestiona múltiples clientes sin esfuerzo. Facturación profesional incluida."
+      },
+      "retail": {
+        "title": "Dueños de Tiendas",
+        "description": "Gestiona inventario con escaneo de códigos de barras, rastrea ventas y acepta múltiples métodos de pago incluyendo dinero móvil."
+      },
+      "streetVendors": {
+        "title": "Vendedores Ambulantes",
+        "description": "Diseño móvil simple para rastrear ventas diarias, gestionar inventario y aceptar pagos digitales sobre la marcha."
+      },
+      "marketStalls": {
+        "title": "Dueños de Puestos de Mercado",
+        "description": "Perfecto para días ocupados de mercado. Entrada rápida de ventas, alertas de inventario y seguimiento de ganancias diarias en tu moneda local."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agentes de Dinero Móvil",
+        "description": "Rastrea transacciones, gestiona saldos flotantes y genera informes para operadores de red. Creado para M-Pesa, MTN y más."
+      },
+      "restaurants": {
+        "title": "Dueños de Pequeños Restaurantes",
+        "description": "Gestiona pedidos, rastrea ingredientes, calcula costos de alimentos y maneja tanto comedor como para llevar eficientemente."
+      },
+      "serviceProviders": {
+        "title": "Proveedores de Servicios",
+        "description": "Para plomeros, electricistas, mecánicos y más. Programa trabajos, rastrea piezas y factura al completar."
+      },
+      "onlineSellers": {
+        "title": "Vendedores en Línea",
+        "description": "Sincroniza inventario a través de plataformas, gestiona pedidos y rastrea envíos. Perfecto para vendedores de redes sociales."
+      },
+      "transport": {
+        "title": "Operadores de Transporte",
+        "description": "Para operadores de taxi, boda boda y tuk-tuk. Rastrea ganancias diarias, costos de combustible y horarios de mantenimiento."
+      }
+    }
+  },
+  "heroTitle": "Software empresarial todo en uno",
+  "heroSubtitle": "Gratis para siempre con funciones básicas",
+  "heroDescription": "Gestión empresarial global con inventario avanzado, escaneo de códigos de barras y soluciones de pago regionales, todo en una plataforma intuitiva para empresas de todo el mundo.",
+  "heroButton": "Comienza gratis",
+  "heroTrustedBy": "Confianza de más de 10,000 empresas en todo el mundo",
+  "heroImageAlt": "Ilustración de Gestión Empresarial",
+  "heroVideoTitle": "Demostración del Software Dott",
+  "searchLanguages": "Buscar idiomas...",
+  "navFeatures": "Características",
+  "navPricing": "Precios",
+  "navAbout": "Acerca de",
+  "navBlog": "Blog",
+  "navContact": "Contacto",
+  "navStatus": "Estado del Sistema",
+  "navSignIn": "INICIAR SESIÓN",
+  "footer": {
+    "home": "Inicio",
+    "features": "Características",
+    "pricing": "Precios",
+    "about": "Sobre Nosotros",
+    "blog": "Blog",
+    "contact": "Contacto",
+    "inventory": "Gestión de Inventario",
+    "accounting": "Contabilidad",
+    "invoicing": "Facturación",
+    "payments": "Pagos",
+    "pos": "Punto de Venta",
+    "careers": "Carreras",
+    "press": "Prensa",
+    "partners": "Socios",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos de Servicio",
+    "help": "Centro de Ayuda",
+    "docs": "Documentación",
+    "status": "Estado del Sistema",
+    "security": "Seguridad",
+    "cookies": "Política de Cookies",
+    "rights": "Todos los derechos reservados.",
+    "tagline": "Haciendo la gestión empresarial simple y eficiente para empresas de todo el mundo.",
+    "product": "Producto",
+    "company": "Empresa",
+    "support": "Soporte",
+    "legal": "Legal"
+  },
+  "highlights": {
+    "bluetooth": "Integración de escáner Bluetooth",
+    "printBarcodes": "Imprime códigos de barras personalizados",
+    "lowStock": "Alertas de stock bajo",
+    "customLabel": "Impresión de etiquetas personalizadas",
+    "mobileScanning": "Escaneo móvil",
+    "batchProcessing": "Procesamiento por lotes",
+    "offlineMode": "Modo offline",
+    "multiplePayments": "Múltiples métodos de pago",
+    "receiptCustom": "Personalización de recibos",
+    "recurringInvoices": "Facturas recurrentes",
+    "paymentReminders": "Recordatorios de pago",
+    "invoiceFactoring": "Factorización de facturas",
+    "vatGst": "Soporte VAT/GST",
+    "taxReports": "Reportes fiscales",
+    "eFilingReady": "Listo para presentación electrónica",
+    "customDashboards": "Dashboards personalizados",
+    "profitAnalysis": "Análisis de ganancias",
+    "cashFlowForecast": "Pronóstico de flujo de efectivo",
+    "mobileMoney": "Dinero móvil",
+    "bankTransfers": "Transferencias bancarias",
+    "digitalWallets": "Billeteras digitales",
+    "customsDocuments": "Documentos aduaneros",
+    "shippingIntegration": "Integración de envíos",
+    "tradeCompliance": "Cumplimiento comercial",
+    "soc2Compliant": "Cumple SOC2",
+    "dataEncryption": "Encriptación de datos",
+    "gdprReady": "Listo para GDPR",
+    "jobs": {
+      "title": "Gestión Integral de Trabajos",
+      "description": "Costeo de trabajos de principio a fin desde la cotización hasta la finalización. Rastrea materiales, mano de obra y gastos con análisis de rentabilidad en tiempo real. Perfecto para empresas de servicios, contratistas y operaciones de campo con diseño móvil primero.",
+      "imageAlt": "Interfaz de gestión y costeo de trabajos",
+      "features": {
+        "jobCosting": "Costeo de trabajos en tiempo real",
+        "mobileFieldApp": "Aplicación móvil de campo",
+        "materialTracking": "Seguimiento de materiales",
+        "timeTracking": "Seguimiento automático de tiempo",
+        "photoCapture": "Captura de fotos",
+        "digitalSignatures": "Firmas digitales",
+        "profitabilityAnalysis": "Análisis de rentabilidad",
+        "offlineSupport": "Soporte sin conexión"
+      }
+    },
+    "jobCosting": "Costeo de trabajos en tiempo real",
+    "mobileFieldApp": "Aplicación móvil para trabajadores de campo",
+    "materialLaborTracking": "Seguimiento de materiales y mano de obra",
+    "ifrs": "IFRS para más de 166 países",
+    "gaap": "US GAAP para empresas de EE.UU.",
+    "autoDetect": "Detección automática según el país",
+    "autoDetection": "Detección automática de idioma",
+    "rightToLeft": "Idiomas de derecha a izquierda",
+    "regionalFormat": "Formatos regionales de fecha/número",
+    "realTimeRates": "Tasas de cambio en tiempo real",
+    "cryptoCurrency": "Soporte de criptomonedas",
+    "currencyConversion": "Conversiones automáticas"
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Preguntas frecuentes",
+    "subheading": "Encuentra respuestas a preguntas comunes sobre nuestra plataforma y servicios.",
+    "global": {
+      "question": "¿Funciona Dott para empresas fuera de EE.UU.?",
+      "answer": "Sí, Dott está diseñado para funcionar globalmente. Admitimos múltiples monedas, idiomas y métodos de pago regionales. Nuestra plataforma cumple con las regulaciones fiscales en varios países, lo que te permite gestionar tu negocio en cualquier parte del mundo."
+    },
+    "cost": {
+      "question": "¿Cuánto cuesta?",
+      "answer": "Ofrecemos diferentes niveles de precios basados en las necesidades de tu negocio. Nuestro plan básico comienza en $9.99/mes, mientras que nuestro plan premium con características avanzadas cuesta $29.99/mes. Todos los planes incluyen características principales como gestión de inventario, facturación e informes básicos. Visita nuestra página de precios para una comparación detallada."
+    },
+    "onboarding": {
+      "question": "¿Cuánto tiempo lleva configurarlo?",
+      "answer": "La mayoría de las empresas se ponen en marcha con Dott en menos de un día. Nuestro asistente de configuración intuitivo te guía a través del proceso, y nuestro equipo de éxito del cliente está disponible para ayudarte si necesitas asistencia. Si estás migrando desde otro sistema, ofrecemos herramientas para importar tus datos existentes."
+    },
+    "support": {
+      "question": "¿Qué tipo de soporte ofrecen?",
+      "answer": "Proporcionamos soporte al cliente 24/7 a través de chat, correo electrónico y teléfono. Nuestro equipo está disponible en múltiples idiomas para ayudar a empresas en diferentes zonas horarias. Los planes premium incluyen gerentes de cuenta dedicados y soporte prioritario."
+    },
+    "data": {
+      "question": "¿Están seguros mis datos empresariales?",
+      "answer": "Sí, nos tomamos la seguridad en serio. Dott utiliza encriptación de nivel bancario para proteger tus datos, auditorías de seguridad regulares y cumple con GDPR y otras regulaciones regionales de protección de datos. Tus datos empresariales se respaldan regularmente y se almacenan de forma segura en la nube."
+    },
+    "integration": {
+      "question": "¿Puedo integrar con otras herramientas que uso?",
+      "answer": "Absolutamente. Dott se integra con procesadores de pago populares, software de contabilidad, plataformas de comercio electrónico y otras herramientas empresariales. También ofrecemos una API para integraciones personalizadas. Consulta nuestra página de integraciones para ver una lista completa de servicios compatibles."
+    }
+  },
+  "featuresTitle": "Características Comerciales Globales",
+  "featuresSubtitle": "Todo lo que necesitas para gestionar eficientemente tu negocio en más de 100 países",
+  "countriesSupported": "Más de 100 países compatibles",
+  "globalPaymentOptions": "Opciones de pago globales",
+  "advancedInventory": "Gestión avanzada de inventario",
+  "new": "Nuevo",
+  "pricingTitle": "Todo incluido en nuestro plan Profesional por solo $15/mes",
+  "pricingDescription": "Sin cargos ocultos. Sin cargos adicionales por impresión de códigos de barras o integración de escáneres.",
+  "feature_inventory": "Gestión de Inventario",
+  "feature_inventory_desc": "Rastrea niveles de stock, genera códigos de barras y gestiona múltiples ubicaciones con actualizaciones en tiempo real.",
+  "feature_pos": "Punto de Venta",
+  "feature_pos_desc": "Acepta pagos, gestiona ventas y rastrea inventario desde un sistema POS fácil de usar.",
+  "feature_invoicing": "Facturación y Presupuestos",
+  "feature_invoicing_desc": "Crea facturas profesionales, cotizaciones y facturas recurrentes en segundos. Cobra más rápido.",
+  "feature_payroll": "Nómina y RRHH",
+  "feature_payroll_desc": "Paga a empleados, gestiona beneficios, rastrea tiempo libre y maneja todas las necesidades de RRHH en un solo lugar.",
+  "feature_accounting": "Contabilidad e Informes",
+  "feature_accounting_desc": "Rastrea ingresos, gastos y genera informes financieros. Mantente preparado para impuestos todo el año.",
+  "feature_payments": "Pagos Globales",
+  "feature_payments_desc": "Acepta tarjetas de crédito, transferencias bancarias, dinero móvil y más de 50 métodos de pago en todo el mundo.",
+  "feature_crm": "Gestión de Clientes",
+  "feature_crm_desc": "Construye relaciones duraderas con datos organizados de clientes, notas e historial de comunicación.",
+  "feature_analytics": "Análisis con IA",
+  "feature_analytics_desc": "Obtén información inteligente y predicciones para tomar mejores decisiones comerciales con análisis impulsados por IA.",
+  "highlights_title": "Por Qué Elegir Nuestra Plataforma Global",
+  "highlights_subtitle": "Diseñada para apoyar a empresas a través de fronteras con potente gestión de inventario",
+  "highlight_title_global_business_solution": "Solución Empresarial Global",
+  "highlight_desc_global_business_solution": "Diseñada para empresas en todo el mundo con soporte para más de 100 países, múltiples monedas y métodos de pago específicos por región.",
+  "highlight_title_advanced_inventory_tools": "Herramientas Avanzadas de Inventario",
+  "highlight_desc_advanced_inventory_tools": "Impresión de códigos de barras e integración de escáneres Bluetooth incluidos en nuestro plan Profesional sin cargos adicionales.",
+  "highlight_title_fast_&_efficient": "Rápido y Eficiente",
+  "highlight_desc_fast_&_efficient": "Plataforma basada en la nube optimizada para velocidad y eficiencia, ayudándote a gestionar tu negocio más rápido dondequiera que estés.",
+  "highlight_title_secure_&_compliant": "Seguro y Conforme",
+  "highlight_desc_secure_&_compliant": "Seguridad de nivel bancario y características de cumplimiento regional aseguran que tus datos empresariales estén seguros y cumplan con las regulaciones locales.",
+  "highlight_title_global_support": "Soporte Global",
+  "highlight_desc_global_support": "Nuestro equipo de soporte dedicado comprende los entornos empresariales locales y está disponible en múltiples zonas horarias e idiomas.",
+  "highlights_pricing_title": "Todas las características, incluida la impresión de códigos de barras e integración de escáneres, incluidas en nuestro plan Profesional por solo $15/mes",
+  "highlights_pricing_subtitle": "Sin cargos ocultos. Sin niveles de precios complicados. Solo un plan simple para empresas globales.",
+  "faq_title": "Preguntas Frecuentes",
+  "faq_subtitle": "¿Tienes preguntas sobre nuestra plataforma empresarial global? Tenemos respuestas.",
+  "chip_countries": "Más de 100 Países",
+  "chip_barcode": "Integración de Códigos de Barras",
+  "chip_currency": "Multi-Moneda",
+  "key_info": "Información Clave",
+  "faq_category_general": "General",
+  "faq_category_pricing": "Precios y Planes",
+  "faq_category_global": "Negocio Global",
+  "faq_category_features": "Características",
+  "faq_category_payments": "Opciones de Pago",
+  "faq_category_security": "Seguridad y Cumplimiento",
+  "faq_category_support": "Soporte y Ayuda",
+  "faq_q_what_is_dott": "¿Qué es Dott?",
+  "faq_a_what_is_dott": "Dott es una plataforma de gestión empresarial global que apoya a empresas en más de 100 países. Combina contabilidad, nómina, RRHH, gestión de inventario con funcionalidad de códigos de barras, y varias opciones de pago, incluyendo dinero móvil, en una solución intuitiva.",
+  "faq_q_is_it_really_free": "¿Es Dott realmente gratis?",
+  "faq_a_is_it_really_free": "¡Sí! Nuestro plan Básico es gratis para siempre sin necesidad de tarjeta de crédito. Incluye funciones esenciales para freelancers y pequeñas startups. Puedes actualizar en cualquier momento a medida que crece tu negocio.",
+  "faq_q_how_much_does_it_cost": "¿Cuánto cuesta?",
+  "faq_a_how_much_does_it_cost": "Ofrecemos un plan Básico gratuito para startups y un plan Profesional a $15/mes ($150/año). El plan Profesional incluye todas las características, incluida la impresión de códigos de barras e integración de escáneres, sin cargos ocultos. Puedes actualizar o reducir en cualquier momento.",
+  "faq_q_which_countries_do_you_support": "¿Qué países admiten?",
+  "faq_a_which_countries_do_you_support": "Dott apoya a empresas en más de 100 países en todo el mundo, con características especiales para regiones específicas como integración de dinero móvil en África, factoring de facturas en EE.UU. y Canadá, y herramientas de cumplimiento para diversos entornos regulatorios.",
+  "faq_q_does_dott_support_mobile_money_payments": "¿Dott admite pagos con dinero móvil?",
+  "faq_a_does_dott_support_mobile_money_payments": "¡Sí! Admitimos integración con plataformas populares de dinero móvil como M-Pesa, MTN Mobile Money, Airtel Money y otras en África y Asia. Esto permite que tu negocio acepte y procese fácilmente métodos de pago locales.",
+  "faq_q_can_i_switch_plans": "¿Puedo cambiar de plan en cualquier momento?",
+  "faq_a_can_i_switch_plans": "¡Por supuesto! Puedes actualizar o bajar tu plan en cualquier momento. Los cambios entran en vigor inmediatamente y prorratearemos cualquier pago. Sin contratos a largo plazo ni tarifas de cancelación.",
+  "faq_q_do_you_offer_mobile_apps": "¿Ofrecen aplicaciones móviles?",
+  "faq_a_do_you_offer_mobile_apps": "¡Sí! Dott funciona perfectamente en cualquier dispositivo a través de tu navegador web. También tenemos aplicaciones dedicadas para iOS y Android para administrar tu negocio sobre la marcha. Todas las funciones se sincronizan en tiempo real entre dispositivos.",
+  "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "¿Cómo funciona la característica de escáner de códigos de barras e inventario?",
+  "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Nuestro plan Profesional incluye la capacidad de generar e imprimir códigos de barras para tus artículos de inventario y sincronizar con escáneres de códigos de barras Bluetooth para una gestión de inventario más rápida. Esta característica está incluida sin costo adicional y funciona perfectamente con nuestro sistema de gestión de inventario.",
+  "faq_q_is_my_data_secure": "¿Están seguros mis datos?",
+  "faq_a_is_my_data_secure": "Absolutamente. Utilizamos encriptación de seguridad de nivel bancario y seguimos las mejores prácticas de la industria para proteger tus datos. Nuestra plataforma está alojada en infraestructura de nube segura con múltiples capas de seguridad, características de cumplimiento regional y copias de seguridad regulares.",
+  "faq_q_can_i_import_data_from_other_systems": "¿Puedo importar datos de otros sistemas?",
+  "faq_a_can_i_import_data_from_other_systems": "Sí, puedes importar datos desde varios formatos, incluyendo Excel, CSV y otras plataformas de contabilidad. También proporcionamos asistencia de migración para empresas que cambian desde otras plataformas, con soporte para formatos de datos internacionales.",
+  "faq_q_what_kind_of_support_do_you_offer": "¿Qué tipo de soporte ofrecen?",
+  "faq_a_what_kind_of_support_do_you_offer": "Proporcionamos soporte al cliente a través de múltiples zonas horarias mediante chat, correo electrónico y llamadas programadas. Nuestro equipo incluye expertos familiarizados con prácticas empresariales regionales para proporcionar asistencia relevante, sin importar dónde opere tu negocio.",
+  "faq_q_how_does_multi-currency_support_work": "¿Cómo funciona el soporte multi-moneda?",
+  "faq_a_how_does_multi-currency_support_work": "Dott te permite operar en múltiples monedas simultáneamente, con actualizaciones automáticas de tipos de cambio. Puedes facturar a tus clientes en su moneda local, realizar seguimiento de gastos en diferentes monedas y generar informes en tu moneda base preferida.",
+  "still_have_questions": "¿Todavía tienes preguntas?",
+  "contact_support": "Contacta con nuestro equipo de soporte global en support@dottapps.com",
+  "cta_title": "¿Listo para hacer crecer tu negocio?",
+  "cta_subtitle": "Únete a más de 10,000 negocios que ya usan Dott",
+  "cta_button": "Comienza prueba gratis",
+  "cta_no_credit_card": "No se requiere tarjeta de crédito",
+  "testimonial_title": "Lo que dicen nuestros clientes",
+  "testimonial_subtitle": "Únete a miles de negocios felices",
+  "integration_title": "Funciona con las herramientas que ya usas",
+  "integration_subtitle": "Conecta Dott con tus aplicaciones favoritas",
+  "security_badge_1": "Encriptación de nivel bancario",
+  "security_badge_2": "Cumple con GDPR",
+  "security_badge_3": "99.9% de tiempo activo",
+  "copyright_text": "Dott, LLC. Todos los derechos reservados.",
+  "footer_product": "Producto",
+  "footer_company": "Empresa",
+  "footer_legal": "Legal",
+  "footer_link_features": "Características",
+  "footer_link_testimonials": "Testimonios",
+  "footer_link_highlights": "Destacados",
+  "footer_link_pricing": "Precios",
+  "footer_link_faqs": "FAQs",
+  "footer_link_about_us": "Sobre Nosotros",
+  "footer_link_careers": "Carreras",
+  "footer_link_press": "Prensa",
+  "footer_link_blog": "Blog",
+  "footer_link_terms_of_use": "Términos de Uso",
+  "footer_link_privacy_policy": "Política de Privacidad",
+  "footer_link_cookie_policy": "Política de Cookies",
+  "footer_link_contact": "Contacto",
   "pricing_title": "Precios simples y transparentes",
   "pricing_subtitle": "Elige el plan adecuado para tu negocio",
   "pricing_period_monthly": "Mensual",
@@ -738,26 +1115,6 @@
       "securityNote": "La verificación por correo electrónico nos ayuda a garantizar la seguridad de tu cuenta y prevenir el acceso no autorizado."
     }
   },
-  "features": {
-    "eyebrow": "Solución Empresarial Completa",
-    "heading": "Todo lo que Necesitas para Crecer Globalmente",
-    "subheading": "Herramientas poderosas diseñadas para empresas modernas que operan a través de fronteras",
-    "operations": {
-      "title": "Gestión de Operaciones",
-      "description": "Simplifica tus operaciones comerciales diarias"
-    },
-    "financial": {
-      "title": "Gestión Financiera",
-      "description": "Control completo sobre las finanzas de tu negocio"
-    },
-    "global": {
-      "title": "Herramientas de Negocio Global",
-      "description": "Todo lo que necesitas para operar internacionalmente"
-    },
-    "trust": {
-      "title": "Diseñado para Seguridad y Cumplimiento"
-    }
-  },
   "feature": {
     "inventory": "Gestión Avanzada de Inventario",
     "inventory.description": "Seguimiento de stock en tiempo real con escaneo de códigos de barras y soporte multi-ubicación",
@@ -776,36 +1133,12 @@
     "global": "Gestión de Importación/Exportación",
     "global.description": "Maneja documentación de comercio internacional y cumplimiento",
     "security": "Seguridad Empresarial",
-    "security.description": "Seguridad de grado bancario con cumplimiento regional"
-  },
-  "highlights": {
-    "bluetooth": "Integración de escáner Bluetooth",
-    "printBarcodes": "Imprime códigos de barras personalizados",
-    "lowStock": "Alertas de stock bajo",
-    "customLabel": "Impresión de etiquetas personalizadas",
-    "mobileScanning": "Escaneo móvil",
-    "batchProcessing": "Procesamiento por lotes",
-    "offlineMode": "Modo offline",
-    "multiplePayments": "Múltiples métodos de pago",
-    "receiptCustom": "Personalización de recibos",
-    "recurringInvoices": "Facturas recurrentes",
-    "paymentReminders": "Recordatorios de pago",
-    "invoiceFactoring": "Factorización de facturas",
-    "vatGst": "Soporte VAT/GST",
-    "taxReports": "Reportes fiscales",
-    "eFilingReady": "Listo para presentación electrónica",
-    "customDashboards": "Dashboards personalizados",
-    "profitAnalysis": "Análisis de ganancias",
-    "cashFlowForecast": "Pronóstico de flujo de efectivo",
-    "mobileMoney": "Dinero móvil",
-    "bankTransfers": "Transferencias bancarias",
-    "digitalWallets": "Billeteras digitales",
-    "customsDocuments": "Documentos aduaneros",
-    "shippingIntegration": "Integración de envíos",
-    "tradeCompliance": "Cumplimiento comercial",
-    "soc2Compliant": "Cumple SOC2",
-    "dataEncryption": "Encriptación de datos",
-    "gdprReady": "Listo para GDPR"
+    "security.description": "Seguridad de grado bancario con cumplimiento regional",
+    "jobs": "Gestión y Costeo de Trabajos",
+    "jobs.description": "Seguimiento de proyectos de principio a fin con costeo en tiempo real, aplicación móvil de campo y análisis de rentabilidad",
+    "accounting": "Estándares de Contabilidad Dual",
+    "languages": "Soporte Multi-Idioma",
+    "currencies": "Sistema Multi-Moneda"
   },
   "trust": {
     "soc2Title": "Cumple SOC2",
@@ -816,88 +1149,6 @@
     "gdprDesc": "Cumple con privacidad",
     "uptimeTitle": "99.9% Tiempo Activo",
     "uptimeDesc": "Siempre disponible"
-  },
-  "about": {
-    "backToHome": "Volver al Inicio",
-    "hero": {
-      "title": "Empoderando a las empresas para",
-      "subtitle": "prosperar globalmente",
-      "description": "Estamos construyendo el sistema operativo para pequeñas empresas modernas, haciendo accesibles a todos las herramientas de nivel empresarial."
-    },
-    "story": {
-      "title": "Nuestra Historia",
-      "paragraph1": "Dott nació de una simple observación: las pequeñas empresas se estaban ahogando en la complejidad. Múltiples herramientas, datos desconectados y procesos diseñados para empresas estaban frenando a los emprendedores en todo el mundo.",
-      "paragraph2": "Fundada en 2023, nos propusimos construir algo diferente. Una plataforma que comprende los desafíos únicos de las pequeñas empresas, especialmente en mercados emergentes donde las soluciones tradicionales fallan.",
-      "paragraph3": "Hoy, estamos orgullosos de servir a empresas en todo el mundo. Pero apenas estamos comenzando."
-    },
-    "timeline": {
-      "beginning": {
-        "title": "El Comienzo",
-        "description": "Identificamos la necesidad de herramientas unificadas de gestión empresarial para PYMES"
-      },
-      "launch": {
-        "title": "Lanzamiento del Producto",
-        "description": "Lanzamos la plataforma principal con gestión financiera e inventario"
-      },
-      "expansion": {
-        "title": "Expansión Global",
-        "description": "Extendimos a más de 25 países con características localizadas"
-      },
-      "ai": {
-        "title": "Integración de IA",
-        "description": "Introduciendo perspectivas inteligentes y automatización"
-      }
-    },
-    "mission": {
-      "title": "Nuestra Misión",
-      "description": "Democratizar la gestión empresarial proporcionando a las pequeñas empresas herramientas potentes y asequibles que simplifiquen las operaciones y permitan el crecimiento, independientemente de la ubicación o experiencia técnica."
-    },
-    "vision": {
-      "title": "Nuestra Visión",
-      "description": "Un mundo donde cada pequeña empresa tiene acceso a la misma calidad de herramientas de gestión que las empresas Fortune 500, empoderando a un millón de empresas para prosperar para 2030."
-    },
-    "journey": {
-      "title": "Nuestro Viaje"
-    },
-    "values": {
-      "title": "Nuestros Valores",
-      "subtitle": "Los principios que guían cada decisión que tomamos",
-      "simplicity": {
-        "title": "Simplicidad Primero",
-        "description": "Operaciones empresariales complejas simplificadas a través del diseño intuitivo"
-      },
-      "innovation": {
-        "title": "Innovación Continua",
-        "description": "Evolucionando con las necesidades cambiantes de las empresas modernas"
-      },
-      "success": {
-        "title": "Éxito del Cliente",
-        "description": "Tu crecimiento es nuestro éxito: ganamos cuando tú ganas"
-      },
-      "empowerment": {
-        "title": "Empoderamiento Global",
-        "description": "Rompiendo barreras para empresas en todo el mundo"
-      }
-    },
-    "differentiators": {
-      "title": "Lo que Hace a Dott Diferente",
-      "unified": {
-        "title": "Plataforma Unificada",
-        "description": "Todas tus herramientas empresariales en un solo lugar"
-      },
-      "global": {
-        "title": "Global, pero Local",
-        "description": "Estándares internacionales con cumplimiento local"
-      },
-      "security": {
-        "title": "Seguridad Empresarial",
-        "description": "Protección de nivel bancario para tus datos"
-      },
-      "insights": {
-        "title": "Perspectivas Inteligentes",
-        "description": "Análisis impulsado por IA para mejores decisiones"
-      }
-    }
   },
   "blog": {
     "hero": {
@@ -980,7 +1231,6 @@
         "content": "Accede a todo tu negocio desde tu smartphone o tablet. Nuestra aplicación móvil está diseñada para darte control total ya sea que estés en la oficina, en el campo o viajando. Con capacidades offline, puedes seguir trabajando incluso sin conexión a internet."
       },
       "features": {
-        "heading": "Características Móviles Clave",
         "1": "Seguimiento de ventas e inventario en tiempo real",
         "2": "Crear y enviar facturas al instante",
         "3": "Aceptar pagos en el momento",
@@ -988,7 +1238,8 @@
         "5": "Gestionar empleados y hojas de tiempo",
         "6": "Escanear códigos de barras con tu cámara",
         "7": "Funciona offline con sincronización automática",
-        "8": "Notificaciones push para eventos importantes"
+        "8": "Notificaciones push para eventos importantes",
+        "heading": "Características Móviles Clave"
       },
       "benefits": {
         "heading": "Beneficios para tu Negocio",
@@ -1011,7 +1262,6 @@
         "content": "Transforma cualquier dispositivo en un potente sistema de punto de venta. Nuestro TPV está diseñado para velocidad y simplicidad, permitiéndote procesar ventas rápidamente mientras mantienes un seguimiento preciso del inventario. El escáner de códigos de barras integrado hace que el checkout sea ultrarrápido."
       },
       "features": {
-        "heading": "Características Avanzadas del TPV",
         "1": "Escaneo de códigos de barras con cámara o escáner Bluetooth",
         "2": "Soporte para todos los tipos de pago incluyendo dinero móvil",
         "3": "Actualizaciones automáticas de inventario con cada venta",
@@ -1019,7 +1269,8 @@
         "5": "Pagos divididos y pagos parciales",
         "6": "Manejo de devoluciones e intercambios",
         "7": "Modo offline con gestión de cola",
-        "8": "Seguimiento de inventario multi-ubicación"
+        "8": "Seguimiento de inventario multi-ubicación",
+        "heading": "Características Avanzadas del TPV"
       },
       "barcode": {
         "heading": "Sistema de Códigos de Barras Potente",
@@ -1042,7 +1293,6 @@
         "content": "Nuestra IA analiza los datos de tu negocio para proporcionar insights accionables y recomendaciones. Obtén análisis predictivos, pronósticos de demanda y alertas inteligentes que te ayuden a tomar mejores decisiones empresariales."
       },
       "features": {
-        "heading": "Características con IA",
         "1": "Pronóstico de demanda basado en datos históricos",
         "2": "Recomendaciones de optimización de inventario",
         "3": "Análisis de productos más vendidos",
@@ -1050,7 +1300,8 @@
         "5": "Sugerencias de optimización de precios",
         "6": "Detección de tendencias estacionales",
         "7": "Predicciones de flujo de efectivo",
-        "8": "Reportes financieros automatizados"
+        "8": "Reportes financieros automatizados",
+        "heading": "Características con IA"
       },
       "benefits": {
         "heading": "Cómo la IA Ayuda a tu Negocio",
@@ -1073,7 +1324,6 @@
         "content": "Garantiza un seguimiento preciso del tiempo y mejora la responsabilidad con fichar entrada/salida basado en GPS. Crea límites virtuales alrededor de sitios de trabajo y recibe notificaciones instantáneas cuando los empleados entren o salgan de áreas designadas."
       },
       "features": {
-        "heading": "Características de Gestión de Ubicación",
         "1": "Fichar entrada/salida basado en GPS con verificación de ubicación",
         "2": "Crear zonas de geovallado ilimitadas",
         "3": "Ubicación de empleados en tiempo real durante horas laborales",
@@ -1081,7 +1331,8 @@
         "5": "Seguimiento de kilometraje para conductores de reparto",
         "6": "Verificación de visitas a sitios para equipos de campo",
         "7": "Enfoque en privacidad con consentimiento del empleado",
-        "8": "Historial detallado de ubicación y reportes"
+        "8": "Historial detallado de ubicación y reportes",
+        "heading": "Características de Gestión de Ubicación"
       },
       "compliance": {
         "heading": "Privacidad y Cumplimiento",
@@ -1104,14 +1355,13 @@
         "content": "Rompe las barreras de pago y alcanza clientes en todas partes. El dinero móvil es el método de pago preferido para miles de millones de personas globalmente, especialmente en mercados emergentes. Con Dott, puedes aceptar pagos de usuarios de M-Pesa hoy, con muchos más proveedores de dinero móvil próximamente."
       },
       "current": {
-        "heading": "Actualmente Disponible",
         "1": "M-Pesa (Kenia) - Más de 30 millones de usuarios activos",
         "2": "Tarjetas de crédito y débito (Visa, Mastercard, Amex)",
         "3": "Transferencias bancarias y pagos ACH",
-        "4": "Pagos en efectivo (rastreados en el sistema)"
+        "4": "Pagos en efectivo (rastreados en el sistema)",
+        "heading": "Actualmente Disponible"
       },
       "coming": {
-        "heading": "Próximamente",
         "1": "MTN Mobile Money - 180+ millones de usuarios en África",
         "2": "Airtel Money - 125+ millones de usuarios en África y Asia",
         "3": "Orange Money - 70+ millones de usuarios en África y Medio Oriente",
@@ -1119,7 +1369,8 @@
         "5": "Paytm (India) - 350+ millones de usuarios",
         "6": "Pix (Brasil) - 140+ millones de usuarios",
         "7": "Mercado Pago - 80+ millones de usuarios en América Latina",
-        "8": "bKash (Bangladesh), OVO (Indonesia) y más"
+        "8": "bKash (Bangladesh), OVO (Indonesia) y más",
+        "heading": "Próximamente"
       },
       "benefits": {
         "heading": "Por Qué Importa el Dinero Móvil",
@@ -1142,7 +1393,6 @@
         "content": "Conecta con tus clientes en la plataforma de mensajería más popular del mundo. Crea catálogos de productos impresionantes, automatiza la entrega de facturas y recibos, proporciona soporte instantáneo al cliente y convierte conversaciones en ventas. Con más de 2 mil millones de usuarios en todo el mundo, WhatsApp Business es esencial para el engagement moderno con clientes."
       },
       "features": {
-        "heading": "Características Clave de WhatsApp Business",
         "1": "Catálogo empresarial profesional con fotos y descripciones de productos",
         "2": "Entrega automatizada de facturas y recibos a clientes",
         "3": "Soporte instantáneo al cliente y chat en vivo",
@@ -1150,7 +1400,8 @@
         "5": "Gestión de pedidos directamente a través de WhatsApp",
         "6": "Confirmaciones de pago y notificaciones de transacciones",
         "7": "Respuestas rápidas y respuestas automatizadas",
-        "8": "Sincronización de datos de clientes con tus contactos empresariales"
+        "8": "Sincronización de datos de clientes con tus contactos empresariales",
+        "heading": "Características Clave de WhatsApp Business"
       },
       "benefits": {
         "heading": "Beneficios para tu Negocio",
@@ -1251,5 +1502,165 @@
       "name": "Amazon Seller",
       "description": "Gestiona tu negocio en Amazon"
     }
-  }
+  },
+  "termsOfService": {
+    "title": "Términos de Uso",
+    "effectiveDate": "Vigente a partir de: {{date}}",
+    "introduction": "Bienvenido a Dott, un servicio proporcionado por Dott LLC. Este Acuerdo de Términos de Uso (\"Acuerdo\") rige su uso del sitio web de Dott, aplicaciones móviles y todos los servicios relacionados ofrecidos por Dott LLC. Al acceder o usar nuestro servicio, usted reconoce que ha leído, entendido y acepta estar sujeto a estos términos.",
+    "navigation": {
+      "backToDashboard": "Volver al Panel",
+      "backToHome": "Volver al Inicio"
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Aceptación de Términos",
+        "content": "Al registrarse y/o usar Dott de cualquier manera, incluyendo pero no limitado a visitar o navegar el sitio web o descargar la aplicación, usted acepta estar sujeto a este Acuerdo, todas las leyes y regulaciones aplicables, y acepta que es responsable del cumplimiento de cualquier ley local aplicable. Si no está de acuerdo con alguno de estos términos, tiene prohibido usar o acceder a Dott. Los materiales contenidos en Dott están protegidos por las leyes de derechos de autor y marcas registradas aplicables."
+      },
+      "service": {
+        "title": "2. Descripción del Servicio",
+        "content": "Dott es una plataforma integral de gestión financiera que proporciona a las empresas herramientas para contabilidad, nómina, procesamiento de pagos, facturación e insights financieros. Nuestros servicios incluyen acceso basado en suscripción a nuestro software, capacidades de procesamiento de pagos, servicios de nómina y factoraje de facturas en regiones seleccionadas. Las características específicas disponibles para usted pueden depender de su nivel de suscripción, ubicación geográfica y leyes y regulaciones aplicables."
+      },
+      "accounts": {
+        "title": "3. Cuentas de Usuario",
+        "content": "Para acceder a la mayoría de las características de Dott, debe registrarse para una cuenta. Usted acepta proporcionar información precisa, actual y completa durante el proceso de registro y actualizar dicha información para mantenerla precisa, actual y completa. Usted es responsable de salvaguardar su contraseña y de todas las actividades que ocurran bajo su cuenta. Usted acepta notificar a Dott LLC inmediatamente de cualquier uso no autorizado de su cuenta. Dott LLC no puede y no será responsable de ninguna pérdida o daño que surja de su falla en cumplir con los requisitos anteriores."
+      },
+      "payments": {
+        "title": "4. Suscripción y Pagos",
+        "content": "Dott ofrece varios planes de suscripción y servicios de pago. Al suscribirse a nuestros servicios, usted acepta pagar las tarifas aplicables cuando se venzan. Las tarifas de suscripción se facturan por adelantado mensual o anualmente dependiendo de su ciclo de facturación seleccionado. Cuando se registra para un servicio de pago, debe proporcionar información precisa y completa para un método de pago válido que esté autorizado a usar.",
+        "recurring": {
+          "title": "4.1 Facturación Recurrente",
+          "content": "Al suscribirse a los servicios de Dott, nos autoriza a cargar el método de pago que nos proporcione de forma recurrente. Si no podemos cargar su método de pago por cualquier razón, nos reservamos el derecho de terminar o suspender su acceso a los servicios de pago."
+        },
+        "processing": {
+          "title": "4.2 Procesamiento de Pagos",
+          "content": "Dott usa procesadores de pagos de terceros incluyendo Stripe, Flutterwave, DLocal, Wise, PayPal y otros para procesar transacciones. Su uso de estos servicios de pago está sujeto a los términos de servicio y política de privacidad del procesador de pagos aplicable. Dott cobra una tarifa de transacción por los servicios de procesamiento de pagos como se describe en nuestra página de precios."
+        },
+        "refunds": {
+          "title": "4.3 Reembolsos",
+          "content": "Todas las tarifas no son reembolsables a menos que se especifique lo contrario o sea requerido por la ley aplicable. Si cree que se le ha cobrado por error, póngase en contacto con nuestro equipo de soporte al cliente."
+        }
+      },
+      "conduct": {
+        "title": "5. Conducta del Usuario",
+        "content": "Usted acepta usar Dott solo para propósitos legales y de acuerdo con este Acuerdo. Usted acepta no usar Dott:",
+        "violations": {
+          "law": "De cualquier manera que viole cualquier ley o regulación federal, estatal, local o internacional aplicable.",
+          "material": "Para transmitir cualquier material que sea ilegal, amenazante, abusivo, difamatorio, obsceno o de otra manera objetable.",
+          "impersonation": "Para hacerse pasar o intentar hacerse pasar por Dott LLC, un empleado de Dott LLC, otro usuario o cualquier otra persona o entidad.",
+          "interference": "Para participar en cualquier actividad que interfiera o interrumpa los servicios (o los servidores y redes conectados a los servicios).",
+          "security": "Para intentar eludir cualquier medida de seguridad implementada por Dott LLC.",
+          "financial": "Para lavado de dinero, financiamiento del terrorismo o cualquier otra actividad financiera ilegal."
+        }
+      },
+      "financial": {
+        "title": "6. Servicios de Pago y Financieros",
+        "content": "Dott permite a los usuarios procesar pagos, gestionar nóminas y acceder a servicios financieros a través de varios proveedores de terceros. Al usar estos servicios, usted acepta cumplir con todas las leyes y regulaciones aplicables, incluyendo aquellas relacionadas con transacciones financieras, requisitos anti-lavado de dinero y privacidad de datos.",
+        "processing": {
+          "title": "6.1 Procesamiento de Pagos",
+          "content": "El uso de nuestras características de procesamiento de pagos está sujeto a los términos de servicio de nuestros socios de pago. Usted es responsable de asegurar que toda la información de pago proporcionada sea precisa y que esté autorizado a usar los métodos de pago que proporcione."
+        },
+        "factoring": {
+          "title": "6.2 Factoraje de Facturas",
+          "content": "Donde esté disponible, Dott ofrece servicios de factoraje de facturas sujetos a términos adicionales y requisitos de elegibilidad. Estos servicios actualmente solo están disponibles en Estados Unidos y Canadá. Al usar nuestros servicios de factoraje de facturas, autoriza a Dott LLC a verificar su información comercial, historial crediticio y otros detalles relevantes."
+        },
+        "international": {
+          "title": "6.3 Transacciones Internacionales",
+          "content": "Para transacciones internacionales, usted reconoce que pueden aplicar tasas de conversión de moneda y tarifas adicionales. Dott LLC no es responsable de ninguna tarifa cobrada por su institución financiera o cualquier procesador de pagos de terceros."
+        }
+      },
+      "data": {
+        "title": "7. Datos y Contenido",
+        "content": "Usted retiene todos los derechos sobre sus datos subidos a Dott. Al usar nuestros servicios, otorga a Dott LLC una licencia no exclusiva, mundial y libre de regalías para usar, procesar y mostrar sus datos únicamente con el propósito de proporcionar y mejorar nuestros servicios. Mantendremos salvaguardas administrativas, físicas y técnicas apropiadas para proteger sus datos.",
+        "processing": {
+          "title": "7.1 Procesamiento de Datos",
+          "content": "Como parte de proporcionar nuestros servicios, Dott procesa datos financieros y personales de acuerdo con nuestra Política de Privacidad. Usted reconoce que Dott puede usar proveedores de servicios de terceros para procesar datos en nuestro nombre."
+        },
+        "security": {
+          "title": "7.2 Seguridad de Datos",
+          "content": "Usted es responsable de mantener la confidencialidad de la información de su cuenta y de restringir el acceso a su computadora o dispositivo. Usted acepta aceptar la responsabilidad de todas las actividades que ocurran bajo su cuenta."
+        }
+      },
+      "contact": {
+        "title": "21. Información de Contacto",
+        "content": "Si tiene alguna pregunta sobre este Acuerdo, póngase en contacto con nosotros en:"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "Estados Unidos",
+      "email": "Correo electrónico: support@dottapps.com"
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "Plataforma de gestión empresarial impulsada por IA que funciona sin conexión.",
+      "cta": {
+        "getStarted": "Comienza Gratis",
+        "signIn": "Iniciar Sesión"
+      },
+      "noCreditCard": "No se requiere tarjeta de crédito",
+      "freePlan": "Plan gratuito para siempre"
+    },
+    "features": {
+      "title": "Todo Lo Que Necesitas",
+      "pos": {
+        "title": "Punto de Venta",
+        "description": "Procesa ventas al instante, incluso sin conexión"
+      },
+      "barcode": {
+        "title": "Escáner de Códigos",
+        "description": "Escanea productos con tu cámara"
+      },
+      "invoicing": {
+        "title": "Facturación Rápida",
+        "description": "Crea y envía facturas sobre la marcha"
+      },
+      "analytics": {
+        "title": "Análisis en Tiempo Real",
+        "description": "Rastrea el rendimiento de tu negocio"
+      }
+    },
+    "benefits": {
+      "title": "Construido para Tu Éxito",
+      "offline": {
+        "title": "Funciona Sin Conexión",
+        "description": "Continúa vendiendo sin internet"
+      },
+      "fast": {
+        "title": "Ultrarrápido",
+        "description": "Carga instantánea, sin demoras"
+      },
+      "mobile": {
+        "title": "Móvil Primero",
+        "description": "Diseñado para teléfonos y tabletas"
+      },
+      "payments": {
+        "title": "Dinero Móvil",
+        "description": "M-Pesa, modo sin conexión, soporte local"
+      }
+    },
+    "pricing": {
+      "title": "Precios Simples y Transparentes"
+    },
+    "cta": {
+      "title": "¿Listo para Hacer Crecer Tu Negocio?",
+      "subtitle": "Comienza a gestionar mejor tu negocio hoy",
+      "button": "Comienza Gratis",
+      "terms": "No se requiere tarjeta de crédito • Cancela cuando quieras"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: Plataforma Empresarial Global",
+    "ios": "Disponible en tu pantalla de inicio",
+    "android": "Instalar para acceso rápido",
+    "tap": "Toca",
+    "then": "luego",
+    "addToHome": "Añadir a inicio",
+    "install": "Instalar"
+  },
+  "browserTitle": "Dott: Plataforma Empresarial Global"
 }

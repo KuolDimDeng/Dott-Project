@@ -46,6 +46,13 @@ export const taxesApi = {
     getFilingSchedule: () => axiosInstance.get('/taxes/payroll-tax/filing-schedule/'),
     updateFilingSchedule: (data) => axiosInstance.put('/taxes/payroll-tax/filing-schedule/', data),
     getLiabilities: () => axiosInstance.get('/taxes/payroll-tax/liabilities/'),
+    
+    // New payroll tax filing endpoints
+    calculate: (data) => axiosInstance.post('/taxes/payroll/calculate/', data),
+    getSettings: (params) => axiosInstance.get('/taxes/payroll/settings/', { params }),
+    createFiling: (data) => axiosInstance.post('/taxes/payroll/filing/create/', data),
+    getFilingHistory: () => axiosInstance.get('/taxes/payroll/filing/history/'),
+    getFilingStatus: (filingId) => axiosInstance.get(`/taxes/payroll/filing/${filingId}/status/`),
   },
 
   // Tax Payments

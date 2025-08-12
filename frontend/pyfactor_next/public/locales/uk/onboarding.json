@@ -1,0 +1,261 @@
+{
+  "businessInfo": {
+    "title": "Інформація про Бізнес",
+    "subtitle": "Розкажіть нам про ваш бізнес",
+    "step": "Крок 1 з 3",
+    "businessNameLabel": "Назва Бізнесу",
+    "businessNamePlaceholder": "Введіть назву вашого бізнесу",
+    "businessTypeLabel": "Тип Бізнесу",
+    "businessTypePlaceholder": "Оберіть тип вашого бізнесу",
+    "industryLabel": "Галузь",
+    "industryPlaceholder": "Оберіть вашу галузь",
+    "legalStructureLabel": "Правова Структура",
+    "legalStructurePlaceholder": "Оберіть правову структуру",
+    "countryLabel": "Країна",
+    "countryPlaceholder": "Оберіть вашу країну",
+    "stateLabel": "Штат/Область",
+    "statePlaceholder": "Оберіть ваш штат",
+    "dateFoundedLabel": "Дата Заснування",
+    "addressLabel": "Адреса Бізнесу",
+    "addressPlaceholder": "Введіть адресу вашого бізнесу",
+    "phoneLabel": "Телефон Бізнесу",
+    "phonePlaceholder": "+380 123 456 789",
+    "emailLabel": "Email Бізнесу",
+    "emailPlaceholder": "biznes@priklad.com",
+    "websiteLabel": "Веб-сайт (необов'язково)",
+    "websitePlaceholder": "https://www.priklad.com",
+    "nextButton": "Продовжити до Підписки",
+    "skipButton": "Пропустити зараз",
+    "businessTypes": {
+      "retail": "Роздрібна Торгівля",
+      "restaurant": "Ресторан",
+      "services": "Послуги",
+      "manufacturing": "Виробництво",
+      "technology": "Технології",
+      "healthcare": "Охорона Здоров'я",
+      "construction": "Будівництво",
+      "realestate": "Нерухомість",
+      "nonprofit": "Неприбуткова Організація",
+      "other": "Інше"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Приватне Підприємство",
+      "partnership": "Партнерство",
+      "llc": "ТОВ",
+      "corporation": "Корпорація",
+      "nonprofit": "Неприбуткова Організація",
+      "other": "Інше"
+    },
+    "errors": {
+      "businessNameRequired": "Назва бізнесу обов'язкова",
+      "businessNameTooShort": "Назва бізнесу повинна містити принаймні 2 символи",
+      "businessTypeRequired": "Будь ласка, оберіть тип бізнесу",
+      "legalStructureRequired": "Будь ласка, оберіть правову структуру",
+      "countryRequired": "Будь ласка, оберіть країну",
+      "emailInvalid": "Будь ласка, введіть правильну електронну адресу",
+      "phoneInvalid": "Будь ласка, введіть правильний номер телефону",
+      "websiteInvalid": "Будь ласка, введіть правильний URL веб-сайту"
+    },
+    "saving": "Збереження..."
+  },
+  "subscription": {
+    "title": "Оберіть Ваш План",
+    "subtitle": "Оберіть план, який найкраще підходить для потреб вашого бізнесу",
+    "step": "Крок 2 з 3",
+    "billingCycle": {
+      "monthly": "Щомісячно",
+      "sixMonth": "6 Місяців",
+      "yearly": "Щорічно",
+      "popular": "ПОПУЛЯРНИЙ",
+      "save": "Заощадьте {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Базовий",
+        "description": "Ідеально для малих підприємств, які тільки починають",
+        "price": "Безкоштовно",
+        "features": [
+          "Відстеження доходів і витрат",
+          "Створення рахунків і нагадування",
+          "Платежі Stripe і PayPal",
+          "Мобільні гроші (M-Pesa тощо)",
+          "Базове відстеження інвентаря",
+          "Сканування штрих-кодів",
+          "Обмеження зберігання 3GB",
+          "Тільки 1 користувач"
+        ],
+        "buttonText": "Почати Безкоштовно"
+      },
+      "basic": {
+        "name": "Базовий",
+        "description": "Ідеально для малих підприємств, які тільки починають",
+        "price": "Безкоштовно",
+        "features": [
+          "Відстеження доходів і витрат",
+          "Створення рахунків і нагадування",
+          "Платежі Stripe і PayPal",
+          "Мобільні гроші (M-Pesa тощо)",
+          "Базове відстеження інвентаря",
+          "Сканування штрих-кодів",
+          "Обмеження зберігання 3GB",
+          "Тільки 1 користувач"
+        ],
+        "buttonText": "Почати Безкоштовно"
+      },
+      "professional": {
+        "name": "Професійний",
+        "description": "Все, що потрібно підприємствам, що зростають, для процвітання",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "НАЙПОПУЛЯРНІШИЙ",
+        "features": [
+          "Все з Базового",
+          "До 3 користувачів",
+          "Необмежене зберігання",
+          "Пріоритетна підтримка",
+          "Всі функції включені",
+          "{{discount}}% знижка на 6 місяців",
+          "{{yearlyDiscount}}% річна знижка"
+        ],
+        "buttonText": "Обрати Професійний"
+      },
+      "enterprise": {
+        "name": "Корпоративний",
+        "description": "Необмежений масштаб для амбітних організацій",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "ПРЕМІУМ",
+        "features": [
+          "Все з Професійного",
+          "Необмежена кількість користувачів",
+          "Персоналізоване впровадження",
+          "Виділена підтримка",
+          "Всі функції включені",
+          "{{discount}}% знижка на 6 місяців",
+          "{{yearlyDiscount}}% річна знижка"
+        ],
+        "buttonText": "Обрати Корпоративний"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% знижка на всі плани!",
+      "description": "Спеціальні ціни для підприємств у {{country}}",
+      "percentOff": "{{percentage}}% знижка",
+      "yourRegion": "ваш регіон"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "Платіж M-Pesa доступний!",
+        "description": "Зручна оплата мобільними грошима за вашу підписку",
+        "payInCurrency": "Платіть у {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Заощадьте ${{amount}} (${{monthly}}/місяць)",
+      "yearly": "Заощадьте ${{amount}} на рік"
+    },
+    "backButton": "Назад до Інформації про Бізнес",
+    "processing": "Обробка...",
+    "note": "* Доступні регіональні ціни. Ціни автоматично коригуються відповідно до вашого місцезнаходження."
+  },
+  "payment": {
+    "title": "Завершіть Вашу Підписку",
+    "subtitle": "План {{plan}} • ${{price}}/{{period}}",
+    "step": "Крок 3 з 3",
+    "discountBadge": "{{percentage}}% ЗНИЖКА",
+    "originalPrice": "Оригінал: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% регіональна знижка застосована!",
+      "subtitle": "Спеціальні ціни для підприємств у {{country}}"
+    },
+    "paymentMethod": {
+      "title": "Оберіть Спосіб Оплати",
+      "card": {
+        "name": "Кредитна/Дебетна Картка",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Мобільні Гроші",
+        "payInCurrency": "Платіть у {{currency}}"
+      },
+      "flutterwave": {
+        "name": "Банківський Переказ",
+        "description": "Платіть через банківський переказ"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Платіж Мобільними Грошима"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Ім'я Власника Картки",
+      "cardholderNamePlaceholder": "Іван Петренко",
+      "cardNumber": "Номер Картки",
+      "expiryDate": "Термін Дії",
+      "cvc": "CVC",
+      "postalCode": "Поштовий Індекс",
+      "postalCodePlaceholder": "01001"
+    },
+    "mobilePayment": {
+      "phoneNumber": "Номер Телефону {{provider}}",
+      "phoneNumberPlaceholder": "0671234567",
+      "phoneNumberHint": "Введіть ваш зареєстрований номер телефону {{provider}}",
+      "localPrice": "Ціна в {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Обмінний курс: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "Як працює платіж {{provider}}:",
+        "steps": [
+          "Натисніть \"Платити через {{provider}}\" нижче",
+          "Ви отримаєте запит на платіж на ваш телефон",
+          "Введіть ваш PIN {{provider}} для завершення платежу",
+          "Вас буде перенаправлено після підтвердження платежу"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Підписатися за ${{price}}/{{period}}",
+      "mobile": "Платити через {{provider}} - {{symbol}}{{amount}}",
+      "processing": "Обробка Платежу..."
+    },
+    "securityBadge": "Захищено Stripe",
+    "cancelNote": "Ви можете скасувати або змінити план у будь-який час з панелі керування.",
+    "errors": {
+      "cardholderNameRequired": "Будь ласка, введіть ім'я власника картки",
+      "postalCodeRequired": "Будь ласка, введіть ваш поштовий індекс",
+      "phoneRequired": "Будь ласка, введіть ваш номер телефону {{provider}}",
+      "businessInfoMissing": "Відсутня інформація про бізнес. Будь ласка, спочатку завершіть крок налаштування бізнесу.",
+      "paymentFailed": "Платіж не вдався. Будь ласка, спробуйте ще раз.",
+      "cardDeclined": "Вашу картку було відхилено. Будь ласка, спробуйте іншу картку.",
+      "insufficientFunds": "Недостатньо коштів. Будь ласка, перевірте ваш баланс.",
+      "networkError": "Помилка мережі. Будь ласка, перевірте ваше з'єднання."
+    },
+    "success": {
+      "title": "Платіж Успішний!",
+      "message": "Перенаправлення до вашої панелі керування...",
+      "mpesaTitle": "Платіж M-Pesa Ініційовано!",
+      "mpesaMessage": "Перевірте ваш телефон на предмет запиту платежу M-Pesa",
+      "mpesaHint": "Введіть ваш PIN для завершення платежу",
+      "redirecting": "Перенаправлення до вашої панелі керування..."
+    }
+  },
+  "completion": {
+    "title": "Ласкаво просимо до Dott!",
+    "subtitle": "Ваш обліковий запис повністю налаштовано",
+    "message": "Ви готові почати керувати фінансами вашого бізнесу",
+    "dashboardButton": "Перейти до Панелі Керування",
+    "setupComplete": "Налаштування Завершено"
+  },
+  "errors": {
+    "sessionExpired": "Ваша сесія закінчилась. Будь ласка, увійдіть знову.",
+    "networkError": "Помилка мережі. Будь ласка, перевірте ваше з'єднання.",
+    "genericError": "Сталася помилка. Будь ласка, спробуйте ще раз.",
+    "requiredField": "Це поле обов'язкове"
+  },
+  "navigation": {
+    "back": "Назад",
+    "next": "Далі",
+    "skip": "Пропустити",
+    "cancel": "Скасувати",
+    "save": "Зберегти",
+    "continue": "Продовжити"
+  }
+}

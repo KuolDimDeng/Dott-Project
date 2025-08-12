@@ -30,6 +30,7 @@ export async function POST(request, { params }) {
     
     // Get request body
     const data = await request.json();
+    logger.info('[UserManagement] Raw request data received:', JSON.stringify(data, null, 2));
     
     // Convert permissions if needed
     let processedData = { ...data };
@@ -40,10 +41,11 @@ export async function POST(request, { params }) {
     
     // Get backend URL from environment
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const apiUrl = `${backendUrl}/auth/rbac/direct-users/${id}/update-permissions/`;
+    const apiUrl = `${backendUrl}/auth/rbac/users/${id}/update_permissions/`;
     
     logger.info('[UserManagement] Making request to:', apiUrl);
-    logger.info('[UserManagement] Request data:', processedData);
+    logger.info('[UserManagement] Processed request data:', JSON.stringify(processedData, null, 2));
+    logger.info('[UserManagement] Page permissions array:', JSON.stringify(processedData.page_permissions, null, 2));
     
     // Forward request to Django backend with the update_permissions action
     const response = await fetch(apiUrl, {
@@ -51,17 +53,51 @@ export async function POST(request, { params }) {
       headers: {
         'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
+        'X-CSRFToken': request.headers.get('x-csrftoken') || '',
       },
       body: JSON.stringify(processedData),
       credentials: 'include',
     });
 
-    const responseData = await response.json();
+    // Check if response is JSON or HTML
+    const contentType = response.headers.get('content-type');
+    let responseData;
+    
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      // If not JSON, it's likely an HTML error page
+      const responseText = await response.text();
+      logger.error('[UserManagement] Non-JSON response received:');
+      logger.error('[UserManagement] Response status:', response.status);
+      logger.error('[UserManagement] Content-Type:', contentType);
+      logger.error('[UserManagement] Response text (first 500 chars):', responseText.substring(0, 500));
+      
+      return NextResponse.json(
+        { 
+          error: 'Invalid response from backend', 
+          details: 'Backend returned HTML instead of JSON. The endpoint may not exist or there may be an authentication issue.',
+          status: response.status,
+          contentType: contentType
+        },
+        { status: response.status || 500 }
+      );
+    }
     
     if (!response.ok) {
-      logger.error('[UserManagement] Backend error:', responseData);
+      logger.error('[UserManagement] Backend error status:', response.status);
+      logger.error('[UserManagement] Backend error data:', JSON.stringify(responseData, null, 2));
+      
+      // Add more context for debugging
       return NextResponse.json(
-        responseData,
+        {
+          ...responseData,
+          debug: {
+            requestUrl: apiUrl,
+            requestData: processedData,
+            status: response.status
+          }
+        },
         { status: response.status }
       );
     }

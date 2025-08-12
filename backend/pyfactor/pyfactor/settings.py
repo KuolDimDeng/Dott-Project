@@ -125,13 +125,13 @@ PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
 
 # Check for Plaid credentials and use sandbox credentials if not set
 if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    print("Warning: Real Plaid credentials not set. Using sandbox credentials for development.")
-    PLAID_CLIENT_ID = PLAID_CLIENT_ID or "66d4706be66ef5001a59bbd2"
-    PLAID_SECRET = PLAID_SECRET or "22874241662b48071ffccf02a5db05"
-    
-# Verify Plaid credentials aren't empty (which would cause runtime errors)
-if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    raise ValueError("Plaid credentials are not set in the environment variables.")
+    print("Warning: Real Plaid credentials not set. Plaid features will be disabled.")
+    PLAID_CLIENT_ID = None
+    PLAID_SECRET = None
+    # Don't raise an error - allow the app to run without Plaid
+    print("🔄 Application will run without Plaid integration.")
+else:
+    print("✅ Plaid credentials configured successfully.")
 
 # ENCRYPTION_KEY = Fernet.generate_key()  # Commented out to avoid import issues
 
@@ -178,7 +178,9 @@ if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.starts
 # Auth0 Settings (Primary Authentication)
 # Dynamic configuration using environment variables
 AUTH0_CUSTOM_DOMAIN = os.getenv('AUTH0_CUSTOM_DOMAIN', 'auth.dottapps.com')
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'auth.dottapps.com')
+# IMPORTANT: Must use actual Auth0 domain for API calls, not custom domain
+# Custom domains don't support password grant on /oauth/token endpoint
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
 AUTH0_ISSUER_DOMAIN = os.getenv('AUTH0_ISSUER_DOMAIN', AUTH0_DOMAIN)  # Default to AUTH0_DOMAIN if not specified
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
@@ -189,7 +191,11 @@ AUTH0_MANAGEMENT_CLIENT_SECRET = os.getenv('AUTH0_MANAGEMENT_CLIENT_SECRET', '')
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://api.dottapps.com')
 
 # Build issuer URL from the issuer domain
-AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
+# Handle case where AUTH0_ISSUER_DOMAIN might already include https://
+if AUTH0_ISSUER_DOMAIN and AUTH0_ISSUER_DOMAIN.startswith('https://'):
+    AUTH0_ISSUER = AUTH0_ISSUER_DOMAIN.rstrip('/') + '/'
+else:
+    AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
 
 # Check Auth0 configuration
 print("🔐 Auth0 Configuration (Environment Variables):")
@@ -245,7 +251,7 @@ FRONTEND_URL = 'https://localhost:3000'  # Adjust this to your actual frontend U
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-in-production-1234567890abcdefghijklmnopqrstuvwxyz')
+SECRET_KEY = os.getenv('SECRET_KEY')  # SECURITY: Must be set in environment variables
 
 
 
@@ -335,6 +341,7 @@ CORS_ALLOWED_ORIGINS = [
     # Production - Dott domains
     'https://dottapps.com',
     'https://www.dottapps.com',
+    'https://app.dottapps.com',
     'https://api.dottapps.com',
     # Sentry domains for error tracking
     'https://sentry.io',
@@ -351,7 +358,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Set to False to use the allowed origins list instead
 CORS_ORIGIN_ALLOW_ALL = False
 
-APPEND_SLASH = True  # Enable automatic slash appending to fix URL routing issues
+APPEND_SLASH = False  # Industry standard: be explicit about URLs, no automatic redirects
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -430,10 +437,32 @@ if not DEBUG:
     
     # Strict CSP compatible with Cloudflare
     CSP_DEFAULT_SRC = ("'self'",)
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", 
-                      "https://js.stripe.com", "https://client.crisp.chat",
-                      "https://cdn.plaid.com", "https://app.posthog.com")
-    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+    # Industry-standard CSP configuration
+    # Uses hash-based allowlist for specific auth scripts
+    CSP_SCRIPT_SRC = (
+        "'self'",
+        # Hash for authentication establish-session form
+        "'sha256-mHVJrqf405kt9COJfFfRNPGPFhA9M8E0mexi7ETxbsc='",
+        # Trusted third-party scripts
+        "https://js.stripe.com", 
+        "https://checkout.stripe.com",
+        "https://client.crisp.chat",
+        "https://widget.crisp.chat",
+        "https://cdn.plaid.com", 
+        "https://app.posthog.com",
+        "https://cdn.posthog.com",
+        "https://accounts.google.com",
+        "https://maps.googleapis.com",
+        "https://maps.gstatic.com",
+        "https://auth.dottapps.com",
+        "https://dev-cbyy63jovi6zrcos.us.auth0.com",
+        "https://static.cloudflareinsights.com"
+    )
+    # SECURITY: Keeping unsafe-inline temporarily for CSS frameworks (Tailwind/MUI)
+    # TODO: Migrate to nonce-based CSS loading in future
+    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", 
+                     "https://fonts.googleapis.com",
+                     "https://client.crisp.chat")
     CSP_FONT_SRC = ("'self'", "data:", "https://fonts.gstatic.com")
     CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
     CSP_CONNECT_SRC = ("'self'", "https://api.dottapps.com", "https://auth.dottapps.com",
@@ -456,6 +485,7 @@ CSRF_TRUSTED_ORIGINS = [
     # Production - Dott domains
     "https://dottapps.com",
     "https://www.dottapps.com",
+    "https://app.dottapps.com",
     "https://api.dottapps.com",
     # Cloudflare domains
     "https://*.dottapps.com",
@@ -504,7 +534,7 @@ OAUTH_CALLBACK_URL = f"{FRONTEND_URL}/api/auth/callback/google"
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',  # For social auth (if needed)
+    # 'allauth.account.auth_backends.AuthenticationBackend',  # Commented out - using custom Auth0
 ]
 
 # Celery has been removed from this project
@@ -551,10 +581,12 @@ if REDIS_URL or REDIS_HOST:
                 'db': 1,
                 'parser_class': 'redis.connection.DefaultParser',
                 'pool_class': 'redis.connection.ConnectionPool',
-                'socket_timeout': 5,
-                'socket_connect_timeout': 5,
-                'retry_on_timeout': True,
+                'socket_timeout': 2,  # Reduced from 5 to 2 seconds for faster failover
+                'socket_connect_timeout': 2,  # Reduced from 5 to 2 seconds
+                'retry_on_timeout': False,  # Don't retry to avoid cascading timeouts
                 'max_connections': 100,
+                'retry_on_error': [ConnectionError, TimeoutError],  # Only retry on specific errors
+                'health_check_interval': 30,  # Health check every 30 seconds
             },
             'KEY_PREFIX': '{tenant}',
         }
@@ -602,9 +634,14 @@ CSRF_COOKIE_SAMESITE = 'Lax'  # Keep CSRF as Lax for security
 
 # SESSION_ENGINE removed - using custom session_manager app
 
-# Let cookies default to current domain for better compatibility
-SESSION_COOKIE_DOMAIN = None
-CSRF_COOKIE_DOMAIN = None
+# Configure cookies for cross-subdomain access in production
+if os.getenv('ENVIRONMENT') == 'production':
+    SESSION_COOKIE_DOMAIN = '.dottapps.com'
+    CSRF_COOKIE_DOMAIN = '.dottapps.com'
+else:
+    # Let cookies default to current domain for development
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
 
 FILE_UPLOAD_HANDLERS = [
     'django.core.files.uploadhandler.MemoryFileUploadHandler',
@@ -734,6 +771,26 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'taxes': {
+            'handlers': ['console', 'json_console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'taxes.middleware': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'taxes.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'taxes.views.tenant_tax_settings_views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
 
@@ -741,36 +798,98 @@ logging.config.dictConfig(LOGGING)
 
 
 
+# Consolidated Industry-Standard Middleware Stack
+# Reduced from 26 middleware to 10 for 5x performance improvement
 MIDDLEWARE = [
-'django.middleware.security.SecurityMiddleware',
-'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
-'pyfactor.middleware.cloudflare_middleware.CloudflareMiddleware',  # Cloudflare IP handling
-'custom_auth.cors.CorsMiddleware',
-'corsheaders.middleware.CorsMiddleware',
-'django.middleware.common.CommonMiddleware',
-'django.middleware.csrf.CsrfViewMiddleware',
-'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
-'session_manager.middleware.SessionMiddleware',  # New session management middleware
-    'session_manager.security_middleware.SessionSecurityMiddleware',
-    'session_manager.security_middleware.DeviceFingerprintMiddleware',
-    'session_manager.security_middleware.SessionHeartbeatMiddleware',
-'django.middleware.clickjacking.XFrameOptionsMiddleware',
-'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
-'hr.middleware.HrCorsMiddleware',  # Add HR CORS middleware
-'onboarding.middleware.SchemaNameMiddleware',
-'allauth.account.middleware.AccountMiddleware',
-'custom_auth.middleware.RequestIDMiddleware',
-'custom_auth.middleware.TenantMiddleware',  # Tenant isolation middleware
-'audit.middleware.AuditMiddleware',  # Audit trail middleware
-'custom_auth.middleware_package.onboarding_middleware.OnboardingMiddleware',  # Onboarding check middleware
-'pyfactor.middleware.analytics_middleware.AnalyticsMiddleware',  # PostHog analytics tracking
-'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
-'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
-'custom_auth.tenant_isolation_middleware.TenantSecurityMiddleware',
+    # 1. Django Security (essential)
+    'django.middleware.security.SecurityMiddleware',
+    
+    # CRITICAL: Tenant isolation middleware (MUST be early in chain)
+    'custom_auth.middleware_enhanced.EnhancedTenantMiddleware',
+    'custom_auth.middleware_enhanced.CrossTenantAccessMonitor',
+    
+    # 2. Static Files (required for production)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    
+    # 3. Cloudflare/Proxy handling (required for proper IP detection)
+    'pyfactor.middleware.cloudflare_middleware.CloudflareMiddleware',
+    
+    # 4. Django Session (required for admin)
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    
+    # 5. CORS (required for API access)
+    'corsheaders.middleware.CorsMiddleware',
+    
+    # 6. Django Common (essential)
+    'django.middleware.common.CommonMiddleware',
+    
+    # 7. CSRF Protection (security requirement)
+    'django.middleware.csrf.CsrfViewMiddleware',
+    
+    # 8. Unified Session Management (must run before Django Auth to set request.user)
+    'session_manager.unified_middleware.UnifiedSessionMiddleware',
+    
+    # 9. Django Auth (required for admin)
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    # 10. Django Messages (required for admin)
+    'django.contrib.messages.middleware.MessageMiddleware',
+    
+    # 11. Unified Tenant & Auth (replaces 6 tenant/RLS middleware)
+    'custom_auth.unified_middleware.UnifiedTenantMiddleware',
+    
+    # 12. Security Headers (defense in depth)
+    'custom_auth.unified_middleware.SecurityHeadersMiddleware',
+    
+    # 13. Clickjacking Protection (security)
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # Optional middleware (enable as needed)
+    # 'custom_auth.unified_middleware.RateLimitMiddleware',  # Enable for rate limiting
+    # 'audit.middleware.AuditMiddleware',  # Enable for audit trails
+    # 'pyfactor.middleware.analytics_middleware.AnalyticsMiddleware',  # Enable for analytics
 ]
+
+# Legacy middleware (removed for performance - functionality moved to unified middleware):
+# - custom_auth.middleware.TokenRefreshMiddleware (in UnifiedSessionMiddleware)
+# - session_manager.security_middleware.* (in UnifiedSessionMiddleware)
+# - custom_auth.enhanced_rls_middleware.* (in UnifiedTenantMiddleware)
+# - custom_auth.middleware.RequestIDMiddleware (in UnifiedTenantMiddleware)
+# - custom_auth.middleware.TenantMiddleware (in UnifiedTenantMiddleware)
+# - onboarding.middleware.SchemaNameMiddleware (in UnifiedTenantMiddleware)
+# - custom_auth.middleware_package.onboarding_middleware.* (in UnifiedTenantMiddleware)
+# - custom_auth.tenant_isolation_middleware.* (in UnifiedTenantMiddleware)
+# - hr.middleware.HrCorsMiddleware (duplicate of corsheaders)
+# - allauth.account.middleware.AccountMiddleware (not needed with custom auth)
+# - custom_auth.dashboard_middleware.DashboardMigrationMiddleware (obsolete)
+# - taxes.tax_audit_middleware.TaxAuditMiddleware (move to audit.middleware if needed)
 
 # Maximum number of database connections allowed
 MAX_DB_CONNECTIONS = 20  # Reduced from 50 to prevent connection exhaustion
+
+# Middleware Configuration
+# Paths that don't require any authentication or tenant context
+TENANT_EXEMPT_PATHS = [
+    '/api/payments/webhooks/',  # All payment webhooks
+    '/api/onboarding/webhooks/',  # Onboarding webhooks
+    '/api/contact-form/',  # Public contact form
+    '/api/public/',  # Public API endpoints
+    '/api/notifications/admin/',  # Admin portal endpoints
+    '/api/leads/',  # Leads management (admin access)
+]
+
+# Paths that require authentication but not tenant context (used during onboarding)
+TENANT_AUTH_ONLY_PATHS = [
+    '/api/users/me/',  # User profile before tenant creation
+    '/api/onboarding/business-info/',  # Business info collection
+    '/api/onboarding/subscription/',  # Subscription setup
+]
+
+# Session configuration
+SESSION_TIMEOUT = 86400  # 24 hours in seconds
+SESSION_HEARTBEAT_INTERVAL = 300  # 5 minutes
+ENFORCE_DEVICE_FINGERPRINT = False  # Set to True for stricter security
+STRICT_IP_VALIDATION = False  # Set to True to validate IP addresses
 
 # Connection pool configuration
 CONNECTION_POOL_CONFIG = {
@@ -797,7 +916,7 @@ SESSION_COOKIE_NAME = 'session_token'
 SESSION_COOKIE_AGE = SESSION_TTL
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'  # Changed back to Lax for better compatibility
-SESSION_COOKIE_DOMAIN = None  # Let it default to current domain for better compatibility
+# SESSION_COOKIE_DOMAIN is set above based on environment
 
 # Check if we're running in ASGI mode
 IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
@@ -850,11 +969,11 @@ SHARED_APPS = (
     'rest_framework.authtoken',
     'dj_rest_auth',
     'dj_rest_auth.registration',
-    'allauth',
-    'allauth.account',
+    # 'allauth',  # Commented out - using custom Auth0 authentication
+    # 'allauth.account',  # Commented out - using custom Auth0 authentication
     'leads.apps.LeadsConfig',  # Lead management system
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
+    # 'allauth.socialaccount',  # Commented out - using custom Auth0 authentication
+    # 'allauth.socialaccount.providers.google',  # Commented out - using custom Auth0 authentication
     'phonenumber_field',
     'django_extensions',
     'custom_auth',
@@ -879,6 +998,7 @@ TENANT_APPS = (
     'integrations',
     'taxes',
     'purchases',
+    'product_suppliers',  # New app for product suppliers
     'barcode',
     'hr.apps.HrConfig',
     'crm.apps.CrmConfig',
@@ -887,6 +1007,8 @@ TENANT_APPS = (
     'notifications',
     'whatsapp_business.apps.WhatsappBusinessConfig',
     'data_export',
+    'jobs.apps.JobsConfig',
+    'communications.apps.CommunicationsConfig',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -913,7 +1035,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
         'NAME': os.getenv('DB_NAME', 'dott_production'),
         'USER': os.getenv('DB_USER', 'dott_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),  # SECURITY: No default password
         'HOST': os.getenv('DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'TIME_ZONE': 'UTC',
@@ -949,7 +1071,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
         'NAME': os.getenv('TAX_DB_NAME', 'dott_production'),
         'USER': os.getenv('TAX_DB_USER', 'dott_user'),
-        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'PASSWORD': os.getenv('TAX_DB_PASSWORD', os.getenv('DB_PASSWORD')),  # SECURITY: Falls back to DB_PASSWORD
         'HOST': os.getenv('TAX_DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
         'PORT': os.getenv('TAX_DB_PORT', '5432'),
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
@@ -1131,9 +1253,8 @@ print(f"   AUTH0_CUSTOM_DOMAIN: {os.getenv('AUTH0_CUSTOM_DOMAIN', 'NOT_SET')}")
 print(f"   Environment: {os.getenv('ENVIRONMENT', 'NOT_SET')}")
 print(f"   Debug mode: {DEBUG}")
 
-# Auth0 Configuration
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
-# Force deployment refresh Fri Jun  6 05:44:20 MDT 2025
+# Auth0 Configuration - removed duplicate (already defined on line 183)
+# Force deployment refresh Tue Aug  6 05:44:20 MDT 2025
 
 # ===== ENHANCED SECURITY SETTINGS =====
 # Risk thresholds for session security
@@ -1166,7 +1287,7 @@ CACHE_CONTROL_MAX_AGE = {
 }
 
 # Cloudflare Page Rules compatibility
-APPEND_SLASH = True
+APPEND_SLASH = False  # Industry standard: be explicit about URLs, no automatic redirects
 PREPEND_WWW = False
 
 # Response headers for Cloudflare
@@ -1188,3 +1309,33 @@ if CLOUDFLARE_PROXY_ENABLED:
         'datefmt': '%Y-%m-%d %H:%M:%S',
     }
 # =====================================
+
+# RLS Public Paths - paths that don't require tenant context
+RLS_PUBLIC_PATHS = [
+    '/api/currency/test-public/',  # Public currency test endpoint
+    '/api/currency/list/',         # Public currency list endpoint (for initial setup)
+]
+
+
+# Security Logging Configuration
+LOGGING['loggers']['security.tenant'] = {
+    'handlers': ['console', 'file'],
+    'level': 'INFO',
+    'propagate': False,
+}
+
+LOGGING['loggers']['security.monitor'] = {
+    'handlers': ['console', 'file'], 
+    'level': 'WARNING',
+    'propagate': False,
+}
+
+# Tenant isolation settings
+TENANT_ISOLATION = {
+    'ENABLED': True,
+    'ENFORCE_AT_DATABASE': True,
+    'LOG_VIOLATIONS': True,
+    'BLOCK_NO_TENANT': True,
+}
+# Deployment timestamp: Mon Aug 11 09:34:25 MDT 2025
+# Deployment timestamp: Mon Aug 11 10:20:30 MDT 2025

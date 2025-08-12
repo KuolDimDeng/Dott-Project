@@ -1,19 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
-# Import secure viewset for customers
-try:
-    from .views.secure_customer_viewset import SecureCustomerViewSet
-    use_secure_customers = True
-except ImportError:
-    use_secure_customers = False
 
 router = DefaultRouter()
-# Use secure viewset for customers if available
-if use_secure_customers:
-    router.register(r'customers', SecureCustomerViewSet, basename='customer')
-else:
-    router.register(r'customers', views.CustomerViewSet)
+# Use single CustomerViewSet - no need for duplicate
+router.register(r'customers', views.CustomerViewSet)
 router.register(r'contacts', views.ContactViewSet)
 router.register(r'leads', views.LeadViewSet)
 router.register(r'opportunities', views.OpportunityViewSet)

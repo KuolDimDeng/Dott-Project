@@ -457,7 +457,7 @@ export default function Step1_ReviewEmployees({
 
       {/* Employee Timesheet Detail Modal */}
       {selectedEmployee && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-200">

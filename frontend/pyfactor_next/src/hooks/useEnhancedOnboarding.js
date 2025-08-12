@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onboardingService } from '@/services/onboardingService';
-import { updateUserAttributes } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 
 /**

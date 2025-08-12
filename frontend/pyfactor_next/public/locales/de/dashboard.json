@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Hallo 👋\n\n{{name}} hat Sie eingeladen, Dott auszuprobieren, ein All-in-One-Tool zur Vereinfachung von Geschäftsabläufen.\n\n✓ Automatisierte Rechnungsstellung\n✓ Terminplanung\n✓ Bestandsverwaltung\n✓ Gehaltsabrechnung\n✓ Geschäftsanalysen\n\nStarten Sie Ihre kostenlose Testversion: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Guten Morgen",
+      "afternoon": "Guten Tag",
+      "evening": "Guten Abend"
+    },
+    "subscriptionBanner": {
+      "active": "Ihr {{planName}} ist aktiv",
+      "activeDescription": "Sie haben Zugriff auf alle in Ihrem Plan enthaltenen Funktionen.",
+      "expired": "Ihr {{previousPlan}} Abonnement ist abgelaufen",
+      "expiredDescription": "Ihr Konto wurde auf den kostenlosen Plan herabgestuft. Sie haben jetzt begrenzten Zugriff auf Funktionen.",
+      "renewButton": "Abonnement erneuern",
+      "viewDetailsButton": "Plandetails anzeigen"
+    },
+    "gettingStarted": {
+      "title": "Erste Schritte",
+      "progress": "{{completed}} von {{total}} abgeschlossen",
+      "description": "Führen Sie diese Schritte aus, um das Beste aus Ihrem Konto herauszuholen:",
+      "loading": "Lade Ihren Fortschritt...",
+      "congratulations": "Glückwunsch! Sie haben alle Einrichtungsschritte abgeschlossen.",
+      "steps": {
+        "profile": {
+          "title": "Vervollständigen Sie Ihr Unternehmensprofil",
+          "description": "Fügen Sie Ihre Geschäftsdetails und Ihr Logo hinzu"
+        },
+        "customer": {
+          "titleEmpty": "Fügen Sie Ihren ersten Kunden hinzu",
+          "titleWithCount": "{{count}} Kunden hinzugefügt",
+          "descriptionEmpty": "Beginnen Sie mit dem Aufbau Ihrer Kundenbasis",
+          "descriptionWithCount": "Verwalten Sie Ihre Kunden"
+        },
+        "product": {
+          "titleEmpty": "Erstellen Sie Ihr erstes Produkt",
+          "titleWithCount": "{{count}} Produkte erstellt",
+          "descriptionEmpty": "Fügen Sie Produkte zu Ihrem Inventar hinzu",
+          "descriptionWithCount": "Verwalten Sie Ihre Produkte"
+        },
+        "service": {
+          "titleEmpty": "Erstellen Sie Ihre erste Dienstleistung",
+          "titleWithCount": "{{count}} Dienstleistungen erstellt",
+          "descriptionEmpty": "Definieren Sie Dienstleistungen, die Sie anbieten",
+          "descriptionWithCount": "Verwalten Sie Ihre Dienstleistungen"
+        },
+        "supplier": {
+          "titleEmpty": "Fügen Sie Ihren ersten Lieferanten hinzu",
+          "titleWithCount": "{{count}} Lieferanten hinzugefügt",
+          "descriptionEmpty": "Verfolgen Sie Ihre Lieferkette",
+          "descriptionWithCount": "Verwalten Sie Ihre Lieferanten"
+        },
+        "invoice": {
+          "titleEmpty": "Erstellen Sie Ihre erste Rechnung",
+          "titleWithCount": "{{count}} Rechnungen erstellt",
+          "descriptionEmpty": "Beginnen Sie mit der Rechnungsstellung an Ihre Kunden",
+          "descriptionWithCount": "Verwalten Sie Ihre Rechnungen"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Aktuelle Updates",
+      "noUpdates": "Keine aktuellen Updates zum Anzeigen.",
+      "description": "Updates zu Ihrer Kontoaktivität werden hier angezeigt.",
+      "activities": {
+        "salesToday": "${{amount}} Umsatz heute",
+        "unpaidInvoices": "{{count}} unbezahlte Rechnung{{plural}} ausstehend",
+        "overdueInvoices": "{{count}} überfällige Rechnung{{plural}} benötigen Aufmerksamkeit",
+        "newCustomers": "{{count}} neue{{plural}} Kunde{{plural}} diesen Monat"
+      }
+    },
+    "quickStats": {
+      "title": "Schnellstatistiken",
+      "customers": "Kunden",
+      "products": "Produkte",
+      "services": "Dienstleistungen",
+      "invoices": "Rechnungen"
+    },
+    "planDetails": {
+      "title": "Ihre Abonnementdetails",
+      "perMonth": "pro Monat",
+      "active": "Aktiv",
+      "currentPlan": "Aktueller Plan",
+      "featuresIncluded": "Enthaltene Funktionen",
+      "limitations": "Einschränkungen beim kostenlosen Plan",
+      "upgradePrompt": "Upgraden Sie jetzt, um alle Funktionen freizuschalten und Einschränkungen zu entfernen!",
+      "upgradeButton": "Hier upgraden",
+      "upgradeToEnterprise": "Auf Enterprise upgraden",
+      "close": "Schließen"
+    },
+    "plans": {
+      "free": {
+        "name": "Kostenloser Plan",
+        "description": "Grundlegende Funktionen für kleine Unternehmen, die gerade erst anfangen",
+        "features": [
+          "Grundlegende Rechnungsstellung",
+          "Bis zu 5 Kunden",
+          "Grundlegende Berichte",
+          "E-Mail-Support",
+          "2GB Speicher"
+        ],
+        "limitations": [
+          "Begrenzt auf 5 Rechnungen pro Monat",
+          "Kein individuelles Branding",
+          "Nur grundlegende Berichte",
+          "Kein API-Zugriff",
+          "Nur einzelner Benutzer"
+        ]
+      },
+      "professional": {
+        "name": "Professional Plan",
+        "description": "Erweiterte Funktionen für wachsende Unternehmen",
+        "features": [
+          "Unbegrenzte Rechnungsstellung",
+          "Unbegrenzte Kunden",
+          "Erweiterte Berichte",
+          "Prioritäts-Support",
+          "Individuelles Branding",
+          "15GB Speicher",
+          "Bis zu 3 Benutzer"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise Plan",
+        "description": "Vollständige Tool-Suite für etablierte Unternehmen",
+        "features": [
+          "Alles in Professional",
+          "Unbegrenzter Speicher",
+          "Unbegrenzte Benutzer",
+          "Dedizierter Account Manager",
+          "Erweiterter API-Zugriff",
+          "Benutzerdefinierte Rollen und Berechtigungen",
+          "Erweiterte Sicherheitsfunktionen",
+          "Vorzugstarife für Transaktionen"
+        ]
+      }
+    }
   }
 }

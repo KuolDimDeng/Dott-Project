@@ -6,6 +6,23 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 
+// Helper function to get country name from country code
+function getCountryName(countryCode) {
+  const countryNames = {
+    'US': 'United States',
+    'CA': 'Canada',
+    'GB': 'United Kingdom',
+    'AU': 'Australia',
+    'DE': 'Germany',
+    'FR': 'France',
+    'IN': 'India',
+    'NG': 'Nigeria',
+    'KE': 'Kenya',
+    'ZA': 'South Africa'
+  };
+  return countryNames[countryCode] || countryCode;
+}
+
 export async function GET(request) {
   const requestId = Math.random().toString(36).substring(2, 9);
   
@@ -54,10 +71,15 @@ export async function GET(request) {
       }
       
       const sessionData = await sessionResponse.json();
-      const tenantId = sessionData.tenant_id;
+      // Try to get tenant_id from multiple possible locations
+      const tenantId = sessionData.tenant_id || 
+                       sessionData.user?.tenant_id || 
+                       sessionData.user?.tenantId ||
+                       sessionData.tenant?.id;
       
       if (!tenantId) {
         logger.warn(`[Business API] No tenant ID in session, request ${requestId}`);
+        logger.debug(`[Business API] Session data structure:`, JSON.stringify(sessionData, null, 2));
         return NextResponse.json(
           { error: 'No tenant information available', requestId },
           { status: 404 }
@@ -99,6 +121,10 @@ export async function GET(request) {
             zipCode: businessData.address?.zip_code || businessData.address?.zipCode || '',
             country: businessData.address?.country || 'US'
           },
+          // Add specific fields for tax settings
+          country: businessData.address?.country || businessData.country || 'US',
+          state: businessData.address?.state || businessData.state || '',
+          country_name: businessData.country_name || getCountryName(businessData.address?.country || businessData.country || 'US'),
           tenantId: tenantId,
           requestId,
           source: 'backend-real-data'
@@ -127,6 +153,10 @@ export async function GET(request) {
             zipCode: '',
             country: 'US'
           },
+          // Add specific fields for tax settings
+          country: 'US',
+          state: '',
+          country_name: 'United States',
           tenantId: tenantId,
           requestId,
           source: 'session-fallback'
@@ -157,6 +187,10 @@ export async function GET(request) {
           zipCode: '',
           country: 'US'
         },
+        // Add specific fields for tax settings
+        country: 'US',
+        state: '',
+        country_name: 'United States',
         tenantId: null,
         requestId,
         source: 'fallback-empty',

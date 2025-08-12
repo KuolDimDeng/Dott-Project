@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { usePlaidLink } from 'react-plaid-link';
+import React, { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { plaidApi, bankAccountsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
+
+// Dynamic import for Plaid to avoid SSR issues
+const PlaidLinkButton = dynamic(
+  () => import('./PlaidLinkButton'),
+  { 
+    ssr: false,
+    loading: () => <div className="text-center p-4">Loading Plaid...</div>
+  }
+);
 
 const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false, onSuccess = null, onClose = null }) => {
   const [region, setRegion] = useState('');
@@ -17,6 +26,10 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
 
   // Use preferredProvider when provided - skip region selection entirely
   useEffect(() => {
+    console.log('🔍🔍🔍 [ConnectBank] === USEEFFECT TRIGGERED ===');
+    console.log('🔍🔍🔍 [ConnectBank] preferredProvider:', preferredProvider);
+    console.log('🔍🔍🔍 [ConnectBank] businessCountry:', businessCountry);
+    
     if (preferredProvider && businessCountry) {
       // Set region based on preferred provider
       if (preferredProvider.provider === 'plaid') {
@@ -27,24 +40,30 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         ];
         
         if (europeanCountries.includes(businessCountry)) {
+          console.log('🔍🔍🔍 [ConnectBank] Setting region to Europe');
           setRegion('Europe');
         } else {
+          console.log('🔍🔍🔍 [ConnectBank] Setting region to America');
           setRegion('America');
         }
+      } else if (preferredProvider.provider === 'wise') {
+        // Handle Wise provider - used for international banking
+        console.log('🔍🔍🔍 [ConnectBank] Setting up for Wise provider');
+        setRegion('International');
       } else if (preferredProvider.provider === 'mobilemoney') {
+        console.log('🔍🔍🔍 [ConnectBank] Setting region to Africa with Mobile Money');
         setRegion('Africa');
         setAfricanOption('Mobile Money');
       } else if (preferredProvider.provider === 'dlocal') {
+        console.log('🔍🔍🔍 [ConnectBank] Setting region to South America');
         setRegion('South America');
       }
       
       // Show the provider form directly without region selection
       setShowProviderForm(true);
       
-      // Auto-initialize the connection
-      setTimeout(() => {
-        autoConnectToBank();
-      }, 100);
+      // Don't auto-connect, let user click the button
+      // This prevents the null token error on initial load
     }
   }, [preferredProvider, businessCountry]);
 
@@ -64,74 +83,54 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
   };
 
   const getProviderForRegion = (region) => {
+    console.log('🔍🔍🔍 [getProviderForRegion] region:', region);
+    console.log('🔍🔍🔍 [getProviderForRegion] preferredProvider:', preferredProvider);
+    
     // If we have a preferred provider from the backend, use that
     if (preferredProvider && preferredProvider.provider) {
+      console.log('🔍🔍🔍 [getProviderForRegion] Using preferred provider:', preferredProvider.provider);
       return preferredProvider.provider;
     }
     
     // Otherwise, use region-based logic as a fallback
+    let provider;
     switch (region) {
       case 'America':
       case 'Europe':
-        return 'plaid';
+        provider = 'plaid';
+        break;
+      case 'International':
+        provider = 'wise';
+        break;
       case 'Africa':
-        return africanOption === 'Mobile Money' ? 'africas_talking' : africanBankProvider;
+        provider = africanOption === 'Mobile Money' ? 'africas_talking' : africanBankProvider;
+        break;
       case 'South America':
-        return 'dlocal';
+        provider = 'dlocal';
+        break;
       case 'Asia':
-        return 'salt_edge';
+        provider = 'salt_edge';
+        break;
       default:
-        return 'unknown';
+        provider = 'unknown';
     }
+    
+    console.log('🔍🔍🔍 [getProviderForRegion] Selected provider:', provider);
+    return provider;
   };
   
-  // Function to automatically connect based on the preferred provider
-  const autoConnectToBank = async () => {
-    if (!preferredProvider || !region) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const provider = getProviderForRegion(region);
-      console.log(`Auto-connecting to bank with provider: ${provider}, region: ${region}`);
-      
-      const payload = { region, provider };
-      if (region === 'Africa') {
-        payload.sub_option = africanOption;
-        if (africanOption === 'Banks') {
-          payload.bank_provider = africanBankProvider;
-        }
-      }
-      
-      // Add business country to payload
-      if (businessCountry) {
-        payload.country_code = businessCountry;
-      }
-
-      const response = await plaidApi.createLinkToken(payload);
-
-      if (response.data.link_token) {
-        setLinkToken(response.data.link_token);
-      } else if (response.data.auth_url) {
-        // Handle non-Plaid providers that return an auth URL
-        window.location.href = response.data.auth_url;
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (err) {
-      logger.error('Error auto-connecting to bank:', err);
-      setError('Failed to initialize bank connection. Please try again.');
-      setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleConnect = async () => {
+    console.log('🔍🔍🔍 [handleConnect] === STARTING CONNECTION ===');
+    console.log('🔍🔍🔍 [handleConnect] Current region:', region);
+    console.log('🔍🔍🔍 [handleConnect] Business country:', businessCountry);
+    
     setLoading(true);
     setError(null);
     const provider = getProviderForRegion(region);
+    
+    console.log('🔍🔍🔍 [handleConnect] Selected provider:', provider);
+    
     try {
       const payload = { region, provider };
       if (region === 'Africa') {
@@ -146,47 +145,32 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         payload.country_code = businessCountry;
       }
 
+      console.log('🔍🔍🔍 [handleConnect] Final payload:', JSON.stringify(payload, null, 2));
+      logger.info('🏦 [ConnectBank] Creating link token with payload:', payload);
       const response = await plaidApi.createLinkToken(payload);
+      logger.info('🏦 [ConnectBank] Link token response:', response);
+      console.log('🔍🔍🔍 [handleConnect] Response from API:', response);
 
-      if (response.data.link_token) {
+      if (response.data && response.data.link_token) {
+        logger.info('🏦 [ConnectBank] Link token received successfully');
         setLinkToken(response.data.link_token);
-      } else if (response.data.auth_url) {
+      } else if (response.data && response.data.auth_url) {
         // Handle non-Plaid providers that return an auth URL
+        logger.info('🏦 [ConnectBank] Redirecting to auth URL:', response.data.auth_url);
         window.location.href = response.data.auth_url;
       } else {
-        throw new Error('Invalid response from server');
+        logger.error('🏦 [ConnectBank] Invalid response structure:', response);
+        throw new Error(`Invalid response from server: ${JSON.stringify(response)}`);
       }
     } catch (err) {
-      logger.error('Error creating link token:', err);
-      setError('Failed to initialize bank connection. Please try again.');
-      setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
+      logger.error('🏦 [ConnectBank] Error creating link token:', err);
+      setError(`Failed to initialize bank connection: ${err.message || 'Please try again.'}`);
+      setSnackbar({ open: true, message: `Failed to connect bank: ${err.message || 'Unknown error'}`, severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: (public_token, metadata) => {
-      console.log('Bank connection successful');
-      exchangePublicToken(public_token);
-    },
-    onExit: (err, metadata) => {
-      console.log('Plaid Link exited', err, metadata);
-      if (err) {
-        setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
-      }
-    },
-    onEvent: (eventName, metadata) => {
-      console.log('Plaid Link event', eventName, metadata);
-    },
-  });
-
-  useEffect(() => {
-    if (linkToken && ready) {
-      open();
-    }
-  }, [linkToken, ready, open]);
 
   const exchangePublicToken = async (public_token) => {
     try {
@@ -235,23 +219,6 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
     return null;
   };
 
-  // Show loading state when auto-connecting
-  if (autoConnect && loading && !connectedBankInfo) {
-    return (
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h1 className="text-2xl font-bold mb-4">
-          Connecting to Your Bank
-        </h1>
-        <div className="flex flex-col items-center justify-center py-10">
-          <CenteredSpinner size="medium" />
-          <p className="text-gray-600">
-            We're setting up your bank connection based on your business location.
-            Please wait a moment...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6">
@@ -305,29 +272,48 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
                     You'll be redirected to your bank's secure login page.
                   </p>
                   
-                  <button
-                    className={`w-full py-3 px-4 rounded-md font-medium ${
-                      loading
-                        ? 'bg-blue-300 cursor-not-allowed text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                    onClick={handleConnect}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center">
-                        <ButtonSpinner />
-                        Connecting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center">
-                        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                        </svg>
-                        Connect with Plaid
-                      </div>
-                    )}
-                  </button>
+                  {linkToken ? (
+                    <PlaidLinkButton
+                      linkToken={linkToken}
+                      onSuccess={(public_token, metadata) => {
+                        console.log('🏦 [ConnectBank] Bank connection successful');
+                        logger.info('🏦 [ConnectBank] Plaid Link success:', { public_token, metadata });
+                        exchangePublicToken(public_token);
+                      }}
+                      onExit={(err, metadata) => {
+                        console.log('🏦 [ConnectBank] Plaid Link exited', err, metadata);
+                        logger.error('🏦 [ConnectBank] Plaid Link exit error:', err);
+                        if (err) {
+                          setError(`Plaid connection failed: ${err.error_message || err.message || 'Unknown error'}`);
+                          setSnackbar({ open: true, message: `Failed to connect bank: ${err.error_message || err.message || 'Unknown error'}`, severity: 'error' });
+                        }
+                      }}
+                    />
+                  ) : (
+                    <button
+                      className={`w-full py-3 px-4 rounded-md font-medium ${
+                        loading
+                          ? 'bg-blue-300 cursor-not-allowed text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                      onClick={handleConnect}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <ButtonSpinner />
+                          Connecting...
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                          </svg>
+                          Connect with Plaid
+                        </div>
+                      )}
+                    </button>
+                  )}
                   
                   <div className="text-xs text-gray-500 mt-4">
                     <p className="font-medium mb-1">🔒 Your data is secure:</p>

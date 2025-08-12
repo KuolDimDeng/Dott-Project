@@ -1700,7 +1700,7 @@ class SaveStep1View(APIView):
     parser_classes = [JSONParser]
 
     def post(self, request, *args, **kwargs):
-        from django.db import connection, transaction
+        from django.db import connection, transaction as db_transaction
         from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
         request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))

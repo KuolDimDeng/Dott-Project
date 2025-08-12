@@ -24,8 +24,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
     """
     Serializer for Employee model with sensitive information excluded
     """
-    # Make tenant_id optional to handle missing column gracefully
+    # Make tenant_id and business_id optional to handle missing column gracefully
     tenant_id = serializers.UUIDField(read_only=True, required=False)
+    business_id = serializers.UUIDField(read_only=True, required=False)
     supervisor_name = serializers.SerializerMethodField()
     
     class Meta:
@@ -37,9 +38,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'street', 'city', 'state', 'zip_code', 'country', 'compensation_type',
             'emergency_contact_name', 'emergency_contact_phone',
             'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'supervisor_name', 'user',
-            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at', 'tenant_id'
+            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at', 'tenant_id', 'business_id'
         ]
-        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four', 'tenant_id']
+        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four', 'tenant_id', 'business_id']
         
     def to_representation(self, instance):
         """Override to handle missing tenant_id column gracefully"""
@@ -260,18 +261,54 @@ class TimesheetEntryWithLocationSerializer(TimesheetEntrySerializer):
 
 class GeofenceSerializer(serializers.ModelSerializer):
     """Serializer for Geofence model"""
-    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    created_by_name = serializers.SerializerMethodField(read_only=True)
     assigned_employees_count = serializers.IntegerField(read_only=True)
+    
+    def get_created_by_name(self, obj):
+        """Get the name of the user who created the geofence"""
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.email
+        return None
     
     class Meta:
         model = Geofence
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'business_id']
     
+    def validate(self, data):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[GeofenceSerializer] validate() called with data: {data}")
+        logger.info(f"[GeofenceSerializer] Data keys: {data.keys()}")
+        logger.info(f"[GeofenceSerializer] is_active in data: {'is_active' in data}")
+        if 'is_active' in data:
+            logger.info(f"[GeofenceSerializer] is_active value: {data['is_active']}")
+        
+        return data
+    
     def create(self, validated_data):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[GeofenceSerializer] create() called with validated_data: {validated_data}")
+        logger.info(f"[GeofenceSerializer] User: {self.context['request'].user.email}")
+        logger.info(f"[GeofenceSerializer] User business_id: {self.context['request'].user.business_id}")
+        
         # Set business_id from request context
         validated_data['business_id'] = self.context['request'].user.business_id
-        return super().create(validated_data)
+        
+        logger.info(f"[GeofenceSerializer] After setting business_id: {validated_data}")
+        
+        # Call parent create
+        instance = super().create(validated_data)
+        
+        logger.info(f"[GeofenceSerializer] Created instance: ID={instance.id}, Name={instance.name}")
+        logger.info(f"[GeofenceSerializer] Instance business_id: {instance.business_id}")
+        logger.info(f"[GeofenceSerializer] Instance is_active: {instance.is_active}")
+        logger.info(f"[GeofenceSerializer] Instance created_by: {instance.created_by}")
+        
+        return instance
 
 
 class EmployeeGeofenceSerializer(serializers.ModelSerializer):

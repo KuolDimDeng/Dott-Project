@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+
 import { logger } from '@/utils/sentry';
 
 type ApiHandler = (request: NextRequest) => Promise<NextResponse>;
@@ -16,15 +16,6 @@ export function withApiWrapper(
 ) {
   return async (request: NextRequest) => {
     const { requireAuth = false, logRequest = true } = options;
-    
-    // Start performance transaction
-    const transaction = Sentry.startTransaction({
-      op: 'http.server',
-      name: `${request.method} ${request.nextUrl.pathname}`,
-    });
-
-    // Set transaction on scope
-    Sentry.getCurrentHub().configureScope(scope => scope.setSpan(transaction));
 
     try {
       // Log request if enabled
@@ -52,19 +43,13 @@ export function withApiWrapper(
       // Execute handler
       const response = await handler(request);
       
-      // Set success status
-      transaction.setStatus('ok');
-      
       return response;
     } catch (error) {
-      // Capture error in Sentry
+      // Log error
       logger.error(`API Error: ${request.nextUrl.pathname}`, error, {
         method: request.method,
         url: request.url,
       });
-
-      // Set error status
-      transaction.setStatus('internal_error');
 
       // Return appropriate error response
       if (error instanceof Error) {
@@ -89,8 +74,6 @@ export function withApiWrapper(
         { error: 'Internal server error' },
         { status: 500 }
       );
-    } finally {
-      transaction.finish();
     }
   };
 }

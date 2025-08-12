@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Nodig Bedrijfseigenaar Uit",
     "analytics": "Analyse",
     "smartInsights": "Slimme Inzichten",
-    "dottStatus": "Dott Status"
+    "dottStatus": "Dott Status",
+    "jobs": "Opdrachten"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Rekeningschema",
     "journalEntries": "Journaalposten",
     "generalLedger": "Grootboek",
-    "trialBalance": "Proefbalans"
+    "trialBalance": "Proefbalans",
+    "jobsList": "Alle Opdrachten",
+    "jobCosting": "Opdrachtkosten",
+    "jobMaterials": "Materiaalgebruik",
+    "jobLabor": "Arbeidsregistratie",
+    "jobProfitability": "Winstgevendheidsanalyse",
+    "services": "Diensten",
+    "jobs": "Opdrachten"
   },
   "actions": {
     "viewAll": "Alles Bekijken",

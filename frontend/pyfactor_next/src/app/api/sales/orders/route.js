@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+
 // Helper function to get session cookie
 async function getSessionCookie() {
   const cookieStore = cookies();
@@ -27,7 +29,7 @@ export async function GET(request) {
     const queryString = searchParams.toString();
     
     // Forward request to Django backend (Django requires trailing slash)
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/orders/${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${BACKEND_URL}/api/sales/orders/${queryString ? `?${queryString}` : ''}`;
     logger.info('[Orders API] Forwarding GET to:', backendUrl);
     
     const response = await fetch(backendUrl, {
@@ -102,6 +104,33 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[Orders API] Creating order with data:', body);
     
+    // Get user's current currency preference for new orders
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[Orders API] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          logger.info('[Orders API] Using user preferred currency:', userCurrency);
+        } else {
+          logger.warn('[Orders API] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        logger.warn('[Orders API] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      logger.error('[Orders API] Error fetching currency preference:', currencyError);
+    }
+    
     // Transform frontend data to match backend expectations
     const backendData = {
       customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
@@ -113,6 +142,7 @@ export async function POST(request) {
       discount_percentage: body.discount_percentage || 0,
       shipping_cost: body.shipping_cost || 0,
       tax_rate: body.tax_rate || 0,
+      currency: body.currency || userCurrency, // Use user's preferred currency
       notes: body.notes || '',
       items: body.items?.map(item => ({
         item_type: item.type || 'product',
@@ -127,7 +157,7 @@ export async function POST(request) {
     logger.info('[Orders API] Transformed data for backend:', backendData);
     
     // Forward request to Django backend (Django requires trailing slash)
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/orders/`;
+    const backendUrl = `${BACKEND_URL}/api/sales/orders/`;
     
     const response = await fetch(backendUrl, {
       method: 'POST',

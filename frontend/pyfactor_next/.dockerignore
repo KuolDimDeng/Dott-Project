@@ -1,11 +1,90 @@
+# Dependencies
 node_modules
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+coverage
+.nyc_output
+
+# Next.js build output - CRITICAL to exclude!
 .next
-.git
-.env.local
-.env*.local
+.next/cache
+.next/standalone
+out
+.swc
+
+# Development files that shouldn't be deployed
+*.log
+dev.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
+debug.log
+logs
+
+# Cache directories
+.cache
+.eslintcache
+.stylelintcache
+
+# Temporary and backup files
+temp.js
+*.tmp
+*.temp
+backups
+*.local
+
+# Scripts not needed in production
+*.sh
+*.py
+run_*.sh
+setup-*.py
+test-*.js
+create-*.js
+scripts/dev-*.sh
+scripts/test-*.sh
+
+# Documentation
+docs
+*.md
+!README.md
+
+# IDE and OS files
 .DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+*~
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Environment and config files
+.env*
+!.env.example
+.git
+.gitignore
+
+# Certificates
+certificates
+*.pem
+*.key
+*.crt
+
+# Infrastructure files
+infrastructure
+deploy-*.sh
+AUTH0_*.html
+
+# Archives
 *.tgz
 *.tar.gz
+*.zip
+
+# Prisma migrations (regenerated during build)
+prisma/migrations

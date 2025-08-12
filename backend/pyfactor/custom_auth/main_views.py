@@ -1,5 +1,5 @@
 import uuid
-from django.db import connections, transaction, DatabaseError, IntegrityError
+from django.db import connections, transaction as db_transaction, DatabaseError, IntegrityError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -37,7 +37,7 @@ import requests
 from users.models import UserProfile
 from .models import User, Tenant
 from .serializers import (
-    CustomRegisterSerializer, 
+    # CustomRegisterSerializer,  # Commented out - using Auth0
     CustomAuthTokenSerializer, 
     SocialLoginSerializer,
     CustomTokenObtainPairSerializer
@@ -58,49 +58,21 @@ ONBOARDING_STATUS_CHOICES = [
     ('complete', 'Complete'),
 ]
 
-class RegisterView(generics.CreateAPIView):
+# Commented out - using Auth0 for registration
+# class RegisterView(generics.CreateAPIView):
+#     permission_classes = [permissions.AllowAny]
+#     serializer_class = CustomRegisterSerializer
+
+# Placeholder for Auth0 registration
+class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
-    serializer_class = CustomRegisterSerializer
     
-    def create(self, request, *args, **kwargs):
-        logger.debug("RegisterView: Received request data: %s", request.data)
-        serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid():
-            try:
-                with transaction.atomic():
-                    user = initial_user_registration(serializer.validated_data)
-                    user.is_active = False
-                    user.save()
-
-                    # Send confirmation email
-                    uid = urlsafe_base64_encode(force_bytes(user.pk))
-                    token = account_activation_token.make_token(user)
-                    current_site = get_current_site(request)
-                    confirmation_url = reverse('activate', kwargs={'uidb64': uid, 'token': token})
-                    confirmation_link = f'https://{current_site.domain}{confirmation_url}'
-
-                    mail_subject = 'Activate your account'
-                    message = render_to_string('email_activation.html', {
-                        'user': user,
-                        'activate_url': confirmation_link
-                    })
-
-                    send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
-
-                logger.info("User registered successfully. Awaiting email confirmation.")
-                return Response({
-                    "message": "User registered successfully. Please check your email to confirm your account.",
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                logger.exception("Failed to register user: %s", str(e))
-                return Response({"error": "Failed to register user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            logger.warning("Registration failed: %s", serializer.errors)
-            return Response({
-                "message": "Registration failed. Please check the form and try again.",
-                "errors": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, *args, **kwargs):
+        # Auth0 handles registration
+        return Response({
+            "message": "Please use Auth0 for registration",
+            "auth0_domain": settings.AUTH0_DOMAIN
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 class SessionView(APIView):
     permission_classes = [AllowAny]
@@ -297,7 +269,7 @@ class CustomAuthToken(ObtainAuthToken):
 class SocialLoginView(APIView):
     permission_classes = [AllowAny]
 
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request):
         logger.debug(f"Received social login request: {request.data}")
         serializer = SocialLoginSerializer(data=request.data)
@@ -387,7 +359,7 @@ class SocialLoginView(APIView):
             logger.error("Failed to validate Google token: %s", str(e))
             return None
 
-    @transaction.atomic
+    @db_transaction.atomic
     def get_or_create_user(self, user_info):
         email = user_info.get('email')
         logger.debug(f"Checking if user exists with email: {email}")
@@ -455,14 +427,19 @@ class SignUpView(APIView):
         return Response(response, status=status_code)
 
     def post(self, request):
-        logger.info(f"Received sign-up request: {request.data}")
+        # Auth0 handles registration
+        return Response({
+            "message": "Please use Auth0 for registration",
+            "auth0_domain": settings.AUTH0_DOMAIN
+        }, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = CustomRegisterSerializer(data=request.data)
+        # Commented out - using Auth0
+        # serializer = CustomRegisterSerializer(data=request.data)
         
         if serializer.is_valid():
             logger.info("Sign-up data is valid")
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     try:
                         # Create user first
                         user = User.objects.create(
@@ -744,7 +721,7 @@ def setup_user(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Create user profile if it doesn't exist
             user_profile, created = UserProfile.objects.get_or_create(
                 user_id=user_id,
@@ -822,7 +799,7 @@ class TokenService:
 class SignupAPIView(APIView):
     permission_classes = [AllowAny]
 
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request):
         """
         Handle user signup with Auth0 authentication
@@ -899,7 +876,7 @@ class SignupAPIView(APIView):
 class UpdateSessionView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @transaction.atomic
+    @db_transaction.atomic
     def post(self, request, *args, **kwargs):
         user = request.user
         try:

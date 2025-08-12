@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from functools import wraps
 
 from celery import shared_task
-from django.db import transaction, connections, DatabaseError, models
+from django.db import transaction as db_transaction, connections, DatabaseError, models
 from django.conf import settings
 from django.core.management import call_command
 from django.utils import timezone
@@ -239,7 +239,7 @@ def setup_user_tenant_task(self, user_id: str, business_id: str, **kwargs) -> Di
         
         # Create tenant if it doesn't exist
         if not tenant:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 tenant = Tenant.objects.create(
                     owner_id=user_id,
                     business_id=business_id or str(uuid.uuid4()),

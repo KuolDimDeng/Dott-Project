@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ClockIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { api } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
@@ -200,9 +200,9 @@ const GenerationHistory = () => {
 
       {/* Generation Details Modal */}
       {selectedGeneration && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="absolute inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-center justify-center p-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSelectedGeneration(null)} />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSelectedGeneration(null)} />
             
             <div className="relative bg-white rounded-lg max-w-2xl w-full p-6">
               <h3 className="text-lg font-semibold mb-4">Generation Details</h3>

@@ -25,9 +25,14 @@ class TimesheetEntrySerializer(serializers.ModelSerializer):
         fields = ['id', 'date', 'regular_hours', 'overtime_hours', 'project', 'description']
 
 class PayrollRunSerializer(serializers.ModelSerializer):
+    employee_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = PayrollRun
         fields = '__all__'
+    
+    def get_employee_count(self, obj):
+        return PayrollTransaction.objects.filter(payroll_run=obj).values('employee').distinct().count()
 
 class PayrollTransactionSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.get_full_name', read_only=True)

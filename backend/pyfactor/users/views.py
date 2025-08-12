@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.views import APIView
@@ -14,6 +14,7 @@ from pyfactor.logging_config import get_logger
 from django.core import serializers
 from rest_framework.renderers import JSONRenderer
 from rest_framework import viewsets
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from .models import UserMenuPrivilege, BusinessMember
 from .serializers import UserMenuPrivilegeSerializer
@@ -40,7 +41,7 @@ class ProfileView(APIView):
         database load.
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Use select_related to optimize database queries with explicit default database
                 profile = UserProfile.objects.using('default').select_related(
                     'user',
@@ -175,7 +176,7 @@ class ProfileView(APIView):
             if not user_profile:
                 logger.warning(f"No profile found for user {request.user.email}, creating one")
                 try:
-                    with transaction.atomic():
+                    with db_transaction.atomic():
                         user_profile = UserProfile.objects.using('default').create(
                             user=request.user,
                             is_business_owner=True  # Set as business owner since this is initial profile
@@ -239,7 +240,7 @@ class ProfileView(APIView):
                 "message": str(e) if settings.DEBUG else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class UserMenuPrivilegeViewSet(viewsets.ModelViewSet):
+class UserMenuPrivilegeViewSet(TenantIsolatedViewSet):
     """
     API endpoints for managing user menu privileges
     """

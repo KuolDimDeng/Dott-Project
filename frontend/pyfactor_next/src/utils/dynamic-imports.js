@@ -148,23 +148,72 @@ export function cleanupPDFTasks() {
   }
 }
 
-// Chart.js dynamic import wrapper
+// Chart.js dynamic import wrapper with auto-registration
 export const loadChartJs = async () => {
+  console.log('📊 [dynamic-imports] Starting Chart.js lazy load...');
+  const startTime = performance.now();
+  
   try {
-    return await import('chart.js');
+    console.log('📊 [dynamic-imports] Loading Chart.js modules...');
+    const [
+      { Chart },
+      { default: annotationPlugin },
+      { CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement, ArcElement }
+    ] = await Promise.all([
+      import('chart.js'),
+      import('chartjs-plugin-annotation'),
+      import('chart.js')
+    ]);
+    
+    console.log('📊 [dynamic-imports] Chart.js modules loaded, registering components...');
+    
+    // Register components
+    Chart.register(
+      CategoryScale,
+      LinearScale,
+      PointElement,
+      LineElement,
+      BarElement,
+      ArcElement,
+      Title,
+      Tooltip,
+      Legend,
+      annotationPlugin
+    );
+    
+    const loadTime = performance.now() - startTime;
+    console.log(`✅ [dynamic-imports] Chart.js loaded and registered in ${loadTime.toFixed(2)}ms`);
+    
+    return { Chart };
   } catch (error) {
-    console.error('Error loading Chart.js:', error);
+    console.error('❌ [dynamic-imports] Error loading Chart.js:', error);
     return null;
   }
 };
 
-// XLSX dynamic import wrapper
+// XLSX dynamic import wrapper with minimal bundle
 export const loadXlsx = async () => {
+  console.log('📊 [dynamic-imports] Starting XLSX lazy load...');
+  const startTime = performance.now();
+  
   try {
-    return await import('xlsx');
+    console.log('📊 [dynamic-imports] Attempting to load minimal XLSX bundle...');
+    const XLSX = await import('xlsx/dist/xlsx.mini.min.js');
+    const loadTime = performance.now() - startTime;
+    console.log(`✅ [dynamic-imports] XLSX mini loaded in ${loadTime.toFixed(2)}ms`);
+    return XLSX;
   } catch (error) {
-    console.error('Error loading XLSX:', error);
-    return null;
+    console.warn('⚠️ [dynamic-imports] Failed to load XLSX mini, trying full version...', error);
+    // Try full version as fallback
+    try {
+      const XLSX = await import('xlsx');
+      const loadTime = performance.now() - startTime;
+      console.log(`✅ [dynamic-imports] XLSX full version loaded in ${loadTime.toFixed(2)}ms`);
+      return XLSX;
+    } catch (fallbackError) {
+      console.error('❌ [dynamic-imports] Failed to load XLSX entirely:', fallbackError);
+      return null;
+    }
   }
 };
 
@@ -221,6 +270,84 @@ export const loadDatepicker = async () => {
     return await import('react-datepicker');
   } catch (error) {
     console.error('Error loading React Datepicker:', error);
+    return null;
+  }
+};
+
+// React Hook Form dynamic import
+export const loadReactHookForm = async () => {
+  try {
+    const module = await import('react-hook-form');
+    return module;
+  } catch (error) {
+    console.error('Error loading React Hook Form:', error);
+    return null;
+  }
+};
+
+// Moment.js dynamic import (or day.js as lighter alternative)
+export const loadDateLibrary = async () => {
+  try {
+    // Try dayjs first (much smaller)
+    const dayjs = await import('dayjs');
+    return { dayjs: dayjs.default };
+  } catch (error) {
+    console.error('Error loading date library:', error);
+    return null;
+  }
+};
+
+// QR Code generator dynamic import
+export const loadQRCode = async () => {
+  try {
+    const QRCode = await import('qrcode');
+    return QRCode;
+  } catch (error) {
+    console.error('Error loading QR Code library:', error);
+    return null;
+  }
+};
+
+// Barcode generator dynamic import
+export const loadBarcode = async () => {
+  try {
+    const JsBarcode = await import('jsbarcode');
+    return JsBarcode.default;
+  } catch (error) {
+    console.error('Error loading barcode library:', error);
+    return null;
+  }
+};
+
+// File saver dynamic import
+export const loadFileSaver = async () => {
+  try {
+    const { saveAs } = await import('file-saver');
+    return { saveAs };
+  } catch (error) {
+    console.error('Error loading file-saver:', error);
+    return null;
+  }
+};
+
+// CSV parser dynamic import
+export const loadCSVParser = async () => {
+  try {
+    const Papa = await import('papaparse');
+    return Papa.default;
+  } catch (error) {
+    console.error('Error loading CSV parser:', error);
+    return null;
+  }
+};
+
+// Google Maps dynamic import
+export const loadGoogleMaps = async () => {
+  try {
+    const { Loader } = await import('@googlemaps/js-api-loader');
+    return { Loader };
+  } catch (error) {
+    console.error('Error loading Google Maps:', error);
     return null;
   }
 };

@@ -18,6 +18,9 @@ from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
+from .views.session_v2 import SessionV2View
+from .views.pos_validation_view import ValidatePOSAccessView
+from .views.password_login_fixed import PasswordLoginViewFixed
 from custom_auth.views.email_views import SendEmailView, ContactFormView
 # Password login is now in auth_views
 # from .views.password_login_view import PasswordLoginView
@@ -38,11 +41,19 @@ urlpatterns = [
     # Authentication endpoints
     path('auth/signup/', auth_views.SignUpView.as_view(), name='signup'),
     path('auth/register/', EmailPasswordRegisterView.as_view(), name='email-password-register'),
-    path('auth/password-login/', auth_views.PasswordLoginView.as_view(), name='password-login'),
+    # Temporarily use fixed version to resolve transaction issues
+    path('auth/password-login/', PasswordLoginViewFixed.as_view(), name='password-login'),
+    # Original: path('auth/password-login/', auth_views.PasswordLoginView.as_view(), name='password-login'),
     path('auth/oauth-exchange/', OAuthExchangeView.as_view(), name='oauth-exchange'),
     path('auth/deployment-check/', auth_views.DeploymentCheckView.as_view(), name='deployment-check'),
     # path('auth/test-endpoint/', TestEndpointView.as_view(), name='test-endpoint'),
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
+    
+    # Industry-standard session management v2
+    path('auth/session-v2', SessionV2View.as_view(), name='session-v2'),
+    
+    # POS access validation endpoint
+    path('auth/validate-pos-access', ValidatePOSAccessView.as_view(), name='validate-pos-access'),
     
     # Unified profile endpoint (consolidates all profile endpoints)
     path('auth/profile', UnifiedProfileView.as_view(), name='unified-profile'),

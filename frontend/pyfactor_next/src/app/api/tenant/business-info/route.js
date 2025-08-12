@@ -126,6 +126,7 @@ export async function GET(request) {
           businessType: onboardingData.business_type || '',
           legalStructure: onboardingData.legal_structure || '',
           country: onboardingData.country || '',
+          country_name: onboardingData.country_name || '',
           state: onboardingData.state || '',
           subscriptionPlan: subscriptionPlan || 'free',
           tenantId: tenantId,
@@ -137,10 +138,26 @@ export async function GET(request) {
           source: 'backend_onboarding'
         };
         
-        console.log('[Business Info API] Final business info with subscription:', {
+        console.log('🌍 [Business Info API] Final business info with country data:', {
           businessName: businessInfo.businessName,
-          subscriptionPlan: businessInfo.subscriptionPlan
+          subscriptionPlan: businessInfo.subscriptionPlan,
+          country: businessInfo.country,
+          country_name: businessInfo.country_name,
+          state: businessInfo.state,
+          hasCountryData: !!(businessInfo.country || businessInfo.country_name)
         });
+        
+        // Add specific country debugging
+        if (businessInfo.country || businessInfo.country_name) {
+          console.log('🏁 [Country Debug] Business country found in business-info:', {
+            country_code: businessInfo.country,
+            country_name: businessInfo.country_name,
+            state: businessInfo.state,
+            source: 'business_info_api'
+          });
+        } else {
+          console.log('⚠️ [Country Debug] No country data in business-info onboarding data');
+        }
         
         // In Session V2, we don't update client-side cookies
         // All session data is managed server-side
@@ -170,6 +187,61 @@ export async function GET(request) {
       tenantId: tenantId,
       source: 'none'
     });
+    
+  } catch (error) {
+    console.error('[Business Info API] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * PUT /api/tenant/business-info
+ * Updates business information for the authenticated user's tenant
+ */
+export async function PUT(request) {
+  try {
+    console.log('[Business Info API] Updating business information');
+    
+    // Get session ID from cookie
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      console.log('[Business Info API] No session found');
+      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    }
+    
+    // Get request body
+    const body = await request.json();
+    console.log('[Business Info API] Update request body:', body);
+    
+    // Backend API URL
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+    
+    // Forward the update request to backend - using users/me PATCH for preferences
+    const updateResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        display_legal_structure: body.displayLegalStructure
+      })
+    });
+    
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      console.error('[Business Info API] Backend update failed:', errorText);
+      return NextResponse.json({ error: 'Failed to update business information' }, { status: updateResponse.status });
+    }
+    
+    const result = await updateResponse.json();
+    console.log('[Business Info API] Update successful:', result);
+    
+    return NextResponse.json(result);
     
   } catch (error) {
     console.error('[Business Info API] Error:', error);

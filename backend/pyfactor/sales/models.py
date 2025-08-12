@@ -53,6 +53,20 @@ class Invoice(TenantAwareModel):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     
+    # Exchange rate fields for compliance and historical accuracy
+    exchange_rate = models.DecimalField(
+        max_digits=12, decimal_places=6, null=True, blank=True,
+        help_text='Exchange rate to USD at creation time'
+    )
+    exchange_rate_date = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When exchange rate was captured'
+    )
+    currency_locked = models.BooleanField(
+        default=False,
+        help_text='Currency is locked once invoice is sent or paid'
+    )
+    
     # Add tenant-aware manager
     objects = TenantManager()
     all_objects = models.Manager()
@@ -94,6 +108,25 @@ class Invoice(TenantAwareModel):
             while Invoice.objects.filter(tenant_id=self.tenant_id, invoice_num=self.invoice_num).exists():
                 random_suffix = ''.join(random.choices('0123456789', k=6))
                 self.invoice_num = f"{prefix}{random_suffix}"
+        
+        # Lock currency if invoice is sent or paid
+        if self.pk:  # Only for existing invoices
+            try:
+                old_invoice = Invoice.objects.get(pk=self.pk)
+                if old_invoice.currency_locked or old_invoice.status in ['sent', 'paid'] or old_invoice.is_paid:
+                    # Currency is immutable once sent or paid
+                    self.currency = old_invoice.currency
+                    self.exchange_rate = old_invoice.exchange_rate
+                    self.exchange_rate_date = old_invoice.exchange_rate_date
+                    self.currency_locked = True
+                    logger.warning(f"[CURRENCY-LOCK] Invoice {self.invoice_num} currency is locked. Cannot change from {old_invoice.currency}")
+            except Invoice.DoesNotExist:
+                pass
+        
+        # Auto-lock currency when status changes to sent or paid
+        if self.status in ['sent', 'paid'] or self.is_paid:
+            self.currency_locked = True
+            logger.info(f"[CURRENCY-LOCK] Locking currency for invoice {self.invoice_num} (status: {self.status}, is_paid: {self.is_paid})")
                 
         super().save(*args, **kwargs)
 
@@ -210,6 +243,21 @@ class Estimate(TenantAwareModel):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     footer = models.TextField(blank=True)
+    
+    # Exchange rate fields for compliance and historical accuracy
+    exchange_rate = models.DecimalField(
+        max_digits=12, decimal_places=6, null=True, blank=True,
+        help_text='Exchange rate to USD at creation time'
+    )
+    exchange_rate_date = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When exchange rate was captured'
+    )
+    currency_locked = models.BooleanField(
+        default=False,
+        help_text='Currency is locked once estimate is accepted'
+    )
+    
     # Additional fields to match SQL schema
     estimate_date = models.DateTimeField(default=timezone.now)
     expiry_date = models.DateTimeField(blank=True, null=True)
@@ -446,7 +494,7 @@ class POSTransaction(TenantAwareModel):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    transaction_number = models.CharField(max_length=50, editable=False, unique=True)
+    transaction_number = models.CharField(max_length=50, editable=False)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_transactions')
     subtotal = models.DecimalField(max_digits=15, decimal_places=4, default=0)
     discount_amount = models.DecimalField(max_digits=15, decimal_places=4, default=0)
@@ -471,6 +519,29 @@ class POSTransaction(TenantAwareModel):
     voided_at = models.DateTimeField(null=True, blank=True)
     void_reason = models.TextField(null=True, blank=True)
     
+    # Tax jurisdiction tracking
+    tax_jurisdiction = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Store all tax jurisdiction components and rates'
+    )
+    tax_calculation_method = models.CharField(
+        max_length=20,
+        choices=[
+            ('destination', 'Customer Shipping Address'),
+            ('billing', 'Customer Billing Address'),
+            ('origin', 'Business Location'),
+            ('manual', 'Manually Entered'),
+            ('exempt', 'Tax Exempt'),
+        ],
+        default='origin',
+        help_text='Method used to calculate tax'
+    )
+    shipping_address_used = models.BooleanField(
+        default=False,
+        help_text='Whether shipping address was used for tax calculation'
+    )
+    
     # Add tenant-aware manager
     objects = TenantManager()
     all_objects = models.Manager()
@@ -490,25 +561,68 @@ class POSTransaction(TenantAwareModel):
     
     def save(self, *args, **kwargs):
         if not self.transaction_number:
+            logger.info(f"🎯 [POSTransaction.save] === TRANSACTION NUMBER GENERATION START ===")
+            logger.info(f"🎯 [POSTransaction.save] Tenant ID: {self.tenant_id}")
+            
             # Generate unique transaction number
             prefix = "POS"
             year = timezone.now().year
             month = timezone.now().month
-            # Count transactions today for sequence
-            today = timezone.now().date()
-            daily_count = POSTransaction.objects.filter(
+            month_prefix = f"{prefix}-{year}{month:02d}-"
+            
+            logger.info(f"🎯 [POSTransaction.save] Month prefix: {month_prefix}")
+            
+            # Get the highest transaction number for this month
+            # This ensures we always increment properly, even across days
+            last_transaction = POSTransaction.objects.filter(
                 tenant_id=self.tenant_id,
-                created_at__date=today
-            ).count() + 1
+                transaction_number__startswith=month_prefix
+            ).order_by('-transaction_number').first()
             
-            self.transaction_number = f"{prefix}-{year}{month:02d}-{daily_count:04d}"
+            logger.info(f"🎯 [POSTransaction.save] Last transaction found: {last_transaction.transaction_number if last_transaction else 'None'}")
             
-            # Ensure uniqueness (handle race conditions)
-            original_number = self.transaction_number
-            counter = 1
-            while POSTransaction.objects.filter(tenant_id=self.tenant_id, transaction_number=self.transaction_number).exists():
-                self.transaction_number = f"{original_number}-{counter}"
-                counter += 1
+            if last_transaction and last_transaction.transaction_number.startswith(month_prefix):
+                # Extract the sequence number from the last transaction
+                try:
+                    # Handle both formats: POS-202508-0001 and POS-202508-0001-1
+                    parts = last_transaction.transaction_number.replace(month_prefix, '').split('-')
+                    last_sequence = int(parts[0])
+                    next_sequence = last_sequence + 1
+                    logger.info(f"🎯 [POSTransaction.save] Last sequence: {last_sequence}, Next: {next_sequence}")
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"🎯 [POSTransaction.save] Error parsing sequence: {e}")
+                    # If we can't parse, start from 1
+                    next_sequence = 1
+            else:
+                # First transaction of the month
+                next_sequence = 1
+                logger.info(f"🎯 [POSTransaction.save] First transaction of month, starting with sequence: {next_sequence}")
+            
+            self.transaction_number = f"{month_prefix}{next_sequence:04d}"
+            logger.info(f"🎯 [POSTransaction.save] Generated transaction number: {self.transaction_number}")
+            
+            # Ensure uniqueness (handle race conditions with retry logic)
+            max_attempts = 10
+            attempt = 0
+            while POSTransaction.objects.filter(
+                tenant_id=self.tenant_id, 
+                transaction_number=self.transaction_number
+            ).exists() and attempt < max_attempts:
+                logger.warning(f"🎯 [POSTransaction.save] Transaction number {self.transaction_number} already exists, attempt {attempt + 1}")
+                next_sequence += 1
+                self.transaction_number = f"{month_prefix}{next_sequence:04d}"
+                attempt += 1
+                logger.info(f"🎯 [POSTransaction.save] Retrying with: {self.transaction_number}")
+            
+            if attempt >= max_attempts:
+                # Fallback: add timestamp to ensure uniqueness
+                import time
+                timestamp_suffix = int(time.time())
+                self.transaction_number = f"{month_prefix}{next_sequence:04d}-{timestamp_suffix}"
+                logger.warning(f"🎯 [POSTransaction.save] Max attempts reached, using timestamp fallback: {self.transaction_number}")
+            
+            logger.info(f"🎯 [POSTransaction.save] Final transaction number: {self.transaction_number}")
+            logger.info(f"🎯 [POSTransaction.save] === TRANSACTION NUMBER GENERATION END ===")
                 
         super().save(*args, **kwargs)
     
@@ -553,6 +667,7 @@ class POSTransactionItem(TenantAwareModel):
     """
     Individual line items within a POS transaction.
     """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     transaction = models.ForeignKey(POSTransaction, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.PROTECT, null=True, blank=True)
@@ -732,21 +847,46 @@ class POSRefund(TenantAwareModel):
             prefix = "REF"
             year = timezone.now().year
             month = timezone.now().month
-            # Count refunds today for sequence
-            today = timezone.now().date()
-            daily_count = POSRefund.objects.filter(
+            
+            # Get the highest refund number for this month
+            # This ensures we always increment properly, even across days
+            month_prefix = f"{prefix}-{year}{month:02d}-"
+            last_refund = POSRefund.objects.filter(
                 tenant_id=self.tenant_id,
-                created_at__date=today
-            ).count() + 1
+                refund_number__startswith=month_prefix
+            ).order_by('-refund_number').first()
             
-            self.refund_number = f"{prefix}-{year}{month:02d}-{daily_count:04d}"
+            if last_refund and last_refund.refund_number.startswith(month_prefix):
+                # Extract the sequence number from the last refund
+                try:
+                    # Handle both formats: REF-202508-0001 and REF-202508-0001-1
+                    parts = last_refund.refund_number.replace(month_prefix, '').split('-')
+                    last_sequence = int(parts[0])
+                    next_sequence = last_sequence + 1
+                except (ValueError, IndexError):
+                    # If we can't parse, start from 1
+                    next_sequence = 1
+            else:
+                # First refund of the month
+                next_sequence = 1
             
-            # Ensure uniqueness
-            original_number = self.refund_number
-            counter = 1
-            while POSRefund.objects.filter(tenant_id=self.tenant_id, refund_number=self.refund_number).exists():
-                self.refund_number = f"{original_number}-{counter}"
-                counter += 1
+            self.refund_number = f"{month_prefix}{next_sequence:04d}"
+            
+            # Ensure uniqueness (handle race conditions with retry logic)
+            max_attempts = 10
+            attempt = 0
+            while POSRefund.objects.filter(
+                tenant_id=self.tenant_id,
+                refund_number=self.refund_number
+            ).exists() and attempt < max_attempts:
+                next_sequence += 1
+                self.refund_number = f"{month_prefix}{next_sequence:04d}"
+                attempt += 1
+            
+            if attempt >= max_attempts:
+                # Fallback: add timestamp to ensure uniqueness
+                import time
+                self.refund_number = f"{month_prefix}{next_sequence:04d}-{int(time.time())}"
                 
         super().save(*args, **kwargs)
     

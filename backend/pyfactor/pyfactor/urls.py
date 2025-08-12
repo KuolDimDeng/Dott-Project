@@ -13,6 +13,19 @@ from .health_check import health_check, root_health_check, detailed_health_check
 # Import diagnostic view
 from custom_auth.api.views.diagnostic_views import DiagnosticView, RestoreAccountView
 
+# Import new features
+try:
+    from core.api_documentation import documentation_urls
+    has_documentation = True
+except ImportError:
+    has_documentation = False
+
+try:
+    from monitoring.admin_dashboard import admin_monitoring_dashboard, api_monitoring_metrics, api_monitoring_health
+    has_monitoring = True
+except ImportError:
+    has_monitoring = False
+
 @csrf_exempt
 def test_sentry(request):
     """Test endpoint for Sentry integration"""
@@ -97,6 +110,9 @@ urlpatterns = [
     # Purchases API routes (if exists)
     path('api/purchases/', include('purchases.urls')),
     
+    # Product Suppliers API routes
+    path('api/product-suppliers/', include('product_suppliers.urls')),
+    
     # Timesheets API routes
     path('api/timesheets/', include('timesheets.urls')),
     
@@ -106,6 +122,25 @@ urlpatterns = [
     # Direct user profile routes for frontend compatibility
     path('api/user/', include('users.api.urls')),
     
+    # Currency API routes (direct access)
+    path('api/currency/', include('users.api.currency_urls')),
+]
+
+# Add documentation URLs if available
+if has_documentation:
+    urlpatterns += documentation_urls
+
+# Add monitoring URLs if available
+if has_monitoring:
+    from django.contrib.admin.views.decorators import staff_member_required
+    urlpatterns += [
+        path('admin/monitoring/', staff_member_required(admin_monitoring_dashboard), name='admin-monitoring'),
+        path('api/monitoring/metrics/', api_monitoring_metrics, name='monitoring-metrics'),
+        path('api/monitoring/health/', api_monitoring_health, name='monitoring-health'),
+    ]
+
+# Continue with remaining patterns
+urlpatterns += [
     # Audit API routes
     path('api/audit/', include('audit.urls')),
     
@@ -125,16 +160,22 @@ urlpatterns = [
     path('api/whatsapp-business/', include('whatsapp_business.urls')),
     
     # Data Export API routes
-    path('api/data-export/', include('data_export.urls')),
+    path('api/data_export/', include('data_export.urls')),
     
     # Leads API routes  
     path('api/leads/', include('leads.urls')),
+    
+    # Jobs API routes
+    path('api/jobs/', include('jobs.urls')),
+    
+    # Core monitoring and performance routes
+    path('api/core/', include('core.urls')),
     
     # Main app routes
     path('', include('users.urls')),
     
     # Authentication routes  
-    path('accounts/', include('allauth.urls')),
+    # path('accounts/', include('allauth.urls')),  # Commented out - using Auth0
     path('auth/', include('custom_auth.urls')),
     
     # Onboarding routes (includes Stripe webhook)

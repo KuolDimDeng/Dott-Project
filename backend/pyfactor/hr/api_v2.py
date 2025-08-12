@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.shortcuts import get_object_or_404
 from .models import Employee
 from .serializers import EmployeeSerializer
@@ -40,16 +40,45 @@ def employee_list_v2(request):
     
     if not business_id:
         logger.error(f"[Employee API v2] No business_id found for user: {request.user.email}")
-        return Response(
-            {"error": "No business association found for user"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        
+        # CRITICAL FIX: If user has tenant_id but no business_id, fix it
+        if hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            logger.warning(f"[Employee API v2] User has tenant_id but no business_id - FIXING")
+            request.user.business_id = request.user.tenant_id
+            request.user.save()
+            business_id = request.user.tenant_id
+            logger.info(f"[Employee API v2] Fixed user's business_id to: {business_id}")
+        else:
+            return Response(
+                {"error": "No business association found for user. Please complete onboarding."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     logger.info(f"[Employee API v2] {request.method} request - User: {request.user.email}, Business: {business_id}")
     
     if request.method == 'GET':
         try:
-            # Get all employees for this business
+            # CRITICAL SECURITY: Log all employee queries for audit
+            logger.warning(f"🔒 [SECURITY AUDIT] Employee query - User: {request.user.email}, Business ID: {business_id}")
+            
+            # Debug: Check what business_id Monica has
+            if request.user.email == 'jubacargovillage@outlook.com':
+                logger.critical(f"🚨 MONICA DENG QUERY - Business ID: {business_id}, User business_id: {request.user.business_id}")
+                
+                # Check all employees in database
+                all_employees = Employee.objects.all()
+                logger.critical(f"🚨 TOTAL EMPLOYEES IN DB: {all_employees.count()}")
+                
+                # Check employees for Monica's business
+                monica_employees = Employee.objects.filter(business_id=business_id)
+                logger.critical(f"🚨 EMPLOYEES FOR MONICA's BUSINESS: {monica_employees.count()}")
+                
+                # Log first 5 employees found
+                for emp in monica_employees[:5]:
+                    logger.critical(f"🚨 Employee: {emp.email}, Business: {emp.business_id}, Tenant: {emp.tenant_id}")
+            
+            # CRITICAL: Filter by tenant to prevent data leakage
+            # Never use Employee.objects.all() - always filter by business_id
             employees = Employee.objects.filter(business_id=business_id).order_by('-created_at')
             serializer = EmployeeSerializer(employees, many=True)
             
@@ -94,7 +123,7 @@ def employee_list_v2(request):
             
             logger.info(f"[Employee API v2] Creating employee: {employee_data.get('email', 'unknown')}")
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Validate data
                 serializer = EmployeeSerializer(data=employee_data)
                 if not serializer.is_valid():
@@ -209,7 +238,7 @@ def employee_detail_v2(request, employee_id):
             # Handle SSN update separately
             ssn = employee_data.pop('securityNumber', None)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 serializer = EmployeeSerializer(employee, data=employee_data, partial=True)
                 if not serializer.is_valid():
                     return Response({
@@ -250,7 +279,7 @@ def employee_detail_v2(request, employee_id):
     
     elif request.method == 'DELETE':
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 employee_email = employee.email
                 employee.delete()
                 

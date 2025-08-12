@@ -16,6 +16,7 @@ import DashboardLanguageSelector from './LanguageSelector';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { useNotification } from '@/context/NotificationContext';
+import CurrencyDisplay from '@/components/CurrencyDisplay';
 import { logger } from '@/utils/logger';
 import { Avatar, Box } from '@/components/ui/TailwindComponents';
 import SubscriptionPopup from './SubscriptionPopup';
@@ -65,6 +66,20 @@ const [state, dispatch] = useReducer(reducer, initialState);
   // Create a ref for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
+  
+  // Add currency update listener for debugging
+  useEffect(() => {
+    const handleCurrencyUpdate = (event) => {
+      console.log('📍 [AppBar] Currency update detected:', event.detail);
+      console.log('📍 [AppBar] Timestamp:', new Date().toISOString());
+    };
+    
+    window.addEventListener('currency-updated', handleCurrencyUpdate);
+    
+    return () => {
+      window.removeEventListener('currency-updated', handleCurrencyUpdate);
+    };
+  }, []);
 
   // Helper function to consistently generate initials from user data
   const generateInitialsFromNames = useCallback(
@@ -1669,6 +1684,12 @@ const [state, dispatch] = useReducer(reducer, initialState);
                     <span className="whitespace-nowrap text-xs inline-block">
                       {displayLabel}
                     </span>
+                    <span className="mx-1 text-xs text-white/60">•</span>
+                    <CurrencyDisplay 
+                      className="text-xs text-white font-medium" 
+                      showName={false} 
+                      showSymbol={false} 
+                    />
                     {businessData.subscription_type === 'free' && (
                       <button
                         className="ml-auto text-xs py-1 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
@@ -2012,9 +2033,15 @@ const [state, dispatch] = useReducer(reducer, initialState);
                         }`}
                         onClick={handleSubscriptionClick}
                       >
-                        <span className="text-white text-sm flex-1">
+                        <span className="text-white text-sm">
                           {displayLabel}
                         </span>
+                        <span className="mx-1 text-sm text-white/60">•</span>
+                        <CurrencyDisplay 
+                          className="text-sm text-white font-medium" 
+                          showName={false} 
+                          showSymbol={false} 
+                        />
                         {businessData.subscription_type === 'free' && (
                           <button
                             className="ml-auto text-xs py-1 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"

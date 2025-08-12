@@ -4,7 +4,7 @@ This handles existing users who signed up before timezone support was added
 """
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from custom_auth.models import User
 import logging
 
@@ -63,7 +63,7 @@ class Command(BaseCommand):
         updated_count = 0
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for user in users_without_timezone.iterator(chunk_size=batch_size):
                     user.timezone = 'UTC'
                     user.save(update_fields=['timezone'])

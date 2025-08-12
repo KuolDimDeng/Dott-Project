@@ -4,11 +4,12 @@ Handles automatic journal entries for sales, payments, and refunds.
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount, Account
 from pyfactor.logging_config import get_logger
+from users.models import BusinessDetails
 
 logger = get_logger()
 
@@ -71,9 +72,21 @@ class AccountingService:
         # Try to get or create account category
         from finance.models import AccountCategory
         category_name = category_mappings.get(account_type, 'Other')
+        
+        # Generate a short code that fits within 10 characters
+        code_mappings = {
+            'Current Assets': 'CA',
+            'Current Liabilities': 'CL',
+            'Revenue': 'REV',
+            'Cost of Goods Sold': 'COGS',
+            'Other': 'OTHER'
+        }
+        
+        category_code = code_mappings.get(category_name, 'OTHER')[:10]  # Ensure max 10 chars
+        
         category, created = AccountCategory.objects.get_or_create(
             name=category_name,
-            defaults={'code': category_name.upper().replace(' ', '_')}
+            defaults={'code': category_code}
         )
         
         # Generate account number (simple sequential)
@@ -108,6 +121,7 @@ class AccountingService:
     def create_sale_journal_entry(pos_transaction, items_data):
         """
         Create journal entries for a completed POS sale.
+        Incorporates IFRS/GAAP differences in revenue recognition and inventory valuation.
         
         Journal Entry Structure:
         - Debit: Cash/Accounts Receivable (based on payment method)
@@ -124,13 +138,22 @@ class AccountingService:
             JournalEntry instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
+                # Get business from the user who created the transaction
+                business = None
+                if pos_transaction.created_by and hasattr(pos_transaction.created_by, 'business_id'):
+                    try:
+                        from users.models import Business
+                        business = Business.objects.get(id=pos_transaction.created_by.business_id)
+                    except Business.DoesNotExist:
+                        logger.warning(f"Business not found for user {pos_transaction.created_by}")
+                
                 # Create the main journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=pos_transaction.created_at.date(),
                     description=f"POS Sale - {pos_transaction.transaction_number}",
                     reference=pos_transaction.transaction_number,
-                    business=getattr(pos_transaction, 'business', None),
+                    business=business,
                     created_by=pos_transaction.created_by
                 )
                 
@@ -155,7 +178,21 @@ class AccountingService:
                 )
                 
                 # 2. Credit Sales Revenue for subtotal (excluding tax)
+                # Apply revenue recognition based on accounting standard
                 revenue_amount = pos_transaction.subtotal - pos_transaction.discount_amount
+                
+                # Check if this is a bundled sale that needs to be allocated (IFRS 15 / ASC 606)
+                if business and business.id:
+                    from accounting.services import AccountingStandardsService
+                    accounting_standard = AccountingStandardsService.get_business_accounting_standard(business.id)
+                    
+                    # Both IFRS and GAAP follow 5-step revenue recognition model
+                    # but may have slight differences in bundled goods/services allocation
+                    if hasattr(pos_transaction, 'contains_bundled_items') and pos_transaction.contains_bundled_items:
+                        # For bundled transactions, allocate revenue proportionally
+                        # This is a simplified implementation - real world would be more complex
+                        logger.info(f"Processing bundled revenue allocation under {accounting_standard}")
+                
                 JournalEntryLine.objects.create(
                     journal_entry=journal_entry,
                     account=sales_revenue_account,
@@ -175,10 +212,30 @@ class AccountingService:
                     )
                 
                 # 4. Cost of Goods Sold entries (for products only)
+                # Import accounting service to determine inventory method
+                from accounting.services import AccountingStandardsService
+                
                 total_cogs = Decimal('0.00')
                 for item in items_data:
                     if item['type'] == 'product' and 'cost_price' in item:
-                        cost_price = item.get('cost_price', Decimal('0.00'))
+                        # Get cost based on accounting standard (FIFO/LIFO/Weighted Average)
+                        if business and business.id and 'product_id' in item:
+                            try:
+                                # Get the actual cost based on inventory valuation method
+                                from inventory.models_materials import Material
+                                material = Material.objects.filter(id=item['product_id']).first()
+                                if material:
+                                    cost_price = AccountingStandardsService.calculate_inventory_cost(
+                                        material, item['quantity'], business.id
+                                    )
+                                else:
+                                    cost_price = item.get('cost_price', Decimal('0.00'))
+                            except Exception as e:
+                                logger.warning(f"Error calculating inventory cost: {e}")
+                                cost_price = item.get('cost_price', Decimal('0.00'))
+                        else:
+                            cost_price = item.get('cost_price', Decimal('0.00'))
+                        
                         quantity = item['quantity']
                         item_cogs = cost_price * quantity
                         total_cogs += item_cogs
@@ -232,15 +289,24 @@ class AccountingService:
             JournalEntry instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 original_transaction = pos_refund.original_transaction
+                
+                # Get business from the user who created the refund
+                business = None
+                if pos_refund.created_by and hasattr(pos_refund.created_by, 'business_id'):
+                    try:
+                        from users.models import Business
+                        business = Business.objects.get(id=pos_refund.created_by.business_id)
+                    except Business.DoesNotExist:
+                        logger.warning(f"Business not found for user {pos_refund.created_by}")
                 
                 # Create the refund journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=pos_refund.created_at.date(),
                     description=f"POS Refund - {pos_refund.refund_number} (Original: {original_transaction.transaction_number})",
                     reference=pos_refund.refund_number,
-                    business=getattr(pos_refund, 'business', None),
+                    business=business,
                     created_by=pos_refund.created_by
                 )
                 
@@ -334,13 +400,22 @@ class AccountingService:
             JournalEntry instance
         """
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
+                # Get business from the user who voided the transaction
+                business = None
+                if pos_transaction.voided_by and hasattr(pos_transaction.voided_by, 'business_id'):
+                    try:
+                        from users.models import Business
+                        business = Business.objects.get(id=pos_transaction.voided_by.business_id)
+                    except Business.DoesNotExist:
+                        logger.warning(f"Business not found for user {pos_transaction.voided_by}")
+                
                 # Create the void journal entry
                 journal_entry = JournalEntry.objects.create(
                     date=timezone.now().date(),
                     description=f"VOID POS Sale - {pos_transaction.transaction_number}",
                     reference=f"VOID-{pos_transaction.transaction_number}",
-                    business=getattr(pos_transaction, 'business', None),
+                    business=business,
                     created_by=pos_transaction.voided_by
                 )
                 

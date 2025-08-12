@@ -37,6 +37,12 @@ def get_model_changes(sender, instance):
         return {}, {}
     
     try:
+        # Check if we're in a broken transaction
+        from django.db import connection
+        if connection.in_atomic_block and connection.needs_rollback:
+            # Don't try to query in a broken transaction
+            return {}, {}
+            
         old_instance = sender.objects.get(pk=instance.pk)
         old_values = {}
         new_values = {}
@@ -62,7 +68,8 @@ def get_model_changes(sender, instance):
                 new_values[field_name] = str(new_value) if new_value is not None else None
         
         return changes, old_values
-    except sender.DoesNotExist:
+    except (sender.DoesNotExist, Exception):
+        # Catch any exception to prevent audit from breaking the main transaction
         return {}, {}
 
 
@@ -90,6 +97,12 @@ def audit_post_save(sender, instance, created, **kwargs):
     
     # Skip if model has AuditMixin (it handles its own auditing)
     if hasattr(instance, 'get_audit_data'):
+        return
+    
+    # Check if we're in a broken transaction
+    from django.db import connection
+    if connection.in_atomic_block and connection.needs_rollback:
+        # Don't try to audit in a broken transaction
         return
     
     try:

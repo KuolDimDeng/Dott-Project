@@ -18,6 +18,20 @@ from .views import (
     BankingRuleViewSet,
 )
 
+# Import new V2 views
+from .views_v2 import (
+    SyncTransactionsView,
+    BankingTransactionsView,
+    BankingAccountsView,
+    ReconciliationView,
+    CashFlowReportView,
+    AccountBalancesView,
+    MonthlyStatementsView,
+)
+
+# Import Wise views
+from .api import wise_views
+
 # Create router for ViewSets
 router = DefaultRouter()
 router.register(r'rules', BankingRuleViewSet, basename='banking-rules')
@@ -41,4 +55,26 @@ urlpatterns = [
     
     # New secure endpoints
     path('import-csv/', BankTransactionImportView.as_view(), name='import-csv'),
+    
+    # New V2 Banking Endpoints as per requirements
+    path('sync/transactions/', SyncTransactionsView.as_view(), name='sync-transactions'),
+    path('transactions/', BankingTransactionsView.as_view(), name='banking-transactions'),
+    path('accounts/', BankingAccountsView.as_view(), name='banking-accounts'),
+    path('reconciliation/', ReconciliationView.as_view(), name='reconciliation'),
+    path('cash-flow/', CashFlowReportView.as_view(), name='cash-flow-report'),
+    path('account-balances/', AccountBalancesView.as_view(), name='account-balances'),
+    path('monthly-statements/', MonthlyStatementsView.as_view(), name='monthly-statements'),
+    
+    # Wise integration endpoints  
+    path('method/', wise_views.get_banking_method, name='banking_method'),
+    path('wise/setup/', wise_views.setup_wise_account, name='wise_setup'),
+    path('wise/account/', wise_views.get_wise_account, name='wise_account'),
+    path('wise/quote/', wise_views.get_transfer_quote, name='wise_quote'),
+    path('wise/connect/', wise_views.connect_wise_account, name='wise_connect'),
+    path('settlements/', wise_views.get_settlements, name='settlements'),
+    path('settlements/process/', wise_views.process_manual_settlement, name='process_settlement'),
+    
+    # New Banking Connection Management endpoints
+    path('connections/', wise_views.list_bank_connections, name='bank_connections'),
+    path('connections/<uuid:connection_id>/', wise_views.manage_bank_connection, name='manage_bank_connection'),
 ]

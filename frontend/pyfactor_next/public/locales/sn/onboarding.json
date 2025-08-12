@@ -1,0 +1,261 @@
+{
+  "businessInfo": {
+    "title": "Ruzivo Rwekubhizinesi",
+    "subtitle": "Tiudze nezve bhizinesi renyu",
+    "step": "Nhanho 1 ye 3",
+    "businessNameLabel": "Zita Rebhizinesi",
+    "businessNamePlaceholder": "Isa zita rebhizinesi renyu",
+    "businessTypeLabel": "Mhando Yebhizinesi",
+    "businessTypePlaceholder": "Sarudza mhando yebhizinesi renyu",
+    "industryLabel": "Indasitiri",
+    "industryPlaceholder": "Sarudza indasitiri yenyu",
+    "legalStructureLabel": "Chimiro Chemutemo",
+    "legalStructurePlaceholder": "Sarudza chimiro chemutemo",
+    "countryLabel": "Nyika",
+    "countryPlaceholder": "Sarudza nyika yenyu",
+    "stateLabel": "Dunhu/Matunhu",
+    "statePlaceholder": "Sarudza dunhu renyu",
+    "dateFoundedLabel": "Zuva Rekuvambwa",
+    "addressLabel": "Kero Yebhizinesi",
+    "addressPlaceholder": "Isa kero yebhizinesi renyu",
+    "phoneLabel": "Nhare Yebhizinesi",
+    "phonePlaceholder": "+263 123 456 789",
+    "emailLabel": "Email Yebhizinesi",
+    "emailPlaceholder": "bhizinesi@muenzaniso.com",
+    "websiteLabel": "Webhusaiti (isina kukosha)",
+    "websitePlaceholder": "https://www.muenzaniso.com",
+    "nextButton": "Enderera kuSubscription",
+    "skipButton": "Siya izvozvi",
+    "businessTypes": {
+      "retail": "Kutengesa",
+      "restaurant": "Resitorendi",
+      "services": "Mabasa",
+      "manufacturing": "Kugadzira",
+      "technology": "Tekinoroji",
+      "healthcare": "Hutano",
+      "construction": "Kuvaka",
+      "realestate": "Ivhu Nedzimba",
+      "nonprofit": "Zvisingaite Purofiti",
+      "other": "Zvimwe"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Muridzi Mumwe",
+      "partnership": "Kudyidzana",
+      "llc": "Kambani Inoshanda",
+      "corporation": "Korporesheni",
+      "nonprofit": "Zvisingaite Purofiti",
+      "other": "Zvimwe"
+    },
+    "errors": {
+      "businessNameRequired": "Zita rebhizinesi rinodiwa",
+      "businessNameTooShort": "Zita rebhizinesi rinofanira kunge rine mavara anosvika 2",
+      "businessTypeRequired": "Ndapota sarudza mhando yebhizinesi",
+      "legalStructureRequired": "Ndapota sarudza chimiro chemutemo",
+      "countryRequired": "Ndapota sarudza nyika",
+      "emailInvalid": "Ndapota isa kero ye-email chairo",
+      "phoneInvalid": "Ndapota isa nhamba yenhare chairo",
+      "websiteInvalid": "Ndapota isa URL yewebhusaiti chairo"
+    },
+    "saving": "Tichichengetedza..."
+  },
+  "subscription": {
+    "title": "Sarudza Chirongwa Chenyu",
+    "subtitle": "Sarudza chirongwa chinokodzera zvinodiwa nebhizinesi renyu",
+    "step": "Nhanho 2 ye 3",
+    "billingCycle": {
+      "monthly": "Pamwedzi",
+      "sixMonth": "Mwedzi 6",
+      "yearly": "Pagore",
+      "popular": "WAKAKURUMBIRA",
+      "save": "Chengetedza {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Zvekutanga",
+        "description": "Zvakanakira mabhizinesi madiki anotanga",
+        "price": "Mahara",
+        "features": [
+          "Kutevera mari inopinda nemari inobuda",
+          "Kugadzira mabhiri nekuyeuchidza",
+          "Kubhadhara neStripe nePayPal",
+          "Mobile money (M-Pesa nezvimwe)",
+          "Kutevera zvinhu zvekutanga",
+          "Kuona mabhakodhi",
+          "Muganhu wekuchengetedza 3GB",
+          "Mushandisi 1 chete"
+        ],
+        "buttonText": "Tanga Mahara"
+      },
+      "basic": {
+        "name": "Zvekutanga",
+        "description": "Zvakanakira mabhizinesi madiki anotanga",
+        "price": "Mahara",
+        "features": [
+          "Kutevera mari inopinda nemari inobuda",
+          "Kugadzira mabhiri nekuyeuchidza",
+          "Kubhadhara neStripe nePayPal",
+          "Mobile money (M-Pesa nezvimwe)",
+          "Kutevera zvinhu zvekutanga",
+          "Kuona mabhakodhi",
+          "Muganhu wekuchengetedza 3GB",
+          "Mushandisi 1 chete"
+        ],
+        "buttonText": "Tanga Mahara"
+      },
+      "professional": {
+        "name": "Nyanzvi",
+        "description": "Zvese zvinodiwa nemabhizinesi ari kukura kuti abudirire",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "INONYANYA KUKURUMBIRA",
+        "features": [
+          "Zvese muZvekutanga",
+          "Kusvika pavashandisi 3",
+          "Kuchengetedza kusina muganhu",
+          "Rubatsiro rwepamberi",
+          "Zvese zviri mukati",
+          "{{discount}}% kuderedzwa kwemwedzi 6",
+          "{{yearlyDiscount}}% kuderedzwa kwegore"
+        ],
+        "buttonText": "Sarudza Nyanzvi"
+      },
+      "enterprise": {
+        "name": "Kambani",
+        "description": "Kukura kusina muganhu kumasangano makuru",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "PREMIUM",
+        "features": [
+          "Zvese muNyanzvi",
+          "Vashandisi vasina muganhu",
+          "Kugadzirira kwakasarudzika",
+          "Rubatsiro rwakatsaurirwa",
+          "Zvese zviri mukati",
+          "{{discount}}% kuderedzwa kwemwedzi 6",
+          "{{yearlyDiscount}}% kuderedzwa kwegore"
+        ],
+        "buttonText": "Sarudza Kambani"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% kuderedzwa pazvese zvirongwa!",
+      "description": "Mitengo yakasarudzika yemabhizinesi mu{{country}}",
+      "percentOff": "{{percentage}}% kuderedzwa",
+      "yourRegion": "nzvimbo yenyu"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "Kubhadhara kweM-Pesa kunowanikwa!",
+        "description": "Bhadharai zvakareruka nemobile money yesubscription yenyu",
+        "payInCurrency": "Bhadharai mu{{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Chengetedza ${{amount}} (${{monthly}}/mwedzi)",
+      "yearly": "Chengetedza ${{amount}} pagore"
+    },
+    "backButton": "Dzokera kuRuzivo Rwekubhizinesi",
+    "processing": "Tichigadzirisa...",
+    "note": "* Mitengo yematunhu inowanikwa. Mitengo inogadziridzwa yega zvichienderana nenzvimbo yenyu."
+  },
+  "payment": {
+    "title": "Pedzisa Subscription Yenyu",
+    "subtitle": "Chirongwa che{{plan}} • ${{price}}/{{period}}",
+    "step": "Nhanho 3 ye 3",
+    "discountBadge": "{{percentage}}% KUDEREDZWA",
+    "originalPrice": "Chekutanga: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% kuderedzwa kwematunhu kwaiswa!",
+      "subtitle": "Mitengo yakasarudzika yemabhizinesi mu{{country}}"
+    },
+    "paymentMethod": {
+      "title": "Sarudza Nzira Yekubhadhara",
+      "card": {
+        "name": "Kadhi Yekikiredhi/Debhiti",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Mobile Money",
+        "payInCurrency": "Bhadharai mu{{currency}}"
+      },
+      "flutterwave": {
+        "name": "Kutumira Kubhengi",
+        "description": "Bhadharai kuburikidza nekutumira kubhengi"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Kubhadhara Mobile Money"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Zita reMusina Kadhi",
+      "cardholderNamePlaceholder": "Tendai Mukamuri",
+      "cardNumber": "Nhamba yeKadhi",
+      "expiryDate": "Zuva Rekupera",
+      "cvc": "CVC",
+      "postalCode": "Kodhi yePosti",
+      "postalCodePlaceholder": "1000"
+    },
+    "mobilePayment": {
+      "phoneNumber": "Nhamba yeNhare ye{{provider}}",
+      "phoneNumberPlaceholder": "0771234567",
+      "phoneNumberHint": "Isa nhamba yenyu yenhare yakanyorwa ku{{provider}}",
+      "localPrice": "Mutengo mu{{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Chiyero chekuchinja: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "Maitiro ekubhadhara ne{{provider}}:",
+        "steps": [
+          "Bata \"Bhadhara ne{{provider}}\" pazasi",
+          "Muchapiwa chikumbiro chekubhadhara panhare yenyu",
+          "Isa PIN yenyu ye{{provider}} kuti mupedze kubhadhara",
+          "Muchaendeswa kune imwe nzvimbo kubhadhara kwakasimbiswa"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Subscribe ye${{price}}/{{period}}",
+      "mobile": "Bhadhara ne{{provider}} - {{symbol}}{{amount}}",
+      "processing": "Tichigadzirisa Kubhadhara..."
+    },
+    "securityBadge": "Yakachengetedzwa neStripe",
+    "cancelNote": "Munogona kumisa kana kuchinja chirongwa chero nguva kubva padashboard.",
+    "errors": {
+      "cardholderNameRequired": "Ndapota isa zita remusina kadhi",
+      "postalCodeRequired": "Ndapota isa kodhi yenyu yeposti",
+      "phoneRequired": "Ndapota isa nhamba yenyu yenhare ye{{provider}}",
+      "businessInfoMissing": "Ruzivo rwekubhizinesi haruna. Ndapota pedzisa nhanho yekugadzirira bhizinesi kutanga.",
+      "paymentFailed": "Kubhadhara kwakadudza. Ndapota edza zvakare.",
+      "cardDeclined": "Kadhi yenyu yakarambidzwa. Ndapota edza imwe kadhi.",
+      "insufficientFunds": "Mari haina kukwana. Ndapota tarisa balance yenyu.",
+      "networkError": "Dambudziko renetwork. Ndapota tarisa kubatana kwenyu."
+    },
+    "success": {
+      "title": "Kubhadhara Kwakabudirira!",
+      "message": "Tichikuendesai kudashboard yenyu...",
+      "mpesaTitle": "Kubhadhara kweM-Pesa Kwatanga!",
+      "mpesaMessage": "Tarisai nhare yenyu chikumbiro chekubhadhara cheM-Pesa",
+      "mpesaHint": "Isai PIN yenyu kuti mupedze kubhadhara",
+      "redirecting": "Tichikuendesai kudashboard yenyu..."
+    }
+  },
+  "completion": {
+    "title": "Makagamuchirwa kuDott!",
+    "subtitle": "Account yenyu yagadzirwa zvese",
+    "message": "Makagadzirira kutanga kubata mari yebhizinesi renyu",
+    "dashboardButton": "Enda kuDashboard",
+    "setupComplete": "Kugadzirira Kwapera"
+  },
+  "errors": {
+    "sessionExpired": "Session yenyu yapera. Ndapota pinda zvakare.",
+    "networkError": "Dambudziko renetwork. Ndapota tarisa kubatana kwenyu.",
+    "genericError": "Pane chakakanganisa. Ndapota edza zvakare.",
+    "requiredField": "Munda uyu unodiwa"
+  },
+  "navigation": {
+    "back": "Kumashure",
+    "next": "Inotevera",
+    "skip": "Siya",
+    "cancel": "Kanzura",
+    "save": "Chengetedza",
+    "continue": "Enderera"
+  }
+}

@@ -1,8 +1,9 @@
 from rest_framework import viewsets, status
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from decimal import Decimal
@@ -32,7 +33,7 @@ from custom_auth.models import Tenant
 from inventory.models import Product
 
 
-class WhatsAppBusinessSettingsViewSet(viewsets.ModelViewSet):
+class WhatsAppBusinessSettingsViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Business Settings"""
     serializer_class = WhatsAppBusinessSettingsSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -79,7 +80,7 @@ class WhatsAppBusinessSettingsViewSet(viewsets.ModelViewSet):
             })
 
 
-class WhatsAppCatalogViewSet(viewsets.ModelViewSet):
+class WhatsAppCatalogViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Catalogs"""
     serializer_class = WhatsAppCatalogSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -131,7 +132,7 @@ class WhatsAppCatalogViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class WhatsAppProductViewSet(viewsets.ModelViewSet):
+class WhatsAppProductViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Products"""
     serializer_class = WhatsAppProductSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -234,7 +235,7 @@ class WhatsAppProductViewSet(viewsets.ModelViewSet):
         })
 
 
-class WhatsAppOrderViewSet(viewsets.ModelViewSet):
+class WhatsAppOrderViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Orders"""
     serializer_class = WhatsAppOrderSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
@@ -246,7 +247,7 @@ class WhatsAppOrderViewSet(viewsets.ModelViewSet):
     def create_order(self, request):
         """Create a new WhatsApp order"""
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Extract order data
                 customer_phone = request.data.get('customer_phone')
                 customer_name = request.data.get('customer_name')
@@ -419,7 +420,7 @@ class WhatsAppOrderViewSet(viewsets.ModelViewSet):
             )
 
 
-class WhatsAppAnalyticsViewSet(viewsets.ReadOnlyModelViewSet):
+class WhatsAppAnalyticsViewSet(TenantIsolatedViewSet):
     """ViewSet for WhatsApp Analytics"""
     serializer_class = WhatsAppAnalyticsSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]

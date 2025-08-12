@@ -6,56 +6,74 @@ import { useEffect, useState } from 'react';
 
 // Create custom feature icons using inline SVG
 const InventoryIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
   </svg>
 );
 
 const PaymentIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
   </svg>
 );
 
 const GlobalIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
 const InvoiceIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   </svg>
 );
 
 const ReportingIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
   </svg>
 );
 
 const SupportIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
   </svg>
 );
 
 const BarcodeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
   </svg>
 );
 
 const TaxIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
   </svg>
 );
 
+const JobManagementIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+  </svg>
+);
+
 const SecurityIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const LanguageIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+  </svg>
+);
+
+const CurrencyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
@@ -102,6 +120,12 @@ export default function Features() {
           description: t('feature.pos.description', 'Modern POS system with offline capabilities'),
           icon: <PaymentIcon />,
           highlights: [t('highlights.offlineMode', 'Offline mode'), t('highlights.multiplePayments', 'Multiple payment methods'), t('highlights.receiptCustom', 'Receipt customization')]
+        },
+        {
+          title: t('feature.jobs', 'Job Management & Costing'),
+          description: t('feature.jobs.description', 'End-to-end project tracking with real-time costing, mobile field app, and profitability analysis'),
+          icon: <JobManagementIcon />,
+          highlights: [t('highlights.jobCosting', 'Real-time job costing'), t('highlights.mobileFieldApp', 'Mobile field worker app'), t('highlights.materialLaborTracking', 'Material & labor tracking')]
         }
       ]
     },
@@ -122,6 +146,12 @@ export default function Features() {
           highlights: [t('highlights.vatGst', 'VAT/GST support'), t('highlights.taxReports', 'Tax reports'), t('highlights.eFilingReady', 'E-filing ready')]
         },
         {
+          title: t('feature.accounting', 'Dual Accounting Standards'),
+          description: t('feature.accounting.description', 'Support for both IFRS and US GAAP - the only platform that adapts to your location'),
+          icon: <ReportingIcon />,
+          highlights: [t('highlights.ifrs', 'IFRS for 166+ countries'), t('highlights.gaap', 'US GAAP for US businesses'), t('highlights.autoDetect', 'Auto-detects based on country')]
+        },
+        {
           title: t('feature.reporting', 'Financial Analytics'),
           description: t('feature.reporting.description', 'Real-time insights with AI-powered recommendations'),
           icon: <ReportingIcon />,
@@ -140,10 +170,16 @@ export default function Features() {
           highlights: [t('highlights.mobileMoney', 'Mobile money'), t('highlights.bankTransfers', 'Bank transfers'), t('highlights.digitalWallets', 'Digital wallets')]
         },
         {
-          title: t('feature.global', 'Import/Export Management'),
-          description: t('feature.global.description', 'Handle international trade documentation and compliance'),
-          icon: <GlobalIcon />,
-          highlights: [t('highlights.customsDocuments', 'Customs documents'), t('highlights.shippingIntegration', 'Shipping integration'), t('highlights.tradeCompliance', 'Trade compliance')]
+          title: t('feature.languages', 'Multi-Language Support'),
+          description: t('feature.languages.description', 'Full application support in 30+ languages for global teams'),
+          icon: <LanguageIcon />,
+          highlights: [t('highlights.autoDetection', 'Auto language detection'), t('highlights.rightToLeft', 'Right-to-left languages'), t('highlights.regionalFormat', 'Regional date/number formats')]
+        },
+        {
+          title: t('feature.currencies', 'Multi-Currency System'),
+          description: t('feature.currencies.description', 'Support for 170+ currencies with real-time exchange rates'),
+          icon: <CurrencyIcon />,
+          highlights: [t('highlights.realTimeRates', 'Real-time exchange rates'), t('highlights.cryptoCurrency', 'Cryptocurrency support'), t('highlights.currencyConversion', 'Automatic conversions')]
         },
         {
           title: t('feature.security', 'Enterprise Security'),
@@ -156,16 +192,16 @@ export default function Features() {
   ];
 
   return (
-    <section id="features" className="py-16 sm:py-24 bg-gray-50">
+    <section id="features" className="py-16 sm:py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-base font-semibold text-primary-main uppercase tracking-wide">
+        <div className="text-center mb-12">
+          <h2 className="text-base font-semibold text-indigo-600 tracking-wide uppercase">
             {t('features.eyebrow', 'Complete Business Solution')}
           </h2>
-          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
+          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">
             {t('features.heading', 'Everything You Need to Grow Globally')}
           </p>
-          <p className="mt-6 max-w-2xl text-xl text-gray-600 mx-auto">
+          <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
             {t('features.subheading', 'Powerful tools designed for modern businesses operating across borders')}
           </p>
         </div>
@@ -178,39 +214,64 @@ export default function Features() {
               <p className="mt-2 text-lg text-gray-600">{category.description}</p>
             </div>
             
-            <div className="grid gap-8 md:grid-cols-3">
-              {category.features.map((feature, index) => (
-                <div 
-                  key={index}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300"
-                >
-                  <div className="p-6">
-                    <div className="flex items-center mb-4">
-                      <div className="flex-shrink-0">
-                        {feature.icon}
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {category.features.map((feature, index) => {
+                // Define gradients for each feature type
+                const gradients = {
+                  'Advanced Inventory Management': 'from-blue-500 to-cyan-500',
+                  'Barcode & QR Code': 'from-purple-500 to-pink-500',
+                  'Point of Sale': 'from-green-500 to-teal-500',
+                  'Job Management & Costing': 'from-orange-500 to-red-500',
+                  'Multi-Currency Invoicing': 'from-blue-500 to-cyan-500',
+                  'Regional Tax Compliance': 'from-green-500 to-teal-500',
+                  'Dual Accounting Standards': 'from-purple-500 to-pink-500',
+                  'Financial Analytics': 'from-orange-500 to-red-500',
+                  'Regional Payment Gateways': 'from-blue-500 to-cyan-500',
+                  'Multi-Language Support': 'from-green-500 to-teal-500',
+                  'Multi-Currency System': 'from-yellow-500 to-orange-500',
+                  'Enterprise Security': 'from-purple-500 to-pink-500'
+                };
+                
+                const gradient = gradients[feature.title] || 'from-blue-500 to-cyan-500';
+                
+                return (
+                  <div
+                    key={index}
+                    className="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                  >
+                    {/* Gradient Header */}
+                    <div className={`h-32 bg-gradient-to-br ${gradient} p-6 relative`}>
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-white opacity-90">
+                          {feature.icon}
+                        </div>
                       </div>
-                      <h4 className="ml-3 text-lg font-semibold text-gray-900">
-                        {feature.title}
-                      </h4>
                     </div>
-                    
-                    <p className="text-gray-600 mb-4">
-                      {feature.description}
-                    </p>
-                    
-                    <ul className="space-y-2">
-                      {feature.highlights.map((highlight, hIndex) => (
-                        <li key={hIndex} className="flex items-start">
-                          <svg className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-sm text-gray-600">{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
+
+                    {/* Card Content */}
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {feature.description}
+                      </p>
+                      
+                      {/* Feature List */}
+                      <ul className="space-y-2">
+                        {feature.highlights.map((highlight, hIndex) => (
+                          <li key={hIndex} className="flex items-start text-sm text-gray-600">
+                            <svg className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {highlight}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

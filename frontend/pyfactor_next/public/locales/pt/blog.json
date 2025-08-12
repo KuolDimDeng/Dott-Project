@@ -1,0 +1,49 @@
+{
+  "backToHome": "Voltar ao Início",
+  "hero": {
+    "title": "Blog Empresarial Dott",
+    "subtitle": "Aprenda a gerenciar as finanças do seu negócio com Dott. Obtenha dicas, insights e estratégias para fazer seu negócio crescer."
+  },
+  "newsletter": {
+    "title": "Inscreva-se em nossa newsletter para atualizações de produtos e novas postagens do blog!",
+    "placeholder": "Seu endereço de e-mail",
+    "button": "Inscrever-se"
+  },
+  "categories": {
+    "all": "Todos os Artigos",
+    "accounting": "Contabilidade e Impostos",
+    "business": "Negócios"
+  },
+  "search": {
+    "placeholder": "Pesquisar artigos..."
+  },
+  "featured": "Destaque",
+  "readTime": "{{minutes}} min de leitura",
+  "noArticles": "Nenhum artigo encontrado que corresponda aos seus critérios.",
+  "articles": {
+    "profitLoss": {
+      "title": "Entendendo Lucros e Perdas: Um Guia Divertido para Empreendedores",
+      "excerpt": "Descubra como ler e entender sua demonstração de lucros e perdas sem adormecer. Prometemos tornar isso interessante!"
+    },
+    "expenses": {
+      "title": "Acompanhe as Despesas do Seu Negócio Como um Profissional: 5 Passos Simples",
+      "excerpt": "Aprenda a rastrear cada centavo sem perder a cabeça. Além disso, descubra quais despesas podem economizar dinheiro nos impostos!"
+    },
+    "taxDeductions": {
+      "title": "Deduções Fiscais Ocultas que Todo Pequeno Negócio Deveria Conhecer",
+      "excerpt": "Pare de deixar dinheiro na mesa! Descubra deduções fiscais legítimas que a maioria dos empreendedores perde."
+    },
+    "inventory": {
+      "title": "Transforme Sua Gestão de Estoque com Leitura de Código de Barras",
+      "excerpt": "Diga adeus à contagem manual! Aprenda como a leitura de código de barras pode revolucionar sua gestão de estoque."
+    },
+    "mobile": {
+      "title": "Gerencie Todo Seu Negócio do Seu Telefone: A Revolução Móvel",
+      "excerpt": "Descubra como gerenciar faturas, rastrear estoque e lidar com pagamentos - tudo do seu smartphone!"
+    },
+    "customerRelationships": {
+      "title": "Construindo Relacionamentos com Clientes que Duram: CRM Simplificado",
+      "excerpt": "Aprenda como manter os clientes voltando sem software complicado ou ferramentas caras."
+    }
+  }
+}

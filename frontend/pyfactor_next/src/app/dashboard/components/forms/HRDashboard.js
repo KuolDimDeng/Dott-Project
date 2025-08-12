@@ -11,6 +11,7 @@ import {
   ExclamationCircleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -390,6 +391,11 @@ function HRDashboard({ section = 'dashboard', onNavigate }) {
         return renderDashboardContent();
     }
   };
+
+  // Show loading spinner while data is loading
+  if (loading) {
+    return <CenteredSpinner size="large" text="Loading HR Dashboard..." showText={true} minHeight="h-screen" />;
+  }
 
   return (
     <div className="space-y-6">

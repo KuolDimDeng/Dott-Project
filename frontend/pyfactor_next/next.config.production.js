@@ -1,89 +1,71 @@
 /** @type {import('next').NextConfig} */
-const path = require('path');
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
 
 const nextConfig = {
-  // Basic Next.js settings optimized for production deployment
   reactStrictMode: true,
+  output: 'standalone',
+  swcMinify: true,
   
-  // Remove static export for now to support dynamic API routes
-  // output: 'export',
-  trailingSlash: false,
-  
-  // Standard Next.js build output
-  distDir: '.next',
-  
-  // Page extensions
-  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  
-  // Environment variables for production
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production',
-    BACKEND_API_URL: process.env.BACKEND_API_URL || 'https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production',
-    USE_DATABASE: 'true',
-    MOCK_DATA_DISABLED: 'true',
-    PROD_MODE: 'true',
+  compiler: {
+    removeConsole: {
+      exclude: ['error', 'warn'],
+    },
   },
   
-  // ESLint and TypeScript configuration
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  
-  // Experimental features for SWC transforms
-  experimental: {
-    forceSwcTransforms: true,
-  },
-  
-  // Webpack configuration optimized for production
   webpack: (config, { isServer }) => {
-    // Handle problematic modules with stubs
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),
-      'react-chartjs-2': path.resolve(__dirname, 'src/utils/stubs/react-chartjs-2-stub.js'),
-      'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
-    };
-
-    // Node.js polyfills
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-      os: false,
-      crypto: false,
-    };
-
-    // SVG support
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
-
+    if (!isServer) {
+      // Use default SWC minifier
+      config.optimization.minimize = true;
+      
+      // Optimize chunks
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          react: {
+            name: 'react',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+          },
+          vendor: {
+            name: 'vendor',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/]/,
+            priority: 10,
+            reuseExistingChunk: true,
+          },
+        },
+      };
+    }
     return config;
   },
   
-  // Image optimization for production
-  images: {
-    unoptimized: true,
-    dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    domains: [
-      'api.dottapps.com',
-      'dottapps.com',
-      'via.placeholder.com',
-      'images.unsplash.com',
-    ],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
   },
   
-  // Production optimizations
-  productionBrowserSourceMaps: false,
-  compress: true,
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com',
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'https://app.dottapps.com',
+    NEXT_PUBLIC_AUTH0_DOMAIN: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
+    NEXT_PUBLIC_AUTH0_CLIENT_ID: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  },
   
-  // Headers not supported with static export
-  // Security headers would need to be configured at S3/CloudFront level
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
+  images: { unoptimized: true },
+  productionBrowserSourceMaps: false,
+  
+  async rewrites() {
+    return [{
+      source: '/api/backend/:path*',
+      destination: `${BACKEND_API_URL}/:path*`
+    }];
+  },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

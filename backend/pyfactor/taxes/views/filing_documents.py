@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import ValidationError, PermissionDenied
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -17,8 +17,7 @@ import logging
 from taxes.models import TaxFiling, FilingDocument
 from taxes.serializers import (
     FilingDocumentSerializer,
-    TaxFilingSerializer,
-    FilingDocumentUploadSerializer
+    TaxFilingSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -160,7 +159,7 @@ class FilingDocumentUploadView(viewsets.ModelViewSet):
         uploaded_documents = []
         errors = []
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             for idx, file in enumerate(files):
                 try:
                     # Validate file

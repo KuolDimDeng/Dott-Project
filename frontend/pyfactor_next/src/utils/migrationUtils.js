@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
-import { getCurrentUser, fetchUserAttributes, updateUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { removeCacheValue, setCacheValue } from './appCache';
 import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
@@ -403,7 +403,7 @@ export async function clearLegacyStorage() {
  */
 export async function getUserAttributes() {
   try {
-    return await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
   } catch (error) {
     logger.error('[Migration] Failed to get user attributes', error);
     throw error;

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction as db_transaction
 from ..models import Employee
 from ..stripe_bank_tax_service import StripeBankTaxService
 from ..stripe_ssn_service_express import StripeSSNService
@@ -29,9 +29,9 @@ class EmployeeProfileView(APIView):
             logger.info(f"[EmployeeProfile] === EMPLOYEE LOOKUP DEBUG START ===")
             logger.info(f"[EmployeeProfile] User ID: {user.id}")
             logger.info(f"[EmployeeProfile] User Email: {user.email}")
-            logger.info(f"[EmployeeProfile] User tenant_id: {getattr(user, 'tenant_id', 'NOT_FOUND')}")
+            logger.info(f"[EmployeeProfile] User tenant_id: {user.tenant_id if hasattr(user, 'tenant_id') else 'NOT_FOUND'}")
             logger.info(f"[EmployeeProfile] User business_id: {getattr(user, 'business_id', 'NOT_FOUND')}")
-            logger.info(f"[EmployeeProfile] User attributes: {dir(user)}")
+            logger.info(f"[EmployeeProfile] User tenant: {user.tenant if hasattr(user, 'tenant') else 'NOT_FOUND'}")
             
             # First try to get employee by user's ID (OneToOne relationship)
             logger.info(f"[EmployeeProfile] Attempting to find employee by user_id={user.id}")
@@ -42,24 +42,8 @@ class EmployeeProfileView(APIView):
             else:
                 logger.info(f"[EmployeeProfile] No employee found by user_id={user.id}")
             
-            # Try to find by email
-            logger.info(f"[EmployeeProfile] Attempting to find employee by email={user.email}")
-            employee = Employee.objects.filter(email=user.email).first()
-            if employee:
-                logger.info(f"[EmployeeProfile] Found employee by email: {employee.id} - {employee.first_name} {employee.last_name}")
-                logger.info(f"[EmployeeProfile] Employee user_id: {employee.user_id}")
-                logger.info(f"[EmployeeProfile] Employee business_id: {employee.business_id}")
-                # Link the employee to the user if not already linked
-                if not employee.user_id:
-                    logger.info(f"[EmployeeProfile] Linking employee to user...")
-                    employee.user = user
-                    employee.save(update_fields=['user'])
-                    logger.info(f"[EmployeeProfile] Employee linked to user successfully")
-                return employee
-            else:
-                logger.info(f"[EmployeeProfile] No employee found by email={user.email}")
-            
-            # Try to find by business_id if user has tenant_id
+            # Try to find by email and business_id (tenant_id)
+            # This is critical for multi-tenant - same email can exist across tenants
             if hasattr(user, 'tenant_id') and user.tenant_id:
                 logger.info(f"[EmployeeProfile] Attempting to find employee by business_id={user.tenant_id} AND email={user.email}")
                 employee = Employee.objects.filter(
@@ -77,8 +61,24 @@ class EmployeeProfileView(APIView):
                     return employee
                 else:
                     logger.info(f"[EmployeeProfile] No employee found by business_id={user.tenant_id} AND email={user.email}")
-            else:
-                logger.info(f"[EmployeeProfile] User has no tenant_id, skipping business_id lookup")
+            
+            # Last resort: Try to find by email only (but this could return wrong tenant's employee)
+            logger.info(f"[EmployeeProfile] Last resort: Attempting to find employee by email={user.email} only")
+            employee = Employee.objects.filter(email=user.email).first()
+            if employee:
+                logger.info(f"[EmployeeProfile] Found employee by email: {employee.id} - {employee.first_name} {employee.last_name}")
+                logger.info(f"[EmployeeProfile] WARNING: Found by email only - employee business_id: {employee.business_id}, user tenant_id: {getattr(user, 'tenant_id', 'NONE')}")
+                # Only link if business_id matches
+                if str(employee.business_id) == str(getattr(user, 'tenant_id', '')):
+                    if not employee.user_id:
+                        logger.info(f"[EmployeeProfile] Linking employee to user...")
+                        employee.user = user
+                        employee.save(update_fields=['user'])
+                        logger.info(f"[EmployeeProfile] Employee linked to user successfully")
+                    return employee
+                else:
+                    logger.warning(f"[EmployeeProfile] Employee found but business_id mismatch - not returning")
+                    return None
             
             # Debug: Show all employees to understand what's in the database
             logger.info(f"[EmployeeProfile] === ALL EMPLOYEES DEBUG ===")

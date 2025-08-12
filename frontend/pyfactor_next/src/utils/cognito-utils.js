@@ -2,7 +2,7 @@
  * Cognito utility functions for managing user attributes and onboarding state
  */
 
-import { fetchUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
@@ -30,7 +30,7 @@ export async function getOnboardingState(user = null) {
     }
     
     // Get user attributes from Cognito
-    const attributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
     
     // Parse onboarding status
     const status = (attributes['custom:onboarding'] || '').toLowerCase();
@@ -127,7 +127,7 @@ function getCurrentStep(attributes) {
  */
 export async function getAllUserAttributes() {
   try {
-    return await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
   } catch (error) {
     logger.error('[cognito-utils] Error fetching user attributes:', error);
     return {};

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ChevronLeftIcon,
   DocumentTextIcon,
-  DownloadIcon,
+  ArrowDownTrayIcon,
   CalendarIcon,
   CurrencyDollarIcon,
   ArrowPathIcon
@@ -212,7 +212,7 @@ export default function MobilePayStubsPage() {
                     className="p-2 text-blue-600"
                     disabled={downloading}
                   >
-                    <DownloadIcon className="w-5 h-5" />
+                    <ArrowDownTrayIcon className="w-5 h-5" />
                   </button>
                 </div>
                 
@@ -238,7 +238,7 @@ export default function MobilePayStubsPage() {
 
       {/* Pay Stub Detail Modal */}
       {selectedPayStub && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
+        <div className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-end">
           <div className="bg-white w-full max-h-[90vh] rounded-t-2xl animate-slide-up">
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b px-4 py-4 flex items-center justify-between">

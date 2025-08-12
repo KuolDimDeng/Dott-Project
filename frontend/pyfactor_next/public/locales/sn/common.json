@@ -1,0 +1,477 @@
+{
+  "hero": {
+    "tagline": "MHINDURO DZAKANGWARA DZEKUTUNGAMIRA BHIZINESI",
+    "your": "Yako",
+    "title": "Puratifomu Yebhizinesi Repasi Rese",
+    "subtitle": "Mahara nekusingaperi kumasevhisi ekutanga",
+    "description": "Dott inobatsira varidzi vebhizinesi sewe kugadzira mainvoisi, kugamuchira mari pamhepo, kutungamira accounting nezvivakwa, pamwe nekuskena bhakodhi—zvese papuratifomu imwe chete.",
+    "button": "Tanga Mahara",
+    "trustedBy": "Inovimbwa nemabhizinesi anopfuura 10,000 pasi rose",
+    "benefit": {
+      "free": "Chirongwa chemahara nekusingaperi",
+      "invoicing": "Mainvoisi ehunyanzvi",
+      "pos": "Nzvimbo yekutengesa system",
+      "inventory": "Kutungamira zvivakwa",
+      "payroll": "Zvishandiso zvemuhoro neHR",
+      "tax": "Kutevedzera mutero",
+      "insights": "Mazano ane AI",
+      "mobileMoney": "Kubhadhara nemari yenhare (M-Pesa)",
+      "cardPayments": "Gamuchira kadhi pasi rose",
+      "languages": "Mitauro inopfuura makumi maviri",
+      "mobilePhone": "App yenhare yakabatanidzwa",
+      "jobManagement": "Kutungamira mabasa nemitengo",
+      "accounting": "Rutsigiro rweIFRS neUS GAAP"
+    }
+  },
+  "navFeatures": "Zvimiro",
+  "navPricing": "Mitengo",
+  "navAbout": "Nezvedu",
+  "navBlog": "Blog",
+  "navContact": "Bata",
+  "navStatus": "Mamiriro eSystem",
+  "navSignIn": "PINDA",
+  "getStarted": "Tanga",
+  "pricing": {
+    "eyebrow": "Mitengo Iri Nyore uye Yakajeka",
+    "heading": "Sarudza Chirongwa Chakakodzera Bhizinesi Rako",
+    "subheading": "Hapana mitengo yakavanzika. Hapana kadhi rechikwereti rinodiwa kune Basic plan. Misa chero riini.",
+    "billing": {
+      "monthly": "Pamwedzi",
+      "sixMonths": "Mwedzi 6",
+      "annual": "Pagore",
+      "popular": "YAKAKURUMBIRA",
+      "save20": "CHENGETEDZA 20%"
+    },
+    "period": {
+      "month": "/mwedzi",
+      "sixMonths": "/mwedzi 6",
+      "year": "/gore"
+    },
+    "mostPopular": "YAKANYANYA KUKURUMBIRA",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Yakanakira kutanga",
+        "cta": "Tanga Mahara"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Kune mabhizinesi ari kukura anoda zvakawanda",
+        "cta": "Tora Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Kusina muganhu kune masangano makuru",
+        "cta": "Tanga Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Mhinduro Yebhizinesi Yakazara",
+    "heading": "Zvese Zvaunoda Kukura Pasi Rose",
+    "subheading": "Zvishandiso zvine simba zvakagadzirirwa mabhizinesi emazuva ano anoshanda kupfuura miganhu",
+    "operations": {
+      "title": "Kutonga Mabasa",
+      "description": "Rerutsa mabasa ako ezuva nezuva ebhizinesi"
+    },
+    "financial": {
+      "title": "Kutonga Mari",
+      "description": "Kutonga kuzere kwemari yebhizinesi rako",
+      "heading": "Kutonga kuzere pamusoro pemari yebhizinesi rako"
+    },
+    "global": {
+      "title": "Zvishandiso Zvebhizinesi Repasi Rose",
+      "description": "Zvese zvaunoda kushanda pasi rose",
+      "heading": "Zvese zvaunoda kumabasa epasi rose"
+    },
+    "trust": {
+      "title": "Yakavakirwa Kuchengetedzeka neKutevedzera"
+    }
+  },
+  "footer": {
+    "home": "Kumba",
+    "features": "Zvimiro",
+    "pricing": "Mitengo",
+    "blog": "Blog",
+    "contact": "Bata",
+    "inventory": "Inventory Management",
+    "accounting": "Accounting",
+    "invoicing": "Invoicing",
+    "payments": "Zvibhadharo",
+    "pos": "Nzvimbo Yekutengesa",
+    "about": "Nezvedu",
+    "careers": "Mabasa",
+    "press": "Nhau",
+    "partners": "Vadyidzani",
+    "help": "Help Center",
+    "docs": "Zvinyorwa",
+    "status": "System Status",
+    "security": "Chengetedzo",
+    "privacy": "Privacy Policy",
+    "terms": "Mitemo Yesevhisi",
+    "cookies": "Cookie Policy",
+    "footerHeading": "Footer",
+    "logoAlt": "Dott Logo",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Mibvunzo Inowanzo bvunzwa",
+    "subheading": "Wana mhinduro kumibvunzo yakajairika nezve puratifomu yedu nemasevhisi."
+  },
+  "feature": {
+    "inventory": "Kutonga Kwakawanda Kwezvigadzirwa",
+    "inventory.description": "Kutevera stock munguva chaiyo nekuscan barcode uye kutsigira nzvimbo dzakawanda",
+    "barcode": "Barcode ne QR Code",
+    "barcode.description": "Gadzira uye scan mabharcode ezvigadzirwa nemagwaro",
+    "pos": "Nzvimbo Yekutengesa",
+    "pos.description": "POS system yemazuva ano ine kugona kusiri pamhepo",
+    "invoicing": "Mabhiri Emari Dzakasiyana",
+    "invoicing.description": "Mabhiri ehunyanzvi mumari dzinodarika makumi mashanu nekushandura otomatiki",
+    "tax": "Kutevedzera Mitero Yedunhu",
+    "tax.description": "Kuverenga mitero otomatiki kunyika dzinodarika zana",
+    "reporting": "Kuongorora Mari",
+    "reporting.description": "Ruzivo rwenguva chaiyo nemazano anobva kuAI",
+    "payments": "Nzira Dzekubhadhara Dzedunhu",
+    "payments.description": "Gamuchira mubhadharo kuburikidza nenzira dzemuno munyika yega yega",
+    "global": "Kutonga Kupinza/Kutumira Kunze",
+    "global.description": "Bata magwaro ekutengeserana kwepasi rose nekutevedzera",
+    "security": "Kuchengetedzeka Kwebhizinesi",
+    "security.description": "Kuchengetedzeka kwebhangi nekutevedzera kwedunhu",
+    "jobs": "Kutonga Mabasa neMutengo",
+    "jobs.description": "Kutevera purojekiti kubva kutanga kusvika kumagumo nemitengo yenguva chaiyo, app yemufoni, uye kuongorora purofiti",
+    "accounting": "Zviyero zveAccounting Zviviri",
+    "languages": "Rutsigiro Rwemitauro Yakawanda",
+    "currencies": "Hurongwa Hwemari Dzakawanda"
+  },
+  "trust": {
+    "soc2Title": "Inotevedzera SOC2",
+    "soc2Desc": "Kuchengetedzeka kwebhizinesi",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Kuchengetedzeka kwebhangi",
+    "gdprTitle": "Yakagadzirira GDPR",
+    "gdprDesc": "Inotevedzera zvakavanzika",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Inogara iripo"
+  },
+  "highlights": {
+    "eyebrow": "Zvakakosha",
+    "heading": "Nei mabhizinesi achisarudza Dott",
+    "subheading": "Advanced features inoita kuti tive vakasiyana nevamwe uye inobatsira bhizinesi rako kukura.",
+    "learnMore": "Dzidza zvimwe",
+    "features": {
+      "label": "Zvakakosha:"
+    },
+    "mobile": {
+      "title": "Mobile Application",
+      "description": "Wana data yebhizinesi rako chero nguva uye chero kupi neapp yedu ine simba. Manage inventory, process sales, uye uone real-time reports paunofamba.",
+      "imageAlt": "Screenshot ye mobile application"
+    },
+    "pos": {
+      "title": "POS ne Barcode Scanning",
+      "description": "Shandura chero device kuve powerful point-of-sale system. Scan barcode pakarepo, process sales nekukurumidza, track inventory mu real-time, uye gamuchira ese mazhinji ekubhadhara kusanganisira mari, makadhi, ne mobile money.",
+      "imageAlt": "POS system ine barcode scanning feature",
+      "features": {
+        "quickCheckout": "Quick checkout",
+        "barcodeScanning": "Barcode scanning",
+        "allPaymentTypes": "Ese marudzi ekubhadhara",
+        "inventoryTracking": "Inventory tracking",
+        "offlineMode": "Offline mode",
+        "mobileReady": "Mobile ready"
+      }
+    },
+    "ai": {
+      "title": "AI-Powered Insights",
+      "description": "Wana smart recommendations ne predictive analytics zvichibva ku data yebhizinesi rako. AI yedu inokubatsira kufunga demand, optimize inventory, uye identify mikana yekukura.",
+      "imageAlt": "Screenshot ye AI analytics dashboard"
+    },
+    "jobs": {
+      "title": "Comprehensive Job Management",
+      "description": "End-to-end job costing kubva ku quote kusvika pakupera. Track zvinhu, basa, ne maexpenses ine real-time profitability analysis. Yakanakira service businesses, contractors, ne field operations ine mobile-first design.",
+      "imageAlt": "Job management ne costing interface",
+      "features": {
+        "jobCosting": "Real-time job costing",
+        "mobileFieldApp": "Mobile app yevashandi vemu field",
+        "materialTracking": "Material tracking",
+        "timeTracking": "Automatic time tracking",
+        "photoCapture": "Photo capture",
+        "digitalSignatures": "Digital signatures",
+        "profitabilityAnalysis": "Profitability analysis",
+        "offlineSupport": "Offline support"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing ne Location Tracking",
+      "description": "Vimbisa accurate time tracking ne GPS-based clock in/out. Yakanakira field teams, delivery drivers, ne remote workers. Set virtual boundaries ye work sites uye wana alerts kana vashandi vapinda kana vabuda munzvimbo dzakatsaurwa.",
+      "imageAlt": "Geofencing ne location tracking interface",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Virtual boundaries",
+        "realTimeAlerts": "Real-time alerts",
+        "automatedTimesheets": "Automated timesheets",
+        "complianceReady": "Compliance ready",
+        "teamManagement": "Team management"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Payments",
+      "description": "Gamuchira mabhadharo kubva chero kupi munyika. M-Pesa integration iri live muKenya, uye MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, ne Mercado Pago zvirikuuya. Svika kumabhiriyoni evatengi vanofarira mobile money pane traditional banking.",
+      "imageAlt": "Mobile money payment options",
+      "available": "Nzira dzekubhadhara:",
+      "live": "Zviripo Zvino:",
+      "coming": "Zvirikuuya:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Shandura kutaurirana nevatengi ne WhatsApp Business integration. Gadzira uye manage product catalog yako, otomatiki tuma ma invoices ne receipts, ipa instant customer support, uye svika kuvatengi pa messaging platform yavakafarira.",
+      "imageAlt": "WhatsApp Business integration interface"
+    },
+    "languages": {
+      "title": "30+ Mitauro Inotsigirwa",
+      "description": "Svika kuvatengi uye manage bhizinesi rako nemutauro waunofarira. Kubva kuChirungu kusvika kuSwahili, kuSpanish kusvika kuMandarin, tinotsigira mitauro inopfuura 30 kuita kuti Dott iwane kuma businesses munyika yose.",
+      "imageAlt": "Multi-language interface demonstration",
+      "availableIn": "Inowanikwa mu:"
+    },
+    "vatGst": "Rutsigiro rweVAT/GST",
+    "taxReports": "Mishumo yemutero",
+    "eFilingReady": "Yakagadzirira kufaira yemagetsi",
+    "ifrs": "IFRS yenyika 166+",
+    "gaap": "US GAAP yemabhizinesi eUS",
+    "autoDetect": "Kuona otomatiki nenyika",
+    "autoDetection": "Kuona mutauro otomatiki",
+    "rightToLeft": "Mitauro yekurudyi kuenda kuruboshwe",
+    "regionalFormat": "Mafomati ezuva/nhamba dzedunhu",
+    "realTimeRates": "Mitengo yekuchinja yenguva chaiyo",
+    "cryptoCurrency": "Rutsigiro rwecryptocurrency",
+    "currencyConversion": "Kushandurwa otomatiki"
+  },
+  "builtForYou": {
+    "title": "Yakagadzirirwa Iwe",
+    "heading": "Tongera bhizinesi rako semunyanzvi!",
+    "subheading": "Yakagadzirirwa varidzi vebhizinesi vakafanana newe",
+    "cta": "Bata mazuru evaridzi vebhizinesi pasi rose vanovimba naDott kutonga bhizinesi ravo",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Tevera mapurojekiti, tuma mabhiri kuvatengi nekukasika uye tonge mari yako munzvimbo imwe. Wana mari nekukasika nemabhiri ehunyanzvi."
+      },
+      "contractors": {
+        "title": "Contractors",
+        "description": "Tonga mapurojekiti akawanda, tevera mutengo wezvinhu nebasa uye tuma maquote ehunyanzvi. Chengetedza kuyerera kwemari kwako kwakanaka."
+      },
+      "entrepreneurs": {
+        "title": "Entrepreneurs",
+        "description": "Wedza startup yako nezvishandiso zvine simba zveinventory, kutengesa, nekutevera mari. Ita sarudzo dzinotsamira padata."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Bhadharisa neawa kana purojekiti, tevera zvinoshandiswa uye tonga vatengi vakawanda zvisingaome. Kubhadhara kwehunyanzvi kwakabatanidzwa."
+      },
+      "retail": {
+        "title": "Varidzi veZvitoro",
+        "description": "Tonga inventory nekuscan barcode, tevera kutengesa uye gamuchira nzira dzekubhadhara dzakawanda kusanganisira mobile money."
+      },
+      "streetVendors": {
+        "title": "Vatengi veMumigwagwa",
+        "description": "Dhizaini iri nyore ye mobile-first kutevera kutengesa kwezuva nezuva, kutonga inventory uye kugamuchira mubhadharo wedhijitari munzira."
+      },
+      "marketStalls": {
+        "title": "Varidzi veZvitoro zveMisika",
+        "description": "Zvakanaka pamazuva akabatikana emisika. Kuisa kutengesa nekukasika, yambiro yeinventory, nekutevera purofiti yezuva rimwe nerimwe mumari yako yemuno."
+      },
+      "mobileMoneyAgents": {
+        "title": "Vamiririri veMobile Money",
+        "description": "Tevera kutengesa, tonga zviyero zvefloat uye gadzira mishumo yevashandi venetwork. Yakavakirwa M-Pesa, MTN, nezvimwe."
+      },
+      "restaurants": {
+        "title": "Varidzi veRestaurant Diki",
+        "description": "Tonga maoda, tevera zvidyiwa, verengera mutengo wechikafu uye bata zvese zvekudyira mukati nekubvisa zvichibudirira."
+      },
+      "serviceProviders": {
+        "title": "Vapan'i Vebasa",
+        "description": "Kuvanachiremba vemvura, magetsi, mota, nezvimwe. Rongovedza mabasa, tevera zvikamu uye bhadhara pakupera."
+      },
+      "onlineSellers": {
+        "title": "Vatengi veOnline",
+        "description": "Batanidza inventory kuburikidza nemapuratifomu, tonga maoda uye tevera kutumira. Zvakanaka kuvatengi vesocial media."
+      },
+      "transport": {
+        "title": "Vashandisi veTransport",
+        "description": "Kuvashandi vetaxi, boda boda, netuk-tuk. Tevera mari yezuva nezuva, mutengo wepeturu, nemagadzirirwo ekugadzirisa."
+      }
+    }
+  },
+  "integrations": {
+    "title": "Kubatanidza",
+    "heading": "Batanidza nezvishandiso zvaunoda",
+    "subheading": "Batanidza zvisina dambudziko nezvishandiso zvebhizinesi zvinofarirwa nemaplatifomu ekubhadhara",
+    "availableNow": "Zviripo Zvino",
+    "comingSoon": "Zvichauya Uku",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Tumira mabhiri nezvikwereti zvakananga kuvatengi"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Gamuchira mubhadharo wemobile money zvisina dambudziko"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Gadzirisa mubhadharo wemakadi pasi rose"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Batidzirai inventory yenyu ye-commerce"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Batanidza chitoro chenyu cheWordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Pinza uye budisa data yeaccounting"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Tonga bhizinesi renyu reAmazon"
+    }
+  },
+  "cookieBanner": {
+    "title": "Chiziviso cheCookie",
+    "message": "Tinoshandisa makuki kuvandudza ruzivo rwako, kuongorora kushandiswa, uye kupa basa rakakosha. Nekuenderera mberi nekushandisa saiti yedu, unobvuma kushandiswa kwedu kwemakuki.",
+    "learnMore": "Dzidza zvakawanda",
+    "customize": "Gadzirisa",
+    "rejectAll": "Ramba Zvose",
+    "acceptAll": "Gamuchira Zvose",
+    "preferencesTitle": "Zvido zveCookie",
+    "alwaysOn": "Yakagara Yakabatidzwa",
+    "savePreferences": "Chengetedza Zvido",
+    "essential": {
+      "title": "Makuki Anodiwa",
+      "description": "Anodiwa kuti saiti ishande uye kuchengetedzeka"
+    },
+    "functional": {
+      "title": "Makuki Anoshanda",
+      "description": "Anoyeuka zvaunoda uye masetingi ako"
+    },
+    "analytics": {
+      "title": "Makuki eAnalytics",
+      "description": "Anotibatsira kunzwisisa mashandisiro aunomaitira saiti yedu"
+    },
+    "marketing": {
+      "title": "Makuki eMarketing",
+      "description": "Anoshandiswa kuratidza zviziviso zvakakodzera"
+    }
+  },
+  "contact": {
+    "eyebrow": "Batana Nesu",
+    "heading": "Bata",
+    "subheading": "Une mibvunzo nezve Dott? Timu yedu iri pano kukubatsira kuwana mhinduro yakakodzera yebhizinesi rako.",
+    "infoTitle": "Ruzivo Rwekubata",
+    "infoSubtitle": "Zadza fomu kana kubata nesu zvakananga uchishandisa ruzivo rwuri pasi.",
+    "email": "Email",
+    "address": "Kero",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "United States",
+    "submitting": "Kutumira meseji yako...",
+    "success": "Maita zvekubata! Tichabata newe munguva pfupi.",
+    "error": "Takundikana kutumira meseji yako. Ndapota edza zvakare kana kutumira email zvakananga ku support@dottapps.com.",
+    "error.name": "Zita rinodiwa",
+    "error.email.required": "Email inodiwa",
+    "error.email.invalid": "Ndapota isa email address yakanaka",
+    "error.message": "Meseji inodiwa",
+    "form": {
+      "name": "Zita Rizere",
+      "email": "Email Address",
+      "company": "Kambani",
+      "phone": "Nhamba Yefoni",
+      "message": "Meseji",
+      "submit": "Tumira Meseji",
+      "sending": "Kutumira...",
+      "subject": {
+        "label": "Tingakubatsira sei?",
+        "general": "Mubvunzo Mukuru",
+        "sales": "Mubvunzo Wekutengesa",
+        "support": "Technical Support",
+        "demo": "Kumbira Demo",
+        "partnership": "Mukana Wekushandira Pamwe"
+      }
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "Puratifomu yekutungamira bhizinesi ine AI inoshanda pasina internet.",
+      "cta": {
+        "getStarted": "Tanga Mahara",
+        "signIn": "Pinda"
+      },
+      "noCreditCard": "Hapana kadhi rekukwereta rinodiwa",
+      "freePlan": "Chirongwa chemahara nekusingaperi"
+    },
+    "features": {
+      "title": "Zvese Zvaunoda",
+      "pos": {
+        "title": "Nzvimbo Yekutengesa",
+        "description": "Ita kutengesa pakarepo, kunyange pasina internet"
+      },
+      "barcode": {
+        "title": "Barcode Scanner",
+        "description": "Tarisa zvigadzirwa nekamera yako"
+      },
+      "invoicing": {
+        "title": "Kukurumidza Invoice",
+        "description": "Gadzira uye tumira ma invoice uri munzira"
+      },
+      "analytics": {
+        "title": "Kuongorora Kwenguva Chaiyo",
+        "description": "Tevera kushanda kwebhizinesi rako"
+      }
+    },
+    "benefits": {
+      "title": "Yakavakirwa Budiriro Yako",
+      "offline": {
+        "title": "Inoshanda Pasina Internet",
+        "description": "Ramba uchitengesa pasina internet"
+      },
+      "fast": {
+        "title": "Inokurumidza Zvikuru",
+        "description": "Kurodha pakarepo, pasina kunonoka"
+      },
+      "mobile": {
+        "title": "Nharembozha Kutanga",
+        "description": "Yakagadzirirwa mafoni nematabhureti"
+      },
+      "payments": {
+        "title": "Mari Yenhare",
+        "description": "M-Pesa, mamiriro asina internet, rutsigiro rwenzvimbo"
+      }
+    },
+    "pricing": {
+      "title": "Mitengo Yakapfava, Yakajeka"
+    },
+    "cta": {
+      "title": "Wakagadzirira Kukura Bhizinesi Rako?",
+      "subtitle": "Tanga kutungamira bhizinesi rako zvirinani nhasi",
+      "button": "Tanga Mahara",
+      "terms": "Hapana kadhi rekukwereta rinodiwa • Kanzura chero nguva"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: Global Business Platform",
+    "ios": "Iripo pane yako yepamusha peji",
+    "android": "Isa kuti uwane nekukurumidza",
+    "tap": "Baya",
+    "then": "wobva",
+    "addToHome": "Wedzera kuMusha",
+    "install": "Isa"
+  },
+  "browserTitle": "Dott: Global Business Platform"
+}

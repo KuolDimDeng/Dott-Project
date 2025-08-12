@@ -90,22 +90,27 @@ export const handleApiError = (error, options = {}) => {
   return null;
 };
 
+// Removed normalizeEndpoint function - Django APPEND_SLASH=True handles trailing slashes automatically
+// Adding trailing slashes causes unnecessary 308 redirects that can corrupt POST request bodies
+
 /**
- * Ensure endpoint has a trailing slash for Django
+ * Generate a cache key from endpoint and parameters
  * @param {string} endpoint - API endpoint
- * @returns {string} - Endpoint with trailing slash
+ * @param {Object} params - Query parameters
+ * @returns {string} - Cache key
  */
-const normalizeEndpoint = (endpoint) => {
-  // Don't add trailing slash to URLs with file extensions, download or print URLs
-  const skipTrailingSlash = endpoint.includes('.') || 
-                          endpoint.includes('download') || 
-                          endpoint.includes('print');
-  
-  if (skipTrailingSlash || endpoint.endsWith('/')) {
+const generateCacheKey = (endpoint, params = {}) => {
+  if (!params || Object.keys(params).length === 0) {
     return endpoint;
   }
   
-  return `${endpoint}/`;
+  // Sort parameters to ensure consistent cache keys
+  const sortedParams = Object.keys(params)
+    .sort()
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+  
+  return `${endpoint}?${sortedParams}`;
 };
 
 /**
@@ -129,14 +134,12 @@ export const fetchData = async (endpoint, options = {}) => {
     notify = true,
     skipAuthCheck = false,
     maxRetries = 2,
-    enableRetry = true
+    enableRetry = true,
+    rethrow = false  // Add rethrow option with default false for backward compatibility
   } = options;
   
   try {
-    // Ensure endpoint ends with trailing slash for Django
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
-    
-    logger.debug(`[ApiService] Fetching ${normalizedEndpoint}`, { 
+    logger.debug(`[ApiService] Fetching ${endpoint}`, { 
       useCache, 
       forceRefresh,
       tenantOverride: tenantOverride ? 'custom' : 'default'
@@ -144,12 +147,13 @@ export const fetchData = async (endpoint, options = {}) => {
     
     // Get data from cache first if allowed
     if (useCache && !forceRefresh) {
-      const cachedData = dataCache.get(normalizedEndpoint, params);
+      const cacheKey = generateCacheKey(endpoint, params);
+      const cachedData = dataCache.get(cacheKey);
       if (cachedData) {
-        logger.debug(`[ApiService] Cache hit for ${normalizedEndpoint}`);
+        logger.debug(`[ApiService] Cache hit for ${cacheKey}`);
         return cachedData;
       }
-      logger.debug(`[ApiService] Cache miss for ${normalizedEndpoint}`);
+      logger.debug(`[ApiService] Cache miss for ${cacheKey}`);
     }
     
     // Add tenant headers
@@ -158,7 +162,7 @@ export const fetchData = async (endpoint, options = {}) => {
       : getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.get(normalizedEndpoint, {
+    const response = await axiosInstance.get(endpoint, {
       params,
       headers: {
         ...tenantHeaders,
@@ -172,7 +176,8 @@ export const fetchData = async (endpoint, options = {}) => {
     
     // Store in cache if caching is enabled
     if (useCache && response.data) {
-      dataCache.set(normalizedEndpoint, params, response.data, cacheTTL);
+      const cacheKey = generateCacheKey(endpoint, params);
+      dataCache.set(cacheKey, response.data, cacheTTL);
     }
     
     return response.data;
@@ -180,7 +185,7 @@ export const fetchData = async (endpoint, options = {}) => {
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
-      rethrow: false,
+      rethrow,  // Use the rethrow option from function parameters
       customMessage
     });
   }
@@ -217,10 +222,7 @@ export const postData = async (endpoint, data = {}, options = {}) => {
   } = options;
   
   try {
-    // Ensure endpoint ends with trailing slash for Django
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
-    
-    logger.debug(`[ApiService] Posting to ${normalizedEndpoint}`);
+    logger.debug(`[ApiService] Posting to ${endpoint}`);
     
     // Add tenant headers
     const tenantHeaders = tenantOverride 
@@ -239,9 +241,9 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     // Make the request with retry capability
     let response;
     if (enableRetry && maxRetries > 0) {
-      response = await retryRequest(() => axiosInstance.post(normalizedEndpoint, data, config), maxRetries);
+      response = await retryRequest(() => axiosInstance.post(endpoint, data, config), maxRetries);
     } else {
-      response = await axiosInstance.post(normalizedEndpoint, data, config);
+      response = await axiosInstance.post(endpoint, data, config);
     }
     
     // Extract and save tenant info from response headers if present
@@ -249,7 +251,7 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     
     // Invalidate cache if requested
     if (invalidateCache) {
-      dataCache.invalidateStartingWith(normalizedEndpoint);
+      dataCache.invalidateStartingWith(endpoint);
     }
     
     return response.data;
@@ -293,10 +295,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
   } = options;
   
   try {
-    // Ensure endpoint ends with trailing slash for Django
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
-    
-    logger.debug(`[ApiService] Putting to ${normalizedEndpoint}`);
+    logger.debug(`[ApiService] Putting to ${endpoint}`);
     
     // Add tenant headers
     const tenantHeaders = tenantOverride 
@@ -304,7 +303,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
       : getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.put(normalizedEndpoint, data, {
+    const response = await axiosInstance.put(endpoint, data, {
       headers: {
         ...tenantHeaders,
         ...headers
@@ -317,7 +316,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
     
     // Invalidate cache if requested
     if (invalidateCache) {
-      dataCache.invalidateStartingWith(normalizedEndpoint);
+      dataCache.invalidateStartingWith(endpoint);
     }
     
     return response.data;
@@ -340,6 +339,51 @@ export const putData = async (endpoint, data = {}, options = {}) => {
  */
 export const put = (endpoint, data = {}, options = {}) => {
   return putData(endpoint, data, options);
+};
+
+/**
+ * Delete data with DELETE method
+ * @param {string} endpoint - API endpoint
+ * @param {Object} options - Options for the request
+ * @returns {Promise<Object>} - Response data
+ */
+export const deleteData = async (endpoint, options = {}) => {
+  const {
+    headers = {},
+    showNotification = true,
+    fallbackData = null,
+    rethrow = false,
+    ...otherOptions
+  } = options;
+
+  try {
+    const tenantHeaders = await getRequestTenantHeaders();
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...tenantHeaders,
+        ...headers,
+      },
+      credentials: 'include',
+      cache: 'no-store',
+      ...otherOptions,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json().catch(() => ({}));
+    return data;
+  } catch (error) {
+    handleApiError(error, { fallbackData, showNotification, rethrow });
+    if (rethrow) throw error;
+    return fallbackData;
+  }
 };
 
 /**

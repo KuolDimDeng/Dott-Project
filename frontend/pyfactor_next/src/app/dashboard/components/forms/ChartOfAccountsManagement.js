@@ -119,34 +119,78 @@ function ChartOfAccountsManagement({ onNavigate }) {
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const data = await accountingApi.chartOfAccounts.getAll().catch(err => {
-        logger.warn('[ChartOfAccounts] API not ready, using demo data:', err);
-        // Return demo data if API is not ready
-        return [
-          { id: 1, code: '1000', name: 'Cash', type: 'asset', description: 'Cash and cash equivalents', normalBalance: 'debit', currentBalance: 50000, isActive: true },
-          { id: 2, code: '1200', name: 'Accounts Receivable', type: 'asset', description: 'Money owed by customers', normalBalance: 'debit', currentBalance: 25000, isActive: true },
-          { id: 3, code: '2000', name: 'Accounts Payable', type: 'liability', description: 'Money owed to suppliers', normalBalance: 'credit', currentBalance: 15000, isActive: true },
-          { id: 4, code: '3000', name: "Owner's Equity", type: 'equity', description: 'Owner investment in business', normalBalance: 'credit', currentBalance: 100000, isActive: true },
-          { id: 5, code: '4000', name: 'Sales Revenue', type: 'revenue', description: 'Income from sales', normalBalance: 'credit', currentBalance: 75000, isActive: true },
-          { id: 6, code: '5000', name: 'Rent Expense', type: 'expense', description: 'Monthly rent payments', normalBalance: 'debit', currentBalance: 5000, isActive: true }
-        ];
-      });
+      const response = await fetch('/api/accounting/chart-of-accounts');
       
-      setAccounts(Array.isArray(data) ? data : []);
+      if (!response.ok) {
+        console.error('API Error:', response.status, response.statusText);
+        setAccounts([]);
+        setLoading(false);
+        return;
+      }
       
-      // Calculate stats
+      const data = await response.json();
+      
+      // Handle various response formats
+      let accountsArray = [];
+      if (Array.isArray(data)) {
+        accountsArray = data;
+      } else if (data && Array.isArray(data.accounts)) {
+        accountsArray = data.accounts;
+      } else if (data && Array.isArray(data.results)) {
+        accountsArray = data.results;
+      } else if (data && typeof data === 'object') {
+        console.warn('Unexpected data format:', data);
+        accountsArray = [];
+      }
+      
+      setAccounts(accountsArray);
+      
+      // Calculate stats with proper accounting equation
+      // Assets should use actual balance (positive for debit balance accounts)
+      const totalAssets = accountsArray
+        .filter(a => a.type === 'asset')
+        .reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+      
+      // Liabilities use absolute value (displayed as positive)
+      const totalLiabilities = accountsArray
+        .filter(a => a.type === 'liability')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      // Calculate retained earnings from revenue and expenses
+      const totalRevenue = accountsArray
+        .filter(a => a.type === 'revenue')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      const totalExpenses = accountsArray
+        .filter(a => a.type === 'expense')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      // Net income (revenue - expenses) flows to retained earnings
+      const retainedEarnings = totalRevenue - totalExpenses;
+      
+      // Equity includes permanent equity accounts plus retained earnings
+      const permanentEquity = accountsArray
+        .filter(a => a.type === 'equity')
+        .reduce((sum, a) => sum + Math.abs(a.currentBalance || 0), 0);
+      
+      const totalEquity = permanentEquity + retainedEarnings;
+      
       const stats = {
-        totalAccounts: data.length,
-        activeAccounts: data.filter(a => a.isActive).length,
-        totalAssets: data.filter(a => a.type === 'asset').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-        totalLiabilities: data.filter(a => a.type === 'liability').reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-        totalEquity: data.filter(a => a.type === 'equity').reduce((sum, a) => sum + (a.currentBalance || 0), 0)
+        totalAccounts: accountsArray.length,
+        activeAccounts: accountsArray.filter(a => a.isActive).length,
+        totalAssets: totalAssets,
+        totalLiabilities: totalLiabilities,
+        totalEquity: totalEquity,
+        totalRevenue: totalRevenue,
+        totalExpenses: totalExpenses,
+        retainedEarnings: retainedEarnings
       };
       setStats(stats);
       
     } catch (error) {
       logger.error('[ChartOfAccounts] Error loading accounts:', error);
       toast.error('Failed to load chart of accounts');
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -194,12 +238,20 @@ function ChartOfAccountsManagement({ onNavigate }) {
     try {
       if (selectedAccount) {
         // Update existing account
-        await accountingApi.chartOfAccounts.update(selectedAccount.id, formData);
+        await fetch(`/api/accounting/chart-of-accounts?id=${selectedAccount.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
         toast.success('Account updated successfully');
         setIsEditModalOpen(false);
       } else {
         // Create new account
-        await accountingApi.chartOfAccounts.create(formData);
+        await fetch('/api/accounting/chart-of-accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
         toast.success('Account created successfully');
         setIsCreateModalOpen(false);
       }
@@ -217,7 +269,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
     if (!selectedAccount) return;
     
     try {
-      await accountingApi.chartOfAccounts.delete(selectedAccount.id);
+      await fetch(`/api/accounting/chart-of-accounts?id=${selectedAccount.id}`, {
+        method: 'DELETE'
+      });
       toast.success('Account deleted successfully');
       setIsDeleteModalOpen(false);
       loadAccounts();
@@ -253,70 +307,103 @@ function ChartOfAccountsManagement({ onNavigate }) {
     }).format(amount || 0);
   };
 
-  // Summary Cards Component
-  const renderSummaryCards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <CalculatorIcon className="h-8 w-8 text-blue-600" />
+  // Summary Cards Component with proper accounting equation
+  const renderSummaryCards = () => {
+    // Calculate the accounting equation check
+    const isBalanced = Math.abs(stats.totalAssets - (stats.totalLiabilities + stats.totalEquity)) < 0.01;
+    
+    return (
+      <div className="space-y-4 mb-8">
+        {/* Accounting Equation Display */}
+        <div className={`bg-white rounded-lg shadow-sm border-2 ${isBalanced ? 'border-green-500' : 'border-yellow-500'} p-4`}>
+          <div className="flex items-center justify-center space-x-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium">Assets</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(stats.totalAssets)}</p>
+            </div>
+            <span className="text-2xl font-bold text-gray-400">=</span>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium">Liabilities</p>
+              <p className="text-lg font-bold text-red-600">{formatCurrency(stats.totalLiabilities)}</p>
+            </div>
+            <span className="text-2xl font-bold text-gray-400">+</span>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium">Equity</p>
+              <p className="text-lg font-bold text-purple-600">{formatCurrency(stats.totalEquity)}</p>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Accounts</p>
-            <p className="text-3xl font-bold text-blue-600 truncate">{loading ? '-' : stats.totalAccounts}</p>
-          </div>
+          {!isBalanced && (
+            <p className="text-center text-sm text-yellow-600 mt-2">
+              ⚠️ Accounting equation not balanced (difference: {formatCurrency(Math.abs(stats.totalAssets - (stats.totalLiabilities + stats.totalEquity)))})
+            </p>
+          )}
         </div>
-      </div>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CalculatorIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Accounts</p>
+                <p className="text-2xl font-bold text-blue-600">{loading ? '-' : stats.totalAccounts}</p>
+              </div>
+            </div>
+          </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <BanknotesIcon className="h-8 w-8 text-green-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <BanknotesIcon className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Assets</p>
+                <p className="text-xl font-bold text-green-600 break-all">{loading ? '-' : formatCurrency(stats.totalAssets)}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Assets</p>
-            <p className="text-3xl font-bold text-green-600 truncate">{loading ? '-' : formatCurrency(stats.totalAssets)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <BuildingLibraryIcon className="h-8 w-8 text-red-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <BuildingLibraryIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Liabilities</p>
+                <p className="text-xl font-bold text-red-600 break-all">{loading ? '-' : formatCurrency(stats.totalLiabilities)}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Liabilities</p>
-            <p className="text-3xl font-bold text-red-600 truncate">{loading ? '-' : formatCurrency(stats.totalLiabilities)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <ChartBarIcon className="h-8 w-8 text-purple-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ChartBarIcon className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Total Equity</p>
+                <p className="text-xl font-bold text-purple-600 break-all">{loading ? '-' : formatCurrency(stats.totalEquity)}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Equity</p>
-            <p className="text-3xl font-bold text-purple-600 truncate">{loading ? '-' : formatCurrency(stats.totalEquity)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <DocumentPlusIcon className="h-8 w-8 text-yellow-600" />
-          </div>
-          <div className="ml-4 flex-1 min-w-0">
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Accounts</p>
-            <p className="text-3xl font-bold text-yellow-600 truncate">{loading ? '-' : stats.activeAccounts}</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <DocumentPlusIcon className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Active Accounts</p>
+                <p className="text-2xl font-bold text-yellow-600">{loading ? '-' : stats.activeAccounts}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Search and Actions Component
   const renderSearchAndActions = () => (
@@ -526,10 +613,10 @@ function ChartOfAccountsManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="absolute inset-0 z-10 overflow-y-auto">
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
@@ -751,10 +838,10 @@ function ChartOfAccountsManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="absolute inset-0 z-10 overflow-y-auto">
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}

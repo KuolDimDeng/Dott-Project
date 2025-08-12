@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { updateUserAttributes, fetchUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { COGNITO_ATTRIBUTES } from '@/constants/onboarding';
 
 // Dynamically import components that might cause issues
@@ -73,7 +73,7 @@ async function updateCompletionAttributes() {
 async function ensureCompletionAttributes() {
   try {
     // Check current attributes
-    const attributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
     const setupDone = attributes['custom:setupdone']?.toLowerCase() === 'true';
     const onboardingComplete = attributes['custom:onboarding']?.toLowerCase() === 'complete';
     

@@ -2,7 +2,7 @@
 Management command to fix employee business_id/tenant_id mismatches
 """
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from hr.models import Employee
 from custom_auth.models import Tenant
 import logging

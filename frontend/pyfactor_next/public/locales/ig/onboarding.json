@@ -1,0 +1,261 @@
+{
+  "businessInfo": {
+    "title": "Ozi Azụmahịa",
+    "subtitle": "Gwa anyị maka azụmahịa gị",
+    "step": "Nzọụkwụ 1 nke 3",
+    "businessNameLabel": "Aha Azụmahịa",
+    "businessNamePlaceholder": "Tinye aha azụmahịa gị",
+    "businessTypeLabel": "Ụdị Azụmahịa",
+    "businessTypePlaceholder": "Họrọ ụdị azụmahịa gị",
+    "industryLabel": "Ụlọ Ọrụ",
+    "industryPlaceholder": "Họrọ ụlọ ọrụ gị",
+    "legalStructureLabel": "Usoro Iwu",
+    "legalStructurePlaceholder": "Họrọ usoro iwu",
+    "countryLabel": "Obodo",
+    "countryPlaceholder": "Họrọ obodo gị",
+    "stateLabel": "Steeti/Mpaghara",
+    "statePlaceholder": "Họrọ steeti gị",
+    "dateFoundedLabel": "Ụbọchị E Hibere",
+    "addressLabel": "Adreesị Azụmahịa",
+    "addressPlaceholder": "Tinye adreesị azụmahịa gị",
+    "phoneLabel": "Ekwentị Azụmahịa",
+    "phonePlaceholder": "+234 123 456 7890",
+    "emailLabel": "Email Azụmahịa",
+    "emailPlaceholder": "azụmahịa@ọmụmaatụ.com",
+    "websiteLabel": "Websaịtị (nhọrọ)",
+    "websitePlaceholder": "https://www.ọmụmaatụ.com",
+    "nextButton": "Gaa n'ihu na Ndebanye Aha",
+    "skipButton": "Hapụ ugbu a",
+    "businessTypes": {
+      "retail": "Ire Ahịa",
+      "restaurant": "Ụlọ Oriri",
+      "services": "Ọrụ",
+      "manufacturing": "Nrụpụta",
+      "technology": "Teknụzụ",
+      "healthcare": "Nlekọta Ahụike",
+      "construction": "Owuwu",
+      "realestate": "Ala na Ụlọ",
+      "nonprofit": "Enweghị Uru",
+      "other": "Ndị Ọzọ"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Onye Nwe Naanị Ya",
+      "partnership": "Mmekọrịta",
+      "llc": "Ụlọ Ọrụ Nwere Oke",
+      "corporation": "Kọpọreshọn",
+      "nonprofit": "Enweghị Uru",
+      "other": "Ndị Ọzọ"
+    },
+    "errors": {
+      "businessNameRequired": "Aha azụmahịa dị mkpa",
+      "businessNameTooShort": "Aha azụmahịa ga-enwerịrị opekata nta mkpụrụ akwụkwọ 2",
+      "businessTypeRequired": "Biko họrọ ụdị azụmahịa",
+      "legalStructureRequired": "Biko họrọ usoro iwu",
+      "countryRequired": "Biko họrọ obodo",
+      "emailInvalid": "Biko tinye adreesị email ziri ezi",
+      "phoneInvalid": "Biko tinye nọmba ekwentị ziri ezi",
+      "websiteInvalid": "Biko tinye URL websaịtị ziri ezi"
+    },
+    "saving": "Na-echekwa..."
+  },
+  "subscription": {
+    "title": "Họrọ Atụmatụ Gị",
+    "subtitle": "Họrọ atụmatụ kacha dabara adaba mkpa azụmahịa gị",
+    "step": "Nzọụkwụ 2 nke 3",
+    "billingCycle": {
+      "monthly": "Kwa Ọnwa",
+      "sixMonth": "Ọnwa 6",
+      "yearly": "Kwa Afọ",
+      "popular": "AMA AMA",
+      "save": "Chekwaa {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Ntọala",
+        "description": "Zuru oke maka obere azụmahịa na-amalite",
+        "price": "N'efu",
+        "features": [
+          "Nsochi ego na-abata na nke na-apụ",
+          "Nrụpụta akwụkwọ ụgwọ na ncheta",
+          "Ịkwụ ụgwọ Stripe na PayPal",
+          "Ego ekwentị (M-Pesa na ndị ọzọ)",
+          "Nsochi ngwa ahịa ntọala",
+          "Nscanị barcode",
+          "Oke nchekwa 3GB",
+          "Naanị onye ọrụ 1"
+        ],
+        "buttonText": "Malite N'efu"
+      },
+      "basic": {
+        "name": "Ntọala",
+        "description": "Zuru oke maka obere azụmahịa na-amalite",
+        "price": "N'efu",
+        "features": [
+          "Nsochi ego na-abata na nke na-apụ",
+          "Nrụpụta akwụkwọ ụgwọ na ncheta",
+          "Ịkwụ ụgwọ Stripe na PayPal",
+          "Ego ekwentị (M-Pesa na ndị ọzọ)",
+          "Nsochi ngwa ahịa ntọala",
+          "Nscanị barcode",
+          "Oke nchekwa 3GB",
+          "Naanị onye ọrụ 1"
+        ],
+        "buttonText": "Malite N'efu"
+      },
+      "professional": {
+        "name": "Nkà",
+        "description": "Ihe niile azụmahịa na-eto eto chọrọ iji mee nke ọma",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "KACHA AMA AMA",
+        "features": [
+          "Ihe niile na Ntọala",
+          "Ruo ndị ọrụ 3",
+          "Nchekwa enweghị oke",
+          "Nkwado mbụ",
+          "Atụmatụ niile gụnyere",
+          "{{discount}}% mbelata maka ọnwa 6",
+          "{{yearlyDiscount}}% mbelata kwa afọ"
+        ],
+        "buttonText": "Họrọ Nkà"
+      },
+      "enterprise": {
+        "name": "Nnukwu Ụlọ Ọrụ",
+        "description": "Ogo enweghị oke maka nnukwu nzukọ",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "PREMIUM",
+        "features": [
+          "Ihe niile na Nkà",
+          "Ndị ọrụ enweghị oke",
+          "Nkwado pụrụ iche",
+          "Nkwado raara onwe ya nye",
+          "Atụmatụ niile gụnyere",
+          "{{discount}}% mbelata maka ọnwa 6",
+          "{{yearlyDiscount}}% mbelata kwa afọ"
+        ],
+        "buttonText": "Họrọ Nnukwu Ụlọ Ọrụ"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% mbelata na atụmatụ niile!",
+      "description": "Ọnụ ahịa pụrụ iche maka azụmahịa na {{country}}",
+      "percentOff": "{{percentage}}% mbelata",
+      "yourRegion": "mpaghara gị"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "Ịkwụ ụgwọ M-Pesa dị!",
+        "description": "Kwụọ ụgwọ na-enweghị nsogbu site na ego ekwentị maka ndebanye aha gị",
+        "payInCurrency": "Kwụọ na {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Chekwaa ${{amount}} (${{monthly}}/ọnwa)",
+      "yearly": "Chekwaa ${{amount}} kwa afọ"
+    },
+    "backButton": "Laghachi na Ozi Azụmahịa",
+    "processing": "Na-ahazi...",
+    "note": "* Ọnụ ahịa mpaghara dị. A na-edozi ọnụ ahịa na-akpaghị aka dabere na ebe ị nọ."
+  },
+  "payment": {
+    "title": "Mezuo Ndebanye Aha Gị",
+    "subtitle": "Atụmatụ {{plan}} • ${{price}}/{{period}}",
+    "step": "Nzọụkwụ 3 nke 3",
+    "discountBadge": "{{percentage}}% MBELATA",
+    "originalPrice": "Nke Mbụ: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% mbelata mpaghara etinyere!",
+      "subtitle": "Ọnụ ahịa pụrụ iche maka azụmahịa na {{country}}"
+    },
+    "paymentMethod": {
+      "title": "Họrọ Ụzọ Ịkwụ Ụgwọ",
+      "card": {
+        "name": "Kaadị Kredit/Debit",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Ego Ekwentị",
+        "payInCurrency": "Kwụọ na {{currency}}"
+      },
+      "flutterwave": {
+        "name": "Nnyefe Bank",
+        "description": "Kwụọ ụgwọ site na nnyefe bank"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Ịkwụ Ụgwọ na Ego Ekwentị"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Aha Onye Nwe Kaadị",
+      "cardholderNamePlaceholder": "Emeka Okafor",
+      "cardNumber": "Nọmba Kaadị",
+      "expiryDate": "Ụbọchị Nkwụsị",
+      "cvc": "CVC",
+      "postalCode": "Koodu Nzi Ozi",
+      "postalCodePlaceholder": "100001"
+    },
+    "mobilePayment": {
+      "phoneNumber": "Nọmba Ekwentị {{provider}}",
+      "phoneNumberPlaceholder": "08012345678",
+      "phoneNumberHint": "Tinye nọmba ekwentị {{provider}} gị edebanyere aha",
+      "localPrice": "Ọnụ ahịa na {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Ọnụ ahịa mgbanwe: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "Otú ịkwụ ụgwọ {{provider}} si arụ ọrụ:",
+        "steps": [
+          "Pịa \"Kwụọ na {{provider}}\" n'okpuru",
+          "Ị ga-anata arịrịọ ịkwụ ụgwọ na ekwentị gị",
+          "Tinye PIN {{provider}} gị iji mezuo ịkwụ ụgwọ",
+          "A ga-edugharị gị ozugbo akwụọla ụgwọ"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Debanye aha maka ${{price}}/{{period}}",
+      "mobile": "Kwụọ na {{provider}} - {{symbol}}{{amount}}",
+      "processing": "Na-ahazi Ịkwụ Ụgwọ..."
+    },
+    "securityBadge": "Stripe na-echebe",
+    "cancelNote": "Ị nwere ike ịkagbu ma ọ bụ gbanwee atụmatụ mgbe ọ bụla site na dashboard.",
+    "errors": {
+      "cardholderNameRequired": "Biko tinye aha onye nwe kaadị",
+      "postalCodeRequired": "Biko tinye koodu nzi ozi gị",
+      "phoneRequired": "Biko tinye nọmba ekwentị {{provider}} gị",
+      "businessInfoMissing": "Ozi azụmahịa na-efu. Biko buuru ụzọ mezuo nzọụkwụ nhazi azụmahịa.",
+      "paymentFailed": "Ịkwụ ụgwọ adaghị. Biko nwaa ọzọ.",
+      "cardDeclined": "A jụrụ kaadị gị. Biko nwaa kaadị ọzọ.",
+      "insufficientFunds": "Ego ezughị. Biko lee balance gị.",
+      "networkError": "Nsogbu netwọk. Biko lee njikọ gị."
+    },
+    "success": {
+      "title": "Ịkwụ Ụgwọ Gara Nke Ọma!",
+      "message": "Na-edugharị gị na dashboard gị...",
+      "mpesaTitle": "Ịkwụ Ụgwọ M-Pesa Malitere!",
+      "mpesaMessage": "Lee ekwentị gị maka arịrịọ ịkwụ ụgwọ M-Pesa",
+      "mpesaHint": "Tinye PIN gị iji mezuo ịkwụ ụgwọ",
+      "redirecting": "Na-edugharị gị na dashboard gị..."
+    }
+  },
+  "completion": {
+    "title": "Nnọọ na Dott!",
+    "subtitle": "Akaụntụ gị ka edobere",
+    "message": "Ị dị njikere ịmalite ijikwa ego azụmahịa gị",
+    "dashboardButton": "Gaa na Dashboard",
+    "setupComplete": "Nhazi Ewezugala"
+  },
+  "errors": {
+    "sessionExpired": "Oge gị agwụla. Biko banye ọzọ.",
+    "networkError": "Nsogbu netwọk. Biko lee njikọ gị.",
+    "genericError": "Nsogbu mere. Biko nwaa ọzọ.",
+    "requiredField": "Oghere a dị mkpa"
+  },
+  "navigation": {
+    "back": "Azụ",
+    "next": "Na-esote",
+    "skip": "Mafụ",
+    "cancel": "Kagbuo",
+    "save": "Chekwaa",
+    "continue": "Gaa n'ihu"
+  }
+}

@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+
+console.log('[TaxFilingService] 🎯 === COMPONENT LOADED ===')
 import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
-import { DEVELOPING_COUNTRIES } from '@/services/countryDetectionService';
+import { isDevelopingCountry } from '@/services/countryDetectionService';
 import { 
   DocumentTextIcon,
   SparklesIcon,
@@ -165,9 +167,15 @@ const SERVICE_PRICING = {
 };
 
 export default function TaxFilingService({ onNavigate }) {
+  console.log('[TaxFilingService] 🎯 === COMPONENT RENDERING ===');
+  console.log('[TaxFilingService] Props:', { onNavigate });
+  
   const { user, loading: sessionLoading } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [tenantId, setTenantId] = useState(null);
+  
+  console.log('[TaxFilingService] User:', user?.email);
+  console.log('[TaxFilingService] Session loading:', sessionLoading);
   
   // Eligibility state
   const [eligibilityChecked, setEligibilityChecked] = useState(false);
@@ -289,7 +297,7 @@ export default function TaxFilingService({ onNavigate }) {
         const country = businessData.country || 'US';
         
         // Check if country is in developing countries list
-        const isDeveloping = DEVELOPING_COUNTRIES.includes(country);
+        const isDeveloping = isDevelopingCountry(country);
         
         return { country, isDeveloping, discount: isDeveloping ? 0.5 : 1.0 };
       }

@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction as db_transaction
 from taxes.models import (
     W2Form, W3Form, Form1099NEC, Form1099MISC, Form1096,
     YearEndTaxGeneration
@@ -24,7 +24,7 @@ class Command(BaseCommand):
         )
 
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Check if tables exist and are accessible
                 models_to_check = [
                     W2Form,

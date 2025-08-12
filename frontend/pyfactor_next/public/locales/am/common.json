@@ -10,11 +10,13 @@
     },
     "financial": {
       "title": "የፋይናንስ አስተዳደር",
-      "description": "በንግድዎ ፋይናንስ ላይ ሙሉ ቁጥጥር"
+      "description": "በንግድዎ ፋይናንስ ላይ ሙሉ ቁጥጥር",
+      "heading": "በንግድ ፋይናንስዎ ላይ ሙሉ ቁጥጥር"
     },
     "global": {
       "title": "ዓለም አቀፍ የንግድ መሳሪያዎች",
-      "description": "በዓለም አቀፍ ደረጃ ለመሥራት የሚያስፈልጉዎት ሁሉ"
+      "description": "በዓለም አቀፍ ደረጃ ለመሥራት የሚያስፈልጉዎት ሁሉ",
+      "heading": "ለዓለም አቀፍ ሥራዎች የሚያስፈልግዎት ሁሉ"
     },
     "trust": {
       "title": "ለደህንነት እና ተገዥነት የተገነባ"
@@ -34,8 +36,297 @@
   "socialImpact": "ማህበራዊ ተጽዕኖአችን",
   "getInTouch": "ከቡድናችን ጋር ይገናኙ",
   "termsOfUse": "የአጠቃቀም ደንቦች",
-  "privacyPolicy": "የግላዊነት ፖሊሲ",
-  "cookiePolicy": "የኩኪ ፖሊሲ",
+  "privacyPolicy": {
+    "title": "Privacy Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "introduction": "At Dott LLC, we value your trust and respect your privacy. We exist to provide businesses with comprehensive financial management tools. This Privacy Policy explains—in clear and plain language—what information we collect, how we use it, and the choices you have regarding your personal information, so you can feel confident about using our platform.",
+    "navigation": {
+      "backToDashboard": "Back to Dashboard",
+      "backToHome": "Back to Home"
+    },
+    "sections": {
+      "scope": {
+        "title": "A. Scope",
+        "content": "Protecting your personal information is important to us. This privacy policy applies to our products and services offered under the Dott brand, our websites, and our mobile applications that incorporate this privacy policy. Our products and services are offered by Dott LLC. This policy covers how we collect, use, store, process, and share your information in connection with our financial management platform, including accounting, payroll, payment processing, invoicing, and other services."
+      },
+      "personalInfo": {
+        "title": "B. Personal Information",
+        "content": "As part of providing our services, we may collect personal information about you, your business, your employees, and your customers. 'Personal Information' is data that can be used to identify a person individually. This policy outlines our collection, protection, use, retention, disclosure and other processing of Personal Information and your rights relating to these activities.",
+        "businessInfo": {
+          "title": "B.1 Business Information",
+          "content": "This includes your business name, address, tax identification numbers, industry type, business entity type, and other information necessary to provide our services."
+        },
+        "individualInfo": {
+          "title": "B.2 Individual Information",
+          "content": "This includes information about you as a business owner, your employees, contractors, and your customers, as necessary to provide our services."
+        }
+      },
+      "categories": {
+        "title": "C. Categories of Personal Information Collected",
+        "content": "The information we may collect includes, but is not limited to:",
+        "identification": {
+          "title": "C.1 Identification Information",
+          "content": "Contact Information (name, email address, phone number, postal address), Government Identification Numbers (EIN, SSN, tax IDs), Date of Birth, photographic ID, and business documentation."
+        },
+        "financial": {
+          "title": "C.2 Financial Information",
+          "content": "Bank account details, payment card information, transaction history, account balances, payment records, credit history, financial statements, and payroll information."
+        },
+        "employee": {
+          "title": "C.3 Employee Information",
+          "content": "For payroll services, we collect information about your employees including their names, contact details, salary information, tax withholding information, bank details for direct deposit, and other employment-related data."
+        },
+        "technical": {
+          "title": "C.4 Technical Information",
+          "content": "Device Information (IP address, device type, operating system), Browser Information, Geo-Location Data, Usage Data, Login Information, and Application Interaction Data."
+        },
+        "customer": {
+          "title": "C.5 Customer Information",
+          "content": "When you use our invoicing or payment processing features, we may collect information about your customers necessary to process these transactions."
+        },
+        "tax": {
+          "title": "C.6 Tax Information",
+          "content": "When you use our tax features, we collect your business location, tax rates you enter, tax settings preferences, and tax calculation history. We may also process tax-related queries when you use our AI-powered tax suggestion features. This information is used solely to provide tax calculation services and is not used for tax filing or reporting on your behalf."
+        }
+      },
+      "collection": {
+        "title": "D. How We Collect Your Information",
+        "content": "We collect information from various sources:",
+        "direct": {
+          "title": "D.1 Direct Collection",
+          "content": "Information you provide when you register for our services, set up your account, connect your financial accounts, process payments, or communicate with us."
+        },
+        "automated": {
+          "title": "D.2 Automated Collection",
+          "content": "Information collected automatically through cookies, web beacons, and similar technologies when you use our services."
+        },
+        "thirdParty": {
+          "title": "D.3 Third-Party Sources",
+          "content": "Information we receive from third-party service providers, business partners, identity verification services, credit bureaus, and other publicly available sources."
+        },
+        "financial": {
+          "title": "D.4 Financial Institutions",
+          "content": "When you connect your bank accounts or other financial services to Dott, we collect information from these financial institutions with your authorization."
+        }
+      },
+      "usage": {
+        "title": "E. How We Use Your Information",
+        "content": "We use your information for the following purposes:",
+        "services": {
+          "title": "E.1 Providing and Improving Our Services",
+          "content": "To deliver the financial management services you request, process transactions, facilitate payments, manage invoices, process payroll, provide technical support, and improve our platform."
+        },
+        "security": {
+          "title": "E.2 Authentication and Security",
+          "content": "To verify your identity, secure your account, prevent fraud, and ensure the security of our platform."
+        },
+        "communications": {
+          "title": "E.3 Communications",
+          "content": "To communicate with you about your account, provide customer support, send service updates, and, with your consent, send marketing communications."
+        },
+        "compliance": {
+          "title": "E.4 Legal Compliance",
+          "content": "To comply with our legal obligations, including anti-money laundering regulations, tax reporting requirements, and other financial services regulations."
+        },
+        "analytics": {
+          "title": "E.5 Analytics and Improvements",
+          "content": "To analyze usage patterns, troubleshoot technical issues, and develop new features and services."
+        }
+      },
+      "sharing": {
+        "title": "F. Information Sharing and Disclosure",
+        "content": "We may share your information with the following categories of recipients:",
+        "providers": {
+          "title": "F.1 Service Providers",
+          "content": "Third-party service providers who help us deliver our services, including payment processors (Stripe, Flutterwave, DLocal, Wise, PayPal), hosting providers, customer support services, and analytics providers."
+        },
+        "partners": {
+          "title": "F.2 Financial Partners",
+          "content": "Banks and financial institutions necessary to process transactions, facilitate payments, and provide invoice factoring services."
+        },
+        "authorities": {
+          "title": "F.3 Legal and Regulatory Authorities",
+          "content": "Government authorities, law enforcement, and other third parties where required by law, to comply with legal process, or to protect our rights."
+        },
+        "transfers": {
+          "title": "F.4 Business Transfers",
+          "content": "In connection with any merger, acquisition, or sale of company assets, your information may be transferred as a business asset."
+        },
+        "consent": {
+          "title": "F.5 With Your Consent",
+          "content": "We may share your information with other third parties when you have given your consent to do so."
+        }
+      },
+      "rights": {
+        "title": "G. Your Choices and Rights",
+        "content": "Depending on your jurisdiction, you may have the following rights regarding your personal information:",
+        "access": {
+          "title": "G.1 Access and Portability",
+          "content": "You may request access to your personal information and receive a copy in a structured, commonly used format."
+        },
+        "correction": {
+          "title": "G.2 Correction",
+          "content": "You may request that we correct inaccurate or incomplete personal information."
+        },
+        "deletion": {
+          "title": "G.3 Deletion",
+          "content": "You may request that we delete your personal information, subject to certain exceptions."
+        },
+        "objection": {
+          "title": "G.4 Objection and Restriction",
+          "content": "You may object to or request restriction of processing of your personal information."
+        },
+        "withdraw": {
+          "title": "G.5 Withdraw Consent",
+          "content": "Where we rely on your consent to process your personal information, you may withdraw your consent at any time."
+        },
+        "exercise": {
+          "title": "G.6 How to Exercise Your Rights",
+          "content": "To exercise your rights, please contact us at support@dottapps.com We may need to verify your identity before fulfilling your request."
+        }
+      },
+      "security": {
+        "title": "H. Data Security",
+        "content": "We implement appropriate technical and organizational measures to protect your personal information:",
+        "measures": {
+          "title": "H.1 Security Measures",
+          "content": "We use industry-standard security measures including encryption, access controls, firewalls, and regular security assessments."
+        },
+        "payment": {
+          "title": "H.2 Payment Information",
+          "content": "Payment information is processed in compliance with the Payment Card Industry Data Security Standard (PCI DSS)."
+        },
+        "access": {
+          "title": "H.3 Employee Access",
+          "content": "We restrict employee access to personal information to those who need it to perform their job functions."
+        },
+        "breach": {
+          "title": "H.4 Data Breach Procedures",
+          "content": "We have procedures in place to respond to suspected data security breaches and will notify you and applicable regulators of breaches as required by law."
+        },
+        "tax": {
+          "title": "H.5 Tax Data Security",
+          "content": "Tax rates and settings you enter are encrypted and stored securely. AI-powered tax suggestions are processed without storing your specific queries. We do not share your tax configuration data with third parties except as necessary to provide our services or as required by law. You remain responsible for the accuracy of all tax information entered into our system."
+        }
+      },
+      "retention": {
+        "title": "I. Data Retention",
+        "content": "We retain your personal information for as long as necessary to provide our services and for legitimate business purposes, such as maintaining business records, complying with legal obligations, resolving disputes, and enforcing our agreements. When we no longer need your personal information, we will securely delete or anonymize it."
+      },
+      "transfers": {
+        "title": "J. International Data Transfers",
+        "content": "Your information may be transferred to and processed in countries other than the country you live in, including the United States, Rwanda, and other countries where Dott LLC or its service providers operate. These countries may have data protection laws different from the laws of your country. We implement appropriate safeguards to protect your information when transferred internationally, such as standard contractual clauses approved by relevant data protection authorities."
+      },
+      "children": {
+        "title": "K. Children's Privacy",
+        "content": "Our services are not directed to children under the age of 18. We do not knowingly collect personal information from children. If you are a parent or guardian and believe that your child has provided us with personal information, please contact us so that we can delete the information."
+      },
+      "cookies": {
+        "title": "L. Cookies and Similar Technologies",
+        "content": "We use cookies and similar technologies to collect information about how you interact with our services, to remember your preferences, and to optimize your experience. You can manage your cookie preferences through your browser settings.",
+        "types": {
+          "title": "L.1 Types of Cookies We Use",
+          "content": "Essential cookies (necessary for the functionality of our services), Analytical cookies (to understand how users interact with our services), and Marketing cookies (to deliver relevant advertisements)."
+        },
+        "choices": {
+          "title": "L.2 Your Cookie Choices",
+          "content": "Most web browsers allow you to control cookies through their settings. However, if you reject certain cookies, you may not be able to use all features of our services."
+        }
+      },
+      "ai": {
+        "title": "M. AI and Automated Processing",
+        "content": "We use artificial intelligence and automated systems to enhance our services and provide features like tax rate suggestions, financial insights, and fraud detection.",
+        "features": {
+          "title": "M.1 AI-Powered Features",
+          "content": "Our AI features analyze your location and business type to suggest tax rates and provide other business insights. These suggestions are generated based on publicly available information and general tax rules."
+        },
+        "advice": {
+          "title": "M.2 No Professional Advice",
+          "content": "AI-generated suggestions, including tax rate recommendations, are provided for informational purposes only and do not constitute professional tax, legal, or financial advice. You should independently verify all suggestions before using them."
+        },
+        "review": {
+          "title": "M.3 Human Review",
+          "content": "Significant automated decisions that may have legal or similarly significant effects on you are subject to human review upon request."
+        }
+      },
+      "changes": {
+        "title": "N. Changes to This Privacy Policy",
+        "content": "We may update this privacy policy from time to time to reflect changes in our practices or legal requirements. We will notify you of any material changes by posting the new version on our website and updating the effective date. We encourage you to review our privacy policy periodically."
+      },
+      "contact": {
+        "title": "O. Contact Us",
+        "content": "If you have any questions about this Privacy Policy or our data practices, or if you wish to exercise your rights regarding your personal information, please contact us at:"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "United States",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
+  "cookiePolicy": {
+    "title": "Cookie Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "navigation": {
+      "backToHome": "Back to Home"
+    },
+    "introduction": "This Cookie Policy explains how Dott LLC uses cookies and similar technologies to recognize you when you visit our website and use our services. It explains what these technologies are and why we use them, as well as your rights to control our use of them.",
+    "sections": {
+      "whatAreCookies": {
+        "title": "What are cookies?",
+        "content": "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information."
+      },
+      "howWeUseCookies": {
+        "title": "How we use cookies",
+        "content": "We use cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as \"essential\" or \"strictly necessary\" cookies. Other cookies enable us to track and target the interests of our users to enhance the experience on our website."
+      },
+      "typesOfCookies": {
+        "title": "Types of cookies we use",
+        "content": "The specific types of first and third party cookies served through our website and the purposes they perform are described below:",
+        "essential": {
+          "title": "Essential cookies",
+          "content": "These cookies are strictly necessary to provide you with services available through our website and to use some of its features, such as access to secure areas."
+        },
+        "functional": {
+          "title": "Functional cookies",
+          "content": "These cookies enable the website to provide enhanced functionality and personalization. They may be set by us or by third party providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics cookies",
+          "content": "These cookies allow us to count visits and traffic sources, so we can measure and improve the performance of our site. They help us know which pages are the most and least popular and see how visitors move around the site."
+        },
+        "marketing": {
+          "title": "Marketing cookies",
+          "content": "These cookies may be set through our site by our advertising partners. They may be used by those companies to build a profile of your interests and show you relevant adverts on other sites."
+        }
+      },
+      "managingCookies": {
+        "title": "Managing cookies",
+        "content": "Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you. It may also stop you from saving customized settings like login information."
+      },
+      "thirdPartyCookies": {
+        "title": "Third-party cookies",
+        "content": "In addition to our own cookies, we may also use various third-party cookies to report usage statistics of our service and deliver advertisements on and through our service."
+      },
+      "changes": {
+        "title": "Changes to this Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time in order to reflect changes to the cookies we use or for other operational, legal or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies."
+      },
+      "contact": {
+        "title": "Contact us",
+        "content": "If you have any questions about our use of cookies or other technologies, please contact us."
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
   "simplicity": "ቀላልነት",
   "innovation": "ፈጠራ",
   "empowerment": "ማብቃት",
@@ -82,7 +373,9 @@
       "mobileMoney": "የሞባይል ገንዘብ ክፍያዎች",
       "cardPayments": "የዓለም አቀፍ ካርድ ክፍያዎች",
       "languages": "ከ20 በላይ ቃንቃዎች ይደገፋሉ",
-      "mobilePhone": "የሞባይል ስልክ መተግበሪያ ተካትቷል"
+      "mobilePhone": "የሞባይል ስልክ መተግበሪያ ተካትቷል",
+      "jobManagement": "የሥራ አስተዳደር እና ወጪ ስሌት",
+      "accounting": "IFRS እና US GAAP ድጋፍ"
     }
   },
   "featuresTitle": "ዓለም አቀፍ የንግድ ባህሪያት",
@@ -161,36 +454,68 @@
     "global": "የመግቢያ/መላኪያ አስተዳደር",
     "global.description": "የዓለም አቀፍ የንግድ ሰነዶች እና ተገዥነትን ያስተናግዱ",
     "security": "የድርጅት ደህንነት",
-    "security.description": "የባንክ ደረጃ ደህንነት ከክልላዊ ተገዥነት ጋር"
+    "security.description": "የባንክ ደረጃ ደህንነት ከክልላዊ ተገዥነት ጋር",
+    "jobs": "የሥራ አስተዳደር እና ወጪ ስሌት",
+    "jobs.description": "ከጫፍ እስከ ጫፍ ፕሮጀክት መከታተል ከእውነተኛ ጊዜ ወጪ ስሌት፣ የሞባይል መስክ መተግበሪያ እና የትርፋማነት ትንተና ጋር",
+    "accounting": "ድርብ የሂሳብ ደረጃዎች",
+    "languages": "ብዙ ቋንቋ ድጋፍ",
+    "currencies": "ብዙ ምንዛሪ ስርዓት"
   },
   "highlights": {
-    "bluetooth": "የብሉቱዝ ስካነር ውህደት",
-    "printBarcodes": "ብጁ ባርኮዶችን ያትሙ",
-    "lowStock": "ዝቅተኛ የአክሲዮን ማንቂያዎች",
-    "customLabel": "ብጁ መለያ ህትመት",
-    "mobileScanning": "የሞባይል ቅኝት",
-    "batchProcessing": "ባች ማቀናበር",
-    "offlineMode": "ከመስመር ውጭ ሁነታ",
-    "multiplePayments": "ብዙ የክፍያ ዘዴዎች",
-    "receiptCustom": "የደረሰኝ ማበጀት",
-    "recurringInvoices": "ተደጋጋሚ ደረሰኞች",
+    "bluetooth": "ብልቱው ስካነር እንተግሪሽን",
+    "printBarcodes": "ግላዊ ባርኮዶችን ማታተም",
+    "lowStock": "ዝቅተኛ ስቶክ ማንቂያዎች",
+    "customLabel": "ግላዊ መጠቀማ ማታተም",
+    "mobileScanning": "ተንቀሳቂስ ስካን",
+    "batchProcessing": "ክፍል ቅርፃት",
+    "offlineMode": "የኢንተርኔት የለለ ሁኔታ",
+    "multiplePayments": "ብዙ ከፍያ ሜታዎች",
+    "receiptCustom": "ደረሰኝ ግላዊ ሁኔታ",
+    "recurringInvoices": "ተደግሜ ይመጠቁ ወጨቦች",
     "paymentReminders": "የክፍያ ማስታወሻዎች",
-    "invoiceFactoring": "የደረሰኝ ሽያጭ",
+    "invoiceFactoring": "የወጨብ ፋክተሪንግ",
     "vatGst": "VAT/GST ድጋፍ",
     "taxReports": "የግብር ሪፖርቶች",
-    "eFilingReady": "ለኢ-ፋይል ዝግጁ",
-    "customDashboards": "ብጁ ዳሽቦርዶች",
+    "eFilingReady": "ለኤሌክትሮኒክ ማስገባት ዝግጁ",
+    "customDashboards": "ግላዊ ዳሽቦርዶች",
     "profitAnalysis": "የትርፍ ትንተና",
-    "cashFlowForecast": "የገንዘብ ፍሰት ትንበያ",
-    "mobileMoney": "የሞባይል ገንዘብ",
-    "bankTransfers": "የባንክ ዝውውሮች",
-    "digitalWallets": "ዲጂታል ኪስ ቦርሳዎች",
-    "customsDocuments": "የጉምሩክ ሰነዶች",
-    "shippingIntegration": "የመላኪያ ውህደት",
-    "tradeCompliance": "የንግድ ተገዥነት",
-    "soc2Compliant": "SOC2 ተገዥ",
-    "dataEncryption": "የውሂብ ምስጠራ",
-    "gdprReady": "ለGDPR ዝግጁ"
+    "cashFlowForecast": "የግንዘብ ፍሰት ትንበያ",
+    "mobileMoney": "ተንቀሳቂስ ግንዘብ",
+    "bankTransfers": "የባንክ ግልፍቶች",
+    "digitalWallets": "ዲጂታል ከሦከቶች",
+    "customsDocuments": "የጘምረክ ሰነዶች",
+    "shippingIntegration": "የማፍረስ እንተግሪሽን",
+    "tradeCompliance": "የንግድ መመጠት",
+    "soc2Compliant": "SOC2 መመጠት",
+    "dataEncryption": "የመረጃ መስጣር",
+    "gdprReady": "GDPR ዝጉጁ",
+    "jobs": {
+      "title": "ሁሉን አቀፍ የሥራ አስተዳደር",
+      "description": "ከዋጋ ጥቅስ እስከ ማጠናቀቅ ድረስ ከጫፍ እስከ ጫፍ የሥራ ወጪ ስሌት። በእውነተኛ ጊዜ ትርፋማነት ትንተና ቁሳቁሶችን፣ ጉልበትን እና ወጪዎችን ይከታተሉ። ለአገልግሎት ንግዶች፣ ኮንትራክተሮች እና የመስክ ስራዎች ከሞባይል-መጀመሪያ ዲዛይን ጋር ፍጹም።",
+      "imageAlt": "የሥራ አስተዳደር እና ወጪ ስሌት መገናኛ",
+      "features": {
+        "jobCosting": "የእውነተኛ ጊዜ የሥራ ወጪ ስሌት",
+        "mobileFieldApp": "የሞባይል መስክ መተግበሪያ",
+        "materialTracking": "የቁሳቁስ መከታተል",
+        "timeTracking": "አውቶማቲክ ጊዜ መከታተል",
+        "photoCapture": "ፎቶ ማንሳት",
+        "digitalSignatures": "ዲጂታል ፊርማዎች",
+        "profitabilityAnalysis": "የትርፋማነት ትንተና",
+        "offlineSupport": "ከመስመር ውጭ ድጋፍ"
+      }
+    },
+    "jobCosting": "የእውነተኛ ጊዜ የሥራ ወጪ ስሌት",
+    "mobileFieldApp": "ለመስክ ሠራተኞች የሞባይል መተግበሪያ",
+    "materialLaborTracking": "የቁሳቁስ እና የጉልበት መከታተል",
+    "ifrs": "ለ166+ አገሮች IFRS",
+    "gaap": "ለአሜሪካ ንግዶች US GAAP",
+    "autoDetect": "በአገር መሰረት አውቶማቲክ ማወቅ",
+    "autoDetection": "አውቶማቲክ ቋንቋ ማወቅ",
+    "rightToLeft": "ከቀኝ ወደ ግራ ቋንቋዎች",
+    "regionalFormat": "የክልል ቀን/ቁጥር ቅርጸቶች",
+    "realTimeRates": "እውነተኛ ጊዜ ምንዛሬ ተመኖች",
+    "cryptoCurrency": "Cryptocurrency ድጋፍ",
+    "currencyConversion": "አውቶማቲክ ለውጦች"
   },
   "faq_a_does_dott_support_mobile_money_payments": "አዎን! በአፍሪካ እና እስያ ያሉ ታዋቂ የሞባይል ገንዘብ መድረኮችን እንደ ኤም-ፔሳ፣ ኤምቲኤን ሞባይል ገንዘብ፣ ኤርቴል ገንዘብ እና ሌሎችንም ውህደት እንደግፋለን። ይህ ንግድዎ የአካባቢ የክፍያ ዘዴዎችን በቀላሉ እንዲቀበል እና እንዲያስኬድ ያስችለዋል።",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "የባርኮድ እና የእቃ መጋዘን ስካነር ባህሪ እንዴት ይሰራል?",
@@ -421,45 +746,6 @@
   "security_badge_1": "የባንክ ደረጃ ምስጠራ",
   "security_badge_2": "GDPR ተገዢ",
   "security_badge_3": "99.9% የስራ ጊዜ",
-  "highlights": {
-    "eyebrow": "ዋና ጥቅሞች",
-    "heading": "ንግዶች ዶትን የሚመርጡት ለምን ነው",
-    "mobile": {
-      "title": "የሞባይል መተግበሪያ",
-      "description": "ከAndroid እና iOS መተግበሪያዎቻችን ጋር ንግድዎን ከዓለም ውስጥ በማንኛውም ቦታ ያስተዳድሩ።",
-      "learnMore": "የበለጠ ይወቁ"
-    },
-    "pos": {
-      "title": "POS እና ባርኮድ ስካኒንግ",
-      "description": "ጠንካራ የክፍያ ማቀነባበሪያ እና ባርኮድ ስካን መሳሪያዎች ጋር ወዲያውኑ ክፍያዎችን ይቀበሉ።",
-      "learnMore": "የበለጠ ይወቁ"
-    },
-    "ai": {
-      "title": "በAI የተደገፉ ግንዛቤዎች",
-      "description": "ስለንግድዎ ጥልቅ ግንዛቤዎችን እና ጠቃሚ ምክሮችን ለማግኘት AIን ይጠቀሙ።",
-      "learnMore": "የበለጠ ይወቁ"
-    },
-    "geofencing": {
-      "title": "ጂኦፌንሲንግ እና ቦታ መከታተል",
-      "description": "ሰራተኞችዎን ይከታተሉ እና ዘመናዊ ቦታ መከታተል እና ጂኦፌንሲንግ ስራዎችን ያስተዳድሩ።",
-      "learnMore": "የበለጠ ይወቁ"
-    },
-    "mobilemoney": {
-      "title": "የሞባይል ገንዘብ ክፍያዎች",
-      "description": "ከM-Pesa፣ MTN Mobile Money፣ Airtel Money፣ እና ሌሎች ጋር በዓለም ዙሪያ ከየትኛውም ቦታ ክፍያዎችን ይቀበሉ።",
-      "learnMore": "የበለጠ ይወቁ"
-    },
-    "whatsapp": {
-      "title": "WhatsApp Business",
-      "description": "በWhatsApp Business ውህደት የደንበኛ ግንኙነትን ይለውጡ። የምርት ካታሎጅዎን ይፍጠሩ እና ያስተዳድሩ፣ ደረሰኞችን እና ደረሰኞችን በራስ-ሰር ይላኩ፣ ፈጣን የደንበኛ ድጋፍ ይስጡ፣ እና በተወዳጅ መልእክት መድረካቸው ላይ ያገናኙ።",
-      "learnMore": "የበለጠ ይወቁ"
-    },
-    "languages": {
-      "title": "ከ20+ ቋንቋዎች ድጋፍ",
-      "description": "በራስዎ ቋንቋ ይሰሩ። ለዓለም አቀፍ ንግድ ከ20 በላይ ቋንቋዎችን እንደግፋለን።",
-      "learnMore": "የበለጠ ይወቁ"
-    }
-  },
   "subscription": {
     "freePlan": "ነፃ ዕቅድ",
     "professionalPlan": "ሙያዊ ዕቅድ",
@@ -585,33 +871,164 @@
       "description": "የ Amazon ነግድዎን ያስተዳድሩ"
     }
   },
-  "highlights": {
-    "bluetooth": "ብልቱው ስካነር እንተግሪሽን",
-    "printBarcodes": "ግላዊ ባርኮዶችን ማታተም",
-    "lowStock": "ዝቅተኛ ስቶክ ማንቂያዎች",
-    "customLabel": "ግላዊ መጠቀማ ማታተም",
-    "mobileScanning": "ተንቀሳቂስ ስካን",
-    "batchProcessing": "ክፍል ቅርፃት",
-    "offlineMode": "የኢንተርኔት የለለ ሁኔታ",
-    "multiplePayments": "ብዙ ከፍያ ሜታዎች",
-    "receiptCustom": "ደረሰኝ ግላዊ ሁኔታ",
-    "recurringInvoices": "ተደግሜ ይመጠቁ ወጨቦች",
-    "paymentReminders": "የክፍያ ማስታወሻዎች",
-    "invoiceFactoring": "የወጨብ ፋክተሪንግ",
-    "vatGst": "VAT/GST ድግፍ",
-    "taxReports": "የግብር ሪፖርቶች",
-    "eFilingReady": "ለኢ-ፋይሊንግ ዝጉጁ",
-    "customDashboards": "ግላዊ ዳሽቦርዶች",
-    "profitAnalysis": "የትርፍ ትንተና",
-    "cashFlowForecast": "የግንዘብ ፍሰት ትንበያ",
-    "mobileMoney": "ተንቀሳቂስ ግንዘብ",
-    "bankTransfers": "የባንክ ግልፍቶች",
-    "digitalWallets": "ዲጂታል ከሦከቶች",
-    "customsDocuments": "የጘምረክ ሰነዶች",
-    "shippingIntegration": "የማፍረስ እንተግሪሽን",
-    "tradeCompliance": "የንግድ መመጠት",
-    "soc2Compliant": "SOC2 መመጠት",
-    "dataEncryption": "የመረጃ መስጣር",
-    "gdprReady": "GDPR ዝጉጁ"
-  }
+  "termsOfService": {
+    "title": "Terms of Use",
+    "effectiveDate": "Effective as of: {{date}}",
+    "introduction": "Welcome to Dott, a service provided by Dott LLC. This Terms of Use Agreement (\"Agreement\") governs your use of the Dott website, mobile applications, and all related services offered by Dott LLC. By accessing or using our service, you acknowledge that you have read, understood, and agree to be bound by these terms.",
+    "navigation": {
+      "backToDashboard": "Back to Dashboard",
+      "backToHome": "Back to Home"
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By registering for and/or using Dott in any manner, including but not limited to visiting or browsing the website or downloading the application, you agree to be bound by this Agreement, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws. If you do not agree with any of these terms, you are prohibited from using or accessing Dott. The materials contained in Dott are protected by applicable copyright and trademark law."
+      },
+      "service": {
+        "title": "2. Description of Service",
+        "content": "Dott is a comprehensive financial management platform that provides businesses with tools for accounting, payroll, payment processing, invoicing, and financial insights. Our services include subscription-based access to our software, payment processing capabilities, payroll services, and invoice factoring in select regions. The specific features available to you may depend on your subscription level, geographical location, and applicable laws and regulations."
+      },
+      "accounts": {
+        "title": "3. User Accounts",
+        "content": "To access most features of Dott, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete. You are responsible for safeguarding your password and for all activities that occur under your account. You agree to notify Dott LLC immediately of any unauthorized use of your account. Dott LLC cannot and will not be liable for any loss or damage arising from your failure to comply with the above requirements."
+      },
+      "payments": {
+        "title": "4. Subscription and Payments",
+        "content": "Dott offers various subscription plans and payment services. By subscribing to our services, you agree to pay the applicable fees as they become due. Subscription fees are billed in advance on a monthly or annual basis depending on your selected billing cycle. When you register for a paid service, you must provide accurate and complete information for a valid payment method that you are authorized to use.",
+        "recurring": {
+          "title": "4.1 Recurring Billing",
+          "content": "By subscribing to Dott services, you authorize us to charge the payment method you provide to us on a recurring basis. If we are unable to charge your payment method for any reason, we reserve the right to terminate or suspend your access to the paid services."
+        },
+        "processing": {
+          "title": "4.2 Payment Processing",
+          "content": "Dott uses third-party payment processors including Stripe, Flutterwave, DLocal, Wise, PayPal, and others to process transactions. Your use of these payment services is subject to the applicable payment processor's terms of service and privacy policy. Dott charges a transaction fee for payment processing services as outlined in our pricing page."
+        },
+        "refunds": {
+          "title": "4.3 Refunds",
+          "content": "All fees are non-refundable unless otherwise specified or required by applicable law. If you believe you've been charged in error, please contact our customer support team."
+        }
+      },
+      "conduct": {
+        "title": "5. User Conduct",
+        "content": "You agree to use Dott only for lawful purposes and in accordance with this Agreement. You agree not to use Dott:",
+        "violations": {
+          "law": "In any way that violates any applicable federal, state, local, or international law or regulation.",
+          "material": "To transmit any material that is unlawful, threatening, abusive, libelous, defamatory, obscene, or otherwise objectionable.",
+          "impersonation": "To impersonate or attempt to impersonate Dott LLC, a Dott LLC employee, another user, or any other person or entity.",
+          "interference": "To engage in any activity that interferes with or disrupts the services (or the servers and networks connected to the services).",
+          "security": "To attempt to circumvent any security measures implemented by Dott LLC.",
+          "financial": "For money laundering, terrorist financing, or any other illegal financial activities."
+        }
+      },
+      "financial": {
+        "title": "6. Payment and Financial Services",
+        "content": "Dott enables users to process payments, manage payroll, and access financial services through various third-party providers. When using these services, you agree to comply with all applicable laws and regulations, including those related to financial transactions, anti-money laundering requirements, and data privacy.",
+        "processing": {
+          "title": "6.1 Payment Processing",
+          "content": "Use of our payment processing features is subject to the terms of service of our payment partners. You are responsible for ensuring all payment information provided is accurate and that you are authorized to use the payment methods you provide."
+        },
+        "factoring": {
+          "title": "6.2 Invoice Factoring",
+          "content": "Where available, Dott offers invoice factoring services subject to additional terms and eligibility requirements. These services are currently only available in the United States and Canada. By using our invoice factoring services, you authorize Dott LLC to verify your business information, credit history, and other relevant details."
+        },
+        "international": {
+          "title": "6.3 International Transactions",
+          "content": "For international transactions, you acknowledge that currency conversion rates and additional fees may apply. Dott LLC is not responsible for any fees charged by your financial institution or any third-party payment processors."
+        }
+      },
+      "data": {
+        "title": "7. Data and Content",
+        "content": "You retain all rights to your data uploaded to Dott. By using our services, you grant Dott LLC a non-exclusive, worldwide, royalty-free license to use, process, and display your data solely for the purpose of providing and improving our services. We will maintain appropriate administrative, physical, and technical safeguards to protect your data.",
+        "processing": {
+          "title": "7.1 Data Processing",
+          "content": "As part of providing our services, Dott processes financial and personal data in accordance with our Privacy Policy. You acknowledge that Dott may use third-party service providers to process data on our behalf."
+        },
+        "security": {
+          "title": "7.2 Data Security",
+          "content": "You are responsible for maintaining the confidentiality of your account information and for restricting access to your computer or device. You agree to accept responsibility for all activities that occur under your account."
+        }
+      },
+      "contact": {
+        "title": "21. Contact Information",
+        "content": "If you have any questions about this Agreement, please contact us at:"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "United States",
+      "email": "Email: support@dottapps.com"
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "ከመስመር ውጭ የሚሰራ በAI የተደገፈ የንግድ አስተዳደር መድረክ።",
+      "cta": {
+        "getStarted": "በነጻ ይጀምሩ",
+        "signIn": "ግባ"
+      },
+      "noCreditCard": "ክሬዲት ካርድ አያስፈልግም",
+      "freePlan": "ለዘላለም ነጻ እቅድ"
+    },
+    "features": {
+      "title": "የሚያስፈልግዎት ሁሉ",
+      "pos": {
+        "title": "የሽያጭ ነጥብ",
+        "description": "ከመስመር ውጭ እንኳን ሽያጮችን ወዲያውኑ ያስኬዱ"
+      },
+      "barcode": {
+        "title": "ባርኮድ ስካነር",
+        "description": "ምርቶችን በካሜራዎ ይቃኙ"
+      },
+      "invoicing": {
+        "title": "ፈጣን ደረሰኝ",
+        "description": "በመንቀሳቀስ ላይ ደረሰኞችን ይፍጠሩ እና ይላኩ"
+      },
+      "analytics": {
+        "title": "የቅጽበት ትንታኔ",
+        "description": "የንግድዎን አፈጻጸም ይከታተሉ"
+      }
+    },
+    "benefits": {
+      "title": "ለስኬትዎ የተገነባ",
+      "offline": {
+        "title": "ከመስመር ውጭ ይሰራል",
+        "description": "ያለ ኢንተርኔት መሸጥዎን ይቀጥሉ"
+      },
+      "fast": {
+        "title": "በጣም ፈጣን",
+        "description": "ወዲያውኑ መጫን፣ ምንም መዘግየት የለም"
+      },
+      "mobile": {
+        "title": "ሞባይል መጀመሪያ",
+        "description": "ለስልኮች እና ታብሌቶች የተነደፈ"
+      },
+      "payments": {
+        "title": "የሞባይል ገንዘብ",
+        "description": "M-Pesa፣ ከመስመር ውጭ ሁነታ፣ የአካባቢ ድጋፍ"
+      }
+    },
+    "pricing": {
+      "title": "ቀላል፣ ግልጽ ዋጋ"
+    },
+    "cta": {
+      "title": "ንግድዎን ለማሳደግ ዝግጁ ነዎት?",
+      "subtitle": "ዛሬ ንግድዎን በተሻለ ሁኔታ ማስተዳደር ይጀምሩ",
+      "button": "በነጻ ይጀምሩ",
+      "terms": "ክሬዲት ካርድ አያስፈልግም • በማንኛውም ጊዜ ይሰርዙ"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: ዓለም አቀፍ የንግድ መድረክ",
+    "ios": "በመነሻ ማያ ገጽዎ ላይ ይገኛል",
+    "android": "ለፈጣን መዳረሻ ይጫኑ",
+    "tap": "ይንኩ",
+    "then": "ከዚያ",
+    "addToHome": "ወደ መነሻ ያክሉ",
+    "install": "ጫን"
+  },
+  "browserTitle": "ዶት፡ ዓለም አቀፍ የንግድ መድረክ"
 }

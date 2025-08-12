@@ -4,7 +4,7 @@ Converts integer ID to UUID to fix production database issues
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.conf import settings
 import sys
 
@@ -191,7 +191,7 @@ class Command(BaseCommand):
         ON CONFLICT DO NOTHING;
         """
 
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connection.cursor() as cursor:
                 cursor.execute(schema_sql)
         

@@ -6,7 +6,7 @@ Usage: python manage.py shell < scripts/create_admin_user.py
 
 import sys
 import getpass
-from django.db import transaction
+from django.db import transaction as db_transaction
 from notifications.models import AdminUser
 from django.contrib.auth.hashers import make_password
 
@@ -116,7 +116,7 @@ while True:
 # Create the admin user
 print("\n🔄 Creating admin user...")
 try:
-    with transaction.atomic():
+    with db_transaction.atomic():
         admin_user = AdminUser(
             username=username,
             email=email,

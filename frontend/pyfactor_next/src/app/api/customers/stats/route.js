@@ -30,23 +30,24 @@ export async function GET(request) {
       });
       
       if (customersResponse.ok) {
-        const customers = await customersResponse.json();
+        const responseData = await customersResponse.json();
+        const customers = Array.isArray(responseData) ? responseData : (responseData.results || responseData.customers || []);
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         
         // Calculate stats from the customers list
         const stats = {
           total: customers.length || 0,
-          active: customers.filter(c => c.total_spent > 0).length || 0,
+          active: customers.filter(c => (c.total_spent || 0) > 0).length || 0,
           new_this_month: customers.filter(c => {
-            const createdDate = new Date(c.created_at || c.date_created);
-            return createdDate >= startOfMonth;
+            const createdDate = new Date(c.created_at || c.date_created || c.created);
+            return createdDate >= startOfMonth && createdDate <= now;
           }).length || 0,
           total_revenue: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
           average_order_value: customers.length > 0 
-            ? customers.reduce((sum, c) => sum + (c.total_spent || 0), 0) / customers.filter(c => c.total_spent > 0).length
+            ? customers.reduce((sum, c) => sum + (c.total_spent || 0), 0) / customers.filter(c => (c.total_spent || 0) > 0).length || 1
             : 0,
-          total_orders: customers.filter(c => c.total_spent > 0).length || 0
+          total_orders: customers.filter(c => (c.total_spent || 0) > 0).length || 0
         };
         
         return NextResponse.json(stats);

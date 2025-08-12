@@ -368,9 +368,9 @@ class OnboardingSessionService:
                 step_data[step_key] = json.loads(parsed_step.get("data", "{}"))
                 
             # Find or create OnboardingProgress
-            from django.db import transaction
+            from django.db import transaction as db_transaction
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 progress, created = onboarding_progress_model.objects.get_or_create(
                     user_id=user_id,
                     defaults={

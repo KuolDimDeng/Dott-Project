@@ -1,0 +1,477 @@
+{
+  "hero": {
+    "tagline": "NGWAỌRỤ NCHỊKWA AZỤMAHỊA NWERE ỌGỤ",
+    "your": "Gị",
+    "title": "Ikpo Okwu Azụmahịa Ụwa",
+    "subtitle": "N'efu ruo mgbe ebighị ebi maka njirimara ndị bụ isi",
+    "description": "Dott na-enyere ndị nwe azụmahịa dịka gị aka ịmepụta akwụkwọ nnata ego, ịnata ụgwọ n'ịntanetị, ijikwa ego na ngwaahịa, yana inyocha koodu—ihe niile n'otu ikpo okwu dị mfe.",
+    "button": "Malite N'efu",
+    "trustedBy": "Azụmahịa karịrị 10,000 n'ụwa niile tụkwasịrị anyị obi",
+    "benefit": {
+      "free": "Atụmatụ n'efu ruo mgbe ebighị ebi",
+      "invoicing": "Ịde akwụkwọ nnata ego ọkachamara",
+      "pos": "Sistemụ ebe ire ahịa",
+      "inventory": "Nchịkwa ngwaahịa",
+      "payroll": "Ngwaọrụ ụgwọ ọnwa na HR",
+      "tax": "Nrube isi ụtụ isi",
+      "insights": "Nghọta sitere na AI",
+      "mobileMoney": "Ịkwụ ụgwọ ego ekwentị (M-Pesa)",
+      "cardPayments": "Nabata ụgwọ kaadị n'ụwa niile",
+      "languages": "Nkwado asụsụ karịrị 30",
+      "mobilePhone": "Ngwa ekwentị gụnyere",
+      "jobManagement": "Nchịkwa ọrụ na ọnụ ahịa",
+      "accounting": "Nkwado IFRS na US GAAP"
+    }
+  },
+  "navFeatures": "Atụmatụ",
+  "navPricing": "Ọnụahịa",
+  "navAbout": "Maka Anyị",
+  "navBlog": "Blog",
+  "navContact": "Kpọtụrụ Anyị",
+  "navStatus": "Ọnọdụ Sistemụ",
+  "navSignIn": "BANYE",
+  "getStarted": "Malite",
+  "pricing": {
+    "eyebrow": "Ọnụ ahịa dị mfe na nke doro anya",
+    "heading": "Họrọ atụmatụ kwesịrị ekwesị maka azụmahịa gị",
+    "subheading": "Enweghị ụgwọ zoro ezo. Achọghị kaadị kredit maka atụmatụ Basic. Kagbuo mgbe ọ bụla.",
+    "billing": {
+      "monthly": "Kwa ọnwa",
+      "sixMonths": "Ọnwa 6",
+      "annual": "Kwa afọ",
+      "popular": "AMA AMA",
+      "save20": "CHEKWAA 20%"
+    },
+    "period": {
+      "month": "/ọnwa",
+      "sixMonths": "/ọnwa 6",
+      "year": "/afọ"
+    },
+    "mostPopular": "KACHA AMA AMA",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Zuru oke maka mmalite",
+        "cta": "Malite n'efu"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Maka azụmahịa na-eto eto nke chọrọ karịa",
+        "cta": "Nweta Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Enweghị oke maka nnukwu nzukọ",
+        "cta": "Malite Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Ngwọta Azụmahịa Zuru Ezu",
+    "heading": "Ihe Niile Ị Chọrọ Ito N'ụwa Niile",
+    "subheading": "Ngwaọrụ dị ike emebere azụmahịa ọgbara ọhụrụ na-arụ ọrụ gafee oke",
+    "operations": {
+      "title": "Njikwa Ọrụ",
+      "description": "Mee ka ọrụ azụmahịa gị kwa ụbọchị dị mfe"
+    },
+    "financial": {
+      "title": "Njikwa Ego",
+      "description": "Njikwa zuru ezu nke ego azụmahịa gị",
+      "heading": "Njikwa zuru ezu na ego azụmahịa gị"
+    },
+    "global": {
+      "title": "Ngwaọrụ Azụmahịa Ụwa",
+      "description": "Ihe niile ị chọrọ iji rụọ ọrụ n'ụwa niile",
+      "heading": "Ihe niile ị chọrọ maka ọrụ mba ụwa"
+    },
+    "trust": {
+      "title": "Ewuru maka Nchekwa na Nrube isi"
+    }
+  },
+  "footer": {
+    "home": "Ụlọ",
+    "features": "Atụmatụ",
+    "pricing": "Ọnụahịa",
+    "blog": "Blog",
+    "contact": "Kpọtụrụ",
+    "inventory": "Njikwa Ngwongwo",
+    "accounting": "Nchịkọta Ego",
+    "invoicing": "Ịkwụ Ụgwọ",
+    "payments": "Nkwụghachi",
+    "pos": "Ebe Ire Ahịa",
+    "about": "Maka Anyị",
+    "careers": "Ọrụ",
+    "press": "Akwụkwọ Akụkọ",
+    "partners": "Ndị Mmekọ",
+    "help": "Ebe Enyemaka",
+    "docs": "Akwụkwọ",
+    "status": "Ọnọdụ Sistemụ",
+    "security": "Nchekwa",
+    "privacy": "Iwu Nzuzo",
+    "terms": "Usoro Ọrụ",
+    "cookies": "Iwu Cookie",
+    "footerHeading": "Footer",
+    "logoAlt": "Akara Dott",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Ajụjụ Ndị A Na-ajụkarị",
+    "subheading": "Chọta azịza nye ajụjụ ndị a na-ajụkarị gbasara ikpo okwu anyị na ọrụ anyị."
+  },
+  "feature": {
+    "inventory": "Njikwa Ngwaahịa Dị Elu",
+    "inventory.description": "Nleba anya ngwaahịa n'oge ozugbo na nyocha barcode na nkwado ọtụtụ ebe",
+    "barcode": "Barcode na QR Code",
+    "barcode.description": "Mepụta ma nyochaa barcode maka ngwaahịa na akwụkwọ",
+    "pos": "Ebe Ire Ahịa",
+    "pos.description": "Sistemụ POS ọgbara ọhụrụ nwere ike ọrụ na-enweghị ịntanetị",
+    "invoicing": "Akwụkwọ ụgwọ Ego Dị Iche Iche",
+    "invoicing.description": "Akwụkwọ ụgwọ ọkachamara na ego karịrị 50 na mgbanwe akpaka",
+    "tax": "Nrube Isi Ụtụ Mpaghara",
+    "tax.description": "Mgbakọ ụtụ akpaka maka mba karịrị 100",
+    "reporting": "Nyocha Ego",
+    "reporting.description": "Nghọta n'oge ozugbo na ndụmọdụ AI",
+    "payments": "Ụzọ Ịkwụ Ụgwọ Mpaghara",
+    "payments.description": "Nabata ịkwụ ụgwọ site na ụzọ mpaghara na mba ọ bụla",
+    "global": "Njikwa Mbubata/Mbupu",
+    "global.description": "Jikwaa akwụkwọ azụmahịa mba ụwa na nrube isi",
+    "security": "Nchekwa Ụlọ Ọrụ",
+    "security.description": "Nchekwa ọkwa ụlọ akụ na nrube isi mpaghara",
+    "jobs": "Njikwa Ọrụ na Ọnụ Ahịa",
+    "jobs.description": "Nleba anya ọrụ site na mmalite ruo na njedebe na ọnụ ahịa n'oge ozugbo, ngwa mkpanaka, na nyocha uru",
+    "accounting": "Ụkpụrụ Ndekọ Ego Abụọ",
+    "languages": "Nkwado Asụsụ Ọtụtụ",
+    "currencies": "Usoro Ego Ọtụtụ"
+  },
+  "trust": {
+    "soc2Title": "SOC2 Kwadoro",
+    "soc2Desc": "Nchekwa ụlọ ọrụ",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Nchekwa ọkwa ụlọ akụ",
+    "gdprTitle": "GDPR Dị Njikere",
+    "gdprDesc": "Kwadoro nzuzo",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Mgbe niile dị"
+  },
+  "highlights": {
+    "eyebrow": "Uru Ndi Isi",
+    "heading": "Gịnị mere ndị azụmahịa ji họrọ Dott",
+    "subheading": "Njirimara dị elu nke na-eme ka anyị dị iche n'etiti ndị asọmpi ma na-enyere azụmahịa gị aka ịbawanye.",
+    "learnMore": "Mụtakwuo",
+    "features": {
+      "label": "Njirimara isi:"
+    },
+    "mobile": {
+      "title": "Ngwa Mkpanaka",
+      "description": "Nweta data azụmahịa gị mgbe ọ bụla na ebe ọ bụla site na ngwa mkpanaka anyị dị ike. Jikwaa ngwongwo, hazie ahịa, ma hụ akụkọ oge dị ugbu a mgbe ị na-aga.",
+      "imageAlt": "Foto ngwa mkpanaka"
+    },
+    "pos": {
+      "title": "POS na Nyocha Barcode",
+      "description": "Gbanwee ngwaọrụ ọ bụla ka ọ bụrụ sistemụ ire ahịa dị ike. Nyochaa barcode ozugbo, hazie ahịa ngwa ngwa, soro ngwongwo n'oge dị ugbu a, ma nabata ụzọ ịkwụ ụgwọ niile gụnyere ego, kaadị, na ego mkpanaka.",
+      "imageAlt": "Sistemụ POS nwere njirimara nyocha barcode",
+      "features": {
+        "quickCheckout": "Nkwụghachi ngwa ngwa",
+        "barcodeScanning": "Nyocha barcode",
+        "allPaymentTypes": "Ụdị nkwụghachi niile",
+        "inventoryTracking": "Nsochi ngwongwo",
+        "offlineMode": "Ọnọdụ na-adịghị n'ịntanetị",
+        "mobileReady": "Njikere mkpanaka"
+      }
+    },
+    "ai": {
+      "title": "Nghọta AI",
+      "description": "Nweta ndụmọdụ amamihe na nyocha amụma dabere na data azụmahịa gị. AI anyị na-enyere gị aka ịkọ ihe achọrọ, meziwanye ngwongwo, ma chọpụta ohere maka uto.",
+      "imageAlt": "Foto dashboard nyocha AI"
+    },
+    "jobs": {
+      "title": "Njikwa Ọrụ Zuru Ezu",
+      "description": "Ọnụahịa ọrụ site na quote ruo n'ọgwụgwụ. Soro ihe, ọrụ, na mmefu ego na nyocha uru n'oge dị ugbu a. Dị mma maka azụmahịa ọrụ, ndị na-arụ ọrụ, na ọrụ ọhịa nwere nhazi mkpanaka mbụ.",
+      "imageAlt": "Njikwa ọrụ na interface ọnụahịa",
+      "features": {
+        "jobCosting": "Ọnụahịa ọrụ n'oge dị ugbu a",
+        "mobileFieldApp": "Ngwa mkpanaka maka ndị ọrụ ọhịa",
+        "materialTracking": "Nsochi ihe",
+        "timeTracking": "Nsochi oge akpaghị aka",
+        "photoCapture": "Njide foto",
+        "digitalSignatures": "Mbinye aka dijitalụ",
+        "profitabilityAnalysis": "Nyocha uru",
+        "offlineSupport": "Nkwado na-adịghị n'ịntanetị"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing na Nsochi Ebe",
+      "description": "Gbaa nsochi oge ziri ezi na GPS clock in/out. Dị mma maka ndị otu ọhịa, ndị ọkwọ ụgbọala nnyefe, na ndị ọrụ dị anya. Tọọ oke mpaghara maka saịtị ọrụ ma nweta mkpesa mgbe ndị ọrụ batara ma ọ bụ pụọ na mpaghara ahọpụtara.",
+      "imageAlt": "Geofencing na interface nsochi ebe",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Oke mpaghara",
+        "realTimeAlerts": "Mkpesa oge dị ugbu a",
+        "automatedTimesheets": "Akwụkwọ oge akpaghị aka",
+        "complianceReady": "Njikere nrube isi",
+        "teamManagement": "Njikwa otu"
+      }
+    },
+    "mobilemoney": {
+      "title": "Nkwụghachi Ego Mkpanaka",
+      "description": "Nabata nkwụghachi site n'akụkụ ọ bụla nke ụwa. Njikọta M-Pesa na-arụ ọrụ na Kenya, na MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, na Mercado Pago na-abịa. Ruo ọtụtụ ijeri ndị ahịa na-ahọrọ ego mkpanaka karịa ụlọ akụ omenala.",
+      "imageAlt": "Nhọrọ nkwụghachi ego mkpanaka",
+      "available": "Ụzọ ịkwụ ụgwọ:",
+      "live": "Dị Ugbu a:",
+      "coming": "Na-abịa:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Gbanwee nkwurịta okwu ndị ahịa site na njikọta WhatsApp Business. Mepụta ma jikwaa katalọgụ ngwaahịa gị, zigara akwụkwọ ụgwọ na akwụkwọ nnata na-enweghị onye, nye nkwado ndị ahịa ozugbo, ma ruo ndị ahịa n'usoro ozi ha kachasị masị.",
+      "imageAlt": "Interface njikọta WhatsApp Business"
+    },
+    "languages": {
+      "title": "Asụsụ 30+ A Na-akwado",
+      "description": "Ruo ndị ahịa ma jikwaa azụmahịa gị n'asụsụ ị hụrụ n'anya. Site na Bekee ruo Swahili, Spanish ruo Mandarin, anyị na-akwado asụsụ karịrị 30 iji mee ka Dott ruo azụmahịa niile n'ụwa.",
+      "imageAlt": "Ngosi interface asụsụ ọtụtụ",
+      "availableIn": "Dị na:"
+    },
+    "vatGst": "Nkwado VAT/GST",
+    "taxReports": "Akụkọ ụtụ isi",
+    "eFilingReady": "Dị njikere maka itinye elektrọnik",
+    "ifrs": "IFRS maka mba 166+",
+    "gaap": "US GAAP maka azụmaahịa US",
+    "autoDetect": "Nchọpụta akpaaka site na mba",
+    "autoDetection": "Nchọpụta asụsụ akpaaka",
+    "rightToLeft": "Asụsụ aka nri gaa aka ekpe",
+    "regionalFormat": "Usoro ụbọchị/ọnụọgụ mpaghara",
+    "realTimeRates": "Ọnụego mgbanwe n'ezie",
+    "cryptoCurrency": "Nkwado cryptocurrency",
+    "currencyConversion": "Ntụgharị akpaaka"
+  },
+  "builtForYou": {
+    "title": "Ewuru Maka Gị",
+    "heading": "Jikwaa azụmahịa gị dị ka onye ọkachamara!",
+    "subheading": "Ewuru maka ndị nwe azụmahịa dị ka gị",
+    "cta": "Sonye na ọtụtụ puku ndị nwe azụmahịa n'ụwa niile na-atụkwasị Dott obi iji jikwaa azụmahịa ha",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Soro ọrụ, nyefeere ndị ahịa akwụkwọ ụgwọ ozugbo ma jikwaa ego gị n'otu ebe. Nweta ego ngwa ngwa site na akwụkwọ ụgwọ ọkachamara."
+      },
+      "contractors": {
+        "title": "Ndị Ọrụ Nkwekọrịta",
+        "description": "Jikwaa ọtụtụ ọrụ, soro ọnụ ahịa ihe na ọrụ ma zitere ndị ahịa ọnụ ahịa ọkachamara. Debe ego gị ka ọ na-eru gị."
+      },
+      "entrepreneurs": {
+        "title": "Ndị Ọchụnta Ego",
+        "description": "Wee startup gị site na ngwaọrụ dị ike maka ngwa ahịa, ire ere na nleba anya ego. Me mkpebi dabere na data."
+      },
+      "consultants": {
+        "title": "Ndị Ndụmọdụ",
+        "description": "Kwụọ site na elekere ma ọ bụ ọrụ, soro mmefu ma jikwaa ọtụtụ ndị ahịa n'enweghị nsogbu. Akwụkwọ ụgwọ ọkachamara gụnyere."
+      },
+      "retail": {
+        "title": "Ndị Nwe Ụlọ Ahịa Nta",
+        "description": "Jikwaa ngwa ahịa site na nyocha barcode, soro ire ere ma nabata ụzọ ịkwụ ụgwọ dị iche iche gụnyere mobile money."
+      },
+      "streetVendors": {
+        "title": "Ndị Na-ere N'okporo Ụzọ",
+        "description": "Nhazi mobile-first dị mfe iji soro ire ere kwa ụbọchị, jikwaa ngwa ahịa ma nabata ịkwụ ụgwọ dijitalụ n'ije."
+      },
+      "marketStalls": {
+        "title": "Ndị Nwe Ụlọ Ahịa Ahịa",
+        "description": "Dị mma maka ụbọchị ahịa ndị na-achọkarị ihe. Ntinye ire ere ngwa ngwa, mkpọtụ ngwa ahịa na nleba anya uru kwa ụbọchị n'ego obodo gị."
+      },
+      "mobileMoneyAgents": {
+        "title": "Ndị Nnọchianya Mobile Money",
+        "description": "Soro azụmahịa, jikwaa nguzozi float ma mepụta akụkọ maka ndị ọrụ netwọk. Ewuru maka M-Pesa, MTN na ndị ọzọ."
+      },
+      "restaurants": {
+        "title": "Ndị Nwe Nri Nta",
+        "description": "Jikwaa ọda, soro ihe nri, gbakọọ ọnụ ahịa nri ma jikwaa ma iri nri n'ime na ibu n'ụzọ dị irè."
+      },
+      "serviceProviders": {
+        "title": "Ndị Na-enye Ọrụ",
+        "description": "Maka ndị ọrụ mmiri, ọkụ latrik, ndị rụrụ ụgbọala na ndị ọzọ. Hazie ọrụ, soro akụkụ ma nye akwụkwọ ụgwọ mgbe emechara."
+      },
+      "onlineSellers": {
+        "title": "Ndị Na-ere Online",
+        "description": "Jikọọ ngwa ahịa n'ofe ikpo okwu, jikwaa ọda ma soro mbupu. Dị mma maka ndị na-ere mgbasa ozi."
+      },
+      "transport": {
+        "title": "Ndị Ọrụ Njem",
+        "description": "Maka ndị ọrụ taksi, boda boda na tuk-tuk. Soro ego kwa ụbọchị, ọnụ ahịa mmanụ na usoro nlekọta."
+      }
+    }
+  },
+  "integrations": {
+    "title": "Njikọta",
+    "heading": "Jikọọ na ngwaọrụ ndị ị hụrụ n'anya",
+    "subheading": "Jikọọ na ngwaọrụ azụmahịa a ma ama na ikpo okwu ịkwụ ụgwọ n'enweghị nsogbu",
+    "availableNow": "Dị ugbu a",
+    "comingSoon": "Na-abịa n'oge na-adịghị anya",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Zipụrụ akwụkwọ ụgwọ na akwụkwọ nnata ozugbo nye ndị ahịa"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Nabata ịkwụ ụgwọ mobile money n'enweghị nsogbu"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Hazie ịkwụ ụgwọ kaadị n'ụwa niile"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Jikọọ ngwa ahịa e-commerce gị"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Jikọọ ụlọ ahịa WordPress gị"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Bubata ma mepụta data akụkọ"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Jikwaa azụmahịa Amazon gị"
+    }
+  },
+  "cookieBanner": {
+    "title": "Ọkwa Cookie",
+    "message": "Anyị na-eji kuki eme ka ahụmịhe gị dịkwuo mma, nyochaa ojiji, ma nye ọrụ dị mkpa. Site n'iji saịtị anyị, ị kwenyere n'iji kuki anyị.",
+    "learnMore": "Mụtakwuo",
+    "customize": "Hazie",
+    "rejectAll": "Jụ Ha Niile",
+    "acceptAll": "Nabata Ha Niile",
+    "preferencesTitle": "Mmasị Cookie",
+    "alwaysOn": "Mgbe Niile Ọkụ",
+    "savePreferences": "Chekwaa Mmasị",
+    "essential": {
+      "title": "Kuki Dị Mkpa",
+      "description": "Achọrọ maka ọrụ saịtị bụ isi na nchekwa"
+    },
+    "functional": {
+      "title": "Kuki Na-arụ Ọrụ",
+      "description": "Na-echeta mmasị gị na ntọala"
+    },
+    "analytics": {
+      "title": "Kuki Nyocha",
+      "description": "Na-enyere anyị aka ịghọta otu esi eji saịtị anyị"
+    },
+    "marketing": {
+      "title": "Kuki Ahịa",
+      "description": "Ejiri gosi mgbasa ozi dabara adaba"
+    }
+  },
+  "contact": {
+    "eyebrow": "Kpọtụrụ Anyị",
+    "heading": "Kpọtụrụ",
+    "subheading": "Ị nwere ajụjụ gbasara Dott? Ndị otu anyị nọ ebe a iji nyere gị aka ịchọta azịza zuru oke maka azụmahịa gị.",
+    "infoTitle": "Ozi Kọntaktị",
+    "infoSubtitle": "Dejupụta fọm ma ọ bụ kpọtụrụ anyị ozugbo site na iji ozi dị n'okpuru.",
+    "email": "Email",
+    "address": "Adreesị",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "United States",
+    "submitting": "Na-ezipu ozi gị...",
+    "success": "Daalụ maka ịkpọtụrụ! Anyị ga-eso gị kpọtụrụ n'oge na-adịghị anya.",
+    "error": "Ọ dara ada izipu ozi gị. Biko nwaa ọzọ ma ọ bụ zitere anyị email ozugbo na support@dottapps.com.",
+    "error.name": "Aha dị mkpa",
+    "error.email.required": "Email dị mkpa",
+    "error.email.invalid": "Biko tinye adreesị email ziri ezi",
+    "error.message": "Ozi dị mkpa",
+    "form": {
+      "name": "Aha Zuru Ezu",
+      "email": "Adreesị Email",
+      "company": "Ụlọ Ọrụ",
+      "phone": "Nọmba Ekwentị",
+      "message": "Ozi",
+      "submit": "Zipu Ozi",
+      "sending": "Na-ezipu...",
+      "subject": {
+        "label": "Kedu ka anyị ga-esi nyere gị aka?",
+        "general": "Ajụjụ Izugbe",
+        "sales": "Ajụjụ Ire Ahịa",
+        "support": "Nkwado Teknụzụ",
+        "demo": "Rịọ maka Demo",
+        "partnership": "Ohere Mmekọrịta"
+      }
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "Ikpo okwu nlekọta azụmahịa nke AI na-akwado nke na-arụ ọrụ na-enweghị ịntanetị.",
+      "cta": {
+        "getStarted": "Malite N'efu",
+        "signIn": "Banye"
+      },
+      "noCreditCard": "Kaadị kredit adịghị mkpa",
+      "freePlan": "Atụmatụ efu ruo mgbe ebighị ebi"
+    },
+    "features": {
+      "title": "Ihe Niile Ị Chọrọ",
+      "pos": {
+        "title": "Ebe Ire Ahịa",
+        "description": "Hazie ahịa ozugbo, ọbụna na-enweghị ịntanetị"
+      },
+      "barcode": {
+        "title": "Nyocha Barcode",
+        "description": "Nyochaa ngwaahịa site na igwefoto gị"
+      },
+      "invoicing": {
+        "title": "Ịnye Akwụkwọ Ọnụ Ngwa Ngwa",
+        "description": "Mepụta ma ziga akwụkwọ ọnụ mgbe ị na-aga"
+      },
+      "analytics": {
+        "title": "Nyocha Oge Ozugbo",
+        "description": "Soro arụmọrụ azụmahịa gị"
+      }
+    },
+    "benefits": {
+      "title": "Ewuru Maka Ihe Ịga Nke Ọma Gị",
+      "offline": {
+        "title": "Ọ Na-arụ Ọrụ Na-enweghị Ịntanetị",
+        "description": "Gaa n'ihu na-ere ahịa na-enweghị ịntanetị"
+      },
+      "fast": {
+        "title": "Ọsọ Ọsọ",
+        "description": "Ntinye ozugbo, enweghị igbu oge"
+      },
+      "mobile": {
+        "title": "Ekwentị Mbụ",
+        "description": "Emebere maka ekwentị na mbadamba"
+      },
+      "payments": {
+        "title": "Ego Ekwentị",
+        "description": "M-Pesa, ọnọdụ na-enweghị ịntanetị, nkwado mpaghara"
+      }
+    },
+    "pricing": {
+      "title": "Ọnụahịa Dị Mfe, Doro Anya"
+    },
+    "cta": {
+      "title": "Ị Dị Njikere Ito Azụmahịa Gị?",
+      "subtitle": "Malite ijikwa azụmahịa gị nke ọma taa",
+      "button": "Malite N'efu",
+      "terms": "Kaadị kredit adịghị mkpa • Kagbuo oge ọ bụla"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: Ikpo Azụmaahịa Ụwa",
+    "ios": "Dị na ihuenyo mbụ gị",
+    "android": "Tinye maka ịnweta ngwa ngwa",
+    "tap": "Kpatụ",
+    "then": "mgbe ahụ",
+    "addToHome": "Tinye na Ụlọ",
+    "install": "Tinye"
+  },
+  "browserTitle": "Dott: Ikpo Azụmaahịa Ụwa"
+}

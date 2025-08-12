@@ -11,7 +11,7 @@ Then run these commands one by one:
 from django.contrib.auth import get_user_model
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 User = get_user_model()
 
@@ -40,7 +40,7 @@ print("WARNING: This will delete ALL user data!")
 confirm = input("Type 'DELETE ALL DATA' to confirm: ")
 
 if confirm == "DELETE ALL DATA":
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Delete in order (foreign key constraints)
         progress_deleted = OnboardingProgress.objects.all().delete()
         print(f"Deleted OnboardingProgress: {progress_deleted}")

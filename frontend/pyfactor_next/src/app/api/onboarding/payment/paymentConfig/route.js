@@ -16,9 +16,9 @@ export async function GET(request) {
         publicKey: 'mock-stripe-pk',
         clientSecret: 'mock-client-secret',
         paymentIntentId: 'mock-payment-intent-id',
-        amount: 1500, // $15.00
+        amount: 3500, // $35.00
         currency: 'usd',
-        description: 'PyFactor Professional Subscription',
+        description: 'Dott Professional Subscription',
         redirect: {
           success: '/dashboard',
           cancel: '/onboarding/subscription'

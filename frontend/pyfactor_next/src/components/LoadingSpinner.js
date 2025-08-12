@@ -40,7 +40,7 @@ export default function LoadingSpinner({
 
   // Container classes
   const containerClasses = fullscreen
-    ? 'fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80'
+    ? 'absolute inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80'
     : 'flex flex-col items-center justify-center p-4';
 
   return (
@@ -70,8 +70,8 @@ export default function LoadingSpinner({
           </svg>
         </div>
         
-        {/* Message (if provided) */}
-        {message && (
+        {/* Message (if provided and not empty) */}
+        {message && message.trim() !== '' && (
           <div className={`mt-3 ${sizeClass.text} text-gray-700`}>
             {message}
           </div>

@@ -11,12 +11,12 @@ import Features from '@/app/components/Features';
 import Highlights from '@/app/components/Highlights';
 import BuiltForYou from '@/app/components/BuiltForYou';
 import Integrations from '@/app/components/Integrations';
-// import Pricing from '@/app/components/Pricing';
-import GeoPricing from '@/components/pricing/GeoPricing';
+import Pricing from '@/app/components/Pricing';
 import FAQ from '@/app/components/FAQ';
 import ContactForm from '@/app/components/ContactForm';
 import Footer from '@/app/components/Footer';
 import CookieBanner from '@/components/Cookie/CookieBanner';
+import PageTitle from '@/components/PageTitle';
 
 // Add a function to clear tenant data
 const clearTenantData = () => {
@@ -103,6 +103,7 @@ export default function Home() {
   return (
     <>
     <I18nextProvider i18n={i18nInstance}>
+      <PageTitle />
       <main className="min-h-screen">
       {/* NavBar */}
       <div className="sticky top-0 z-50 bg-white">
@@ -136,7 +137,7 @@ export default function Home() {
       
       {/* Pricing Section - Light cyan background */}
       <div className="bg-cyan-50">
-        <GeoPricing />
+        <Pricing />
       </div>
       
       {/* FAQ Section - Light amber background */}

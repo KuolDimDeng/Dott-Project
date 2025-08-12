@@ -5,6 +5,7 @@ import { appCache } from '@/utils/appCache';
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { logger } from '@/utils/logger';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Create a context for the user
 export const UserContext = createContext(null);
@@ -45,124 +46,27 @@ export const UserProvider = ({ children }) => {
     error,
     refreshUser: async () => {
       try {
-        // Check if we're in a dashboard route
-        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-        const isInDashboard = isDashboardRoute(currentPath);
+        // Since we're using Auth0 now, get user from session manager
+        const response = await fetch('/api/auth/session-v2', {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
         
-        if (isInDashboard) {
-          // In dashboard, exclusively use Cognito
-          try {
-            const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-            const cognitoAttributes = await fetchUserAttributes();
-            
-            if (cognitoAttributes) {
-              const userData = {
-                username: cognitoAttributes['given_name'] 
-                  ? `${cognitoAttributes['given_name']} ${cognitoAttributes['family_name'] || ''}`
-                  : cognitoAttributes.email,
-                email: cognitoAttributes.email,
-                firstName: cognitoAttributes['given_name'] || '',
-                lastName: cognitoAttributes['family_name'] || '',
-                ...cognitoAttributes
-              };
-              
-              // Store in app cache
-              if (typeof window !== 'undefined') {
-                appCache.set('user', {
-                  ...appCache.getAll().user,
-                  ...userData
-                });
-                
-                // Store email in auth cache too for consistency
-                if (userData.email) {
-                  appCache.set('auth.email', userData.email);
-                }
-              }
-              
-              setUser(userData);
-              return userData;
-            }
-          } catch (cognitoError) {
-            logger.error('[UserContext] Error fetching from Cognito in dashboard:', cognitoError);
-            throw cognitoError;
-          }
-        } else {
-          // For non-dashboard routes, use APP_CACHE with localStorage/cookies as fallback
-          // Initialize app cache if needed
-          if (typeof window !== 'undefined') {
-            if (!appCache.getAll()) appCache.init();
-            if (!appCache.getAll().auth) appCache.set('auth', {});
-            if (!appCache.getAll().user) appCache.set('user', {});
-          }
-          
-          // Get email from APP_CACHE, then try Cognito
-          const email = typeof window !== 'undefined' ? 
-            appCache.get('auth.email') ||
-            appCache.get('user.email') || '' : '';
-          
-          // Get name details from APP_CACHE
-          const firstName = typeof window !== 'undefined' ? 
-            appCache.get('user.firstName') || '' : '';
-            
-          const lastName = typeof window !== 'undefined' ? 
-            appCache.get('user.lastName') || '' : '';
-          
-          // Create a username from first name and last name, or email if not available
-          const username = firstName && lastName 
-            ? `${firstName} ${lastName}` 
-            : firstName || email.split('@')[0] || '';
-          
-          // Create userData object
-          const userData = { username, email, firstName, lastName };
-          
-          // If no data in app cache, try fetching from Cognito
-          if (typeof window !== 'undefined' && (!email || !firstName)) {
-            try {
-              // Try to fetch from Cognito and update app cache
-              import('@/config/amplifyUnified')
-                .then(({ fetchUserAttributes }) => {
-                  fetchUserAttributes()
-                    .then(attributes => {
-                      const cognitoEmail = attributes.email;
-                      const cognitoFirstName = attributes['given_name'] || 
-                                              attributes['custom:firstname'] || '';
-                      const cognitoLastName = attributes['family_name'] || 
-                                             attributes['custom:lastname'] || '';
-                      
-                      // Update app cache with Cognito data
-                      appCache.set('user', {
-                        ...appCache.getAll().user,
-                        email: cognitoEmail || email,
-                        firstName: cognitoFirstName || firstName,
-                        lastName: cognitoLastName || lastName
-                      });
-                      
-                      // Also update auth cache
-                      if (cognitoEmail) {
-                        appCache.set('auth.email', cognitoEmail);
-                      }
-                      
-                      // Update user data if we got new info
-                      if (cognitoEmail || cognitoFirstName || cognitoLastName) {
-                        const updatedUserData = {
-                          username: (cognitoFirstName && cognitoLastName) 
-                            ? `${cognitoFirstName} ${cognitoLastName}` 
-                            : cognitoFirstName || cognitoEmail?.split('@')[0] || username,
-                          email: cognitoEmail || email,
-                          firstName: cognitoFirstName || firstName,
-                          lastName: cognitoLastName || lastName
-                        };
-                        
-                        setUser(updatedUserData);
-                      }
-                    })
-                    .catch(e => logger.debug('[UserContext] Failed to fetch Cognito attributes:', e));
-                })
-                .catch(e => logger.debug('[UserContext] Failed to import auth module:', e));
-            } catch (e) {
-              logger.debug('[UserContext] Error in Cognito fetch fallback:', e);
-            }
-          }
+        if (!response.ok) {
+          throw new Error('Failed to fetch session');
+        }
+        
+        const sessionData = await response.json();
+        
+        if (sessionData.authenticated && sessionData.user) {
+          const sessionUser = sessionData.user;
+          const userData = {
+            username: sessionUser.name || sessionUser.email?.split('@')[0] || 'User',
+            email: sessionUser.email,
+            firstName: sessionUser.given_name || sessionUser.firstName || '',
+            lastName: sessionUser.family_name || sessionUser.lastName || '',
+            ...sessionUser
+          };
           
           // Store in app cache
           if (typeof window !== 'undefined') {
@@ -179,6 +83,10 @@ export const UserProvider = ({ children }) => {
           
           setUser(userData);
           return userData;
+        } else {
+          // No authenticated session, clear user data
+          setUser(null);
+          return null;
         }
       } catch (err) {
         logger.error('[UserContext] Error refreshing user:', err);
@@ -202,6 +110,11 @@ export const UserProvider = ({ children }) => {
         
         // Clear the user state
         setUser(null);
+        
+        // Redirect to Auth0 logout
+        if (typeof window !== 'undefined') {
+          window.location.href = '/api/auth/logout';
+        }
       } catch (err) {
         logger.error('[UserContext] Error logging out:', err);
         throw err;

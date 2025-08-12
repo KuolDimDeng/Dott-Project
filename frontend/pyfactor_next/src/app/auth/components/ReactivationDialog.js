@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { checkDisabledAccount, reactivateAccount } from '@/lib/account-reactivation';
 
 /**
@@ -110,7 +110,7 @@ export default function ReactivationDialog({ email, onClose, onSuccess, onError 
   }, [email]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-lg font-medium mb-4">Account Reactivation</h2>
         

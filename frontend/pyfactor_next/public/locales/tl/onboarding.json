@@ -1,0 +1,261 @@
+{
+  "businessInfo": {
+    "title": "Impormasyon ng Negosyo",
+    "subtitle": "Sabihin sa amin ang tungkol sa inyong negosyo",
+    "step": "Hakbang 1 ng 3",
+    "businessNameLabel": "Pangalan ng Negosyo",
+    "businessNamePlaceholder": "Ilagay ang pangalan ng inyong negosyo",
+    "businessTypeLabel": "Uri ng Negosyo",
+    "businessTypePlaceholder": "Piliin ang uri ng inyong negosyo",
+    "industryLabel": "Industriya",
+    "industryPlaceholder": "Piliin ang inyong industriya",
+    "legalStructureLabel": "Legal na Istraktura",
+    "legalStructurePlaceholder": "Piliin ang legal na istraktura",
+    "countryLabel": "Bansa",
+    "countryPlaceholder": "Piliin ang inyong bansa",
+    "stateLabel": "Estado/Lalawigan",
+    "statePlaceholder": "Piliin ang inyong estado",
+    "dateFoundedLabel": "Petsa ng Pagkakatatag",
+    "addressLabel": "Address ng Negosyo",
+    "addressPlaceholder": "Ilagay ang address ng inyong negosyo",
+    "phoneLabel": "Telepono ng Negosyo",
+    "phonePlaceholder": "+63 123 456 789",
+    "emailLabel": "Email ng Negosyo",
+    "emailPlaceholder": "negosyo@halimbawa.com",
+    "websiteLabel": "Website (opsyonal)",
+    "websitePlaceholder": "https://www.halimbawa.com",
+    "nextButton": "Magpatuloy sa Subscription",
+    "skipButton": "I-skip muna",
+    "businessTypes": {
+      "retail": "Retail",
+      "restaurant": "Restaurant",
+      "services": "Mga Serbisyo",
+      "manufacturing": "Manufacturing",
+      "technology": "Teknolohiya",
+      "healthcare": "Healthcare",
+      "construction": "Konstruksiyon",
+      "realestate": "Real Estate",
+      "nonprofit": "Non-Profit",
+      "other": "Iba pa"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Sole Proprietorship",
+      "partnership": "Partnership",
+      "llc": "Limited Company",
+      "corporation": "Corporation",
+      "nonprofit": "Non-Profit",
+      "other": "Iba pa"
+    },
+    "errors": {
+      "businessNameRequired": "Kailangan ang pangalan ng negosyo",
+      "businessNameTooShort": "Ang pangalan ng negosyo ay dapat hindi bababa sa 2 character",
+      "businessTypeRequired": "Mangyaring pumili ng uri ng negosyo",
+      "legalStructureRequired": "Mangyaring pumili ng legal na istraktura",
+      "countryRequired": "Mangyaring pumili ng bansa",
+      "emailInvalid": "Mangyaring maglagay ng wastong email address",
+      "phoneInvalid": "Mangyaring maglagay ng wastong phone number",
+      "websiteInvalid": "Mangyaring maglagay ng wastong website URL"
+    },
+    "saving": "Nise-save..."
+  },
+  "subscription": {
+    "title": "Piliin Ang Inyong Plan",
+    "subtitle": "Piliin ang plan na pinakaangkop sa pangangailangan ng inyong negosyo",
+    "step": "Hakbang 2 ng 3",
+    "billingCycle": {
+      "monthly": "Buwanang",
+      "sixMonth": "6 na Buwan",
+      "yearly": "Taunan",
+      "popular": "SIKAT",
+      "save": "Makatipid ng {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Perpekto para sa mga maliliit na negosyong nagsisimula pa lang",
+        "price": "Libre",
+        "features": [
+          "Pagsubaybay sa kita at gastos",
+          "Paggawa ng invoice at mga paalala",
+          "Stripe at PayPal payments",
+          "Mobile money (M-Pesa, atbp.)",
+          "Basic inventory tracking",
+          "Barcode scanning",
+          "3GB storage limit",
+          "1 user lamang"
+        ],
+        "buttonText": "Simulan Nang Libre"
+      },
+      "basic": {
+        "name": "Basic",
+        "description": "Perpekto para sa mga maliliit na negosyong nagsisimula pa lang",
+        "price": "Libre",
+        "features": [
+          "Pagsubaybay sa kita at gastos",
+          "Paggawa ng invoice at mga paalala",
+          "Stripe at PayPal payments",
+          "Mobile money (M-Pesa, atbp.)",
+          "Basic inventory tracking",
+          "Barcode scanning",
+          "3GB storage limit",
+          "1 user lamang"
+        ],
+        "buttonText": "Simulan Nang Libre"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Lahat ng kailangan ng mga lumalaking negosyo para umangat",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "PINAKASIKAT",
+        "features": [
+          "Lahat sa Basic",
+          "Hanggang 3 users",
+          "Walang limitasyon sa storage",
+          "Priority support",
+          "Lahat ng features kasama",
+          "{{discount}}% discount sa 6 months",
+          "{{yearlyDiscount}}% discount sa yearly"
+        ],
+        "buttonText": "Piliin ang Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Walang limitasyon na scale para sa malalaking organisasyon",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "PREMIUM",
+        "features": [
+          "Lahat sa Professional",
+          "Walang limitasyon sa users",
+          "Custom onboarding",
+          "Dedicated support",
+          "Lahat ng features kasama",
+          "{{discount}}% discount sa 6 months",
+          "{{yearlyDiscount}}% discount sa yearly"
+        ],
+        "buttonText": "Piliin ang Enterprise"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% off sa lahat ng plans!",
+      "description": "Special pricing para sa mga negosyo sa {{country}}",
+      "percentOff": "{{percentage}}% off",
+      "yourRegion": "inyong rehiyon"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "M-Pesa payment available!",
+        "description": "Magbayad nang convenient gamit ang mobile money para sa inyong subscription",
+        "payInCurrency": "Magbayad sa {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Makatipid ng ${{amount}} (${{monthly}}/month)",
+      "yearly": "Makatipid ng ${{amount}} bawat taon"
+    },
+    "backButton": "Bumalik sa Business Info",
+    "processing": "Pinoproseso...",
+    "note": "* May regional pricing. Ang mga presyo ay awtomatikong ina-adjust base sa inyong location."
+  },
+  "payment": {
+    "title": "Tapusin Ang Inyong Subscription",
+    "subtitle": "{{plan}} Plan • ${{price}}/{{period}}",
+    "step": "Hakbang 3 ng 3",
+    "discountBadge": "{{percentage}}% DISCOUNT",
+    "originalPrice": "Original: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% regional discount applied!",
+      "subtitle": "Special pricing para sa mga negosyo sa {{country}}"
+    },
+    "paymentMethod": {
+      "title": "Piliin ang Payment Method",
+      "card": {
+        "name": "Credit/Debit Card",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Mobile Money",
+        "payInCurrency": "Magbayad sa {{currency}}"
+      },
+      "flutterwave": {
+        "name": "Bank Transfer",
+        "description": "Magbayad through bank transfer"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Mobile Money Payment"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Pangalan ng Cardholder",
+      "cardholderNamePlaceholder": "Juan dela Cruz",
+      "cardNumber": "Card Number",
+      "expiryDate": "Expiration Date",
+      "cvc": "CVC",
+      "postalCode": "Postal Code",
+      "postalCodePlaceholder": "1234"
+    },
+    "mobilePayment": {
+      "phoneNumber": "{{provider}} Phone Number",
+      "phoneNumberPlaceholder": "09123456789",
+      "phoneNumberHint": "Ilagay ang inyong registered {{provider}} phone number",
+      "localPrice": "Presyo sa {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Exchange rate: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "Paano gumagana ang {{provider}} payment:",
+        "steps": [
+          "I-click ang \"Pay with {{provider}}\" sa baba",
+          "Makatanggap kayo ng payment prompt sa inyong phone",
+          "I-enter ang inyong {{provider}} PIN para matapos ang payment",
+          "Ma-redirect kayo kapag na-confirm ang payment"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Mag-subscribe para sa ${{price}}/{{period}}",
+      "mobile": "Magbayad gamit ang {{provider}} - {{symbol}}{{amount}}",
+      "processing": "Pinoproseso ang Payment..."
+    },
+    "securityBadge": "Secured by Stripe",
+    "cancelNote": "Pwede ninyong i-cancel o baguhin ang plan anumang oras sa dashboard.",
+    "errors": {
+      "cardholderNameRequired": "Mangyaring ilagay ang pangalan ng cardholder",
+      "postalCodeRequired": "Mangyaring ilagay ang inyong postal code",
+      "phoneRequired": "Mangyaring ilagay ang inyong {{provider}} phone number",
+      "businessInfoMissing": "Kulang ang business information. Mangyaring tapusin muna ang business setup step.",
+      "paymentFailed": "Hindi nagtagumpay ang payment. Subukan ulit.",
+      "cardDeclined": "Na-decline ang inyong card. Subukan ang ibang card.",
+      "insufficientFunds": "Hindi sapat ang pondo. I-check ang inyong balance.",
+      "networkError": "Network error. I-check ang inyong connection."
+    },
+    "success": {
+      "title": "Matagumpay ang Payment!",
+      "message": "Ni-redirect sa inyong dashboard...",
+      "mpesaTitle": "Na-initiate ang M-Pesa Payment!",
+      "mpesaMessage": "I-check ang inyong phone para sa M-Pesa payment prompt",
+      "mpesaHint": "I-enter ang inyong PIN para matapos ang payment",
+      "redirecting": "Ni-redirect sa inyong dashboard..."
+    }
+  },
+  "completion": {
+    "title": "Maligayang pagdating sa Dott!",
+    "subtitle": "Na-setup na ang inyong account",
+    "message": "Handa na kayong simulan ang pag-manage ng finances ng inyong business",
+    "dashboardButton": "Pumunta sa Dashboard",
+    "setupComplete": "Tapos na ang Setup"
+  },
+  "errors": {
+    "sessionExpired": "Nag-expire na ang inyong session. Mag-sign in ulit.",
+    "networkError": "Network error. I-check ang inyong connection.",
+    "genericError": "May naging problema. Subukan ulit.",
+    "requiredField": "Kailangan ang field na ito"
+  },
+  "navigation": {
+    "back": "Bumalik",
+    "next": "Susunod",
+    "skip": "I-skip",
+    "cancel": "I-cancel",
+    "save": "I-save",
+    "continue": "Magpatuloy"
+  }
+}

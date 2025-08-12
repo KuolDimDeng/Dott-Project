@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Invitar a un Propietario de Negocio",
     "analytics": "Análisis",
     "smartInsights": "Perspectivas Inteligentes",
-    "dottStatus": "Estado de Dott"
+    "dottStatus": "Estado de Dott",
+    "jobs": "Trabajos"
   },
   "subMenu": {
     "dashboard": "Panel de Control",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Plan de Cuentas",
     "journalEntries": "Asientos Contables",
     "generalLedger": "Libro Mayor",
-    "trialBalance": "Balance de Comprobación"
+    "trialBalance": "Balance de Comprobación",
+    "jobsList": "Todos los Trabajos",
+    "jobCosting": "Costeo de Trabajos",
+    "jobMaterials": "Uso de Materiales",
+    "jobLabor": "Seguimiento de Mano de Obra",
+    "jobProfitability": "Análisis de Rentabilidad",
+    "services": "Servicios",
+    "jobs": "Trabajos"
   },
   "actions": {
     "viewAll": "Ver Todo",

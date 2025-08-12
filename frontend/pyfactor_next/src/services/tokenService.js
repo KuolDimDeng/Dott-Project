@@ -51,15 +51,15 @@ class TokenService {
       }
       
       try {
-        // Try to get tokens from Amplify first (most reliable source)
+        // Try to get tokens from Auth0 session
         const session = await fetchAuthSession();
-        if (session.tokens) {
+        if (session?.tokens) {
           // Cache the tokens for resilience
           this.cacheTokens(session.tokens);
           return session.tokens;
         }
-      } catch (amplifyError) {
-        logger.warn('[TokenService] Error getting tokens from Amplify:', amplifyError);
+      } catch (sessionError) {
+        logger.warn('[TokenService] Error getting tokens from session:', sessionError);
         // Fall back to cached tokens
       }
       
@@ -104,7 +104,7 @@ class TokenService {
       // Create a new refresh promise
       this.refreshPromise = (async () => {
         try {
-          // Use Amplify Auth to refresh the session
+          // Use Auth0 to refresh the session
           const session = await fetchAuthSession();
           
           // Update last refresh timestamp
@@ -136,7 +136,7 @@ class TokenService {
             setCacheValue(TOKEN_CACHE_KEY, null);
             
             try {
-              // Sign out to clear Amplify state
+              // Sign out to clear Auth0 state
               await signOut();
             } catch (signOutError) {
               logger.error('[TokenService] Error signing out:', signOutError);

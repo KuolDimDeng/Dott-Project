@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OAuthLoadingScreen from '@/components/auth/OAuthLoadingScreen';
+import { secureLog } from '@/utils/secureLogger';
 
 console.log('🚨 SessionBridge PAGE FILE LOADED AT:', new Date().toISOString());
 console.log('🚨 Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
@@ -50,17 +51,19 @@ export default function SessionBridge() {
       
       const { token, redirectUrl, timestamp } = parsed;
       
-      // CRITICAL DEBUG: Log the exact token retrieved
-      console.log('🔴 [SessionBridge] CRITICAL: Token retrieved from sessionStorage:', token);
-      console.log('🔴 [SessionBridge] Token first 20 chars:', token?.substring(0, 20));
-      console.log('🔴 [SessionBridge] Token last 20 chars:', token?.substring(token.length - 20));
+      // SECURE DEBUG: Log session info safely
+      secureLog.session('[SessionBridge] Token retrieved', token);
       console.log('🔴 [SessionBridge] Token length:', token?.length);
       console.log('🔴 [SessionBridge] Token type check:', {
         isUUID: token && token.length === 36 && token.includes('-'),
         isBackendSession: token === 'backend_session',
-        tokenValue: token
+        hasToken: !!token
       });
-      console.log('🔴 [SessionBridge] Full bridge data:', parsed);
+      console.log('🔴 [SessionBridge] Bridge data (secure):', {
+        hasToken: !!parsed.token,
+        redirectUrl: parsed.redirectUrl,
+        timestamp: parsed.timestamp
+      });
       
       // Verify the bridge data is recent (within 30 seconds)
       if (Date.now() - timestamp > 30000) {
@@ -81,7 +84,7 @@ export default function SessionBridge() {
       // The token from sessionStorage is already our session token
       setStatus('Establishing session...');
       console.log('[SessionBridge] 🔄 Preparing to establish session directly...');
-      console.log('[SessionBridge] Session token:', token?.substring(0, 20) + '...');
+      secureLog.session('[SessionBridge] Establishing session with token', token);
       
       // Update state for form submission
       setSessionToken(token);

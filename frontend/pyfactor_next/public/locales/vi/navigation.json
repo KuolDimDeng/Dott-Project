@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Mời Chủ Doanh Nghiệp",
     "analytics": "Phân tích",
     "smartInsights": "Thông tin Thông minh",
-    "dottStatus": "Trạng thái Dott"
+    "dottStatus": "Trạng thái Dott",
+    "jobs": "Công việc"
   },
   "subMenu": {
     "dashboard": "Bảng Điều Khiển",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Hệ Thống Tài Khoản",
     "journalEntries": "Bút Toán",
     "generalLedger": "Sổ Cái",
-    "trialBalance": "Bảng Cân Đối Thử"
+    "trialBalance": "Bảng Cân Đối Thử",
+    "jobsList": "Tất cả Công việc",
+    "jobCosting": "Chi phí Công việc",
+    "jobMaterials": "Sử dụng Vật liệu",
+    "jobLabor": "Theo dõi Lao động",
+    "jobProfitability": "Phân tích Lợi nhuận",
+    "services": "Dịch vụ",
+    "jobs": "Công việc"
   },
   "actions": {
     "viewAll": "Xem Tất Cả",

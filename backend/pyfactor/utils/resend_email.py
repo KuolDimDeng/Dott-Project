@@ -43,6 +43,9 @@ class ResendEmailBackend(BaseEmailBackend):
                     'subject': message.subject,
                 }
                 
+                # Check if this is an HTML email
+                is_html = getattr(message, 'content_subtype', None) == 'html'
+                
                 # Add HTML content if available
                 if hasattr(message, 'alternatives'):
                     for content, mimetype in message.alternatives:
@@ -50,9 +53,18 @@ class ResendEmailBackend(BaseEmailBackend):
                             payload['html'] = content
                             break
                 
-                # Add text content
+                # Add body content based on content type
                 if message.body:
-                    payload['text'] = message.body
+                    if is_html:
+                        # If content_subtype is 'html', the body contains HTML
+                        payload['html'] = message.body
+                        # Try to create a text version (basic strip tags)
+                        import re
+                        text_content = re.sub('<[^<]+?>', '', message.body)
+                        payload['text'] = text_content
+                    else:
+                        # Regular text email
+                        payload['text'] = message.body
                 
                 # Add CC and BCC if present
                 if message.cc:

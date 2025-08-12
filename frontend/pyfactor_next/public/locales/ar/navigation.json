@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "دعوة صاحب عمل",
     "analytics": "التحليلات",
     "smartInsights": "رؤى ذكية",
-    "dottStatus": "حالة Dott"
+    "dottStatus": "حالة Dott",
+    "jobs": "الوظائف"
   },
   "subMenu": {
     "dashboard": "لوحة القيادة",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "دليل الحسابات",
     "journalEntries": "القيود اليومية",
     "generalLedger": "دفتر الأستاذ العام",
-    "trialBalance": "ميزان المراجعة"
+    "trialBalance": "ميزان المراجعة",
+    "jobsList": "جميع الوظائف",
+    "jobCosting": "تكلفة الوظائف",
+    "jobMaterials": "استخدام المواد",
+    "jobLabor": "تتبع العمالة",
+    "jobProfitability": "تحليل الربحية",
+    "services": "الخدمات",
+    "jobs": "الوظائف"
   },
   "actions": {
     "viewAll": "عرض الكل",

@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { locationApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import { MapPinIcon } from '@heroicons/react/24/outline';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -87,6 +88,9 @@ const Typography = ({ variant, component, className, color, children, gutterBott
 };
 
 const LocationsManagement = () => {
+  // Get user session for country default
+  const { session, user } = useSession();
+  
   // State management
   const [locations, setLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,16 +113,30 @@ const LocationsManagement = () => {
     name: '',
     description: '',
     address: '',
+    street_address: '',
+    street_address_2: '',
+    city: '',
+    state_province: '',
+    postal_code: '',
+    country: '',
+    latitude: null,
+    longitude: null,
     is_active: true
   });
 
   useEffect(() => {
     isMounted.current = true;
     fetchLocations();
+    
+    // Set default country from user profile
+    if (user?.country && !formData.country) {
+      setFormData(prev => ({ ...prev, country: user.country }));
+    }
+    
     return () => {
       isMounted.current = false;
     };
-  }, []);
+  }, [user]);
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -185,6 +203,14 @@ const LocationsManagement = () => {
         name: '',
         description: '',
         address: '',
+        street_address: '',
+        street_address_2: '',
+        city: '',
+        state_province: '',
+        postal_code: '',
+        country: '',
+        latitude: null,
+        longitude: null,
         is_active: true
       });
     } catch (error) {
@@ -352,25 +378,117 @@ const LocationsManagement = () => {
           />
         </div>
         
+        {/* Address Section */}
         <div className="mb-6">
-          <label htmlFor="address" className="block text-sm font-medium text-black mb-1">
-            <span className="flex items-center">
-              Address
-              <FieldTooltip 
-                text="Enter the complete physical address of this location. This helps with shipping logistics, delivery coordination, and tax calculations. Include street address, city, state/province, postal code, and country if applicable."
-                position="bottom"
+          <h3 className="text-sm font-medium text-black mb-3 flex items-center">
+            Location Address
+            <FieldTooltip 
+              text="Enter the complete physical address of this location. This helps with shipping logistics, delivery coordination, tax calculations, and can be used for geofencing setup."
+              position="bottom"
+            />
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label htmlFor="street_address" className="block text-sm font-medium text-black mb-1">
+                Street Address
+              </label>
+              <input
+                id="street_address"
+                type="text"
+                name="street_address"
+                value={currentData.street_address || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 123 Main Street"
               />
-            </span>
-          </label>
-          <textarea
-            id="address"
-            name="address"
-            value={currentData.address}
-            onChange={handleChange}
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Full address of the location..."
-          />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label htmlFor="street_address_2" className="block text-sm font-medium text-black mb-1">
+                Street Address 2 (Optional)
+              </label>
+              <input
+                id="street_address_2"
+                type="text"
+                name="street_address_2"
+                value={currentData.street_address_2 || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., Suite 100"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-black mb-1">
+                City
+              </label>
+              <input
+                id="city"
+                type="text"
+                name="city"
+                value={currentData.city || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., San Francisco"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="state_province" className="block text-sm font-medium text-black mb-1">
+                State/Province
+              </label>
+              <input
+                id="state_province"
+                type="text"
+                name="state_province"
+                value={currentData.state_province || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., CA"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="postal_code" className="block text-sm font-medium text-black mb-1">
+                Postal/ZIP Code
+              </label>
+              <input
+                id="postal_code"
+                type="text"
+                name="postal_code"
+                value={currentData.postal_code || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 94105"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium text-black mb-1">
+                Country
+              </label>
+              <input
+                id="country"
+                type="text"
+                name="country"
+                value={currentData.country || user?.country || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., US"
+                maxLength="2"
+              />
+              <p className="mt-1 text-xs text-gray-500">2-letter country code (e.g., US, CA, GB)</p>
+            </div>
+          </div>
+          
+          {/* Map integration hint */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-md">
+            <p className="text-sm text-blue-700">
+              <strong>Tip:</strong> This location will appear on the map when creating geofences, 
+              making it easy to set up location-based time tracking for employees.
+            </p>
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3">
@@ -385,6 +503,14 @@ const LocationsManagement = () => {
                 name: '',
                 description: '',
                 address: '',
+                street_address: '',
+                street_address_2: '',
+                city: '',
+                state_province: '',
+                postal_code: '',
+                country: '',
+                latitude: null,
+                longitude: null,
                 is_active: true
               });
             }}
@@ -462,7 +588,16 @@ const LocationsManagement = () => {
               Address
             </Typography>
             <Typography variant="body1">
-              {selectedLocation.address || 'No address provided'}
+              {(() => {
+                const parts = [];
+                if (selectedLocation.street_address) parts.push(selectedLocation.street_address);
+                if (selectedLocation.street_address_2) parts.push(selectedLocation.street_address_2);
+                if (selectedLocation.city) parts.push(selectedLocation.city);
+                if (selectedLocation.state_province) parts.push(selectedLocation.state_province);
+                if (selectedLocation.postal_code) parts.push(selectedLocation.postal_code);
+                if (selectedLocation.country) parts.push(selectedLocation.country);
+                return parts.length > 0 ? parts.join(', ') : (selectedLocation.address || 'No address provided');
+              })()}
             </Typography>
           </div>
           
@@ -539,7 +674,15 @@ const LocationsManagement = () => {
                     <div className="text-sm text-gray-500">{location.description || '-'}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-500">{location.address || '-'}</div>
+                    <div className="text-sm text-gray-500">
+                      {(() => {
+                        const parts = [];
+                        if (location.street_address) parts.push(location.street_address);
+                        if (location.city) parts.push(location.city);
+                        if (location.state_province) parts.push(location.state_province);
+                        return parts.length > 0 ? parts.join(', ') : (location.address || '-');
+                      })()}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -748,10 +891,10 @@ const LocationsManagement = () => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="absolute inset-0 z-10 overflow-y-auto">
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}

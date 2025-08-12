@@ -2,9 +2,11 @@ import logging
 from django.conf import settings
 # Removed Cognito import - using Auth0 instead
 from .models import Employee
-from typing import cast, Any
+from typing import cast, Any, Optional
+from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 def get_business_id_from_request(request):
     """
@@ -172,3 +174,136 @@ def get_available_employee_fields():
             logger.warning(f"Could not check for column {column_name}: {str(e)}")
     
     return base_fields
+
+
+# ===== NEW HELPER FUNCTIONS FOR USER-EMPLOYEE RELATIONSHIP =====
+
+def get_employee_for_user(user: User) -> Optional[Employee]:
+    """
+    Get the Employee instance for a given User, if it exists.
+    
+    Args:
+        user: The User instance
+        
+    Returns:
+        Employee instance or None if the user has no employee profile
+    """
+    try:
+        return user.employee_profile
+    except Employee.DoesNotExist:
+        return None
+
+
+def create_employee_for_user(user: User, **kwargs) -> Employee:
+    """
+    Create an Employee instance for a User if one doesn't exist.
+    
+    Args:
+        user: The User instance
+        **kwargs: Additional fields for the Employee model
+        
+    Returns:
+        The created or existing Employee instance
+    """
+    employee, created = Employee.objects.get_or_create(
+        user=user,
+        defaults={
+            'business_id': user.business_id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            **kwargs
+        }
+    )
+    
+    if created:
+        logger.info(f"Created employee profile for user {user.email}")
+    
+    return employee
+
+
+def user_has_employee_profile(user: User) -> bool:
+    """
+    Check if a User has an associated Employee profile.
+    
+    Args:
+        user: The User instance
+        
+    Returns:
+        True if the user has an employee profile, False otherwise
+    """
+    return hasattr(user, 'employee_profile')
+
+
+def get_user_display_name(user: User) -> str:
+    """
+    Get a display name for a user, whether they have an employee profile or not.
+    
+    Args:
+        user: The User instance
+        
+    Returns:
+        The user's full name or email
+    """
+    if user.get_full_name():
+        return user.get_full_name()
+    return user.email
+
+
+def is_user_employee(user: User) -> bool:
+    """
+    Check if a user is an employee (has employee profile and is not an owner).
+    
+    Args:
+        user: The User instance
+        
+    Returns:
+        True if the user is an employee, False if they're an owner or have no profile
+    """
+    if user.role == 'OWNER':
+        return False
+    return user_has_employee_profile(user)
+
+
+def get_user_role_display(user: User) -> str:
+    """
+    Get a human-readable role for the user.
+    
+    Args:
+        user: The User instance
+        
+    Returns:
+        A string describing the user's role
+    """
+    role_map = {
+        'OWNER': 'Business Owner',
+        'ADMIN': 'Administrator',
+        'USER': 'Employee'
+    }
+    
+    base_role = role_map.get(user.role, 'User')
+    
+    # Add employee status if applicable
+    if user.role == 'USER' and user_has_employee_profile(user):
+        employee = get_employee_for_user(user)
+        if employee and employee.is_supervisor:
+            return f"{base_role} (Supervisor)"
+    
+    return base_role
+
+
+def get_or_none(model, **kwargs):
+    """
+    Generic helper to get a model instance or None if it doesn't exist.
+    
+    Args:
+        model: The Django model class
+        **kwargs: Lookup parameters
+        
+    Returns:
+        Model instance or None
+    """
+    try:
+        return model.objects.get(**kwargs)
+    except model.DoesNotExist:
+        return None

@@ -198,89 +198,55 @@ export async function PUT(request, { params }) {
     const productData = await request.json();
     logger.debug(`[${requestId}] Product PUT data for ID: ${id}:`, productData);
     
-    // Extract tenant info from request
-    const tenantInfo = await extractTenantId(request);
-    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
+    // Get authentication tokens - use the proper approach
+    const { accessToken, idToken, tenantId } = await getTokens(request);
     
-    if (!finalTenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request`);
+    if (!accessToken || !tenantId) {
+      logger.error(`[${requestId}] Missing authentication tokens`);
       return NextResponse.json(
-        { error: 'Tenant ID is required' }, 
-        { status: 400 }
+        { error: 'Authentication required' }, 
+        { status: 401 }
       );
     }
     
-    logger.info(`[${requestId}] Updating product ${id} for tenant: ${finalTenantId}`);
+    logger.info(`[${requestId}] Updating product ${id} for tenant: ${tenantId}`);
     
-    // Import the RLS database utility
-    const db = await import('@/utils/db/rls-database');
+    // Forward the request to the backend API
+    const response = await serverAxiosInstance.put(
+      `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`,
+      productData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'X-Id-Token': idToken || '',
+          'X-Tenant-ID': tenantId,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
     
-    // Update using tenant context for RLS
-    const result = await db.transaction(async (client) => {
-      // Update the product with tenant ID context for RLS
-      const updateQuery = `
-        UPDATE public.inventory_product 
-        SET 
-          name = $1,
-          description = $2,
-          sku = $3,
-          price = $4,
-          cost = $5,
-          stock_quantity = $6,
-          reorder_level = $7,
-          for_sale = $8,
-          for_rent = $9,
-          supplier_id = $10,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $11
-        RETURNING *
-      `;
-      
-      const params = [
-        productData.name,
-        productData.description || '',
-        productData.sku || '',
-        parseFloat(productData.price) || 0,
-        parseFloat(productData.cost) || 0,
-        parseInt(productData.stock_quantity) || 0,
-        parseInt(productData.reorder_level) || 0,
-        productData.for_sale === true,
-        productData.for_rent === true,
-        productData.supplier_id || null,
-        id
-      ];
-      
-      logger.debug(`[${requestId}] Executing product update with tenant context: ${finalTenantId}`);
-      
-      const result = await client.query(updateQuery, params);
-      return result;
-    }, {
-      debug: true,
-      requestId,
-      tenantId: finalTenantId // Set the tenant context for RLS
-    });
+    logger.info(`[${requestId}] Product ${id} updated successfully`);
     
-    if (result.rowCount === 0) {
-      logger.warn(`[${requestId}] Product ${id} not found or not owned by tenant ${finalTenantId}`);
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
-    
-    logger.info(`[${requestId}] Product ${id} updated successfully for tenant ${finalTenantId}`);
-    
-    return NextResponse.json({
-      success: true,
-      product: result.rows[0],
-      message: 'Product updated successfully'
-    });
+    return NextResponse.json(response.data);
     
   } catch (error) {
     logger.error(`[${requestId}] Error updating product ${id}: ${error.message}`, error);
     
+    // Handle specific error responses from backend
+    if (error.response) {
+      return NextResponse.json(
+        {
+          error: error.response.data?.error || 'Failed to update product',
+          message: error.response.data?.message || error.message
+        },
+        { status: error.response.status }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: 'Failed to update product',
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: error.message
       }, 
       { status: 500 }
     );
@@ -297,63 +263,125 @@ export async function DELETE(request, { params }) {
   const { id } = params;
   const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
   
+  console.log('🔴 [API DELETE] === START DELETE REQUEST ===');
+  console.log(`🔴 [API DELETE] Request ID: ${requestId}`);
+  console.log(`🔴 [API DELETE] Product ID: ${id}`);
+  console.log(`🔴 [API DELETE] Request headers:`, request.headers);
+  
   logger.info(`[${requestId}] DELETE /api/inventory/products/${id} - Start processing request`);
   
   try {
-    // Extract tenant info from request
-    const tenantInfo = await extractTenantId(request);
-    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
+    console.log('🔴 [API DELETE] Step 1: Getting authentication tokens...');
+    // Get authentication tokens - use the proper approach
+    const { accessToken, idToken, tenantId } = await getTokens(request);
     
-    if (!finalTenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request`);
+    console.log('🔴 [API DELETE] Step 2: Auth tokens retrieved:', {
+      hasAccessToken: !!accessToken,
+      hasIdToken: !!idToken,
+      tenantId: tenantId,
+      accessTokenLength: accessToken ? accessToken.length : 0
+    });
+    
+    if (!accessToken || !tenantId) {
+      console.error('🔴 [API DELETE] ❌ Missing authentication tokens');
+      logger.error(`[${requestId}] Missing authentication tokens`);
       return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
     
-    logger.info(`[${requestId}] Deleting product ${id} for tenant: ${finalTenantId}`);
+    // Construct backend URL
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`;
+    console.log(`🔴 [API DELETE] Step 3: Backend URL: ${backendUrl}`);
     
-    // Import the RLS database utility
-    const db = await import('@/utils/db/rls-database');
+    logger.info(`[${requestId}] Deleting product ${id} for tenant: ${tenantId}`);
     
-    // Delete using tenant context for RLS
-    const result = await db.transaction(async (client) => {
-      // Delete the product with tenant ID context for RLS
-      const deleteQuery = `
-        DELETE FROM public.inventory_product 
-        WHERE id = $1
-        RETURNING id
-      `;
-      
-      const result = await client.query(deleteQuery, [id]);
-      return result;
-    }, {
-      debug: true,
-      requestId,
-      tenantId: finalTenantId // Set the tenant context for RLS
+    console.log('🔴 [API DELETE] Step 4: Sending DELETE to backend...');
+    console.log('🔴 [API DELETE] Headers being sent:', {
+      Authorization: `Bearer ${accessToken.substring(0, 20)}...`,
+      'X-Id-Token': idToken ? `${idToken.substring(0, 20)}...` : 'none',
+      'X-Tenant-ID': tenantId
     });
     
-    if (result.rowCount === 0) {
-      logger.warn(`[${requestId}] Product ${id} not found or not owned by tenant ${finalTenantId}`);
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
+    // Forward the request to the backend API
+    const response = await serverAxiosInstance.delete(
+      backendUrl,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'X-Id-Token': idToken || '',
+          'X-Tenant-ID': tenantId
+        }
+      }
+    );
     
-    logger.info(`[${requestId}] Product ${id} deleted successfully for tenant ${finalTenantId}`);
+    console.log('🔴 [API DELETE] Step 5: Backend response received');
+    console.log('🔴 [API DELETE] Response status:', response.status);
+    console.log('🔴 [API DELETE] Response data:', response.data);
+    
+    logger.info(`[${requestId}] Product ${id} deleted successfully`);
+    
+    console.log('🔴 [API DELETE] ✅ Successfully deleted product');
+    console.log('🔴 [API DELETE] === END DELETE REQUEST (SUCCESS) ===');
     
     return NextResponse.json({
       success: true,
-      message: 'Product deleted successfully'
+      message: 'Product deleted successfully',
+      productId: id
     });
     
   } catch (error) {
+    console.error('🔴 [API DELETE] ❌ Error occurred:', error);
+    console.error('🔴 [API DELETE] Error type:', error.constructor.name);
+    console.error('🔴 [API DELETE] Error message:', error.message);
+    
+    if (error.response) {
+      console.error('🔴 [API DELETE] Backend error response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    }
+    
+    if (error.config) {
+      console.error('🔴 [API DELETE] Request config:', {
+        url: error.config.url,
+        method: error.config.method,
+        headers: error.config.headers
+      });
+    }
+    
     logger.error(`[${requestId}] Error deleting product ${id}: ${error.message}`, error);
+    
+    // Handle specific error responses from backend
+    if (error.response) {
+      const errorMessage = error.response.data?.error || 
+                          error.response.data?.detail || 
+                          error.response.data?.message || 
+                          'Failed to delete product';
+      
+      console.error(`🔴 [API DELETE] Returning error: ${errorMessage}`);
+      console.error('🔴 [API DELETE] === END DELETE REQUEST (ERROR) ===');
+      
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          message: error.response.data?.message || error.message,
+          details: error.response.data
+        },
+        { status: error.response.status }
+      );
+    }
+    
+    console.error('🔴 [API DELETE] Returning generic error');
+    console.error('🔴 [API DELETE] === END DELETE REQUEST (ERROR) ===');
     
     return NextResponse.json(
       {
         error: 'Failed to delete product',
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: error.message
       },
       { status: 500 }
     );

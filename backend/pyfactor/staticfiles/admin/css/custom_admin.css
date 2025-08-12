@@ -1,0 +1,22 @@
+/* static/admin/css/custom_admin.css */
+.field-status_badge span {
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
+}
+
+.field-token_status span {
+    font-weight: bold;
+}
+
+/* Improve fieldset styling */
+.module h2 {
+    background: #f8f9fa;
+    color: #495057;
+    padding: 8px 15px;
+}
+
+/* Custom status colors in list view */
+.column-onboarding_status {
+    font-weight: bold;
+}

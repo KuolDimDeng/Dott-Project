@@ -1,6 +1,6 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/finance/models.py
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction as db_transaction
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
@@ -9,6 +9,9 @@ from banking.models import BankAccount, BankTransaction
 from custom_auth.models import TenantAwareModel, TenantManager
 from purchases.models import Bill
 from sales.models import Invoice
+from pyfactor.logging_config import get_logger
+
+logger = get_logger()
 
 class AccountType(models.Model):
     ACCOUNT_TYPE_CHOICES = [
@@ -92,7 +95,7 @@ class Account(TenantAwareModel):
         
     def reconcile(self, statement_balance, reconciliation_date):
         """Reconcile account with bank statement"""
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Get all unreconciled transactions up to reconciliation date
             transactions = self.transactions.filter(
                 date__lte=reconciliation_date,
@@ -231,7 +234,7 @@ class FinanceTransaction(TenantAwareModel):
         if self.status != 'pending':
             raise ValidationError('Only pending transactions can update account balance')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Lock the account row for update
             account = Account.objects.select_for_update().get(pk=self.account.pk)
             
@@ -273,7 +276,7 @@ class FinanceTransaction(TenantAwareModel):
         if self.status not in ['posted', 'reconciled']:
             raise ValidationError('Only posted or reconciled transactions can be voided')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Reverse the account balance change
             account = Account.objects.select_for_update().get(pk=self.account.pk)
             old_balance = account.balance
@@ -340,27 +343,54 @@ class SalesTaxAccount(models.Model):
     note = models.TextField(blank=True)
     transaction = models.OneToOneField(FinanceTransaction, on_delete=models.SET_NULL, related_name='sales_tax_account', null=True)
     
-class AccountCategory(models.Model):
+class AccountCategory(TenantAwareModel):
     name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10, unique=True)
+    code = models.CharField(max_length=10)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
+    
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'code']),
+            models.Index(fields=['business']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant_id', 'code'], name='unique_category_code_per_tenant'),
+        ]
 
     def __str__(self):
         return f"{self.code} - {self.name}"
 
-class ChartOfAccount(models.Model):
-    account_number = models.CharField(max_length=20, unique=True)
+class ChartOfAccount(TenantAwareModel):
+    account_number = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     category = models.ForeignKey(AccountCategory, on_delete=models.CASCADE, related_name='accounts')
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='children')
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
+    
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'account_number']),
+            models.Index(fields=['business']),
+            models.Index(fields=['category']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant_id', 'account_number'], name='unique_chart_account_per_tenant'),
+        ]
 
     def __str__(self):
         return f"{self.account_number} - {self.name}"
     
 
-class JournalEntry(models.Model):
+class JournalEntry(TenantAwareModel):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('posted', 'Posted'),
@@ -378,10 +408,13 @@ class JournalEntry(models.Model):
     business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     reference = models.CharField(max_length=50, blank=True)
     
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
     class Meta:
         indexes = [
-            models.Index(fields=['date']),
-            models.Index(fields=['status']),
+            models.Index(fields=['tenant_id', 'date']),
+            models.Index(fields=['tenant_id', 'status']),
             models.Index(fields=['business']),
         ]
 
@@ -407,7 +440,7 @@ class JournalEntry(models.Model):
             
         self.clean()  # Validate the entry
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Update account balances
             for line in self.lines.all():
                 account = line.account
@@ -438,12 +471,22 @@ class JournalEntry(models.Model):
                 }
             )
 
-class JournalEntryLine(models.Model):
+class JournalEntryLine(TenantAwareModel):
     journal_entry = models.ForeignKey(JournalEntry, related_name='lines', on_delete=models.CASCADE)
     account = models.ForeignKey(ChartOfAccount, on_delete=models.PROTECT)
     description = models.CharField(max_length=255, blank=True)
     debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     credit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
+    
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'journal_entry']),
+            models.Index(fields=['business']),
+        ]
     
     def clean(self):
         if self.debit_amount > 0 and self.credit_amount > 0:
@@ -460,16 +503,26 @@ class JournalEntryLine(models.Model):
     
 
 
-class GeneralLedgerEntry(models.Model):
+class GeneralLedgerEntry(TenantAwareModel):
     account = models.ForeignKey('ChartOfAccount', on_delete=models.PROTECT)    
     date = models.DateField()
     description = models.CharField(max_length=255)
     debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     credit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     balance = models.DecimalField(max_digits=15, decimal_places=2)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
+    journal_entry = models.ForeignKey('JournalEntry', on_delete=models.CASCADE, null=True, blank=True)
+    
+    objects = TenantManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ['date', 'id']
+        indexes = [
+            models.Index(fields=['tenant_id', 'date']),
+            models.Index(fields=['tenant_id', 'account']),
+            models.Index(fields=['business']),
+        ]
 
     def __str__(self):
         return f"{self.date} - {self.account.name} - {self.description}"
@@ -533,7 +586,7 @@ class AccountReconciliation(models.Model):
         if unmatched_items.exists():
             raise ValidationError('Cannot complete reconciliation with unmatched items')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Calculate final balances
             matched_items = self.items.filter(is_matched=True)
             total_adjustments = sum(item.adjustment_amount for item in matched_items)
@@ -810,7 +863,7 @@ class MonthEndClosing(models.Model):
         if incomplete_tasks.exists():
             raise ValidationError('All tasks must be completed before closing')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             # Calculate final totals
             self.calculate_totals()
             
@@ -1166,7 +1219,7 @@ class FinancialStatement(models.Model):
             return None
     
 
-class FixedAsset(models.Model):
+class FixedAsset(TenantAwareModel):
     DEPRECIATION_METHOD_CHOICES = [
         ('SL', 'Straight Line'),
         ('DB', 'Declining Balance'),
@@ -1199,6 +1252,9 @@ class FixedAsset(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     department = models.CharField(max_length=100, blank=True)
+    
+    objects = TenantManager()
+    all_objects = models.Manager()
     
     # Acquisition details
     acquisition_date = models.DateField()
@@ -1347,7 +1403,7 @@ class FixedAsset(models.Model):
         if self.status == 'disposed':
             raise ValidationError('Asset is already disposed')
             
-        with transaction.atomic():
+        with db_transaction.atomic():
             old_status = self.status
             
             self.status = 'disposed'

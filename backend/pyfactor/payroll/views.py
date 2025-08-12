@@ -511,7 +511,12 @@ class PayrollRunsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        payroll_runs = PayrollRun.objects.all().order_by('-run_date')
+        # Get tenant from user profile
+        tenant = request.user.profile.tenant if hasattr(request.user, 'profile') else None
+        if not tenant:
+            return Response({'error': 'User not associated with a tenant'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        payroll_runs = PayrollRun.objects.filter(tenant=tenant).order_by('-run_date')
         serializer = PayrollRunSerializer(payroll_runs, many=True)
         return Response(serializer.data)
 

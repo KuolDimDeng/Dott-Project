@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "邀请企业主",
     "analytics": "分析",
     "smartInsights": "智能洞察",
-    "dottStatus": "Dott 状态"
+    "dottStatus": "Dott 状态",
+    "jobs": "工作"
   },
   "subMenu": {
     "dashboard": "仪表板",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "会计科目表",
     "journalEntries": "日记账分录",
     "generalLedger": "总账",
-    "trialBalance": "试算平衡表"
+    "trialBalance": "试算平衡表",
+    "jobsList": "所有工作",
+    "jobCosting": "工作成本核算",
+    "jobMaterials": "材料使用情凵",
+    "jobLabor": "劳动时间跟踪",
+    "jobProfitability": "盈利能力分析",
+    "services": "服务",
+    "jobs": "工作"
   },
   "actions": {
     "viewAll": "查看全部",

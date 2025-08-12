@@ -43,16 +43,16 @@ export function useSafeSearchParams() {
             // If still no tenant ID, try to get it from Cognito
             if (!urlParams.tenantId) {
               try {
-                const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-                const userAttributes = await fetchUserAttributes();
-                const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'];
+                // Removed Amplify/Cognito - using Auth0
+                const userAttributes = {}; // Auth0 attributes handled elsewhere
+                const auth0TenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'];
                 
-                if (cognitoTenantId) {
-                  urlParams.tenantId = cognitoTenantId;
-                  logger.debug('[SafeSearchParams] Using tenant ID from Cognito:', cognitoTenantId);
+                if (auth0TenantId) {
+                  urlParams.tenantId = auth0TenantId;
+                  logger.debug('[SafeSearchParams] Using tenant ID from Auth0:', auth0TenantId);
                 }
-              } catch (cognitoError) {
-                logger.warn('[SafeSearchParams] Could not get tenant ID from Cognito:', cognitoError);
+              } catch (authError) {
+                logger.warn('[SafeSearchParams] Could not get tenant ID from Auth0:', authError);
               }
             }
             
@@ -152,10 +152,9 @@ export async function getServerSideTenantId(req) {
     
     // If server-side rendering with auth, try to get from Cognito
     try {
-      const { getCurrentUser, fetchUserAttributes } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       if (user) {
-        const userAttributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
         const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'];
         if (cognitoTenantId) {
           return cognitoTenantId;

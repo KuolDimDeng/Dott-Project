@@ -9,7 +9,7 @@ from django.db import connections, OperationalError
 from django.apps import apps
 from django.utils import timezone
 from django.core.management import call_command
-from django.db import transaction
+from django.db import transaction as db_transaction
 from asgiref.sync import sync_to_async
 from pyfactor.logging_config import get_logger
 from pyfactor.db.utils import get_connection, return_connection

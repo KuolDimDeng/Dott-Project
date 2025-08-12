@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Invite a Business Owner",
     "analytics": "Analytics",
     "smartInsights": "Smart Insights",
-    "dottStatus": "Dott Status"
+    "dottStatus": "Dott Status",
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -36,12 +37,13 @@
     "sales": "Sales",
     "purchases": "Purchases",
     "customers": "Customers",
-    "vendors": "Vendors",
-    "catalog": "Product",
-    "service": "Service",
+    "vendors": "Suppliers",
+    "catalog": "Products",
+    "service": "Services",
     "orders": "Orders",
     "productsPricing": "Products & Pricing",
-    "warehouseTracker": "Warehouse",
+    "suppliesMaterials": "Supplies & Materials",
+    "warehouseTracker": "Stock Adjustments",
     "expiryDates": "Expiry Dates",
     "availabilityMonitor": "Availability Monitor",
     "lowStockAlerts": "Low Stock Alerts",
@@ -86,7 +88,16 @@
     "chartOfAccounts": "Chart of Accounts",
     "journalEntries": "Journal Entries",
     "generalLedger": "General Ledger",
-    "trialBalance": "Trial Balance"
+    "fixedAssets": "Fixed Assets",
+    "trialBalance": "Trial Balance",
+    "jobsList": "All Jobs",
+    "jobCosting": "Job Costing",
+    "jobMaterials": "Materials Usage",
+    "jobLabor": "Labor Tracking",
+    "jobProfitability": "Profitability Analysis",
+    "billOfMaterials": "Bill of Materials",
+    "services": "Services",
+    "jobs": "Jobs"
   },
   "actions": {
     "viewAll": "View All",
@@ -344,8 +355,8 @@
         "description": "Tax configurations by location"
       },
       "vendors": {
-        "label": "Vendors",
-        "description": "Supplier database and payment terms"
+        "label": "Suppliers",
+        "description": "Product supplier database and payment terms"
       },
       "employees": {
         "label": "Employees",

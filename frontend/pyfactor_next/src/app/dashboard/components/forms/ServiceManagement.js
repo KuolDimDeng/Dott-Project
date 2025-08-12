@@ -698,9 +698,7 @@ const ServiceManagement = () => {
   // Render services table
   const renderServicesTable = () => {
     if (isLoading) {
-      return (
-        <CenteredSpinner size="medium" text="Loading services..." />
-      );
+      return <CenteredSpinner size="large" text="Loading services..." showText={true} minHeight="h-screen" />;
     }
     
     if (!filteredServices || filteredServices.length === 0) {

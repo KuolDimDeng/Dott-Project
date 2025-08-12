@@ -114,6 +114,21 @@ class DataCache {
       }
     }
   }
+  
+  /**
+   * Invalidate cache entries that start with a specific string
+   * @param {string} prefix - String prefix to match against keys
+   */
+  invalidateStartingWith(prefix) {
+    if (!prefix) return;
+    
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        logger.debug(`[DataCache] Invalidating cached key starting with ${prefix}: ${key}`);
+        this.delete(key);
+      }
+    }
+  }
 }
 
 // Create singleton instances for different parts of the application

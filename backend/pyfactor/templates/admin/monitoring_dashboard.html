@@ -1,0 +1,458 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}System Monitoring Dashboard{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .monitoring-dashboard {
+        padding: 20px;
+        background: #f5f5f5;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .metric-card h3 {
+        margin: 0 0 15px 0;
+        color: #333;
+        font-size: 18px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+    }
+    
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #007bff;
+        margin: 10px 0;
+    }
+    
+    .metric-label {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    .metric-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .metric-row:last-child {
+        border-bottom: none;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-good { background: #28a745; }
+    .status-warning { background: #ffc107; }
+    .status-critical { background: #dc3545; }
+    
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+        transition: width 0.3s ease;
+    }
+    
+    .chart-container {
+        height: 200px;
+        margin-top: 15px;
+    }
+    
+    .alert-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #856404;
+    }
+    
+    .refresh-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    
+    .refresh-button:hover {
+        transform: scale(1.1);
+    }
+    
+    .refresh-button.spinning {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="monitoring-dashboard">
+    <h1>System Monitoring Dashboard</h1>
+    <p>Last updated: <span id="last-updated">{{ timestamp|date:"Y-m-d H:i:s" }}</span></p>
+    
+    <!-- Alerts Section -->
+    <div id="alerts-container"></div>
+    
+    <!-- System Metrics -->
+    <h2>System Resources</h2>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>CPU Usage</h3>
+            <div class="metric-value">{{ system_metrics.cpu.usage_percent|default:"0" }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ system_metrics.cpu.usage_percent|default:0 }}%"></div>
+            </div>
+            <div class="metric-row">
+                <span>Cores:</span>
+                <span>{{ system_metrics.cpu.core_count|default:"N/A" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Memory Usage</h3>
+            <div class="metric-value">{{ system_metrics.memory.percent|default:"0" }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ system_metrics.memory.percent|default:0 }}%"></div>
+            </div>
+            <div class="metric-row">
+                <span>Used:</span>
+                <span>{{ system_metrics.memory.used|filesizeformat|default:"N/A" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Available:</span>
+                <span>{{ system_metrics.memory.available|filesizeformat|default:"N/A" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Disk Usage</h3>
+            <div class="metric-value">{{ system_metrics.disk.percent|default:"0" }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ system_metrics.disk.percent|default:0 }}%"></div>
+            </div>
+            <div class="metric-row">
+                <span>Used:</span>
+                <span>{{ system_metrics.disk.used|filesizeformat|default:"N/A" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Free:</span>
+                <span>{{ system_metrics.disk.free|filesizeformat|default:"N/A" }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Database Metrics -->
+    <h2>Database Performance</h2>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Database Size</h3>
+            <div class="metric-value">{{ database_metrics.size|filesizeformat|default:"0" }}</div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Active Connections</h3>
+            <div class="metric-value">{{ database_metrics.connections|default:"0" }}</div>
+            <div class="metric-row">
+                <span>Active Queries:</span>
+                <span>{{ database_metrics.active_queries|default:"0" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Cache Performance</h3>
+            <div class="metric-value">{{ redis_metrics.hit_rate|default:"0" }}%</div>
+            <div class="metric-label">Cache Hit Rate</div>
+            <div class="metric-row">
+                <span>Memory Used:</span>
+                <span>{{ redis_metrics.used_memory_human|default:"N/A" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Connected Clients:</span>
+                <span>{{ redis_metrics.connected_clients|default:"0" }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Metrics -->
+    <h2>User Activity</h2>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Total Users</h3>
+            <div class="metric-value">{{ user_metrics.total_users|default:"0" }}</div>
+            <div class="metric-row">
+                <span>New Today:</span>
+                <span>{{ user_metrics.new_users_today|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>New This Week:</span>
+                <span>{{ user_metrics.new_users_week|default:"0" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Active Users</h3>
+            <div class="metric-value">{{ user_metrics.active_sessions|default:"0" }}</div>
+            <div class="metric-label">Current Sessions</div>
+            <div class="metric-row">
+                <span>Today:</span>
+                <span>{{ user_metrics.active_today|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>This Week:</span>
+                <span>{{ user_metrics.active_week|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>This Month:</span>
+                <span>{{ user_metrics.active_month|default:"0" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Subscriptions</h3>
+            <div class="metric-value">{{ business_metrics.subscriptions.active|default:"0" }}</div>
+            <div class="metric-label">Active Subscriptions</div>
+            <div class="metric-row">
+                <span>Free:</span>
+                <span>{{ business_metrics.subscriptions.free|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Professional:</span>
+                <span>{{ business_metrics.subscriptions.professional|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Enterprise:</span>
+                <span>{{ business_metrics.subscriptions.enterprise|default:"0" }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Business Metrics -->
+    <h2>Business Performance</h2>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Revenue</h3>
+            <div class="metric-value">${{ business_metrics.revenue.month|floatformat:2|default:"0" }}</div>
+            <div class="metric-label">This Month</div>
+            <div class="metric-row">
+                <span>Today:</span>
+                <span>${{ business_metrics.revenue.today|floatformat:2|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>This Year:</span>
+                <span>${{ business_metrics.revenue.year|floatformat:2|default:"0" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Invoices</h3>
+            <div class="metric-value">{{ business_metrics.invoices.total|default:"0" }}</div>
+            <div class="metric-label">Total Invoices</div>
+            <div class="metric-row">
+                <span>Paid:</span>
+                <span>{{ business_metrics.invoices.paid|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Pending:</span>
+                <span>{{ business_metrics.invoices.pending|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Overdue:</span>
+                <span style="color: #dc3545;">{{ business_metrics.invoices.overdue|default:"0" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>API Usage</h3>
+            <div class="metric-value">{{ api_metrics.requests_today|default:"0" }}</div>
+            <div class="metric-label">Requests Today</div>
+            <div class="metric-row">
+                <span>This Hour:</span>
+                <span>{{ api_metrics.requests_hour|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Avg Response Time:</span>
+                <span>{{ api_metrics.average_response_time|default:"0" }}ms</span>
+            </div>
+            <div class="metric-row">
+                <span>Rate Limit Hits:</span>
+                <span>{{ api_metrics.rate_limit_hits|default:"0" }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Error Tracking -->
+    <h2>Error Tracking</h2>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Errors</h3>
+            <div class="metric-value">{{ error_metrics.errors_today|default:"0" }}</div>
+            <div class="metric-label">Errors Today</div>
+            <div class="metric-row">
+                <span>This Week:</span>
+                <span>{{ error_metrics.errors_week|default:"0" }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Critical:</span>
+                <span style="color: #dc3545;">{{ error_metrics.critical_errors|default:"0" }}</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h3>Top Errors</h3>
+            {% for error in error_metrics.top_errors %}
+            <div class="metric-row">
+                <span>{{ error.error_type }}</span>
+                <span>{{ error.count }}</span>
+            </div>
+            {% empty %}
+            <p>No errors recorded</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Refresh Button -->
+    <button class="refresh-button" onclick="refreshDashboard()" title="Refresh Dashboard">
+        ↻
+    </button>
+</div>
+
+<script>
+// Auto-refresh every 30 seconds
+let refreshInterval;
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(refreshDashboard, 30000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+async function refreshDashboard() {
+    const button = document.querySelector('.refresh-button');
+    button.classList.add('spinning');
+    
+    try {
+        const response = await fetch('/api/monitoring/metrics/');
+        const data = await response.json();
+        
+        if (data.success) {
+            updateDashboard(data.data);
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+        }
+    } catch (error) {
+        console.error('Failed to refresh dashboard:', error);
+    } finally {
+        button.classList.remove('spinning');
+    }
+}
+
+function updateDashboard(data) {
+    // Update system metrics
+    if (data.system) {
+        updateProgressBar('cpu-usage', data.system.cpu.usage_percent);
+        updateProgressBar('memory-usage', data.system.memory.percent);
+        updateProgressBar('disk-usage', data.system.disk.percent);
+    }
+    
+    // Check for alerts
+    checkAlerts(data);
+}
+
+function updateProgressBar(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.style.width = value + '%';
+        element.parentElement.previousElementSibling.textContent = value + '%';
+    }
+}
+
+function checkAlerts(data) {
+    const alertsContainer = document.getElementById('alerts-container');
+    alertsContainer.innerHTML = '';
+    
+    // Check for critical conditions
+    const alerts = [];
+    
+    if (data.system?.cpu?.usage_percent > 90) {
+        alerts.push('High CPU usage: ' + data.system.cpu.usage_percent + '%');
+    }
+    
+    if (data.system?.memory?.percent > 90) {
+        alerts.push('High memory usage: ' + data.system.memory.percent + '%');
+    }
+    
+    if (data.system?.disk?.percent > 90) {
+        alerts.push('Low disk space: ' + data.system.disk.percent + '% used');
+    }
+    
+    if (data.error_metrics?.critical_errors > 0) {
+        alerts.push('Critical errors detected: ' + data.error_metrics.critical_errors);
+    }
+    
+    if (alerts.length > 0) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert-banner';
+        alertDiv.innerHTML = '<strong>⚠️ Alerts:</strong> ' + alerts.join(' | ');
+        alertsContainer.appendChild(alertDiv);
+    }
+}
+
+// Start auto-refresh on page load
+document.addEventListener('DOMContentLoaded', startAutoRefresh);
+
+// Stop auto-refresh when page is hidden
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+    }
+});
+</script>
+{% endblock %}

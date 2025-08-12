@@ -260,8 +260,8 @@ class Service(Item):
             # Remove explicit 'default' connection to use the tenant's connection
             
             # Use a transaction for atomicity
-            from django.db import transaction
-            with transaction.atomic():
+            from django.db import transaction as db_transaction
+            with db_transaction.atomic():
                 super().save(*args, **kwargs)
                 
             logger.debug(f"Successfully saved service {self.name} with ID {self.id} in {time.time() - start_time:.4f}s")

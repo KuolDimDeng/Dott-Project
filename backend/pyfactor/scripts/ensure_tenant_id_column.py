@@ -7,7 +7,7 @@ This runs on startup to fix any missing columns
 import os
 import sys
 import django
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
@@ -33,7 +33,7 @@ def ensure_tenant_id_column():
             
             print('❌ tenant_id column missing, adding it now...')
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Add the column
                 cursor.execute("""
                     ALTER TABLE hr_employee 

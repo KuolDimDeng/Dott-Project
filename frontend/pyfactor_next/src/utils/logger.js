@@ -1,9 +1,8 @@
 /**
  * Unified logger that works in both browser and server environments
  * This logger provides basic logging functionality with level filtering
- * Enhanced with Sentry integration for error tracking
  */
-import * as Sentry from '@sentry/nextjs';
+
 
 // Log levels with numerical values for comparison
 const LOG_LEVELS = {
@@ -90,13 +89,7 @@ export const logger = {
     if (LOG_LEVELS[minLevel] <= LOG_LEVELS.info) {
       const logData = logger.fmt(message, data);
       
-      // Add breadcrumb to Sentry
-      Sentry.addBreadcrumb({
-        message: logData.message,
-        level: 'info',
-        data: logData,
-        timestamp: logData.timestamp,
-      });
+      // Sentry disabled - was adding breadcrumb here
       
       if (getIsServer()) {
         if (data !== undefined) {
@@ -123,13 +116,7 @@ export const logger = {
     if (LOG_LEVELS[minLevel] <= LOG_LEVELS.warn) {
       const logData = logger.fmt(message, data);
       
-      // Add breadcrumb to Sentry
-      Sentry.addBreadcrumb({
-        message: logData.message,
-        level: 'warning',
-        data: logData,
-        timestamp: logData.timestamp,
-      });
+      // Sentry disabled - was adding breadcrumb here
       
       if (getIsServer()) {
         if (data !== undefined) {
@@ -162,20 +149,7 @@ export const logger = {
         } : null,
       });
       
-      // Capture exception in Sentry
-      if (error instanceof Error) {
-        Sentry.captureException(error, {
-          contexts: {
-            log: logData,
-          },
-          tags: {
-            logLevel: 'error',
-          },
-        });
-      } else {
-        // If no error object, capture message
-        Sentry.captureMessage(message, 'error');
-      }
+      // Sentry disabled - was capturing exception here
       
       if (getIsServer()) {
         if (error !== undefined) {
@@ -194,7 +168,7 @@ export const logger = {
   },
   
   /**
-   * Log user actions (for Sentry tracking)
+   * Log user actions
    * @param {string} action - The action performed
    * @param {any} data - Optional data associated with the action
    */

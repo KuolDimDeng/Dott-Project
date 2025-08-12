@@ -58,7 +58,6 @@ export function AuthLoadingState() {
       // Update Cognito attributes in the background
       try {
         setTimeout(async () => {
-          const { updateUserAttributes } = await import('@/config/amplifyUnified');
           await updateUserAttributes({
             userAttributes: {
               'custom:onboarding': 'complete',

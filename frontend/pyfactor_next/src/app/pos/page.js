@@ -5,8 +5,37 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession-v2';
 import { PlusIcon, MinusIcon, TrashIcon, CreditCardIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { ErrorBoundary } from 'react-error-boundary';
 
-export default function POSPage() {
+// Error fallback component
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+        <div className="text-red-600 mb-4">
+          <h2 className="text-lg font-semibold">Something went wrong</h2>
+          <p className="text-sm mt-2 text-gray-600">The POS system encountered an error. Please try refreshing the page.</p>
+        </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={resetErrorBoundary}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => window.location.href = '/dashboard'}
+            className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function POSPage() {
   const router = useRouter();
   const { session, loading } = useSession();
   const [products, setProducts] = useState([]);
@@ -14,31 +43,52 @@ export default function POSPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Handle hydration mismatch by ensuring client-side only rendering for dynamic content
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (!loading && !session) {
-      router.push('/auth/login');
+    if (!loading && !session && mounted) {
+      router.push('/auth/signin');
     }
-  }, [session, loading, router]);
+  }, [session, loading, router, mounted]);
 
   useEffect(() => {
-    if (session?.tenantId) {
+    if (session?.tenantId && mounted) {
       fetchProducts();
     }
-  }, [session]);
+  }, [session, mounted]);
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`/api/products/${session.tenantId}`, {
+      const response = await fetch('/api/products', {
         credentials: 'include'
       });
       
       if (response.ok) {
         const data = await response.json();
-        setProducts(data.products || []);
+        console.log('[POS] Raw API response:', data);
+        console.log('[POS] Products array:', data.products);
+        
+        if (data.products && data.products.length > 0) {
+          console.log('[POS] First product received:', data.products[0]);
+          console.log('[POS] First product quantity_in_stock:', data.products[0].quantity_in_stock);
+        }
+        
+        setProducts(Array.isArray(data.products) ? data.products : []);
+      } else if (response.status === 401) {
+        console.warn('Authentication required, redirecting to login');
+        router.push('/auth/signin');
+      } else {
+        console.error('Failed to fetch products:', response.status);
+        toast.error('Failed to load products');
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      toast.error('Error loading products');
     }
   };
 
@@ -142,10 +192,23 @@ export default function POSPage() {
     product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
+  // Show loading spinner while session is loading or not mounted (prevents hydration mismatch)
+  if (loading || !mounted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect if no session (only after mounted to prevent hydration mismatch)
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
       </div>
     );
   }
@@ -181,14 +244,14 @@ export default function POSPage() {
                   <span className="text-3xl">📦</span>
                 </div>
                 <h3 className="text-sm font-medium text-gray-900 truncate">
-                  {product.name}
+                  {product.name || 'Unnamed Product'}
                 </h3>
                 <p className="text-lg font-semibold text-blue-600 mt-1">
-                  ${product.price.toFixed(2)}
+                  ${(product.price || 0).toFixed(2)}
                 </p>
-                {product.stock_quantity !== undefined && (
+                {product.quantity_in_stock !== undefined && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Stock: {product.stock_quantity}
+                    Stock: {product.quantity_in_stock}
                   </p>
                 )}
               </button>
@@ -302,5 +365,20 @@ export default function POSPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export with Error Boundary wrapper to prevent crashes
+export default function POSPageWithErrorBoundary() {
+  return (
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onReset={() => window.location.reload()}
+      onError={(error, errorInfo) => {
+        console.error('POS Page Error:', error, errorInfo);
+      }}
+    >
+      <POSPage />
+    </ErrorBoundary>
   );
 }

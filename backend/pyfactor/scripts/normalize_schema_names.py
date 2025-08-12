@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 # Now import Django models
-from django.db import transaction, connections
+from django.db import transaction as db_transaction, connections
 from custom_auth.models import User, Tenant
 
 def normalize_schema_name(tenant_id: uuid.UUID:
@@ -66,7 +66,7 @@ def update_tenant_schema_names():
                     print(f"WARNING: Schema {new_schema_name} already exists!")
                     continue
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create new schema with proper name
                 with connections['default'].cursor() as cursor:
                     # Save original search path
@@ -131,7 +131,7 @@ def update_user_roles():
     
     for user in users:
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 if user.cognito_sub:
                     # Update the role to OWNER since Cognito has OWNER role
                     user.role = 'owner'

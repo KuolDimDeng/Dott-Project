@@ -1,6 +1,6 @@
 'use client';
 
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 /**
  * Unified OAuth loading screen component
@@ -11,31 +11,24 @@ export default function OAuthLoadingScreen({
   error = null,
   showProgress = false
 }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center space-y-4 max-w-md">
-        <StandardSpinner size="large" />
-        <h2 className="text-xl font-semibold text-gray-900">Completing Authentication</h2>
-        <p className="text-gray-600">{status}</p>
-        
-        {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
-            <p className="text-red-600 text-xs mt-1">Redirecting to sign in...</p>
+  // For error state, show custom error UI
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </div>
-        )}
-        
-        {showProgress && (
-          <div className="text-sm text-gray-500 space-y-1 mt-6">
-            <p>🔄 Processing OAuth callback</p>
-            <div className="text-xs text-left bg-gray-100 p-2 rounded">
-              <div>✓ Secure token exchange</div>
-              <div>✓ Session establishment</div>
-              <div>✓ Account verification</div>
-            </div>
-          </div>
-        )}
+          <h2 className="text-xl font-semibold text-gray-900">Authentication Error</h2>
+          <p className="text-red-800">{error}</p>
+          <p className="text-red-600 text-sm">Redirecting to sign in...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Use CenteredSpinner for loading state
+  return <CenteredSpinner size="large" text={status} showText={true} minHeight="h-screen" />;
 }

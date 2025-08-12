@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Alika Mmiliki wa Biashara",
     "analytics": "Uchambuzi",
     "smartInsights": "Maarifa Makini",
-    "dottStatus": "Hali ya Dott"
+    "dottStatus": "Hali ya Dott",
+    "jobs": "Kazi"
   },
   "subMenu": {
     "dashboard": "Dashibodi",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Chati ya Akaunti",
     "journalEntries": "Maingizo ya Jarida",
     "generalLedger": "Leja Kuu",
-    "trialBalance": "Mizani ya Jaribio"
+    "trialBalance": "Mizani ya Jaribio",
+    "jobsList": "Kazi Zote",
+    "jobCosting": "Bei ya Kazi",
+    "jobMaterials": "Matumizi ya Vifaa",
+    "jobLabor": "Ufuatiliaji wa Kazi",
+    "jobProfitability": "Uchambuzi wa Faida",
+    "services": "Huduma",
+    "jobs": "Kazi"
   },
   "actions": {
     "viewAll": "Tazama Zote",

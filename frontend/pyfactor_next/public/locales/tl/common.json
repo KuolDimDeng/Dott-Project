@@ -1,0 +1,477 @@
+{
+  "hero": {
+    "tagline": "MATALINONG SOLUSYON SA PAMAMAHALA NG NEGOSYO",
+    "your": "Ang Iyong",
+    "title": "Pandaigdigang Platform ng Negosyo",
+    "subtitle": "Libre magpakailanman para sa mga pangunahing feature",
+    "description": "Pinapahintulutan ng Dott ang mga may-ari ng negosyo tulad mo na gumawa ng mga invoice, tumanggap ng online na pagbabayad, pamahalaan ang iyong accounting at imbentaryo, kasama ang barcode scanning—lahat sa isang intuitive na platform.",
+    "button": "Magsimula Nang Libre",
+    "trustedBy": "Pinagkakatiwalaan ng 10,000+ negosyo sa buong mundo",
+    "benefit": {
+      "free": "Libreng plano magpakailanman",
+      "invoicing": "Propesyonal na pag-invoice",
+      "pos": "Point of sale system",
+      "inventory": "Pamamahala ng imbentaryo",
+      "payroll": "Mga tool para sa payroll at HR",
+      "tax": "Pagsunod sa buwis",
+      "insights": "Mga insight na pinapatakbo ng AI",
+      "mobileMoney": "Mobile money payments (M-Pesa)",
+      "cardPayments": "Tumanggap ng card payments sa buong mundo",
+      "languages": "30+ suportadong wika",
+      "mobilePhone": "Kasama ang mobile phone app",
+      "jobManagement": "Pamamahala ng trabaho at gastos",
+      "accounting": "Suporta sa IFRS at US GAAP"
+    }
+  },
+  "navFeatures": "Mga Feature",
+  "navPricing": "Presyo",
+  "navAbout": "Tungkol Sa Amin",
+  "navBlog": "Blog",
+  "navContact": "Makipag-ugnayan",
+  "navStatus": "Status ng Sistema",
+  "navSignIn": "MAG-SIGN IN",
+  "getStarted": "Magsimula",
+  "pricing": {
+    "eyebrow": "Simple, Transparent na Presyo",
+    "heading": "Pumili ng Tamang Plan para sa Inyong Business",
+    "subheading": "Walang nakatagong bayad. Walang credit card na kailangan para sa Basic plan. Cancel anumang oras.",
+    "billing": {
+      "monthly": "Buwanang",
+      "sixMonths": "6 na Buwan",
+      "annual": "Taunan",
+      "popular": "SIKAT",
+      "save20": "MAKATIPID NG 20%"
+    },
+    "period": {
+      "month": "/buwan",
+      "sixMonths": "/6 na buwan",
+      "year": "/taon"
+    },
+    "mostPopular": "PINAKASIKAT",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Perpekto para sa pagsisimula",
+        "cta": "Simulan Nang Libre"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Para sa lumalaking business na kailangan ng higit pa",
+        "cta": "Kunin ang Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Walang limitasyon na scale para sa malalaking organisasyon",
+        "cta": "Simulan ang Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Kumpletong Solusyon sa Negosyo",
+    "heading": "Lahat ng Kailangan Mo para Lumago sa Pandaigdigang Antas",
+    "subheading": "Malalakas na tool na dinisenyo para sa mga modernong negosyong tumatakbo sa iba't ibang bansa",
+    "operations": {
+      "title": "Pamamahala ng Operasyon",
+      "description": "Pasimplehan ang iyong pang-araw-araw na operasyon sa negosyo"
+    },
+    "financial": {
+      "title": "Pamamahala ng Pananalapi",
+      "description": "Kumpletong kontrol sa pananalapi ng iyong negosyo",
+      "heading": "Kumpletong kontrol sa pananalapi ng iyong negosyo"
+    },
+    "global": {
+      "title": "Pandaigdigang Kasangkapan sa Negosyo",
+      "description": "Lahat ng kailangan mo para mag-operate sa buong mundo",
+      "heading": "Lahat ng kailangan mo para sa pandaigdigang operasyon"
+    },
+    "trust": {
+      "title": "Binuo para sa Seguridad at Pagsunod"
+    }
+  },
+  "footer": {
+    "home": "Home",
+    "features": "Mga Feature",
+    "pricing": "Presyo",
+    "blog": "Blog",
+    "contact": "Makipag-ugnayan",
+    "inventory": "Pamamahala ng Imbentaryo",
+    "accounting": "Accounting",
+    "invoicing": "Pag-invoice",
+    "payments": "Mga Bayad",
+    "pos": "Point of Sale",
+    "about": "Tungkol sa Amin",
+    "careers": "Mga Karera",
+    "press": "Press",
+    "partners": "Mga Partner",
+    "help": "Help Center",
+    "docs": "Dokumentasyon",
+    "status": "Status ng System",
+    "security": "Seguridad",
+    "privacy": "Patakaran sa Privacy",
+    "terms": "Mga Tuntunin ng Serbisyo",
+    "cookies": "Patakaran sa Cookie",
+    "footerHeading": "Footer",
+    "logoAlt": "Dott Logo",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Mga Madalas Itanong",
+    "subheading": "Maghanap ng mga sagot sa karaniwang tanong tungkol sa aming platform at serbisyo."
+  },
+  "feature": {
+    "inventory": "Advanced na Pamamahala ng Imbentaryo",
+    "inventory.description": "Real-time na pagsubaybay ng stock gamit ang barcode scanning at suporta sa maraming lokasyon",
+    "barcode": "Barcode at QR Code",
+    "barcode.description": "Gumawa at mag-scan ng mga barcode para sa mga produkto at dokumento",
+    "pos": "Point of Sale",
+    "pos.description": "Modernong POS system na may kakayahang offline",
+    "invoicing": "Multi-Currency na Pagsingil",
+    "invoicing.description": "Propesyonal na mga invoice sa mahigit 50 pera na may awtomatikong conversion",
+    "tax": "Rehiyonal na Pagsunod sa Buwis",
+    "tax.description": "Awtomatikong kalkulasyon ng buwis para sa mahigit 100 bansa",
+    "reporting": "Pagsusuri ng Pananalapi",
+    "reporting.description": "Real-time na insights na may AI-powered na rekomendasyon",
+    "payments": "Rehiyonal na Payment Gateways",
+    "payments.description": "Tumanggap ng bayad sa pamamagitan ng lokal na paraan sa bawat bansa",
+    "global": "Pamamahala ng Import/Export",
+    "global.description": "Hawakan ang dokumentasyon at pagsunod sa pandaigdigang kalakalan",
+    "security": "Enterprise Security",
+    "security.description": "Bank-grade na seguridad na may rehiyonal na pagsunod",
+    "jobs": "Pamamahala ng Trabaho at Gastos",
+    "jobs.description": "End-to-end na pagsubaybay ng proyekto na may real-time na gastos, mobile app, at pagsusuri ng kita",
+    "accounting": "Dalawang Pamantayan sa Accounting",
+    "languages": "Suporta sa Maraming Wika",
+    "currencies": "Sistema ng Maraming Pera"
+  },
+  "trust": {
+    "soc2Title": "SOC2 Compliant",
+    "soc2Desc": "Enterprise security",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Bank-level na seguridad",
+    "gdprTitle": "GDPR Ready",
+    "gdprDesc": "Sumusunod sa privacy",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Laging available"
+  },
+  "highlights": {
+    "eyebrow": "Mga Pangunahing Benepisyo",
+    "heading": "Bakit pinipili ng mga negosyo ang Dott",
+    "subheading": "Mga advanced na feature na nagiging kaibahan namin sa kompetensya at tumutulong sa inyong business na lumago.",
+    "learnMore": "Matuto pa",
+    "features": {
+      "label": "Mga pangunahing feature:"
+    },
+    "mobile": {
+      "title": "Mobile Application",
+      "description": "I-access ang inyong business data kahit saan at kahit kailan gamit ang aming powerful na mobile app. Pamahalaan ang inventory, mag-process ng sales, at tingnan ang real-time reports habang naglalakbay.",
+      "imageAlt": "Screenshot ng mobile application"
+    },
+    "pos": {
+      "title": "POS at Barcode Scanning",
+      "description": "Gawing powerful na point-of-sale system ang kahit anong device. Mag-scan ng barcode nang mabilis, mag-process ng sales nang mabilis, i-track ang inventory sa real-time, at tanggapin ang lahat ng paraan ng pagbabayad kabilang ang cash, cards, at mobile money.",
+      "imageAlt": "POS system na may barcode scanning feature",
+      "features": {
+        "quickCheckout": "Mabilis na checkout",
+        "barcodeScanning": "Barcode scanning",
+        "allPaymentTypes": "Lahat ng uri ng pagbabayad",
+        "inventoryTracking": "Inventory tracking",
+        "offlineMode": "Offline mode",
+        "mobileReady": "Mobile ready"
+      }
+    },
+    "ai": {
+      "title": "AI-Powered na Insights",
+      "description": "Makakuha ng mga smart na rekomendasyon at predictive analytics batay sa inyong business data. Tumutulong ang aming AI na mag-forecast ng demand, i-optimize ang inventory, at i-identify ang mga opportunity para sa paglago.",
+      "imageAlt": "Screenshot ng AI analytics dashboard"
+    },
+    "jobs": {
+      "title": "Comprehensive na Job Management",
+      "description": "End-to-end na job costing mula sa quote hanggang completion. I-track ang materials, labor, at expenses na may real-time profitability analysis. Perfect para sa service businesses, contractors, at field operations na may mobile-first design.",
+      "imageAlt": "Job management at costing interface",
+      "features": {
+        "jobCosting": "Real-time na job costing",
+        "mobileFieldApp": "Mobile app para sa field workers",
+        "materialTracking": "Material tracking",
+        "timeTracking": "Automatic time tracking",
+        "photoCapture": "Photo capture",
+        "digitalSignatures": "Digital signatures",
+        "profitabilityAnalysis": "Profitability analysis",
+        "offlineSupport": "Offline support"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing at Location Tracking",
+      "description": "Siguruhin ang tumpak na time tracking gamit ang GPS-based na clock in/out. Perfect para sa field teams, delivery drivers, at remote workers. Mag-set up ng virtual boundaries para sa work sites at makakuha ng alerts kapag pumasok o lumabas ang mga empleyado sa designated areas.",
+      "imageAlt": "Geofencing at location tracking interface",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Virtual boundaries",
+        "realTimeAlerts": "Real-time alerts",
+        "automatedTimesheets": "Automated timesheets",
+        "complianceReady": "Compliance ready",
+        "teamManagement": "Team management"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Payments",
+      "description": "Tanggapin ang mga bayad mula saanmang parte ng mundo. Live na ang M-Pesa integration sa Kenya, at paparating na ang MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, at Mercado Pago. Maabot ang bilyun-bilyong customer na mas gusto ang mobile money kaysa traditional banking.",
+      "imageAlt": "Mobile money payment options",
+      "available": "Mga paraan ng pagbabayad:",
+      "live": "Available Na Ngayon:",
+      "coming": "Paparating Na:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "I-transform ang customer communication gamit ang WhatsApp Business integration. Gumawa at pamahalaan ang inyong product catalog, automatic na magpadala ng invoices at receipts, magbigay ng instant customer support, at maabot ang mga customer sa kanilang preferred messaging platform.",
+      "imageAlt": "WhatsApp Business integration interface"
+    },
+    "languages": {
+      "title": "30+ na Suportadong Wika",
+      "description": "Maabot ang mga customer at pamahalaan ang inyong business sa inyong preferred na wika. Mula sa English hanggang Swahili, Spanish hanggang Mandarin, sinusuportahan namin ang mahigit 30 wika para gawing accessible ang Dott sa mga business worldwide.",
+      "imageAlt": "Multi-language interface demonstration",
+      "availableIn": "Available sa:"
+    },
+    "vatGst": "Suporta sa VAT/GST",
+    "taxReports": "Mga ulat ng buwis",
+    "eFilingReady": "Handa para sa e-filing",
+    "ifrs": "IFRS para sa 166+ bansa",
+    "gaap": "US GAAP para sa mga negosyo sa US",
+    "autoDetect": "Awtomatikong pagtukoy ayon sa bansa",
+    "autoDetection": "Awtomatikong pagtukoy ng wika",
+    "rightToLeft": "Mga wikang kanan-pakaliwa",
+    "regionalFormat": "Mga rehiyonal na format ng petsa/numero",
+    "realTimeRates": "Real-time na palitan",
+    "cryptoCurrency": "Suporta sa cryptocurrency",
+    "currencyConversion": "Awtomatikong pagpapalit"
+  },
+  "builtForYou": {
+    "title": "Ginawa Para Sa Iyo",
+    "heading": "Pamahalaan ang inyong negosyo tulad ng isang propesyonal!",
+    "subheading": "Ginawa para sa mga may-ari ng negosyo tulad ninyo",
+    "cta": "Sumali sa libu-libong may-ari ng negosyo sa buong mundo na nagtitiwala sa Dott upang pamahalaan ang kanilang negosyo",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Subaybayan ang mga proyekto, mag-invoice sa mga kliyente agad, at pamahalaan ang inyong pananalapi sa isang lugar. Makakuha ng bayad nang mas mabilis gamit ang propesyonal na mga invoice."
+      },
+      "contractors": {
+        "title": "Contractors",
+        "description": "Pamahalaan ang maraming proyekto, subaybayan ang gastos sa mga materyales at paggawa, at magpadala ng propesyonal na mga quote. Panatilihin ang malusog na cash flow."
+      },
+      "entrepreneurs": {
+        "title": "Entrepreneurs",
+        "description": "I-scale ang inyong startup gamit ang malakas na mga tools para sa inventory, benta, at financial tracking. Gumawa ng mga desisyon na batay sa datos."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Mag-bill ayon sa oras o proyekto, subaybayan ang mga gastos, at pamahalaan ang maraming kliyente nang walang hirap. Kasama ang propesyonal na invoicing."
+      },
+      "retail": {
+        "title": "Mga May-ari ng Retail Shop",
+        "description": "Pamahalaan ang inventory gamit ang barcode scanning, subaybayan ang benta, at tumanggap ng maraming paraan ng pagbabayad kasama ang mobile money."
+      },
+      "streetVendors": {
+        "title": "Street Vendors",
+        "description": "Simpleng mobile-first na disenyo upang subaybayan ang araw-araw na benta, pamahalaan ang inventory, at tumanggap ng digital payments habang naglalakbay."
+      },
+      "marketStalls": {
+        "title": "Mga May-ari ng Market Stall",
+        "description": "Perpekto para sa mga abalang araw sa palengke. Mabilis na pagpasok ng benta, mga alerto sa inventory, at araw-araw na pagsubaybay ng kita sa inyong lokal na pera."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mobile Money Agents",
+        "description": "Subaybayan ang mga transaksyon, pamahalaan ang mga float balance, at lumikha ng mga ulat para sa mga network operator. Ginawa para sa M-Pesa, MTN, at iba pa."
+      },
+      "restaurants": {
+        "title": "Mga May-ari ng Maliliit na Restaurant",
+        "description": "Pamahalaan ang mga order, subaybayan ang mga sangkap, kalkulahin ang gastos sa pagkain, at hawakan nang epektibo ang dine-in at takeaway."
+      },
+      "serviceProviders": {
+        "title": "Service Providers",
+        "description": "Para sa mga plumber, electrician, mechanic, at iba pa. Mag-schedule ng mga trabaho, subaybayan ang mga parts, at mag-invoice pagkatapos matapos."
+      },
+      "onlineSellers": {
+        "title": "Online Sellers",
+        "description": "I-sync ang inventory sa mga platform, pamahalaan ang mga order, at subaybayan ang shipping. Perpekto para sa mga social media sellers."
+      },
+      "transport": {
+        "title": "Transport Operators",
+        "description": "Para sa mga operator ng taxi, boda boda, at tuk-tuk. Subaybayan ang araw-araw na kita, gastos sa gasolina, at mga schedule ng maintenance."
+      }
+    }
+  },
+  "integrations": {
+    "title": "Mga Integration",
+    "heading": "Kumonekta sa mga tools na mahal mo",
+    "subheading": "Walang problema na mag-integrate sa mga sikat na business tools at payment platforms",
+    "availableNow": "Available Na Ngayon",
+    "comingSoon": "Malapit Na",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Magpadala ng mga invoice at resibo direkta sa mga customer"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Tumanggap ng mobile money payments nang walang problema"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Mag-process ng card payments sa buong mundo"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "I-sync ang inyong e-commerce inventory"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Ikonekta ang inyong WordPress store"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Mag-import at mag-export ng accounting data"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Pamahalaan ang inyong Amazon business"
+    }
+  },
+  "cookieBanner": {
+    "title": "Paunawa sa Cookie",
+    "message": "Gumagamit kami ng cookies upang pahusayin ang iyong karanasan, suriin ang paggamit, at magbigay ng mahahalagang functionality. Sa patuloy na paggamit ng aming site, sumasang-ayon ka sa aming paggamit ng cookies.",
+    "learnMore": "Matuto pa",
+    "customize": "I-customize",
+    "rejectAll": "Tanggihan Lahat",
+    "acceptAll": "Tanggapin Lahat",
+    "preferencesTitle": "Mga Kagustuhan sa Cookie",
+    "alwaysOn": "Palaging Naka-on",
+    "savePreferences": "I-save ang mga Kagustuhan",
+    "essential": {
+      "title": "Mahahalagang Cookies",
+      "description": "Kinakailangan para sa pangunahing functionality at seguridad ng site"
+    },
+    "functional": {
+      "title": "Functional na Cookies",
+      "description": "Naaalala ang iyong mga kagustuhan at settings"
+    },
+    "analytics": {
+      "title": "Analytics Cookies",
+      "description": "Tumutulong sa amin na maunawaan kung paano mo ginagamit ang aming site"
+    },
+    "marketing": {
+      "title": "Marketing Cookies",
+      "description": "Ginagamit upang ipakita ang mga nauugnay na advertisement"
+    }
+  },
+  "contact": {
+    "eyebrow": "Makipag-ugnayan sa Amin",
+    "heading": "Makipag-ugnayan",
+    "subheading": "May mga tanong tungkol sa Dott? Nandito ang aming team upang matulungan kang makahanap ng perpektong solusyon para sa iyong negosyo.",
+    "infoTitle": "Impormasyon sa Pakikipag-ugnayan",
+    "infoSubtitle": "Punan ang form o makipag-ugnayan sa amin nang direkta gamit ang impormasyon sa ibaba.",
+    "email": "Email",
+    "address": "Address",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "Estados Unidos",
+    "submitting": "Ipinapadala ang iyong mensahe...",
+    "success": "Salamat sa pakikipag-ugnayan! Babalik kami sa iyo sa lalong madaling panahon.",
+    "error": "Nabigong ipadala ang iyong mensahe. Pakisubukan muli o mag-email sa amin nang direkta sa support@dottapps.com.",
+    "error.name": "Kinakailangan ang pangalan",
+    "error.email.required": "Kinakailangan ang email",
+    "error.email.invalid": "Pakipasok ang wastong email address",
+    "error.message": "Kinakailangan ang mensahe",
+    "form": {
+      "name": "Buong Pangalan",
+      "email": "Email Address",
+      "company": "Kumpanya",
+      "phone": "Numero ng Telepono",
+      "message": "Mensahe",
+      "submit": "Ipadala ang Mensahe",
+      "sending": "Ipinapadala...",
+      "subject": {
+        "label": "Paano namin kayo matutulungan?",
+        "general": "Pangkalahatang Tanong",
+        "sales": "Tanong sa Benta",
+        "support": "Technical Support",
+        "demo": "Humiling ng Demo",
+        "partnership": "Pagkakataon sa Partnership"
+      }
+    }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "Platform ng pangangasiwa ng negosyo na pinapatakbo ng AI na gumagana offline.",
+      "cta": {
+        "getStarted": "Magsimula Nang Libre",
+        "signIn": "Mag-sign In"
+      },
+      "noCreditCard": "Walang kailangang credit card",
+      "freePlan": "Libreng plano magpakailanman"
+    },
+    "features": {
+      "title": "Lahat ng Kailangan Mo",
+      "pos": {
+        "title": "Punto ng Benta",
+        "description": "Iproseso ang mga benta kaagad, kahit offline"
+      },
+      "barcode": {
+        "title": "Barcode Scanner",
+        "description": "I-scan ang mga produkto gamit ang iyong camera"
+      },
+      "invoicing": {
+        "title": "Mabilis na Pag-invoice",
+        "description": "Gumawa at magpadala ng mga invoice habang naglalakbay"
+      },
+      "analytics": {
+        "title": "Real-time Analytics",
+        "description": "Subaybayan ang performance ng iyong negosyo"
+      }
+    },
+    "benefits": {
+      "title": "Ginawa Para sa Iyong Tagumpay",
+      "offline": {
+        "title": "Gumagana Offline",
+        "description": "Magpatuloy sa pagbebenta nang walang internet"
+      },
+      "fast": {
+        "title": "Napakabilis",
+        "description": "Instant loading, walang pagkaantala"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Dinisenyo para sa mga telepono at tablet"
+      },
+      "payments": {
+        "title": "Mobile Money",
+        "description": "M-Pesa, offline mode, lokal na suporta"
+      }
+    },
+    "pricing": {
+      "title": "Simple, Transparent na Presyo"
+    },
+    "cta": {
+      "title": "Handa na Bang Palaguin ang Iyong Negosyo?",
+      "subtitle": "Simulang pamahalaan nang mas mahusay ang iyong negosyo ngayon",
+      "button": "Magsimula Nang Libre",
+      "terms": "Walang kailangang credit card • Kanselahin anumang oras"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: Pandaigdigang Platform ng Negosyo",
+    "ios": "Available sa iyong home screen",
+    "android": "I-install para sa mabilis na access",
+    "tap": "I-tap",
+    "then": "pagkatapos",
+    "addToHome": "Idagdag sa Home",
+    "install": "I-install"
+  },
+  "browserTitle": "Dott: Pandaigdigang Platform ng Negosyo"
+}

@@ -25,6 +25,7 @@ from .views import (
     email_estimate,
     print_estimate,
 )
+from .receipt_views import send_receipt_email
 
 # Create router for ViewSets
 router = DefaultRouter()
@@ -64,4 +65,7 @@ urlpatterns = [
     path('refunds/<uuid:pk>/', refund_detail, name='refund-detail'),
     path('custom-charge-plans/create/', create_custom_charge_plan, name='create-custom-charge-plan'),
     path('custom-charge-plans/', list_custom_charge_plans, name='list-custom-charge-plans'),
+    
+    # Receipt email endpoint
+    path('pos/send-receipt/', send_receipt_email, name='send-receipt-email'),
 ]

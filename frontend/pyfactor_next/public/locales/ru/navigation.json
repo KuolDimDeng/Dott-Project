@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Пригласить владельца бизнеса",
     "analytics": "Аналитика",
     "smartInsights": "Умная Аналитика",
-    "dottStatus": "Статус Dott"
+    "dottStatus": "Статус Dott",
+    "jobs": "Работы"
   },
   "subMenu": {
     "dashboard": "Панель управления",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "План счетов",
     "journalEntries": "Журнальные записи",
     "generalLedger": "Главная книга",
-    "trialBalance": "Пробный баланс"
+    "trialBalance": "Пробный баланс",
+    "jobsList": "Все Работы",
+    "jobCosting": "Калькуляция Работ",
+    "jobMaterials": "Использование Материалов",
+    "jobLabor": "Учёт Рабочего Времени",
+    "jobProfitability": "Анализ Прибыльности",
+    "services": "Услуги",
+    "jobs": "Работы"
   },
   "actions": {
     "viewAll": "Просмотреть все",

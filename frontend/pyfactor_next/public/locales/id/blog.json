@@ -1,0 +1,49 @@
+{
+  "backToHome": "Kembali ke Beranda",
+  "hero": {
+    "title": "Blog Bisnis Dott",
+    "subtitle": "Pelajari cara mengelola keuangan bisnis Anda dengan Dott. Dapatkan tips, wawasan, dan strategi untuk mengembangkan bisnis Anda."
+  },
+  "newsletter": {
+    "title": "Daftar untuk buletin kami untuk pembaruan produk dan posting blog baru!",
+    "placeholder": "Alamat email Anda",
+    "button": "Berlangganan"
+  },
+  "categories": {
+    "all": "Semua Artikel",
+    "accounting": "Akuntansi & Pajak",
+    "business": "Bisnis"
+  },
+  "search": {
+    "placeholder": "Cari artikel..."
+  },
+  "featured": "Unggulan",
+  "readTime": "{{minutes}} menit baca",
+  "noArticles": "Tidak ada artikel yang ditemukan sesuai kriteria Anda.",
+  "articles": {
+    "profitLoss": {
+      "title": "Memahami Laba & Rugi: Panduan Menyenangkan untuk Pemilik Bisnis",
+      "excerpt": "Temukan cara membaca dan memahami laporan L&R Anda tanpa tertidur. Kami berjanji membuatnya menarik!"
+    },
+    "expenses": {
+      "title": "Lacak Pengeluaran Bisnis Seperti Profesional: 5 Langkah Sederhana",
+      "excerpt": "Pelajari cara melacak setiap sen tanpa kehilangan akal sehat. Plus, temukan pengeluaran mana yang bisa menghemat uang pajak Anda!"
+    },
+    "taxDeductions": {
+      "title": "Potongan Pajak Tersembunyi yang Harus Diketahui Setiap Bisnis Kecil",
+      "excerpt": "Berhenti meninggalkan uang di atas meja! Temukan potongan pajak sah yang dilewatkan kebanyakan pemilik bisnis."
+    },
+    "inventory": {
+      "title": "Ubah Manajemen Inventaris Anda dengan Pemindaian Barcode",
+      "excerpt": "Ucapkan selamat tinggal pada penghitungan manual! Pelajari bagaimana pemindaian barcode dapat merevolusi manajemen inventaris Anda."
+    },
+    "mobile": {
+      "title": "Jalankan Seluruh Bisnis Anda dari Ponsel: Revolusi Mobile",
+      "excerpt": "Temukan cara mengelola faktur, melacak inventaris, dan menangani pembayaran - semuanya dari smartphone Anda!"
+    },
+    "customerRelationships": {
+      "title": "Membangun Hubungan Pelanggan yang Bertahan: CRM Menjadi Sederhana",
+      "excerpt": "Pelajari cara membuat pelanggan kembali tanpa perangkat lunak rumit atau alat mahal."
+    }
+  }
+}

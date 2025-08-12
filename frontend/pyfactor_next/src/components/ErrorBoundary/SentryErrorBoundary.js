@@ -1,6 +1,30 @@
 import React from 'react';
-import * as Sentry from '@sentry/nextjs';
-import { ErrorBoundary } from '@sentry/nextjs';
+
+// Simple ErrorBoundary implementation since Sentry is removed
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const Fallback = this.props.fallback;
+      return <Fallback error={this.state.error} resetError={() => this.setState({ hasError: false, error: null })} />;
+    }
+    return this.props.children;
+  }
+}
 
 // Fallback component for errors
 const ErrorFallback = ({ error, resetError }) => {
@@ -74,11 +98,7 @@ export const SentryErrorBoundary = ({ children, fallback, showDialog = false }) 
 // Hook to manually capture exceptions
 export const useSentryError = () => {
   const captureError = React.useCallback((error, context = {}) => {
-    Sentry.captureException(error, {
-      contexts: {
-        react: context,
-      },
-    });
+    console.error('Error captured:', error, context);
   }, []);
 
   return { captureError };

@@ -18,7 +18,7 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone as django_timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 # PDF generation imports
 from reportlab.lib import colors
@@ -35,7 +35,7 @@ except ImportError:
     TwilioClient = None
 
 from ..models import (
-    TaxFiling, TaxFilingStatus, FilingConfirmation,
+    TaxFiling, FilingConfirmation,
     FilingNotification, NotificationStatus, NotificationType
 )
 from .notification_templates import (
@@ -100,7 +100,7 @@ class ConfirmationGenerator:
         logger.warning("Twilio credentials not configured, SMS notifications disabled")
         return None
     
-    @transaction.atomic
+    @db_transaction.atomic
     def generate_confirmation(self, filing: TaxFiling) -> FilingConfirmation:
         """Generate filing confirmation for a completed tax filing."""
         try:

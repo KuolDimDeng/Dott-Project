@@ -48,6 +48,115 @@ const countryCurrencyMap = {
   'PL': 'PLN', // Polish Zloty
   'AE': 'AED', // UAE Dirham
   'SA': 'SAR', // Saudi Riyal
+  // Additional developing countries
+  'ET': 'ETB', // Ethiopian Birr
+  'RW': 'RWF', // Rwandan Franc
+  'ZM': 'ZMW', // Zambian Kwacha
+  'ZW': 'ZWL', // Zimbabwean Dollar
+  'MW': 'MWK', // Malawian Kwacha
+  'MZ': 'MZN', // Mozambican Metical
+  'BW': 'BWP', // Botswana Pula
+  'NA': 'NAD', // Namibian Dollar
+  'SN': 'XOF', // Senegal - West African CFA Franc
+  'CI': 'XOF', // Côte d'Ivoire - West African CFA Franc
+  'CM': 'XAF', // Cameroon - Central African CFA Franc
+  'AO': 'AOA', // Angolan Kwanza
+  'GA': 'XAF', // Gabon - Central African CFA Franc
+  'CG': 'XAF', // Congo - Central African CFA Franc
+  'CD': 'CDF', // Democratic Republic of Congo - Congolese Franc
+  'SD': 'SDG', // Sudanese Pound
+  'TN': 'TND', // Tunisian Dinar
+  'DZ': 'DZD', // Algerian Dinar
+  'LY': 'LYD', // Libyan Dinar
+  'BD': 'BDT', // Bangladeshi Taka
+  'PK': 'PKR', // Pakistani Rupee
+  'MM': 'MMK', // Myanmar Kyat
+  'KH': 'KHR', // Cambodian Riel
+  'LA': 'LAK', // Lao Kip
+  'NP': 'NPR', // Nepalese Rupee
+  'LK': 'LKR', // Sri Lankan Rupee
+  'AF': 'AFN', // Afghan Afghani
+  'VE': 'VES', // Venezuelan Bolívar
+  'EC': 'USD', // Ecuador uses USD
+  'BO': 'BOB', // Bolivian Boliviano
+  'PY': 'PYG', // Paraguayan Guaraní
+  'UY': 'UYU', // Uruguayan Peso
+  'GT': 'GTQ', // Guatemalan Quetzal
+  'HN': 'HNL', // Honduran Lempira
+  'SV': 'USD', // El Salvador uses USD
+  'NI': 'NIO', // Nicaraguan Córdoba
+  'CR': 'CRC', // Costa Rican Colón
+  'PA': 'PAB', // Panamanian Balboa (pegged to USD)
+  'DO': 'DOP', // Dominican Peso
+  'HT': 'HTG', // Haitian Gourde
+  'JM': 'JMD', // Jamaican Dollar
+  'IQ': 'IQD', // Iraqi Dinar
+  'YE': 'YER', // Yemeni Rial
+  'SY': 'SYP', // Syrian Pound
+  'JO': 'JOD', // Jordanian Dinar
+  'LB': 'LBP', // Lebanese Pound
+  'PS': 'ILS', // Palestine uses Israeli Shekel
+  'UA': 'UAH', // Ukrainian Hryvnia
+  'MD': 'MDL', // Moldovan Leu
+  'AL': 'ALL', // Albanian Lek
+  'BA': 'BAM', // Bosnia and Herzegovina Convertible Mark
+  'RS': 'RSD', // Serbian Dinar
+  'ME': 'EUR', // Montenegro uses Euro
+  'MK': 'MKD', // Macedonian Denar
+  'XK': 'EUR', // Kosovo uses Euro
+  'PG': 'PGK', // Papua New Guinea Kina
+  'FJ': 'FJD', // Fijian Dollar
+  'WS': 'WST', // Samoan Tala
+  'TO': 'TOP', // Tongan Pa'anga
+  'VU': 'VUV', // Vanuatu Vatu
+  'SB': 'SBD', // Solomon Islands Dollar
+  // Additional currency mappings
+  'SS': 'SSP', // South Sudan Pound
+  'BJ': 'XOF', // Benin - West African CFA Franc
+  'BF': 'XOF', // Burkina Faso - West African CFA Franc
+  'BI': 'BIF', // Burundi Franc
+  'CV': 'CVE', // Cape Verde Escudo
+  'CF': 'XAF', // Central African Republic - CFA Franc
+  'TD': 'XAF', // Chad - CFA Franc
+  'KM': 'KMF', // Comoros Franc
+  'DJ': 'DJF', // Djibouti Franc
+  'GQ': 'XAF', // Equatorial Guinea - CFA Franc
+  'ER': 'ERN', // Eritrea Nakfa
+  'GM': 'GMD', // Gambia Dalasi
+  'GN': 'GNF', // Guinea Franc
+  'GW': 'XOF', // Guinea-Bissau - CFA Franc
+  'LS': 'LSL', // Lesotho Loti (also accepts ZAR)
+  'LR': 'LRD', // Liberia Dollar
+  'MG': 'MGA', // Madagascar Ariary
+  'ML': 'XOF', // Mali - West African CFA Franc
+  'MR': 'MRU', // Mauritania Ouguiya
+  'NE': 'XOF', // Niger - West African CFA Franc
+  'ST': 'STN', // São Tomé and Príncipe Dobra
+  'SL': 'SLL', // Sierra Leone Leone
+  'SO': 'SOS', // Somalia Shilling
+  'SZ': 'SZL', // Eswatini Lilangeni (also accepts ZAR)
+  'TG': 'XOF', // Togo - West African CFA Franc
+  'AM': 'AMD', // Armenian Dram
+  'AZ': 'AZN', // Azerbaijani Manat
+  'BT': 'BTN', // Bhutanese Ngultrum
+  'GE': 'GEL', // Georgian Lari
+  'IR': 'IRR', // Iranian Rial
+  'KZ': 'KZT', // Kazakhstani Tenge
+  'KG': 'KGS', // Kyrgyzstani Som
+  'MV': 'MVR', // Maldivian Rufiyaa
+  'MN': 'MNT', // Mongolian Tugrik
+  'TJ': 'TJS', // Tajikistani Somoni
+  'TL': 'USD', // Timor-Leste uses USD
+  'TM': 'TMT', // Turkmenistan Manat
+  'UZ': 'UZS', // Uzbekistani Som
+  'BZ': 'BZD', // Belize Dollar
+  'CU': 'CUP', // Cuban Peso
+  'GY': 'GYD', // Guyanese Dollar
+  'SR': 'SRD', // Surinamese Dollar
+  'BY': 'BYN', // Belarusian Ruble
+  'KI': 'AUD', // Kiribati uses Australian Dollar
+  'FM': 'USD', // Micronesia uses USD
+  'TV': 'AUD', // Tuvalu uses Australian Dollar
 };
 
 // Currency formatting preferences
@@ -63,6 +172,107 @@ const currencyFormats = {
   'KRW': { symbol: '₩', decimals: 0 },
   'IDR': { symbol: 'Rp', decimals: 0 },
   'VND': { symbol: '₫', decimals: 0 },
+  // Additional currency formats
+  'BRL': { symbol: 'R$', decimals: 2 },
+  'MXN': { symbol: '$', decimals: 2 },
+  'ARS': { symbol: '$', decimals: 2 },
+  'COP': { symbol: '$', decimals: 0 },
+  'PEN': { symbol: 'S/', decimals: 2 },
+  'CLP': { symbol: '$', decimals: 0 },
+  'PHP': { symbol: '₱', decimals: 2 },
+  'THB': { symbol: '฿', decimals: 2 },
+  'MYR': { symbol: 'RM', decimals: 2 },
+  'EGP': { symbol: 'E£', decimals: 2 },
+  'MAD': { symbol: 'DH', decimals: 2 },
+  'TRY': { symbol: '₺', decimals: 2 },
+  'PKR': { symbol: '₨', decimals: 0 },
+  'BDT': { symbol: '৳', decimals: 2 },
+  'LKR': { symbol: 'Rs', decimals: 2 },
+  'NPR': { symbol: '₨', decimals: 2 },
+  'MMK': { symbol: 'K', decimals: 0 },
+  'KHR': { symbol: '៛', decimals: 0 },
+  'LAK': { symbol: '₭', decimals: 0 },
+  'AFN': { symbol: '؋', decimals: 2 },
+  'ETB': { symbol: 'Br', decimals: 2 },
+  'RWF': { symbol: 'FRw', decimals: 0 },
+  'ZMW': { symbol: 'K', decimals: 2 },
+  'ZWL': { symbol: '$', decimals: 2 },
+  'MWK': { symbol: 'MK', decimals: 2 },
+  'MZN': { symbol: 'MT', decimals: 2 },
+  'BWP': { symbol: 'P', decimals: 2 },
+  'NAD': { symbol: '$', decimals: 2 },
+  'XOF': { symbol: 'CFA', decimals: 0 },
+  'XAF': { symbol: 'FCFA', decimals: 0 },
+  'AOA': { symbol: 'Kz', decimals: 2 },
+  'CDF': { symbol: 'FC', decimals: 2 },
+  'SDG': { symbol: 'SDG', decimals: 2 },
+  'TND': { symbol: 'DT', decimals: 3 },
+  'DZD': { symbol: 'DA', decimals: 2 },
+  'LYD': { symbol: 'LD', decimals: 3 },
+  'VES': { symbol: 'Bs', decimals: 2 },
+  'BOB': { symbol: 'Bs', decimals: 2 },
+  'PYG': { symbol: '₲', decimals: 0 },
+  'UYU': { symbol: '$', decimals: 2 },
+  'GTQ': { symbol: 'Q', decimals: 2 },
+  'HNL': { symbol: 'L', decimals: 2 },
+  'NIO': { symbol: 'C$', decimals: 2 },
+  'CRC': { symbol: '₡', decimals: 0 },
+  'PAB': { symbol: 'B/.', decimals: 2 },
+  'DOP': { symbol: 'RD$', decimals: 2 },
+  'HTG': { symbol: 'G', decimals: 2 },
+  'JMD': { symbol: 'J$', decimals: 2 },
+  'IQD': { symbol: 'ID', decimals: 0 },
+  'YER': { symbol: '﷼', decimals: 0 },
+  'SYP': { symbol: '£S', decimals: 0 },
+  'JOD': { symbol: 'JD', decimals: 3 },
+  'LBP': { symbol: 'L£', decimals: 0 },
+  'ILS': { symbol: '₪', decimals: 2 },
+  'UAH': { symbol: '₴', decimals: 2 },
+  'MDL': { symbol: 'L', decimals: 2 },
+  'ALL': { symbol: 'L', decimals: 0 },
+  'BAM': { symbol: 'KM', decimals: 2 },
+  'RSD': { symbol: 'din', decimals: 0 },
+  'MKD': { symbol: 'ден', decimals: 2 },
+  'PGK': { symbol: 'K', decimals: 2 },
+  'FJD': { symbol: '$', decimals: 2 },
+  'WST': { symbol: 'T', decimals: 2 },
+  'TOP': { symbol: 'T$', decimals: 2 },
+  'VUV': { symbol: 'Vt', decimals: 0 },
+  'SBD': { symbol: '$', decimals: 2 },
+  // Additional currency formats
+  'SSP': { symbol: 'SSP', decimals: 2 },
+  'BIF': { symbol: 'FBu', decimals: 0 },
+  'CVE': { symbol: '$', decimals: 2 },
+  'KMF': { symbol: 'CF', decimals: 0 },
+  'DJF': { symbol: 'Fdj', decimals: 0 },
+  'ERN': { symbol: 'Nfk', decimals: 2 },
+  'GMD': { symbol: 'D', decimals: 2 },
+  'GNF': { symbol: 'FG', decimals: 0 },
+  'LSL': { symbol: 'L', decimals: 2 },
+  'LRD': { symbol: '$', decimals: 2 },
+  'MGA': { symbol: 'Ar', decimals: 0 },
+  'MRU': { symbol: 'UM', decimals: 2 },
+  'STN': { symbol: 'Db', decimals: 2 },
+  'SLL': { symbol: 'Le', decimals: 0 },
+  'SOS': { symbol: 'S', decimals: 0 },
+  'SZL': { symbol: 'E', decimals: 2 },
+  'AMD': { symbol: '֏', decimals: 0 },
+  'AZN': { symbol: '₼', decimals: 2 },
+  'BTN': { symbol: 'Nu.', decimals: 2 },
+  'GEL': { symbol: '₾', decimals: 2 },
+  'IRR': { symbol: '﷼', decimals: 0 },
+  'KZT': { symbol: '₸', decimals: 2 },
+  'KGS': { symbol: 'с', decimals: 2 },
+  'MVR': { symbol: '.ރ', decimals: 2 },
+  'MNT': { symbol: '₮', decimals: 0 },
+  'TJS': { symbol: 'ЅМ', decimals: 2 },
+  'TMT': { symbol: 'T', decimals: 2 },
+  'UZS': { symbol: 'soʻm', decimals: 0 },
+  'BZD': { symbol: 'BZ$', decimals: 2 },
+  'CUP': { symbol: '₱', decimals: 2 },
+  'GYD': { symbol: '$', decimals: 0 },
+  'SRD': { symbol: '$', decimals: 2 },
+  'BYN': { symbol: 'Br', decimals: 2 },
 };
 
 export async function GET(request) {
@@ -123,33 +333,70 @@ export async function GET(request) {
     }
 
     // Fallback to exchangerate-api.com
-    const fallbackUrl = `https://v6.exchangerate-api.com/v6/41fc0bfadd338697395e482f/latest/${baseCurrency}`;
-    console.log(`🌍 [ExchangeRate API] Calling fallback API: ${fallbackUrl}`);
-    
-    const response = await fetch(fallbackUrl);
-    console.log(`🌍 [ExchangeRate API] Fallback API response status: ${response.status}`);
-    
-    if (!response.ok) {
-      throw new Error(`Exchange rate API error: ${response.status}`);
+    try {
+      const fallbackUrl = `https://v6.exchangerate-api.com/v6/41fc0bfadd338697395e482f/latest/${baseCurrency}`;
+      console.log(`🌍 [ExchangeRate API] Calling exchangerate-api: ${fallbackUrl}`);
+      
+      const response = await fetch(fallbackUrl);
+      console.log(`🌍 [ExchangeRate API] Exchangerate-api response status: ${response.status}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`🌍 [ExchangeRate API] Exchangerate-api conversion rates available:`, Object.keys(data.conversion_rates || {}).length);
+        
+        const rate = data.conversion_rates[targetCurrency] || 1;
+        console.log(`🌍 [ExchangeRate API] Rate for ${targetCurrency}: ${rate}`);
+        
+        const result = {
+          success: true,
+          rate: rate,
+          currency: targetCurrency,
+          source: 'ExchangeRate-API',
+          format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
+          disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
+        };
+        
+        console.log('🌍 [ExchangeRate API] Returning exchangerate-api result:', result);
+        return NextResponse.json(result);
+      }
+    } catch (exchangeRateError) {
+      console.error('🌍 [ExchangeRate API] Exchangerate-api error:', exchangeRateError.message);
+      console.log('🌍 [ExchangeRate API] Falling back to currencyapi');
     }
-    
-    const data = await response.json();
-    console.log(`🌍 [ExchangeRate API] Fallback API conversion rates available:`, Object.keys(data.conversion_rates || {}).length);
-    
-    const rate = data.conversion_rates[targetCurrency] || 1;
-    console.log(`🌍 [ExchangeRate API] Rate for ${targetCurrency}: ${rate}`);
-    
-    const result = {
-      success: true,
-      rate: rate,
-      currency: targetCurrency,
-      source: 'ExchangeRate-API',
-      format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
-      disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
-    };
-    
-    console.log('🌍 [ExchangeRate API] Returning fallback result:', result);
-    return NextResponse.json(result);
+
+    // Fallback to currencyapi.com
+    try {
+      const currencyApiUrl = `https://api.currencyapi.com/v3/latest?apikey=cur_live_jE7Pw20yFxMkRhfGR8cmwEFHP8HB2JCQOUEOg0lc&base_currency=${baseCurrency}&currencies=${targetCurrency}`;
+      console.log(`🌍 [ExchangeRate API] Calling currencyapi: ${currencyApiUrl.replace(/apikey=[^&]+/, 'apikey=***')}`);
+      
+      const currencyResponse = await fetch(currencyApiUrl);
+      console.log(`🌍 [ExchangeRate API] Currencyapi response status: ${currencyResponse.status}`);
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        console.log('🌍 [ExchangeRate API] Currencyapi data:', currencyData);
+        
+        const rate = currencyData.data?.[targetCurrency]?.value || 1;
+        console.log(`🌍 [ExchangeRate API] Currencyapi rate for ${targetCurrency}: ${rate}`);
+        
+        const result = {
+          success: true,
+          rate: rate,
+          currency: targetCurrency,
+          source: 'CurrencyAPI',
+          format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
+          disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
+        };
+        
+        console.log('🌍 [ExchangeRate API] Returning currencyapi result:', result);
+        return NextResponse.json(result);
+      }
+    } catch (currencyApiError) {
+      console.error('🌍 [ExchangeRate API] Currencyapi error:', currencyApiError.message);
+    }
+
+    // If all APIs fail, return default
+    throw new Error('All exchange rate APIs failed');
     
   } catch (error) {
     console.error('🌍 [ExchangeRate API] Critical error:', error);

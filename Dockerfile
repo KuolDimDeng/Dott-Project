@@ -1,18 +1,19 @@
 # Multi-stage build with advanced caching
 FROM node:18-alpine AS base
+# Add cache bust to force fresh builds when needed
+ARG CACHEBUST=2025-07-31-v1
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0
 
 # Dependencies stage with cache mount
 FROM base AS deps
-# Mount pnpm store as cache
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm config set store-dir /pnpm/store
+# Configure pnpm store directory
+RUN pnpm config set store-dir /pnpm/store
 # Copy only package files for better caching
 COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml ./
-COPY frontend/pyfactor_next/.npmrc* ./
-# Install dependencies with cache
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prefer-offline
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
 # Build stage with optimizations
 FROM base AS builder
@@ -27,8 +28,8 @@ COPY frontend/pyfactor_next/ .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV BUILD_STANDALONE=true
-# Limit memory usage during build
-ENV NODE_OPTIONS="--max-old-space-size=3072"
+# Use 3.5GB for build (leaving 0.5GB for system)
+ENV NODE_OPTIONS="--max-old-space-size=3584"
 
 # Build arguments
 ARG NEXT_PUBLIC_API_URL=https://api.dottapps.com
@@ -57,8 +58,13 @@ ENV NEXT_PUBLIC_CRISP_WEBSITE_ID=$NEXT_PUBLIC_CRISP_WEBSITE_ID
 ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
 ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
-# Build with cache mount for Next.js cache
+# Build with cache mount and memory optimizations
+# Split build into stages to reduce memory pressure
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
+    --mount=type=cache,id=webpack,target=/app/node_modules/.cache \
+    rm -rf .next/cache/webpack && \
+    NODE_OPTIONS="--max-old-space-size=3584" \
+    NEXT_TELEMETRY_DISABLED=1 \
     pnpm run build:render
 
 # Production stage - minimal size

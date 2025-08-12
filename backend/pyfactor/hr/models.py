@@ -40,8 +40,9 @@ class Employee(models.Model):
         related_name='employee_profile'
     )
     
-    # Business association
-    business_id = models.UUIDField(db_index=True)
+    # Business association - synced from User on save
+    business_id = models.UUIDField(db_index=True, null=True, blank=True,
+                                   help_text="Business ID - automatically synced from User")
     
     # Tenant ID for Row Level Security (RLS)
     # This should match business_id for proper tenant isolation
@@ -173,6 +174,15 @@ class Employee(models.Model):
             unique_suffix = str(uuid.uuid4())[:4].upper()
             self.employee_number = f"EMP-{today}-{unique_suffix}"
             logger.info(f'🏷️ [Employee Model] Generated employee_number: {self.employee_number}')
+        
+        # Sync business_id from User if available
+        if self.user and self.user.business_id:
+            self.business_id = self.user.business_id
+            self.tenant_id = self.user.business_id
+            logger.info(f'🏢 [Employee Model] Synced business_id from user: {self.business_id}')
+        elif self.business_id:
+            # If only business_id is set, use it for tenant_id
+            self.tenant_id = self.business_id
         
         # Ensure tenant_id matches business_id for RLS
         if self.business_id and not self.tenant_id:
@@ -1220,7 +1230,7 @@ class Geofence(TenantAwareModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        'Employee',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1229,6 +1239,24 @@ class Geofence(TenantAwareModel):
     
     def __str__(self):
         return f"{self.name} ({self.radius_meters}m radius)"
+    
+    def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[Geofence Model] save() called for geofence: {self.name}")
+        logger.info(f"[Geofence Model] ID: {self.id}")
+        logger.info(f"[Geofence Model] business_id: {self.business_id}")
+        logger.info(f"[Geofence Model] is_active: {self.is_active}")
+        logger.info(f"[Geofence Model] created_by: {self.created_by}")
+        logger.info(f"[Geofence Model] New record: {self._state.adding}")
+        
+        # Call parent save
+        super().save(*args, **kwargs)
+        
+        logger.info(f"[Geofence Model] After save - ID: {self.id}")
+        logger.info(f"[Geofence Model] After save - business_id: {self.business_id}")
+        logger.info(f"[Geofence Model] After save - is_active: {self.is_active}")
     
     class Meta:
         verbose_name = "Geofence"
@@ -1257,7 +1285,7 @@ class EmployeeGeofence(TenantAwareModel):
     # Assignment details
     assigned_at = models.DateTimeField(auto_now_add=True)
     assigned_by = models.ForeignKey(
-        'Employee',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

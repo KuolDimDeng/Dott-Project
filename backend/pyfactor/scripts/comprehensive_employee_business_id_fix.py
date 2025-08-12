@@ -5,7 +5,7 @@ Comprehensive fix for employee business_id issues
 import os
 import sys
 import django
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 # Add the parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -27,7 +27,7 @@ def comprehensive_fix():
     print("COMPREHENSIVE EMPLOYEE BUSINESS_ID FIX")
     print("="*80 + "\n")
     
-    with transaction.atomic():
+    with db_transaction.atomic():
         # Step 1: Fix all users without business_id
         print("1. FIXING USERS WITHOUT BUSINESS_ID:")
         print("-" * 50)

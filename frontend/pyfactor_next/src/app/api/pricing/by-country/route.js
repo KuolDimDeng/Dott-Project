@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getBackendUrl } from '@/utils/backend-url';
 import { getDiscountPercentage, isDevelopingCountry } from '@/utils/developingCountries';
 
 export async function GET(request) {
@@ -110,20 +111,20 @@ export async function GET(request) {
         // Update pricing with discount
         if (result.pricing) {
           result.pricing.professional = {
-            monthly: 15.00 * discountMultiplier,
-            six_month: 78.00 * discountMultiplier,
-            yearly: 144.00 * discountMultiplier,
-            monthly_display: `$${(15.00 * discountMultiplier).toFixed(2)}`,
-            six_month_display: `$${(78.00 * discountMultiplier).toFixed(2)}`,
-            yearly_display: `$${(144.00 * discountMultiplier).toFixed(2)}`
+            monthly: 35.00 * discountMultiplier,
+            six_month: 175.00 * discountMultiplier,  // 17% discount
+            yearly: 336.00 * discountMultiplier,      // 20% discount
+            monthly_display: `$${(35.00 * discountMultiplier).toFixed(2)}`,
+            six_month_display: `$${(175.00 * discountMultiplier).toFixed(2)}`,
+            yearly_display: `$${(336.00 * discountMultiplier).toFixed(2)}`
           };
           result.pricing.enterprise = {
-            monthly: 45.00 * discountMultiplier,
-            six_month: 234.00 * discountMultiplier,
-            yearly: 432.00 * discountMultiplier,
-            monthly_display: `$${(45.00 * discountMultiplier).toFixed(2)}`,
-            six_month_display: `$${(234.00 * discountMultiplier).toFixed(2)}`,
-            yearly_display: `$${(432.00 * discountMultiplier).toFixed(2)}`
+            monthly: 95.00 * discountMultiplier,
+            six_month: 475.00 * discountMultiplier,  // 17% discount
+            yearly: 912.00 * discountMultiplier,      // 20% discount
+            monthly_display: `$${(95.00 * discountMultiplier).toFixed(2)}`,
+            six_month_display: `$${(475.00 * discountMultiplier).toFixed(2)}`,
+            yearly_display: `$${(912.00 * discountMultiplier).toFixed(2)}`
           };
         }
         
@@ -154,20 +155,20 @@ export async function GET(request) {
       discount_percentage: 0,
       pricing: {
         professional: {
-          monthly: 15.00,
-          six_month: 78.00,
-          yearly: 144.00,
-          monthly_display: '$15.00',
-          six_month_display: '$78.00',
-          yearly_display: '$144.00'
+          monthly: 35.00,
+          six_month: 175.00,
+          yearly: 336.00,
+          monthly_display: '$35.00',
+          six_month_display: '$175.00',
+          yearly_display: '$336.00'
         },
         enterprise: {
-          monthly: 45.00,
-          six_month: 234.00,
-          yearly: 432.00,
-          monthly_display: '$45.00',
-          six_month_display: '$234.00',
-          yearly_display: '$432.00'
+          monthly: 95.00,
+          six_month: 475.00,
+          yearly: 912.00,
+          monthly_display: '$95.00',
+          six_month_display: '$475.00',
+          yearly_display: '$912.00'
         }
       }
     });

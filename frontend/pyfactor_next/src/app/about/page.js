@@ -8,95 +8,114 @@ import { I18nextProvider } from 'react-i18next';
 import i18nInstance from '@/i18n';
 import { 
   ArrowLeft, 
-  Target, 
-  Eye, 
-  Heart,
-  Users,
+  Target,
+  Lightning,
   Globe,
   Shield,
   ChartBar,
-  Package,
   Rocket,
-  Lightbulb,
-  HandHeart
+  CurrencyDollar,
+  DevicePhoneMobile,
+  Lock,
+  Timer,
+  Handshake,
+  Sparkle
 } from '@phosphor-icons/react';
 
 function AboutUsContent() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation();
+  
+  // Don't render until i18n is ready
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-64 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-4 w-48 bg-gray-100 rounded mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
-  const timeline = [
+  const problems = [
     {
-      year: '2022',
-      title: t('about.timeline.beginning.title', 'The Beginning'),
-      description: t('about.timeline.beginning.description', 'Identified the need for unified business management tools for SMBs'),
-      icon: <Lightbulb size={24} weight="duotone" />
+      title: 'Expensive enterprise software they can\'t afford',
+      icon: <CurrencyDollar size={24} weight="duotone" className="text-red-500" />
     },
     {
-      year: '2023',
-      title: t('about.timeline.launch.title', 'Product Launch'),
-      description: t('about.timeline.launch.description', 'Launched core platform with financial and inventory management'),
-      icon: <Rocket size={24} weight="duotone" />
+      title: 'Juggling 10+ different tools that don\'t talk to each other',
+      icon: <ChartBar size={24} weight="duotone" className="text-orange-500" />
     },
     {
-      year: '2024',
-      title: t('about.timeline.expansion.title', 'Global Expansion'),
-      description: t('about.timeline.expansion.description', 'Extended to 25+ countries with localized features'),
-      icon: <Globe size={24} weight="duotone" />
-    },
-    {
-      year: '2025',
-      title: t('about.timeline.ai.title', 'AI Integration'),
-      description: t('about.timeline.ai.description', 'Introducing intelligent insights and automation'),
-      icon: <ChartBar size={24} weight="duotone" />
+      title: 'Outdated systems that weren\'t built for today\'s mobile, global world',
+      icon: <DevicePhoneMobile size={24} weight="duotone" className="text-yellow-600" />
     }
   ];
 
-  const values = [
+  const approach = [
     {
-      title: t('about.values.simplicity.title', 'Simplicity First'),
-      description: t('about.values.simplicity.description', 'Complex business operations made simple through intuitive design'),
-      icon: <Heart size={32} weight="duotone" className="text-blue-600" />
+      title: 'Built from the ground up for mobile-first businesses',
+      icon: <DevicePhoneMobile size={20} weight="bold" className="text-blue-600" />
     },
     {
-      title: t('about.values.innovation.title', 'Continuous Innovation'),
-      description: t('about.values.innovation.description', 'Evolving with the changing needs of modern businesses'),
-      icon: <Lightbulb size={32} weight="duotone" className="text-purple-600" />
+      title: 'Designed for global operations from day one',
+      icon: <Globe size={20} weight="bold" className="text-purple-600" />
     },
     {
-      title: t('about.values.success.title', 'Customer Success'),
-      description: t('about.values.success.description', 'Your growth is our success - we win when you win'),
-      icon: <Target size={32} weight="duotone" className="text-green-600" />
-    },
-    {
-      title: t('about.values.empowerment.title', 'Global Empowerment'),
-      description: t('about.values.empowerment.description', 'Breaking barriers for businesses worldwide'),
-      icon: <HandHeart size={32} weight="duotone" className="text-orange-600" />
+      title: 'Focused on what actually matters: helping you make money',
+      icon: <CurrencyDollar size={20} weight="bold" className="text-green-600" />
     }
   ];
 
   const differentiators = [
     {
-      title: t('about.differentiators.unified.title', 'Unified Platform'),
-      description: t('about.differentiators.unified.description', 'All your business tools in one place'),
-      icon: <Package size={24} weight="duotone" />
+      emoji: '🌍',
+      title: 'Truly Global',
+      points: [
+        '249 countries supported (not just 20 like competitors)',
+        'Automatic tax compliance worldwide',
+        'Local payment methods (M-Pesa, UPI, bank transfers)',
+        '30+ languages at launch'
+      ]
     },
     {
-      title: t('about.differentiators.global.title', 'Global, Yet Local'),
-      description: t('about.differentiators.global.description', 'International standards with local compliance'),
-      icon: <Globe size={24} weight="duotone" />
+      emoji: '💰',
+      title: 'Revenue-Focused',
+      points: [
+        'Not just tracking money - helping you make it',
+        'Built-in payment processing',
+        'Integrated tax filing',
+        'Smart insights that drive growth'
+      ]
     },
     {
-      title: t('about.differentiators.security.title', 'Enterprise Security'),
-      description: t('about.differentiators.security.description', 'Bank-level protection for your data'),
-      icon: <Shield size={24} weight="duotone" />
+      emoji: '🚀',
+      title: 'Lightning Fast',
+      points: [
+        'No committees. No bureaucracy.',
+        'We ship updates weekly, not yearly',
+        'Direct feedback line to development',
+        'Your feature request could be live next week'
+      ]
     },
     {
-      title: t('about.differentiators.insights.title', 'Smart Insights'),
-      description: t('about.differentiators.insights.description', 'AI-powered analytics for better decisions'),
-      icon: <ChartBar size={24} weight="duotone" />
+      emoji: '🔒',
+      title: 'Uncompromising Security',
+      points: [
+        'Bank-grade encryption',
+        'Stripe-secured payment data',
+        'SOC 2 compliance in progress',
+        'Your data never sold or shared'
+      ]
     }
   ];
 
+  const beliefs = [
+    'Small businesses deserve enterprise-grade tools',
+    'Complexity is the enemy of growth',
+    'Technology should empower, not overwhelm',
+    'Success should be affordable for everyone'
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -109,7 +128,7 @@ function AboutUsContent() {
               className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft size={20} weight="bold" />
-              <span className="font-medium leading-relaxed">{t('about.backToHome', 'Back to Home')}</span>
+              <span className="font-medium leading-relaxed">Back to Home</span>
             </Link>
           </div>
         </div>
@@ -117,109 +136,121 @@ function AboutUsContent() {
 
       {/* Hero Section */}
       <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-              {t('about.hero.title', 'Empowering businesses to')}
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                {t('about.hero.subtitle', 'thrive globally')}
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-6">
+              The Future of Business Management is 
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+                Here
               </span>
             </h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              {t('about.hero.description', "We're building the operating system for modern small businesses, making enterprise-grade tools accessible to everyone.")}
+            <p className="text-xl md:text-2xl text-gray-700 leading-relaxed font-medium">
+              We're revolutionizing how small businesses operate globally with one unified platform that replaces dozens of expensive tools.
             </p>
           </div>
         </div>
       </section>
 
-
-      {/* Story Section */}
-      <section className="py-20 bg-gray-50">
+      {/* Why Dott Exists */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                {t('about.story.title', 'Our Story')}
-              </h2>
-              <div className="space-y-4 text-gray-600">
-                <p>
-                  {t('about.story.paragraph1', 'Dott was born from a simple observation: small businesses were drowning in complexity. Multiple tools, disconnected data, and processes designed for enterprises were holding back entrepreneurs worldwide.')}
-                </p>
-                <p>
-                  {t('about.story.paragraph2', 'Founded in 2023, we set out to build something different. A platform that understands the unique challenges of small businesses, especially in emerging markets where traditional solutions fall short.')}
-                </p>
-                <p>
-                  {t('about.story.paragraph3', "Today, we're proud to serve businesses worldwide. But we're just getting started.")}
-                </p>
-              </div>
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-8">
+              Why Dott Exists
+            </h2>
+            <p className="text-lg text-gray-700 mb-10">
+              Small businesses power the global economy, yet they're forced to choose between:
+            </p>
+            <div className="space-y-4 mb-12">
+              {problems.map((problem, index) => (
+                <div key={index} className="flex items-center gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  {problem.icon}
+                  <p className="text-gray-800 font-medium">{problem.title}</p>
+                </div>
+              ))}
             </div>
-            <div className="relative">
-              <div className="aspect-square relative">
-                <Image
-                  src="/static/images/Team-Building-4--Streamline-Brooklyn.png"
-                  alt="Dott team collaboration"
-                  fill
-                  className="object-contain"
-                />
-              </div>
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-8 text-center">
+              <p className="text-2xl font-bold">
+                We refused to accept this reality.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Mission & Vision */}
+      {/* Built Different */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 md:p-10">
-              <div className="flex items-center gap-3 mb-4">
-                <Target size={32} weight="duotone" className="text-blue-600" />
-                <h3 className="text-2xl font-bold text-gray-900">{t('about.mission.title', 'Our Mission')}</h3>
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-8">
+              Built Different, By Design
+            </h2>
+            <p className="text-lg text-gray-700 mb-10">
+              Dott isn't another VC-backed startup burning cash on features nobody uses. We're a bootstrapped company obsessed with solving real problems for real businesses.
+            </p>
+            <div className="bg-gray-50 rounded-2xl p-8">
+              <h3 className="font-bold text-gray-900 mb-6">Our approach:</h3>
+              <div className="space-y-4">
+                {approach.map((item, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <div className="mt-1">{item.icon}</div>
+                    <p className="text-gray-800 font-medium">{item.title}</p>
+                  </div>
+                ))}
               </div>
-              <p className="text-gray-700 leading-relaxed">
-                {t('about.mission.description', 'To democratize business management by providing small businesses with powerful, affordable tools that simplify operations and enable growth, regardless of location or technical expertise.')}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 md:p-10">
-              <div className="flex items-center gap-3 mb-4">
-                <Eye size={32} weight="duotone" className="text-purple-600" />
-                <h3 className="text-2xl font-bold text-gray-900">{t('about.vision.title', 'Our Vision')}</h3>
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                {t('about.vision.description', 'A world where every small business has access to the same quality of management tools as Fortune 500 companies, empowering one million businesses to thrive by 2030.')}
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Timeline */}
-      <section className="py-20 bg-gray-50">
+      {/* The Dott Difference */}
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16">
-            {t('about.journey.title', 'Our Journey')}
+          <h2 className="text-3xl md:text-4xl font-black text-center text-gray-900 mb-16">
+            The Dott Difference
           </h2>
-          <div className="relative">
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-gray-300"></div>
-            <div className="space-y-12">
-              {timeline.map((item, index) => (
-                <div key={index} className={`relative flex items-center ${
-                  index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
-                }`}>
-                  <div className="flex-1"></div>
-                  <div className="absolute left-1/2 transform -translate-x-1/2 w-12 h-12 bg-white rounded-full border-4 border-blue-600 flex items-center justify-center z-10">
-                    {item.icon}
+          <div className="grid md:grid-cols-2 gap-8">
+            {differentiators.map((item, index) => (
+              <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{item.emoji}</span>
+                    <h3 className="text-2xl font-bold text-gray-900">{item.title}</h3>
                   </div>
-                  <div className="flex-1 px-8">
-                    <div className={`bg-white rounded-xl shadow-lg p-6 ${
-                      index % 2 === 0 ? 'md:ml-8' : 'md:mr-8'
-                    }`}>
-                      <div className="text-sm font-semibold text-blue-600 mb-1">{item.year}</div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
-                      <p className="text-gray-600">{item.description}</p>
-                    </div>
-                  </div>
+                </div>
+                <div className="p-6">
+                  <ul className="space-y-3">
+                    {item.points.map((point, pointIndex) => (
+                      <li key={pointIndex} className="flex items-start gap-2">
+                        <Sparkle size={16} weight="fill" className="text-indigo-600 mt-1 flex-shrink-0" />
+                        <span className="text-gray-700">{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Our Promise */}
+      <section className="py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-8">
+            Our Promise
+          </h2>
+          <p className="text-lg text-gray-700 mb-10">
+            While big companies debate features in boardrooms, we're shipping solutions. While they focus on their stock price, we focus on your success.
+          </p>
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8">
+            <h3 className="font-bold text-gray-900 mb-6">We believe:</h3>
+            <div className="space-y-3">
+              {beliefs.map((belief, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <Handshake size={20} weight="duotone" className="text-indigo-600" />
+                  <p className="text-gray-800 font-medium">{belief}</p>
                 </div>
               ))}
             </div>
@@ -227,49 +258,51 @@ function AboutUsContent() {
         </div>
       </section>
 
-      {/* Values */}
+      {/* The Mission */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-8">
+            The Mission
+          </h2>
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-10">
+            <p className="text-2xl md:text-3xl font-bold mb-6">
+              Empower 1 million businesses to thrive by 2030.
+            </p>
+            <p className="text-lg opacity-90">
+              Not with fancy promises. With software that actually works, support that actually helps, and pricing that actually makes sense.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Join the Revolution */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
-            {t('about.values.title', 'Our Values')}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-8">
+            Join the Revolution
           </h2>
-          <p className="text-xl text-center text-gray-600 mb-16 max-w-2xl mx-auto leading-relaxed">
-            {t('about.values.subtitle', 'The principles that guide every decision we make')}
+          <p className="text-lg text-gray-700 mb-10">
+            Every mega-corporation started as a small business. We're here to make sure yours has every advantage they did - and more.
           </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {values.map((value, index) => (
-              <div key={index} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                <div className="mb-4">{value.icon}</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{value.title}</h3>
-                <p className="text-sm text-gray-600">{value.description}</p>
-              </div>
-            ))}
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-10">
+            <p className="text-2xl md:text-3xl font-bold mb-4">
+              Start your journey with Dott.
+            </p>
+            <p className="text-xl opacity-90">
+              Where small businesses think big.
+            </p>
+          </div>
+          <div className="mt-12">
+            <Link 
+              href="/auth/signin"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <Rocket size={24} weight="bold" />
+              Get Started Today
+            </Link>
           </div>
         </div>
       </section>
-
-      {/* What Makes Us Different */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16">
-            {t('about.differentiators.title', 'What Makes Dott Different')}
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {differentiators.map((item, index) => (
-              <div key={index} className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <div className="text-blue-600">{item.icon}</div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
 
       {/* Footer spacing */}
       <div className="h-20"></div>
@@ -278,6 +311,24 @@ function AboutUsContent() {
 }
 
 export default function AboutUs() {
+  const [isClient, setIsClient] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Don't render on server to avoid hydration mismatch
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-64 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-4 w-48 bg-gray-100 rounded mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <I18nextProvider i18n={i18nInstance}>
       <AboutUsContent />

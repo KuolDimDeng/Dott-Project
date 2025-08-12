@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 // Event type configurations
 const getEventTypes = (t) => ({
   appointment: { color: '#3B82F6', icon: ClockIcon, label: t('eventTypes.appointment') },
+  job: { color: '#059669', icon: BuildingOfficeIcon, label: 'Job/Project' },
   tax: { color: '#DC2626', icon: DocumentTextIcon, label: t('eventTypes.tax') },
   payroll: { color: '#10B981', icon: CurrencyDollarIcon, label: t('eventTypes.payroll') },
   birthday: { color: '#F59E0B', icon: CakeIcon, label: t('eventTypes.birthday') },
@@ -1085,7 +1086,7 @@ export default function Calendar({ onNavigate }) {
 
       {/* Event Modal */}
       {showEventModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">

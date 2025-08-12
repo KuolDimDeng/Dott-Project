@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getBackendUrl } from '@/utils/backend-url';
 import { cookies } from 'next/headers';
 import { generateCSRFToken } from '@/utils/csrf';
-import * as Sentry from '@sentry/nextjs';
+// 
 import { logger } from '@/utils/logger';
 import { safeJsonParse } from '@/utils/responseParser';
 
@@ -12,13 +13,11 @@ import { safeJsonParse } from '@/utils/responseParser';
  * to resolve onboarding status conflicts permanently.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
-  return await Sentry.startSpan(
-    { name: 'GET /api/auth/session-v2', op: 'http.server' },
-    async () => {
-      try {
+  // Sentry disabled
+  try {
     const cookieStore = cookies();
     
     // CRITICAL: Log Cloudflare headers to debug interference
@@ -225,6 +224,8 @@ export async function GET(request) {
       if (responseContentType && responseContentType.includes('application/json')) {
         sessionData = await response.json();
         console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
+    console.log('[Session-V2] DEBUG - User permissions from backend:', JSON.stringify(sessionData.permissions || sessionData.user?.permissions || [], null, 2));
+    console.log('[Session-V2] DEBUG - Page permissions from backend:', JSON.stringify(sessionData.page_permissions || sessionData.user?.page_permissions || [], null, 2));
       } else {
         const responseText = await response.text();
         logger.error('[Session-V2] Non-JSON response from backend:', {
@@ -271,6 +272,14 @@ export async function GET(request) {
       onboarding_completed: sessionData.onboarding_completed,
       typeof_needs_onboarding: typeof sessionData.needs_onboarding,
       typeof_onboarding_completed: typeof sessionData.onboarding_completed
+    });
+    
+    // SINGLE SOURCE OF TRUTH: Log subscription plan source
+    console.log('[Session-V2] SUBSCRIPTION SINGLE SOURCE OF TRUTH:', {
+      top_level_subscription: sessionData.subscription_plan,
+      will_use: sessionData.subscription_plan || 'free',
+      ignoring_user_subscription: userData.subscription_plan,
+      ignoring_tenant_subscription: tenantData.subscription_plan
     });
     
     // SIMPLIFIED: Direct backend data without internal HTTP calls
@@ -322,15 +331,16 @@ export async function GET(request) {
         // Business information - check multiple sources
         businessName: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
         business_name: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
-        // Subscription information - prioritize session/tenant data over user model (like business name)
-        subscriptionPlan: sessionData.subscription_plan || tenantData.subscription_plan || userData.subscription_plan || sessionData.selected_plan || 'free',
-        subscription_plan: sessionData.subscription_plan || tenantData.subscription_plan || userData.subscription_plan || sessionData.selected_plan || 'free',
-        selected_plan: sessionData.selected_plan || userData.selected_plan || tenantData.selected_plan,
+        // SINGLE SOURCE OF TRUTH: subscription_plan comes from top-level session data only
+        subscriptionPlan: sessionData.subscription_plan || 'free',
+        subscription_plan: sessionData.subscription_plan || 'free',
+        selected_plan: sessionData.subscription_plan || 'free',  // Ensure consistency
         // CRITICAL: Backend's authoritative onboarding status
         needsOnboarding: sessionData.needs_onboarding,
         onboardingCompleted: sessionData.onboarding_completed || false,
         tenantId: sessionData.tenant_id || tenantData.id,
         tenant_id: sessionData.tenant_id || tenantData.id,
+        business_id: sessionData.business_id || sessionData.tenant_id || tenantData.id,
         // User role for RBAC - use backend role, don't override
         role: userData.role || sessionData.role || sessionData.user_role || 'USER',
         // WhatsApp Commerce preference
@@ -338,7 +348,14 @@ export async function GET(request) {
         country: userData.country || sessionData.country || 'US',
         // Additional metadata
         sessionSource: 'backend-direct',
-        permissions: sessionData.permissions || []
+        permissions: sessionData.permissions || userData.permissions || [],
+        page_permissions: sessionData.page_permissions || userData.page_permissions || [],
+        // DEBUG - Log what we're returning
+        _debug_permissions: {
+          from_sessionData: sessionData.permissions || [],
+          from_userData: userData.permissions || [],
+          from_page_permissions: sessionData.page_permissions || userData.page_permissions || []
+        }
       }
     });
     
@@ -348,16 +365,15 @@ export async function GET(request) {
           stack: error.stack,
           name: error.name
         });
-        Sentry.captureException(error, {
-          tags: { endpoint: 'session-v2-get' }
-        });
+        // Sentry disabled
+        // Sentry.captureException(error, {
+        //   tags: { endpoint: 'session-v2-get' }
+        // });
         return NextResponse.json({ 
           authenticated: false,
           error: error.message
         }, { status: 500 });
       }
-    }
-  );
 }
 
 export async function POST(request) {
@@ -475,6 +491,86 @@ export async function POST(request) {
     console.error('[Session-V2] POST error:', error);
     return NextResponse.json({ 
       error: 'Server error' 
+    }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
+    
+    if (!sessionId) {
+      console.error('[Session-V2] PATCH: No session ID found for refresh');
+      return NextResponse.json({ 
+        error: 'No session found' 
+      }, { status: 401 });
+    }
+    
+    console.log('[Session-V2] PATCH: Refreshing session:', sessionId.value.substring(0, 8) + '...');
+    
+    // Call backend to refresh/extend the session
+    const refreshResponse = await fetch(`${API_URL}/api/auth/session-v2/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sessionId.value}`
+      },
+      body: JSON.stringify({
+        action: 'refresh'
+      })
+    });
+    
+    if (!refreshResponse.ok) {
+      const errorText = await refreshResponse.text();
+      console.error('[Session-V2] PATCH: Session refresh failed:', refreshResponse.status, errorText);
+      return NextResponse.json({ 
+        error: 'Session refresh failed',
+        details: errorText
+      }, { status: refreshResponse.status });
+    }
+    
+    const refreshData = await refreshResponse.json();
+    console.log('[Session-V2] PATCH: Session refreshed successfully:', {
+      expires_at: refreshData.expires_at,
+      message: refreshData.message
+    });
+    
+    // Update cookie expiration if backend provides new expiry
+    if (refreshData.expires_at) {
+      const response = NextResponse.json({ 
+        success: true,
+        message: 'Session refreshed',
+        expires_at: refreshData.expires_at
+      });
+      
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        expires: new Date(refreshData.expires_at),
+        path: '/'
+      };
+      
+      // Refresh both cookies with new expiration
+      response.cookies.set('sid', sessionId.value, cookieOptions);
+      response.cookies.set('session_token', sessionId.value, cookieOptions);
+      
+      return response;
+    }
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Session refreshed'
+    });
+    
+  } catch (error) {
+    console.error('[Session-V2] PATCH error:', error);
+    return NextResponse.json({ 
+      error: 'Server error',
+      message: error.message
     }, { status: 500 });
   }
 }

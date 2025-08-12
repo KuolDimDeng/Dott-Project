@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List, Tuple
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
@@ -124,7 +124,7 @@ class SecurityService:
         )
         
         # Create security tracking
-        with transaction.atomic():
+        with db_transaction.atomic():
             session_security = SessionSecurity.objects.create(
                 session=session,
                 device_fingerprint=device_fp,

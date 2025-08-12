@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from '@/utils/logger';
 
 // Initialize Stripe with your secret key (use environment variable in production)

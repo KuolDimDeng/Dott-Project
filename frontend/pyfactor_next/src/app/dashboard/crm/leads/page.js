@@ -6,7 +6,7 @@ import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
-import { fetchAuthSession } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { appCache } from '@/utils/appCache';
 
 const LeadsPage = () => {
@@ -456,7 +456,7 @@ const LeadsPage = () => {
 
       {/* Lead Details Modal */}
       {showLeadDetails && selectedLead && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-xl font-bold text-gray-800">Lead Details</h2>

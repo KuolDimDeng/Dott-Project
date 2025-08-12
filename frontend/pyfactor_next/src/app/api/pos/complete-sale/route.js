@@ -24,34 +24,53 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Sale must contain at least one item' }, { status: 400 });
     }
 
-    // Prepare the sale data for backend
+    // Get user's current currency preference for POS sales
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[POSProxy] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          logger.info('[POSProxy] Using user preferred currency:', userCurrency);
+        } else {
+          logger.warn('[POSProxy] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        logger.warn('[POSProxy] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      logger.error('[POSProxy] Error fetching currency preference:', currencyError);
+    }
+
+    // Prepare the sale data for backend - matching the expected format
     const backendSaleData = {
       items: saleData.items.map(item => ({
-        product_id: item.id,
-        product_name: item.name,
-        product_sku: item.sku,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.price),
-        line_total: parseFloat(item.price) * item.quantity
+        id: item.product_id || item.id,
+        type: item.type || 'product', // Default to product if not specified
+        quantity: parseFloat(item.quantity || 1),
+        unit_price: parseFloat(item.unit_price || item.price || 0)
       })),
       customer_id: saleData.customer_id || null,
-      subtotal: parseFloat(saleData.subtotal),
-      discount_amount: parseFloat(saleData.discount_amount) || 0,
-      discount_type: saleData.discount_type || 'amount',
-      tax_amount: parseFloat(saleData.tax_amount) || 0,
-      tax_rate: parseFloat(saleData.tax_rate) || 0,
-      total_amount: parseFloat(saleData.total_amount),
       payment_method: saleData.payment_method,
-      notes: saleData.notes || '',
-      sale_date: saleData.date || new Date().toISOString().split('T')[0],
-      status: 'completed',
-      // POS specific fields
-      pos_sale: true,
-      source: 'pos_system'
+      amount_tendered: parseFloat(saleData.amount_tendered || saleData.total_amount || 0),
+      discount_percentage: parseFloat(saleData.discount_percentage || 0),
+      tax_rate: parseFloat(saleData.tax_rate || 0),
+      notes: saleData.notes || ''
     };
 
-    const url = `${BACKEND_URL}/api/pos/complete-sale/`;
+    // Use the POS complete-sale endpoint
+    const url = `${BACKEND_URL}/api/sales/pos/transactions/complete-sale/`;
     logger.info('[POSProxy] Forwarding POST request to:', url);
+    logger.info('[POSProxy] Backend sale data:', JSON.stringify(backendSaleData, null, 2));
 
     const response = await fetch(url, {
       method: 'POST',

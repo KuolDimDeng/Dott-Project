@@ -1,6 +1,7 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/banking/models.py
 from django.db import models
 import uuid
+from decimal import Decimal
 
 # Create your models here.
 from django.conf import settings
@@ -29,6 +30,48 @@ class PlaidItem(BankIntegration):
 class TinkItem(BankIntegration):
     access_token = models.CharField(max_length=100)
     item_id = models.CharField(max_length=100)
+
+class WiseItem(BankIntegration):
+    """
+    Wise integration for countries without Plaid support.
+    Stores only non-sensitive data locally, sensitive data in Stripe.
+    """
+    # Basic bank information (non-sensitive)
+    bank_name = models.CharField(max_length=255)
+    bank_country = models.CharField(max_length=2)  # ISO country code
+    account_holder_name = models.CharField(max_length=255)
+    currency = models.CharField(max_length=3, default='USD')
+    
+    # Last 4 digits only for display (stored locally)
+    account_number_last4 = models.CharField(max_length=4, blank=True)
+    routing_number_last4 = models.CharField(max_length=4, blank=True)
+    iban_last4 = models.CharField(max_length=4, blank=True)
+    
+    # Stripe Connect storage for sensitive data
+    stripe_external_account_id = models.CharField(max_length=255, blank=True)  # Stripe's ID for the bank account
+    stripe_bank_account_token = models.CharField(max_length=255, blank=True)  # Token for the bank account
+    
+    # Wise-specific fields
+    wise_recipient_id = models.CharField(max_length=100, blank=True)  # Wise's ID for this recipient
+    
+    # Validation and status
+    is_verified = models.BooleanField(default=False)
+    verification_date = models.DateTimeField(null=True, blank=True)
+    last_transfer_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'banking_wise_item'
+        
+    def __str__(self):
+        return f"{self.bank_name} ({self.bank_country}) - {self.account_holder_name}"
+    
+    def get_masked_account_number(self):
+        """Return masked account number for display."""
+        if self.account_number_last4:
+            return f"****{self.account_number_last4}"
+        elif self.iban_last4:
+            return f"****{self.iban_last4}"
+        return "****"
 
 class Country(TenantAwareModel):
     """
@@ -96,14 +139,6 @@ class CountryPaymentGateway(TenantAwareModel):
         return f"{self.country.name} - {self.gateway.get_name_display()} (Priority: {self.get_priority_display()})"
 
 class BankAccount(TenantAwareModel):
-    PURPOSE_CHOICES = [
-        ('payroll', 'Payroll'),
-        ('payments', 'Customer Payments'),
-        ('transfers', 'Vendor Transfers'),
-        ('sales', 'Sales Revenue'),
-        ('general', 'General Purpose'),
-    ]
-    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bank_accounts', null=True, blank=True)
     # Replace ForeignKey with UUID field to break circular dependency
     # employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='bank_accounts', null=True, blank=True)
@@ -112,7 +147,6 @@ class BankAccount(TenantAwareModel):
     account_number = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     account_type = models.CharField(max_length=50, null=True, blank=True)
-    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, null=True, blank=True, help_text="The business purpose of this bank account")
     last_synced = models.DateTimeField(auto_now=True)
     
     integration_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -283,6 +317,87 @@ class BankingRule(TenantAwareModel):
     def __str__(self):
         return f"{self.name} ({self.condition_type}: {self.condition_value})"
 
+
+class PaymentSettlement(TenantAwareModel):
+    """
+    Tracks payments from Stripe that need to be settled to user bank accounts via Wise.
+    """
+    SETTLEMENT_STATUS = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    
+    # Payment details
+    stripe_payment_intent_id = models.CharField(max_length=255, unique=True)
+    original_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Amount customer paid
+    currency = models.CharField(max_length=3, default='USD')
+    
+    # Fee breakdown
+    stripe_fee = models.DecimalField(max_digits=10, decimal_places=2)  # Stripe's fee (2.9% + $0.30)
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2)  # Our fee (0.1% + $0.30)
+    wise_fee_estimate = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Estimated Wise fee
+    wise_fee_actual = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Actual Wise fee
+    
+    # Settlement amounts
+    settlement_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Amount to transfer via Wise
+    user_receives = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Final amount user gets
+    
+    # Transfer details
+    wise_transfer_id = models.CharField(max_length=255, blank=True)
+    wise_recipient_id = models.CharField(max_length=255, blank=True)
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=SETTLEMENT_STATUS, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    failed_at = models.DateTimeField(null=True, blank=True)
+    failure_reason = models.TextField(blank=True)
+    
+    # Metadata
+    pos_transaction_id = models.CharField(max_length=255, blank=True)  # Reference to POS transaction
+    customer_email = models.EmailField(blank=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        db_table = 'banking_payment_settlement'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['user', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"Settlement {self.id} - {self.user} - {self.status}"
+    
+    def calculate_fees(self):
+        """Calculate all fees for this payment."""
+        # Stripe fee: 2.9% + $0.30
+        self.stripe_fee = (self.original_amount * Decimal('0.029')) + Decimal('0.30')
+        
+        # Platform fee: 0.1% + $0.30
+        self.platform_fee = (self.original_amount * Decimal('0.001')) + Decimal('0.30')
+        
+        # Amount to transfer via Wise
+        self.settlement_amount = self.original_amount - self.stripe_fee - self.platform_fee
+        
+        self.save()
+        
+    def mark_completed(self, wise_transfer_id, actual_wise_fee):
+        """Mark settlement as completed."""
+        self.status = 'completed'
+        self.wise_transfer_id = wise_transfer_id
+        self.wise_fee_actual = actual_wise_fee
+        self.user_receives = self.settlement_amount - actual_wise_fee
+        self.completed_at = timezone.now()
+        self.save()
 
 class BankingAuditLog(TenantAwareModel):
     """Audit trail for all banking operations - regulatory compliance"""

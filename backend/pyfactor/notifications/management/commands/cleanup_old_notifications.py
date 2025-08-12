@@ -6,7 +6,7 @@ import logging
 from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 from notifications.models import Notification, NotificationRecipient, AdminAuditLog
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class Command(BaseCommand):
                 # Delete in batches to avoid memory issues
                 deleted_total = 0
                 
-                with transaction.atomic():
+                with db_transaction.atomic():
                     while True:
                         # Get batch of notification IDs
                         batch_ids = list(

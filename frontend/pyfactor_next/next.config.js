@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
-const { withSentryConfig } = require('@sentry/nextjs');
+// const { withSentryConfig } = require('@sentry/nextjs');
 const withPWA = require('next-pwa')({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
+  buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/api\.dottapps\.com\/api\/.*/i,
@@ -125,6 +126,75 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
+  // Compiler optimizations using SWC
+  compiler: {
+    // Remove console logs in production - but keep more for debugging
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+    // SWC is the default minifier in Next.js 15
+    styledComponents: false,
+    emotion: false,
+  },
+  
+  // Webpack optimization for bundle size
+  webpack: (config, { isServer, dev }) => {
+    // Fix util module issue
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        util: false
+      };
+    }
+    
+    if (!isServer && !dev) {
+      // Industry standard: Merge small chunks to reduce HTTP requests
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        minSize: 20000,
+        maxAsyncRequests: 6,
+        maxInitialRequests: 4,
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          // Framework chunk
+          framework: {
+            name: 'framework',
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription|next)[\\/]/,
+            priority: 40,
+            chunks: 'all',
+          },
+          // Main vendor chunk
+          vendor: {
+            name: 'vendor',
+            test: /[\\/]node_modules[\\/]/,
+            priority: 30,
+            chunks: 'all',
+            reuseExistingChunk: true,
+          },
+          // Application commons
+          commons: {
+            name: 'commons',
+            minChunks: 2,
+            priority: 20,
+            chunks: 'all',
+            reuseExistingChunk: true,
+          },
+          // Dashboard specific
+          dashboard: {
+            name: 'dashboard',
+            test: /[\\/]src[\\/](app|components)[\\/]dashboard[\\/]/,
+            priority: 15,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      };
+      
+      // Limit parallel requests
+      config.optimization.runtimeChunk = 'single';
+    }
+    return config;
+  },
+  
   // Optimize for Render's infrastructure
   experimental: {
     // Server actions configuration (Next.js 15 format)
@@ -132,13 +202,6 @@ const nextConfig = {
       bodySizeLimit: '2mb',
       allowedOrigins: ['dottapps.com', 'www.dottapps.com']
     },
-    
-    // Enable module/chunk optimizations
-    optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react', 'react-icons', '@stripe/stripe-js'],
-    
-    // Reduce memory usage during build
-    workerThreads: false,
-    cpus: 2, // Limit CPU usage for Render
   },
   
   // Environment variables (minimal set)
@@ -153,6 +216,8 @@ const nextConfig = {
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
     NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL,
+    BACKEND_URL: process.env.BACKEND_URL || process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com',
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_SENTRY_DSN: 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576',
@@ -176,6 +241,9 @@ const nextConfig = {
   // Page extensions
   pageExtensions: ['js', 'jsx'],
   
+  // Don't transpile these modules - causes issues
+  // transpilePackages: [],
+  
   // Ignore errors during build
   eslint: {
     ignoreDuringBuilds: true,
@@ -184,107 +252,15 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Optimized webpack config for Render
-  webpack: (config, { isServer, dev }) => {
-    // Production optimizations
-    if (!dev) {
-      // Enable module concatenation
-      config.optimization.concatenateModules = true;
-      
-      // Optimize chunk splitting
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          framework: {
-            name: 'framework',
-            chunks: 'all',
-            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-            priority: 40,
-            enforce: true,
-          },
-          lib: {
-            test(module) {
-              return module.size() > 160000 &&
-                /node_modules[/\\]/.test(module.identifier());
-            },
-            name(module) {
-              const hash = require('crypto')
-                .createHash('sha1')
-                .update(module.identifier())
-                .digest('hex')
-                .substring(0, 8);
-              return `lib-${hash}`;
-            },
-            priority: 30,
-            minChunks: 1,
-            reuseExistingChunk: true,
-          },
-          commons: {
-            name: 'commons',
-            minChunks: 2,
-            priority: 20,
-          },
-        },
-      };
-      
-      // Minimize main bundle
-      config.optimization.minimize = true;
-      
-      // Disable source maps for faster builds
-      config.devtool = false;
-      
-      // Use faster hashing algorithm
-      config.output.hashFunction = 'xxhash64';
-      
-      // Optimize module IDs
-      config.optimization.moduleIds = 'deterministic';
-      config.optimization.chunkIds = 'deterministic';
-      
-      // Enable aggressive code splitting
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
-    }
-    
-    // Handle stubs (removed chart.js stubs to enable Smart Insights charts)
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
-    };
-
-    // Node.js polyfills
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-      os: false,
-      crypto: false,
-      net: false,
-      tls: false,
-    };
-
-    // Exclude heavy dependencies (removed canvas to enable Smart Insights charts)
-    config.externals = [
-      ...(config.externals || []),
-      'puppeteer',
-      'puppeteer-core',
-      'chrome-aws-lambda',
-    ];
-
-    // SVG support
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
-
-    return config;
-  },
   
-  // Disable image optimization for Render
+  // Image optimization settings
   images: {
-    unoptimized: true,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/webp'],
+    minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,
+    contentDispositionType: 'inline',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     domains: [
       'api.dottapps.com',
@@ -303,13 +279,26 @@ const nextConfig = {
   },
   
   // Production optimizations
-  productionBrowserSourceMaps: false,
+  productionBrowserSourceMaps: true, // Enable source maps to debug TDZ errors
   compress: true,
   
   // Security headers and caching
   async headers() {
     return [
       // Cache static assets aggressively
+      {
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/_next/static/:path*',
         headers: [
@@ -382,34 +371,8 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Scripts - still need unsafe-inline for Next.js
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com",
-              // Workers - needed for PostHog session recording
-              "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
-              // Styles
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
-              // Fonts
-              "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
-              // Images
-              "img-src 'self' data: https: blob: https://*.dottapps.com https://maps.googleapis.com https://maps.gstatic.com",
-              // Connections - add Cloudflare domains and Sentry
-              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com https://*.cloudflare.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
-              // Frames
-              "frame-src 'self' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://*.plaid.com",
-              // Objects
-              "object-src 'none'",
-              // Base URI
-              "base-uri 'self'",
-              // Form actions
-              "form-action 'self' https://auth.dottapps.com https://dottapps.com https://www.dottapps.com",
-              // Upgrade insecure requests
-              "upgrade-insecure-requests"
-            ].join('; ')
-          }
+          // CSP is now handled by middleware.js for dynamic nonce support
+          // This provides industry-standard security while allowing authentication
         ]
       },
       // API routes should not be cached
@@ -512,9 +475,5 @@ console.log('[Build] Sentry configuration:');
 console.log('[Build] - DSN from env:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Yes' : 'No (using fallback)');
 console.log('[Build] - Sentry enabled:', enableSentry);
 
-// Export with PWA and optionally Sentry
-const configWithPWA = withPWA(nextConfig);
-
-module.exports = enableSentry 
-  ? withSentryConfig(configWithPWA, sentryWebpackPluginOptions)
-  : configWithPWA;
+// Export without PWA for now to fix the build
+module.exports = nextConfig;

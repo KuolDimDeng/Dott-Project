@@ -4,14 +4,14 @@
  * Utility functions for currency handling and pricing calculations
  */
 
-import { getCurrencyForCountry, convertFromUSD, formatCurrency } from '@/services/wiseApiService';
+import { getCurrencyForCountry, convertFromUSD, formatCurrency } from '@/utils/simpleCurrencyUtils';
 import { getCacheValue } from '@/utils/appCache';
 
 // Base pricing in USD
 export const BASE_PRICING_USD = {
   basic: { monthly: 0, annual: 0 },
-  professional: { monthly: 15, annual: 15 },
-  enterprise: { monthly: 45, annual: 45 }
+  professional: { monthly: 35, annual: 35 },
+  enterprise: { monthly: 95, annual: 95 }
 };
 
 /**
@@ -72,12 +72,12 @@ export async function calculatePricingForCountry(countryCode, isDeveloping = fal
         annual: { amount: 0, formatted: '$0' }
       },
       professional: {
-        monthly: { amount: 15, formatted: '$15' },
-        annual: { amount: 15, formatted: '$15' }
+        monthly: { amount: 35, formatted: '$35' },
+        annual: { amount: 35, formatted: '$35' }
       },
       enterprise: {
-        monthly: { amount: 45, formatted: '$45' },
-        annual: { amount: 45, formatted: '$45' }
+        monthly: { amount: 95, formatted: '$95' },
+        annual: { amount: 95, formatted: '$95' }
       }
     };
   }

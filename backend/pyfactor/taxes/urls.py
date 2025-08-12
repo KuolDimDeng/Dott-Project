@@ -9,7 +9,8 @@ from .views import (
     TaxDataEntryControlViewSet, TaxDataEntryLogViewSet,
     TaxDataAbuseReportViewSet, TaxDataBlacklistViewSet,
     TaxSettingsViewSet, TaxApiUsageViewSet,
-    FilingDocumentUploadView, TaxFilingViewSet
+    FilingDocumentUploadView, TaxFilingViewSet,
+    GlobalTaxRateViewSet
 )
 from .views.filing_locations import TaxFilingLocationViewSet
 from .views.reminders import TaxReminderViewSet
@@ -19,17 +20,17 @@ from .views.payment_views import (
     validate_payment_session,
     cancel_payment_session
 )
-from .views.esignature_views import (
-    TaxSignatureRequestViewSet,
-    send_signature_request,
-    cancel_signature_request,
-    check_signature_status,
-    download_signed_document,
-    get_audit_trail,
-    get_available_providers,
-    webhook_handler,
-    get_signature_statistics
-)
+# from .views.esignature_views import (
+#     TaxSignatureRequestViewSet,
+#     send_signature_request,
+#     cancel_signature_request,
+#     check_signature_status,
+#     download_signed_document,
+#     get_audit_trail,
+#     get_available_providers,
+#     webhook_handler,
+#     get_signature_statistics
+# )
 from .views.confirmation_views import (
     FilingConfirmationViewSet,
     FilingNotificationViewSet
@@ -37,6 +38,28 @@ from .views.confirmation_views import (
 from .views.tax_suggestions import get_tax_suggestions
 from .views.tax_feedback import submit_tax_feedback
 from .efiling.views import EFilingViewSet
+from .views.filing_service import (
+    FilingServiceViewSet, 
+    get_country_requirements,
+    get_sales_data,
+    get_tax_info,
+    get_countries_list
+)
+from .views.payroll_tax_views import (
+    calculate_payroll_tax,
+    get_payroll_tax_settings,
+    create_payroll_tax_filing,
+    get_payroll_tax_filing_history,
+    get_payroll_tax_filing_status
+)
+from .views.payroll_filing_instructions import get_payroll_filing_instructions
+from .views.location_data import (
+    get_countries,
+    get_states,
+    get_counties,
+    validate_location
+)
+from .views.sales_tax_config import SalesTaxConfigViewSet, get_tax_settings_summary
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -45,7 +68,13 @@ router.register(r'tax-filings', PayrollTaxFilingViewSet)
 router.register(r'filing-instructions', TaxFilingInstructionViewSet)
 router.register(r'tax-forms', TaxFormViewSet)
 router.register(r'global', GlobalComplianceViewSet, basename='global')
+router.register(r'global-rates', GlobalTaxRateViewSet, basename='global-tax-rates')
 router.register(r'settings', TaxSettingsViewSet, basename='tax-settings')
+
+# Import tenant tax settings view
+from .views.tenant_tax_settings_views import TenantTaxSettingsViewSet
+from .views.simple_tenant_settings import get_tenant_tax_settings
+router.register(r'tenant-settings', TenantTaxSettingsViewSet, basename='tenant-tax-settings')
 router.register(r'api-usage', TaxApiUsageViewSet, basename='tax-api-usage')
 router.register(r'filing-locations', TaxFilingLocationViewSet, basename='tax-filing-locations')
 router.register(r'reminders', TaxReminderViewSet, basename='tax-reminders')
@@ -58,11 +87,17 @@ router.register(r'filing-documents', FilingDocumentUploadView, basename='filing-
 router.register(r'efiling', EFilingViewSet, basename='tax-efiling')
 
 # E-signature endpoints
-router.register(r'esignature/requests', TaxSignatureRequestViewSet, basename='tax-signature-request')
+# router.register(r'esignature/requests', TaxSignatureRequestViewSet, basename='tax-signature-request')
 
 # Filing confirmation endpoints
 router.register(r'confirmations', FilingConfirmationViewSet, basename='tax-filing-confirmation')
 router.register(r'notifications', FilingNotificationViewSet, basename='tax-filing-notification')
+
+# Filing service endpoints
+router.register(r'filings', FilingServiceViewSet, basename='filing-service')
+
+# Sales tax configuration endpoints (OWNER/ADMIN only)
+router.register(r'sales-tax-config', SalesTaxConfigViewSet, basename='sales-tax-config')
 
 # Abuse control endpoints
 router.register(r'abuse-control/controls', TaxDataEntryControlViewSet, basename='tax-entry-control')
@@ -73,6 +108,7 @@ router.register(r'abuse-control/blacklist', TaxDataBlacklistViewSet, basename='t
 urlpatterns = [
     path('', include(router.urls)),
     path('calculate/', TaxCalculationView.as_view(), name='tax-calculate'),
+    path('tenant-settings/', get_tenant_tax_settings, name='tenant-tax-settings-simple'),
     path('suggestions/', get_tax_suggestions, name='tax-suggestions'),
     path('feedback/', submit_tax_feedback, name='tax-feedback'),
     path('global-compliance/<str:country_code>/', GlobalComplianceViewSet.as_view({'get': 'global_compliance'}), name='global-compliance'),
@@ -87,22 +123,42 @@ urlpatterns = [
     # PDF Generation endpoints
     path('pdf/', include('taxes.pdf_generation.urls')),
     
-    # E-signature endpoints
-    path('esignature/requests/<uuid:signature_id>/send/', send_signature_request, name='esignature-send'),
-    path('esignature/requests/<uuid:signature_id>/cancel/', cancel_signature_request, name='esignature-cancel'),
-    path('esignature/requests/<uuid:signature_id>/status/', check_signature_status, name='esignature-status'),
-    path('esignature/requests/<uuid:signature_id>/download/', download_signed_document, name='esignature-download'),
-    path('esignature/requests/<uuid:signature_id>/audit/', get_audit_trail, name='esignature-audit'),
-    path('esignature/providers/', get_available_providers, name='esignature-providers'),
-    path('esignature/statistics/', get_signature_statistics, name='esignature-statistics'),
-    path('esignature/webhook/<str:provider_name>/', webhook_handler, name='esignature-webhook'),
+    # E-signature endpoints (temporarily disabled)
+    # path('esignature/requests/<uuid:signature_id>/send/', send_signature_request, name='esignature-send'),
+    # path('esignature/requests/<uuid:signature_id>/cancel/', cancel_signature_request, name='esignature-cancel'),
+    # path('esignature/requests/<uuid:signature_id>/status/', check_signature_status, name='esignature-status'),
+    # path('esignature/requests/<uuid:signature_id>/download/', download_signed_document, name='esignature-download'),
+    # path('esignature/requests/<uuid:signature_id>/audit/', get_audit_trail, name='esignature-audit'),
+    # path('esignature/providers/', get_available_providers, name='esignature-providers'),
+    # path('esignature/statistics/', get_signature_statistics, name='esignature-statistics'),
+    # path('esignature/webhook/<str:provider_name>/', webhook_handler, name='esignature-webhook'),
+    
+    # Filing service endpoints
+    path('countries/', get_countries_list, name='tax-countries-list'),
+    path('countries/<str:country_code>/requirements/', get_country_requirements, name='tax-country-requirements'),
+    path('sales-data/', get_sales_data, name='tax-sales-data'),
+    path('info/', get_tax_info, name='tax-info'),
     
     # Payroll tax endpoints
-    path('payroll/', include('taxes.payroll.urls')),
+    path('payroll/calculate/', calculate_payroll_tax, name='payroll-tax-calculate'),
+    path('payroll/settings/', get_payroll_tax_settings, name='payroll-tax-settings'),
+    path('payroll/filing/create/', create_payroll_tax_filing, name='payroll-tax-filing-create'),
+    path('payroll/filing/history/', get_payroll_tax_filing_history, name='payroll-tax-filing-history'),
+    path('payroll/filing/<int:filing_id>/status/', get_payroll_tax_filing_status, name='payroll-tax-filing-status'),
+    path('payroll/filing/<int:filing_id>/instructions/', get_payroll_filing_instructions, name='payroll-tax-filing-instructions'),
     
-    # Year-end tax form endpoints
-    path('year-end/', include('taxes.year_end.urls')),
+    # Year-end tax form endpoints (temporarily disabled)
+    # path('year-end/', include('taxes.year_end.urls')),
     
-    # Multi-state tax endpoints
-    path('multistate/', include('taxes.multistate.urls')),
+    # Multi-state tax endpoints (temporarily disabled)
+    # path('multistate/', include('taxes.multistate.urls')),
+    
+    # Location data endpoints for dropdowns
+    path('location/countries/', get_countries, name='tax-location-countries'),
+    path('location/states/', get_states, name='tax-location-states'),
+    path('location/counties/', get_counties, name='tax-location-counties'),
+    path('location/validate/', validate_location, name='tax-location-validate'),
+    
+    # Sales tax configuration endpoints
+    path('sales-tax-config/summary/', get_tax_settings_summary, name='tax-settings-summary'),
 ]

@@ -1,5 +1,86 @@
 {
-  "about": "О нас",
+  "about": {
+    "backToHome": "На главную",
+    "hero": {
+      "title": "Помогаем бизнесу",
+      "subtitle": "процветать во всем мире",
+      "description": "Мы создаем операционную систему для современного малого бизнеса, делая инструменты корпоративного уровня доступными для всех."
+    },
+    "story": {
+      "title": "Наша история",
+      "paragraph1": "Dott родился из простого наблюдения: малые предприятия тонули в сложности. Множество инструментов, разрозненные данные и процессы, разработанные для корпораций, сдерживали предпринимателей по всему миру.",
+      "paragraph2": "Основанная в 2023 году, мы начали строить что-то другое. Платформа, которая понимает уникальные проблемы малого бизнеса, особенно на развивающихся рынках, где традиционные решения не работают.",
+      "paragraph3": "Сегодня мы гордимся тем, что обслуживаем бизнес по всему миру. Но мы только начинаем."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Начало",
+        "description": "Определили потребность в единых инструментах управления бизнесом для МСП"
+      },
+      "launch": {
+        "title": "Запуск продукта",
+        "description": "Запустили основную платформу с финансовым и складским управлением"
+      },
+      "expansion": {
+        "title": "Глобальная экспансия",
+        "description": "Расширились в более чем 25 стран с локализованными функциями"
+      },
+      "ai": {
+        "title": "Интеграция ИИ",
+        "description": "Внедрение интеллектуальных решений и автоматизации"
+      }
+    },
+    "mission": {
+      "title": "Наша миссия",
+      "description": "Демократизировать управление бизнесом, предоставляя малым предприятиям мощные, доступные инструменты, которые упрощают операции и способствуют росту, независимо от местоположения или технического опыта."
+    },
+    "vision": {
+      "title": "Наше видение",
+      "description": "Мир, где каждый малый бизнес имеет доступ к такому же качеству инструментов управления, как и компании Fortune 500, что позволит миллиону предприятий процветать к 2030 году."
+    },
+    "journey": {
+      "title": "Наш путь"
+    },
+    "values": {
+      "title": "Наши ценности",
+      "subtitle": "Принципы, которые руководят каждым нашим решением",
+      "simplicity": {
+        "title": "Простота прежде всего",
+        "description": "Сложные бизнес-операции упрощены благодаря интуитивному дизайну"
+      },
+      "innovation": {
+        "title": "Постоянные инновации",
+        "description": "Развитие вместе с меняющимися потребностями современного бизнеса"
+      },
+      "success": {
+        "title": "Успех клиентов",
+        "description": "Ваш рост - это наш успех - мы побеждаем, когда побеждаете вы"
+      },
+      "empowerment": {
+        "title": "Глобальная поддержка",
+        "description": "Преодоление барьеров для бизнеса по всему миру"
+      }
+    },
+    "differentiators": {
+      "title": "Что делает Dott особенным",
+      "unified": {
+        "title": "Единая платформа",
+        "description": "Все ваши бизнес-инструменты в одном месте"
+      },
+      "global": {
+        "title": "Глобальный, но локальный",
+        "description": "Международные стандарты с локальной совместимостью"
+      },
+      "security": {
+        "title": "Корпоративная безопасность",
+        "description": "Защита банковского уровня для ваших данных"
+      },
+      "insights": {
+        "title": "Умная аналитика",
+        "description": "Аналитика на основе ИИ для лучших решений"
+      }
+    }
+  },
   "features": {
     "eyebrow": "Полное бизнес-решение",
     "heading": "Всё необходимое для глобального роста",
@@ -10,11 +91,13 @@
     },
     "financial": {
       "title": "Финансовое управление",
-      "description": "Полный контроль над финансами вашего бизнеса"
+      "description": "Полный контроль над финансами вашего бизнеса",
+      "heading": "Полный контроль над финансами вашего бизнеса"
     },
     "global": {
       "title": "Инструменты глобального бизнеса",
-      "description": "Всё необходимое для международной деятельности"
+      "description": "Всё необходимое для международной деятельности",
+      "heading": "Все необходимое для международных операций"
     },
     "trust": {
       "title": "Создано для безопасности и соответствия"
@@ -160,33 +243,98 @@
     }
   },
   "highlights": {
-    "bluetooth": "Интеграция Bluetooth-сканера",
-    "printBarcodes": "Печать пользовательских штрих-кодов",
-    "lowStock": "Уведомления о низком запасе",
-    "customLabel": "Печать пользовательских этикеток",
-    "mobileScanning": "Мобильное сканирование",
-    "batchProcessing": "Пакетная обработка",
-    "offlineMode": "Автономный режим",
-    "multiplePayments": "Несколько способов оплаты",
-    "receiptCustom": "Настройка чеков",
-    "recurringInvoices": "Повторяющиеся счета",
-    "paymentReminders": "Напоминания об оплате",
-    "invoiceFactoring": "Факторинг счетов",
+    "eyebrow": "Ключевые Преимущества",
+    "heading": "Почему предприятия выбирают Dott",
+    "subheading": "Передовые функции, которые выделяют нас среди конкурентов и помогают вашему бизнесу расти.",
+    "mobile": {
+      "title": "Мобильное Приложение",
+      "description": "Получайте доступ к данным вашего бизнеса в любое время и в любом месте с помощью нашего мощного мобильного приложения. Управляйте инвентарем, обрабатывайте продажи и просматривайте отчеты в реальном времени на ходу.",
+      "imageAlt": "Скриншот мобильного приложения"
+    },
+    "pos": {
+      "title": "POS-система и Сканирование Штрих-кодов",
+      "description": "Превратите любое устройство в мощную систему торговых точек. Сканируйте штрих-коды мгновенно, обрабатывайте продажи быстро, отслеживайте инвентарь в реальном времени и принимайте все способы оплаты, включая наличные, карты и мобильные деньги.",
+      "imageAlt": "POS-система с функцией сканирования штрих-кодов",
+      "features": {
+        "quickCheckout": "Быстрая оплата",
+        "barcodeScanning": "Сканирование штрих-кодов",
+        "allPaymentTypes": "Все типы платежей",
+        "inventoryTracking": "Отслеживание инвентаря",
+        "offlineMode": "Оффлайн режим",
+        "mobileReady": "Готов для мобильных"
+      }
+    },
+    "ai": {
+      "title": "AI-аналитика",
+      "description": "Получайте умные рекомендации и прогностическую аналитику на основе данных вашего бизнеса. Наш ИИ помогает прогнозировать спрос, оптимизировать инвентарь и выявлять возможности роста.",
+      "imageAlt": "Скриншот панели AI-аналитики"
+    },
+    "geofencing": {
+      "title": "Геофенсинг и Отслеживание Местоположения",
+      "description": "Обеспечьте точное отслеживание времени с помощью GPS-регистрации входа/выхода. Идеально подходит для выездных команд, водителей доставки и удаленных сотрудников. Настройте виртуальные границы для рабочих мест и получайте уведомления, когда сотрудники входят или покидают назначенные зоны.",
+      "imageAlt": "Интерфейс геофенсинга и отслеживания местоположения",
+      "features": {
+        "gpsClockInOut": "GPS вход/выход",
+        "virtualBoundaries": "Виртуальные границы",
+        "realTimeAlerts": "Уведомления в реальном времени",
+        "automatedTimesheets": "Автоматические табели",
+        "complianceReady": "Готов к соответствию",
+        "teamManagement": "Управление командой"
+      }
+    },
+    "mobilemoney": {
+      "title": "Платежи Мобильными Деньгами",
+      "description": "Принимайте платежи из любой точки мира. Интеграция M-Pesa работает в Кении, а MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix и Mercado Pago появятся в ближайшее время. Охватите миллиарды клиентов, которые предпочитают мобильные деньги традиционным банковским услугам.",
+      "imageAlt": "Варианты платежей мобильными деньгами",
+      "available": "Способы оплаты:",
+      "live": "Доступно Сейчас:",
+      "coming": "Скоро:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Преобразуйте общение с клиентами через интеграцию WhatsApp Business. Создавайте и управляйте каталогом продуктов, автоматически отправляйте счета и чеки, обеспечивайте мгновенную поддержку клиентов и связывайтесь с ними на их предпочтительной платформе обмена сообщениями.",
+      "learnMore": "Узнать Больше"
+    },
+    "languages": {
+      "title": "Поддержка 20+ Языков",
+      "description": "Охватывайте клиентов и управляйте своим бизнесом на предпочитаемом языке. От английского до суахили, от испанского до мандаринского, мы поддерживаем более 20 языков, чтобы сделать Dott доступным для бизнеса по всему миру.",
+      "imageAlt": "Демонстрация многоязычного интерфейса",
+      "availableIn": "Доступно на:"
+    },
+    "features": {
+      "label": "Ключевые функции:"
+    },
+    "learnMore": "Узнать больше",
+    "jobs": {
+      "title": "Комплексное управление работами",
+      "description": "Сквозной расчет стоимости работ от предложения до завершения. Отслеживайте материалы, труд и расходы с анализом рентабельности в реальном времени. Идеально подходит для сервисных компаний, подрядчиков и полевых операций с мобильным дизайном.",
+      "imageAlt": "Интерфейс управления работами и расчета стоимости",
+      "features": {
+        "jobCosting": "Расчет стоимости работ в реальном времени",
+        "mobileFieldApp": "Мобильное полевое приложение",
+        "materialTracking": "Отслеживание материалов",
+        "timeTracking": "Автоматическое отслеживание времени",
+        "photoCapture": "Захват фотографий",
+        "digitalSignatures": "Цифровые подписи",
+        "profitabilityAnalysis": "Анализ рентабельности",
+        "offlineSupport": "Поддержка офлайн"
+      }
+    },
+    "jobCosting": "Расчет стоимости работ в реальном времени",
+    "mobileFieldApp": "Мобильное приложение для полевых работников",
+    "materialLaborTracking": "Отслеживание материалов и труда",
     "vatGst": "Поддержка НДС/GST",
     "taxReports": "Налоговые отчеты",
-    "eFilingReady": "Готовность к электронной подаче",
-    "customDashboards": "Пользовательские панели",
-    "profitAnalysis": "Анализ прибыли",
-    "cashFlowForecast": "Прогноз денежного потока",
-    "mobileMoney": "Мобильные деньги",
-    "bankTransfers": "Банковские переводы",
-    "digitalWallets": "Цифровые кошельки",
-    "customsDocuments": "Таможенные документы",
-    "shippingIntegration": "Интеграция доставки",
-    "tradeCompliance": "Торговое соответствие",
-    "soc2Compliant": "Соответствие SOC2",
-    "dataEncryption": "Шифрование данных",
-    "gdprReady": "Готовность к GDPR"
+    "eFilingReady": "Готов к электронной подаче",
+    "ifrs": "IFRS для более 166 стран",
+    "gaap": "US GAAP для американских компаний",
+    "autoDetect": "Автоопределение по стране",
+    "autoDetection": "Автоматическое определение языка",
+    "rightToLeft": "Языки справа налево",
+    "regionalFormat": "Региональные форматы даты/чисел",
+    "realTimeRates": "Курсы обмена в реальном времени",
+    "cryptoCurrency": "Поддержка криптовалют",
+    "currencyConversion": "Автоматические конвертации"
   },
   "contact": {
     "eyebrow": "Свяжитесь с нами",
@@ -237,8 +385,66 @@
   "socialImpact": "Социальное влияние",
   "getInTouch": "Связаться с нашей командой",
   "termsOfUse": "Условия использования",
-  "privacyPolicy": "Политика конфиденциальности",
-  "cookiePolicy": "Политика использования файлов cookie",
+  "privacyPolicy": {},
+  "cookiePolicy": {
+    "title": "Cookie Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "navigation": {
+      "backToHome": "Back to Home"
+    },
+    "introduction": "This Cookie Policy explains how Dott LLC uses cookies and similar technologies to recognize you when you visit our website and use our services. It explains what these technologies are and why we use them, as well as your rights to control our use of them.",
+    "sections": {
+      "whatAreCookies": {
+        "title": "What are cookies?",
+        "content": "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information."
+      },
+      "howWeUseCookies": {
+        "title": "How we use cookies",
+        "content": "We use cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as \"essential\" or \"strictly necessary\" cookies. Other cookies enable us to track and target the interests of our users to enhance the experience on our website."
+      },
+      "typesOfCookies": {
+        "title": "Types of cookies we use",
+        "content": "The specific types of first and third party cookies served through our website and the purposes they perform are described below:",
+        "essential": {
+          "title": "Essential cookies",
+          "content": "These cookies are strictly necessary to provide you with services available through our website and to use some of its features, such as access to secure areas."
+        },
+        "functional": {
+          "title": "Functional cookies",
+          "content": "These cookies enable the website to provide enhanced functionality and personalization. They may be set by us or by third party providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics cookies",
+          "content": "These cookies allow us to count visits and traffic sources, so we can measure and improve the performance of our site. They help us know which pages are the most and least popular and see how visitors move around the site."
+        },
+        "marketing": {
+          "title": "Marketing cookies",
+          "content": "These cookies may be set through our site by our advertising partners. They may be used by those companies to build a profile of your interests and show you relevant adverts on other sites."
+        }
+      },
+      "managingCookies": {
+        "title": "Managing cookies",
+        "content": "Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you. It may also stop you from saving customized settings like login information."
+      },
+      "thirdPartyCookies": {
+        "title": "Third-party cookies",
+        "content": "In addition to our own cookies, we may also use various third-party cookies to report usage statistics of our service and deliver advertisements on and through our service."
+      },
+      "changes": {
+        "title": "Changes to this Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time in order to reflect changes to the cookies we use or for other operational, legal or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies."
+      },
+      "contact": {
+        "title": "Contact us",
+        "content": "If you have any questions about our use of cookies or other technologies, please contact us."
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
   "simplicity": "Простота",
   "innovation": "Инновации",
   "empowerment": "Расширение возможностей",
@@ -273,7 +479,9 @@
       "mobileMoney": "Платежи мобильными деньгами",
       "cardPayments": "Платежи картами по всему миру",
       "languages": "Поддержка более 20 языков",
-      "mobilePhone": "Мобильное приложение включено"
+      "mobilePhone": "Мобильное приложение включено",
+      "jobManagement": "Управление работами и расчет стоимости",
+      "accounting": "Поддержка IFRS и US GAAP"
     }
   },
   "heroTitle": "Универсальное бизнес-программное обеспечение",
@@ -605,35 +813,6 @@
     "support": "Поддержка",
     "legal": "Правовая информация"
   },
-  "highlights": {
-    "bluetooth": "Интеграция Bluetooth-сканера",
-    "printBarcodes": "Печать пользовательских штрих-кодов",
-    "lowStock": "Оповещения о низком запасе",
-    "customLabel": "Печать пользовательских этикеток",
-    "mobileScanning": "Мобильное сканирование",
-    "batchProcessing": "Пакетная обработка",
-    "offlineMode": "Офлайн-режим",
-    "multiplePayments": "Несколько методов оплаты",
-    "receiptCustom": "Настройка чеков",
-    "recurringInvoices": "Повторяющиеся счета",
-    "paymentReminders": "Напоминания о платежах",
-    "invoiceFactoring": "Факторинг счетов",
-    "vatGst": "Поддержка НДС/GST",
-    "taxReports": "Налоговые отчёты",
-    "eFilingReady": "Готово к электронной подаче",
-    "customDashboards": "Пользовательские панели",
-    "profitAnalysis": "Анализ прибыли",
-    "cashFlowForecast": "Прогноз денежных потоков",
-    "mobileMoney": "Мобильные деньги",
-    "bankTransfers": "Банковские переводы",
-    "digitalWallets": "Цифровые кошельки",
-    "customsDocuments": "Таможенные документы",
-    "shippingIntegration": "Интеграция доставки",
-    "tradeCompliance": "Торговое соответствие",
-    "soc2Compliant": "Соответствие SOC2",
-    "dataEncryption": "Шифрование данных",
-    "gdprReady": "Готово к GDPR"
-  },
   "faq": {
     "eyebrow": "Часто задаваемые вопросы",
     "heading": "Часто задаваемые вопросы",
@@ -722,7 +901,12 @@
     "global": "Управление импортом/экспортом",
     "global.description": "Обрабатывайте международную торговую документацию и соответствие",
     "security": "Корпоративная безопасность",
-    "security.description": "Безопасность банковского уровня с региональным соответствием"
+    "security.description": "Безопасность банковского уровня с региональным соответствием",
+    "jobs": "Управление работами и расчет стоимости",
+    "jobs.description": "Сквозное отслеживание проектов с расчетом стоимости в реальном времени, мобильным полевым приложением и анализом рентабельности",
+    "accounting": "Двойные стандарты учета",
+    "languages": "Многоязычная поддержка",
+    "currencies": "Мультивалютная система"
   },
   "trust": {
     "soc2Title": "Соответствие SOC2",
@@ -733,88 +917,6 @@
     "gdprDesc": "Соответствие конфиденциальности",
     "uptimeTitle": "99.9% Время работы",
     "uptimeDesc": "Всегда доступно"
-  },
-  "about": {
-    "backToHome": "На главную",
-    "hero": {
-      "title": "Помогаем бизнесу",
-      "subtitle": "процветать во всем мире",
-      "description": "Мы создаем операционную систему для современного малого бизнеса, делая инструменты корпоративного уровня доступными для всех."
-    },
-    "story": {
-      "title": "Наша история",
-      "paragraph1": "Dott родился из простого наблюдения: малые предприятия тонули в сложности. Множество инструментов, разрозненные данные и процессы, разработанные для корпораций, сдерживали предпринимателей по всему миру.",
-      "paragraph2": "Основанная в 2023 году, мы начали строить что-то другое. Платформа, которая понимает уникальные проблемы малого бизнеса, особенно на развивающихся рынках, где традиционные решения не работают.",
-      "paragraph3": "Сегодня мы гордимся тем, что обслуживаем бизнес по всему миру. Но мы только начинаем."
-    },
-    "timeline": {
-      "beginning": {
-        "title": "Начало",
-        "description": "Определили потребность в единых инструментах управления бизнесом для МСП"
-      },
-      "launch": {
-        "title": "Запуск продукта",
-        "description": "Запустили основную платформу с финансовым и складским управлением"
-      },
-      "expansion": {
-        "title": "Глобальная экспансия",
-        "description": "Расширились в более чем 25 стран с локализованными функциями"
-      },
-      "ai": {
-        "title": "Интеграция ИИ",
-        "description": "Внедрение интеллектуальных решений и автоматизации"
-      }
-    },
-    "mission": {
-      "title": "Наша миссия",
-      "description": "Демократизировать управление бизнесом, предоставляя малым предприятиям мощные, доступные инструменты, которые упрощают операции и способствуют росту, независимо от местоположения или технического опыта."
-    },
-    "vision": {
-      "title": "Наше видение",
-      "description": "Мир, где каждый малый бизнес имеет доступ к такому же качеству инструментов управления, как и компании Fortune 500, что позволит миллиону предприятий процветать к 2030 году."
-    },
-    "journey": {
-      "title": "Наш путь"
-    },
-    "values": {
-      "title": "Наши ценности",
-      "subtitle": "Принципы, которые руководят каждым нашим решением",
-      "simplicity": {
-        "title": "Простота прежде всего",
-        "description": "Сложные бизнес-операции упрощены благодаря интуитивному дизайну"
-      },
-      "innovation": {
-        "title": "Постоянные инновации",
-        "description": "Развитие вместе с меняющимися потребностями современного бизнеса"
-      },
-      "success": {
-        "title": "Успех клиентов",
-        "description": "Ваш рост - это наш успех - мы побеждаем, когда побеждаете вы"
-      },
-      "empowerment": {
-        "title": "Глобальная поддержка",
-        "description": "Преодоление барьеров для бизнеса по всему миру"
-      }
-    },
-    "differentiators": {
-      "title": "Что делает Dott особенным",
-      "unified": {
-        "title": "Единая платформа",
-        "description": "Все ваши бизнес-инструменты в одном месте"
-      },
-      "global": {
-        "title": "Глобальный, но локальный",
-        "description": "Международные стандарты с локальной совместимостью"
-      },
-      "security": {
-        "title": "Корпоративная безопасность",
-        "description": "Защита банковского уровня для ваших данных"
-      },
-      "insights": {
-        "title": "Умная аналитика",
-        "description": "Аналитика на основе ИИ для лучших решений"
-      }
-    }
   },
   "blog": {
     "hero": {
@@ -881,70 +983,6 @@
     "allRightsReserved": "Все права защищены.",
     "privacyPolicy": "Политика конфиденциальности",
     "termsOfService": "Условия обслуживания"
-  },
-  "highlights": {
-    "eyebrow": "Ключевые Преимущества",
-    "heading": "Почему предприятия выбирают Dott",
-    "subheading": "Передовые функции, которые выделяют нас среди конкурентов и помогают вашему бизнесу расти.",
-    "mobile": {
-      "title": "Мобильное Приложение",
-      "description": "Получайте доступ к данным вашего бизнеса в любое время и в любом месте с помощью нашего мощного мобильного приложения. Управляйте инвентарем, обрабатывайте продажи и просматривайте отчеты в реальном времени на ходу.",
-      "imageAlt": "Скриншот мобильного приложения"
-    },
-    "pos": {
-      "title": "POS-система и Сканирование Штрих-кодов",
-      "description": "Превратите любое устройство в мощную систему торговых точек. Сканируйте штрих-коды мгновенно, обрабатывайте продажи быстро, отслеживайте инвентарь в реальном времени и принимайте все способы оплаты, включая наличные, карты и мобильные деньги.",
-      "imageAlt": "POS-система с функцией сканирования штрих-кодов",
-      "features": {
-        "quickCheckout": "Быстрая оплата",
-        "barcodeScanning": "Сканирование штрих-кодов",
-        "allPaymentTypes": "Все типы платежей",
-        "inventoryTracking": "Отслеживание инвентаря",
-        "offlineMode": "Оффлайн режим",
-        "mobileReady": "Готов для мобильных"
-      }
-    },
-    "ai": {
-      "title": "AI-аналитика",
-      "description": "Получайте умные рекомендации и прогностическую аналитику на основе данных вашего бизнеса. Наш ИИ помогает прогнозировать спрос, оптимизировать инвентарь и выявлять возможности роста.",
-      "imageAlt": "Скриншот панели AI-аналитики"
-    },
-    "geofencing": {
-      "title": "Геофенсинг и Отслеживание Местоположения",
-      "description": "Обеспечьте точное отслеживание времени с помощью GPS-регистрации входа/выхода. Идеально подходит для выездных команд, водителей доставки и удаленных сотрудников. Настройте виртуальные границы для рабочих мест и получайте уведомления, когда сотрудники входят или покидают назначенные зоны.",
-      "imageAlt": "Интерфейс геофенсинга и отслеживания местоположения",
-      "features": {
-        "gpsClockInOut": "GPS вход/выход",
-        "virtualBoundaries": "Виртуальные границы",
-        "realTimeAlerts": "Уведомления в реальном времени",
-        "automatedTimesheets": "Автоматические табели",
-        "complianceReady": "Готов к соответствию",
-        "teamManagement": "Управление командой"
-      }
-    },
-    "mobilemoney": {
-      "title": "Платежи Мобильными Деньгами",
-      "description": "Принимайте платежи из любой точки мира. Интеграция M-Pesa работает в Кении, а MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix и Mercado Pago появятся в ближайшее время. Охватите миллиарды клиентов, которые предпочитают мобильные деньги традиционным банковским услугам.",
-      "imageAlt": "Варианты платежей мобильными деньгами",
-      "available": "Способы оплаты:",
-      "live": "Доступно Сейчас:",
-      "coming": "Скоро:"
-    },
-    "whatsapp": {
-      "title": "WhatsApp Business",
-      "description": "Преобразуйте общение с клиентами через интеграцию WhatsApp Business. Создавайте и управляйте каталогом продуктов, автоматически отправляйте счета и чеки, обеспечивайте мгновенную поддержку клиентов и связывайтесь с ними на их предпочтительной платформе обмена сообщениями.",
-      "learnMore": "Узнать Больше"
-    },
-    "languages": {
-      "title": "Поддержка 20+ Языков",
-      "description": "Охватывайте клиентов и управляйте своим бизнесом на предпочитаемом языке. От английского до суахили, от испанского до мандаринского, мы поддерживаем более 20 языков, чтобы сделать Dott доступным для бизнеса по всему миру.",
-      "imageAlt": "Демонстрация многоязычного интерфейса",
-      "availableIn": "Доступно на:"
-    },
-    "features": {
-      "label": "Ключевые функции:"
-    },
-    "learnMore": "Узнать больше"
   },
   "builtForYou": {
     "title": "Создано для Вас",
@@ -1064,5 +1102,75 @@
       "name": "Amazon Seller",
       "description": "Управляйте своим бизнесом на Amazon"
     }
-  }
+  },
+  "termsOfService": {},
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "Платформа управления бизнесом на основе ИИ, работающая офлайн.",
+      "cta": {
+        "getStarted": "Начать Бесплатно",
+        "signIn": "Войти"
+      },
+      "noCreditCard": "Кредитная карта не требуется",
+      "freePlan": "Бесплатный план навсегда"
+    },
+    "features": {
+      "title": "Всё, Что Вам Нужно",
+      "pos": {
+        "title": "Касса",
+        "description": "Обрабатывайте продажи мгновенно, даже офлайн"
+      },
+      "barcode": {
+        "title": "Сканер Штрих-кодов",
+        "description": "Сканируйте товары камерой"
+      },
+      "invoicing": {
+        "title": "Быстрые Счета",
+        "description": "Создавайте и отправляйте счета на ходу"
+      },
+      "analytics": {
+        "title": "Аналитика в Реальном Времени",
+        "description": "Отслеживайте эффективность вашего бизнеса"
+      }
+    },
+    "benefits": {
+      "title": "Создано для Вашего Успеха",
+      "offline": {
+        "title": "Работает Офлайн",
+        "description": "Продолжайте продавать без интернета"
+      },
+      "fast": {
+        "title": "Молниеносно Быстро",
+        "description": "Мгновенная загрузка, без задержек"
+      },
+      "mobile": {
+        "title": "Мобильность Прежде Всего",
+        "description": "Разработано для телефонов и планшетов"
+      },
+      "payments": {
+        "title": "Мобильные Деньги",
+        "description": "M-Pesa, офлайн режим, локальная поддержка"
+      }
+    },
+    "pricing": {
+      "title": "Простые, Прозрачные Цены"
+    },
+    "cta": {
+      "title": "Готовы Развивать Свой Бизнес?",
+      "subtitle": "Начните лучше управлять своим бизнесом сегодня",
+      "button": "Начать Бесплатно",
+      "terms": "Кредитная карта не требуется • Отмена в любое время"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott: Глобальная Бизнес Платформа",
+    "ios": "Доступно на главном экране",
+    "android": "Установите для быстрого доступа",
+    "tap": "Нажмите",
+    "then": "затем",
+    "addToHome": "Добавить на главный экран",
+    "install": "Установить"
+  },
+  "browserTitle": "Dott: Глобальная бизнес-платформа"
 }

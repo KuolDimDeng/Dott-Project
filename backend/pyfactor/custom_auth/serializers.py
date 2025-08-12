@@ -1,8 +1,9 @@
 # serializers.py
 import uuid
-from allauth.account.adapter import get_adapter
-from dj_rest_auth.registration.serializers import RegisterSerializer
+# from allauth.account.adapter import get_adapter  # Commented out - using Auth0
+# from dj_rest_auth.registration.serializers import RegisterSerializer  # Commented out - using Auth0
 from rest_framework import serializers
+from django.db import models
 from .models import User, Tenant, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
 from users.models import Subscription
 
@@ -28,7 +29,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from pyfactor.logging_config import get_logger
 from users.models import UserProfile  # Adjust the import path as necessary
-from django.db import transaction
+from django.db import transaction as db_transaction
 from users.choices import SUBSCRIPTION_TYPES  # Import from users.choices
 
 
@@ -37,6 +38,10 @@ from users.choices import SUBSCRIPTION_TYPES  # Import from users.choices
 
 logger = get_logger()
 
+
+"""
+# Commented out - using Auth0 instead of allauth
+# Keeping this code for reference but it's not used
 
 class CustomRegisterSerializer(RegisterSerializer):
     username = None  # Remove username if not used
@@ -107,7 +112,7 @@ class CustomRegisterSerializer(RegisterSerializer):
             'last_name': self.validated_data.get('last_name', ''),
         }
 
-    @transaction.atomic
+    @db_transaction.atomic
     def save(self, request):
         user = super().save(request)
         try:
@@ -158,6 +163,7 @@ class CustomRegisterSerializer(RegisterSerializer):
         user.save()
 
         logger.info("User profile created for email: %s", user.email)
+"""
     
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -313,7 +319,6 @@ class UserInvitationSerializer(serializers.ModelSerializer):
 
 class UpdateUserPermissionsSerializer(serializers.Serializer):
     """Serializer for updating user permissions"""
-    user_id = serializers.UUIDField()
     role = serializers.ChoiceField(choices=['ADMIN', 'USER'], required=False)
     page_permissions = serializers.ListField(
         child=serializers.DictField(),
@@ -327,6 +332,54 @@ class UpdateUserPermissionsSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     "Each permission must have page_id, can_read, can_write, can_edit, and can_delete"
                 )
+            
+            # Validate and resolve page_id (could be UUID or string path)
+            page_id = perm.get('page_id')
+            if page_id:
+                # Try UUID first
+                try:
+                    uuid.UUID(str(page_id))
+                    # If it's a valid UUID, check if the page exists
+                    if not PagePermission.objects.filter(id=page_id, is_active=True).exists():
+                        raise serializers.ValidationError(
+                            f"Page with id '{page_id}' does not exist or is not active"
+                        )
+                except (ValueError, TypeError):
+                    # If not a UUID, try to find by path or name
+                    # First try exact path match with common prefixes
+                    page = None
+                    
+                    # Try different path patterns
+                    path_patterns = [
+                        f"/dashboard/{page_id}",
+                        f"/dashboard/{page_id.replace('-', '/')}",  # Convert sales-products to sales/products
+                        f"/dashboard/products/{page_id}",
+                        f"/dashboard/services/{page_id}",
+                        f"/dashboard/customers/{page_id}",
+                        f"/dashboard/vendors/{page_id}",
+                    ]
+                    
+                    for pattern in path_patterns:
+                        page = PagePermission.objects.filter(path=pattern, is_active=True).first()
+                        if page:
+                            break
+                    
+                    # If still not found, try more flexible matching
+                    if not page:
+                        page = PagePermission.objects.filter(
+                            models.Q(path__icontains=str(page_id)) | 
+                            models.Q(name__iexact=str(page_id)) |
+                            models.Q(path__endswith=f"/{page_id}"),
+                            is_active=True
+                        ).first()
+                    
+                    if page:
+                        # Replace string with actual UUID
+                        perm['page_id'] = str(page.id)
+                    else:
+                        raise serializers.ValidationError(
+                            f"Page with identifier '{page_id}' not found. Must be a valid UUID or page path."
+                        )
         return value
 
 

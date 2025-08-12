@@ -1,0 +1,49 @@
+{
+  "backToHome": "Volver al Inicio",
+  "hero": {
+    "title": "Blog Empresarial de Dott",
+    "subtitle": "Aprende a gestionar las finanzas de tu negocio con Dott. Obtén consejos, ideas y estrategias para hacer crecer tu empresa."
+  },
+  "newsletter": {
+    "title": "¡Suscríbete a nuestro boletín para actualizaciones de productos y nuevas publicaciones del blog!",
+    "placeholder": "Tu dirección de correo electrónico",
+    "button": "Suscribirse"
+  },
+  "categories": {
+    "all": "Todos los Artículos",
+    "accounting": "Contabilidad e Impuestos",
+    "business": "Negocios"
+  },
+  "search": {
+    "placeholder": "Buscar artículos..."
+  },
+  "featured": "Destacado",
+  "readTime": "{{minutes}} min de lectura",
+  "noArticles": "No se encontraron artículos que coincidan con tus criterios.",
+  "articles": {
+    "profitLoss": {
+      "title": "Entendiendo las Ganancias y Pérdidas: Una Guía Divertida para Empresarios",
+      "excerpt": "Descubre cómo leer y entender tu estado de pérdidas y ganancias sin quedarte dormido. ¡Prometemos hacerlo interesante!"
+    },
+    "expenses": {
+      "title": "Rastrea los Gastos de tu Negocio Como un Profesional: 5 Pasos Simples",
+      "excerpt": "Aprende a rastrear cada centavo sin perder la cabeza. ¡Además, descubre qué gastos pueden ahorrarte dinero en impuestos!"
+    },
+    "taxDeductions": {
+      "title": "Deducciones Fiscales Ocultas que Todo Pequeño Negocio Debería Conocer",
+      "excerpt": "¡Deja de dejar dinero sobre la mesa! Descubre deducciones fiscales legítimas que la mayoría de los empresarios pasan por alto."
+    },
+    "inventory": {
+      "title": "Transforma tu Gestión de Inventario con Escaneo de Códigos de Barras",
+      "excerpt": "¡Adiós al conteo manual! Aprende cómo el escaneo de códigos de barras puede revolucionar tu gestión de inventario."
+    },
+    "mobile": {
+      "title": "Administra Todo tu Negocio desde tu Teléfono: La Revolución Móvil",
+      "excerpt": "Descubre cómo gestionar facturas, rastrear inventario y manejar pagos, ¡todo desde tu smartphone!"
+    },
+    "customerRelationships": {
+      "title": "Construyendo Relaciones con Clientes que Perduren: CRM Simplificado",
+      "excerpt": "Aprende cómo hacer que los clientes regresen sin software complicado o herramientas costosas."
+    }
+  }
+}

@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Geschäftsinhaber einladen",
     "analytics": "Analytik",
     "smartInsights": "Intelligente Einblicke",
-    "dottStatus": "Dott Status"
+    "dottStatus": "Dott Status",
+    "jobs": "Aufträge"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -83,7 +84,14 @@
     "chartOfAccounts": "Kontenplan",
     "journalEntries": "Buchungseinträge",
     "generalLedger": "Hauptbuch",
-    "trialBalance": "Probebilanz"
+    "trialBalance": "Probebilanz",
+    "jobsList": "Alle Aufträge",
+    "jobCosting": "Auftragskalkulation",
+    "jobMaterials": "Materialverbrauch",
+    "jobLabor": "Arbeitszeitverfolgung",
+    "jobProfitability": "Rentabilitätsanalyse",
+    "services": "Dienstleistungen",
+    "jobs": "Aufträge"
   },
   "actions": {
     "viewAll": "Alle anzeigen",

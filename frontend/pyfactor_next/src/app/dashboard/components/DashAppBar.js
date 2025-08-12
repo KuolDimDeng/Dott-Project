@@ -45,6 +45,7 @@ import React, {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
+import CurrencyIndicator from './CurrencyIndicator';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { getCreateOptions } from './lists/listItems';
@@ -64,13 +65,13 @@ import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import { useTranslation } from 'react-i18next';
 
 // Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined' && !appCache.getAll()) {
-  // Initialize app cache properly
-if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
-  appCache.set('auth', {});
-  appCache.set('user', {});
-  appCache.set('tenant', {});
-}
+if (typeof window !== 'undefined') {
+  const cache = appCache.getAll();
+  if (!cache || Object.keys(cache).length === 0) {
+    appCache.set('auth', {});
+    appCache.set('user', {});
+    appCache.set('tenant', {});
+  }
 }
 
 const DashAppBar = ({
@@ -103,6 +104,7 @@ const DashAppBar = ({
   showCreateMenu,
   handleMenuItemClick,
   handleCloseCreateMenu,
+  handleShowCreateOptions,
   setUserData, // Add setUserData to the component props
 }) => {
   // Reduced logging for production - only log once per mount
@@ -144,9 +146,27 @@ const DashAppBar = ({
         name: session.user?.name,
         businessName: session.user?.businessName,
         business_name: session.user?.business_name,
+        legal_structure: session.user?.legal_structure,
+        legalStructure: session.user?.legalStructure,
+        display_legal_structure: session.user?.display_legal_structure,
+        displayLegalStructure: session.user?.displayLegalStructure,
         tenantId: session.user?.tenantId,
         allUserKeys: session.user ? Object.keys(session.user) : 'no user'
       });
+      
+      // Set legal structure and display preference from session
+      if (session.user?.legal_structure) {
+        setLegalStructure(session.user.legal_structure);
+      }
+      if (session.user?.legalStructure) {
+        setLegalStructure(session.user.legalStructure);
+      }
+      if (session.user?.display_legal_structure !== undefined) {
+        setDisplayLegalStructure(session.user.display_legal_structure);
+      }
+      if (session.user?.displayLegalStructure !== undefined) {
+        setDisplayLegalStructure(session.user.displayLegalStructure);
+      }
     }
   }, [session, sessionLoading]);
   
@@ -173,13 +193,72 @@ const DashAppBar = ({
     userData: null,
     profileData: null
   });
+
+  // Track mounted state to prevent state updates after unmount
+  const [businessLogoUrl, setBusinessLogoUrl] = useState(null);
+  const isMounted = useRef(true);
+
+  // Load business logo
+  useEffect(() => {
+    const loadBusinessLogo = async () => {
+      try {
+        const response = await fetch('/api/business/logo');
+        if (response.ok) {
+          const data = await response.json();
+          // Check for logo_data or logo_url (API now returns logo_data: null for no logo)
+          const logoData = data.logo_data || data.logo_url;
+          if (logoData && isMounted.current) {
+            // Convert backend URL to full URL if needed
+            // Support both http URLs and data: URLs (base64)
+            const fullUrl = (logoData.startsWith('http') || logoData.startsWith('data:'))
+              ? logoData 
+              : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${logoData}`;
+            console.log('[DashAppBar] Business logo loaded:', fullUrl.substring(0, 100) + '...');
+            setBusinessLogoUrl(fullUrl);
+          } else {
+            // No logo found - set to null to avoid errors
+            console.log('[DashAppBar] No business logo found');
+            setBusinessLogoUrl(null);
+          }
+        } else {
+          console.log('[DashAppBar] Failed to fetch business logo, response not ok');
+          setBusinessLogoUrl(null);
+        }
+      } catch (error) {
+        console.log('[DashAppBar] Business logo fetch failed (expected for users without logos):', error.message);
+        setBusinessLogoUrl(null);
+      }
+    };
+
+    if (session?.authenticated) {
+      loadBusinessLogo();
+    }
+  }, [session?.authenticated]);
+  
+  // Listen for logo update events from settings page
+  useEffect(() => {
+    const handleLogoUpdate = (event) => {
+      console.log('[DashAppBar] Received businessLogoUpdated event:', event.detail);
+      if (event.detail?.logoUrl) {
+        setBusinessLogoUrl(event.detail.logoUrl);
+      }
+    };
+    
+    window.addEventListener('businessLogoUpdated', handleLogoUpdate);
+    
+    return () => {
+      window.removeEventListener('businessLogoUpdated', handleLogoUpdate);
+    };
+  }, []);
+  
+  // Monitor businessLogoUrl changes
+  useEffect(() => {
+    console.log('[DashAppBar] businessLogoUrl state changed:', businessLogoUrl ? 'Set to URL' : 'null');
+  }, [businessLogoUrl]);
   
   // Create refs for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
-  
-  // Track mounted state to prevent state updates after unmount
-  const isMounted = useRef(true);
 
   // Initialize profile data with prop if available or null
   const [profileData, setProfileData] = useState(propProfileData || null);
@@ -189,6 +268,8 @@ const DashAppBar = ({
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [businessName, setBusinessName] = useState(null);
   const [fetchedBusinessName, setFetchedBusinessName] = useState(null);
+  const [legalStructure, setLegalStructure] = useState(null);
+  const [displayLegalStructure, setDisplayLegalStructure] = useState(true);
   const [isDesktop, setIsDesktop] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   
@@ -1235,6 +1316,11 @@ const DashAppBar = ({
               logger.debug('[DashAppBar] Found business name from business info API:', businessInfo.businessName);
               setBusinessName(businessInfo.businessName);
               setFetchedBusinessName(businessInfo.businessName);
+              
+              // Also set legal structure from business info
+              if (businessInfo.legalStructure) {
+                setLegalStructure(businessInfo.legalStructure);
+              }
               return;
             }
           }
@@ -1273,6 +1359,29 @@ const DashAppBar = ({
       fetchBusinessNameData();
     }
   }, [auth0Loading, getAuth0BusinessName, businessName, fetchedBusinessName, tenantId]);
+  
+  // Helper function to get legal structure suffix
+  const getLegalStructureSuffix = () => {
+    if (!displayLegalStructure || !legalStructure) return '';
+    
+    // Extract suffix from legal structure
+    if (legalStructure.includes('LLC') || legalStructure.includes('Limited Liability Company')) {
+      return ', LLC';
+    } else if (legalStructure.includes('Inc.') || legalStructure.includes('Corp.') || legalStructure.includes('Corporation')) {
+      return ', Corp';
+    } else if (legalStructure.includes('Ltd.') || legalStructure.includes('Limited Company')) {
+      return ', Ltd';
+    }
+    
+    // Don't show suffix for Sole Proprietorship, Partnership, etc.
+    return '';
+  };
+  
+  // Get the display business name with optional legal structure
+  const getDisplayBusinessName = () => {
+    const baseName = businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || tCommon('common.loading', 'Loading...');
+    return baseName + getLegalStructureSuffix();
+  };
 
   return (
     <>
@@ -1307,7 +1416,7 @@ const DashAppBar = ({
             </button>
             
             {/* Logo */}
-            <div className="cursor-pointer">
+            <div className="cursor-pointer flex items-center">
               <Image 
                 src="/static/images/PyfactorDashboard.png"
                 alt="Pyfactor Dashboard Logo"
@@ -1327,7 +1436,21 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || tCommon('common.loading', 'Loading...')}</span>
+                  {businessLogoUrl && (
+                    <div className="h-8 w-[100px] mr-2 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <img 
+                        src={businessLogoUrl} 
+                        alt="" 
+                        className="h-7 w-[96px] object-contain p-0.5"
+                        onError={(e) => {
+                          console.error('[DashAppBar] Logo image failed to load:', e);
+                          setBusinessLogoUrl(null);
+                        }}
+                        onLoad={() => console.log('[DashAppBar] Logo image loaded successfully')}
+                      />
+                    </div>
+                  )}
+                  <span className="font-semibold">{getDisplayBusinessName()}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1342,8 +1465,27 @@ const DashAppBar = ({
                   }`}
                 >
                   {/* Display business name on mobile inside the subscription button */}
-                  <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                    {(businessName || fetchedBusinessName || auth0BusinessName) ? `${businessName || fetchedBusinessName || auth0BusinessName}:` : ''}
+                  <span className="whitespace-nowrap text-xs md:hidden mr-1 flex items-center">
+                    {(businessName || fetchedBusinessName || auth0BusinessName) ? (
+                      <>
+                        {businessLogoUrl && (
+                          <div className="h-5 w-[60px] mr-1 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img 
+                              src={businessLogoUrl} 
+                              alt="" 
+                              className="h-4 w-[58px] object-contain p-0.5"
+                              onError={(e) => {
+                                console.error('[DashAppBar] Mobile logo image failed to load:', e);
+                                setBusinessLogoUrl(null);
+                              }}
+                              onLoad={() => console.log('[DashAppBar] Mobile logo image loaded successfully')}
+                            />
+                          </div>
+                        )}
+                        {getDisplayBusinessName()}
+                        :
+                      </>
+                    ) : ''}
                   </span>
                   <span className="whitespace-nowrap text-xs inline-block">
                     {displayLabel}
@@ -1416,6 +1558,11 @@ const DashAppBar = ({
                 </svg>
               </button>
 
+
+              {/* Currency indicator */}
+              <div className="hidden sm:block mr-3">
+                <CurrencyIndicator />
+              </div>
 
               {/* Language selector */}
               <div className="hidden sm:block mr-2">
@@ -1559,7 +1706,7 @@ const DashAppBar = ({
         <>
           {/* Overlay to catch clicks outside the menu */}
           <div 
-            className="fixed inset-0 bg-black/20 z-50" 
+            className="absolute inset-0 bg-black/20 z-50" 
             onClick={handleCloseCreateMenu}
           />
           
@@ -1581,22 +1728,68 @@ const DashAppBar = ({
               </button>
             </div>
             <ul className="space-y-1">
-              {getCreateOptions(t).filter(option => option.label !== 'Create New').map((option, index) => (
-                <li key={index}>
-                  <button 
-                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                    onClick={() => handleMenuItemClick(option.value || option.label)}
-                  >
-                    <span className="mr-2 text-primary-main">
-                      {typeof option.icon === 'function' 
-                        ? option.icon({ className: "w-5 h-5" })
-                        : option.icon
-                      }
-                    </span>
-                    <span>{option.label}</span>
-                  </button>
-                </li>
-              ))}
+              {(() => {
+                try {
+                  if (!t || typeof t !== 'function') {
+                    console.error('[DashAppBar] Translation function t is not available');
+                    return null;
+                  }
+                  const options = getCreateOptions(t);
+                  if (!options || !Array.isArray(options)) {
+                    console.error('[DashAppBar] getCreateOptions returned invalid value:', options);
+                    return null;
+                  }
+                  return options.filter(option => option && option.label && option.label !== 'Create New').map((option, index) => {
+                    if (!option) {
+                      console.error('[DashAppBar] Invalid option in getCreateOptions:', option);
+                      return null;
+                    }
+                
+                return (
+                  <li key={index}>
+                    <button 
+                      className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                      onClick={() => {
+                        console.log('[DashAppBar] Create menu item clicked:', option.label);
+                        // If the option has its own onClick handler, call it
+                        if (typeof option.onClick === 'function') {
+                          console.log('[DashAppBar] Calling option.onClick with params:', {
+                            handleCloseCreateMenu: typeof handleCloseCreateMenu,
+                            handleShowCreateOptions: typeof handleShowCreateOptions
+                          });
+                          // Pass the required parameters for Create New menu items
+                          option.onClick(false, handleCloseCreateMenu, handleCloseCreateMenu, handleShowCreateOptions || handleMenuItemClick);
+                        } else {
+                          console.log('[DashAppBar] Using default handleMenuItemClick');
+                          // Otherwise use the default handleMenuItemClick
+                          handleMenuItemClick(option.value || option.label);
+                        }
+                      }}
+                    >
+                      <span className="mr-2 text-primary-main">
+                        {option.icon && typeof option.icon === 'function' 
+                          ? (() => {
+                              try {
+                                const IconComponent = option.icon({ className: "w-5 h-5" });
+                                return IconComponent || null;
+                              } catch (iconError) {
+                                console.error('[DashAppBar] Error rendering icon for:', option.label, iconError);
+                                return null;
+                              }
+                            })()
+                          : null
+                        }
+                      </span>
+                      <span>{option.label || ''}</span>
+                    </button>
+                  </li>
+                  );
+                  });
+                } catch (error) {
+                  console.error('[DashAppBar] Error rendering create options:', error);
+                  return null;
+                }
+              })()}
             </ul>
           </div>
         </>

@@ -20,8 +20,6 @@ const InviteAFriend = () => {
   const [inviteMethod, setInviteMethod] = useState('email'); // 'email' or 'whatsapp'
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [recipientName, setRecipientName] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState(null); // 'success', 'error', or null
   const [, forceUpdate] = useState({});
@@ -127,9 +125,7 @@ Best regards,
       const requestBody = {
         message,
         senderName: user?.name || user?.email || 'A Dott User',
-        senderEmail: user?.email,
-        recipientName: recipientName.trim(),
-        companyName: companyName.trim()
+        senderEmail: user?.email
       };
 
       if (inviteMethod === 'email') {
@@ -158,8 +154,6 @@ Best regards,
         });
         setEmail('');
         setPhoneNumber('');
-        setRecipientName('');
-        setCompanyName('');
       } else {
         setStatus({ 
           type: 'error', 
@@ -238,35 +232,6 @@ Best regards,
               </div>
             </div>
 
-            {/* Recipient Name Input */}
-            <div>
-              <label htmlFor="recipientName" className="block text-sm font-medium text-gray-700 mb-2">
-                {t('invite.nameLabel', "Recipient's Name (Optional)")}
-              </label>
-              <input
-                type="text"
-                id="recipientName"
-                value={recipientName}
-                onChange={(e) => setRecipientName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={t('invite.namePlaceholder', 'John Smith')}
-              />
-            </div>
-
-            {/* Company Name Input */}
-            <div>
-              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-                {t('invite.companyLabel', "Company Name (Optional)")}
-              </label>
-              <input
-                type="text"
-                id="companyName"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={t('invite.companyPlaceholder', 'ABC Company Ltd.')}
-              />
-            </div>
 
             {/* Email Input */}
             {inviteMethod === 'email' && (

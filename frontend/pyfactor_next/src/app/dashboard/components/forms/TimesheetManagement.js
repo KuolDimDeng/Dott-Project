@@ -25,7 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSessionContext } from '@/providers/SessionProvider';
 import { logger } from '@/utils/logger';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import timesheetApi from '@/utils/api/timesheetApi';
 import EnhancedTimesheet from '@/app/dashboard/components/forms/timesheet/EnhancedTimesheet';
 
@@ -501,11 +501,7 @@ function TimesheetManagement({ onNavigate }) {
   );
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <StandardSpinner size="large" />
-      </div>
-    );
+    return <CenteredSpinner size="large" text="Loading timesheets..." showText={true} minHeight="h-screen" />;
   }
 
   return (
@@ -552,10 +548,10 @@ function TimesheetManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}
@@ -613,10 +609,10 @@ function TimesheetManagement({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="absolute inset-0 bg-black bg-opacity-25" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <Transition.Child
                 as={Fragment}

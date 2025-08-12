@@ -1,0 +1,14 @@
+--- a/useSession.js
++++ b/useSession.js
+@@ -87,6 +87,11 @@ export const useSession = () => {
+         if (response.status === 401 || response.status === 403) {
+           console.log('[useSession] Unauthorized, redirecting to signin');
+           handleAuthError();
++          // Don't throw error, just return null user
++          setUser(null);
++          setIsAuthenticated(false);
++          setLoading(false);
++          return;
+         }
+         
+         throw new Error(`Failed to fetch session: ${response.status}`);

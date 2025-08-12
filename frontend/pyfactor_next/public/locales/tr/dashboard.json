@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Merhaba 👋\n\n{{name}} sizi iş operasyonlarını basitleştirmek için çok yönlü bir araç olan Dott'u denemeye davet ediyor.\n\n✓ Otomatik faturalandırma\n✓ Randevu planlama\n✓ Envanter yönetimi\n✓ Bordro işleme\n✓ İş analizleri\n\nÜcretsiz denemeyi başlat: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Günaydın",
+      "afternoon": "İyi günler",
+      "evening": "İyi akşamlar"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}} planınız aktif",
+      "activeDescription": "Planınıza dahil olan tüm özelliklere erişiminiz var.",
+      "expired": "{{previousPlan}} aboneliğiniz sona erdi",
+      "expiredDescription": "Hesabınız ücretsiz plana düşürüldü. Artık özelliklere sınırlı erişiminiz var.",
+      "renewButton": "Aboneliği Yenile",
+      "viewDetailsButton": "Plan Detaylarını Görüntüle"
+    },
+    "gettingStarted": {
+      "title": "Başlarken",
+      "progress": "{{total}} adımdan {{completed}} tanesi tamamlandı",
+      "description": "Hesabınızdan en iyi şekilde yararlanmak için bu adımları tamamlayın:",
+      "loading": "İlerlemeniz yükleniyor...",
+      "congratulations": "Tebrikler! Tüm kurulum adımlarını tamamladınız.",
+      "steps": {
+        "profile": {
+          "title": "İşletme profilinizi tamamlayın",
+          "description": "İşletme bilgilerinizi ve logonuzu ekleyin"
+        },
+        "customer": {
+          "titleEmpty": "İlk müşterinizi ekleyin",
+          "titleWithCount": "{{count}} müşteri eklendi",
+          "descriptionEmpty": "Müşteri tabanınızı oluşturmaya başlayın",
+          "descriptionWithCount": "Müşterilerinizi yönetin"
+        },
+        "product": {
+          "titleEmpty": "İlk ürününüzü oluşturun",
+          "titleWithCount": "{{count}} ürün oluşturuldu",
+          "descriptionEmpty": "Envanterinize ürün ekleyin",
+          "descriptionWithCount": "Ürünlerinizi yönetin"
+        },
+        "service": {
+          "titleEmpty": "İlk hizmetinizi oluşturun",
+          "titleWithCount": "{{count}} hizmet oluşturuldu",
+          "descriptionEmpty": "Sunduğunuz hizmetleri tanımlayın",
+          "descriptionWithCount": "Hizmetlerinizi yönetin"
+        },
+        "supplier": {
+          "titleEmpty": "İlk tedarikçinizi ekleyin",
+          "titleWithCount": "{{count}} tedarikçi eklendi",
+          "descriptionEmpty": "Tedarik zincirinizi takip edin",
+          "descriptionWithCount": "Tedarikçilerinizi yönetin"
+        },
+        "invoice": {
+          "titleEmpty": "İlk faturanızı oluşturun",
+          "titleWithCount": "{{count}} fatura oluşturuldu",
+          "descriptionEmpty": "Müşterilerinize fatura kesmeye başlayın",
+          "descriptionWithCount": "Faturalarınızı yönetin"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Son Güncellemeler",
+      "noUpdates": "Görüntülenecek son güncelleme yok.",
+      "description": "Hesap etkinliğinizle ilgili güncellemeler burada görünecek.",
+      "activities": {
+        "salesToday": "Bugün ${{amount}} satış",
+        "unpaidInvoices": "{{count}} ödenmemiş fatura{{plural}} bekliyor",
+        "overdueInvoices": "{{count}} vadesi geçmiş fatura{{plural}} dikkat gerektiriyor",
+        "newCustomers": "Bu ay {{count}} yeni müşteri{{plural}}"
+      }
+    },
+    "quickStats": {
+      "title": "Hızlı İstatistikler",
+      "customers": "Müşteriler",
+      "products": "Ürünler",
+      "services": "Hizmetler",
+      "invoices": "Faturalar"
+    },
+    "planDetails": {
+      "title": "Abonelik Detaylarınız",
+      "perMonth": "aylık",
+      "active": "Aktif",
+      "currentPlan": "Mevcut Plan",
+      "featuresIncluded": "Dahil Edilen Özellikler",
+      "limitations": "Ücretsiz Plandaki Sınırlamalar",
+      "upgradePrompt": "Tüm özellikleri açmak ve sınırlamaları kaldırmak için şimdi yükseltin!",
+      "upgradeButton": "Buradan Yükseltin",
+      "upgradeToEnterprise": "Enterprise'a Yükseltin",
+      "close": "Kapat"
+    },
+    "plans": {
+      "free": {
+        "name": "Ücretsiz Plan",
+        "description": "Yeni başlayan küçük işletmeler için temel özellikler",
+        "features": [
+          "Temel faturalama",
+          "5 müşteriye kadar",
+          "Temel raporlama",
+          "E-posta desteği",
+          "2GB depolama"
+        ],
+        "limitations": [
+          "Ayda 5 faturayla sınırlı",
+          "Özel marka yok",
+          "Sadece temel raporlama",
+          "API erişimi yok",
+          "Sadece tek kullanıcı"
+        ]
+      },
+      "professional": {
+        "name": "Profesyonel Plan",
+        "description": "Büyüyen işletmeler için gelişmiş özellikler",
+        "features": [
+          "Sınırsız faturalama",
+          "Sınırsız müşteri",
+          "Gelişmiş raporlama",
+          "Öncelikli destek",
+          "Özel marka",
+          "15GB depolama",
+          "3 kullanıcıya kadar"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise Plan",
+        "description": "Kurulu işletmeler için tam araç paketi",
+        "features": [
+          "Profesyonel'deki her şey",
+          "Sınırsız depolama",
+          "Sınırsız kullanıcı",
+          "Özel hesap yöneticisi",
+          "Gelişmiş API erişimi",
+          "Özel roller ve izinler",
+          "Gelişmiş güvenlik özellikleri",
+          "Tercihli işlem oranları"
+        ]
+      }
+    }
   }
 }

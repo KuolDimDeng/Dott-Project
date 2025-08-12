@@ -5,7 +5,7 @@ import jwt
 import secrets
 from datetime import datetime, timedelta
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView

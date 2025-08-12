@@ -9,6 +9,7 @@ from pyfactor.logging_config import get_logger
 logger = get_logger()
 
 class Equipment(models.Model):
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     equipment_type = models.CharField(max_length=100, choices=[

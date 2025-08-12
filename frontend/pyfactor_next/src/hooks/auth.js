@@ -796,8 +796,7 @@ export const useAuth = () => {
             
             try {
               // Get refresh tracking data from Cognito attributes
-              const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-              const userAttributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
               
               refreshCount = parseInt(userAttributes['custom:tokenRefreshCount'] || '0', 10);
               lastRefreshTime = parseInt(userAttributes['custom:lastTokenRefreshTime'] || '0', 10);
@@ -914,8 +913,7 @@ export const useAuth = () => {
       
       try {
         // Get current user attributes
-        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-        const userAttributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
         
         // Check verification status from attributes
         verificationInProgress = userAttributes['custom:verificationInProgress'] === 'true';
@@ -970,8 +968,7 @@ export const useAuth = () => {
         if (!lastCodeSentTime) {
           try {
             // Get current user attributes to check for recent codes
-            const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-            const userAttributes = await fetchUserAttributes();
+    const userAttributes = {}; // Removed Amplify - using Auth0
             
             lastCodeSentTime = userAttributes['custom:verificationCodeSentAt'];
             recentlySent = userAttributes['custom:verificationCodeSent'] === 'true';

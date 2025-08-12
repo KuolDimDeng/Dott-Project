@@ -95,9 +95,12 @@ export async function POST(request) {
     const maxAge = 86400; // 24 hours
     const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
     
-    // Set cookies with all necessary attributes
-    document.cookie = 'sid=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none';
-    document.cookie = 'session_token=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none';
+    // Set cookies with domain attribute for cross-subdomain access
+    const isProduction = window.location.hostname.includes('dottapps.com');
+    const cookieDomain = isProduction ? '; domain=.dottapps.com' : '';
+    
+    document.cookie = 'sid=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none' + cookieDomain;
+    document.cookie = 'session_token=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none' + cookieDomain;
     
     // Redirect after cookies are set
     window.location.href = '${absoluteUrl}';

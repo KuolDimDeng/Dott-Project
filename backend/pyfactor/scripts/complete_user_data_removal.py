@@ -31,7 +31,7 @@ Example:
 import os
 import sys
 import django
-from django.db import connection, transaction
+from django.db import connection, transaction as db_transaction
 from django.core.management.base import CommandError
 import argparse
 from datetime import datetime
@@ -232,7 +232,7 @@ def remove_all_users():
 def execute_sql(sql_script, description="data removal"):
     """Execute SQL script with error handling"""
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             with connection.cursor() as cursor:
                 cursor.execute(sql_script)
                 print(f"✅ Successfully completed {description}")

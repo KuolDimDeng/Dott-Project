@@ -119,7 +119,7 @@ const HelpCenter = () => {
 
       <div className="grid grid-cols-1 gap-6">
         <div className="w-full">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">
               How can we help you today?
             </h2>
@@ -142,7 +142,7 @@ const HelpCenter = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold mb-4">
                 Frequently Asked Questions
               </h2>
@@ -150,10 +150,10 @@ const HelpCenter = () => {
               {filteredFaqs.length > 0 ? (
                 <div className="space-y-3">
                   {filteredFaqs.map((faq, index) => (
-                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+                    <div key={index} className="border border-gray-200 rounded-md overflow-hidden">
                       <button 
                         onClick={() => toggleAccordion(index)}
-                        className="w-full flex justify-between items-center p-4 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none"
+                        className="w-full flex justify-between items-center p-4 text-left bg-gray-50 hover:bg-gray-100 focus:outline-none"
                       >
                         <span className="font-medium">{faq.question}</span>
                         <svg 
@@ -165,15 +165,15 @@ const HelpCenter = () => {
                         </svg>
                       </button>
                       {openAccordions[index] && (
-                        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{faq.answer}</p>
+                        <div className="p-4 border-t border-gray-200">
+                          <p className="text-sm text-gray-600">{faq.answer}</p>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500">
                   No results found for "{searchQuery}". Try a different search term or contact support.
                 </p>
               )}
@@ -181,20 +181,20 @@ const HelpCenter = () => {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center mb-4">
                 <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                 </svg>
                 <h2 className="text-xl font-semibold">Contact Support</h2>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-sm text-gray-600 mb-4">
                 Can't find what you're looking for? Our support team is here to help.
               </p>
               <p className="text-sm mb-4">
                 Email: <a href="mailto:support@dottapps.com" className="text-blue-600 hover:underline">support@dottapps.com</a>
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-gray-600">
                 We typically respond within 24 hours during business days.
               </p>
             </div>

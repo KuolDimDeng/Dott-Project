@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "こんにちは 👋\n\n{{name}}があなたをDottにお試しいただくよう招待しています。Dottはビジネス運営を簡素化するオールインワンツールです。\n\n✓ 自動請求書発行\n✓ 予約スケジューリング\n✓ 在庫管理\n✓ 給与処理\n✓ ビジネス分析\n\n無料トライアル開始：{{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "おはようございます",
+      "afternoon": "こんにちは",
+      "evening": "こんばんは"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}}がアクティブです",
+      "activeDescription": "プランに含まれるすべての機能にアクセスできます。",
+      "expired": "{{previousPlan}}サブスクリプションの有効期限が切れました",
+      "expiredDescription": "アカウントは無料プランにダウングレードされました。機能へのアクセスが制限されています。",
+      "renewButton": "サブスクリプションを更新",
+      "viewDetailsButton": "プランの詳細を表示"
+    },
+    "gettingStarted": {
+      "title": "はじめに",
+      "progress": "{{total}}件中{{completed}}件完了",
+      "description": "アカウントを最大限に活用するために、これらの手順を完了してください：",
+      "loading": "進捗状況を読み込んでいます...",
+      "congratulations": "おめでとうございます！すべての設定手順を完了しました。",
+      "steps": {
+        "profile": {
+          "title": "ビジネスプロフィールを完成させる",
+          "description": "ビジネスの詳細とロゴを追加"
+        },
+        "customer": {
+          "titleEmpty": "最初の顧客を追加",
+          "titleWithCount": "{{count}}人の顧客を追加しました",
+          "descriptionEmpty": "顧客基盤の構築を開始",
+          "descriptionWithCount": "顧客を管理"
+        },
+        "product": {
+          "titleEmpty": "最初の製品を作成",
+          "titleWithCount": "{{count}}個の製品を作成しました",
+          "descriptionEmpty": "在庫に製品を追加",
+          "descriptionWithCount": "製品を管理"
+        },
+        "service": {
+          "titleEmpty": "最初のサービスを作成",
+          "titleWithCount": "{{count}}個のサービスを作成しました",
+          "descriptionEmpty": "提供するサービスを定義",
+          "descriptionWithCount": "サービスを管理"
+        },
+        "supplier": {
+          "titleEmpty": "最初のサプライヤーを追加",
+          "titleWithCount": "{{count}}社のサプライヤーを追加しました",
+          "descriptionEmpty": "サプライチェーンを追跡",
+          "descriptionWithCount": "サプライヤーを管理"
+        },
+        "invoice": {
+          "titleEmpty": "最初の請求書を作成",
+          "titleWithCount": "{{count}}件の請求書を作成しました",
+          "descriptionEmpty": "顧客への請求を開始",
+          "descriptionWithCount": "請求書を管理"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "最近の更新",
+      "noUpdates": "表示する最近の更新はありません。",
+      "description": "アカウントアクティビティに関する更新がここに表示されます。",
+      "activities": {
+        "salesToday": "本日の売上 ${{amount}}",
+        "unpaidInvoices": "{{count}}件の未払い請求書{{plural}}が保留中",
+        "overdueInvoices": "{{count}}件の期限切れ請求書{{plural}}に注意が必要",
+        "newCustomers": "今月{{count}}人の新規顧客{{plural}}"
+      }
+    },
+    "quickStats": {
+      "title": "クイック統計",
+      "customers": "顧客",
+      "products": "製品",
+      "services": "サービス",
+      "invoices": "請求書"
+    },
+    "planDetails": {
+      "title": "サブスクリプションの詳細",
+      "perMonth": "月額",
+      "active": "アクティブ",
+      "currentPlan": "現在のプラン",
+      "featuresIncluded": "含まれる機能",
+      "limitations": "無料プランの制限",
+      "upgradePrompt": "今すぐアップグレードして、すべての機能をアンロックし、制限を解除しましょう！",
+      "upgradeButton": "ここでアップグレード",
+      "upgradeToEnterprise": "エンタープライズにアップグレード",
+      "close": "閉じる"
+    },
+    "plans": {
+      "free": {
+        "name": "無料プラン",
+        "description": "始めたばかりの小規模ビジネス向けの基本機能",
+        "features": [
+          "基本的な請求書作成",
+          "最大5クライアント",
+          "基本的なレポート",
+          "メールサポート",
+          "2GBストレージ"
+        ],
+        "limitations": [
+          "月5請求書まで制限",
+          "カスタムブランディングなし",
+          "基本的なレポートのみ",
+          "APIアクセスなし",
+          "シングルユーザーのみ"
+        ]
+      },
+      "professional": {
+        "name": "プロフェッショナルプラン",
+        "description": "成長中のビジネス向けの高度な機能",
+        "features": [
+          "無制限の請求書作成",
+          "無制限のクライアント",
+          "高度なレポート",
+          "優先サポート",
+          "カスタムブランディング",
+          "15GBストレージ",
+          "最大3ユーザー"
+        ]
+      },
+      "enterprise": {
+        "name": "エンタープライズプラン",
+        "description": "確立されたビジネス向けの完全なツールスイート",
+        "features": [
+          "プロフェッショナルのすべて",
+          "無制限のストレージ",
+          "無制限のユーザー",
+          "専任アカウントマネージャー",
+          "高度なAPIアクセス",
+          "カスタムロールと権限",
+          "高度なセキュリティ機能",
+          "優遇取引レート"
+        ]
+      }
+    }
   }
 }

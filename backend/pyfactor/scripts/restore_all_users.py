@@ -14,7 +14,7 @@ import os
 import sys
 import django
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 import argparse
 from datetime import datetime
 
@@ -88,7 +88,7 @@ class BatchUserRestoration:
         # Process in batches
         processed = 0
         
-        with transaction.atomic():
+        with db_transaction.atomic():
             for user in deleted_users.iterator(chunk_size=batch_size):
                 try:
                     # Restore user

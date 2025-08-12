@@ -30,7 +30,7 @@ class Timesheet(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     submitted_at = models.DateTimeField(null=True, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
-    approved_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_timesheet_records')
+    approved_by = models.ForeignKey('custom_auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_timesheet_records')
     
     # Totals (cached for performance)
     total_regular_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -81,6 +81,7 @@ class Timesheet(models.Model):
 
 class TimeEntry(models.Model):
     """Daily time entry within a timesheet"""
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Tenant isolation field')
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='entries')
     date = models.DateField()
@@ -158,7 +159,7 @@ class ClockEntry(models.Model):
     
     # For manual adjustments
     is_manual = models.BooleanField(default=False)
-    adjusted_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='adjusted_clock_entries')
+    adjusted_by = models.ForeignKey('custom_auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='adjusted_clock_entries')
     adjustment_reason = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -216,7 +217,7 @@ class TimeOffRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
     # Approval
-    reviewed_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_timeoff_requests')
+    reviewed_by = models.ForeignKey('custom_auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_timeoff_requests')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     review_notes = models.TextField(blank=True)
     

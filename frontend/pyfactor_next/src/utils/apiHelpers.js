@@ -1,7 +1,7 @@
 /**
  * Utility functions for API requests
  */
-import { appCache } from '@/utils/appCache';
+import { appCache, getCacheValue } from '@/utils/appCache';
 import { logger } from './logger';
 import axiosInstance from './axiosInstance';
 
@@ -42,9 +42,9 @@ export const getApiHeaders = async () => {
     // Only try to get from Cognito in browser environment
     if (typeof window !== 'undefined') {
       try {
-        // Dynamically import to avoid server-side errors
-        const { fetchAuthSession } = await import('@/config/amplifyUnified');
-        const session = await fetchAuthSession();
+        // Removed Amplify - using Auth0
+        // Auth0 tokens are handled differently
+        const session = null; // Auth0 session handled elsewhere
         
         if (session?.tokens?.idToken) {
           idToken = session.tokens.idToken.toString();

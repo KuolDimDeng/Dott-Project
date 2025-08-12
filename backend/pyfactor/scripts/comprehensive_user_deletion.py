@@ -15,7 +15,7 @@ import os
 import sys
 import django
 from django.utils import timezone
-from django.db import transaction, models
+from django.db import transaction as db_transaction, models
 from django.apps import apps
 from datetime import datetime
 import json
@@ -262,7 +262,7 @@ class UserDeletionManager:
         print(f"\n🗑️  Soft deleting user: {user.email}")
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Mark user as inactive and deleted
                 user.is_active = False
                 user.is_deleted = True
@@ -314,7 +314,7 @@ class UserDeletionManager:
             return False
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 # Create deletion log first (before user is deleted)
                 deletion_log = AccountDeletionLog.objects.create(
                     user_id=user.id,
@@ -409,7 +409,7 @@ class UserDeletionManager:
         try:
             user = User.objects.get(email=email, is_deleted=True)
             
-            with transaction.atomic():
+            with db_transaction.atomic():
                 user.is_active = True
                 user.is_deleted = False
                 user.deleted_at = None

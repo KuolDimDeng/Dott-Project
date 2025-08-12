@@ -23,7 +23,7 @@ from .serializers import AccountReconciliationSerializer, AccountTypeSerializer,
 from users.models import UserProfile
 from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
-from django.db import DatabaseError, IntegrityError, connection, transaction, connections, transaction as db_transaction
+from django.db import DatabaseError, IntegrityError, connection, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
 from rest_framework import generics, status
 from .utils import create_general_ledger_entry, generate_financial_statements, get_or_create_account, update_chart_of_accounts
@@ -494,7 +494,7 @@ class DeleteAccountView(APIView):
             logger.info("Deleting user account...")
 
             # Delete the user-specific database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 logger.debug("Deleting related models in user's database: %s", database_name)
                 # Delete all related models in the user's database in the correct order
                 RevenueAccount.objects.using(database_name).all().delete()
@@ -520,7 +520,7 @@ class DeleteAccountView(APIView):
                 logger.warning("No user-specific database found, skipping database drop")
 
             # Delete user-related data from the main database
-            with transaction.atomic():
+            with db_transaction.atomic():
                 logger.info("Deleting related data from other tables...")
                 # Delete related data from other tables in the correct order
                 user.socialaccount_set.all().delete()
@@ -656,42 +656,89 @@ def chart_of_account_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def chart_of_accounts(request):
-    user = request.user
-    database_name = get_user_database(user)
-    logger.debug("Chart of Accounts API called")
-    logger.debug("Database Name: %s", database_name)
+    try:
+        user = request.user
+        
+        # Try multiple ways to get the business/tenant ID
+        business_id = getattr(user, 'business_id', None)
+        if not business_id:
+            business_id = getattr(user, 'tenant_id', None)
+        if not business_id:
+            business_id = getattr(request, 'tenant_id', None)
+        if not business_id:
+            # Try to get from X-Business-ID header
+            business_id = request.META.get('HTTP_X_BUSINESS_ID', None)
+        
+        logger.debug("Chart of Accounts API called")
+        logger.debug("User: %s, Business ID: %s", user.email, business_id)
+        logger.debug("Request tenant_id: %s", getattr(request, 'tenant_id', None))
+        logger.debug("User tenant_id: %s", getattr(user, 'tenant_id', None))
 
-    if request.method == 'GET':
-        chart_accounts = ChartOfAccount.objects.using(database_name).all()
-        serializer = ChartOfAccountSerializer(chart_accounts, many=True, context={'database_name': database_name})
-        logger.debug("Chart of Accounts: %s", chart_accounts)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        serializer = ChartOfAccountSerializer(data=request.data, context={'database_name': database_name})
-        if serializer.is_valid():
-            account = serializer.save()
-            return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if request.method == 'GET':
+            # Since the database doesn't have business_id/tenant_id columns yet,
+            # return all accounts for now until migrations are run
+            try:
+                # Try filtering by business first (in case migrations have been run)
+                if business_id:
+                    logger.debug("Attempting to filter by business_id=%s", business_id)
+                    chart_accounts = ChartOfAccount.objects.filter(business_id=business_id)
+                    # Test if the query works
+                    test_count = chart_accounts.count()
+                    logger.debug("Filtered accounts count: %s", test_count)
+                else:
+                    chart_accounts = ChartOfAccount.objects.none()
+            except Exception as e:
+                # If filtering fails (likely due to missing columns), return all accounts
+                logger.warning("Cannot filter by business_id, columns may not exist: %s", str(e))
+                logger.info("Returning all chart of accounts until migrations are run")
+                chart_accounts = ChartOfAccount.objects.all()
+            
+            serializer = ChartOfAccountSerializer(chart_accounts, many=True)
+            return Response(serializer.data)
+        elif request.method == 'POST':
+            if not business_id:
+                return Response({"error": "No business/tenant ID found"}, status=400)
+                
+            data = request.data.copy()
+            data['business'] = business_id  # Add business_id to data
+            
+            serializer = ChartOfAccountSerializer(data=data)
+            if serializer.is_valid():
+                account = serializer.save(business_id=business_id, tenant_id=business_id)
+                return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error("Error in chart_of_accounts view: %s", str(e))
+        logger.exception("Full traceback:")
+        return Response({"error": f"Internal server error: {str(e)}"}, status=500)
     
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def journal_entry_list(request):
+    user = request.user
+    business_id = getattr(user, 'business_id', None)
+    
     if request.method == 'GET':
-        journal_entries = JournalEntry.objects.all()
+        # Filter by business_id for proper tenant isolation
+        if business_id:
+            journal_entries = JournalEntry.objects.filter(business_id=business_id)
+        else:
+            journal_entries = JournalEntry.objects.none()
         serializer = JournalEntrySerializer(journal_entries, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = JournalEntrySerializer(data=request.data)
+        data = request.data.copy()
+        data['business'] = business_id  # Add business_id to data
+        
+        serializer = JournalEntrySerializer(data=data)
         if serializer.is_valid():
-            with transaction.atomic():
-                journal_entry = serializer.save()
-                update_account_balances(journal_entry, request.user.profile.database_name)
+            with db_transaction.atomic():
+                journal_entry = serializer.save(business_id=business_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -710,7 +757,7 @@ def journal_entry_detail(request, pk):
     elif request.method == 'PUT':
         serializer = JournalEntrySerializer(journal_entry, data=request.data)
         if serializer.is_valid():
-            with transaction.atomic():
+            with db_transaction.atomic():
                 journal_entry = serializer.save()
                 update_account_balances(journal_entry, request.user.profile.database_name)
             return Response(serializer.data)
@@ -729,7 +776,7 @@ def post_journal_entry(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if not journal_entry.is_posted:
-        with transaction.atomic():
+        with db_transaction.atomic():
             journal_entry.is_posted = True
             journal_entry.save()
             update_account_balances(journal_entry, request.user.profile.database_name)
@@ -774,17 +821,21 @@ def update_account_balances(journal_entry, database_name):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def general_ledger(request):
-    print("General ledger view called")
-    print(f"Request user: {request.user}")
-    print(f"Request query params: {request.query_params}")
+    logger.debug("General ledger view called")
+    logger.debug(f"Request user: {request.user}")
+    
     user = request.user
-    database_name = get_user_database(user)
-    logger.debug("Database Name: %s", database_name)
+    business_id = getattr(user, 'business_id', None)
+    
     start_date = request.query_params.get('start_date')
     end_date = request.query_params.get('end_date')
     account_id = request.query_params.get('account_id')
 
-    queryset = GeneralLedgerEntry.objects.using(database_name).all()
+    # Filter by business_id for proper tenant isolation
+    if business_id:
+        queryset = GeneralLedgerEntry.objects.filter(business_id=business_id)
+    else:
+        queryset = GeneralLedgerEntry.objects.none()
 
     if start_date:
         queryset = queryset.filter(date__gte=start_date)
@@ -793,14 +844,11 @@ def general_ledger(request):
     if account_id:
         queryset = queryset.filter(account_id=account_id)
 
-    print(f"Query parameters: start_date={start_date}, end_date={end_date}, account_id={account_id}")
-    print(f"Queryset SQL: {queryset.query}")
-
-    print(f"Queryset count: {queryset.count()}")
+    logger.debug(f"Query parameters: start_date={start_date}, end_date={end_date}, account_id={account_id}")
+    logger.debug(f"Queryset count: {queryset.count()}")
+    
     entries = queryset.order_by('date', 'id')
-    print(f"Entries count: {len(entries)}")
     serializer = GeneralLedgerEntrySerializer(entries, many=True)
-    print(f"Serialized data count: {len(serializer.data)}")
     
     return Response(serializer.data)
 
@@ -1106,58 +1154,72 @@ def financial_statement_view(request, statement_type):
 @permission_classes([IsAuthenticated])
 def profit_and_loss_view(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
     
-    if not database_name:
-        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    financial_data = generate_financial_statements(database_name)
-    return Response(financial_data['profit_and_loss'])
+    # Generate financial statements using default database
+    # The generate_financial_statements function needs to be updated to use business_id
+    financial_data = generate_financial_statements('default', business_id)
+    return Response(financial_data.get('profit_and_loss', {}))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def balance_sheet_view(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
     
-    if not database_name:
-        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    financial_data = generate_financial_statements(database_name)
-    return Response(financial_data['balance_sheet'])
+    # Generate financial statements using default database
+    financial_data = generate_financial_statements('default', business_id)
+    return Response(financial_data.get('balance_sheet', {}))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cash_flow_view(request):
     user = request.user
-    database_name = get_user_database(user)
+    business_id = getattr(user, 'business_id', None)
     
-    if not database_name:
-        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    financial_data = generate_financial_statements(database_name)
-    return Response(financial_data['cash_flow'])
+    # Generate financial statements using default database
+    financial_data = generate_financial_statements('default', business_id)
+    return Response(financial_data.get('cash_flow', {}))
 
 
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def fixed_asset_list(request):
+    user = request.user
+    business_id = getattr(user, 'business_id', None)
+    
     if request.method == 'GET':
-        fixed_assets = FixedAsset.objects.all()
+        # Filter by business_id for proper tenant isolation
+        if business_id:
+            fixed_assets = FixedAsset.objects.filter(business_id=business_id)
+        else:
+            fixed_assets = FixedAsset.objects.none()
         serializer = FixedAssetSerializer(fixed_assets, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = FixedAssetSerializer(data=request.data)
+        data = request.data.copy()
+        data['business'] = business_id  # Add business_id to data
+        
+        serializer = FixedAssetSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(business_id=business_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def fixed_asset_detail(request, pk):
+    user = request.user
+    business_id = getattr(user, 'business_id', None)
+    
     try:
-        fixed_asset = FixedAsset.objects.get(pk=pk)
+        # Filter by business_id for security
+        if business_id:
+            fixed_asset = FixedAsset.objects.get(pk=pk, business_id=business_id)
+        else:
+            raise FixedAsset.DoesNotExist
     except FixedAsset.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 

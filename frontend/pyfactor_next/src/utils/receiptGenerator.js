@@ -9,13 +9,14 @@ import jsPDF from 'jspdf';
 
 export class ReceiptGenerator {
   constructor(businessInfo = {}) {
+    // Only include business info fields that actually exist (no defaults)
     this.businessInfo = {
-      name: businessInfo.name || 'Your Business Name',
-      address: businessInfo.address || 'Business Address',
-      phone: businessInfo.phone || 'Phone Number',
-      email: businessInfo.email || 'email@business.com',
-      website: businessInfo.website || 'www.business.com',
-      taxId: businessInfo.taxId || 'Tax ID',
+      name: businessInfo.name || businessInfo.business_name || '',  // Remove hardcoded default
+      address: businessInfo.address || businessInfo.business_address || null,
+      phone: businessInfo.phone || businessInfo.business_phone || null,
+      email: businessInfo.email || businessInfo.business_email || null,
+      website: businessInfo.website || businessInfo.business_website || null,
+      taxId: businessInfo.taxId || businessInfo.tax_id || null,
       ...businessInfo
     };
   }
@@ -46,7 +47,9 @@ export class ReceiptGenerator {
       },
       payment: {
         method: saleData.payment_method || 'cash',
-        amount: saleData.total_amount || '0.00'
+        amount: saleData.total_amount || '0.00',
+        amountTendered: saleData.amount_tendered || saleData.total_amount || '0.00',
+        changeDue: saleData.change_due || '0.00'
       },
       notes: saleData.notes || ''
     };
@@ -95,12 +98,12 @@ export class ReceiptGenerator {
       </head>
       <body>
         <div class="header">
-          <div class="business-name">${business.name}</div>
+          ${business.name ? `<div class="business-name">${business.name}</div>` : ''}
           <div class="business-info">
-            ${business.address}<br>
-            ${business.phone} | ${business.email}<br>
-            ${business.website}
-            ${business.taxId ? `<br>Tax ID: ${business.taxId}` : ''}
+            ${business.address ? `${business.address}<br>` : ''}
+            ${this.formatContactInfo(business)}
+            ${business.website ? `${business.website}<br>` : ''}
+            ${business.taxId ? `Tax ID: ${business.taxId}` : ''}
           </div>
         </div>
         
@@ -116,16 +119,22 @@ export class ReceiptGenerator {
         <div class="divider"></div>
         
         <div class="items">
-          ${items.map(item => `
+          ${items.map(item => {
+            const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
+            const backorderNote = item.isBackorder ? ' (BACKORDER)' : 
+                                 item.isPartialBackorder ? ` (${item.backorderQuantity} BACKORDER)` : '';
+            return `
             <div class="item">
-              <div class="item-name">${item.name}</div>
+              <div class="item-name">${item.name}${backorderNote}</div>
               <div class="item-qty">${item.quantity}</div>
-              <div class="item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+              <div class="item-price">$${(itemPrice * item.quantity).toFixed(2)}</div>
             </div>
             <div style="font-size: 10px; color: #666; margin-left: 5px;">
-              $${item.price} each
+              $${itemPrice} each
+              ${item.isBackorder ? '<span style="color: red; font-weight: bold;"> - OUT OF STOCK</span>' : ''}
+              ${item.isPartialBackorder ? `<span style="color: orange; font-weight: bold;"> - ${item.backorderQuantity} on backorder</span>` : ''}
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
         
         <div class="divider"></div>
@@ -157,7 +166,12 @@ export class ReceiptGenerator {
         
         <div class="payment-info">
           <div>Payment Method: ${this.formatPaymentMethod(payment.method)}</div>
-          <div>Amount Paid: $${payment.amount}</div>
+          ${payment.method === 'cash' ? `
+            <div>Amount Tendered: $${payment.amountTendered}</div>
+            ${parseFloat(payment.changeDue) > 0 ? `<div>Change Due: $${payment.changeDue}</div>` : ''}
+          ` : `
+            <div>Amount Paid: $${payment.amount}</div>
+          `}
         </div>
         
         ${notes ? `
@@ -192,20 +206,39 @@ export class ReceiptGenerator {
     const lineHeight = 4;
     const pageWidth = 80;
     
-    // Header
-    pdf.setFontSize(12);
-    pdf.setFont(undefined, 'bold');
-    pdf.text(business.name, pageWidth/2, y, { align: 'center' });
-    y += lineHeight + 2;
+    // Header - only show business name if it exists
+    if (business.name) {
+      pdf.setFontSize(12);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(business.name, pageWidth/2, y, { align: 'center' });
+      y += lineHeight + 2;
+    }
     
     pdf.setFontSize(8);
     pdf.setFont(undefined, 'normal');
-    pdf.text(business.address, pageWidth/2, y, { align: 'center' });
-    y += lineHeight;
-    pdf.text(`${business.phone} | ${business.email}`, pageWidth/2, y, { align: 'center' });
-    y += lineHeight;
-    pdf.text(business.website, pageWidth/2, y, { align: 'center' });
-    y += lineHeight + 3;
+    
+    // Only add address if it exists
+    if (business.address) {
+      pdf.text(business.address, pageWidth/2, y, { align: 'center' });
+      y += lineHeight;
+    }
+    
+    // Only add contact info if phone or email exists
+    const contactParts = [];
+    if (business.phone) contactParts.push(business.phone);
+    if (business.email) contactParts.push(business.email);
+    if (contactParts.length > 0) {
+      pdf.text(contactParts.join(' | '), pageWidth/2, y, { align: 'center' });
+      y += lineHeight;
+    }
+    
+    // Only add website if it exists
+    if (business.website) {
+      pdf.text(business.website, pageWidth/2, y, { align: 'center' });
+      y += lineHeight;
+    }
+    
+    y += 3;
     
     // Divider
     pdf.line(5, y, pageWidth-5, y);
@@ -231,12 +264,13 @@ export class ReceiptGenerator {
     
     // Items
     items.forEach(item => {
+      const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
       pdf.text(item.name, 5, y);
       pdf.text(`${item.quantity}`, pageWidth-25, y);
-      pdf.text(`$${(item.price * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
+      pdf.text(`$${(itemPrice * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
       y += lineHeight;
       pdf.setFontSize(7);
-      pdf.text(`$${item.price} each`, 8, y);
+      pdf.text(`$${itemPrice} each`, 8, y);
       pdf.setFontSize(8);
       y += lineHeight;
     });
@@ -275,8 +309,19 @@ export class ReceiptGenerator {
     pdf.setFont(undefined, 'normal');
     pdf.text(`Payment: ${this.formatPaymentMethod(payment.method)}`, 5, y);
     y += lineHeight;
-    pdf.text(`Amount Paid: $${payment.amount}`, 5, y);
-    y += lineHeight + 3;
+    
+    if (payment.method === 'cash') {
+      pdf.text(`Amount Tendered: $${payment.amountTendered}`, 5, y);
+      y += lineHeight;
+      if (parseFloat(payment.changeDue) > 0) {
+        pdf.text(`Change Due: $${payment.changeDue}`, 5, y);
+        y += lineHeight;
+      }
+    } else {
+      pdf.text(`Amount Paid: $${payment.amount}`, 5, y);
+      y += lineHeight;
+    }
+    y += 3;
     
     // Notes
     if (notes) {
@@ -300,6 +345,17 @@ export class ReceiptGenerator {
     pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth/2, y, { align: 'center' });
     
     return pdf;
+  }
+
+  /**
+   * Format contact information (phone and email) for display
+   */
+  formatContactInfo(business) {
+    const contactParts = [];
+    if (business.phone) contactParts.push(business.phone);
+    if (business.email) contactParts.push(business.email);
+    
+    return contactParts.length > 0 ? `${contactParts.join(' | ')}<br>` : '';
   }
 
   /**
@@ -337,9 +393,29 @@ export class ReceiptGenerator {
     const { receipt, business, customer, items, totals, payment, notes } = receiptData;
     
     let text = '';
-    text += `${business.name}\n`;
-    text += `${business.address}\n`;
-    text += `${business.phone} | ${business.email}\n`;
+    // Only add business name if it exists
+    if (business.name) {
+      text += `${business.name}\n`;
+    }
+    
+    // Only add address if it exists
+    if (business.address) {
+      text += `${business.address}\n`;
+    }
+    
+    // Only add contact info if phone or email exists
+    const contactParts = [];
+    if (business.phone) contactParts.push(business.phone);
+    if (business.email) contactParts.push(business.email);
+    if (contactParts.length > 0) {
+      text += `${contactParts.join(' | ')}\n`;
+    }
+    
+    // Only add website if it exists
+    if (business.website) {
+      text += `${business.website}\n`;
+    }
+    
     text += `==========================================\n`;
     text += `Receipt #: ${receipt.number}\n`;
     text += `Date: ${receipt.date} ${receipt.time}\n`;
@@ -350,8 +426,17 @@ export class ReceiptGenerator {
     text += `==========================================\n`;
     
     items.forEach(item => {
-      text += `${item.name}\n`;
-      text += `  ${item.quantity} x $${item.price} = $${(item.price * item.quantity).toFixed(2)}\n`;
+      // Support both 'price' and 'unit_price' field names
+      const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
+      const backorderNote = item.isBackorder ? ' (BACKORDER)' : 
+                           item.isPartialBackorder ? ` (${item.backorderQuantity} BACKORDER)` : '';
+      text += `${item.name}${backorderNote}\n`;
+      text += `  ${item.quantity} x $${itemPrice} = $${(itemPrice * item.quantity).toFixed(2)}\n`;
+      if (item.isBackorder) {
+        text += `  ** OUT OF STOCK - BACKORDER **\n`;
+      } else if (item.isPartialBackorder) {
+        text += `  ** ${item.backorderQuantity} items on backorder **\n`;
+      }
     });
     
     text += `==========================================\n`;
@@ -368,7 +453,15 @@ export class ReceiptGenerator {
     text += `==========================================\n`;
     text += `TOTAL: $${totals.total}\n`;
     text += `Payment: ${this.formatPaymentMethod(payment.method)}\n`;
-    text += `Amount Paid: $${payment.amount}\n`;
+    
+    if (payment.method === 'cash') {
+      text += `Amount Tendered: $${payment.amountTendered}\n`;
+      if (parseFloat(payment.changeDue) > 0) {
+        text += `Change Due: $${payment.changeDue}\n`;
+      }
+    } else {
+      text += `Amount Paid: $${payment.amount}\n`;
+    }
     
     if (notes) {
       text += `\nNotes: ${notes}\n`;

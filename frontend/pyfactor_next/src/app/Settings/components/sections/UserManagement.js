@@ -237,6 +237,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteData, setInviteData] = useState({
     email: '',
+    firstName: '',
+    lastName: '',
     role: 'USER',
     permissions: {}, // Now stores { pageId: { canAccess: true, canWrite: false } }
     createEmployee: false,
@@ -695,8 +697,15 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   
   // Save inline edited permissions
   const saveInlinePermissions = async (userId) => {
+    console.log('[UserManagement] saveInlinePermissions called with userId:', userId);
+    
     try {
       setLoading(true);
+      
+      // Debug logging
+      console.log('[UserManagement] Saving permissions for user:', userId);
+      console.log('[UserManagement] Current user data:', users.find(u => u.id === userId));
+      console.log('[UserManagement] Editing permissions:', editingPermissions[userId]);
       
       // Convert permissions to backend format
       const permissions = editingPermissions[userId] || {};
@@ -714,6 +723,13 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         }
       });
       
+      console.log('[UserManagement] Formatted page permissions:', pagePermissions);
+      console.log('[UserManagement] Making request to:', `/api/user-management/users/${userId}/update-permissions`);
+      
+      // Find the user to get their UUID
+      const targetUser = users.find(u => u.id === userId);
+      console.log('[UserManagement] Target user for permissions update:', targetUser);
+      
       const response = await fetch(`/api/user-management/users/${userId}/update-permissions`, {
         method: 'POST',
         headers: {
@@ -721,16 +737,60 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         credentials: 'include',
         body: JSON.stringify({
+          user_id: targetUser?.user_id || targetUser?.id || userId, // Temporary: include user_id until backend deploys
           page_permissions: pagePermissions
         })
       });
 
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update user permissions');
+        let errorMessage = 'Failed to update user permissions';
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            console.log('[UserManagement] Parsed error data:', errorData);
+            
+            // Handle different error response formats
+            if (typeof errorData === 'string') {
+              errorMessage = errorData;
+            } else if (errorData.error) {
+              errorMessage = errorData.error;
+            } else if (errorData.details) {
+              // Handle validation errors
+              if (Array.isArray(errorData.details)) {
+                errorMessage = errorData.details.join(', ');
+              } else if (typeof errorData.details === 'object') {
+                errorMessage = JSON.stringify(errorData.details);
+              } else {
+                errorMessage = errorData.details;
+              }
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            } else {
+              errorMessage = JSON.stringify(errorData);
+            }
+          } catch (e) {
+            console.error('[UserManagement] Failed to parse error response:', e);
+            errorMessage = 'Failed to parse error response';
+          }
+        } else {
+          // If HTML response, likely a backend error
+          const textResponse = await response.text();
+          console.error('[UserManagement] Non-JSON error response:', textResponse.substring(0, 500));
+          errorMessage = 'Backend error: The permissions endpoint may not be available';
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      // Only parse JSON if content type is correct
+      let result = {};
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      }
       
       // Update local state with the updated permissions
       setUsers(users.map(u => 
@@ -747,6 +807,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       await fetchUsers();
       
     } catch (error) {
+      console.error('[UserManagement] Caught error in saveInlinePermissions:', error);
+      console.error('[UserManagement] Error stack:', error.stack);
       logger.error('[UserManagement] Error updating user permissions:', error);
       notifyError(error.message || 'Failed to update user permissions');
     } finally {
@@ -920,6 +982,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         body: JSON.stringify({
           email: inviteData.email,
+          first_name: inviteData.firstName,
+          last_name: inviteData.lastName,
           role: inviteData.role,
           page_permissions: pagePermissions,
           create_employee: inviteData.createEmployee,
@@ -944,6 +1008,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setShowInviteModal(false);
       setInviteData({ 
         email: '', 
+        firstName: '',
+        lastName: '',
         role: 'USER', 
         permissions: {}, 
         createEmployee: false,
@@ -1217,6 +1283,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 setShowInviteModal(false);
                 setInviteData({
                   email: '',
+                  firstName: '',
+                  lastName: '',
                   role: 'USER',
                   permissions: {},
                   createEmployee: false,
@@ -1255,6 +1323,46 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="user@example.com"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      First Name
+                      <FieldTooltip content="User's first name for their profile" />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the user's first name
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    value={inviteData.firstName}
+                    onChange={(e) => setInviteData({ ...inviteData, firstName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="John"
+                  />
+                </div>
+                
+                <div>
+                  <div className="mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Last Name
+                      <FieldTooltip content="User's last name for their profile" />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the user's last name
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    value={inviteData.lastName}
+                    onChange={(e) => setInviteData({ ...inviteData, lastName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Doe"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1518,6 +1626,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 setShowInviteModal(false);
                 setInviteData({
                   email: '',
+                  firstName: '',
+                  lastName: '',
                   role: 'USER',
                   permissions: {},
                   createEmployee: false,
@@ -1633,7 +1743,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                       {editingUserId === userItem.id ? (
                         <>
                           <button
-                            onClick={() => saveInlinePermissions(userItem.id)}
+                            onClick={() => {
+                              console.log('[UserManagement] Save button clicked for user:', userItem.id);
+                              saveInlinePermissions(userItem.id);
+                            }}
                             className="text-green-600 hover:text-green-900"
                             title="Save Changes"
                             disabled={loading}
@@ -1750,7 +1863,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                           Cancel
                         </button>
                         <button
-                          onClick={() => saveInlinePermissions(userItem.id)}
+                          onClick={() => {
+                            console.log('[UserManagement] Save Changes button clicked for user:', userItem.id);
+                            saveInlinePermissions(userItem.id);
+                          }}
                           disabled={loading}
                           className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                         >
@@ -1769,7 +1885,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
@@ -1821,7 +1937,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
       {/* Edit User Permissions Modal - REMOVED as we now use inline editing */}
       {false && showEditPermissionsModal && editingUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="absolute inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-[90%] max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900">

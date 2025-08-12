@@ -1,5 +1,5 @@
 import { appCache } from '@/utils/appCache';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { logger } from './logger';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';
 
@@ -54,7 +54,6 @@ export async function completeOnboarding() {
     logger.debug(`[completeOnboarding:${requestId}] Attempting direct Amplify update`);
     
     // Dynamically import to avoid SSR issues
-    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Make the API call
     await updateUserAttributes({ userAttributes });
@@ -64,7 +63,7 @@ export async function completeOnboarding() {
     
     // Verify the update worked
     try {
-      const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
       const userInfo = session?.tokens?.idToken?.payload;
       const onboardingStatus = userInfo?.['custom:onboarding']?.toLowerCase();
       
@@ -88,7 +87,7 @@ export async function completeOnboarding() {
       logger.debug(`[completeOnboarding:${requestId}] Attempting API update with token`);
       
       // Get the current session for tokens
-      const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
       const accessToken = session?.tokens?.accessToken?.toString();
       
       if (!accessToken) {
@@ -121,7 +120,7 @@ export async function completeOnboarding() {
       try {
         // Clear any cached sessions first
         await fetchAuthSession({ forceRefresh: true });
-        const freshSession = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
         const freshUserInfo = freshSession?.tokens?.idToken?.payload;
         const freshOnboardingStatus = freshUserInfo?.['custom:onboarding']?.toLowerCase();
         
@@ -197,7 +196,7 @@ export async function completeOnboarding() {
   // Attempt 4 (last resort): Check if we're already complete
   if (!success) {
     try {
-      const session = await fetchAuthSession();
+    const session = null; // Removed Amplify - using Auth0
       const userInfo = session?.tokens?.idToken?.payload;
       const onboardingStatus = userInfo?.['custom:onboarding']?.toLowerCase();
       

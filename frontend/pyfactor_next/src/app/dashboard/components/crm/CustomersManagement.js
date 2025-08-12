@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import { appCache } from '@/utils/appCache';
-import { fetchAuthSession } from '@/config/amplifyUnified';
+// Auth0 authentication is handled via useSession hook
 import { Dialog } from '@headlessui/react';
 import { 
   AddIcon, 
@@ -17,41 +17,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 
-const MOCK_CUSTOMERS = [
-  {
-    id: 'mock-id-1',
-    customerName: 'Acme Corporation',
-    first_name: 'John',
-    last_name: 'Doe',
-    email: 'john.doe@acme.com',
-    phone: '555-123-4567',
-    city: 'New York',
-    billingState: 'NY',
-    billingCountry: 'USA'
-  },
-  {
-    id: 'mock-id-2',
-    customerName: 'Tech Solutions Inc',
-    first_name: 'Jane',
-    last_name: 'Smith',
-    email: 'jane.smith@techsolutions.com',
-    phone: '555-987-6543',
-    city: 'San Francisco',
-    billingState: 'CA',
-    billingCountry: 'USA'
-  },
-  {
-    id: 'mock-id-3',
-    customerName: 'Global Enterprises',
-    first_name: 'Robert',
-    last_name: 'Johnson',
-    email: 'robert@globalenterprises.com',
-    phone: '555-456-7890',
-    city: 'Chicago',
-    billingState: 'IL',
-    billingCountry: 'USA'
-  }
-];
+// All mock data has been removed - the component will now show actual data or errors
 
 const CustomersManagement = () => {
   const [customers, setCustomers] = useState([]);
@@ -297,12 +263,12 @@ const CustomersManagement = () => {
         return;
       }
       
-      // If we've exhausted retries, show a fallback message and use mock data
-      setError(`Unable to fetch customers from server. Showing example data instead.`);
+      // If we've exhausted retries, show a fallback message
+      setError(`Unable to fetch customers from server.`);
       
-      // Set mock data as fallback
-      setCustomers(MOCK_CUSTOMERS);
-      setTotalPages(1);
+      // Set empty array instead of mock data
+      setCustomers([]);
+      setTotalPages(0);
       setLoading(false);
     }
   };
@@ -907,9 +873,9 @@ const CustomersManagement = () => {
         onClose={handleDeleteCancel}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-xl">
             <Dialog.Title className="text-lg font-medium text-black mb-4">
               Delete Customer
@@ -944,9 +910,9 @@ const CustomersManagement = () => {
         onClose={handleCreateCustomerCancel}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-lg bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]">
             <Dialog.Title className="text-lg font-medium text-black mb-4">
               Create New Customer
@@ -1128,9 +1094,9 @@ const CustomersManagement = () => {
         onClose={handleCloseCustomerDetails}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-3xl w-full rounded-lg bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">
               <Dialog.Title className="text-xl font-medium text-black">

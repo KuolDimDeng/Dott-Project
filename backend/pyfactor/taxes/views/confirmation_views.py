@@ -12,7 +12,7 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -242,7 +242,7 @@ class FilingNotificationViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(summary)
 
 
-@transaction.atomic
+@db_transaction.atomic
 def auto_generate_confirmations():
     """
     Background task to automatically generate confirmations for completed filings.

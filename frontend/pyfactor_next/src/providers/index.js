@@ -1,4 +1,5 @@
 import { AuthProvider } from '../contexts/AuthContext';
+import { CurrencyProvider } from '../context/CurrencyContext';
 import AuthWrapper from '../app/AuthWrapper/AuthWrapper';
 import dynamic from 'next/dynamic';
 
@@ -10,8 +11,10 @@ const Providers = ({ children }) => {
   return (
     <AuthWrapper>
       <AuthProvider>
-        {children}
-        <PWAInstallPrompt />
+        <CurrencyProvider>
+          {children}
+          <PWAInstallPrompt />
+        </CurrencyProvider>
       </AuthProvider>
     </AuthWrapper>
   );

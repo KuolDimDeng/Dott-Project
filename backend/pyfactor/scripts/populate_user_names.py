@@ -5,11 +5,11 @@ Run: python manage.py shell < scripts/populate_user_names.py
 """
 
 from custom_auth.models import User
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 print("Populating user names from existing data...")
 
-with transaction.atomic():
+with db_transaction.atomic():
     users_updated = 0
     
     for user in User.objects.all():

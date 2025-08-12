@@ -9,7 +9,7 @@ Run with: python manage.py shell < scripts/seed_local_data.py
 import os
 import django
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction as db_transaction
 
 # Set up Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
@@ -159,7 +159,7 @@ def main():
     print("🌱 Seeding local development data...")
     
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             create_sample_users()
             create_sample_business_data()
             create_sample_financial_data()

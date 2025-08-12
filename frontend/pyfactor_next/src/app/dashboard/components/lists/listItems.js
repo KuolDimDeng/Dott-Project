@@ -147,9 +147,39 @@ const NavIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   ),
+  Jobs: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        <path d="M9.5 2.5L11 4l-1.5 1.5L8 4z" />
+        <path d="M4.5 7.5L6 9 4.5 10.5 3 9z" />
+        <path d="M15 11l1.5 1.5L15 14l-1.5-1.5z" />
+      </g>
+    </svg>
+  ),
   WhatsAppBusiness: (props) => (
     <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  ),
+  Receipt: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  Work: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+  Description: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  Cart: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
     </svg>
   )
 };
@@ -186,15 +216,20 @@ const getCreateOptions = (t) => [
       </svg>
     ),
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu) => {
-      console.log('Create New button clicked');
+      console.log('[Create New] Button clicked with params:', {
+        isIconOnly,
+        handleDrawerClose: typeof handleDrawerClose,
+        handleShowCreateMenu: typeof handleShowCreateMenu
+      });
       if (isIconOnly) {
         handleDrawerClose();
       }
       // Use handleShowCreateMenu instead of showing a local dropdown
       if (typeof handleShowCreateMenu === 'function') {
+        console.log('[Create New] Calling handleShowCreateMenu');
         handleShowCreateMenu();
       } else {
-        console.error('handleShowCreateMenu is not a function');
+        console.error('[Create New] handleShowCreateMenu is not a function:', handleShowCreateMenu);
       }
     }
   },
@@ -209,6 +244,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Transaction');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available, closing menu');
+        if (handleShowCreateMenu) handleShowCreateMenu(); // Close the menu
       }
     }
   },
@@ -223,76 +261,113 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Sales');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for POS');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Sales'
   },
   {
     label: t('subMenu.catalog'),
-    icon: <NavIcons.Inventory className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Inventory className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Product');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Product');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Product'
   },
   {
-    label: t('subMenu.catalog'),
-    icon: <NavIcons.Receipt className="w-4 h-4" />,
+    label: t('subMenu.services'),
+    icon: (props) => <NavIcons.Receipt className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Service');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Service');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Service'
   },
   {
+    label: t('subMenu.jobs'),
+    icon: (props) => <NavIcons.Work className={props.className || "w-4 h-4"} />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Job');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Job');
+        if (handleShowCreateMenu) handleShowCreateMenu();
+      }
+    },
+    value: 'Job'
+  },
+  {
     label: t('subMenu.invoices'),
-    icon: <NavIcons.Description className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Description className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Invoice');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Invoice');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Invoice'
   },
   {
     label: t('subMenu.billsExpenses'),
-    icon: <NavIcons.Cart className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Cart className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Bill');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Bill');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Bill'
   },
   {
     label: t('subMenu.quotes'),
-    icon: <NavIcons.Reports className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Reports className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Estimate');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Estimate');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Estimate'
   },
   {
     label: t('subMenu.customers'),
-    icon: <NavIcons.People className="w-4 h-4" />,
+    icon: (props) => <NavIcons.People className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Customer');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Customer');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Customer'
   },
   {
     label: t('subMenu.vendors'),
-    icon: <NavIcons.Contacts className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Contacts className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Vendor');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Vendor');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Vendor'
@@ -341,6 +416,8 @@ const MainListItems = ({
   const [tooltipVisible, setTooltipVisible] = useState(null);
   const [whatsappPreferenceChanged, setWhatsappPreferenceChanged] = useState(0);
   const [whatsappEnabled, setWhatsappEnabled] = useState(null);
+  const [businessFeatures, setBusinessFeatures] = useState(['jobs', 'pos']); // Default to all features
+  const [menuVisibility, setMenuVisibility] = useState({}); // Store menu visibility from database
   
   // Debug logging for permissions hook
   useEffect(() => {
@@ -363,6 +440,56 @@ const MainListItems = ({
       setWhatsappEnabled(userData.show_whatsapp_commerce);
     }
   }, [user?.show_whatsapp_commerce, userData?.show_whatsapp_commerce]);
+  
+  // Fetch business features based on business type
+  useEffect(() => {
+    const fetchBusinessFeatures = async () => {
+      try {
+        const response = await fetch('/api/users/business-features');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[MainListItems] Business features:', data);
+          setBusinessFeatures(data.features || ['jobs', 'pos']);
+        }
+      } catch (error) {
+        console.error('[MainListItems] Error fetching business features:', error);
+        // Default to showing all features on error
+        setBusinessFeatures(['jobs', 'pos']);
+      }
+    };
+    
+    // Only fetch if user is loaded
+    if (user?.id) {
+      fetchBusinessFeatures();
+    }
+  }, [user?.id]);
+  
+  // Fetch menu visibility settings
+  useEffect(() => {
+    const fetchMenuVisibility = async () => {
+      try {
+        const response = await fetch('/api/settings/menu-visibility');
+        if (response.ok) {
+          const data = await response.json();
+          // Convert menu settings to a simple visibility map
+          const visibilityMap = {};
+          data.menu_settings?.forEach(menu => {
+            visibilityMap[menu.key] = menu.is_visible;
+            menu.submenus?.forEach(sub => {
+              visibilityMap[sub.key] = sub.is_visible;
+            });
+          });
+          setMenuVisibility(visibilityMap);
+        }
+      } catch (error) {
+        console.error('[MainListItems] Error fetching menu visibility:', error);
+      }
+    };
+    
+    if (user?.id) {
+      fetchMenuVisibility();
+    }
+  }, [user?.id]);
   
 
   // Check if we're on mobile/small screens
@@ -509,11 +636,13 @@ const MainListItems = ({
       icon: <NavIcons.Dashboard className="w-5 h-5" />,
       label: t('mainMenu.dashboard'),
       onClick: handleMainDashboardClick,
+      menuKey: 'dashboard',
     },
     {
       icon: <NavIcons.Calendar className="w-5 h-5" />,
       label: t('mainMenu.calendar'),
       onClick: handleCalendarClick,
+      menuKey: 'calendar',
     },
     /* Billing menu item - This will be used in future versions of the application
     {
@@ -533,6 +662,18 @@ const MainListItems = ({
       label: t('mainMenu.sales'),
       subItems: [
         { label: t('subMenu.dashboard'), onClick: handleSalesClick, value: 'dashboard', path: '/dashboard/sales' },
+        { 
+          label: t('mainMenu.pos'), 
+          onClick: (value) => {
+            // Trigger the POS modal
+            if (typeof handleShowCreateOptions === 'function') {
+              handleShowCreateOptions('Sales');
+            } else {
+              console.warn('[Sales Menu] handleShowCreateOptions not available for POS');
+            }
+          }, 
+          value: 'pos' 
+        },
         { 
         label: t('subMenu.catalog'), 
         path: '/dashboard/products',
@@ -714,6 +855,17 @@ const MainListItems = ({
       label: t('mainMenu.inventory'),
       subItems: [
         { label: t('subMenu.dashboard'), onClick: handleInventoryClick, value: 'inventorydashboard', path: '/dashboard/inventory' },
+        { label: t('subMenu.catalog'), onClick: handleInventoryClick, value: 'products', path: '/dashboard/inventory' },
+        { 
+          label: t('subMenu.suppliesMaterials'), 
+          onClick: (value) => {
+            if (typeof handleInventoryClick === 'function') {
+              handleInventoryClick('supplies');
+            }
+          }, 
+          value: 'supplies',
+          path: '/dashboard/inventory' 
+        },
         { 
           label: t('subMenu.warehouseTracker'), 
           path: '/dashboard/inventory',
@@ -755,6 +907,17 @@ const MainListItems = ({
           }, 
           value: 'reports' 
         },
+        { 
+          label: t('subMenu.billOfMaterials'), 
+          onClick: (value) => {
+            // Call the inventory click handler with the appropriate value
+            if (typeof handleInventoryClick === 'function') {
+              handleInventoryClick('inventory-bill-of-materials');
+            }
+          }, 
+          value: 'inventory-bill-of-materials',
+          path: '/dashboard/inventory'
+        },
       ],
     },
     /* Transport menu item - This will be used in future versions of the application
@@ -773,6 +936,132 @@ const MainListItems = ({
       ],
     },
     */
+    {
+      icon: <NavIcons.Jobs className="w-5 h-5" />,
+      label: t('mainMenu.jobs'),
+      subItems: [
+        { 
+          label: t('subMenu.dashboard'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'jobs-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'jobs-dashboard' 
+        },
+        { 
+          label: t('subMenu.jobsList'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'jobs-list', 
+              navigationKey,
+              originalItem: 'All Jobs'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'jobs-list' 
+        },
+        { 
+          label: t('subMenu.jobCosting'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-costing', 
+              navigationKey,
+              originalItem: 'Job Costing'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-costing' 
+        },
+        { 
+          label: t('subMenu.jobMaterials'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-materials', 
+              navigationKey,
+              originalItem: 'Materials Usage'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-materials' 
+        },
+        { 
+          label: t('subMenu.jobLabor'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-labor', 
+              navigationKey,
+              originalItem: 'Labor Tracking'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-labor' 
+        },
+        { 
+          label: t('subMenu.jobProfitability'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-profitability', 
+              navigationKey,
+              originalItem: 'Profitability Analysis'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-profitability' 
+        },
+        { 
+          label: 'Vehicles', 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'vehicles', 
+              navigationKey,
+              originalItem: 'Vehicles'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'vehicles' 
+        },
+        { 
+          label: t('mainMenu.reports'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'jobs-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'jobs-reports' 
+        },
+      ],
+    },
     {
       icon: <NavIcons.Payments className="w-5 h-5" />,
       label: t('mainMenu.payments'),
@@ -1278,7 +1567,7 @@ const MainListItems = ({
           value: 'financial-statements',
         },
         { 
-          label: t('subMenu.chartOfAccounts'), 
+          label: t('subMenu.fixedAssets'), 
           onClick: (value) => {
             // Create navigation event for fixed assets
             const navigationKey = `nav-${Date.now()}`;
@@ -1415,41 +1704,138 @@ const MainListItems = ({
           }, 
           value: 'bank-reports' 
         },
-        { 
-          label: t('subMenu.bankAccounts'), 
-          onClick: (value) => {
-            // Create navigation event for banking tools
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'banking-tools', 
-              navigationKey,
-              originalItem: 'Banking Tools'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the BankingTools component
-            if (typeof handleBankingClick === 'function') {
-              handleBankingClick('tools');
-            }
-          }, 
-          value: 'tools' 
-        },
       ],
     },
     {
       icon: <NavIcons.People className="w-5 h-5" />,
       label: t('mainMenu.hr'),
       subItems: [
-        { label: t('subMenu.dashboard'), onClick: handleHRClick, value: 'dashboard', path: '/dashboard/hr' },
-        { label: t('subMenu.teams'), onClick: handleHRClick, value: 'employees', path: '/dashboard/employees' },
-        { label: t('subMenu.timesheets'), onClick: handleHRClick, value: 'timesheets', path: '/dashboard/timesheets' },
-        { label: t('subMenu.managePay'), onClick: handleHRClick, value: 'pay', path: '/dashboard/pay' },
-        { label: t('subMenu.benefits'), onClick: handleHRClick, value: 'benefits', path: '/dashboard/benefits' },
-        { label: t('mainMenu.reports'), onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
-        { label: t('subMenu.performance'), onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
+        { 
+          label: t('subMenu.dashboard'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'hr-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('dashboard');
+            }
+          }, 
+          value: 'dashboard', 
+          path: '/dashboard/hr' 
+        },
+        { 
+          label: t('subMenu.teams'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'employees', 
+              navigationKey,
+              originalItem: 'Teams'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('employees');
+            }
+          }, 
+          value: 'employees', 
+          path: '/dashboard/employees' 
+        },
+        { 
+          label: t('subMenu.timesheets'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'timesheets', 
+              navigationKey,
+              originalItem: 'Timesheets'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('timesheets');
+            }
+          }, 
+          value: 'timesheets', 
+          path: '/dashboard/timesheets' 
+        },
+        { 
+          label: t('subMenu.managePay'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'pay', 
+              navigationKey,
+              originalItem: 'Manage Pay'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('pay');
+            }
+          }, 
+          value: 'pay', 
+          path: '/dashboard/pay' 
+        },
+        { 
+          label: t('subMenu.benefits'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'benefits', 
+              navigationKey,
+              originalItem: 'Benefits'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('benefits');
+            }
+          }, 
+          value: 'benefits', 
+          path: '/dashboard/benefits' 
+        },
+        { 
+          label: t('mainMenu.reports'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'hr-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('reports');
+            }
+          }, 
+          value: 'reports', 
+          path: '/dashboard/reports' 
+        },
+        { 
+          label: t('subMenu.performance'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'performance', 
+              navigationKey,
+              originalItem: 'Performance'
+            };
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('performance');
+            }
+          }, 
+          value: 'performance', 
+          path: '/dashboard/performance' 
+        },
       ],
     },
     {
@@ -1573,48 +1959,194 @@ const MainListItems = ({
           value: 'taxes-dashboard' 
         },
         { 
-          label: t('subMenu.taxSetup'), 
+          label: 'Sales Tax Filing', 
           onClick: (value) => {
-            // Create navigation event for tax settings
+            // Create navigation event for sales tax filing
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'tax-settings', 
+              item: 'sales-tax-filing', 
               navigationKey,
-              originalItem: 'Tax Settings'
+              originalItem: 'Sales Tax Filing'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the TaxSettings component
+            // Load the Sales Tax Filing component (Filing Dashboard)
             if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('tax-settings');
+              handleTaxesClick('sales-tax-filing');
+            } else if (typeof handleSetView === 'function') {
+              // Fallback to direct view setting
+              handleSetView('sales-tax-filing');
+            } else {
+              console.error('[listItems] No navigation handler available for Sales Tax Filing');
             }
           }, 
-          value: 'tax-settings' 
+          value: 'sales-tax-filing',
+          subItems: [
+            {
+              label: 'File Tax Return',
+              onClick: (value) => {
+                // Create navigation event for new tax filing
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'new-filing', 
+                  navigationKey,
+                  originalItem: 'File Tax Return'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the New Filing component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('new-filing');
+                }
+              },
+              value: 'new-filing'
+            },
+            {
+              label: 'Filing History',
+              onClick: (value) => {
+                // Create navigation event for filing history
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'filing-history', 
+                  navigationKey,
+                  originalItem: 'Filing History'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Filing History component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('filing-history');
+                }
+              },
+              value: 'filing-history'
+            },
+            {
+              label: 'Country Requirements',
+              onClick: (value) => {
+                // Create navigation event for country requirements
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'country-requirements', 
+                  navigationKey,
+                  originalItem: 'Country Requirements'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Country Requirements component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('country-requirements');
+                }
+              },
+              value: 'country-requirements'
+            }
+          ]
         },
         { 
-          label: t('subMenu.filings'), 
+          label: 'Payroll Tax Filing', 
           onClick: (value) => {
-            // Create navigation event for tax filing
+            // Create navigation event for payroll tax filing
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'tax-filing', 
+              item: 'payroll-tax-filing', 
               navigationKey,
-              originalItem: 'Tax Filing'
+              originalItem: 'Payroll Tax Filing'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the TaxFiling component
+            // Load the Payroll Tax Filing component
             if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('tax-filing');
+              handleTaxesClick('payroll-tax-filing');
+            } else if (typeof handleSetView === 'function') {
+              // Fallback to direct view setting
+              handleSetView('payroll-tax-filing');
+            } else {
+              console.error('[listItems] No navigation handler available for Payroll Tax Filing');
             }
           }, 
-          value: 'tax-filing' 
+          value: 'payroll-tax-filing',
+          subItems: [
+            {
+              label: 'File Payroll Tax',
+              onClick: (value) => {
+                // Create navigation event for new payroll tax filing
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'new-payroll-filing', 
+                  navigationKey,
+                  originalItem: 'File Payroll Tax'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the New Payroll Filing component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('new-payroll-filing');
+                }
+              },
+              value: 'new-payroll-filing'
+            },
+            {
+              label: 'Payroll Tax History',
+              onClick: (value) => {
+                // Create navigation event for payroll tax history
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payroll-tax-history', 
+                  navigationKey,
+                  originalItem: 'Payroll Tax History'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Payroll Tax History component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('payroll-tax-history');
+                }
+              },
+              value: 'payroll-tax-history'
+            },
+            {
+              label: 'Payroll Tax Setup',
+              onClick: (value) => {
+                // Create navigation event for payroll tax setup
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payroll-tax-setup', 
+                  navigationKey,
+                  originalItem: 'Payroll Tax Setup'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Load the Payroll Tax Setup component
+                if (typeof handleTaxesClick === 'function') {
+                  handleTaxesClick('payroll-tax-setup');
+                }
+              },
+              value: 'payroll-tax-setup'
+            }
+          ]
         },
         { 
           label: t('mainMenu.reports'), 
@@ -2079,8 +2611,21 @@ const MainListItems = ({
     },
   ];
 
-  // Use menuItems directly (Settings is in the user dropdown menu)
-  const finalMenuItems = menuItems;
+  // Filter menu items based on business features
+  const filterMenuItemsByFeatures = (items) => {
+    return items.filter(item => {
+      // Filter Jobs menu based on features
+      if (item.label === t('mainMenu.jobs')) {
+        return businessFeatures.includes('jobs');
+      }
+      
+      // All other menu items are shown
+      return true;
+    });
+  };
+  
+  // Use filtered menuItems
+  const finalMenuItems = filterMenuItemsByFeatures(menuItems);
 
   // Create a Tailwind CSS based collapsible menu component to replace MUI Collapse
   const CollapsibleMenu = ({ isOpen, children }) => (
@@ -2181,6 +2726,16 @@ const MainListItems = ({
 
   // Function to check if user can see menu item
   const canSeeMenuItem = (item) => {
+    // First check database menu visibility if we have a menuKey
+    if (item.menuKey && Object.keys(menuVisibility).length > 0) {
+      // If menu visibility is explicitly set in database, use that
+      if (menuVisibility.hasOwnProperty(item.menuKey)) {
+        if (!menuVisibility[item.menuKey]) {
+          return false; // Menu is disabled in settings
+        }
+      }
+    }
+    
     // Debug logging for important menus
     if (item.label === 'Sales' || item.label === 'HR') {
       console.log(`🚨 [ROLE_TRACKING] canSeeMenuItem ${item.label}:`, {
@@ -2189,7 +2744,8 @@ const MainListItems = ({
         isLoading: isLoading,
         isOwnerOrAdmin: isOwnerOrAdmin(),
         requiresAdmin: item.requiresAdmin,
-        subItemsCount: item.subItems?.length
+        subItemsCount: item.subItems?.length,
+        menuVisibility: menuVisibility[item.menuKey],
       });
     }
     

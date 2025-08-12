@@ -1,5 +1,86 @@
 {
-  "about": "会社概要",
+  "about": {
+    "backToHome": "ホームに戻る",
+    "hero": {
+      "title": "企業に力を与え",
+      "subtitle": "グローバルに繁栄させる",
+      "description": "私たちは現代の中小企業向けのオペレーティングシステムを構築し、エンタープライズグレードのツールをすべての人に利用可能にしています。"
+    },
+    "story": {
+      "title": "私たちのストーリー",
+      "paragraph1": "Dottはシンプルな観察から生まれました：中小企業は複雑さに溺れていました。複数のツール、切断されたデータ、そして大企業向けに設計されたプロセスが、世界中の起業家を妨げていました。",
+      "paragraph2": "2023年に設立され、私たちは違うものを構築し始めました。中小企業の独特な課題を理解するプラットフォームで、特に伝統的なソリューションが失敗する新興市場です。",
+      "paragraph3": "今日、私たちは世界中のビジネスにサービスを提供できることを誇りに思います。しかし、私たちはまだ始まったばかりです。"
+    },
+    "timeline": {
+      "beginning": {
+        "title": "始まり",
+        "description": "中小企業向け統合ビジネス管理ツールの必要性を特定"
+      },
+      "launch": {
+        "title": "製品ローンチ",
+        "description": "財務・在庫管理機能を備えたコアプラットフォームをローンチ"
+      },
+      "expansion": {
+        "title": "グローバル展開",
+        "description": "25カ国以上にローカライズされた機能で拡大"
+      },
+      "ai": {
+        "title": "AI統合",
+        "description": "インテリジェントなインサイトと自動化を導入"
+      }
+    },
+    "mission": {
+      "title": "私たちのミッション",
+      "description": "場所や技術的専門知識に関係なく、中小企業に運営を簡素化し成長を可能にする強力で手頃なツールを提供することで、ビジネス管理を民主化する。"
+    },
+    "vision": {
+      "title": "私たちのビジョン",
+      "description": "すべての中小企業がFortune 500企業と同じ品質の管理ツールにアクセスできる世界を実現し、2030年までに100万社の企業を繁栄させること。"
+    },
+    "journey": {
+      "title": "私たちの旅"
+    },
+    "values": {
+      "title": "私たちの価値観",
+      "subtitle": "私たちのすべての決定を導く原則",
+      "simplicity": {
+        "title": "シンプルさを最優先",
+        "description": "直感的なデザインで複雑なビジネスオペレーションをシンプルに"
+      },
+      "innovation": {
+        "title": "継続的なイノベーション",
+        "description": "現代のビジネスの変化するニーズに合わせて進化"
+      },
+      "success": {
+        "title": "顧客の成功",
+        "description": "あなたの成長は私たちの成功 - あなたが勝つとき、私たちも勝つ"
+      },
+      "empowerment": {
+        "title": "グローバルエンパワーメント",
+        "description": "世界中のビジネスの障壁を打破"
+      }
+    },
+    "differentiators": {
+      "title": "Dottを特別にするもの",
+      "unified": {
+        "title": "統合プラットフォーム",
+        "description": "すべてのビジネスツールを一箇所に"
+      },
+      "global": {
+        "title": "グローバルでありながらローカル",
+        "description": "ローカルコンプライアンスを伴う国際標準"
+      },
+      "security": {
+        "title": "エンタープライズセキュリティ",
+        "description": "あなたのデータのための銀行レベルの保護"
+      },
+      "insights": {
+        "title": "スマートインサイト",
+        "description": "より良い意思決定のためのAI駆動分析"
+      }
+    }
+  },
   "features": {
     "eyebrow": "完全なビジネスソリューション",
     "heading": "グローバルに成長するためのすべて",
@@ -10,11 +91,13 @@
     },
     "financial": {
       "title": "財務管理",
-      "description": "ビジネス財務の完全な管理"
+      "description": "ビジネス財務の完全な管理",
+      "heading": "ビジネス財務の完全なコントロール"
     },
     "global": {
       "title": "グローバルビジネスツール",
-      "description": "国際的な運営に必要なすべて"
+      "description": "国際的な運営に必要なすべて",
+      "heading": "国際事業に必要なすべて"
     },
     "trust": {
       "title": "セキュリティとコンプライアンスのために構築"
@@ -160,33 +243,98 @@
     }
   },
   "highlights": {
-    "bluetooth": "Bluetoothスキャナー統合",
-    "printBarcodes": "カスタムバーコード印刷",
-    "lowStock": "在庫少アラート",
-    "customLabel": "カスタムラベル印刷",
-    "mobileScanning": "モバイルスキャニング",
-    "batchProcessing": "バッチ処理",
-    "offlineMode": "オフラインモード",
-    "multiplePayments": "複数の支払い方法",
-    "receiptCustom": "レシートカスタマイズ",
-    "recurringInvoices": "定期請求書",
-    "paymentReminders": "支払いリマインダー",
-    "invoiceFactoring": "請求書ファクタリング",
-    "vatGst": "VAT/GSTサポート",
+    "eyebrow": "主な利点",
+    "heading": "企業がDottを選ぶ理由",
+    "subheading": "競合他社との差別化を図り、ビジネスの成長を支援する高度な機能。",
+    "mobile": {
+      "title": "モバイルアプリケーション",
+      "description": "強力なモバイルアプリでいつでもどこでもビジネスデータにアクセス。在庫管理、売上処理、リアルタイムレポート閲覧を外出先で行えます。",
+      "imageAlt": "モバイルアプリのスクリーンショット"
+    },
+    "pos": {
+      "title": "POSシステムとバーコードスキャン",
+      "description": "あらゆるデバイスを強力なPOSシステムに変換。バーコードを瞬時にスキャン、売上を迅速に処理、在庫をリアルタイムで追跡し、現金、カード、モバイルマネーを含むすべての決済方法に対応。",
+      "imageAlt": "バーコードスキャン機能付きPOSシステム",
+      "features": {
+        "quickCheckout": "迅速会計",
+        "barcodeScanning": "バーコードスキャン",
+        "allPaymentTypes": "全決済タイプ",
+        "inventoryTracking": "在庫追跡",
+        "offlineMode": "オフラインモード",
+        "mobileReady": "モバイル対応"
+      }
+    },
+    "ai": {
+      "title": "AI駆動インサイト",
+      "description": "ビジネスデータに基づくスマートな推奨と予測分析を取得。AIが需要予測、在庫最適化、成長機会の特定を支援します。",
+      "imageAlt": "AI分析ダッシュボードのスクリーンショット"
+    },
+    "geofencing": {
+      "title": "ジオフェンシング＆位置追跡",
+      "description": "GPSベースの出退勤で正確な時間追跡を保証。フィールドチーム、配送ドライバー、リモートワーカーに最適。職場に仮想境界を設定し、従業員が指定エリアに出入りする際にアラートを受信。",
+      "imageAlt": "ジオフェンシングと位置追跡インターフェース",
+      "features": {
+        "gpsClockInOut": "GPS出退勤",
+        "virtualBoundaries": "仮想境界",
+        "realTimeAlerts": "リアルタイムアラート",
+        "automatedTimesheets": "自動勤怠表",
+        "complianceReady": "コンプライアンス対応",
+        "teamManagement": "チーム管理"
+      }
+    },
+    "mobilemoney": {
+      "title": "モバイルマネー決済",
+      "description": "世界中どこからでも決済を受け付けます。M-Pesa統合はケニアで稼働中、MTN Mobile Money、Airtel Money、Orange Money、GCash、Paytm、Pix、Mercado Pagoが近日対応予定。従来の銀行サービスよりもモバイルマネーを好む数十億の顧客にリーチ。",
+      "imageAlt": "モバイルマネー決済オプション",
+      "available": "決済方法：",
+      "live": "現在利用可能：",
+      "coming": "近日対応："
+    },
+    "whatsapp": {
+      "title": "WhatsAppビジネス",
+      "description": "WhatsAppビジネス統合で顧客コミュニケーションを変革します。製品カタログを作成・管理し、請求書や領収書を自動送信し、即座の顧客サポートを提供し、お客様の好みのメッセージングプラットフォームで繋がります。",
+      "learnMore": "詳しく見る"
+    },
+    "languages": {
+      "title": "20以上の言語をサポート",
+      "description": "お好みの言語で顧客にリーチし、ビジネスを管理。英語からスワヒリ語、スペイン語から中国語まで、20以上の言語をサポートし、世界中の企業がDottを利用できるようにします。",
+      "imageAlt": "多言語インターフェースのデモンストレーション",
+      "availableIn": "利用可能言語："
+    },
+    "features": {
+      "label": "主な機能："
+    },
+    "learnMore": "詳細を見る",
+    "jobs": {
+      "title": "包括的な作業管理",
+      "description": "見積もりから完了までのエンドツーエンドの作業原価計算。リアルタイムの収益性分析で材料、労働、経費を追跡します。モバイルファーストデザインのサービス事業、請負業者、現場作業に最適です。",
+      "imageAlt": "作業管理と原価計算のインターフェース",
+      "features": {
+        "jobCosting": "リアルタイムの作業原価計算",
+        "mobileFieldApp": "モバイルフィールドアプリ",
+        "materialTracking": "材料追跡",
+        "timeTracking": "自動時間追跡",
+        "photoCapture": "写真撮影",
+        "digitalSignatures": "デジタル署名",
+        "profitabilityAnalysis": "収益性分析",
+        "offlineSupport": "オフラインサポート"
+      }
+    },
+    "jobCosting": "リアルタイムの作業原価計算",
+    "mobileFieldApp": "フィールドワーカー向けモバイルアプリ",
+    "materialLaborTracking": "材料と労働の追跡",
+    "vatGst": "VAT/GST サポート",
     "taxReports": "税務レポート",
     "eFilingReady": "電子申告対応",
-    "customDashboards": "カスタムダッシュボード",
-    "profitAnalysis": "利益分析",
-    "cashFlowForecast": "キャッシュフロー予測",
-    "mobileMoney": "モバイルマネー",
-    "bankTransfers": "銀行振込",
-    "digitalWallets": "デジタルウォレット",
-    "customsDocuments": "税関書類",
-    "shippingIntegration": "配送統合",
-    "tradeCompliance": "貿易コンプライアンス",
-    "soc2Compliant": "SOC2準拠",
-    "dataEncryption": "データ暗号化",
-    "gdprReady": "GDPR対応"
+    "ifrs": "166カ国以上のIFRS",
+    "gaap": "米国企業向けUS GAAP",
+    "autoDetect": "国別自動検出",
+    "autoDetection": "自動言語検出",
+    "rightToLeft": "右から左への言語",
+    "regionalFormat": "地域の日付/数値形式",
+    "realTimeRates": "リアルタイム為替レート",
+    "cryptoCurrency": "暗号通貨サポート",
+    "currencyConversion": "自動変換"
   },
   "contact": {
     "eyebrow": "お問い合わせ",
@@ -237,8 +385,66 @@
   "socialImpact": "社会的影響",
   "getInTouch": "チームにお問い合わせ",
   "termsOfUse": "利用規約",
-  "privacyPolicy": "プライバシーポリシー",
-  "cookiePolicy": "クッキーポリシー",
+  "privacyPolicy": {},
+  "cookiePolicy": {
+    "title": "Cookie Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "navigation": {
+      "backToHome": "Back to Home"
+    },
+    "introduction": "This Cookie Policy explains how Dott LLC uses cookies and similar technologies to recognize you when you visit our website and use our services. It explains what these technologies are and why we use them, as well as your rights to control our use of them.",
+    "sections": {
+      "whatAreCookies": {
+        "title": "What are cookies?",
+        "content": "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information."
+      },
+      "howWeUseCookies": {
+        "title": "How we use cookies",
+        "content": "We use cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as \"essential\" or \"strictly necessary\" cookies. Other cookies enable us to track and target the interests of our users to enhance the experience on our website."
+      },
+      "typesOfCookies": {
+        "title": "Types of cookies we use",
+        "content": "The specific types of first and third party cookies served through our website and the purposes they perform are described below:",
+        "essential": {
+          "title": "Essential cookies",
+          "content": "These cookies are strictly necessary to provide you with services available through our website and to use some of its features, such as access to secure areas."
+        },
+        "functional": {
+          "title": "Functional cookies",
+          "content": "These cookies enable the website to provide enhanced functionality and personalization. They may be set by us or by third party providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics cookies",
+          "content": "These cookies allow us to count visits and traffic sources, so we can measure and improve the performance of our site. They help us know which pages are the most and least popular and see how visitors move around the site."
+        },
+        "marketing": {
+          "title": "Marketing cookies",
+          "content": "These cookies may be set through our site by our advertising partners. They may be used by those companies to build a profile of your interests and show you relevant adverts on other sites."
+        }
+      },
+      "managingCookies": {
+        "title": "Managing cookies",
+        "content": "Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you. It may also stop you from saving customized settings like login information."
+      },
+      "thirdPartyCookies": {
+        "title": "Third-party cookies",
+        "content": "In addition to our own cookies, we may also use various third-party cookies to report usage statistics of our service and deliver advertisements on and through our service."
+      },
+      "changes": {
+        "title": "Changes to this Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time in order to reflect changes to the cookies we use or for other operational, legal or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies."
+      },
+      "contact": {
+        "title": "Contact us",
+        "content": "If you have any questions about our use of cookies or other technologies, please contact us."
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
   "simplicity": "シンプルさ",
   "innovation": "革新",
   "empowerment": "エンパワーメント",
@@ -273,7 +479,9 @@
       "mobileMoney": "モバイルマネー決済",
       "cardPayments": "世界中でのカード決済",
       "languages": "20以上の言語に対応",
-      "mobilePhone": "モバイルアプリ付属"
+      "mobilePhone": "モバイルアプリ付属",
+      "jobManagement": "作業管理と原価計算",
+      "accounting": "IFRS & US GAAP サポート"
     }
   },
   "heroTitle": "オールインワンビジネスソフトウェア",
@@ -605,35 +813,6 @@
     "support": "サポート",
     "legal": "法的"
   },
-  "highlights": {
-    "bluetooth": "Bluetoothスキャナー連携",
-    "printBarcodes": "カスタムバーコード印刷",
-    "lowStock": "低在庫アラート",
-    "customLabel": "カスタムラベル印刷",
-    "mobileScanning": "モバイルスキャン",
-    "batchProcessing": "バッチ処理",
-    "offlineMode": "オフラインモード",
-    "multiplePayments": "複数決済方法",
-    "receiptCustom": "レシートカスタマイズ",
-    "recurringInvoices": "繰り返し請求書",
-    "paymentReminders": "支払いリマインダー",
-    "invoiceFactoring": "請求書ファクタリング",
-    "vatGst": "VAT/GSTサポート",
-    "taxReports": "税務レポート",
-    "eFilingReady": "電子申告対応",
-    "customDashboards": "カスタムダッシュボード",
-    "profitAnalysis": "利益分析",
-    "cashFlowForecast": "キャッシュフロー予測",
-    "mobileMoney": "モバイルマネー",
-    "bankTransfers": "銀行振込",
-    "digitalWallets": "デジタルウォレット",
-    "customsDocuments": "通関書類",
-    "shippingIntegration": "配送連携",
-    "tradeCompliance": "貿易コンプライアンス",
-    "soc2Compliant": "SOC2準拠",
-    "dataEncryption": "データ暗号化",
-    "gdprReady": "GDPR対応"
-  },
   "faq": {
     "eyebrow": "よくある質問",
     "heading": "よくある質問",
@@ -722,7 +901,12 @@
     "global": "輸入/輸出管理",
     "global.description": "国際貿易文書とコンプライアンスの取り扱い",
     "security": "エンタープライズセキュリティ",
-    "security.description": "銀行グレードセキュリティと地域コンプライアンス"
+    "security.description": "銀行グレードセキュリティと地域コンプライアンス",
+    "jobs": "作業管理と原価計算",
+    "jobs.description": "リアルタイムの原価計算、モバイルフィールドアプリ、収益性分析を備えたエンドツーエンドのプロジェクト追跡",
+    "accounting": "デュアル会計基準",
+    "languages": "多言語サポート",
+    "currencies": "マルチ通貨システム"
   },
   "trust": {
     "soc2Title": "SOC2準拠",
@@ -733,88 +917,6 @@
     "gdprDesc": "プライバシー準拠",
     "uptimeTitle": "99.9%稼働率",
     "uptimeDesc": "常時利用可能"
-  },
-  "about": {
-    "backToHome": "ホームに戻る",
-    "hero": {
-      "title": "企業に力を与え",
-      "subtitle": "グローバルに繁栄させる",
-      "description": "私たちは現代の中小企業向けのオペレーティングシステムを構築し、エンタープライズグレードのツールをすべての人に利用可能にしています。"
-    },
-    "story": {
-      "title": "私たちのストーリー",
-      "paragraph1": "Dottはシンプルな観察から生まれました：中小企業は複雑さに溺れていました。複数のツール、切断されたデータ、そして大企業向けに設計されたプロセスが、世界中の起業家を妨げていました。",
-      "paragraph2": "2023年に設立され、私たちは違うものを構築し始めました。中小企業の独特な課題を理解するプラットフォームで、特に伝統的なソリューションが失敗する新興市場です。",
-      "paragraph3": "今日、私たちは世界中のビジネスにサービスを提供できることを誇りに思います。しかし、私たちはまだ始まったばかりです。"
-    },
-    "timeline": {
-      "beginning": {
-        "title": "始まり",
-        "description": "中小企業向け統合ビジネス管理ツールの必要性を特定"
-      },
-      "launch": {
-        "title": "製品ローンチ",
-        "description": "財務・在庫管理機能を備えたコアプラットフォームをローンチ"
-      },
-      "expansion": {
-        "title": "グローバル展開",
-        "description": "25カ国以上にローカライズされた機能で拡大"
-      },
-      "ai": {
-        "title": "AI統合",
-        "description": "インテリジェントなインサイトと自動化を導入"
-      }
-    },
-    "mission": {
-      "title": "私たちのミッション",
-      "description": "場所や技術的専門知識に関係なく、中小企業に運営を簡素化し成長を可能にする強力で手頃なツールを提供することで、ビジネス管理を民主化する。"
-    },
-    "vision": {
-      "title": "私たちのビジョン",
-      "description": "すべての中小企業がFortune 500企業と同じ品質の管理ツールにアクセスできる世界を実現し、2030年までに100万社の企業を繁栄させること。"
-    },
-    "journey": {
-      "title": "私たちの旅"
-    },
-    "values": {
-      "title": "私たちの価値観",
-      "subtitle": "私たちのすべての決定を導く原則",
-      "simplicity": {
-        "title": "シンプルさを最優先",
-        "description": "直感的なデザインで複雑なビジネスオペレーションをシンプルに"
-      },
-      "innovation": {
-        "title": "継続的なイノベーション",
-        "description": "現代のビジネスの変化するニーズに合わせて進化"
-      },
-      "success": {
-        "title": "顧客の成功",
-        "description": "あなたの成長は私たちの成功 - あなたが勝つとき、私たちも勝つ"
-      },
-      "empowerment": {
-        "title": "グローバルエンパワーメント",
-        "description": "世界中のビジネスの障壁を打破"
-      }
-    },
-    "differentiators": {
-      "title": "Dottを特別にするもの",
-      "unified": {
-        "title": "統合プラットフォーム",
-        "description": "すべてのビジネスツールを一箇所に"
-      },
-      "global": {
-        "title": "グローバルでありながらローカル",
-        "description": "ローカルコンプライアンスを伴う国際標準"
-      },
-      "security": {
-        "title": "エンタープライズセキュリティ",
-        "description": "あなたのデータのための銀行レベルの保護"
-      },
-      "insights": {
-        "title": "スマートインサイト",
-        "description": "より良い意思決定のためのAI駆動分析"
-      }
-    }
   },
   "blog": {
     "hero": {
@@ -881,70 +983,6 @@
     "allRightsReserved": "すべての権利を保護します。",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfService": "利用規約"
-  },
-  "highlights": {
-    "eyebrow": "主な利点",
-    "heading": "企業がDottを選ぶ理由",
-    "subheading": "競合他社との差別化を図り、ビジネスの成長を支援する高度な機能。",
-    "mobile": {
-      "title": "モバイルアプリケーション",
-      "description": "強力なモバイルアプリでいつでもどこでもビジネスデータにアクセス。在庫管理、売上処理、リアルタイムレポート閲覧を外出先で行えます。",
-      "imageAlt": "モバイルアプリのスクリーンショット"
-    },
-    "pos": {
-      "title": "POSシステムとバーコードスキャン",
-      "description": "あらゆるデバイスを強力なPOSシステムに変換。バーコードを瞬時にスキャン、売上を迅速に処理、在庫をリアルタイムで追跡し、現金、カード、モバイルマネーを含むすべての決済方法に対応。",
-      "imageAlt": "バーコードスキャン機能付きPOSシステム",
-      "features": {
-        "quickCheckout": "迅速会計",
-        "barcodeScanning": "バーコードスキャン",
-        "allPaymentTypes": "全決済タイプ",
-        "inventoryTracking": "在庫追跡",
-        "offlineMode": "オフラインモード",
-        "mobileReady": "モバイル対応"
-      }
-    },
-    "ai": {
-      "title": "AI駆動インサイト",
-      "description": "ビジネスデータに基づくスマートな推奨と予測分析を取得。AIが需要予測、在庫最適化、成長機会の特定を支援します。",
-      "imageAlt": "AI分析ダッシュボードのスクリーンショット"
-    },
-    "geofencing": {
-      "title": "ジオフェンシング＆位置追跡",
-      "description": "GPSベースの出退勤で正確な時間追跡を保証。フィールドチーム、配送ドライバー、リモートワーカーに最適。職場に仮想境界を設定し、従業員が指定エリアに出入りする際にアラートを受信。",
-      "imageAlt": "ジオフェンシングと位置追跡インターフェース",
-      "features": {
-        "gpsClockInOut": "GPS出退勤",
-        "virtualBoundaries": "仮想境界",
-        "realTimeAlerts": "リアルタイムアラート",
-        "automatedTimesheets": "自動勤怠表",
-        "complianceReady": "コンプライアンス対応",
-        "teamManagement": "チーム管理"
-      }
-    },
-    "mobilemoney": {
-      "title": "モバイルマネー決済",
-      "description": "世界中どこからでも決済を受け付けます。M-Pesa統合はケニアで稼働中、MTN Mobile Money、Airtel Money、Orange Money、GCash、Paytm、Pix、Mercado Pagoが近日対応予定。従来の銀行サービスよりもモバイルマネーを好む数十億の顧客にリーチ。",
-      "imageAlt": "モバイルマネー決済オプション",
-      "available": "決済方法：",
-      "live": "現在利用可能：",
-      "coming": "近日対応："
-    },
-    "whatsapp": {
-      "title": "WhatsAppビジネス",
-      "description": "WhatsAppビジネス統合で顧客コミュニケーションを変革します。製品カタログを作成・管理し、請求書や領収書を自動送信し、即座の顧客サポートを提供し、お客様の好みのメッセージングプラットフォームで繋がります。",
-      "learnMore": "詳しく見る"
-    },
-    "languages": {
-      "title": "20以上の言語をサポート",
-      "description": "お好みの言語で顧客にリーチし、ビジネスを管理。英語からスワヒリ語、スペイン語から中国語まで、20以上の言語をサポートし、世界中の企業がDottを利用できるようにします。",
-      "imageAlt": "多言語インターフェースのデモンストレーション",
-      "availableIn": "利用可能言語："
-    },
-    "features": {
-      "label": "主な機能："
-    },
-    "learnMore": "詳細を見る"
   },
   "builtForYou": {
     "title": "あなたのために構築",
@@ -1064,5 +1102,75 @@
       "name": "Amazon Seller",
       "description": "Amazonビジネスを管理"
     }
-  }
+  },
+  "termsOfService": {},
+  "mobileLanding": {
+    "hero": {
+      "title": "Dott: Global Business Platform",
+      "description": "オフラインでも動作するAI搭載ビジネス管理プラットフォーム。",
+      "cta": {
+        "getStarted": "無料で始める",
+        "signIn": "ログイン"
+      },
+      "noCreditCard": "クレジットカード不要",
+      "freePlan": "永久無料プラン"
+    },
+    "features": {
+      "title": "必要なものすべて",
+      "pos": {
+        "title": "POSシステム",
+        "description": "オフラインでも即座に販売処理"
+      },
+      "barcode": {
+        "title": "バーコードスキャナー",
+        "description": "カメラで商品をスキャン"
+      },
+      "invoicing": {
+        "title": "クイック請求書",
+        "description": "移動中でも請求書を作成・送信"
+      },
+      "analytics": {
+        "title": "リアルタイム分析",
+        "description": "ビジネスパフォーマンスを追跡"
+      }
+    },
+    "benefits": {
+      "title": "成功のために設計",
+      "offline": {
+        "title": "オフライン動作",
+        "description": "インターネットなしで販売継続"
+      },
+      "fast": {
+        "title": "超高速",
+        "description": "即座にロード、遅延なし"
+      },
+      "mobile": {
+        "title": "モバイルファースト",
+        "description": "スマホ・タブレット向け設計"
+      },
+      "payments": {
+        "title": "モバイルマネー",
+        "description": "M-Pesa、オフラインモード、ローカルサポート"
+      }
+    },
+    "pricing": {
+      "title": "シンプルで透明な価格設定"
+    },
+    "cta": {
+      "title": "ビジネスを成長させる準備はできましたか？",
+      "subtitle": "今日からビジネス管理を改善しましょう",
+      "button": "無料で始める",
+      "terms": "クレジットカード不要 • いつでもキャンセル可能"
+    }
+  },
+  "smartBanner": {
+    "title": "Dott：グローバルビジネスプラットフォーム",
+    "ios": "ホーム画面で利用可能",
+    "android": "クイックアクセスのためにインストール",
+    "tap": "タップ",
+    "then": "次に",
+    "addToHome": "ホーム画面に追加",
+    "install": "インストール"
+  },
+  "browserTitle": "Dott: グローバルビジネスプラットフォーム"
 }

@@ -3,7 +3,7 @@ export const i18n = {
   defaultLocale: 'en',
   locales: [
     'en', 'es', 'fr', 'pt', 'de', 'zh', 'ar', 'hi', 'ru', 'ja', 'sw', 'tr', 'id', 'vi', 'nl',
-    'ha', 'yo', 'am', 'zu', 'ko'
+    'ha', 'yo', 'am', 'zu', 'ko', 'it', 'pl', 'th', 'bn', 'ur', 'tl', 'uk', 'fa', 'sn', 'ig'
   ],
   localeDetection: true,
 };

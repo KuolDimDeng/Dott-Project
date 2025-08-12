@@ -13,7 +13,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
@@ -25,10 +25,10 @@ from rest_framework.response import Response
 import json
 from typing import Dict, Any
 
-from ..models import (
-    TaxSignatureRequest, TaxSignatureDocument, TaxSignatureSigner,
-    TaxSignatureAuditLog, TaxSignatureWebhook
-)
+# from ..models import (
+#     TaxSignatureRequest, TaxSignatureDocument, TaxSignatureSigner,
+#     TaxSignatureAuditLog, TaxSignatureWebhook
+# )
 from ..esignature.signature_manager import SignatureManager, SignatureWorkflowError
 from ..esignature.providers import get_signature_provider, get_available_providers
 

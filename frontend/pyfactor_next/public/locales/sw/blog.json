@@ -1,0 +1,49 @@
+{
+  "backToHome": "Rudi Nyumbani",
+  "hero": {
+    "title": "Blogu ya Biashara ya Dott",
+    "subtitle": "Jifunze jinsi ya kudhibiti fedha za biashara yako na Dott. Pata vidokezo, maarifa na mikakati ya kukuza biashara yako."
+  },
+  "newsletter": {
+    "title": "Jiandikishe kwa jarida letu la habari kwa ajili ya sasisho za bidhaa na machapisho mapya ya blogu!",
+    "placeholder": "Anwani yako ya barua pepe",
+    "button": "Jiandikishe"
+  },
+  "categories": {
+    "all": "Makala Zote",
+    "accounting": "Uhasibu na Kodi",
+    "business": "Biashara"
+  },
+  "search": {
+    "placeholder": "Tafuta makala..."
+  },
+  "featured": "Iliyoangaziwa",
+  "readTime": "Dakika {{minutes}} za kusoma",
+  "noArticles": "Hakuna makala zilizopatikana zinazolingana na vigezo vyako.",
+  "articles": {
+    "profitLoss": {
+      "title": "Kuelewa Faida na Hasara: Mwongozo wa Kufurahisha kwa Wamiliki wa Biashara",
+      "excerpt": "Gundua jinsi ya kusoma na kuelewa taarifa yako ya P&L bila kulala. Tunaahidi kuifanya iwe ya kuvutia!"
+    },
+    "expenses": {
+      "title": "Fuatilia Gharama za Biashara Kama Mtaalamu: Hatua 5 Rahisi",
+      "excerpt": "Jifunze jinsi ya kufuatilia kila senti bila kupoteza akili yako. Pia, gundua ni gharama gani zinazoweza kukuokoa pesa wakati wa kodi!"
+    },
+    "taxDeductions": {
+      "title": "Upungufu wa Kodi Uliofichika Ambao Kila Biashara Ndogo Inapaswa Kujua",
+      "excerpt": "Acha kuacha pesa mezani! Gundua upungufu halali wa kodi ambao wamiliki wengi wa biashara wanakosa."
+    },
+    "inventory": {
+      "title": "Badilisha Usimamizi wa Hesabu yako na Uskani wa Barcode",
+      "excerpt": "Sema kwaheri kwa kuhesabu kwa mkono! Jifunze jinsi uskani wa barcode unaweza kuleta mapinduzi katika usimamizi wa hesabu yako."
+    },
+    "mobile": {
+      "title": "Endesha Biashara Yako Yote kutoka Simu Yako: Mapinduzi ya Simu",
+      "excerpt": "Gundua jinsi ya kusimamia ankara, kufuatilia hesabu, na kushughulikia malipo - yote kutoka smartphone yako!"
+    },
+    "customerRelationships": {
+      "title": "Kujenga Mahusiano ya Wateja Yanayodumu: CRM Iliyofanywa Rahisi",
+      "excerpt": "Jifunze jinsi ya kuwafanya wateja warudi bila programu ngumu au zana za gharama kubwa."
+    }
+  }
+}

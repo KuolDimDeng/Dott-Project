@@ -1,27 +1,23 @@
 # ========================================
 # Stage 1: Base image with pnpm
-# Cache bust: 2025-07-24-v1
+# Cache bust: 2025-08-12-v1-fix-docker-cache
 # ========================================
 FROM node:18-alpine AS base
-# Install system dependencies
+ARG CACHEBUST=2025-08-12-v1
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
-# Install pnpm globally with specific version for consistency
-RUN corepack enable && corepack prepare pnpm@8.10.0 --activate
+RUN npm install -g pnpm@8.10.0
 
 # ========================================
 # Stage 2: Install dependencies
 # ========================================
 FROM base AS deps
+RUN pnpm config set store-dir /pnpm/store
 WORKDIR /app
 
-# Copy package files only (for better caching)
-COPY package.json pnpm-lock.yaml ./
-
-# Install ALL dependencies (including devDependencies for building)
-# Using cache mount for pnpm store
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Copy package files first for better layer caching
+COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # ========================================
 # Stage 3: Build the application
@@ -29,18 +25,13 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
-# Copy installed dependencies
+# Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy source code
-COPY . .
+# Copy the entire frontend directory
+COPY frontend/pyfactor_next .
 
-# Set build-time environment variables
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-
-# Copy all environment variables that start with NEXT_PUBLIC_ from build environment
-# This allows Render to pass them without explicitly declaring each one
+# Accept build args for environment variables
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_BASE_URL
 ARG NEXT_PUBLIC_POSTHOG_KEY
@@ -52,8 +43,9 @@ ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_CRISP_WEBSITE_ID
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_PLAID_ENV
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-# Convert ARGs to ENVs so they're available during the build
+# Convert ARGs to ENVs
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
 ENV NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
@@ -65,58 +57,43 @@ ENV NEXT_PUBLIC_CRISP_WEBSITE_ID=${NEXT_PUBLIC_CRISP_WEBSITE_ID}
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
 ENV NEXT_PUBLIC_PLAID_ENV=${NEXT_PUBLIC_PLAID_ENV}
 ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
 
-# Debug: Print environment variables during build (will be visible in Render logs)
-RUN echo "=== Build Environment Debug ===" && \
-    echo "NEXT_PUBLIC_SENTRY_DSN is: ${NEXT_PUBLIC_SENTRY_DSN:+SET}" && \
-    echo "NEXT_PUBLIC_POSTHOG_KEY is: ${NEXT_PUBLIC_POSTHOG_KEY:+SET}" && \
-    echo "NEXT_PUBLIC_POSTHOG_HOST is: ${NEXT_PUBLIC_POSTHOG_HOST:+SET}" && \
-    echo "NEXT_PUBLIC_API_URL is: ${NEXT_PUBLIC_API_URL:+SET}" && \
-    echo "=== End Debug ==="
-
-# Run the optimized production build
-# Set Node.js memory limit to prevent build failures
+# Build the application
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
-    sh scripts/render-build.sh
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+RUN pnpm next build
 
 # ========================================
 # Stage 4: Production runner
 # ========================================
-FROM base AS runner
+FROM node:18-alpine AS runner
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user for security
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy only necessary files for production
-# Public assets
+# Copy necessary files
 COPY --from=builder /app/public ./public
-
-# Standalone build output (includes node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-
-# Static files (JS, CSS, media)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1))"
 
-# Switch to non-root user
 USER nextjs
 
-# Expose port
 EXPOSE 3000
 
-# Set port and hostname for Next.js standalone
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["node", "server.js"]
+CMD ["node", "--max-old-space-size=512", "server.js"]

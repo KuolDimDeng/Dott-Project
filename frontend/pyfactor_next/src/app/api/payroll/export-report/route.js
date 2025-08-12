@@ -3,12 +3,8 @@ import { Pool } from 'pg';
 import { getDbConfigFromEnv } from '@/utils/db-config';
 import { createServerLogger } from '@/utils/serverLogger';
 import { getAuthenticatedUser } from '@/lib/auth-utils';
-import puppeteer from 'puppeteer';
-import { createServer } from 'http';
-import { parse } from 'url';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { EOL } from 'os';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
@@ -608,26 +604,49 @@ async function generatePDF(reportData, companyInfo, dateRange, timeFrame, report
     </html>
   `;
   
-  // Use Puppeteer to generate PDF
-  const browser = await puppeteer.launch({ headless: 'new' });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+  // Use jsPDF to generate PDF
+  const doc = new jsPDF('p', 'mm', 'a4');
+  
+  // Add content to PDF
+  doc.setFontSize(20);
+  doc.text(reportData.title, 105, 20, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.text(`Report Period: ${reportData.period}`, 20, 40);
+  doc.text(`Generated: ${reportData.generated_date}`, 20, 50);
+  
+  // Add summary section
+  let yPosition = 70;
+  doc.setFontSize(14);
+  doc.text('Summary', 20, yPosition);
+  yPosition += 10;
+  
+  doc.setFontSize(10);
+  Object.entries(reportData.summary).forEach(([key, value]) => {
+    doc.text(`${key}: ${value}`, 30, yPosition);
+    yPosition += 7;
+  });
+  
+  // Add details table
+  if (reportData.details && reportData.details.length > 0) {
+    yPosition += 10;
     
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
+    const headers = Object.keys(reportData.details[0]);
+    const rows = reportData.details.map(item => 
+      headers.map(header => String(item[header] || ''))
+    );
+    
+    doc.autoTable({
+      head: [headers],
+      body: rows,
+      startY: yPosition,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
     });
-    
-    return pdfBuffer;
-  } finally {
-    await browser.close();
   }
+  
+  // Generate PDF buffer
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  
+  return pdfBuffer;
 } 
