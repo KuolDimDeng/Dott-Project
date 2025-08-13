@@ -7,14 +7,14 @@ import {
   UserGroupIcon, 
   CurrencyDollarIcon,
   ShoppingCartIcon,
-  TrendingUpIcon,
-  TrendingDownIcon
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
 
 const MetricCard = ({ title, value, change, changeType, icon: Icon, currency }) => {
   const isPositive = changeType === 'increase';
   const changeColor = isPositive ? 'text-green-600' : 'text-red-600';
-  const changeIcon = isPositive ? TrendingUpIcon : TrendingDownIcon;
+  const changeIcon = isPositive ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
   const ChangeIcon = changeIcon;
 
   return (
