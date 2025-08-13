@@ -69,7 +69,8 @@ export async function POST(request) {
     console.log('🔍 [AUTH DEBUG] ===== END ENVIRONMENT CONFIGURATION =====');
     const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
     const clientSecret = process.env.AUTH0_CLIENT_SECRET;
-    const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
+    const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 
+                     (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' ? 'https://api-staging.dottapps.com' : 'https://api.dottapps.com');
     
     addDebugEntry('Auth0 configuration', {
       domain: auth0Domain,
@@ -89,7 +90,8 @@ export async function POST(request) {
       // When secrets are missing, proxy through backend password login endpoint
       addDebugEntry('Auth0 secrets not available, proxying through backend');
       
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 
+                      (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com');
       const cookieStore = cookies();
       
       // DEBUG: Log backend proxy details

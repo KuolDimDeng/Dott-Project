@@ -2,9 +2,16 @@
 // This ensures we always use the correct API URL
 
 const getApiUrl = () => {
-  // Always use api.dottapps.com in production
+  // Check for staging environment first
   if (typeof window !== 'undefined') {
     // Client-side
+    if (window.location.hostname === 'staging.dottapps.com' || 
+        window.location.hostname.includes('dott-staging')) {
+      console.log('[API Config] Staging environment detected, using staging API');
+      return process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-staging.onrender.com';
+    }
+    
+    // Production environment
     if (window.location.hostname.includes('dottapps.com') || 
         window.location.hostname.includes('onrender.com')) {
       console.log('[API Config] Production environment detected, using api.dottapps.com');
@@ -12,13 +19,14 @@ const getApiUrl = () => {
     }
   }
   
-  // Server-side or development
+  // Server-side: check environment variable to determine staging vs production
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT;
   
-  // Ensure we never use the wrong Render URL
-  if (envUrl && envUrl.includes('api.dottapps.com')) {
-    console.warn('[API Config] Wrong API URL detected, correcting to api.dottapps.com');
-    return 'https://api.dottapps.com';
+  // If explicitly set as staging, use staging API
+  if (environment === 'staging') {
+    console.log('[API Config] Staging environment set, using:', envUrl || 'https://dott-api-staging.onrender.com');
+    return envUrl || 'https://dott-api-staging.onrender.com';
   }
   
   // Use environment variable or default to production API
