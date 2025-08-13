@@ -2721,7 +2721,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     
                     try {
                       const endpoint = product.is_active !== false ? 'deactivate' : 'activate';
-                      const response = await fetch(`/api/inventory/optimized/products/${product.id}/${endpoint}/`, {
+                      const response = await fetch(`/api/inventory/products/${product.id}/${endpoint}/`, {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
@@ -3118,7 +3118,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          },
+        },
+        credentials: 'include',
         body: JSON.stringify(apiData)
       });
       
