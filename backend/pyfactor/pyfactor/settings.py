@@ -1030,14 +1030,28 @@ if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
 #     'taxes.db_router.TaxDatabaseRouter'         # Tax database router
 # ]
 
-DATABASES = {
+# Parse DATABASE_URL if provided (standard for deployment platforms)
+import dj_database_url
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    # Use DATABASE_URL for configuration (Render, Heroku, etc.)
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=0)
+    }
+    # Ensure proper SSL mode for production
+    DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+else:
+    # Fall back to individual environment variables
+    DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
-        'NAME': os.getenv('DB_NAME', 'dott_production'),
-        'USER': os.getenv('DB_USER', 'dott_user'),
+        'NAME': os.getenv('DB_NAME'),  # No hardcoded defaults
+        'USER': os.getenv('DB_USER'),  # No hardcoded defaults
         'PASSWORD': os.getenv('DB_PASSWORD'),  # SECURITY: No default password
-        'HOST': os.getenv('DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+        'HOST': os.getenv('DB_HOST'),  # No hardcoded defaults
+        'PORT': os.getenv('DB_PORT', '5432'),  # Port default is safe
         'TIME_ZONE': 'UTC',
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
         'AUTOCOMMIT': True,
@@ -1067,38 +1081,33 @@ DATABASES = {
         # }
     },
 
-    'taxes': {
-        'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
-        'NAME': os.getenv('TAX_DB_NAME', 'dott_production'),
-        'USER': os.getenv('TAX_DB_USER', 'dott_user'),
-        'PASSWORD': os.getenv('TAX_DB_PASSWORD', os.getenv('DB_PASSWORD')),  # SECURITY: Falls back to DB_PASSWORD
-        'HOST': os.getenv('TAX_DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
-        'PORT': os.getenv('TAX_DB_PORT', '5432'),
-        'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
-        'OPTIONS': {
-            'connect_timeout': 10,
-            'client_encoding': 'UTF8',
-            'sslmode': os.getenv('DB_SSL_MODE', 'require'),
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
-            
-            
-            
-            
-            
-        },
-        # 'POOL_OPTIONS': {  # Commented out since we're not using connection pool temporarily
-        #     'POOL_SIZE': 10,
-        #     'MAX_OVERFLOW': 5,
-        #     'RECYCLE': 300,
-        #     'TIMEOUT': 30,
-        #     'RETRY': 3,
-        #     'RECONNECT': True,
-        # }
+        'taxes': {
+            'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
+            'NAME': os.getenv('TAX_DB_NAME', os.getenv('DB_NAME')),  # Falls back to default DB
+            'USER': os.getenv('TAX_DB_USER', os.getenv('DB_USER')),  # Falls back to default user
+            'PASSWORD': os.getenv('TAX_DB_PASSWORD', os.getenv('DB_PASSWORD')),  # Falls back to DB_PASSWORD
+            'HOST': os.getenv('TAX_DB_HOST', os.getenv('DB_HOST')),  # Falls back to default host
+            'PORT': os.getenv('TAX_DB_PORT', '5432'),  # Port default is safe
+            'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
+            'OPTIONS': {
+                'connect_timeout': 10,
+                'client_encoding': 'UTF8',
+                'sslmode': os.getenv('DB_SSL_MODE', 'require'),
+                'keepalives': 1,
+                'keepalives_idle': 30,
+                'keepalives_interval': 10,
+                'keepalives_count': 5,
+            },
+            # 'POOL_OPTIONS': {  # Commented out since we're not using connection pool temporarily
+            #     'POOL_SIZE': 10,
+            #     'MAX_OVERFLOW': 5,
+            #     'RECYCLE': 300,
+            #     'TIMEOUT': 30,
+            #     'RETRY': 3,
+            #     'RECONNECT': True,
+            # }
+        }
     }
-}
 
 # Database pool arguments optimized for better connection management
 DATABASE_POOL_ARGS = {
