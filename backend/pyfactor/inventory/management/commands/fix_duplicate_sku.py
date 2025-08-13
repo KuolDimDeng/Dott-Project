@@ -77,7 +77,9 @@ class Command(BaseCommand):
                 ).order_by('created_at')
                 
                 for p in all_products:
-                    self.stdout.write(f'  - {p.name}: SKU={p.sku}, Price=${p.price}, Stock={p.quantity_in_stock}')
+                    # Use the correct field name for stock quantity
+                    stock = getattr(p, 'quantity_in_stock', None) or getattr(p, 'stock_quantity', None) or getattr(p, 'quantity', 0)
+                    self.stdout.write(f'  - {p.name}: SKU={p.sku}, Price=${p.price}, Stock={stock}')
                 
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error fixing duplicate SKU: {str(e)}'))
