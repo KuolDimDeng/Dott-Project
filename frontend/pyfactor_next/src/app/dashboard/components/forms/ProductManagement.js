@@ -2721,7 +2721,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     
                     try {
                       const endpoint = product.is_active !== false ? 'deactivate' : 'activate';
-                      const response = await fetch(`/api/inventory/products/${product.id}/${endpoint}/`, {
+                      const response = await fetch(`/api/inventory/products/${product.id}/${endpoint}`, {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
