@@ -66,7 +66,31 @@ class Command(BaseCommand):
                         ON {table_name}(tenant_id);
                     """)
                     
-                    self.stdout.write(self.style.SUCCESS(f'Fixed {table_name}'))
+                    self.stdout.write(self.style.SUCCESS(f'Fixed tenant_id for {table_name}'))
+                
+                # Also check for business_id column
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = %s 
+                    AND column_name = 'business_id';
+                """, [table_name])
+                
+                if not cursor.fetchone():
+                    # Add business_id column
+                    cursor.execute(f"""
+                        ALTER TABLE {table_name} 
+                        ADD COLUMN business_id uuid;
+                    """)
+                    
+                    # Update with tenant_id value
+                    cursor.execute(f"""
+                        UPDATE {table_name} 
+                        SET business_id = tenant_id 
+                        WHERE business_id IS NULL AND tenant_id IS NOT NULL;
+                    """)
+                    
+                    self.stdout.write(self.style.SUCCESS(f'Fixed business_id for {table_name}'))
                 
                 # Also fix other finance tables
                 other_tables = [

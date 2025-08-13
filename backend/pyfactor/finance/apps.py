@@ -73,6 +73,32 @@ class FinanceConfig(AppConfig):
                             """)
                             
                             logger.info("SUCCESS: Added tenant_id to finance_journalentryline")
+                
+                # Also check for business_id column
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'finance_journalentryline' 
+                    AND column_name = 'business_id'
+                    LIMIT 1;
+                """)
+                
+                if not cursor.fetchone():
+                    logger.info("CRITICAL: Adding missing business_id to finance_journalentryline")
+                    
+                    cursor.execute("""
+                        ALTER TABLE finance_journalentryline 
+                        ADD COLUMN IF NOT EXISTS business_id uuid;
+                    """)
+                    
+                    # Update with default business_id from tenant
+                    cursor.execute("""
+                        UPDATE finance_journalentryline 
+                        SET business_id = tenant_id 
+                        WHERE business_id IS NULL AND tenant_id IS NOT NULL;
+                    """)
+                    
+                    logger.info("SUCCESS: Added business_id to finance_journalentryline")
                 except Exception as e:
                     pass  # Don't fail startup
                 
