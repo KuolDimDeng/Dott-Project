@@ -3,53 +3,55 @@
 import React, { useEffect, useState } from 'react';
 import { useSessionTimeout } from '@/providers/SessionTimeoutProvider';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { ExclamationTriangleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 export default function SessionTimeoutModal() {
-  const { isWarningVisible, timeRemaining, showFinalCountdown, cancelTimeout } = useSessionTimeout();
+  const { 
+    warningLevel, 
+    timeRemaining, 
+    isInGracePeriod, 
+    cancelTimeout,
+    extendSession,
+    currentTimeout 
+  } = useSessionTimeout();
   const { logout } = useSessionContext();
   const [audioPlayed, setAudioPlayed] = useState(false);
-
-  // Debug logging
-  console.log('🔐 [SessionTimeoutModal] Component state', {
-    isWarningVisible,
-    timeRemaining: timeRemaining / 1000 + 's',
-    showFinalCountdown,
-    modalWillRender: isWarningVisible
-  });
 
   // Format time for display
   const formatTime = (milliseconds) => {
     const totalSeconds = Math.ceil(milliseconds / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    if (minutes > 0) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+    }
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
   };
 
-  // Play warning sound when modal appears
+  // Play warning sound for urgent/final warnings
   useEffect(() => {
-    if (isWarningVisible && !audioPlayed) {
-      // Play a subtle notification sound
+    if ((warningLevel === 'urgent' || warningLevel === 'final') && !audioPlayed) {
+      // Only play sound for urgent warnings, not first warning
       const audio = new Audio('/notification.mp3');
-      audio.volume = 0.3;
+      audio.volume = warningLevel === 'final' ? 0.5 : 0.3;
       audio.play().catch(() => {
         // Ignore if autoplay is blocked
       });
       setAudioPlayed(true);
     }
     
-    if (!isWarningVisible) {
+    if (!warningLevel) {
       setAudioPlayed(false);
     }
-  }, [isWarningVisible, audioPlayed]);
+  }, [warningLevel, audioPlayed]);
 
-  if (!isWarningVisible) return null;
+  // Don't show modal for first warning (handled by toast notification)
+  if (!warningLevel || warningLevel === 'first') return null;
 
   const handleStaySignedIn = async () => {
     try {
-      console.log('🔐 [SessionTimeoutModal] User clicked Stay Signed In, refreshing session...');
-      
-      // Get the current session token from localStorage or cookie
+      // Get the current session token
       const sessionToken = localStorage.getItem('sid') || 
                           document.cookie.split('; ').find(row => row.startsWith('sid='))?.split('=')[1];
       
@@ -60,7 +62,7 @@ export default function SessionTimeoutModal() {
         return;
       }
 
-      // Use PATCH method to refresh the session
+      // Refresh the session
       const response = await fetch('/api/auth/session-v2', {
         method: 'PATCH',
         headers: {
@@ -72,139 +74,183 @@ export default function SessionTimeoutModal() {
 
       if (!response.ok) {
         console.error('Failed to refresh session:', response.status);
-        // If refresh fails, show error but don't redirect immediately
-        // Let the user try again or choose to sign out
         alert('Unable to extend your session. Please try again or sign out.');
         return;
       }
 
       const data = await response.json();
-      console.log('🔐 [SessionTimeoutModal] Session refreshed successfully', data);
+      console.log('Session refreshed successfully', data);
       
-      // Cancel the timeout and close the modal
-      cancelTimeout();
-      
-      // Update last activity time
-      localStorage.setItem('sessionTimeoutLastActivity', Date.now().toString());
-      
-      // Success! User stays on current page, modal closes
-      // No redirect, no page reload - just continue working
-      console.log('🔐 [SessionTimeoutModal] Session extended, user continues on current page');
+      // Use the new extendSession method
+      extendSession();
       
     } catch (error) {
-      console.error('🔐 [SessionTimeoutModal] Error refreshing session:', error);
-      // On network error, show alert but don't force logout
+      console.error('Error refreshing session:', error);
       alert('Network error. Please check your connection and try again.');
     }
   };
 
   const handleSignOut = async () => {
-    cancelTimeout();
-    await logout();
-    window.location.href = '/auth/signin';
+    try {
+      await logout();
+      window.location.href = '/auth/signin';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      window.location.href = '/auth/signin';
+    }
   };
 
-  return (
-    <div className="absolute inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black bg-opacity-50 transition-opacity" />
+  // Determine modal styling based on warning level
+  const getModalStyling = () => {
+    if (warningLevel === 'final' || isInGracePeriod) {
+      return {
+        borderColor: 'border-red-500',
+        bgColor: 'bg-red-50',
+        iconColor: 'text-red-600',
+        titleColor: 'text-red-900',
+        icon: ExclamationTriangleIcon
+      };
+    }
+    
+    return {
+      borderColor: 'border-yellow-500',
+      bgColor: 'bg-yellow-50',
+      iconColor: 'text-yellow-600',
+      titleColor: 'text-yellow-900',
+      icon: ClockIcon
+    };
+  };
 
+  const styling = getModalStyling();
+  const Icon = styling.icon;
+
+  return (
+    <>
+      {/* Semi-transparent backdrop */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity z-[99998]"
+        onClick={(e) => e.preventDefault()} // Prevent closing on backdrop click
+      />
+      
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className={`
-          relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all
-          ${showFinalCountdown ? 'animate-pulse' : ''}
-          sm:my-8 sm:w-full sm:max-w-lg
-        `}>
-          {/* Warning Header */}
-          <div className={`
-            px-6 py-4 ${showFinalCountdown ? 'bg-red-50' : 'bg-yellow-50'}
-          `}>
+      <div className="fixed inset-0 flex items-center justify-center p-4 z-[99999]">
+        <div 
+          className={`
+            bg-white rounded-lg shadow-2xl max-w-md w-full 
+            border-2 ${styling.borderColor} 
+            transform transition-all duration-300 scale-100
+            ${warningLevel === 'final' ? 'animate-pulse' : ''}
+          `}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="timeout-modal-title"
+        >
+          {/* Header */}
+          <div className={`p-6 ${styling.bgColor} rounded-t-lg`}>
             <div className="flex items-center">
-              {showFinalCountdown ? (
-                <ClockIcon className="h-6 w-6 text-red-600 animate-spin" />
-              ) : (
-                <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
-              )}
-              <h3 className={`
-                ml-3 text-lg font-medium
-                ${showFinalCountdown ? 'text-red-900' : 'text-yellow-900'}
-              `}>
-                {showFinalCountdown ? 'Signing out soon!' : "Looks like you've been away for a while"}
-              </h3>
+              <div className={`flex-shrink-0 ${styling.iconColor}`}>
+                <Icon className="h-8 w-8" aria-hidden="true" />
+              </div>
+              <div className="ml-4">
+                <h3 
+                  id="timeout-modal-title"
+                  className={`text-lg font-semibold ${styling.titleColor}`}
+                >
+                  {isInGracePeriod 
+                    ? 'Signing Out...' 
+                    : warningLevel === 'final' 
+                      ? 'Session Expiring Soon!' 
+                      : 'Your Session Will Expire'}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  {isInGracePeriod
+                    ? 'You can still cancel the logout'
+                    : 'You\'ve been inactive for a while'}
+                </p>
+              </div>
             </div>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-4">
-            <div className="text-center">
-              {/* Large Countdown Display */}
-              <div className={`
-                text-5xl font-bold mb-4
-                ${showFinalCountdown ? 'text-red-600 animate-pulse' : 'text-gray-900'}
-              `}>
+          
+          {/* Body */}
+          <div className="p-6">
+            {/* Time remaining display */}
+            <div className="text-center mb-6">
+              <div className="text-3xl font-bold text-gray-900">
                 {formatTime(timeRemaining)}
               </div>
-
-              <p className="text-sm text-gray-600 mb-2">
-                For your security, you will be signed out due to inactivity in {formatTime(timeRemaining)}
+              <p className="mt-2 text-sm text-gray-600">
+                {isInGracePeriod
+                  ? 'Click cancel to stay signed in'
+                  : 'Until automatic sign out'}
               </p>
+            </div>
+            
+            {/* Additional information */}
+            {!isInGracePeriod && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-700">
+                  For security, we automatically sign you out after{' '}
+                  <span className="font-semibold">
+                    {currentTimeout / 1000 / 60} minutes
+                  </span>{' '}
+                  of inactivity. Click "Stay Signed In" to continue working.
+                </p>
+              </div>
+            )}
+            
+            {/* Progress bar for visual feedback */}
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+              <div 
+                className={`
+                  h-2 rounded-full transition-all duration-1000
+                  ${warningLevel === 'final' ? 'bg-red-600' : 'bg-yellow-500'}
+                `}
+                style={{ 
+                  width: `${Math.max(
+                    5, 
+                    (timeRemaining / (warningLevel === 'final' ? 30000 : 180000)) * 100
+                  )}%` 
+                }}
+              />
+            </div>
+            
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleStaySignedIn}
+                className={`
+                  flex-1 px-4 py-3 rounded-lg font-medium text-white
+                  transition-all duration-200 transform hover:scale-105
+                  ${warningLevel === 'final' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-blue-600 hover:bg-blue-700'}
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 
+                  ${warningLevel === 'final' 
+                    ? 'focus:ring-red-500' 
+                    : 'focus:ring-blue-500'}
+                `}
+              >
+                <CheckCircleIcon className="inline-block w-5 h-5 mr-2" />
+                {isInGracePeriod ? 'Cancel Logout' : 'Stay Signed In'}
+              </button>
               
-              {!showFinalCountdown && (
-                <p className="text-sm text-gray-500">
-                  Click "Stay signed in" to continue working
-                </p>
-              )}
-
-              {showFinalCountdown && (
-                <p className="text-sm font-medium text-red-600 animate-pulse">
-                  Final countdown! Click now to stay signed in
-                </p>
+              {!isInGracePeriod && (
+                <button
+                  onClick={handleSignOut}
+                  className="
+                    flex-1 px-4 py-3 rounded-lg font-medium
+                    bg-gray-200 text-gray-700 hover:bg-gray-300
+                    transition-all duration-200
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500
+                  "
+                >
+                  Sign Out Now
+                </button>
               )}
             </div>
-          </div>
-
-          {/* Actions */}
-          <div className="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:space-x-reverse sm:space-x-3">
-            <button
-              type="button"
-              onClick={handleStaySignedIn}
-              className={`
-                inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-semibold shadow-sm sm:w-auto
-                ${showFinalCountdown 
-                  ? 'bg-green-600 text-white hover:bg-green-700 animate-pulse' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                }
-                focus:outline-none focus:ring-2 focus:ring-offset-2 
-                ${showFinalCountdown ? 'focus:ring-green-500' : 'focus:ring-blue-500'}
-              `}
-            >
-              Stay signed in
-            </button>
-            
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-            >
-              Sign Out
-            </button>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
-            <div 
-              className={`
-                h-full transition-all duration-1000
-                ${showFinalCountdown ? 'bg-red-600' : 'bg-yellow-500'}
-              `}
-              style={{ 
-                width: `${(timeRemaining / (showFinalCountdown ? 10000 : 60000)) * 100}%` 
-              }}
-            />
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
