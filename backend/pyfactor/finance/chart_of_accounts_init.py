@@ -120,15 +120,15 @@ def ensure_account_types():
 """
 @transaction.atomic
 def initialize_chart_of_accounts_OLD(tenant_id, business=None):
-    """Initialize Chart of Accounts for a tenant
+    # Initialize Chart of Accounts for a tenant
+    # 
+    # Args:
+    #     tenant_id: The tenant UUID
+    #     business: Optional Business instance
+    # 
+    # Returns:
+    #     dict: Summary of created accounts
     
-    Args:
-        tenant_id: The tenant UUID
-        business: Optional Business instance
-    
-    Returns:
-        dict: Summary of created accounts
-    """
     try:
         # Ensure account types exist
         account_types = ensure_account_types()
@@ -190,6 +190,7 @@ def initialize_chart_of_accounts_OLD(tenant_id, business=None):
     except Exception as e:
         logger.error(f"Error initializing Chart of Accounts for tenant {tenant_id}: {str(e)}")
         raise
+"""  # End of commented OLD implementation
 
 
 def initialize_for_existing_tenant(user_email):
