@@ -303,7 +303,8 @@
       "Bash(./scripts/import-production-to-staging.sh:*)",
       "Bash(./scripts/copy-production-schema-to-staging.sh:*)",
       "Bash(./scripts/quick-staging-import.sh:*)",
-      "Bash(./scripts/fix-staging-frontend-errors.sh:*)"
+      "Bash(./scripts/fix-staging-frontend-errors.sh:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 /tmp/test_customer_creation.py)"
     ],
     "deny": []
   }
