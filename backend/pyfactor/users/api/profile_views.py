@@ -218,16 +218,25 @@ class UserProfileView(APIView):
                 
                 # Get business info if available
                 business_info = {}
+                business_country = None
                 if profile.business:
+                    # Get the business country - prioritize Business model
+                    business_country = str(profile.business.country) if profile.business.country else None
+                    
                     business_info = {
                         "businessName": profile.business.name,
                         "business_name": profile.business.name,  # Both formats for compatibility
                         "businessType": profile.business.business_type,
                         "business_type": profile.business.business_type,
+                        "business_country": business_country,  # Add business country for banking provider detection
                         "business_address": profile.business.address if hasattr(profile.business, 'address') else None,
                         "business_phone": profile.business.phone if hasattr(profile.business, 'phone') else None,
                         "business_email": profile.business.email if hasattr(profile.business, 'email') else None,
                     }
+                
+                # If no business country, use profile country as fallback
+                if not business_country and profile.country:
+                    business_country = str(profile.country)
                 
                 profile_data.update({
                     "occupation": profile.occupation,
@@ -236,6 +245,7 @@ class UserProfileView(APIView):
                     "state": profile.state,
                     "postcode": profile.postcode,
                     "country": str(profile.country) if profile.country else None,
+                    "business_country": business_country,  # Always include business_country
                     **business_info  # Spread business info
                 })
                 

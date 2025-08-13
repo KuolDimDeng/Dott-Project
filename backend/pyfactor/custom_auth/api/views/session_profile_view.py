@@ -144,6 +144,32 @@ class SessionUserProfileView(APIView):
             except Exception as e:
                 logger.warning(f"🔥 [SESSION_USER_PROFILE] Error getting employee data: {str(e)}")
             
+            # Get business country - prioritize Business model over UserProfile
+            business_country = None
+            try:
+                # First try to get country from Business model
+                if tenant:
+                    from users.models import Business
+                    # Business uses tenant_id as its primary key
+                    business = Business.objects.filter(tenant_id=tenant.id).first()
+                    if business and business.country:
+                        business_country = str(business.country)
+                        logger.info(f"🔥 [SESSION_USER_PROFILE] Got business country from Business model: {business_country}")
+                
+                # Fallback to UserProfile country if no business country
+                if not business_country and hasattr(user, 'profile'):
+                    profile = user.profile
+                    if profile and profile.country:
+                        business_country = str(profile.country)
+                        logger.info(f"🔥 [SESSION_USER_PROFILE] Got business country from UserProfile: {business_country}")
+                
+                # Log if no country found
+                if not business_country:
+                    logger.warning(f"🔥 [SESSION_USER_PROFILE] No business country found for user {user.email}")
+                    
+            except Exception as e:
+                logger.warning(f"🔥 [SESSION_USER_PROFILE] Error getting business country: {str(e)}")
+            
             response_data = {
                 'id': user.pk,
                 'email': user.email,
@@ -158,6 +184,7 @@ class SessionUserProfileView(APIView):
                 'current_onboarding_step': current_step,
                 'subscription_plan': user_subscription,
                 'employee': employee_data,  # Add employee data
+                'business_country': business_country,  # Add business country for banking provider detection
                 'created_at': user.date_joined.isoformat() if hasattr(user, 'date_joined') else None,
                 'updated_at': user.modified_at.isoformat() if hasattr(user, 'modified_at') else None
             }
