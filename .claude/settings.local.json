@@ -299,7 +299,11 @@
       "Bash(PYTHONPATH=/Users/kuoldeng/projectx/backend/pyfactor python3 /tmp/check_tenant_data.py)",
       "Bash(/Users/kuoldeng/projectx/test_product_api.sh)",
       "Bash(./fix_imports.sh)",
-      "Bash(./update_backend_urls.sh)"
+      "Bash(./update_backend_urls.sh)",
+      "Bash(./scripts/import-production-to-staging.sh:*)",
+      "Bash(./scripts/copy-production-schema-to-staging.sh:*)",
+      "Bash(./scripts/quick-staging-import.sh:*)",
+      "Bash(./scripts/fix-staging-frontend-errors.sh:*)"
     ],
     "deny": []
   }

@@ -50,29 +50,41 @@ export async function PUT(request, { params }) {
     // Get request body
     const body = await request.json();
     
-    // Map frontend field names to backend field names
+    // Create a new object with properly mapped fields
     const mappedBody = {
-      ...body,
-      // Map address fields
+      // Personal info
+      first_name: body.first_name || '',
+      last_name: body.last_name || '',
+      business_name: body.business_name || '',
+      email: body.email || '',
+      phone: body.phone || '',
+      notes: body.notes || '',
+      
+      // Billing address fields - map frontend names to backend names
       street: body.address || body.street || '',
-      postcode: body.zip_code || body.postcode || '',
+      city: body.city || '',
       billing_state: body.state || body.billing_state || '',
+      billing_county: body.billing_county || '',
+      postcode: body.zip_code || body.postcode || '',
       billing_country: body.country || body.billing_country || '',
-      // Remove frontend fields
-      address: undefined,
-      zip_code: undefined,
-      state: undefined,
-      country: undefined,
+      
+      // Shipping address fields
+      shipping_street: body.shipping_street || '',
+      shipping_city: body.shipping_city || '',
+      shipping_state: body.shipping_state || '',
+      shipping_county: body.shipping_county || '',
+      shipping_postcode: body.shipping_postcode || '',
+      shipping_country: body.shipping_country || '',
+      
+      // Tax exemption fields
+      is_tax_exempt: Boolean(body.is_tax_exempt),
+      tax_exempt_certificate: body.tax_exempt_certificate || '',
+      tax_exempt_expiry: body.tax_exempt_expiry || null,
     };
     
     // Clean up date fields - convert empty strings to null
-    if (mappedBody.tax_exempt_expiry === '' || mappedBody.tax_exempt_expiry === undefined) {
+    if (mappedBody.tax_exempt_expiry === '') {
       mappedBody.tax_exempt_expiry = null;
-    }
-    
-    // Ensure boolean fields are properly typed
-    if (mappedBody.is_tax_exempt !== undefined) {
-      mappedBody.is_tax_exempt = Boolean(mappedBody.is_tax_exempt);
     }
     
     // Forward request to Django backend
