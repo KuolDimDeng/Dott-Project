@@ -1,16 +1,25 @@
 """
 Initialize Chart of Accounts with standard accounting structure
 Based on Generally Accepted Accounting Principles (GAAP)
+This file redirects to the fixed version that uses the correct models
 """
 
+# Import the fixed version
+from finance.chart_of_accounts_init_fixed import initialize_chart_of_accounts, STANDARD_CHART_OF_ACCOUNTS
+
+# For backward compatibility, keep these imports
 from django.db import transaction
-from finance.models import Account, AccountType
+from finance.models import ChartOfAccount, AccountCategory
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Standard Chart of Accounts Template
-STANDARD_CHART_OF_ACCOUNTS = {
+# The actual implementation is in chart_of_accounts_init_fixed.py
+# This file just imports from there for backward compatibility
+
+"""
+Original STANDARD_CHART_OF_ACCOUNTS has been moved to chart_of_accounts_init_fixed.py
+OLD_STANDARD_CHART_OF_ACCOUNTS = {
     # Assets (1000-1999)
     'Current Asset': [
         {'number': '1000', 'name': 'Cash', 'description': 'Cash and cash equivalents'},
@@ -88,6 +97,7 @@ STANDARD_CHART_OF_ACCOUNTS = {
 }
 
 
+"""
 def ensure_account_types():
     """Ensure all account types exist in the database"""
     account_types = {}
@@ -106,8 +116,10 @@ def ensure_account_types():
     return account_types
 
 
+# The old implementation is commented out - see chart_of_accounts_init_fixed.py for the working version
+"""
 @transaction.atomic
-def initialize_chart_of_accounts(tenant_id, business=None):
+def initialize_chart_of_accounts_OLD(tenant_id, business=None):
     """
     Initialize Chart of Accounts for a tenant
     
