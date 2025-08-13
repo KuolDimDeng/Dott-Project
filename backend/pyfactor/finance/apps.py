@@ -27,6 +27,55 @@ class FinanceConfig(AppConfig):
     def run_sql_fix(self):
         try:
             with connection.cursor() as cursor:
+                # CRITICAL FIX: Add tenant_id to finance_journalentryline if missing
+                try:
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'finance_journalentryline' 
+                        AND column_name = 'tenant_id'
+                        LIMIT 1;
+                    """)
+                    
+                    if not cursor.fetchone():
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.info("CRITICAL: Adding missing tenant_id to finance_journalentryline")
+                        
+                        # Get a default tenant_id
+                        cursor.execute("""
+                            SELECT tenant_id FROM custom_auth_user 
+                            WHERE tenant_id IS NOT NULL 
+                            LIMIT 1;
+                        """)
+                        result = cursor.fetchone()
+                        
+                        if result:
+                            tenant_id = result[0]
+                            
+                            # Add the column
+                            cursor.execute("""
+                                ALTER TABLE finance_journalentryline 
+                                ADD COLUMN IF NOT EXISTS tenant_id uuid;
+                            """)
+                            
+                            # Update existing rows
+                            cursor.execute("""
+                                UPDATE finance_journalentryline 
+                                SET tenant_id = %s 
+                                WHERE tenant_id IS NULL;
+                            """, [tenant_id])
+                            
+                            # Create index
+                            cursor.execute("""
+                                CREATE INDEX IF NOT EXISTS idx_finance_journalentryline_tenant 
+                                ON finance_journalentryline(tenant_id);
+                            """)
+                            
+                            logger.info("SUCCESS: Added tenant_id to finance_journalentryline")
+                except Exception as e:
+                    pass  # Don't fail startup
+                
                 # Fix multiple constraint issues that may block operations
                 constraints_to_fix = [
                     ('finance_accountcategory', 'finance_accountcategory_code_key'),
