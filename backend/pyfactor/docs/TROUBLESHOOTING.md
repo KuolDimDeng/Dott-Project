@@ -592,5 +592,105 @@ REST_FRAMEWORK = {
 
 ---
 
-*Last Updated: 2025-06-23*
+## 🔧 **Issue: POS Sale Completion Failing with Missing Database Columns**
+
+**Symptoms:**
+- POS sale completion returns 400 error
+- Error: "column \"tenant_id\" of relation \"finance_journalentryline\" does not exist"
+- After fixing tenant_id, error: "column \"business_id\" of relation \"finance_journalentryline\" does not exist"
+- Stock quantity warnings appearing incorrectly for products with inventory
+
+**Root Cause Analysis:**
+- Database migrations not fully applied to production
+- `finance_journalentryline` table missing required columns (`tenant_id` and `business_id`)
+- Frontend checking wrong field for stock quantity (`stock_quantity` instead of `quantity_in_stock`)
+- Model expects columns that don't exist in database schema
+
+**Solution - Database Fix:**
+```sql
+-- Run in production database (python manage.py dbshell)
+
+-- Add missing tenant_id column
+ALTER TABLE finance_journalentryline 
+ADD COLUMN IF NOT EXISTS tenant_id UUID;
+
+-- Add missing business_id column
+ALTER TABLE finance_journalentryline 
+ADD COLUMN IF NOT EXISTS business_id UUID;
+
+-- Add foreign key constraint for business_id
+ALTER TABLE finance_journalentryline
+ADD CONSTRAINT finance_journalentryline_business_id_fk 
+FOREIGN KEY (business_id) 
+REFERENCES users_business(id) 
+DEFERRABLE INITIALLY DEFERRED;
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_finance_journalentryline_tenant_id 
+ON finance_journalentryline(tenant_id);
+
+CREATE INDEX IF NOT EXISTS finance_journalentryline_business_id_idx 
+ON finance_journalentryline(business_id);
+
+-- Populate tenant_id from journal_entry -> business relationship
+UPDATE finance_journalentry je
+SET tenant_id = b.tenant_id
+FROM users_business b
+WHERE je.business_id = b.id
+AND je.tenant_id IS NULL;
+
+-- Populate tenant_id in journal_entry_line
+UPDATE finance_journalentryline jel
+SET tenant_id = je.tenant_id
+FROM finance_journalentry je
+WHERE jel.journal_entry_id = je.id
+AND jel.tenant_id IS NULL;
+
+-- Populate business_id in journal_entry_line
+UPDATE finance_journalentryline jel
+SET business_id = je.business_id
+FROM finance_journalentry je
+WHERE jel.journal_entry_id = je.id
+AND jel.business_id IS NULL;
+
+-- Verify the fix
+SELECT COUNT(*) as total_records,
+       COUNT(tenant_id) as with_tenant,
+       COUNT(business_id) as with_business
+FROM finance_journalentryline;
+```
+
+**Solution - Frontend Fix:**
+```javascript
+// File: /frontend/pyfactor_next/src/app/dashboard/components/pos/POSSystemInline.js
+
+// ❌ INCORRECT - Wrong field order
+const currentStock = product.stock_quantity || product.quantity || 0;
+
+// ✅ CORRECT - Check quantity_in_stock first
+const currentStock = product.quantity_in_stock || product.stock_quantity || product.quantity || 0;
+```
+
+**Verification Steps:**
+1. Connect to production database via Render shell: `python manage.py dbshell`
+2. Run the SQL commands above to add missing columns
+3. Verify columns exist: `\d finance_journalentryline`
+4. Test POS sale completion - should process without errors
+5. Verify stock warnings only appear for truly out-of-stock items
+
+**Prevention:**
+- Always run migrations on production after model changes
+- Create Django management commands for database fixes
+- Test POS functionality after any finance/inventory model changes
+- Ensure frontend field mappings match backend API responses
+- Document required database columns in model docstrings
+
+**Related Files:**
+- `/backend/pyfactor/finance/models.py` - JournalEntryLine model definition
+- `/backend/pyfactor/finance/management/commands/fix_journal_entry_tenant.py` - Management command
+- `/frontend/pyfactor_next/src/app/dashboard/components/pos/POSSystemInline.js` - POS frontend
+
+---
+
+*Last Updated: 2025-08-13*
 *For Frontend Issues: See /frontend/pyfactor_next/docs/TROUBLESHOOTING.md*
