@@ -1,26 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
-/**
- * Wrapper component to prevent hydration mismatches
- * Only renders children after hydration is complete
- */
-const HydrationSafeWrapper = ({ children, fallback = null }) => {
+export default function HydrationSafeWrapper({ children, fallback = null }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    // This effect only runs on the client side after hydration
     setIsHydrated(true);
   }, []);
 
-  // During SSR and before hydration, show fallback or nothing
   if (!isHydrated) {
-    return fallback;
+    return fallback || <div className="min-h-screen" />;
   }
 
-  // After hydration, render the actual children
   return children;
-};
-
-export default HydrationSafeWrapper;
+}

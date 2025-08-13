@@ -60,16 +60,44 @@ export async function POST(request) {
     
     console.log('[CRM Customers API] POST request body:', JSON.stringify(body));
     
+    // Create a new object with properly mapped fields
+    const mappedBody = {
+      // Personal info
+      first_name: body.first_name || '',
+      last_name: body.last_name || '',
+      business_name: body.business_name || '',
+      email: body.email || '',
+      phone: body.phone || '',
+      notes: body.notes || '',
+      
+      // Billing address fields - map frontend names to backend names
+      street: body.address || body.street || '',
+      city: body.city || '',
+      billing_state: body.state || body.billing_state || '',
+      billing_county: body.billing_county || '',
+      postcode: body.zip_code || body.postcode || '',
+      billing_country: body.country || body.billing_country || '',
+      
+      // Shipping address fields
+      shipping_street: body.shipping_street || '',
+      shipping_city: body.shipping_city || '',
+      shipping_state: body.shipping_state || '',
+      shipping_county: body.shipping_county || '',
+      shipping_postcode: body.shipping_postcode || '',
+      shipping_country: body.shipping_country || '',
+      
+      // Tax exemption fields
+      is_tax_exempt: Boolean(body.is_tax_exempt),
+      tax_exempt_certificate: body.tax_exempt_certificate || '',
+      tax_exempt_expiry: body.tax_exempt_expiry || null,
+    };
+    
     // Clean up date fields - convert empty strings to null
-    if (body.tax_exempt_expiry === '' || body.tax_exempt_expiry === undefined) {
-      body.tax_exempt_expiry = null;
+    if (mappedBody.tax_exempt_expiry === '') {
+      mappedBody.tax_exempt_expiry = null;
     }
     
-    // Ensure boolean fields are properly typed
-    if (body.is_tax_exempt !== undefined) {
-      body.is_tax_exempt = Boolean(body.is_tax_exempt);
-    }
-    
+    console.log('[CRM Customers API] Mapped body:', JSON.stringify(mappedBody));
     console.log('[CRM Customers API] Forwarding to:', `${BACKEND_URL}/api/crm/customers/`);
     
     // Forward request to Django backend
@@ -80,7 +108,7 @@ export async function POST(request) {
         'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(mappedBody),
     });
     
     if (!response.ok) {
