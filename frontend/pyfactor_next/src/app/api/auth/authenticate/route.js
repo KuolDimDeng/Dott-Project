@@ -65,12 +65,34 @@ export async function POST(request) {
     console.log('🔍 [AUTH DEBUG] AUTH0_CLIENT_SECRET exists:', !!process.env.AUTH0_CLIENT_SECRET);
     console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_AUTH0_AUDIENCE:', process.env.NEXT_PUBLIC_AUTH0_AUDIENCE);
     console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+    console.log('🔍 [AUTH DEBUG] NEXT_PUBLIC_ENVIRONMENT:', process.env.NEXT_PUBLIC_ENVIRONMENT);
+    console.log('🔍 [AUTH DEBUG] NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔍 [AUTH DEBUG] ENVIRONMENT:', process.env.ENVIRONMENT);
     console.log('🔍 [AUTH DEBUG] Final auth0Domain being used:', auth0Domain);
     console.log('🔍 [AUTH DEBUG] ===== END ENVIRONMENT CONFIGURATION =====');
+    
     const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
     const clientSecret = process.env.AUTH0_CLIENT_SECRET;
-    const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 
-                     (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' ? 'https://api-staging.dottapps.com' : 'https://api.dottapps.com');
+    
+    // CRITICAL: Determine the correct audience based on environment
+    let audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE;
+    
+    console.log('🎯 [AUTH AUDIENCE] Initial audience from env:', audience);
+    console.log('🎯 [AUTH AUDIENCE] NEXT_PUBLIC_ENVIRONMENT:', process.env.NEXT_PUBLIC_ENVIRONMENT);
+    console.log('🎯 [AUTH AUDIENCE] Checking if staging:', process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging');
+    
+    // If audience is not set or is wrong, determine based on environment
+    if (!audience || audience === 'https://api.dottapps.com') {
+      if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging') {
+        audience = 'https://api-staging.dottapps.com';
+        console.log('🎯 [AUTH AUDIENCE] Overriding to staging audience:', audience);
+      } else {
+        audience = 'https://api.dottapps.com';
+        console.log('🎯 [AUTH AUDIENCE] Using production audience:', audience);
+      }
+    }
+    
+    console.log('🎯 [AUTH AUDIENCE] FINAL audience being used:', audience);
     
     addDebugEntry('Auth0 configuration', {
       domain: auth0Domain,

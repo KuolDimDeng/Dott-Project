@@ -67,8 +67,16 @@ export async function POST(request) {
       baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
       apiUrl: process.env.NEXT_PUBLIC_API_URL,
       auth0Domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
+      auth0Audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+      environment: process.env.NEXT_PUBLIC_ENVIRONMENT,
+      nodeEnv: process.env.NODE_ENV,
       hasAuth0ClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
       hasAuth0Secret: !!process.env.AUTH0_SECRET
+    });
+    console.log('🔄 [ConsolidatedLogin] CRITICAL ENV CHECK:', {
+      NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT,
+      NEXT_PUBLIC_AUTH0_AUDIENCE: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+      isStaging: process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging'
     });
     
     // Step 1: Authenticate with Auth0
