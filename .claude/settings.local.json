@@ -304,7 +304,8 @@
       "Bash(./scripts/copy-production-schema-to-staging.sh:*)",
       "Bash(./scripts/quick-staging-import.sh:*)",
       "Bash(./scripts/fix-staging-frontend-errors.sh:*)",
-      "Bash(/tmp/test_api_simple.sh:*)"
+      "Bash(/tmp/test_api_simple.sh:*)",
+      "Bash(PGSSLMODE=disable python3 manage.py initialize_chart_of_accounts --email kuoldimdeng@outlook.com)"
     ],
     "deny": []
   }
