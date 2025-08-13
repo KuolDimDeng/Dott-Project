@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('finance', '0007_account_unique_account_number_per_tenant_and_more'),
+        ('finance', '0006_add_business_to_accountcategory'),
     ]
 
     operations = [
