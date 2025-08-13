@@ -74,24 +74,22 @@ export async function POST(request) {
     const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
     const clientSecret = process.env.AUTH0_CLIENT_SECRET;
     
-    // CRITICAL: Auth0 audience configuration
-    // IMPORTANT: Auth0 only has 'https://api.dottapps.com' configured as an API identifier
-    // Staging must use the same audience until a separate staging API is created in Auth0
+    // CRITICAL: Determine the correct audience based on environment
     let audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE;
     
     console.log('🎯 [AUTH AUDIENCE] Initial audience from env:', audience);
     console.log('🎯 [AUTH AUDIENCE] NEXT_PUBLIC_ENVIRONMENT:', process.env.NEXT_PUBLIC_ENVIRONMENT);
     console.log('🎯 [AUTH AUDIENCE] Checking if staging:', process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging');
     
-    // TEMPORARY FIX: Use production audience for both environments
-    // Auth0 doesn't have 'https://api-staging.dottapps.com' configured
-    if (audience === 'https://api-staging.dottapps.com') {
-      console.log('🎯 [AUTH AUDIENCE] WARNING: Staging audience not configured in Auth0');
-      console.log('🎯 [AUTH AUDIENCE] Using production audience for staging temporarily');
-      audience = 'https://api.dottapps.com';
-    } else if (!audience) {
-      audience = 'https://api.dottapps.com';
-      console.log('🎯 [AUTH AUDIENCE] No audience set, using default:', audience);
+    // If audience is not set or is wrong, determine based on environment
+    if (!audience || audience === 'https://api.dottapps.com') {
+      if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging') {
+        audience = 'https://api-staging.dottapps.com';
+        console.log('🎯 [AUTH AUDIENCE] Overriding to staging audience:', audience);
+      } else {
+        audience = 'https://api.dottapps.com';
+        console.log('🎯 [AUTH AUDIENCE] Using production audience:', audience);
+      }
     }
     
     console.log('🎯 [AUTH AUDIENCE] FINAL audience being used:', audience);
