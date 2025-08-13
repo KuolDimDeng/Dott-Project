@@ -27,6 +27,37 @@ class FinanceConfig(AppConfig):
     def run_sql_fix(self):
         try:
             with connection.cursor() as cursor:
+                # Fix AccountCategory constraints
+                try:
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_name = 'finance_accountcategory'
+                        ) AS table_exists;
+                    """)
+                    category_table_exists = cursor.fetchone()[0]
+                    
+                    if category_table_exists:
+                        # Check for and remove the problematic constraint
+                        cursor.execute("""
+                            SELECT COUNT(*) 
+                            FROM pg_constraint 
+                            WHERE conname = 'finance_accountcategory_code_key'
+                            AND conrelid = 'finance_accountcategory'::regclass;
+                        """)
+                        
+                        if cursor.fetchone()[0] > 0:
+                            cursor.execute("""
+                                ALTER TABLE finance_accountcategory 
+                                DROP CONSTRAINT IF EXISTS finance_accountcategory_code_key CASCADE;
+                            """)
+                            import logging
+                            logger = logging.getLogger(__name__)
+                            logger.info("Removed problematic AccountCategory constraint on startup")
+                
+                except ProgrammingError:
+                    pass  # Table doesn't exist yet
+                
                 # Super safe check for table existence
                 try:
                     cursor.execute("""
