@@ -633,19 +633,31 @@ def get_user_database(user):
 @permission_classes([IsAuthenticated])
 def chart_of_account_detail(request, pk):
     user = request.user
-    database_name = get_user_database(user)
+    
+    # Get tenant_id from request (set by middleware)
+    tenant_id = getattr(request, 'tenant_id', None)
+    
+    # Fallback to user's tenant_id if not in request
+    if not tenant_id:
+        tenant_id = getattr(user, 'tenant_id', None)
+    
+    if not tenant_id:
+        return Response({"error": "No tenant ID found"}, status=400)
 
     try:
-        account = ChartOfAccount.objects.using(database_name).get(pk=pk)
+        # Filter by both pk and tenant_id for security
+        account = ChartOfAccount.objects.get(pk=pk, tenant_id=tenant_id)
     except ChartOfAccount.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        serializer = ChartOfAccountSerializer(account, context={'database_name': database_name})
+        serializer = ChartOfAccountSerializer(account)
         return Response(serializer.data)
 
     elif request.method == 'PUT':
-        serializer = ChartOfAccountSerializer(account, data=request.data, context={'database_name': database_name})
+        data = request.data.copy()
+        data['tenant_id'] = tenant_id  # Ensure tenant_id stays the same
+        serializer = ChartOfAccountSerializer(account, data=data)
         if serializer.is_valid():
             updated_account = serializer.save()
             return Response(ChartOfAccountSerializer(updated_account).data)
@@ -662,52 +674,67 @@ def chart_of_accounts(request):
     try:
         user = request.user
         
-        # Try multiple ways to get the business/tenant ID
-        business_id = getattr(user, 'business_id', None)
-        if not business_id:
-            business_id = getattr(user, 'tenant_id', None)
-        if not business_id:
-            business_id = getattr(request, 'tenant_id', None)
-        if not business_id:
-            # Try to get from X-Business-ID header
-            business_id = request.META.get('HTTP_X_BUSINESS_ID', None)
+        # Get tenant_id from request (set by middleware)
+        tenant_id = getattr(request, 'tenant_id', None)
+        
+        # Fallback to user's tenant_id if not in request
+        if not tenant_id:
+            tenant_id = getattr(user, 'tenant_id', None)
+        
+        # Try to get business_id as fallback
+        if not tenant_id:
+            tenant_id = getattr(user, 'business_id', None)
         
         logger.debug("Chart of Accounts API called")
-        logger.debug("User: %s, Business ID: %s", user.email, business_id)
+        logger.debug("User: %s, Tenant ID: %s", user.email, tenant_id)
         logger.debug("Request tenant_id: %s", getattr(request, 'tenant_id', None))
         logger.debug("User tenant_id: %s", getattr(user, 'tenant_id', None))
 
         if request.method == 'GET':
-            # Since the database doesn't have business_id/tenant_id columns yet,
-            # return all accounts for now until migrations are run
-            try:
-                # Try filtering by business first (in case migrations have been run)
-                if business_id:
-                    logger.debug("Attempting to filter by business_id=%s", business_id)
-                    chart_accounts = ChartOfAccount.objects.filter(business_id=business_id)
-                    # Test if the query works
-                    test_count = chart_accounts.count()
-                    logger.debug("Filtered accounts count: %s", test_count)
-                else:
-                    chart_accounts = ChartOfAccount.objects.none()
-            except Exception as e:
-                # If filtering fails (likely due to missing columns), return all accounts
-                logger.warning("Cannot filter by business_id, columns may not exist: %s", str(e))
-                logger.info("Returning all chart of accounts until migrations are run")
-                chart_accounts = ChartOfAccount.objects.all()
+            if tenant_id:
+                logger.debug("Filtering ChartOfAccount by tenant_id=%s", tenant_id)
+                # Filter by tenant_id (which is the correct field from TenantAwareModel)
+                chart_accounts = ChartOfAccount.objects.filter(tenant_id=tenant_id)
+                account_count = chart_accounts.count()
+                logger.debug("Found %s accounts for tenant %s", account_count, tenant_id)
+                
+                # If no accounts exist, try to initialize them
+                if account_count == 0:
+                    logger.info("No accounts found, attempting to initialize Chart of Accounts")
+                    from finance.chart_of_accounts_init import initialize_chart_of_accounts
+                    from users.models import Business
+                    
+                    business = Business.objects.filter(tenant_id=tenant_id).first()
+                    result = initialize_chart_of_accounts(tenant_id, business)
+                    
+                    if result['success']:
+                        logger.info("Successfully initialized %s accounts", result.get('created', 0))
+                        # Re-fetch accounts after initialization
+                        chart_accounts = ChartOfAccount.objects.filter(tenant_id=tenant_id)
+                    else:
+                        logger.error("Failed to initialize accounts: %s", result.get('error'))
+            else:
+                logger.warning("No tenant_id found, returning empty list")
+                chart_accounts = ChartOfAccount.objects.none()
             
             serializer = ChartOfAccountSerializer(chart_accounts, many=True)
             return Response(serializer.data)
         elif request.method == 'POST':
-            if not business_id:
-                return Response({"error": "No business/tenant ID found"}, status=400)
+            if not tenant_id:
+                return Response({"error": "No tenant ID found"}, status=400)
                 
             data = request.data.copy()
-            data['business'] = business_id  # Add business_id to data
+            data['tenant_id'] = tenant_id  # Add tenant_id to data
+            
+            # Also try to get business for the business field
+            from users.models import Business
+            business = Business.objects.filter(tenant_id=tenant_id).first()
+            if business:
+                data['business'] = business.id
             
             serializer = ChartOfAccountSerializer(data=data)
             if serializer.is_valid():
-                account = serializer.save(business_id=business_id, tenant_id=business_id)
+                account = serializer.save(tenant_id=tenant_id)
                 return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
