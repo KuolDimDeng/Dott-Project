@@ -27,36 +27,44 @@ class FinanceConfig(AppConfig):
     def run_sql_fix(self):
         try:
             with connection.cursor() as cursor:
-                # Fix AccountCategory constraints
-                try:
-                    cursor.execute("""
-                        SELECT EXISTS (
-                            SELECT FROM information_schema.tables 
-                            WHERE table_name = 'finance_accountcategory'
-                        ) AS table_exists;
-                    """)
-                    category_table_exists = cursor.fetchone()[0]
-                    
-                    if category_table_exists:
-                        # Check for and remove the problematic constraint
-                        cursor.execute("""
-                            SELECT COUNT(*) 
-                            FROM pg_constraint 
-                            WHERE conname = 'finance_accountcategory_code_key'
-                            AND conrelid = 'finance_accountcategory'::regclass;
+                # Fix multiple constraint issues that may block operations
+                constraints_to_fix = [
+                    ('finance_accountcategory', 'finance_accountcategory_code_key'),
+                    ('finance_chartofaccount', 'finance_chartofaccount_account_number_key'),
+                    ('finance_asset', 'finance_asset_asset_tag_key'),
+                    ('finance_costcategory', 'finance_costcategory_code_key'),
+                    ('finance_costcategory', 'finance_costcategory_name_key'),
+                ]
+                
+                for table_name, constraint_name in constraints_to_fix:
+                    try:
+                        cursor.execute(f"""
+                            SELECT EXISTS (
+                                SELECT FROM information_schema.tables 
+                                WHERE table_name = '{table_name}'
+                            );
                         """)
                         
-                        if cursor.fetchone()[0] > 0:
-                            cursor.execute("""
-                                ALTER TABLE finance_accountcategory 
-                                DROP CONSTRAINT IF EXISTS finance_accountcategory_code_key CASCADE;
+                        if cursor.fetchone()[0]:
+                            # Check for and remove the problematic constraint
+                            cursor.execute(f"""
+                                SELECT COUNT(*) 
+                                FROM pg_constraint 
+                                WHERE conname = '{constraint_name}'
+                                AND conrelid = '{table_name}'::regclass;
                             """)
-                            import logging
-                            logger = logging.getLogger(__name__)
-                            logger.info("Removed problematic AccountCategory constraint on startup")
-                
-                except ProgrammingError:
-                    pass  # Table doesn't exist yet
+                            
+                            if cursor.fetchone()[0] > 0:
+                                cursor.execute(f"""
+                                    ALTER TABLE {table_name} 
+                                    DROP CONSTRAINT IF EXISTS {constraint_name} CASCADE;
+                                """)
+                                import logging
+                                logger = logging.getLogger(__name__)
+                                logger.info(f"Removed problematic constraint {constraint_name} from {table_name} on startup")
+                    
+                    except ProgrammingError:
+                        pass  # Table doesn't exist yet
                 
                 # Super safe check for table existence
                 try:
