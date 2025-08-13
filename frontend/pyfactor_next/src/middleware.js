@@ -11,7 +11,8 @@ export async function middleware(request) {
   
   // Subdomain routing logic
   const isAppSubdomain = hostname.startsWith('app.');
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isStaging = hostname.includes('staging') || hostname.includes('dott-staging');
+  const isProduction = process.env.NODE_ENV === 'production' && !isStaging;
   
   // Define paths that should be on app subdomain
   const appPaths = ['/dashboard', '/settings', '/hr', '/sales', '/inventory', '/pos', '/jobs'];
@@ -21,7 +22,7 @@ export async function middleware(request) {
   const marketingPaths = ['/', '/signin', '/signup', '/pricing', '/features', '/about', '/contact'];
   const isMarketingPath = marketingPaths.some(path => pathname === path || pathname.startsWith('/auth'));
   
-  // Redirect logic for production only
+  // Redirect logic for production only (NOT staging)
   if (isProduction) {
     // If on marketing domain but accessing app path, redirect to app subdomain
     if (!isAppSubdomain && isAppPath) {
