@@ -23,6 +23,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         else:
             return f"Customer #{obj.account_number}"
 
+class CustomerDetailSerializer(CustomerSerializer):
+    """Detailed serializer for single customer view"""
+    class Meta(CustomerSerializer.Meta):
+        model = Customer
+        fields = '__all__'
+        read_only_fields = ('id', 'account_number', 'created_at', 'updated_at')
+
 class ContactSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
     

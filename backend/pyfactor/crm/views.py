@@ -94,6 +94,26 @@ class CustomerViewSet(TenantIsolatedViewSet):
             return CustomerDetailSerializer
         return CustomerSerializer
     
+    def create(self, request, *args, **kwargs):
+        """Override create to add debugging"""
+        try:
+            logger.info(f"[CustomerViewSet] Create called by user: {request.user.email if request.user.is_authenticated else 'Anonymous'}")
+            logger.info(f"[CustomerViewSet] Request data: {request.data}")
+            
+            # Get tenant info
+            tenant_id = getattr(request.user, 'tenant_id', None) or \
+                       getattr(request.user, 'business_id', None)
+            logger.info(f"[CustomerViewSet] Using tenant_id: {tenant_id}")
+            
+            # Call parent's create method
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"[CustomerViewSet] Customer created successfully")
+            return response
+            
+        except Exception as e:
+            logger.error(f"[CustomerViewSet] Error creating customer: {str(e)}", exc_info=True)
+            raise
+    
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
         """Dashboard stats - MUST filter by tenant"""
