@@ -34,7 +34,17 @@
 - **Frontend Service**: dott-front (Render Docker, branch: main)
 - **Backend Service**: dott-api (api.dottapps.com, oregon region)
 - **Domains**: dottapps.com, www.dottapps.com, app.dottapps.com
-- **Branch Structure**: main (production only, staging suspended)
+- **Branch Structure**: main (production), staging (testing)
+
+### [1.3.0] - 2025-08-13 - CURRENT - Git Workflow & Deployment Process
+- **CRITICAL**: ALL code changes MUST be committed to `staging` branch FIRST
+- **Workflow**: Local → staging → (test) → main (production)
+- **NEVER**: Commit directly to main/production branch
+- **Commands**: 
+  - Development: `git push origin staging`
+  - Production: `git push origin staging:main` (only after testing)
+- **Staging URL**: staging.dottapps.com
+- **Production URL**: dottapps.com, app.dottapps.com
 
 ### [2.0.0] - 2025-06-18 - CURRENT - Session Management V2
 - **Architecture**: Server-side sessions only (banking standard)

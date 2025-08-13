@@ -88,18 +88,20 @@ const auditLog = (event, details = {}) => {
     console.log('🔐 [SessionAudit]', logEntry);
   }
   
-  // Send to backend for persistent logging
-  try {
-    fetch('/api/audit/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(logEntry),
-      credentials: 'include'
-    }).catch(() => {
-      // Fail silently for audit logs
-    });
-  } catch (error) {
-    // Audit logging should never break the app
+  // Send to backend for persistent logging (only in production)
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_ENVIRONMENT !== 'staging') {
+    try {
+      fetch('/api/audit/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logEntry),
+        credentials: 'include'
+      }).catch(() => {
+        // Fail silently for audit logs
+      });
+    } catch (error) {
+      // Audit logging should never break the app
+    }
   }
   
   // Also log important events with logger
@@ -527,8 +529,8 @@ export function SessionTimeoutProvider({ children }) {
     <SessionTimeoutContext.Provider value={value}>
       {children}
       
-      {/* Debug indicator - only in development */}
-      {process.env.NODE_ENV === 'development' && session && (
+      {/* Debug indicator - show in development and staging */}
+      {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging') && session && (
         <div style={{
           position: 'fixed',
           bottom: 10,
@@ -545,7 +547,7 @@ export function SessionTimeoutProvider({ children }) {
           fontFamily: 'monospace',
           minWidth: '200px'
         }}>
-          <div>🔐 Session Timeout</div>
+          <div>🔐 Session Timeout {process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' ? '(STAGING)' : ''}</div>
           <div>Timeout: {currentTimeout / 1000 / 60}min</div>
           <div>Warning: {warningLevel || 'none'}</div>
           {timeRemaining > 0 && (

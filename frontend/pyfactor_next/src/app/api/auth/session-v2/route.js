@@ -13,7 +13,19 @@ import { safeJsonParse } from '@/utils/responseParser';
  * to resolve onboarding status conflicts permanently.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+// Dynamic backend URL based on environment
+const getApiUrl = () => {
+  // Check for staging environment
+  if (process.env.STAGING_MODE === 'true' || 
+      process.env.NODE_ENV === 'staging' || 
+      process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging') {
+    return process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://dott-api-staging.onrender.com';
+  }
+  // Production
+  return process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+};
+
+const API_URL = getApiUrl();
 
 export async function GET(request) {
   // Sentry disabled
