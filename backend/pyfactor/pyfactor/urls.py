@@ -79,6 +79,7 @@ urlpatterns = [
     
     # Finance/Accounting API routes
     path('api/finance/', include('finance.urls')),
+    path('api/finance/emergency/', include('finance.urls_emergency')),  # Temporary fix endpoint
     
     # Banking API routes
     path('api/banking/', include('banking.urls')),
