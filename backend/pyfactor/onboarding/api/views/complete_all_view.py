@@ -63,7 +63,27 @@ def complete_all_onboarding(request):
                 progress.completed_steps = list(set(progress.completed_steps + all_steps))
                 progress.save()
             
-            # 3. CRITICAL: Update User.onboarding_completed (single source of truth)
+            # 3. Initialize Chart of Accounts for the new tenant
+            try:
+                from finance.chart_of_accounts_init import initialize_chart_of_accounts
+                from users.models import Business
+                
+                business = Business.objects.filter(tenant_id=tenant_id).first()
+                logger.info(f"[Complete-All] Initializing Chart of Accounts for tenant {tenant_id}")
+                
+                coa_result = initialize_chart_of_accounts(tenant_id, business)
+                if coa_result['success']:
+                    if coa_result.get('existing'):
+                        logger.info(f"[Complete-All] Chart of Accounts already exists with {coa_result['existing']} accounts")
+                    else:
+                        logger.info(f"[Complete-All] Successfully initialized {coa_result.get('created', 0)} Chart of Accounts")
+                else:
+                    logger.warning(f"[Complete-All] Chart of Accounts initialization failed: {coa_result.get('error')}")
+            except Exception as coa_error:
+                logger.error(f"[Complete-All] Error initializing Chart of Accounts: {str(coa_error)}")
+                # Don't fail onboarding if COA init fails - it can be done later
+            
+            # 4. CRITICAL: Update User.onboarding_completed (single source of truth)
             user.onboarding_completed = True
             user.onboarding_completed_at = timezone.now()
             
