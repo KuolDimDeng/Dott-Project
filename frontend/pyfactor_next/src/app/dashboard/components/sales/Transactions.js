@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useSessionContext } from '@/contexts/SessionContext';
 import { useNotification } from '@/context/NotificationContext';
 import { 
   MagnifyingGlassIcon, 
@@ -16,10 +16,10 @@ import {
   XCircleIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
-import StandardSpinner from '@/components/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export default function Transactions() {
-  const { session } = useSession();
+  const { session } = useSessionContext();
   const { notifySuccess, notifyError, notifyInfo } = useNotification();
   
   // State
