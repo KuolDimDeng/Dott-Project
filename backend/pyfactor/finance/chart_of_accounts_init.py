@@ -120,8 +120,7 @@ def ensure_account_types():
 """
 @transaction.atomic
 def initialize_chart_of_accounts_OLD(tenant_id, business=None):
-    """
-    Initialize Chart of Accounts for a tenant
+    """Initialize Chart of Accounts for a tenant
     
     Args:
         tenant_id: The tenant UUID
