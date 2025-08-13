@@ -29,11 +29,17 @@ export async function GET(request) {
       
       try {
         // Call session-v2 endpoint directly for complete user data
-        // Use absolute URL to avoid SSL issues
-        const baseUrl = process.env.NEXTAUTH_URL || 'https://dottapps.com';
+        // Use the current host to ensure it works on both staging and production
+        const host = request.headers.get('host');
+        const protocol = host?.includes('localhost') ? 'http' : 'https';
+        const baseUrl = `${protocol}://${host}`;
+        
+        console.log('[Profile API] Calling session-v2 at:', `${baseUrl}/api/auth/session-v2`);
+        
         const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
           headers: {
-            'Cookie': request.headers.get('cookie') || ''
+            'Cookie': request.headers.get('cookie') || '',
+            'X-Forwarded-Host': host || ''
           },
           cache: 'no-store'
         });

@@ -9,10 +9,17 @@ export async function GET(request) {
     console.log('[Session API] Forwarding to session-v2');
     
     // Forward the request to session-v2 endpoint
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://dottapps.com';
+    // Use the current host to ensure it works on both staging and production
+    const host = request.headers.get('host');
+    const protocol = host?.includes('localhost') ? 'http' : 'https';
+    const baseUrl = `${protocol}://${host}`;
+    
+    console.log('[Session API] Forwarding to:', `${baseUrl}/api/auth/session-v2`);
+    
     const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
       headers: {
-        'Cookie': request.headers.get('cookie') || ''
+        'Cookie': request.headers.get('cookie') || '',
+        'X-Forwarded-Host': host || ''
       },
       cache: 'no-store'
     });
