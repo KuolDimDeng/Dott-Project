@@ -34,6 +34,11 @@ export async function GET(request) {
     
     if (!response.ok) {
       const error = await response.text();
+      console.error('[CRM Customers API] GET error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error.substring(0, 500)
+      });
       return NextResponse.json({ error }, { status: response.status });
     }
     
@@ -113,6 +118,12 @@ export async function POST(request) {
     
     if (!response.ok) {
       const error = await response.text();
+      console.error('[CRM Customers API] Backend error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error.substring(0, 500),
+        mappedBody: JSON.stringify(mappedBody)
+      });
       return NextResponse.json({ error }, { status: response.status });
     }
     

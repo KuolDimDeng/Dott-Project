@@ -616,8 +616,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       if (!confirmed) return;
     }
 
-    // Check stock level
-    const currentStock = product.stock_quantity || product.quantity || 0;
+    // Check stock level - use quantity_in_stock as primary field
+    const currentStock = product.quantity_in_stock || product.stock_quantity || product.quantity || 0;
     const existingInCart = cartItems.find(item => item.id === product.id);
     const currentCartQuantity = existingInCart ? existingInCart.quantity : 0;
     const totalQuantityAfterAdd = currentCartQuantity + quantity;
@@ -1488,7 +1488,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                     </tr>
                   ) : (
                     filteredProducts.map(product => {
-                      const stockLevel = product.stock_quantity || product.quantity || product.quantity_in_stock || 0;
+                      const stockLevel = product.quantity_in_stock || product.stock_quantity || product.quantity || 0;
                       const isOutOfStock = stockLevel === 0;
                       const isLowStock = stockLevel > 0 && stockLevel <= 5;
                       
