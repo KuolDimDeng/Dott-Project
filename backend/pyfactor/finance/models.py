@@ -345,7 +345,7 @@ class SalesTaxAccount(models.Model):
     
 class AccountCategory(TenantAwareModel):
     name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10)
+    code = models.CharField(max_length=10)  # NOT unique - each tenant can have same codes
     business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
     
     objects = TenantManager()
@@ -353,11 +353,16 @@ class AccountCategory(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant_id', 'code']),
+            models.Index(fields=['tenant_id', 'code'], name='idx_category_tenant_code'),
             models.Index(fields=['business']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['tenant_id', 'code'], name='unique_category_code_per_tenant'),
+            # Each tenant can have their own set of category codes
+            models.UniqueConstraint(
+                fields=['tenant_id', 'code'], 
+                name='unique_category_code_per_tenant_v2',
+                condition=models.Q(tenant_id__isnull=False)
+            ),
         ]
 
     def __str__(self):
