@@ -23,4 +23,3 @@ class Migration(migrations.Migration):
             state_operations=[],
         ),
     ]
-EOF < /dev/null
