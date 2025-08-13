@@ -15,7 +15,7 @@ import {
   ChartBar,
   Rocket,
   CurrencyDollar,
-  DevicePhoneMobile,
+  DeviceMobile,
   Lock,
   Timer,
   Handshake,
@@ -48,14 +48,14 @@ function AboutUsContent() {
     },
     {
       title: 'Outdated systems that weren\'t built for today\'s mobile, global world',
-      icon: <DevicePhoneMobile size={24} weight="duotone" className="text-yellow-600" />
+      icon: <DeviceMobile size={24} weight="duotone" className="text-yellow-600" />
     }
   ];
 
   const approach = [
     {
       title: 'Built from the ground up for mobile-first businesses',
-      icon: <DevicePhoneMobile size={20} weight="bold" className="text-blue-600" />
+      icon: <DeviceMobile size={20} weight="bold" className="text-blue-600" />
     },
     {
       title: 'Designed for global operations from day one',

@@ -50,6 +50,9 @@ importers:
       '@fullcalendar/timegrid':
         specifier: ^6.1.18
         version: 6.1.18(@fullcalendar/core@6.1.18)
+      '@googlemaps/js-api-loader':
+        specifier: ^1.16.10
+        version: 1.16.10
       '@headlessui/react':
         specifier: ^2.2.4
         version: 2.2.4(react-dom@18.3.1)(react@18.3.1)
@@ -119,6 +122,9 @@ importers:
       chart.js:
         specifier: ^4.4.0
         version: 4.4.8
+      chartjs-plugin-annotation:
+        specifier: ^3.1.0
+        version: 3.1.0(chart.js@4.4.8)
       clsx:
         specifier: ^2.1.0
         version: 2.1.1
@@ -2207,6 +2213,10 @@ packages:
     dependencies:
       '@fullcalendar/core': 6.1.18
       '@fullcalendar/daygrid': 6.1.18(@fullcalendar/core@6.1.18)
+    dev: false
+
+  /@googlemaps/js-api-loader@1.16.10:
+    resolution: {integrity: sha512-c2erv2k7P2ilYzMmtYcMgAR21AULosQuUHJbStnrvRk2dG93k5cqptDrh9A8p+ZNlyhiqEOgHW7N9PAizdUM7Q==}
     dev: false
 
   /@headlessui/react@2.2.4(react-dom@18.3.1)(react@18.3.1):
@@ -5574,6 +5584,14 @@ packages:
     engines: {pnpm: '>=8'}
     dependencies:
       '@kurkle/color': 0.3.4
+    dev: false
+
+  /chartjs-plugin-annotation@3.1.0(chart.js@4.4.8):
+    resolution: {integrity: sha512-EkAed6/ycXD/7n0ShrlT1T2Hm3acnbFhgkIEJLa0X+M6S16x0zwj1Fv4suv/2bwayCT3jGPdAtI9uLcAMToaQQ==}
+    peerDependencies:
+      chart.js: '>=4.0.0'
+    dependencies:
+      chart.js: 4.4.8
     dev: false
 
   /chevrotain-allstar@0.3.1(chevrotain@11.0.3):
