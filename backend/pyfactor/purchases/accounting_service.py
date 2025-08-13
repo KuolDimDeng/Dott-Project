@@ -135,8 +135,12 @@ class PurchaseAccountingService:
     @staticmethod
     def _get_or_create_account(account_name, account_type):
         """Get or create an account"""
+        # Get tenant_id from current context
+        from custom_auth.rls import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        
         try:
-            account = ChartOfAccount.objects.filter(name=account_name).first()
+            account = ChartOfAccount.objects.filter(name=account_name, tenant_id=tenant_id).first()
             if not account:
                 # Create account with appropriate numbering
                 account_numbers = {
@@ -149,6 +153,7 @@ class PurchaseAccountingService:
                 from finance.models import AccountCategory
                 category, _ = AccountCategory.objects.get_or_create(
                     name=account_type,
+                    tenant_id=tenant_id,
                     defaults={'code': account_type.upper().replace(' ', '_')}
                 )
                 
@@ -157,7 +162,8 @@ class PurchaseAccountingService:
                     name=account_name,
                     description=f"{account_name} account",
                     category=category,
-                    is_active=True
+                    is_active=True,
+                    tenant_id=tenant_id
                 )
             return account
         except Exception as e:

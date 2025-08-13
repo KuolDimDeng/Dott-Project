@@ -241,8 +241,12 @@ class PayrollAccountingService:
         """Get or create an account based on the account key"""
         account_name = PayrollAccountingService.ACCOUNT_MAPPINGS.get(account_key, account_key.title())
         
+        # Get tenant_id from current context
+        from custom_auth.rls import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        
         try:
-            account = ChartOfAccount.objects.filter(name=account_name).first()
+            account = ChartOfAccount.objects.filter(name=account_name, tenant_id=tenant_id).first()
             if not account:
                 # Determine account category and number
                 account_configs = {
@@ -266,6 +270,7 @@ class PayrollAccountingService:
                 from finance.models import AccountCategory
                 category, _ = AccountCategory.objects.get_or_create(
                     name=category_name,
+                    tenant_id=tenant_id,
                     defaults={'code': category_name.upper().replace(' ', '_')}
                 )
                 
@@ -274,7 +279,8 @@ class PayrollAccountingService:
                     name=account_name,
                     description=f"{account_name} account for payroll",
                     category=category,
-                    is_active=True
+                    is_active=True,
+                    tenant_id=tenant_id
                 )
                 
                 logger.info(f"Created new payroll account: {account_number} - {account_name}")

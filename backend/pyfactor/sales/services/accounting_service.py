@@ -45,10 +45,17 @@ class AccountingService:
         """
         possible_names = AccountingService.ACCOUNT_MAPPINGS.get(account_type, [account_type.title()])
         
-        # Try to find existing account
+        # Get tenant_id from current context
+        from custom_auth.rls import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        
+        # Try to find existing account (respecting tenant isolation)
         for name in possible_names:
             try:
-                account = ChartOfAccount.objects.filter(name__icontains=name).first()
+                account = ChartOfAccount.objects.filter(
+                    name__icontains=name,
+                    tenant_id=tenant_id
+                ).first()
                 if account:
                     return account
             except ChartOfAccount.DoesNotExist:
@@ -86,6 +93,7 @@ class AccountingService:
         
         category, created = AccountCategory.objects.get_or_create(
             name=category_name,
+            tenant_id=tenant_id,
             defaults={'code': category_code}
         )
         
@@ -111,7 +119,8 @@ class AccountingService:
             name=default_name,
             description=f"Auto-created {default_name} account for POS transactions",
             category=category,
-            is_active=True
+            is_active=True,
+            tenant_id=tenant_id
         )
         
         logger.info(f"Created new account: {account.account_number} - {account.name}")
