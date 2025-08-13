@@ -10,7 +10,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = '__all__'
-        read_only_fields = ('id', 'account_number', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'account_number', 'created_at', 'updated_at', 'tenant_id')
     
     def get_name(self, obj):
         # Return business name if available, otherwise combine first and last name
@@ -28,7 +28,7 @@ class CustomerDetailSerializer(CustomerSerializer):
     class Meta(CustomerSerializer.Meta):
         model = Customer
         fields = '__all__'
-        read_only_fields = ('id', 'account_number', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'account_number', 'created_at', 'updated_at', 'tenant_id')
 
 class ContactSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
@@ -36,7 +36,7 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_customer_name(self, obj):
         return obj.customer.business_name if obj.customer else None
@@ -47,7 +47,7 @@ class LeadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lead
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_assigned_to_name(self, obj):
         return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}" if obj.assigned_to else None
@@ -59,7 +59,7 @@ class OpportunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Opportunity
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_customer_name(self, obj):
         return obj.customer.business_name if obj.customer else None
@@ -73,7 +73,7 @@ class DealSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deal
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_customer_name(self, obj):
         return obj.customer.business_name if obj.customer else None
@@ -85,7 +85,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_assigned_to_name(self, obj):
         return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}" if obj.assigned_to else None
@@ -123,7 +123,7 @@ class CampaignSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_member_count(self, obj):
         return obj.members.count()
@@ -136,7 +136,7 @@ class CampaignMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignMember
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'tenant_id')
     
     def get_campaign_name(self, obj):
         return obj.campaign.name if obj.campaign else None
