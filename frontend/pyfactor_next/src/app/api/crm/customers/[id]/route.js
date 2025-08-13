@@ -50,14 +50,29 @@ export async function PUT(request, { params }) {
     // Get request body
     const body = await request.json();
     
+    // Map frontend field names to backend field names
+    const mappedBody = {
+      ...body,
+      // Map address fields
+      street: body.address || body.street || '',
+      postcode: body.zip_code || body.postcode || '',
+      billing_state: body.state || body.billing_state || '',
+      billing_country: body.country || body.billing_country || '',
+      // Remove frontend fields
+      address: undefined,
+      zip_code: undefined,
+      state: undefined,
+      country: undefined,
+    };
+    
     // Clean up date fields - convert empty strings to null
-    if (body.tax_exempt_expiry === '' || body.tax_exempt_expiry === undefined) {
-      body.tax_exempt_expiry = null;
+    if (mappedBody.tax_exempt_expiry === '' || mappedBody.tax_exempt_expiry === undefined) {
+      mappedBody.tax_exempt_expiry = null;
     }
     
     // Ensure boolean fields are properly typed
-    if (body.is_tax_exempt !== undefined) {
-      body.is_tax_exempt = Boolean(body.is_tax_exempt);
+    if (mappedBody.is_tax_exempt !== undefined) {
+      mappedBody.is_tax_exempt = Boolean(mappedBody.is_tax_exempt);
     }
     
     // Forward request to Django backend
@@ -67,7 +82,7 @@ export async function PUT(request, { params }) {
         'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(mappedBody),
     });
     
     if (!response.ok) {

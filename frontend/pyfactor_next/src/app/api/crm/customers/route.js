@@ -60,16 +60,32 @@ export async function POST(request) {
     
     console.log('[CRM Customers API] POST request body:', JSON.stringify(body));
     
+    // Map frontend field names to backend field names
+    const mappedBody = {
+      ...body,
+      // Map address fields
+      street: body.address || body.street || '',
+      postcode: body.zip_code || body.postcode || '',
+      billing_state: body.state || body.billing_state || '',
+      billing_country: body.country || body.billing_country || '',
+      // Keep original fields too for compatibility
+      address: undefined, // Remove frontend field
+      zip_code: undefined, // Remove frontend field
+      state: undefined, // Remove frontend field  
+      country: undefined, // Remove frontend field
+    };
+    
     // Clean up date fields - convert empty strings to null
-    if (body.tax_exempt_expiry === '' || body.tax_exempt_expiry === undefined) {
-      body.tax_exempt_expiry = null;
+    if (mappedBody.tax_exempt_expiry === '' || mappedBody.tax_exempt_expiry === undefined) {
+      mappedBody.tax_exempt_expiry = null;
     }
     
     // Ensure boolean fields are properly typed
-    if (body.is_tax_exempt !== undefined) {
-      body.is_tax_exempt = Boolean(body.is_tax_exempt);
+    if (mappedBody.is_tax_exempt !== undefined) {
+      mappedBody.is_tax_exempt = Boolean(mappedBody.is_tax_exempt);
     }
     
+    console.log('[CRM Customers API] Mapped body:', JSON.stringify(mappedBody));
     console.log('[CRM Customers API] Forwarding to:', `${BACKEND_URL}/api/crm/customers/`);
     
     // Forward request to Django backend
@@ -80,7 +96,7 @@ export async function POST(request) {
         'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(mappedBody),
     });
     
     if (!response.ok) {
