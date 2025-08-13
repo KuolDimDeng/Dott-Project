@@ -187,6 +187,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
     else if (props.showCustomerList) mappedView = 'customers';
     else if (props.showCustomerManagement) mappedView = 'customer-management';
     else if (props.showTransactionForm) mappedView = 'transactions';
+    else if (props.showTransactions) mappedView = 'sales-transactions';
     else if (props.showInvoiceManagement) mappedView = 'invoices';
     else if (props.showInvoiceBuilder) mappedView = 'invoice-builder';
     else if (props.showBillManagement) mappedView = 'bills';

@@ -202,6 +202,11 @@ export const routeRegistry = {
     title: 'Sales Products',
     description: 'Manage sales products'
   },
+  'sales-transactions': {
+    component: enhancedLazy(() => import('../components/sales/Transactions'), 'Sales Transactions'),
+    title: 'Sales Transactions',
+    description: 'View completed POS transactions'
+  },
   'estimates': {
     component: enhancedLazy(() => import('../components/forms/EstimateManagement'), 'Estimate Management'),
     title: 'Estimates',

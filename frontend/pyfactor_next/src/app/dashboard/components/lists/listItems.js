@@ -674,6 +674,31 @@ const MainListItems = ({
           }, 
           value: 'pos' 
         },
+        {
+          label: t('subMenu.transactions') || 'Transactions',
+          path: '/dashboard/transactions',
+          onClick: (value) => {
+            // Create navigation event for transactions
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'transactions', 
+              navigationKey,
+              originalItem: 'Transactions'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the Transactions component
+            if (typeof handleSalesClick === 'function') {
+              handleSalesClick('transactions');
+            } else if (typeof handleSetView === 'function') {
+              handleSetView('transactions');
+            }
+          },
+          value: 'transactions'
+        },
         { 
         label: t('subMenu.catalog'), 
         path: '/dashboard/products',

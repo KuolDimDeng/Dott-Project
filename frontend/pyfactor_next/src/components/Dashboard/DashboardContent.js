@@ -501,6 +501,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       showEstimateManagement: false,
       showSalesOrderManagement: false,
       showInvoiceManagement: false,
+      showTransactions: false,
       
       // Reset other states
       showCreateOptions: false,
@@ -802,6 +803,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         updateState({ 
           view: 'sales-products',
           showProductManagement: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'transactions':
+        updateState({ 
+          view: 'sales-transactions',
+          showTransactions: true,
           navigationKey: salesNavKey
         });
         break;

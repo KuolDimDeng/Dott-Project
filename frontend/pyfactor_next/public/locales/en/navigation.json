@@ -41,6 +41,7 @@
     "catalog": "Products",
     "service": "Services",
     "orders": "Orders",
+    "transactions": "Transactions",
     "productsPricing": "Products & Pricing",
     "suppliesMaterials": "Supplies & Materials",
     "warehouseTracker": "Stock Adjustments",
