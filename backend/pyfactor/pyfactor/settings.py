@@ -188,7 +188,13 @@ AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
 AUTH0_MANAGEMENT_CLIENT_ID = os.getenv('AUTH0_MANAGEMENT_CLIENT_ID', '')
 AUTH0_MANAGEMENT_CLIENT_SECRET = os.getenv('AUTH0_MANAGEMENT_CLIENT_SECRET', '')
 # Use environment variable for audience with sensible default (UPDATED for new Dott API)
+# IMPORTANT: Auth0 only has 'https://api.dottapps.com' configured as an API identifier
+# Staging must use the same audience until a separate staging API is created in Auth0
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://api.dottapps.com')
+# Force production audience for now - Auth0 doesn't have staging API configured
+if AUTH0_AUDIENCE == 'https://api-staging.dottapps.com':
+    print("WARNING: Staging audience not configured in Auth0, using production audience")
+    AUTH0_AUDIENCE = 'https://api.dottapps.com'
 
 # Build issuer URL from the issuer domain
 # Handle case where AUTH0_ISSUER_DOMAIN might already include https://
