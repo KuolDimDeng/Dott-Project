@@ -88,6 +88,14 @@ export function getCachedCountryData() {
     const timestamp = localStorage.getItem(STORAGE_KEYS.DETECTION_TIMESTAMP);
     
     if (cachedCountry && timestamp) {
+      // Validate cached country isn't a bad value
+      if (cachedCountry === 'null' || cachedCountry === 'undefined' || 
+          cachedCountry === 'International' || cachedCountry === '') {
+        console.log('🔍 [BankingProviders] Clearing invalid cached country:', cachedCountry);
+        clearCountryCache();
+        return null;
+      }
+      
       // Check if cache is less than 24 hours old
       const age = Date.now() - parseInt(timestamp);
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours
@@ -99,6 +107,9 @@ export function getCachedCountryData() {
           cached: true,
           age: age
         };
+      } else {
+        console.log('🔍 [BankingProviders] Cache expired, clearing...');
+        clearCountryCache();
       }
     }
   } catch (error) {

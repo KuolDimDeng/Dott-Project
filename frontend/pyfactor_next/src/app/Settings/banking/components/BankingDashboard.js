@@ -53,11 +53,11 @@ export default function BankingDashboard() {
    * Initialize country detection with caching
    */
   const initializeCountryDetection = async () => {
-    console.log('🔍 [BankingDashboard] Initializing country detection...');
+    console.log('🔍 [BankingDashboard] === INITIALIZING COUNTRY DETECTION ===');
     
     // Check for user's manual selection first
     const userSelected = getUserSelectedCountry();
-    if (userSelected) {
+    if (userSelected && userSelected !== 'null' && userSelected !== 'undefined') {
       console.log('🔍 [BankingDashboard] Using user selected country:', userSelected);
       setUserCountry(userSelected);
       setProvider(getBankingProvider(userSelected));
@@ -67,7 +67,7 @@ export default function BankingDashboard() {
     
     // Check for cached country data
     const cached = getCachedCountryData();
-    if (cached) {
+    if (cached && cached.country && cached.country !== 'null' && cached.country !== 'undefined') {
       console.log('🔍 [BankingDashboard] Using cached country:', cached.country, 'Age:', Math.round(cached.age / 1000), 'seconds');
       setUserCountry(cached.country);
       setProvider(cached.provider);
@@ -76,6 +76,7 @@ export default function BankingDashboard() {
     }
     
     // No cache, fetch from API
+    console.log('🔍 [BankingDashboard] No cached data, fetching from API...');
     if (!isDetectingCountry) {
       await fetchUserProfile();
     }
@@ -102,17 +103,18 @@ export default function BankingDashboard() {
         console.log('🔍 [BankingDashboard] Full profile response:', JSON.stringify(data, null, 2));
         
         // Get country from profile data - check all possible locations
-        // Priority: business_country > country > default to empty (not US)
+        // Priority: business_country > country > NO DEFAULT
         const country = data.business_country || 
                        data.country || 
                        data.user?.business_country || 
                        data.user?.country || 
-                       '';
+                       null;
         
         console.log('🔍 [BankingDashboard] Extracted country from profile:', country);
         console.log('🔍 [BankingDashboard] Available fields:', Object.keys(data));
+        console.log('🔍 [BankingDashboard] Full data structure:', JSON.stringify(data, null, 2));
         
-        if (country) {
+        if (country && country !== 'null' && country !== 'undefined') {
           // Set and cache the country we found
           setUserCountry(country);
           const useProvider = getBankingProvider(country);
@@ -164,11 +166,12 @@ export default function BankingDashboard() {
                        altData.user?.country ||
                        altData.data?.business_country ||
                        altData.data?.country ||
-                       '';
+                       null;
                        
         console.log('🔍 [BankingDashboard] Extracted country from alternative endpoint:', country);
+        console.log('🔍 [BankingDashboard] Alt data structure:', JSON.stringify(altData, null, 2));
         
-        if (country) {
+        if (country && country !== 'null' && country !== 'undefined') {
           setUserCountry(country);
           const useProvider = getBankingProvider(country);
           setProvider(useProvider);
@@ -178,29 +181,32 @@ export default function BankingDashboard() {
           console.log(`🔍 [BankingDashboard] Alternative endpoint set - Country: ${country}, Provider: ${useProvider}`);
         } else {
           // If still no country found, show country selector
-          console.log('🔍 [BankingDashboard] No country found in any endpoint, showing country selector');
+          console.log('🔍 [BankingDashboard] ⚠️ No country found in any endpoint, showing country selector');
           setShowCountrySelector(true);
-          setUserCountry('International');
-          setProvider('wise');
-          setCountryDetected(true);
+          // Don't set a default country - let user choose
+          setUserCountry(null);
+          setProvider(null);
+          setCountryDetected(false);
           setIsDetectingCountry(false);
         }
       } else {
-        console.error('🔍 [BankingDashboard] All endpoints failed, showing country selector');
+        console.error('🔍 [BankingDashboard] ⚠️ All endpoints failed, showing country selector');
         console.error('🔍 [BankingDashboard] Last endpoint status:', altResponse.status);
         setShowCountrySelector(true);
-        setUserCountry('International');
-        setProvider('wise');
-        setCountryDetected(true);
+        // Don't set a default country - let user choose
+        setUserCountry(null);
+        setProvider(null);
+        setCountryDetected(false);
         setIsDetectingCountry(false);
       }
     } catch (error) {
-      console.error('🔍 [BankingDashboard] Error fetching user profile:', error);
+      console.error('🔍 [BankingDashboard] ⚠️ Error fetching user profile:', error);
       // Show country selector when we can't determine country
       setShowCountrySelector(true);
-      setUserCountry('International');
-      setProvider('wise');
-      setCountryDetected(true);
+      // Don't set a default country - let user choose
+      setUserCountry(null);
+      setProvider(null);
+      setCountryDetected(false);
       setIsDetectingCountry(false);
     }
   };
@@ -342,6 +348,27 @@ export default function BankingDashboard() {
         </div>
       </div>
 
+      {/* Debug Info (remove in production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium text-yellow-900">Debug Info</p>
+              <p className="text-xs text-yellow-700">
+                Country: {userCountry || 'Not detected'} | Provider: {provider || 'Not set'} | 
+                Detected: {countryDetected ? 'Yes' : 'No'} | Detecting: {isDetectingCountry ? 'Yes' : 'No'}
+              </p>
+            </div>
+            <button
+              onClick={resetCountryDetection}
+              className="text-xs px-2 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+            >
+              Reset Detection
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Security Notice */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex">
@@ -366,7 +393,7 @@ export default function BankingDashboard() {
               <GlobeAltIcon className="h-5 w-5 text-gray-400 mr-3" />
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  Banking Provider for {getCountryDisplayName(userCountry)}
+                  Banking Provider for {userCountry ? getCountryDisplayName(userCountry) : 'your region'}
                 </p>
                 <p className="text-sm text-gray-500">
                   {provider === 'plaid' 
@@ -376,22 +403,29 @@ export default function BankingDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {provider === 'plaid' ? (
-                <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  <CheckCircleIcon className="h-4 w-4 mr-1" />
-                  Plaid
-                </span>
+              {provider ? (
+                provider === 'plaid' ? (
+                  <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <CheckCircleIcon className="h-4 w-4 mr-1" />
+                    Plaid
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    <CheckCircleIcon className="h-4 w-4 mr-1" />
+                    Wise
+                  </span>
+                )
               ) : (
-                <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                  <CheckCircleIcon className="h-4 w-4 mr-1" />
-                  Wise
+                <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                  <ExclamationCircleIcon className="h-4 w-4 mr-1" />
+                  Select Country
                 </span>
               )}
               <button
                 onClick={() => setShowCountrySelector(true)}
                 className="text-sm text-blue-600 hover:text-blue-500 underline"
               >
-                Change Country
+                {userCountry ? 'Change Country' : 'Select Country'}
               </button>
             </div>
           </div>
