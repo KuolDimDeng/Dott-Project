@@ -48,8 +48,9 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '    echo "Testing Django configuration..." ' >> /app/start.sh && \
     echo '    python -c "import django; django.setup(); print(\"Django setup successful\")" || (echo "ERROR: Django setup failed!"; exit 1)' >> /app/start.sh && \
     echo '    echo "Running database migrations..." ' >> /app/start.sh && \
-    echo "    echo "Fixing POS schema..." " >> /app/start.sh && \
-    echo "    python fix_pos_schema.py || echo "POS schema fix failed but continuing..."" >> /app/start.sh && \    echo '    python manage.py migrate --noinput || echo "Migration failed but continuing..."' >> /app/start.sh && \
+    echo '    python manage.py migrate --noinput || echo "Migration failed but continuing..."' >> /app/start.sh && \
+    echo '    echo "Fixing POS schema..." ' >> /app/start.sh && \
+    echo '    python fix_pos_schema.py || echo "POS schema fix failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Fixing tax exemption fields..." ' >> /app/start.sh && \
     echo '    python fix_tax_exemption_migration.py || echo "Tax exemption fix failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Fixing UserProfile county field..." ' >> /app/start.sh && \
