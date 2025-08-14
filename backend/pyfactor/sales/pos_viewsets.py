@@ -145,7 +145,6 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                 currency_code = 'USD'  # Default
                 currency_symbol = '$'  # Default
                 try:
-                    from users.models import UserProfile
                     user_profile = UserProfile.objects.filter(user=request.user).first()
                     if user_profile and user_profile.preferred_currency_code:
                         currency_code = user_profile.preferred_currency_code
