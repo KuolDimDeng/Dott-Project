@@ -60,7 +60,12 @@ export default function Transactions() {
       }
 
       const data = await response.json();
-      console.log('[Transactions] API Response:', data.results?.[0]); // Debug log
+      console.log('[Transactions] Full API Response:', data); // Debug full response
+      console.log('[Transactions] First transaction:', data.results?.[0]); // Debug first item
+      console.log('[Transactions] Currency fields:', {
+        currency_code: data.results?.[0]?.currency_code,
+        currency_symbol: data.results?.[0]?.currency_symbol
+      }); // Debug currency specifically
       setTransactions(data.results || []);
       setPagination(prev => ({
         ...prev,
