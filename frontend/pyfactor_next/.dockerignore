@@ -87,4 +87,4 @@ AUTH0_*.html
 *.zip
 
 # Prisma migrations (regenerated during build)
-prisma/migrations
+prisma/migrations# Trigger Docker cache rebuild 1755152054
