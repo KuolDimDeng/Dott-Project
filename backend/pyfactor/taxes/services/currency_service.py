@@ -209,7 +209,7 @@ class CurrencyService:
                 'SL': ('SLL', 'Le'),      # Sierra Leone (Leone)
                 'SO': ('SOS', 'S'),       # Somalia (Shilling)
                 'ZA': ('ZAR', 'R'),       # South Africa (Rand)
-                'SS': ('SSP', '£'),       # South Sudan (Pound)
+                'SS': ('SSP', 'SSP'),     # South Sudan (Pound)
                 'SD': ('SDG', 'ج.س'),     # Sudan (Pound)
                 'TZ': ('TZS', 'TSh'),     # Tanzania (Shilling)
                 'TG': ('XOF', 'CFA'),     # Togo (CFA Franc)

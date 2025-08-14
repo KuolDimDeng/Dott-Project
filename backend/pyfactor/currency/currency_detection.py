@@ -130,7 +130,7 @@ COUNTRY_TO_CURRENCY = {
     'SE': {'code': 'SEK', 'symbol': 'kr', 'name': 'Swedish Krona'},
     'SG': {'code': 'SGD', 'symbol': '$', 'name': 'Singapore Dollar'},
     'SO': {'code': 'SOS', 'symbol': 'S', 'name': 'Somali Shilling'},
-    'SS': {'code': 'SSP', 'symbol': '£', 'name': 'South Sudanese Pound'},  # South Sudan
+    'SS': {'code': 'SSP', 'symbol': 'SSP', 'name': 'South Sudanese Pound'},  # South Sudan
     
     'TH': {'code': 'THB', 'symbol': '฿', 'name': 'Baht'},
     'TN': {'code': 'TND', 'symbol': 'د.ت', 'name': 'Tunisian Dinar'},

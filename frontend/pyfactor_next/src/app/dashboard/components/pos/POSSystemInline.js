@@ -15,6 +15,8 @@ import {
   PrinterIcon,
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
+import { useCurrency } from '@/context/CurrencyContext';
+import { formatCurrency } from '@/utils/currencyFormatter';
 
 // Custom Barcode Icon as it might not exist in Heroicons
 const BarcodeIcon = (props) => (
@@ -162,6 +164,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     phone: '',
     email: ''
   });
+  
+  // Get user's currency preference
+  const { currency } = useCurrency();
+  const userCurrency = currency?.code || 'USD';
+  const currencySymbol = currency?.symbol || '$';
+  
   const [useShippingAddress, setUseShippingAddress] = useState(false);
   const [shippingAddress, setShippingAddress] = useState({
     street: '',
@@ -623,7 +631,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       const confirmed = window.confirm(
         `💡 Dynamic Pricing Notice\n\n` +
         `"${product.name}" uses ${product.pricing_model_display || product.pricing_model} pricing.\n\n` +
-        `Current price: $${(product.calculated_price || product.price).toFixed(2)}\n\n` +
+        `Current price: ${formatCurrency(product.calculated_price || product.price, userCurrency)}\n\n` +
         `Note: Final price may vary based on actual usage or time.\n\n` +
         `Continue with this product?`
       );
@@ -1046,7 +1054,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         invoice_number: result.invoice_number || result.transaction?.transaction_number || result.id,
         customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null,
         tax_jurisdiction: result.transaction?.tax_jurisdiction,
-        tax_calculation_method: result.transaction?.tax_calculation_method
+        tax_calculation_method: result.transaction?.tax_calculation_method,
+        currency: userCurrency,
+        currencySymbol: currencySymbol
       };
 
       console.log('[POS] Enhanced sale data for receipt:', enhancedSaleData);
@@ -1274,7 +1284,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         ...result,
         invoice_number: result.invoice_number || result.transaction?.transaction_number || result.id,
         customer: selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null,
-        payment_details: paymentDetails
+        payment_details: paymentDetails,
+        currency: userCurrency,
+        currencySymbol: currencySymbol
       };
       
       // Show receipt dialog
@@ -1513,7 +1525,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                           <td className="px-4 py-2 text-sm font-medium text-gray-900">{product.name}</td>
                           <td className="px-4 py-2 text-sm text-gray-500">{product.sku || 'N/A'}</td>
                           <td className="px-4 py-2 text-sm text-gray-900 text-right">
-                            ${(product.calculated_price || product.price).toFixed(2)}
+                            {formatCurrency(product.calculated_price || product.price, userCurrency)}
                             {product.pricing_model && product.pricing_model !== 'direct' && (
                               <div className="text-xs text-gray-500">{product.pricing_model_display || product.pricing_model}</div>
                             )}
@@ -1582,7 +1594,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">${item.price} each</p>
+                        <p className="text-sm text-gray-500">{formatCurrency(item.price, userCurrency)} each</p>
                       </div>
                       <div className="flex items-center space-x-2">
                         <button
@@ -1612,7 +1624,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       </div>
                     </div>
                     <p className="text-right text-sm font-medium mt-2">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      {formatCurrency(item.price * item.quantity, userCurrency)}
                     </p>
                   </div>
                 ))}
@@ -1843,7 +1855,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
                   <option value="percentage">%</option>
-                  <option value="amount">$</option>
+                  <option value="amount">{currencySymbol}</option>
                 </select>
               </div>
             </div>
@@ -2025,7 +2037,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       <div className="flex justify-between items-center text-lg font-semibold text-green-800">
                         <span>Change Due:</span>
                         <span className="text-2xl">
-                          ${(parseFloat(amountTendered) - parseFloat(totals.total)).toFixed(2)}
+                          {formatCurrency(parseFloat(amountTendered) - parseFloat(totals.total), userCurrency)}
                         </span>
                       </div>
                     </div>
@@ -2037,7 +2049,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       <div className="flex justify-between items-center text-red-800">
                         <span>Insufficient Payment</span>
                         <span className="font-semibold">
-                          Short: ${(parseFloat(totals.total) - parseFloat(amountTendered)).toFixed(2)}
+                          Short: {formatCurrency(parseFloat(totals.total) - parseFloat(amountTendered), userCurrency)}
                         </span>
                       </div>
                     </div>
@@ -2055,19 +2067,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       onClick={() => setAmountTendered((Math.ceil(parseFloat(totals.total) / 5) * 5).toString())}
                       className="px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
                     >
-                      $5
+                      {currencySymbol}5
                     </button>
                     <button
                       onClick={() => setAmountTendered((Math.ceil(parseFloat(totals.total) / 10) * 10).toString())}
                       className="px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
                     >
-                      $10
+                      {currencySymbol}10
                     </button>
                     <button
                       onClick={() => setAmountTendered((Math.ceil(parseFloat(totals.total) / 20) * 20).toString())}
                       className="px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
                     >
-                      $20
+                      {currencySymbol}20
                     </button>
                   </div>
                 </div>
@@ -2093,19 +2105,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             <div className="space-y-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span>{t('subtotal')}:</span>
-                <span>${totals.subtotal}</span>
+                <span>{formatCurrency(parseFloat(totals.subtotal), userCurrency)}</span>
               </div>
               <div className="flex justify-between text-sm text-red-600">
                 <span>{t('discount')}:</span>
-                <span>-${totals.discountAmount}</span>
+                <span>-{formatCurrency(parseFloat(totals.discountAmount), userCurrency)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>{t('tax')}:</span>
-                <span>${totals.taxAmount}</span>
+                <span>{formatCurrency(parseFloat(totals.taxAmount), userCurrency)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold">
                 <span>{t('total')}:</span>
-                <span>${totals.total}</span>
+                <span>{formatCurrency(parseFloat(totals.total), userCurrency)}</span>
               </div>
             </div>
 
