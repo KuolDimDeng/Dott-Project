@@ -21,6 +21,7 @@ const SalesDashboard = () => {
   const [salesData, setSalesData] = useState(null);
   const [posTransactions, setPosTransactions] = useState([]);
   const [timeRange, setTimeRange] = useState(1); // 1 month default
+  const [fetchError, setFetchError] = useState(null);
   const [stats, setStats] = useState({
     totalSales: 0,
     totalTransactions: 0,
@@ -35,6 +36,7 @@ const SalesDashboard = () => {
   // Fetch sales analysis data
   const fetchSalesData = async () => {
     try {
+      setFetchError(null);
       // First try the analytics endpoint
       const response = await fetch(`/api/analytics/sales-data?time_range=${timeRange}`, {
         credentials: 'include',
@@ -48,16 +50,19 @@ const SalesDashboard = () => {
         const data = await response.json();
         setSalesData(data);
         
-        // Calculate stats
+        // Calculate stats - ensure all values are valid
         setStats({
-          totalSales: data.total_sales || 0,
-          totalTransactions: data.total_transactions || 0,
-          averageOrderValue: data.average_order_value || 0,
-          topProducts: data.top_products || [],
-          recentSales: data.recent_sales || []
+          totalSales: data.total_sales || data.totalSales || 0,
+          totalTransactions: data.total_transactions || data.totalTransactions || data.numberOfOrders || 0,
+          averageOrderValue: data.average_order_value || data.averageOrderValue || 0,
+          topProducts: Array.isArray(data.top_products) ? data.top_products : 
+                      Array.isArray(data.topProducts) ? data.topProducts : [],
+          recentSales: Array.isArray(data.recent_sales) ? data.recent_sales : 
+                      Array.isArray(data.recentSales) ? data.recentSales : []
         });
       } else {
         console.log('Analytics endpoint not available, using fallback data');
+        setFetchError('Unable to load sales data. Please try again later.');
         // Set some default data to prevent errors
         setStats({
           totalSales: 0,
@@ -69,6 +74,7 @@ const SalesDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching sales data:', error);
+      setFetchError('Failed to load sales data. Please try again.');
       // Set default stats to prevent render errors
       setStats({
         totalSales: 0,
@@ -93,7 +99,11 @@ const SalesDashboard = () => {
       
       if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
         const data = await response.json();
-        setPosTransactions(data.results || data || []);
+        // Ensure we have an array
+        const transactions = Array.isArray(data) ? data : 
+                           Array.isArray(data.results) ? data.results : 
+                           Array.isArray(data.data) ? data.data : [];
+        setPosTransactions(transactions);
       } else {
         console.log('POS transactions endpoint not available');
         setPosTransactions([]);
@@ -127,6 +137,28 @@ const SalesDashboard = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <StandardSpinner />
+      </div>
+    );
+  }
+
+  // Show error state if there's a fetch error
+  if (fetchError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-red-800 font-medium text-lg mb-2">Error Loading Sales Data</h3>
+          <p className="text-red-700 mb-4">{fetchError}</p>
+          <button 
+            onClick={() => {
+              setLoading(true);
+              setFetchError(null);
+              Promise.all([fetchSalesData(), fetchPOSTransactions()]).then(() => setLoading(false));
+            }}
+            className="bg-red-100 text-red-800 px-4 py-2 rounded-md hover:bg-red-200 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -284,28 +316,31 @@ const SalesDashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900">Top Products</h2>
           </div>
           <div className="p-6">
-            {stats.topProducts.length > 0 ? (
+            {stats.topProducts && stats.topProducts.length > 0 ? (
               <div className="space-y-4">
-                {stats.topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium text-gray-500 w-6">
-                        {index + 1}.
-                      </span>
-                      <p className="font-medium text-gray-900 ml-2">
-                        {product.product__name || product.name || 'Unknown Product'}
-                      </p>
+                {stats.topProducts.slice(0, 5).map((product, index) => {
+                  if (!product) return null;
+                  return (
+                    <div key={product.id || index} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium text-gray-500 w-6">
+                          {index + 1}.
+                        </span>
+                        <p className="font-medium text-gray-900 ml-2">
+                          {product.product__name || product.name || 'Unknown Product'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">
+                          {formatCurrency(product.sales || product.revenue || 0, userCurrency)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {product.quantity || 0} sold
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">
-                        {formatCurrency(product.sales || product.revenue || 0, userCurrency)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {product.quantity || 0} sold
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-500 text-center py-8">No product data available</p>
