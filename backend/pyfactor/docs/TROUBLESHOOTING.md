@@ -2,6 +2,80 @@
 
 *This document contains backend-specific recurring issues and their proven solutions.*
 
+## 🚨 **Issue: POS Transaction Failing - Currency Columns Missing**
+
+**Date Added:** August 14, 2025
+
+**Symptoms:**
+- POS complete sale returns 500 error
+- Error: `column sales_pos_transaction.currency_code does not exist`
+- Error: `column sales_pos_transaction.currency_symbol does not exist`
+- Transactions page shows "Failed to fetch transactions"
+- React error #418 in console
+
+**Root Cause:**
+- Migration `sales.0012_add_currency_to_pos_transactions` not applied to database
+- Currency columns missing from `sales_pos_transaction` table
+- Migration conflicts blocking normal `python manage.py migrate` command
+
+**Solution:**
+
+### Method 1: Direct SQL Fix (Immediate)
+```bash
+# SSH into the affected server (staging or production)
+python manage.py dbshell
+```
+
+```sql
+-- Add currency columns to POS transactions table
+ALTER TABLE sales_pos_transaction 
+ADD COLUMN IF NOT EXISTS currency_code VARCHAR(3) DEFAULT 'USD';
+
+ALTER TABLE sales_pos_transaction 
+ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(10) DEFAULT '$';
+
+-- Record the migration as applied
+INSERT INTO django_migrations (app, name, applied)
+VALUES ('sales', '0012_add_currency_to_pos_transactions', NOW())
+ON CONFLICT (app, name) DO NOTHING;
+
+-- Verify the columns were added
+SELECT column_name, data_type, column_default
+FROM information_schema.columns 
+WHERE table_name = 'sales_pos_transaction' 
+AND column_name IN ('currency_code', 'currency_symbol');
+
+-- Exit
+\q
+```
+
+### Method 2: Check Migration Status
+```bash
+# Check which migrations are unapplied
+python manage.py showmigrations | grep "\[ \]"
+
+# If you see migration conflicts in custom_auth:
+python manage.py migrate --fake custom_auth 0002_add_tenant_id_to_all_models
+python manage.py migrate --fake custom_auth 0003_add_business_id_to_all_models
+
+# Then try to apply sales migration
+python manage.py migrate sales 0012
+```
+
+**Prevention:**
+- Always run `python manage.py showmigrations` after deployment
+- Ensure migration runs during deployment (check Dockerfile)
+- Keep staging and production databases synchronized
+
+**Files Involved:**
+- `/backend/pyfactor/sales/migrations/0012_add_currency_to_pos_transactions.py`
+- `/backend/pyfactor/sales/models.py` (POSTransaction model)
+- `/backend/pyfactor/sales/pos_viewsets.py` (Lines 144-153 for currency logic)
+
+**Note:** The USD and $ are just default values. Each transaction uses the user's preferred currency from their UserProfile.
+
+---
+
 ## 🔧 **Issue: Sales Order Creation Failing with Multi-Database Error**
 
 **Symptoms:**

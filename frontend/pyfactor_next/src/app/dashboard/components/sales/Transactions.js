@@ -60,6 +60,12 @@ export default function Transactions() {
       }
 
       const data = await response.json();
+      console.log('[Transactions] Full API Response:', data); // Debug full response
+      console.log('[Transactions] First transaction:', data.results?.[0]); // Debug first item
+      console.log('[Transactions] Currency fields:', {
+        currency_code: data.results?.[0]?.currency_code,
+        currency_symbol: data.results?.[0]?.currency_symbol
+      }); // Debug currency specifically
       setTransactions(data.results || []);
       setPagination(prev => ({
         ...prev,
@@ -463,7 +469,11 @@ export default function Transactions() {
                       {transaction.items_count || 0} items
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(transaction.total_amount, transaction.currency_code, transaction.currency_symbol)}
+                      {formatCurrency(
+                        transaction.total_amount, 
+                        transaction.currency_code || 'USD', 
+                        transaction.currency_symbol || '$'
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {transaction.payment_method || 'Cash'}
