@@ -93,6 +93,10 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
             use_shipping_address = validated_data.get('use_shipping_address', True)
             notes = validated_data.get('notes', '')
             
+            # Get currency from request or fallback to business settings
+            currency_code = validated_data.get('currency_code')
+            currency_symbol = validated_data.get('currency_symbol')
+            
             with db_transaction.atomic():
                 # Step 1: Validate stock availability
                 logger.info(f"Starting POS sale completion for {len(items)} items")
@@ -141,16 +145,23 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                 if payment_method == 'cash' and amount_tendered:
                     change_due = max(Decimal('0'), amount_tendered - total_amount)
                 
-                # Get user's currency preference from BusinessSettings
-                currency_code = 'USD'  # Default
-                currency_symbol = '$'  # Default
-                try:
-                    if business_settings:
-                        currency_code = business_settings.preferred_currency_code or 'USD'
-                        currency_symbol = business_settings.preferred_currency_symbol or '$'
-                        logger.info(f"Using currency from BusinessSettings: {currency_code} ({currency_symbol})")
-                except Exception as e:
-                    logger.warning(f"Could not get currency preference: {e}")
+                # Use currency from request first, then BusinessSettings as fallback
+                if not currency_code or not currency_symbol:
+                    # Get currency from BusinessSettings if not provided in request
+                    try:
+                        if business_settings:
+                            currency_code = currency_code or business_settings.preferred_currency_code or 'USD'
+                            currency_symbol = currency_symbol or business_settings.preferred_currency_symbol or '$'
+                            logger.info(f"Using currency from BusinessSettings: {currency_code} ({currency_symbol})")
+                        else:
+                            currency_code = currency_code or 'USD'
+                            currency_symbol = currency_symbol or '$'
+                    except Exception as e:
+                        logger.warning(f"Could not get currency preference: {e}")
+                        currency_code = currency_code or 'USD'
+                        currency_symbol = currency_symbol or '$'
+                else:
+                    logger.info(f"Using currency from request: {currency_code} ({currency_symbol})")
                 
                 # Step 5: Create POS transaction with tax jurisdiction info
                 pos_transaction = POSTransaction.objects.create(

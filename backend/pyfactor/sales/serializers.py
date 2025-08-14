@@ -1173,6 +1173,10 @@ class POSSaleCompletionSerializer(serializers.Serializer):
     tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
     use_shipping_address = serializers.BooleanField(default=True, required=False)
     
+    # Currency fields
+    currency_code = serializers.CharField(max_length=3, required=False, default='USD')
+    currency_symbol = serializers.CharField(max_length=10, required=False, default='$')
+    
     # Optional fields
     notes = serializers.CharField(required=False, allow_blank=True)
     

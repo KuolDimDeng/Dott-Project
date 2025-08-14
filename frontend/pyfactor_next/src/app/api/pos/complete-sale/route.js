@@ -64,7 +64,10 @@ export async function POST(request) {
       amount_tendered: parseFloat(saleData.amount_tendered || saleData.total_amount || 0),
       discount_percentage: parseFloat(saleData.discount_percentage || 0),
       tax_rate: parseFloat(saleData.tax_rate || 0),
-      notes: saleData.notes || ''
+      notes: saleData.notes || '',
+      // Include currency information from frontend
+      currency_code: saleData.currency || userCurrency || 'USD',
+      currency_symbol: saleData.currencySymbol || '$'
     };
 
     // Use the POS complete-sale endpoint
