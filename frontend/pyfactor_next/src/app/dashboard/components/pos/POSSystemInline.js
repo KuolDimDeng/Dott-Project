@@ -1284,7 +1284,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     setCartItems([]);
     setSelectedCustomer('');
     setDiscount(0);
-    setTaxRate(0);
+    setTaxRate(defaultTaxRate); // Use business default tax rate for walk-in customers
+    setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
     setNotes('');
     setProductSearchTerm('');
     setAmountTendered(''); // Reset cash drawer amount
@@ -1646,8 +1647,10 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       setCustomerSearchTerm('');
                       setShowCustomerDropdown(false);
                       // Reset to business default tax for walk-in customer
-                      setTaxRate(defaultTaxRate || 0);
-                      console.log('[POS] Reset to default tax rate for walk-in customer:', defaultTaxRate);
+                      setTaxRate(defaultTaxRate);
+                      setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
+                      console.log('[POS] Reset to business default tax rate for walk-in customer:', defaultTaxRate + '%');
+                      toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Business default)`);
                     }}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
                   >

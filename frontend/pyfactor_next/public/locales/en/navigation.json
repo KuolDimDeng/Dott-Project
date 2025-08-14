@@ -3,7 +3,7 @@
   "mainMenu": {
     "createNew": "Create New",
     "dashboard": "Dashboard",
-    "pos": "POS",
+    "pos": "Point of Sale",
     "sales": "Sales",
     "billing": "Billing",
     "crm": "CRM",
