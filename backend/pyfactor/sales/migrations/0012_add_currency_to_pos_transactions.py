@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sales', '0013_remove_customer_loyalty_program_and_more'),
+        ('sales', '0011_add_tax_jurisdiction_fields'),
     ]
 
     operations = [
