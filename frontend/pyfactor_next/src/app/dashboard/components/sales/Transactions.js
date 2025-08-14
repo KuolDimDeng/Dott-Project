@@ -82,12 +82,19 @@ export default function Transactions() {
   // View transaction details
   const viewTransaction = async (transaction) => {
     try {
-      const response = await fetch(`/api/pos/transactions/${transaction.id}/`, {
+      // Remove trailing slash to avoid redirects
+      const response = await fetch(`/api/pos/transactions/${transaction.id}`, {
         credentials: 'include'
       });
 
       if (!response.ok) {
         throw new Error('Failed to fetch transaction details');
+      }
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format');
       }
 
       const data = await response.json();
@@ -188,8 +195,8 @@ export default function Transactions() {
               <tr>
                 <td>${item.product_name}</td>
                 <td style="text-align: center;">${item.quantity}</td>
-                <td style="text-align: right;">$${item.unit_price.toFixed(2)}</td>
-                <td style="text-align: right;">$${(item.quantity * item.unit_price).toFixed(2)}</td>
+                <td style="text-align: right;">$${(Number(item.unit_price) || 0).toFixed(2)}</td>
+                <td style="text-align: right;">$${((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -198,34 +205,34 @@ export default function Transactions() {
         <div class="totals">
           <div class="total-row">
             <span>Subtotal:</span>
-            <span>$${transaction.subtotal?.toFixed(2) || '0.00'}</span>
+            <span>$${(Number(transaction.subtotal) || 0).toFixed(2)}</span>
           </div>
-          ${transaction.discount > 0 ? `
+          ${(Number(transaction.discount) || 0) > 0 ? `
             <div class="total-row">
               <span>Discount:</span>
-              <span>-$${transaction.discount.toFixed(2)}</span>
+              <span>-$${(Number(transaction.discount) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
-          ${transaction.tax > 0 ? `
+          ${(Number(transaction.tax) || 0) > 0 ? `
             <div class="total-row">
               <span>Tax:</span>
-              <span>$${transaction.tax.toFixed(2)}</span>
+              <span>$${(Number(transaction.tax) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
           <div class="total-row" style="font-weight: bold; font-size: 14px; margin-top: 10px;">
             <span>TOTAL:</span>
-            <span>$${transaction.total_amount?.toFixed(2) || '0.00'}</span>
+            <span>$${(Number(transaction.total_amount) || 0).toFixed(2)}</span>
           </div>
           ${transaction.amount_paid ? `
             <div class="total-row">
               <span>Paid:</span>
-              <span>$${transaction.amount_paid.toFixed(2)}</span>
+              <span>$${(Number(transaction.amount_paid) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
           ${transaction.change_given ? `
             <div class="total-row">
               <span>Change:</span>
-              <span>$${transaction.change_given.toFixed(2)}</span>
+              <span>$${(Number(transaction.change_given) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
         </div>
