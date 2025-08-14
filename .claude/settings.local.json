@@ -307,7 +307,8 @@
       "Bash(/tmp/test_api_simple.sh:*)",
       "Bash(PGSSLMODE=disable python3 manage.py initialize_chart_of_accounts --email kuoldimdeng@outlook.com)",
       "Bash(PGSSLMODE=disable python3 initialize_coa_directly.py)",
-      "Bash(/Users/kuoldeng/projectx/deploy_pos_schema_fix.sh)"
+      "Bash(/Users/kuoldeng/projectx/deploy_pos_schema_fix.sh)",
+      "Bash(git cherry-pick:*)"
     ],
     "deny": []
   }
