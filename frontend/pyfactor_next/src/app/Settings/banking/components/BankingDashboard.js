@@ -14,9 +14,16 @@ import ConnectedBanks from './ConnectedBanks';
 import AddBankAccount from './AddBankAccount';
 import { useSession } from '@/hooks/useSession-v2';
 import toast from 'react-hot-toast';
-
-// Plaid supported countries
-const PLAID_COUNTRIES = ['US', 'CA', 'GB', 'FR', 'ES', 'NL', 'IE', 'DE'];
+import {
+  PLAID_COUNTRIES,
+  getBankingProvider,
+  getCountryDisplayName,
+  getCachedCountryData,
+  cacheCountryData,
+  getUserSelectedCountry,
+  saveUserSelectedCountry,
+  clearCountryCache
+} from '@/config/bankingProviders';
 
 /**
  * Main Banking Dashboard Component
@@ -30,22 +37,56 @@ export default function BankingDashboard() {
   const [showAddBank, setShowAddBank] = useState(false);
   const [provider, setProvider] = useState(null);
   const [countryDetected, setCountryDetected] = useState(false);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [isDetectingCountry, setIsDetectingCountry] = useState(false);
   
-  // Debug re-renders
-  console.log('🔍 [BankingDashboard] Component rendered - Country:', userCountry, 'Provider:', provider, 'Detected:', countryDetected);
+  // Debug info
+  console.log('🔍 [BankingDashboard] Render - Country:', userCountry, 'Provider:', provider, 'Detected:', countryDetected);
 
   useEffect(() => {
-    if (!countryDetected) {
-      fetchUserProfile();
-    }
+    // Initialize country detection
+    initializeCountryDetection();
     fetchBankConnections();
-  }, [countryDetected]);
+  }, []); // Only run once on mount
+
+  /**
+   * Initialize country detection with caching
+   */
+  const initializeCountryDetection = async () => {
+    console.log('🔍 [BankingDashboard] Initializing country detection...');
+    
+    // Check for user's manual selection first
+    const userSelected = getUserSelectedCountry();
+    if (userSelected) {
+      console.log('🔍 [BankingDashboard] Using user selected country:', userSelected);
+      setUserCountry(userSelected);
+      setProvider(getBankingProvider(userSelected));
+      setCountryDetected(true);
+      return;
+    }
+    
+    // Check for cached country data
+    const cached = getCachedCountryData();
+    if (cached) {
+      console.log('🔍 [BankingDashboard] Using cached country:', cached.country, 'Age:', Math.round(cached.age / 1000), 'seconds');
+      setUserCountry(cached.country);
+      setProvider(cached.provider);
+      setCountryDetected(true);
+      return;
+    }
+    
+    // No cache, fetch from API
+    if (!isDetectingCountry) {
+      await fetchUserProfile();
+    }
+  };
 
   /**
    * Fetch user profile to get country
    */
   const fetchUserProfile = async () => {
     console.log('🔍 [BankingDashboard] === STARTING COUNTRY DETECTION ===');
+    setIsDetectingCountry(true);
     try {
       // Try the user profile endpoint which has business country data
       const response = await fetch('/api/user/profile', {
@@ -72,11 +113,13 @@ export default function BankingDashboard() {
         console.log('🔍 [BankingDashboard] Available fields:', Object.keys(data));
         
         if (country) {
-          // Set the country we found
+          // Set and cache the country we found
           setUserCountry(country);
-          const useProvider = PLAID_COUNTRIES.includes(country) ? 'plaid' : 'wise';
+          const useProvider = getBankingProvider(country);
           setProvider(useProvider);
           setCountryDetected(true);
+          cacheCountryData(country); // Cache for future use
+          setIsDetectingCountry(false);
           console.log(`🔍 [BankingDashboard] Profile set - Country: ${country}, Provider: ${useProvider}`);
           return; // Don't try the alt endpoint
         } else {
@@ -127,31 +170,64 @@ export default function BankingDashboard() {
         
         if (country) {
           setUserCountry(country);
-          const useProvider = PLAID_COUNTRIES.includes(country) ? 'plaid' : 'wise';
+          const useProvider = getBankingProvider(country);
           setProvider(useProvider);
           setCountryDetected(true);
+          cacheCountryData(country); // Cache for future use
+          setIsDetectingCountry(false);
           console.log(`🔍 [BankingDashboard] Alternative endpoint set - Country: ${country}, Provider: ${useProvider}`);
         } else {
-          // If still no country found, default to Wise for international users
-          console.log('🔍 [BankingDashboard] No country found in any endpoint, defaulting to Wise for international');
+          // If still no country found, show country selector
+          console.log('🔍 [BankingDashboard] No country found in any endpoint, showing country selector');
+          setShowCountrySelector(true);
           setUserCountry('International');
           setProvider('wise');
           setCountryDetected(true);
+          setIsDetectingCountry(false);
         }
       } else {
-        console.error('🔍 [BankingDashboard] All endpoints failed, defaulting to Wise');
+        console.error('🔍 [BankingDashboard] All endpoints failed, showing country selector');
         console.error('🔍 [BankingDashboard] Last endpoint status:', altResponse.status);
+        setShowCountrySelector(true);
         setUserCountry('International');
         setProvider('wise');
         setCountryDetected(true);
+        setIsDetectingCountry(false);
       }
     } catch (error) {
       console.error('🔍 [BankingDashboard] Error fetching user profile:', error);
-      // Default to Wise for international users when we can't determine country
+      // Show country selector when we can't determine country
+      setShowCountrySelector(true);
       setUserCountry('International');
       setProvider('wise');
       setCountryDetected(true);
+      setIsDetectingCountry(false);
     }
+  };
+
+  /**
+   * Handle manual country selection
+   */
+  const handleCountrySelect = (countryCode) => {
+    console.log('🔍 [BankingDashboard] Manual country selection:', countryCode);
+    setUserCountry(countryCode);
+    setProvider(getBankingProvider(countryCode));
+    saveUserSelectedCountry(countryCode);
+    setShowCountrySelector(false);
+    toast.success(`Country set to ${getCountryDisplayName(countryCode)}`);
+  };
+
+  /**
+   * Reset country detection
+   */
+  const resetCountryDetection = () => {
+    clearCountryCache();
+    setCountryDetected(false);
+    setUserCountry(null);
+    setProvider(null);
+    setShowCountrySelector(false);
+    initializeCountryDetection();
+    toast.info('Country detection reset');
   };
 
   /**
@@ -290,7 +366,7 @@ export default function BankingDashboard() {
               <GlobeAltIcon className="h-5 w-5 text-gray-400 mr-3" />
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  Banking Provider for {userCountry || 'your region'}
+                  Banking Provider for {getCountryDisplayName(userCountry)}
                 </p>
                 <p className="text-sm text-gray-500">
                   {provider === 'plaid' 
@@ -299,7 +375,7 @@ export default function BankingDashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-2">
               {provider === 'plaid' ? (
                 <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
                   <CheckCircleIcon className="h-4 w-4 mr-1" />
@@ -311,6 +387,12 @@ export default function BankingDashboard() {
                   Wise
                 </span>
               )}
+              <button
+                onClick={() => setShowCountrySelector(true)}
+                className="text-sm text-blue-600 hover:text-blue-500 underline"
+              >
+                Change Country
+              </button>
             </div>
           </div>
         </div>
@@ -354,6 +436,96 @@ export default function BankingDashboard() {
                   Connect Your First Bank Account
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Country Selector Modal */}
+      {showCountrySelector && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-lg w-full mx-4 p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Select Your Country</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Choose your business country to determine the best banking provider for you.
+              </p>
+            </div>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="mb-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                  Plaid Supported Countries (Direct Bank Connection)
+                </p>
+                {PLAID_COUNTRIES.map(country => (
+                  <button
+                    key={country}
+                    onClick={() => handleCountrySelect(country)}
+                    className="w-full text-left px-3 py-2 rounded hover:bg-blue-50 flex items-center justify-between group"
+                  >
+                    <span>{getCountryDisplayName(country)}</span>
+                    <span className="text-xs text-green-600 opacity-0 group-hover:opacity-100">
+                      Plaid ✓
+                    </span>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="border-t pt-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                  Other Countries (Wise Banking)
+                </p>
+                {Object.entries({
+                  'SS': 'South Sudan',
+                  'KE': 'Kenya',
+                  'NG': 'Nigeria',
+                  'ZA': 'South Africa',
+                  'GH': 'Ghana',
+                  'TZ': 'Tanzania',
+                  'UG': 'Uganda',
+                  'ET': 'Ethiopia',
+                  'RW': 'Rwanda',
+                  'SN': 'Senegal',
+                  'IN': 'India',
+                  'PK': 'Pakistan',
+                  'BD': 'Bangladesh',
+                  'PH': 'Philippines',
+                  'ID': 'Indonesia',
+                  'MY': 'Malaysia',
+                  'TH': 'Thailand',
+                  'VN': 'Vietnam',
+                  'AU': 'Australia',
+                  'NZ': 'New Zealand',
+                  'JP': 'Japan',
+                  'KR': 'South Korea',
+                  'CN': 'China',
+                  'BR': 'Brazil',
+                  'MX': 'Mexico',
+                  'AR': 'Argentina',
+                  'CL': 'Chile',
+                  'CO': 'Colombia'
+                }).map(([code, name]) => (
+                  <button
+                    key={code}
+                    onClick={() => handleCountrySelect(code)}
+                    className="w-full text-left px-3 py-2 rounded hover:bg-purple-50 flex items-center justify-between group"
+                  >
+                    <span>{name}</span>
+                    <span className="text-xs text-purple-600 opacity-0 group-hover:opacity-100">
+                      Wise ✓
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setShowCountrySelector(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

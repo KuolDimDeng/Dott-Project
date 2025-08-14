@@ -33,7 +33,8 @@ def get_banking_method(request):
         user = request.user
         user_country = getattr(user, 'country', 'US')
         
-        # Countries where Plaid is available
+        # Countries where Plaid is available (synchronized with frontend config)
+        # Keep in sync with /frontend/pyfactor_next/src/config/bankingProviders.js
         PLAID_COUNTRIES = [
             'US', 'CA', 'GB', 'FR', 'ES', 'NL', 'IE', 'DE', 
             'IT', 'PL', 'DK', 'NO', 'SE', 'EE', 'LT', 'LV', 'PT', 'BE'
