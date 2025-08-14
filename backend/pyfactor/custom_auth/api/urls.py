@@ -22,6 +22,7 @@ from .views.session_v2 import SessionV2View
 from .views.pos_validation_view import ValidatePOSAccessView
 from .views.password_login_fixed import PasswordLoginViewFixed
 from custom_auth.views.email_views import SendEmailView, ContactFormView
+from session_manager.views_refresh import refresh_session, session_status, session_verify
 # Password login is now in auth_views
 # from .views.password_login_view import PasswordLoginView
 # from .views.test_endpoint_view import TestEndpointView
@@ -51,6 +52,11 @@ urlpatterns = [
     
     # Industry-standard session management v2
     path('auth/session-v2', SessionV2View.as_view(), name='session-v2'),
+    
+    # Session refresh endpoints for auto-recovery
+    path('auth/refresh', refresh_session, name='auth-refresh'),
+    path('auth/session-verify', session_verify, name='auth-session-verify'),
+    path('auth/session-status', session_status, name='auth-session-status'),
     
     # POS access validation endpoint
     path('auth/validate-pos-access', ValidatePOSAccessView.as_view(), name='validate-pos-access'),

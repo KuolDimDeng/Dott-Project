@@ -1,6 +1,7 @@
 'use client';
 
 import { apiService } from '@/shared/services/apiService';
+import { sessionManager } from '@/utils/sessionManager';
 
 // Product Service - Extracted from massive apiClient.js
 export const productService = {
@@ -19,9 +20,12 @@ export const productService = {
     return apiService.post('/inventory/products', productData);
   },
 
-  // Update existing product
+  // Update existing product with session validation
   async update(id, productData) {
-    return apiService.put(`/inventory/products/${id}`, productData);
+    // Wrap in session manager for auto-recovery
+    return sessionManager.withSession(async () => {
+      return apiService.put(`/inventory/products/${id}`, productData);
+    });
   },
 
   // Delete product

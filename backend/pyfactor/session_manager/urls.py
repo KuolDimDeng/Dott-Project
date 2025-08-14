@@ -16,6 +16,7 @@ from .cloudflare_session_view import CloudflareSessionCreateView
 from .consolidated_auth_view import ConsolidatedAuthView
 from .debug_views import SessionDebugView
 from .views_public import PublicSessionDetailView
+from .views_refresh import refresh_session, session_status, session_verify
 
 app_name = 'sessions'
 
@@ -46,6 +47,11 @@ urlpatterns = [
     
     # Debug endpoint (temporary for troubleshooting)
     path('debug/<uuid:session_id>/', SessionDebugView.as_view(), name='session-debug'),
+    
+    # Session refresh and status endpoints for auto-recovery
+    path('refresh/', refresh_session, name='session-refresh'),
+    path('status/', session_status, name='session-status'),
+    path('verify/', session_verify, name='session-verify'),
     
     # Security endpoints
     path('security/', include('session_manager.security_urls')),
