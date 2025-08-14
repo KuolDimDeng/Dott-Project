@@ -4,6 +4,9 @@
 echo "=== Pre-start: Running Django migrations ==="
 python manage.py migrate --no-input
 
+echo "=== Pre-start: Applying currency fields migration ==="
+python scripts/apply_currency_migration.py
+
 echo "=== Pre-start: Applying tax jurisdiction migration ==="
 python scripts/apply_tax_migration.py
 
