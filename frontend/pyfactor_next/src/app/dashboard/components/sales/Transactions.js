@@ -457,7 +457,7 @@ export default function Transactions() {
                 {transactions.map((transaction) => (
                   <tr key={transaction.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {transaction.transaction_id || `TXN-${transaction.id}`}
+                      {transaction.transaction_number || `TXN-${transaction.id}`}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm')}
