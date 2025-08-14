@@ -140,8 +140,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // percentage or amount
-  const [taxRate, setTaxRate] = useState(0);
   const [defaultTaxRate, setDefaultTaxRate] = useState(0); // Business default tax rate
+  const [taxRate, setTaxRate] = useState(0); // Will be set to defaultTaxRate once loaded
   const [taxJurisdiction, setTaxJurisdiction] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountTendered, setAmountTendered] = useState('');
@@ -526,18 +526,33 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     fetchEstimatedTaxRate();
   }, []);
 
+  // Set initial tax rate to default business rate when it's loaded
+  useEffect(() => {
+    if (defaultTaxRate > 0 && taxRate === 0 && !selectedCustomer) {
+      console.log('[POS] Setting initial tax rate to business default:', defaultTaxRate + '%');
+      setTaxRate(defaultTaxRate);
+    }
+  }, [defaultTaxRate]);
+
   // Update tax rate when customer is selected
   
   useEffect(() => {
     const fetchCustomerTaxRate = async () => {
       if (!selectedCustomer) {
-        // Walk-In customer - wait for business info to be loaded
+        // No customer selected - use business default tax rate
+        if (defaultTaxRate > 0) {
+          console.log('[POS] No customer selected, using business default tax rate:', defaultTaxRate + '%');
+          setTaxRate(defaultTaxRate);
+          return;
+        }
+        
+        // If default rate not loaded yet, wait
         if (!businessInfo.country && !businessCountry) {
           console.log('[POS] Business location not yet loaded, waiting...');
           return; // Wait for business info to load
         }
         
-        console.log('[POS] Walk-In customer, calculating tax for business location');
+        console.log('[POS] Walk-In/No customer, calculating tax for business location');
         console.log('[POS] Business location state:', {
           country: businessCountry || businessInfo.country || 'EMPTY',
           state: businessState || businessInfo.state || 'EMPTY',
@@ -1647,10 +1662,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       setCustomerSearchTerm('');
                       setShowCustomerDropdown(false);
                       // Reset to business default tax for walk-in customer
-                      setTaxRate(defaultTaxRate);
-                      setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
-                      console.log('[POS] Reset to business default tax rate for walk-in customer:', defaultTaxRate + '%');
-                      toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Business default)`);
+                      if (defaultTaxRate > 0) {
+                        setTaxRate(defaultTaxRate);
+                        setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
+                        console.log('[POS] Walk-In selected, reset to business default tax rate:', defaultTaxRate + '%');
+                        toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Business default)`);
+                      }
                     }}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
                   >

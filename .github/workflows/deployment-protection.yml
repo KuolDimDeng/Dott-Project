@@ -1,0 +1,45 @@
+name: Deployment Protection
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+
+jobs:
+  staging-deployment:
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to Staging
+        run: echo "✅ Auto-deploying to staging..."
+        # Your staging deployment steps here
+
+  production-protection:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      # Requires manual approval in GitHub
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Tests First
+        run: |
+          echo "🧪 Running production tests..."
+          # npm test
+          # python manage.py test
+      
+      - name: Require Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: KuolDimDeng
+          minimum-approvals: 1
+          issue-title: "Deploy to Production"
+          issue-body: "Please approve production deployment of ${{ github.sha }}"
+      
+      - name: Deploy to Production
+        run: echo "🚀 Deploying to production..."
+        # Your production deployment steps here
