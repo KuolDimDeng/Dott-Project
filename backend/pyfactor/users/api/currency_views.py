@@ -15,6 +15,7 @@ from currency.exchange_rate_service import exchange_rate_service
 from currency.currency_validator import CurrencyValidator, CurrencyConversionValidator
 from decimal import Decimal
 import traceback
+from .currency_sync import sync_currency_to_business_settings
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 

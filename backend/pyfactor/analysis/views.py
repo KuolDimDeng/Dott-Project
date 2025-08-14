@@ -347,34 +347,54 @@ def get_budget_vs_actual_data(request):
 @permission_classes([IsAuthenticated])
 def get_sales_analysis_data(request):
     try:
+        logger.info(f"[SALES-DATA-API] Request received from user: {request.user.email if hasattr(request.user, 'email') else 'Unknown'}")
+        logger.info(f"[SALES-DATA-API] Request headers: {dict(request.headers)}")
+        logger.info(f"[SALES-DATA-API] Request GET params: {dict(request.GET)}")
+        
         time_range = int(request.GET.get('time_range', 1))  # Default to 1 month
         end_date = timezone.now().date()
         start_date = end_date - timedelta(days=30*time_range)
 
         user = request.user
+        logger.info(f"[SALES-DATA-API] User object: {user}, tenant_id: {getattr(user, 'tenant_id', None)}")
         
         # Get the database name using the tenant-aware utility
         database_name = get_tenant_database(user)
+        logger.info(f"[SALES-DATA-API] Database name resolved: {database_name}")
+        
         if not database_name:
+            logger.error(f"[SALES-DATA-API] Could not determine database for user {user}")
             return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
-        logger.info(f"Fetching sales data for user {user.id} from database {database_name}")
+        logger.info(f"[SALES-DATA-API] Fetching sales data for user {user.id} from database {database_name}")
 
         # Import POSTransaction and POSTransactionItem models
         from sales.models import POSTransaction, POSTransactionItem
         
+        logger.info(f"[SALES-DATA-API] Querying POS transactions from {start_date} to {end_date}")
+        
         # Get POS transactions for the time range
-        pos_transactions = POSTransaction.objects.using(database_name).filter(
-            created_at__date__gte=start_date, 
-            created_at__date__lte=end_date,
-            status='completed'  # Only completed transactions
-        )
+        try:
+            pos_transactions = POSTransaction.objects.using(database_name).filter(
+                created_at__date__gte=start_date, 
+                created_at__date__lte=end_date,
+                status='completed'  # Only completed transactions
+            )
+            logger.info(f"[SALES-DATA-API] Found {pos_transactions.count()} POS transactions")
+        except Exception as e:
+            logger.error(f"[SALES-DATA-API] Error querying POS transactions: {str(e)}")
+            pos_transactions = POSTransaction.objects.none()
         
         # Get invoices as well for comprehensive data
-        invoices = Invoice.objects.using(database_name).filter(
-            date__gte=start_date, 
-            date__lte=end_date
-        )
+        try:
+            invoices = Invoice.objects.using(database_name).filter(
+                date__gte=start_date, 
+                date__lte=end_date
+            )
+            logger.info(f"[SALES-DATA-API] Found {invoices.count()} invoices")
+        except Exception as e:
+            logger.error(f"[SALES-DATA-API] Error querying invoices: {str(e)}")
+            invoices = Invoice.objects.none()
         
         # Combine POS and Invoice data
         # Sales over time from POS
@@ -509,12 +529,25 @@ def get_sales_analysis_data(request):
             'numberOfOrders': total_transactions,
         }
         
-        logger.info(f"Sales data fetched successfully: {total_transactions} transactions, ${total_sales:.2f} total")
+        logger.info(f"[SALES-DATA-API] Sales data fetched successfully: {total_transactions} transactions, ${total_sales:.2f} total")
+        logger.info(f"[SALES-DATA-API] Returning data structure: sales_over_time={len(sales_over_time)} items, top_products={len(top_products)} items")
         return JsonResponse(data)
 
     except Exception as e:
-        logger.error(f"Error in get_sales_analysis_data: {str(e)}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        logger.error(f"[SALES-DATA-API] Error in get_sales_analysis_data: {str(e)}", exc_info=True)
+        logger.error(f"[SALES-DATA-API] Full exception details:", exc_info=True)
+        
+        # Return a more informative error response
+        return JsonResponse({
+            'error': str(e),
+            'error_type': type(e).__name__,
+            'total_sales': 0,
+            'total_transactions': 0,
+            'average_order_value': 0,
+            'top_products': [],
+            'recent_sales': [],
+            'sales_over_time': []
+        }, status=500)
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

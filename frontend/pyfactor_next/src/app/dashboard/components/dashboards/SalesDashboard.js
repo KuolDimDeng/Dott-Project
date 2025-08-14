@@ -36,9 +36,14 @@ const SalesDashboard = () => {
   // Fetch sales analysis data
   const fetchSalesData = async () => {
     try {
+      console.log('[SalesDashboard] Starting fetchSalesData, timeRange:', timeRange);
       setFetchError(null);
+      
       // First try the analytics endpoint
-      const response = await fetch(`/api/analytics/sales-data?time_range=${timeRange}`, {
+      const url = `/api/analytics/sales-data?time_range=${timeRange}`;
+      console.log('[SalesDashboard] Fetching from URL:', url);
+      
+      const response = await fetch(url, {
         credentials: 'include',
         headers: {
           'Accept': 'application/json',
@@ -46,8 +51,26 @@ const SalesDashboard = () => {
         }
       });
       
+      console.log('[SalesDashboard] Response status:', response.status);
+      console.log('[SalesDashboard] Response content-type:', response.headers.get('content-type'));
+      
       if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
         const data = await response.json();
+        console.log('[SalesDashboard] Received data:', {
+          total_sales: data.total_sales,
+          total_transactions: data.total_transactions,
+          top_products_count: Array.isArray(data.top_products) ? data.top_products.length : 0,
+          recent_sales_count: Array.isArray(data.recent_sales) ? data.recent_sales.length : 0,
+          has_error: !!data.error
+        });
+        
+        // Check if backend returned an error
+        if (data.error) {
+          console.error('[SalesDashboard] Backend returned error:', data.error);
+          setFetchError(data.error);
+          // Still use the empty data structure returned
+        }
+        
         setSalesData(data);
         
         // Calculate stats - ensure all values are valid
@@ -60,9 +83,22 @@ const SalesDashboard = () => {
           recentSales: Array.isArray(data.recent_sales) ? data.recent_sales : 
                       Array.isArray(data.recentSales) ? data.recentSales : []
         });
+        
+        console.log('[SalesDashboard] Stats updated successfully');
       } else {
-        console.log('Analytics endpoint not available, using fallback data');
-        setFetchError('Unable to load sales data. Please try again later.');
+        // Try to get error details
+        let errorMessage = 'Unable to load sales data. Please try again later.';
+        try {
+          const text = await response.text();
+          console.error('[SalesDashboard] Non-JSON response:', text.substring(0, 200));
+          if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+            errorMessage = 'Server returned HTML instead of data. Please refresh the page.';
+          }
+        } catch (e) {
+          console.error('[SalesDashboard] Could not read response text:', e);
+        }
+        
+        setFetchError(errorMessage);
         // Set some default data to prevent errors
         setStats({
           totalSales: 0,
@@ -73,8 +109,8 @@ const SalesDashboard = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching sales data:', error);
-      setFetchError('Failed to load sales data. Please try again.');
+      console.error('[SalesDashboard] Error fetching sales data:', error.message, error);
+      setFetchError(`Failed to load sales data: ${error.message}`);
       // Set default stats to prevent render errors
       setStats({
         totalSales: 0,
@@ -89,6 +125,8 @@ const SalesDashboard = () => {
   // Fetch POS transactions
   const fetchPOSTransactions = async () => {
     try {
+      console.log('[SalesDashboard] Fetching POS transactions...');
+      
       const response = await fetch('/api/sales/pos/transactions', {
         credentials: 'include',
         headers: {
@@ -97,19 +135,31 @@ const SalesDashboard = () => {
         }
       });
       
+      console.log('[SalesDashboard] POS response status:', response.status);
+      console.log('[SalesDashboard] POS response content-type:', response.headers.get('content-type'));
+      
       if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
         const data = await response.json();
+        console.log('[SalesDashboard] POS data structure:', {
+          isArray: Array.isArray(data),
+          hasResults: !!data.results,
+          hasData: !!data.data,
+          directLength: Array.isArray(data) ? data.length : 'N/A'
+        });
+        
         // Ensure we have an array
         const transactions = Array.isArray(data) ? data : 
                            Array.isArray(data.results) ? data.results : 
                            Array.isArray(data.data) ? data.data : [];
+        
+        console.log('[SalesDashboard] POS transactions count:', transactions.length);
         setPosTransactions(transactions);
       } else {
-        console.log('POS transactions endpoint not available');
+        console.error('[SalesDashboard] POS transactions endpoint not available or returned non-JSON');
         setPosTransactions([]);
       }
     } catch (error) {
-      console.error('Error fetching POS transactions:', error);
+      console.error('[SalesDashboard] Error fetching POS transactions:', error.message, error);
       setPosTransactions([]);
     }
   };
