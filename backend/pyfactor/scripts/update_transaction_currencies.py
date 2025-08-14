@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
 from sales.models import POSTransaction
-from users.models import UserProfile
+from users.models import UserProfile, BusinessSettings
 from django.db import transaction
 
 
@@ -37,19 +37,28 @@ def update_transaction_currencies():
             if not user:
                 continue
                 
-            # Get user's profile
-            profile = UserProfile.objects.filter(user=user).first()
-            if not profile:
-                continue
+            # Get business settings for the tenant
+            business_settings = BusinessSettings.objects.filter(
+                tenant_id=trans.tenant_id
+            ).first()
             
-            # Get user's preferred currency
-            preferred_currency = profile.preferred_currency_code or 'USD'
-            preferred_symbol = profile.preferred_currency_symbol or '$'
-            
-            # For South Sudan users, use SSP
-            if profile.country == 'SS':
-                preferred_currency = 'SSP'
-                preferred_symbol = 'SSP'
+            if business_settings:
+                # Use business currency settings
+                preferred_currency = business_settings.preferred_currency_code or 'USD'
+                preferred_symbol = business_settings.preferred_currency_symbol or '$'
+            else:
+                # Fallback to user profile
+                profile = UserProfile.objects.filter(user=user).first()
+                if not profile:
+                    continue
+                
+                # For South Sudan users, use SSP
+                if profile.country == 'SS':
+                    preferred_currency = 'SSP'
+                    preferred_symbol = 'SSP'
+                else:
+                    preferred_currency = 'USD'
+                    preferred_symbol = '$'
             
             # Update transaction if needed
             if trans.currency_code != preferred_currency:
