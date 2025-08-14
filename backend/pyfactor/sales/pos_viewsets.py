@@ -141,6 +141,18 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                 if payment_method == 'cash' and amount_tendered:
                     change_due = max(Decimal('0'), amount_tendered - total_amount)
                 
+                # Get user's currency preference
+                currency_code = 'USD'  # Default
+                currency_symbol = '$'  # Default
+                try:
+                    from users.models import UserProfile
+                    user_profile = UserProfile.objects.filter(user=request.user).first()
+                    if user_profile and user_profile.preferred_currency_code:
+                        currency_code = user_profile.preferred_currency_code
+                        currency_symbol = user_profile.preferred_currency_symbol or '$'
+                except Exception as e:
+                    logger.warning(f"Could not get user currency preference: {e}")
+                
                 # Step 5: Create POS transaction with tax jurisdiction info
                 pos_transaction = POSTransaction.objects.create(
                     tenant_id=request.user.tenant_id,  # CRITICAL: Explicitly set tenant_id
@@ -156,6 +168,9 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                     status='completed',
                     notes=notes,
                     created_by=request.user,
+                    # Currency information
+                    currency_code=currency_code,
+                    currency_symbol=currency_symbol,
                     # New tax jurisdiction fields
                     tax_jurisdiction=tax_calculation.get('tax_jurisdiction', {}),
                     tax_calculation_method=tax_calculation.get('tax_calculation_method', 'manual'),

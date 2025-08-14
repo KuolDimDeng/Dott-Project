@@ -35,7 +35,7 @@ const CURRENCY_DATA = {
   'XAF': { name: 'Central African CFA Franc', symbol: 'FCFA', decimal_places: 0, symbol_position: 'after' },
   'XOF': { name: 'West African CFA Franc', symbol: 'CFA', decimal_places: 0, symbol_position: 'after' },
   'RWF': { name: 'Rwandan Franc', symbol: 'FRw', decimal_places: 0, symbol_position: 'before' },
-  'SSP': { name: 'South Sudanese Pound', symbol: 'SSP ', decimal_places: 2, symbol_position: 'before' },
+  'SSP': { name: 'South Sudanese Pound', symbol: 'SSP', decimal_places: 2, symbol_position: 'before' },
   'BIF': { name: 'Burundian Franc', symbol: 'FBu', decimal_places: 0, symbol_position: 'before' },
   'DJF': { name: 'Djiboutian Franc', symbol: 'Fdj', decimal_places: 0, symbol_position: 'before' },
   'ERN': { name: 'Eritrean Nakfa', symbol: 'Nfk', decimal_places: 2, symbol_position: 'before' },
@@ -236,7 +236,9 @@ export function formatCurrency(amount, currencyCode, options = {}) {
     
     let result;
     if (currencyInfo.symbol_position === 'before') {
-      result = `${currencyInfo.symbol}${formattedAmount}`;
+      // Add space for multi-character symbols like SSP, ensure no space for single char like $
+      const needsSpace = currencyInfo.symbol.length > 1 || ['SSP', 'USD', 'EUR', 'GBP'].includes(currencyCode);
+      result = needsSpace && currencyInfo.symbol.length > 1 ? `${currencyInfo.symbol} ${formattedAmount}` : `${currencyInfo.symbol}${formattedAmount}`;
     } else {
       result = `${formattedAmount} ${currencyInfo.symbol}`;
     }

@@ -507,6 +507,10 @@ class POSTransaction(TenantAwareModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
     notes = models.TextField(blank=True, null=True)
     
+    # Currency information
+    currency_code = models.CharField(max_length=3, default='USD', help_text='ISO 4217 currency code')
+    currency_symbol = models.CharField(max_length=10, default='$', help_text='Currency symbol for display')
+    
     # Relationships
     invoice = models.OneToOneField('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_transaction')
     journal_entry = models.OneToOneField('finance.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True)
