@@ -28,7 +28,21 @@ export async function GET(request) {
       },
     });
 
-    const data = await response.json();
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // If not JSON, it's likely an HTML error page
+      const text = await response.text();
+      console.error('[POS Transactions API] Non-JSON response:', text.substring(0, 500));
+      return NextResponse.json(
+        { error: 'Backend returned non-JSON response', results: [], count: 0 },
+        { status: response.status || 500 }
+      );
+    }
 
     if (!response.ok) {
       return NextResponse.json(
@@ -71,7 +85,21 @@ export async function POST(request) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // If not JSON, it's likely an HTML error page
+      const text = await response.text();
+      console.error('[POS Transactions API] Non-JSON response:', text.substring(0, 500));
+      return NextResponse.json(
+        { error: 'Backend returned non-JSON response' },
+        { status: response.status || 500 }
+      );
+    }
 
     if (!response.ok) {
       return NextResponse.json(
