@@ -129,6 +129,9 @@ def generate_receipt_html(receipt_data):
     totals = receipt_data.get('totals', {})
     payment = receipt_data.get('payment', {})
     receipt_info = receipt_data.get('receipt', {})
+    # Get currency information from receipt data
+    currency_symbol = receipt_data.get('currencySymbol', '$')
+    currency_code = receipt_data.get('currency', 'USD')
     
     html = f"""
     <!DOCTYPE html>
@@ -176,8 +179,8 @@ def generate_receipt_html(receipt_data):
                     <tr>
                         <td>{item.get('name', 'Item')}</td>
                         <td>{quantity}</td>
-                        <td>${item_price:.2f}</td>
-                        <td>${item_total:.2f}</td>
+                        <td>{currency_symbol}{item_price:.2f}</td>
+                        <td>{currency_symbol}{item_total:.2f}</td>
                     </tr>
         """
     
@@ -188,7 +191,7 @@ def generate_receipt_html(receipt_data):
             <div class="totals">
                 <div class="total-row">
                     <span>Subtotal:</span>
-                    <span>${totals.get('subtotal', 0)}</span>
+                    <span>{currency_symbol}{totals.get('subtotal', 0)}</span>
                 </div>
     """
     
@@ -196,14 +199,14 @@ def generate_receipt_html(receipt_data):
         html += f"""
                 <div class="total-row">
                     <span>Tax:</span>
-                    <span>${totals.get('tax', 0)}</span>
+                    <span>{currency_symbol}{totals.get('tax', 0)}</span>
                 </div>
         """
     
     html += f"""
                 <div class="total-row grand-total">
                     <span>Total:</span>
-                    <span>${totals.get('total', 0)}</span>
+                    <span>{currency_symbol}{totals.get('total', 0)}</span>
                 </div>
             </div>
             
@@ -213,11 +216,11 @@ def generate_receipt_html(receipt_data):
     # Add cash payment details if applicable
     if payment.get('method') == 'cash' and payment.get('amountTendered'):
         html += f"""
-            <p>Amount Tendered: ${payment.get('amountTendered', 0)}</p>
+            <p>Amount Tendered: {currency_symbol}{payment.get('amountTendered', 0)}</p>
         """
         if float(payment.get('changeDue', 0)) > 0:
             html += f"""
-            <p>Change Due: ${payment.get('changeDue', 0)}</p>
+            <p>Change Due: {currency_symbol}{payment.get('changeDue', 0)}</p>
             """
     
     html += """
@@ -246,6 +249,9 @@ def generate_receipt_text(receipt_data):
     totals = receipt_data.get('totals', {})
     payment = receipt_data.get('payment', {})
     receipt_info = receipt_data.get('receipt', {})
+    # Get currency information from receipt data
+    currency_symbol = receipt_data.get('currencySymbol', '$')
+    currency_code = receipt_data.get('currency', 'USD')
     
     # Only add business name if it exists
     text = ""
@@ -261,22 +267,22 @@ def generate_receipt_text(receipt_data):
         item_price = float(item.get('price', item.get('unit_price', 0)))
         quantity = int(float(item.get('quantity', 1)))
         item_total = float(item.get('total', item_price * quantity))
-        text += f"- {item.get('name', 'Item')} x{quantity} = ${item_total:.2f}\n"
+        text += f"- {item.get('name', 'Item')} x{quantity} = {currency_symbol}{item_total:.2f}\n"
     
     text += "\n" + "=" * 40 + "\n"
-    text += f"Subtotal: ${totals.get('subtotal', 0)}\n"
+    text += f"Subtotal: {currency_symbol}{totals.get('subtotal', 0)}\n"
     
     if float(totals.get('tax', 0)) > 0:
-        text += f"Tax: ${totals.get('tax', 0)}\n"
+        text += f"Tax: {currency_symbol}{totals.get('tax', 0)}\n"
     
-    text += f"TOTAL: ${totals.get('total', 0)}\n"
+    text += f"TOTAL: {currency_symbol}{totals.get('total', 0)}\n"
     text += f"\nPayment: {payment.get('method', 'N/A').replace('_', ' ').title()}\n"
     
     # Add cash payment details if applicable
     if payment.get('method') == 'cash' and payment.get('amountTendered'):
-        text += f"Amount Tendered: ${payment.get('amountTendered', 0)}\n"
+        text += f"Amount Tendered: {currency_symbol}{payment.get('amountTendered', 0)}\n"
         if float(payment.get('changeDue', 0)) > 0:
-            text += f"Change Due: ${payment.get('changeDue', 0)}\n"
+            text += f"Change Due: {currency_symbol}{payment.get('changeDue', 0)}\n"
     
     text += "\nThank you for your business!"
     text += "\n\n" + "-" * 40
