@@ -1,9 +1,9 @@
 # ========================================
 # Stage 1: Base image with pnpm
-# Cache bust: 2025-08-12-v1-fix-docker-cache
+# Cache bust: 2025-08-14-v2-fix-currency-display
 # ========================================
 FROM node:18-alpine AS base
-ARG CACHEBUST=2025-08-12-v1
+ARG CACHEBUST=2025-08-14-v2
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0
