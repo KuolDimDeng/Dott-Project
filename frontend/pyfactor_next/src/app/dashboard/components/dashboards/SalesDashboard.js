@@ -35,11 +35,16 @@ const SalesDashboard = () => {
   // Fetch sales analysis data
   const fetchSalesData = async () => {
     try {
+      // First try the analytics endpoint
       const response = await fetch(`/api/analytics/sales-data?time_range=${timeRange}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (response.ok) {
+      if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
         const data = await response.json();
         setSalesData(data);
         
@@ -51,25 +56,51 @@ const SalesDashboard = () => {
           topProducts: data.top_products || [],
           recentSales: data.recent_sales || []
         });
+      } else {
+        console.log('Analytics endpoint not available, using fallback data');
+        // Set some default data to prevent errors
+        setStats({
+          totalSales: 0,
+          totalTransactions: 0,
+          averageOrderValue: 0,
+          topProducts: [],
+          recentSales: []
+        });
       }
     } catch (error) {
       console.error('Error fetching sales data:', error);
+      // Set default stats to prevent render errors
+      setStats({
+        totalSales: 0,
+        totalTransactions: 0,
+        averageOrderValue: 0,
+        topProducts: [],
+        recentSales: []
+      });
     }
   };
 
   // Fetch POS transactions
   const fetchPOSTransactions = async () => {
     try {
-      const response = await fetch('/api/sales/pos/transactions/', {
-        credentials: 'include'
+      const response = await fetch('/api/sales/pos/transactions', {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (response.ok) {
+      if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
         const data = await response.json();
         setPosTransactions(data.results || data || []);
+      } else {
+        console.log('POS transactions endpoint not available');
+        setPosTransactions([]);
       }
     } catch (error) {
       console.error('Error fetching POS transactions:', error);
+      setPosTransactions([]);
     }
   };
 
