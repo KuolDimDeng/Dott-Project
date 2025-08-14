@@ -82,19 +82,35 @@ export default function Transactions() {
   // View transaction details
   const viewTransaction = async (transaction) => {
     try {
-      // Remove trailing slash to avoid redirects
+      // First try to use the transaction data we already have
+      // If it has items, use it directly
+      if (transaction.items && transaction.items.length > 0) {
+        setSelectedTransaction(transaction);
+        setShowReceiptModal(true);
+        return;
+      }
+
+      // Otherwise fetch full details
       const response = await fetch(`/api/pos/transactions/${transaction.id}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch transaction details');
-      }
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid response format');
+        // If we can't fetch details, use what we have
+        console.warn('Could not fetch transaction details, using summary data');
+        setSelectedTransaction({
+          ...transaction,
+          items: [], // Empty items array as fallback
+          subtotal: transaction.total_amount || 0,
+          tax: 0,
+          discount: 0
+        });
+        setShowReceiptModal(true);
+        return;
       }
 
       const data = await response.json();
@@ -102,7 +118,16 @@ export default function Transactions() {
       setShowReceiptModal(true);
     } catch (error) {
       console.error('Error fetching transaction details:', error);
-      notifyError('Failed to load transaction details');
+      // Use what we have as fallback
+      setSelectedTransaction({
+        ...transaction,
+        items: [], // Empty items array as fallback
+        subtotal: transaction.total_amount || 0,
+        tax: 0,
+        discount: 0
+      });
+      setShowReceiptModal(true);
+      notifyInfo('Showing transaction summary');
     }
   };
 
@@ -518,28 +543,34 @@ export default function Transactions() {
                 {/* Items */}
                 <div>
                   <h3 className="font-medium mb-2">Items</h3>
-                  <table className="w-full">
-                    <thead className="border-b">
-                      <tr>
-                        <th className="text-left py-2">Item</th>
-                        <th className="text-center py-2">Qty</th>
-                        <th className="text-right py-2">Price</th>
-                        <th className="text-right py-2">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedTransaction.items?.map((item, index) => (
-                        <tr key={index} className="border-b">
-                          <td className="py-2">{item.product_name}</td>
-                          <td className="text-center py-2">{item.quantity}</td>
-                          <td className="text-right py-2">{formatCurrency(item.unit_price)}</td>
-                          <td className="text-right py-2">
-                            {formatCurrency(item.quantity * item.unit_price)}
-                          </td>
+                  {selectedTransaction.items && selectedTransaction.items.length > 0 ? (
+                    <table className="w-full">
+                      <thead className="border-b">
+                        <tr>
+                          <th className="text-left py-2">Item</th>
+                          <th className="text-center py-2">Qty</th>
+                          <th className="text-right py-2">Price</th>
+                          <th className="text-right py-2">Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {selectedTransaction.items.map((item, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="py-2">{item.product_name}</td>
+                            <td className="text-center py-2">{item.quantity}</td>
+                            <td className="text-right py-2">{formatCurrency(item.unit_price)}</td>
+                            <td className="text-right py-2">
+                              {formatCurrency(item.quantity * item.unit_price)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="text-gray-500 italic py-4">
+                      Item details not available
+                    </p>
+                  )}
                 </div>
 
                 {/* Totals */}
