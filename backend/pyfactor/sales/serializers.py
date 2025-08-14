@@ -1031,7 +1031,8 @@ class POSTransactionListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'transaction_number', 'customer_name',
             'total_amount', 'payment_method', 'status',
-            'total_items_count', 'created_at'
+            'total_items_count', 'created_at',
+            'currency_code', 'currency_symbol'
         ]
 
 
@@ -1052,7 +1053,8 @@ class POSTransactionDetailSerializer(serializers.ModelSerializer):
             'tax_total', 'total_amount', 'payment_method',
             'amount_tendered', 'change_due', 'status', 'notes',
             'items', 'created_at', 'created_by_name',
-            'tax_jurisdiction', 'tax_calculation_method', 'shipping_address_used'
+            'tax_jurisdiction', 'tax_calculation_method', 'shipping_address_used',
+            'currency_code', 'currency_symbol'
         ]
 
 

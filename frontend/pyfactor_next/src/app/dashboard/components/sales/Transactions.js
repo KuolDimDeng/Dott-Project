@@ -135,6 +135,10 @@ export default function Transactions() {
   const printReceipt = (transaction) => {
     const receiptWindow = window.open('', '_blank', 'width=400,height=600');
     
+    // Get currency info for proper spacing
+    const currencySymbol = transaction.currency_symbol || '$';
+    const formatSymbol = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
+    
     const receiptHTML = `
       <!DOCTYPE html>
       <html>
@@ -220,8 +224,8 @@ export default function Transactions() {
               <tr>
                 <td>${item.product_name}</td>
                 <td style="text-align: center;">${item.quantity}</td>
-                <td style="text-align: right;">$${(Number(item.unit_price) || 0).toFixed(2)}</td>
-                <td style="text-align: right;">$${((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toFixed(2)}</td>
+                <td style="text-align: right;">${formatSymbol}${(Number(item.unit_price) || 0).toFixed(2)}</td>
+                <td style="text-align: right;">${formatSymbol}${((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -230,34 +234,34 @@ export default function Transactions() {
         <div class="totals">
           <div class="total-row">
             <span>Subtotal:</span>
-            <span>$${(Number(transaction.subtotal) || 0).toFixed(2)}</span>
+            <span>${formatSymbol}${(Number(transaction.subtotal) || 0).toFixed(2)}</span>
           </div>
           ${(Number(transaction.discount) || 0) > 0 ? `
             <div class="total-row">
               <span>Discount:</span>
-              <span>-$${(Number(transaction.discount) || 0).toFixed(2)}</span>
+              <span>-${formatSymbol}${(Number(transaction.discount) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
           ${(Number(transaction.tax) || 0) > 0 ? `
             <div class="total-row">
               <span>Tax:</span>
-              <span>$${(Number(transaction.tax) || 0).toFixed(2)}</span>
+              <span>${formatSymbol}${(Number(transaction.tax) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
           <div class="total-row" style="font-weight: bold; font-size: 14px; margin-top: 10px;">
             <span>TOTAL:</span>
-            <span>$${(Number(transaction.total_amount) || 0).toFixed(2)}</span>
+            <span>${formatSymbol}${(Number(transaction.total_amount) || 0).toFixed(2)}</span>
           </div>
           ${transaction.amount_paid ? `
             <div class="total-row">
               <span>Paid:</span>
-              <span>$${(Number(transaction.amount_paid) || 0).toFixed(2)}</span>
+              <span>${formatSymbol}${(Number(transaction.amount_paid) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
           ${transaction.change_given ? `
             <div class="total-row">
               <span>Change:</span>
-              <span>$${(Number(transaction.change_given) || 0).toFixed(2)}</span>
+              <span>${formatSymbol}${(Number(transaction.change_given) || 0).toFixed(2)}</span>
             </div>
           ` : ''}
         </div>
@@ -285,12 +289,32 @@ export default function Transactions() {
     notifyInfo('Receipt sent to printer');
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount || 0);
+  // Format currency - use transaction's currency or fallback to USD
+  const formatCurrency = (amount, currencyCode = 'USD', currencySymbol = '$') => {
+    // For SSP and other non-standard currencies, use custom formatting
+    if (currencyCode === 'SSP' || !['USD', 'EUR', 'GBP', 'JPY'].includes(currencyCode)) {
+      const formattedAmount = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount || 0);
+      // Add space between symbol and value
+      return `${currencySymbol} ${formattedAmount}`;
+    }
+    
+    // For standard currencies, use Intl
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode
+      }).format(amount || 0);
+    } catch (e) {
+      // Fallback for unsupported currencies
+      const formattedAmount = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount || 0);
+      return `${currencySymbol} ${formattedAmount}`;
+    }
   };
 
   // Get status badge
@@ -439,7 +463,7 @@ export default function Transactions() {
                       {transaction.items_count || 0} items
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(transaction.total_amount)}
+                      {formatCurrency(transaction.total_amount, transaction.currency_code, transaction.currency_symbol)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {transaction.payment_method || 'Cash'}

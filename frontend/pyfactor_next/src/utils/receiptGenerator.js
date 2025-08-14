@@ -61,7 +61,9 @@ export class ReceiptGenerator {
    * Generate HTML receipt for display/print
    */
   generateHTMLReceipt(receiptData) {
-    const { receipt, business, customer, items, totals, payment, notes, currencySymbol = '$' } = receiptData;
+    const { receipt, business, customer, items, totals, payment, notes, currencySymbol = '$', currency = 'USD' } = receiptData;
+    // Add space for multi-character currency symbols
+    const formatSymbol = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
     
     return `
       <!DOCTYPE html>
@@ -129,10 +131,10 @@ export class ReceiptGenerator {
             <div class="item">
               <div class="item-name">${item.name}${backorderNote}</div>
               <div class="item-qty">${item.quantity}</div>
-              <div class="item-price">${currencySymbol}${(itemPrice * item.quantity).toFixed(2)}</div>
+              <div class="item-price">${formatSymbol}${(itemPrice * item.quantity).toFixed(2)}</div>
             </div>
             <div style="font-size: 10px; color: #666; margin-left: 5px;">
-              ${currencySymbol}${itemPrice} each
+              ${formatSymbol}${itemPrice} each
               ${item.isBackorder ? '<span style="color: red; font-weight: bold;"> - OUT OF STOCK</span>' : ''}
               ${item.isPartialBackorder ? `<span style="color: orange; font-weight: bold;"> - ${item.backorderQuantity} on backorder</span>` : ''}
             </div>
@@ -144,23 +146,23 @@ export class ReceiptGenerator {
         <div class="totals">
           <div class="total-line">
             <span>Subtotal:</span>
-            <span>${currencySymbol}${totals.subtotal}</span>
+            <span>${formatSymbol}${totals.subtotal}</span>
           </div>
           ${parseFloat(totals.discount) > 0 ? `
             <div class="total-line">
               <span>Discount ${totals.discountType === 'percentage' ? '(%)' : '($)'}:</span>
-              <span>-${currencySymbol}${totals.discount}</span>
+              <span>-${formatSymbol}${totals.discount}</span>
             </div>
           ` : ''}
           ${parseFloat(totals.tax) > 0 ? `
             <div class="total-line">
               <span>Tax (${totals.taxRate}%):</span>
-              <span>${currencySymbol}${totals.tax}</span>
+              <span>${formatSymbol}${totals.tax}</span>
             </div>
           ` : ''}
           <div class="total-line final">
             <span>TOTAL:</span>
-            <span>${currencySymbol}${totals.total}</span>
+            <span>${formatSymbol}${totals.total}</span>
           </div>
         </div>
         
@@ -169,10 +171,10 @@ export class ReceiptGenerator {
         <div class="payment-info">
           <div>Payment Method: ${this.formatPaymentMethod(payment.method)}</div>
           ${payment.method === 'cash' ? `
-            <div>Amount Tendered: ${currencySymbol}${payment.amountTendered}</div>
-            ${parseFloat(payment.changeDue) > 0 ? `<div>Change Due: ${currencySymbol}${payment.changeDue}</div>` : ''}
+            <div>Amount Tendered: ${formatSymbol}${payment.amountTendered}</div>
+            ${parseFloat(payment.changeDue) > 0 ? `<div>Change Due: ${formatSymbol}${payment.changeDue}</div>` : ''}
           ` : `
-            <div>Amount Paid: ${currencySymbol}${payment.amount}</div>
+            <div>Amount Paid: ${formatSymbol}${payment.amount}</div>
           `}
         </div>
         
@@ -203,6 +205,8 @@ export class ReceiptGenerator {
     });
 
     const { receipt, business, customer, items, totals, payment, notes, currencySymbol = '$' } = receiptData;
+    // Add space for multi-character currency symbols
+    const formatSymbol = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
     
     let y = 10;
     const lineHeight = 4;
@@ -269,10 +273,10 @@ export class ReceiptGenerator {
       const itemPrice = item.price !== undefined ? item.price : (item.unit_price || 0);
       pdf.text(item.name, 5, y);
       pdf.text(`${item.quantity}`, pageWidth-25, y);
-      pdf.text(`${currencySymbol}${(itemPrice * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
+      pdf.text(`${formatSymbol}${(itemPrice * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
       y += lineHeight;
       pdf.setFontSize(7);
-      pdf.text(`${currencySymbol}${itemPrice} each`, 8, y);
+      pdf.text(`${formatSymbol}${itemPrice} each`, 8, y);
       pdf.setFontSize(8);
       y += lineHeight;
     });
@@ -284,18 +288,18 @@ export class ReceiptGenerator {
     
     // Totals
     pdf.text('Subtotal:', 5, y);
-    pdf.text(`${currencySymbol}${totals.subtotal}`, pageWidth-5, y, { align: 'right' });
+    pdf.text(`${formatSymbol}${totals.subtotal}`, pageWidth-5, y, { align: 'right' });
     y += lineHeight;
     
     if (parseFloat(totals.discount) > 0) {
       pdf.text(`Discount:`, 5, y);
-      pdf.text(`-${currencySymbol}${totals.discount}`, pageWidth-5, y, { align: 'right' });
+      pdf.text(`-${formatSymbol}${totals.discount}`, pageWidth-5, y, { align: 'right' });
       y += lineHeight;
     }
     
     if (parseFloat(totals.tax) > 0) {
       pdf.text(`Tax (${totals.taxRate}%):`, 5, y);
-      pdf.text(`${currencySymbol}${totals.tax}`, pageWidth-5, y, { align: 'right' });
+      pdf.text(`${formatSymbol}${totals.tax}`, pageWidth-5, y, { align: 'right' });
       y += lineHeight;
     }
     
@@ -304,7 +308,7 @@ export class ReceiptGenerator {
     y += 2;
     pdf.setFont(undefined, 'bold');
     pdf.text('TOTAL:', 5, y);
-    pdf.text(`${currencySymbol}${totals.total}`, pageWidth-5, y, { align: 'right' });
+    pdf.text(`${formatSymbol}${totals.total}`, pageWidth-5, y, { align: 'right' });
     y += lineHeight + 3;
     
     // Payment info
@@ -313,14 +317,14 @@ export class ReceiptGenerator {
     y += lineHeight;
     
     if (payment.method === 'cash') {
-      pdf.text(`Amount Tendered: ${currencySymbol}${payment.amountTendered}`, 5, y);
+      pdf.text(`Amount Tendered: ${formatSymbol}${payment.amountTendered}`, 5, y);
       y += lineHeight;
       if (parseFloat(payment.changeDue) > 0) {
-        pdf.text(`Change Due: ${currencySymbol}${payment.changeDue}`, 5, y);
+        pdf.text(`Change Due: ${formatSymbol}${payment.changeDue}`, 5, y);
         y += lineHeight;
       }
     } else {
-      pdf.text(`Amount Paid: ${currencySymbol}${payment.amount}`, 5, y);
+      pdf.text(`Amount Paid: ${formatSymbol}${payment.amount}`, 5, y);
       y += lineHeight;
     }
     y += 3;
@@ -393,6 +397,8 @@ export class ReceiptGenerator {
    */
   generateTextReceipt(receiptData) {
     const { receipt, business, customer, items, totals, payment, notes, currencySymbol = '$' } = receiptData;
+    // Add space for multi-character currency symbols
+    const formatSymbol = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
     
     let text = '';
     // Only add business name if it exists
@@ -433,7 +439,7 @@ export class ReceiptGenerator {
       const backorderNote = item.isBackorder ? ' (BACKORDER)' : 
                            item.isPartialBackorder ? ` (${item.backorderQuantity} BACKORDER)` : '';
       text += `${item.name}${backorderNote}\n`;
-      text += `  ${item.quantity} x ${currencySymbol}${itemPrice} = ${currencySymbol}${(itemPrice * item.quantity).toFixed(2)}\n`;
+      text += `  ${item.quantity} x ${formatSymbol}${itemPrice} = ${formatSymbol}${(itemPrice * item.quantity).toFixed(2)}\n`;
       if (item.isBackorder) {
         text += `  ** OUT OF STOCK - BACKORDER **\n`;
       } else if (item.isPartialBackorder) {
@@ -442,27 +448,27 @@ export class ReceiptGenerator {
     });
     
     text += `==========================================\n`;
-    text += `Subtotal: ${currencySymbol}${totals.subtotal}\n`;
+    text += `Subtotal: ${formatSymbol}${totals.subtotal}\n`;
     
     if (parseFloat(totals.discount) > 0) {
-      text += `Discount: -${currencySymbol}${totals.discount}\n`;
+      text += `Discount: -${formatSymbol}${totals.discount}\n`;
     }
     
     if (parseFloat(totals.tax) > 0) {
-      text += `Tax (${totals.taxRate}%): ${currencySymbol}${totals.tax}\n`;
+      text += `Tax (${totals.taxRate}%): ${formatSymbol}${totals.tax}\n`;
     }
     
     text += `==========================================\n`;
-    text += `TOTAL: ${currencySymbol}${totals.total}\n`;
+    text += `TOTAL: ${formatSymbol}${totals.total}\n`;
     text += `Payment: ${this.formatPaymentMethod(payment.method)}\n`;
     
     if (payment.method === 'cash') {
-      text += `Amount Tendered: ${currencySymbol}${payment.amountTendered}\n`;
+      text += `Amount Tendered: ${formatSymbol}${payment.amountTendered}\n`;
       if (parseFloat(payment.changeDue) > 0) {
-        text += `Change Due: ${currencySymbol}${payment.changeDue}\n`;
+        text += `Change Due: ${formatSymbol}${payment.changeDue}\n`;
       }
     } else {
-      text += `Amount Paid: ${currencySymbol}${payment.amount}\n`;
+      text += `Amount Paid: ${formatSymbol}${payment.amount}\n`;
     }
     
     if (notes) {
