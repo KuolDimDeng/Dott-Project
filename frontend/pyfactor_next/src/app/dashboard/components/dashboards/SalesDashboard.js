@@ -5,7 +5,7 @@ import {
   CurrencyDollarIcon, 
   ShoppingCartIcon, 
   UserGroupIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   ChartBarIcon,
@@ -329,7 +329,7 @@ const SalesDashboard = () => {
               <p className="text-sm text-gray-500 mt-2">Revenue per day</p>
             </div>
             <div className="p-3 bg-orange-100 rounded-full">
-              <TrendingUpIcon className="h-6 w-6 text-orange-600" />
+              <ArrowTrendingUpIcon className="h-6 w-6 text-orange-600" />
             </div>
           </div>
         </div>
