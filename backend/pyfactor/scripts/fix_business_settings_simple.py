@@ -81,8 +81,7 @@ def fix_business_settings():
                 u.id, 
                 u.email, 
                 u.tenant_id,
-                up.country,
-                up.business_name
+                up.country
             FROM custom_auth_user u
             LEFT JOIN users_userprofile up ON up.user_id = u.id
             WHERE u.tenant_id IS NOT NULL 
@@ -92,7 +91,7 @@ def fix_business_settings():
         users_data = cursor.fetchall()
         print(f"Found {len(users_data)} users with tenant_id\n")
         
-        for user_id, email, tenant_id, country, business_name in users_data:
+        for user_id, email, tenant_id, country in users_data:
             try:
                 # Skip if tenant_id is None
                 if not tenant_id:
@@ -134,9 +133,8 @@ def fix_business_settings():
                     currency_symbol = 'SSP'
                     print(f"📍 Detected South Sudan user from email: {email}")
                 
-                # Use business_name from user table or create default
-                if not business_name:
-                    business_name = email.split('@')[0] + "'s Business"
+                # Create default business name from email
+                business_name = email.split('@')[0] + "'s Business"
                 
                 # Insert BusinessSettings directly
                 cursor.execute("""

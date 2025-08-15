@@ -84,8 +84,7 @@ def fix_business_settings():
                     u.id, 
                     u.email, 
                     u.tenant_id,
-                    up.country,
-                    up.business_name
+                    up.country
                 FROM custom_auth_user u
                 LEFT JOIN users_userprofile up ON up.user_id = u.id
                 WHERE u.tenant_id IS NOT NULL 
@@ -95,7 +94,7 @@ def fix_business_settings():
             users_with_tenant = cursor.fetchall()
             print(f"Found {len(users_with_tenant)} users with tenant_id\n")
             
-            for user_id, email, tenant_id, country, business_name in users_with_tenant:
+            for user_id, email, tenant_id, country in users_with_tenant:
                 try:
                     # Check if BusinessSettings already exists
                     cursor.execute("""
@@ -126,8 +125,7 @@ def fix_business_settings():
                         currency_symbol = 'SSP'
                         print(f"📍 Detected South Sudan user: {email}")
                     
-                    if not business_name:
-                        business_name = email.split('@')[0] + "'s Business"
+                    business_name = email.split('@')[0] + "'s Business"
                     
                     # Insert BusinessSettings
                     cursor.execute("""
@@ -162,8 +160,7 @@ def fix_business_settings():
                 SELECT 
                     u.id, 
                     u.email,
-                    up.country,
-                    up.business_name
+                    up.country
                 FROM custom_auth_user u
                 LEFT JOIN users_userprofile up ON up.user_id = u.id
                 WHERE u.tenant_id IS NULL 
@@ -173,11 +170,11 @@ def fix_business_settings():
             users_without_tenant = cursor.fetchall()
             print(f"Found {len(users_without_tenant)} users without tenant_id\n")
             
-            for user_id, email, country, business_name in users_without_tenant:
+            for user_id, email, country in users_without_tenant:
                 try:
                     # Create a tenant for this user
                     tenant_id = str(uuid.uuid4())
-                    tenant_name = business_name or email.split('@')[0] + "'s Business"
+                    tenant_name = email.split('@')[0] + "'s Business"
                     
                     # Create tenant record
                     cursor.execute("""
@@ -220,8 +217,7 @@ def fix_business_settings():
                         currency_symbol = 'SSP'
                         print(f"📍 Detected South Sudan user: {email}")
                     
-                    if not business_name:
-                        business_name = email.split('@')[0] + "'s Business"
+                    business_name = email.split('@')[0] + "'s Business"
                     
                     # Insert BusinessSettings
                     cursor.execute("""
