@@ -486,7 +486,7 @@ def get_sales_analysis_data(request):
         ))
         
         recent_invoices = list(invoices.order_by('-date')[:5].values(
-            'invoiceNumber', 'customer__customerName', 'totalAmount', 'date', 'status'
+            'invoice_num', 'customer__business_name', 'totalAmount', 'date', 'status'
         ))
         
         recent_sales = []
@@ -503,8 +503,8 @@ def get_sales_analysis_data(request):
         for inv in recent_invoices:
             recent_sales.append({
                 'type': 'invoice', 
-                'number': inv['invoiceNumber'],
-                'customer': inv['customer__customerName'] or 'Unknown',
+                'number': inv['invoice_num'],
+                'customer': inv['customer__business_name'] or 'Unknown',
                 'amount': float(inv['totalAmount'] or 0),
                 'date': inv['date'].isoformat() if inv['date'] else None,
                 'status': inv['status']
