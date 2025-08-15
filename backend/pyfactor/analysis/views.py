@@ -358,15 +358,19 @@ def get_sales_analysis_data(request):
         user = request.user
         logger.info(f"[SALES-DATA-API] User object: {user}, tenant_id: {getattr(user, 'tenant_id', None)}")
         
-        # Get the database name using the tenant-aware utility
-        database_name = get_tenant_database(user)
-        logger.info(f"[SALES-DATA-API] Database name resolved: {database_name}")
+        # For RLS (Row-Level Security), we use the default database
+        # The tenant isolation is handled by the models themselves
+        database_name = 'default'
         
-        if not database_name:
-            logger.error(f"[SALES-DATA-API] Could not determine database for user {user}")
-            return JsonResponse({'error': 'Could not determine database for user'}, status=400)
+        # Get tenant_id from user for filtering
+        tenant_id = getattr(user, 'tenant_id', None) or getattr(user, 'business_id', None)
+        logger.info(f"[SALES-DATA-API] Using default database with tenant_id: {tenant_id}")
+        
+        if not tenant_id:
+            logger.error(f"[SALES-DATA-API] User {user} has no tenant_id or business_id")
+            return JsonResponse({'error': 'User has no associated tenant'}, status=400)
 
-        logger.info(f"[SALES-DATA-API] Fetching sales data for user {user.id} from database {database_name}")
+        logger.info(f"[SALES-DATA-API] Fetching sales data for user {user.id} with tenant {tenant_id}")
 
         # Import POSTransaction and POSTransactionItem models
         from sales.models import POSTransaction, POSTransactionItem
@@ -374,8 +378,9 @@ def get_sales_analysis_data(request):
         logger.info(f"[SALES-DATA-API] Querying POS transactions from {start_date} to {end_date}")
         
         # Get POS transactions for the time range
+        # TenantAwareModel handles tenant filtering automatically
         try:
-            pos_transactions = POSTransaction.objects.using(database_name).filter(
+            pos_transactions = POSTransaction.objects.filter(
                 created_at__date__gte=start_date, 
                 created_at__date__lte=end_date,
                 status='completed'  # Only completed transactions
@@ -386,8 +391,9 @@ def get_sales_analysis_data(request):
             pos_transactions = POSTransaction.objects.none()
         
         # Get invoices as well for comprehensive data
+        # TenantAwareModel handles tenant filtering automatically
         try:
-            invoices = Invoice.objects.using(database_name).filter(
+            invoices = Invoice.objects.filter(
                 date__gte=start_date, 
                 date__lte=end_date
             )
@@ -425,7 +431,7 @@ def get_sales_analysis_data(request):
         # Top products from POS transactions
         pos_top_products = []
         if pos_transactions.exists():
-            pos_items = POSTransactionItem.objects.using(database_name).filter(
+            pos_items = POSTransactionItem.objects.filter(
                 transaction__in=pos_transactions
             )
             pos_top_products = list(pos_items.values('product__name').annotate(
@@ -436,7 +442,7 @@ def get_sales_analysis_data(request):
         # Top products from invoices
         invoice_top_products = []
         if invoices.exists():
-            invoice_top_products = list(InvoiceItem.objects.using(database_name).filter(
+            invoice_top_products = list(InvoiceItem.objects.filter(
                 invoice__in=invoices
             ).values('product__name').annotate(
                 sales=Sum(Cast('unit_price', FloatField()) * Cast('quantity', FloatField())),
