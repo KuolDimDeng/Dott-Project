@@ -347,53 +347,213 @@ def get_budget_vs_actual_data(request):
 @permission_classes([IsAuthenticated])
 def get_sales_analysis_data(request):
     try:
-        time_range = int(request.GET.get('time_range', 3))
+        logger.info(f"[SALES-DATA-API] Request received from user: {request.user.email if hasattr(request.user, 'email') else 'Unknown'}")
+        logger.info(f"[SALES-DATA-API] Request headers: {dict(request.headers)}")
+        logger.info(f"[SALES-DATA-API] Request GET params: {dict(request.GET)}")
+        
+        time_range = int(request.GET.get('time_range', 1))  # Default to 1 month
         end_date = timezone.now().date()
         start_date = end_date - timedelta(days=30*time_range)
 
         user = request.user
+        logger.info(f"[SALES-DATA-API] User object: {user}, tenant_id: {getattr(user, 'tenant_id', None)}")
         
-        # Get the database name using the tenant-aware utility
-        database_name = get_tenant_database(user)
-        if not database_name:
-            return JsonResponse({'error': 'Could not determine database for user'}, status=400)
+        # For RLS (Row-Level Security), we use the default database
+        # The tenant isolation is handled by the models themselves
+        database_name = 'default'
+        
+        # Get tenant_id from user for filtering
+        tenant_id = getattr(user, 'tenant_id', None) or getattr(user, 'business_id', None)
+        logger.info(f"[SALES-DATA-API] Using default database with tenant_id: {tenant_id}")
+        
+        if not tenant_id:
+            logger.error(f"[SALES-DATA-API] User {user} has no tenant_id or business_id")
+            return JsonResponse({'error': 'User has no associated tenant'}, status=400)
 
-        logger.info(f"Fetching sales data for user {user.id} from database {database_name}")
+        logger.info(f"[SALES-DATA-API] Fetching sales data for user {user.id} with tenant {tenant_id}")
 
-        invoices = Invoice.objects.using(database_name).filter(date__gte=start_date, date__lte=end_date)
-
-        sales_over_time = list(invoices.values('date').annotate(amount=Sum('totalAmount')).order_by('date'))
-
-        top_products = list(InvoiceItem.objects.using(database_name).filter(invoice__in=invoices)
-            .values('product__name')
-            .annotate(sales=Sum(
-                Cast('unit_price', FloatField()) * Cast('quantity', FloatField())
-            ))
-            .order_by('-sales')[:5])
-
-        sales_by_customer = list(invoices.values('customer__customerName')
-            .annotate(sales=Sum('totalAmount'))
-            .order_by('-sales')[:10])
-
-        total_sales = invoices.aggregate(total=Sum('totalAmount'))['total'] or 0
-        average_order_value = invoices.aggregate(avg=Avg('totalAmount'))['avg'] or 0
-        number_of_orders = invoices.count()
-
+        # Import POSTransaction and POSTransactionItem models
+        from sales.models import POSTransaction, POSTransactionItem
+        
+        logger.info(f"[SALES-DATA-API] Querying POS transactions from {start_date} to {end_date}")
+        
+        # Get POS transactions for the time range
+        # TenantAwareModel handles tenant filtering automatically
+        try:
+            pos_transactions = POSTransaction.objects.filter(
+                created_at__date__gte=start_date, 
+                created_at__date__lte=end_date,
+                status='completed'  # Only completed transactions
+            )
+            logger.info(f"[SALES-DATA-API] Found {pos_transactions.count()} POS transactions")
+        except Exception as e:
+            logger.error(f"[SALES-DATA-API] Error querying POS transactions: {str(e)}")
+            pos_transactions = POSTransaction.objects.none()
+        
+        # Get invoices as well for comprehensive data
+        # TenantAwareModel handles tenant filtering automatically
+        try:
+            invoices = Invoice.objects.filter(
+                date__gte=start_date, 
+                date__lte=end_date
+            )
+            logger.info(f"[SALES-DATA-API] Found {invoices.count()} invoices")
+        except Exception as e:
+            logger.error(f"[SALES-DATA-API] Error querying invoices: {str(e)}")
+            invoices = Invoice.objects.none()
+        
+        # Combine POS and Invoice data
+        # Sales over time from POS
+        pos_sales_over_time = list(pos_transactions.values('created_at__date').annotate(
+            amount=Sum('total_amount')
+        ).order_by('created_at__date'))
+        
+        # Sales over time from invoices
+        invoice_sales_over_time = list(invoices.values('date').annotate(
+            amount=Sum('totalAmount')
+        ).order_by('date'))
+        
+        # Merge sales data
+        sales_by_date = {}
+        for item in pos_sales_over_time:
+            date_key = item['created_at__date']
+            sales_by_date[date_key] = sales_by_date.get(date_key, 0) + float(item['amount'] or 0)
+        
+        for item in invoice_sales_over_time:
+            date_key = item['date']
+            sales_by_date[date_key] = sales_by_date.get(date_key, 0) + float(item['amount'] or 0)
+        
+        sales_over_time = [
+            {'date': date.isoformat(), 'amount': amount}
+            for date, amount in sorted(sales_by_date.items())
+        ]
+        
+        # Top products from POS transactions
+        pos_top_products = []
+        if pos_transactions.exists():
+            pos_items = POSTransactionItem.objects.filter(
+                transaction__in=pos_transactions
+            )
+            pos_top_products = list(pos_items.values('product__name').annotate(
+                sales=Sum(F('quantity') * F('unit_price')),
+                quantity=Sum('quantity')
+            ).order_by('-sales')[:5])
+        
+        # Top products from invoices
+        invoice_top_products = []
+        if invoices.exists():
+            invoice_top_products = list(InvoiceItem.objects.filter(
+                invoice__in=invoices
+            ).values('product__name').annotate(
+                sales=Sum(Cast('unit_price', FloatField()) * Cast('quantity', FloatField())),
+                quantity=Sum('quantity')
+            ).order_by('-sales')[:5])
+        
+        # Merge top products
+        product_sales = {}
+        for product in pos_top_products:
+            name = product['product__name'] or 'Unknown Product'
+            if name in product_sales:
+                product_sales[name]['sales'] += float(product['sales'] or 0)
+                product_sales[name]['quantity'] += int(product['quantity'] or 0)
+            else:
+                product_sales[name] = {
+                    'name': name,
+                    'sales': float(product['sales'] or 0),
+                    'quantity': int(product['quantity'] or 0)
+                }
+        
+        for product in invoice_top_products:
+            name = product['product__name'] or 'Unknown Product'
+            if name in product_sales:
+                product_sales[name]['sales'] += float(product['sales'] or 0)
+                product_sales[name]['quantity'] += int(product['quantity'] or 0)
+            else:
+                product_sales[name] = {
+                    'name': name,
+                    'sales': float(product['sales'] or 0),
+                    'quantity': int(product['quantity'] or 0)
+                }
+        
+        top_products = sorted(product_sales.values(), key=lambda x: x['sales'], reverse=True)[:5]
+        
+        # Calculate totals
+        pos_total = pos_transactions.aggregate(total=Sum('total_amount'))['total'] or 0
+        invoice_total = invoices.aggregate(total=Sum('totalAmount'))['total'] or 0
+        total_sales = float(pos_total) + float(invoice_total)
+        
+        # Calculate average order value
+        total_transactions = pos_transactions.count() + invoices.count()
+        average_order_value = total_sales / total_transactions if total_transactions > 0 else 0
+        
+        # Recent sales (last 10 transactions)
+        recent_pos = list(pos_transactions.order_by('-created_at')[:5].values(
+            'transaction_number', 'customer__business_name', 'total_amount', 'created_at', 'payment_method'
+        ))
+        
+        recent_invoices = list(invoices.order_by('-date')[:5].values(
+            'invoice_num', 'customer__business_name', 'totalAmount', 'date', 'status'
+        ))
+        
+        recent_sales = []
+        for pos in recent_pos:
+            recent_sales.append({
+                'type': 'pos',
+                'number': pos['transaction_number'],
+                'customer': pos['customer__business_name'] or 'Walk-in Customer',
+                'amount': float(pos['total_amount'] or 0),
+                'date': pos['created_at'].isoformat() if pos['created_at'] else None,
+                'payment_method': pos['payment_method']
+            })
+        
+        for inv in recent_invoices:
+            recent_sales.append({
+                'type': 'invoice', 
+                'number': inv['invoice_num'],
+                'customer': inv['customer__business_name'] or 'Unknown',
+                'amount': float(inv['totalAmount'] or 0),
+                'date': inv['date'].isoformat() if inv['date'] else None,
+                'status': inv['status']
+            })
+        
+        # Sort recent sales by date
+        recent_sales.sort(key=lambda x: x['date'] or '', reverse=True)
+        recent_sales = recent_sales[:10]  # Keep only 10 most recent
+        
         data = {
+            'sales_over_time': sales_over_time,
+            'top_products': top_products,
+            'recent_sales': recent_sales,
+            'total_sales': total_sales,
+            'total_transactions': total_transactions,
+            'average_order_value': average_order_value,
+            # Maintain compatibility with frontend
             'salesOverTime': sales_over_time,
             'topProducts': top_products,
-            'salesByCustomer': sales_by_customer,
-            'totalSales': float(total_sales),
-            'averageOrderValue': float(average_order_value),
-            'numberOfOrders': number_of_orders,
+            'totalSales': total_sales,
+            'averageOrderValue': average_order_value,
+            'numberOfOrders': total_transactions,
         }
-
-        logger.info("Sales data fetched successfully")
+        
+        logger.info(f"[SALES-DATA-API] Sales data fetched successfully: {total_transactions} transactions, ${total_sales:.2f} total")
+        logger.info(f"[SALES-DATA-API] Returning data structure: sales_over_time={len(sales_over_time)} items, top_products={len(top_products)} items")
         return JsonResponse(data)
 
     except Exception as e:
-        logger.error(f"Error in get_sales_analysis_data: {str(e)}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        logger.error(f"[SALES-DATA-API] Error in get_sales_analysis_data: {str(e)}", exc_info=True)
+        logger.error(f"[SALES-DATA-API] Full exception details:", exc_info=True)
+        
+        # Return a more informative error response
+        return JsonResponse({
+            'error': str(e),
+            'error_type': type(e).__name__,
+            'total_sales': 0,
+            'total_transactions': 0,
+            'average_order_value': 0,
+            'top_products': [],
+            'recent_sales': [],
+            'sales_over_time': []
+        }, status=500)
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
