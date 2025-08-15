@@ -97,6 +97,12 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
             currency_code = validated_data.get('currency_code')
             currency_symbol = validated_data.get('currency_symbol')
             
+            # Debug currency data
+            logger.info(f"[CURRENCY-DEBUG] 💰 Received from frontend: currency_code={currency_code}, currency_symbol={currency_symbol}")
+            logger.info(f"[CURRENCY-DEBUG] 💰 Full validated_data keys: {validated_data.keys()}")
+            logger.info(f"[CURRENCY-DEBUG] 💰 Request data keys: {request.data.keys()}")
+            logger.info(f"[CURRENCY-DEBUG] 💰 Request data currency fields: currency_code={request.data.get('currency_code')}, currency_symbol={request.data.get('currency_symbol')}")
+            
             with db_transaction.atomic():
                 # Step 1: Validate stock availability
                 logger.info(f"Starting POS sale completion for {len(items)} items")
@@ -164,6 +170,8 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                     logger.info(f"Using currency from request: {currency_code} ({currency_symbol})")
                 
                 # Step 5: Create POS transaction with tax jurisdiction info
+                logger.info(f"[CURRENCY-DEBUG] 💰 About to create transaction with: currency_code={currency_code}, currency_symbol={currency_symbol}")
+                
                 pos_transaction = POSTransaction.objects.create(
                     tenant_id=request.user.tenant_id,  # CRITICAL: Explicitly set tenant_id
                     customer=customer,
@@ -188,6 +196,7 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                 )
                 
                 logger.info(f"Created POS transaction {pos_transaction.transaction_number}")
+                logger.info(f"[CURRENCY-DEBUG] 💰 Transaction created with: currency_code={pos_transaction.currency_code}, currency_symbol={pos_transaction.currency_symbol}")
                 
                 # Step 6: Create transaction items and collect cost data
                 items_with_cost = []
