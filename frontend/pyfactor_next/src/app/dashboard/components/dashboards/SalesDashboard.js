@@ -127,7 +127,7 @@ const SalesDashboard = () => {
     try {
       console.log('[SalesDashboard] Fetching POS transactions...');
       
-      const response = await fetch('/api/sales/pos/transactions', {
+      const response = await fetch('/api/pos/transactions', {
         credentials: 'include',
         headers: {
           'Accept': 'application/json',

@@ -482,7 +482,7 @@ def get_sales_analysis_data(request):
         
         # Recent sales (last 10 transactions)
         recent_pos = list(pos_transactions.order_by('-created_at')[:5].values(
-            'transaction_number', 'customer_name', 'total_amount', 'created_at', 'payment_method'
+            'transaction_number', 'customer__business_name', 'total_amount', 'created_at', 'payment_method'
         ))
         
         recent_invoices = list(invoices.order_by('-date')[:5].values(
@@ -494,7 +494,7 @@ def get_sales_analysis_data(request):
             recent_sales.append({
                 'type': 'pos',
                 'number': pos['transaction_number'],
-                'customer': pos['customer_name'] or 'Walk-in Customer',
+                'customer': pos['customer__business_name'] or 'Walk-in Customer',
                 'amount': float(pos['total_amount'] or 0),
                 'date': pos['created_at'].isoformat() if pos['created_at'] else None,
                 'payment_method': pos['payment_method']
