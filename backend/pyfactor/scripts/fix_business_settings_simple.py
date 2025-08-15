@@ -81,8 +81,8 @@ def fix_business_settings():
                 u.id, 
                 u.email, 
                 u.tenant_id,
-                u.business_name,
-                up.country
+                up.country,
+                up.business_name
             FROM custom_auth_user u
             LEFT JOIN users_userprofile up ON up.user_id = u.id
             WHERE u.tenant_id IS NOT NULL 
@@ -93,7 +93,7 @@ def fix_business_settings():
         users_data = cursor.fetchall()
         print(f"Found {len(users_data)} users with tenant_id\n")
         
-        for user_id, email, tenant_id, business_name, country in users_data:
+        for user_id, email, tenant_id, country, business_name in users_data:
             try:
                 # Skip if tenant_id is empty or None
                 if not tenant_id or tenant_id == '':

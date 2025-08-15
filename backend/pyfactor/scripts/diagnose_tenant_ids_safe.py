@@ -26,16 +26,16 @@ def diagnose():
     print("=== Raw Database Check ===")
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, email, tenant_id, business_name 
+            SELECT id, email, tenant_id
             FROM custom_auth_user 
             WHERE tenant_id IS NOT NULL AND tenant_id != ''
             LIMIT 20
         """)
         rows = cursor.fetchall()
         print(f"Found {len(rows)} users with tenant_id\n")
-        print("Raw user data (id, email, tenant_id, business_name):")
+        print("Raw user data (id, email, tenant_id):")
         for row in rows:
-            print(f"  {row[0]}, {row[1]}, {row[2]}, {row[3]}")
+            print(f"  {row[0]}, {row[1]}, {row[2]}")
         print()
     
     # Check tenant table structure
