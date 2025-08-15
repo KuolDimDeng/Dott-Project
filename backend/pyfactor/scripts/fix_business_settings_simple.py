@@ -86,7 +86,6 @@ def fix_business_settings():
             FROM custom_auth_user u
             LEFT JOIN users_userprofile up ON up.user_id = u.id
             WHERE u.tenant_id IS NOT NULL 
-                AND u.tenant_id != ''
                 AND u.email IS NOT NULL
         """)
         
@@ -95,9 +94,9 @@ def fix_business_settings():
         
         for user_id, email, tenant_id, country, business_name in users_data:
             try:
-                # Skip if tenant_id is empty or None
-                if not tenant_id or tenant_id == '':
-                    print(f"⚠️  User {email}: Empty tenant_id, skipping")
+                # Skip if tenant_id is None
+                if not tenant_id:
+                    print(f"⚠️  User {email}: No tenant_id, skipping")
                     skipped_count += 1
                     continue
                 

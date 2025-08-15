@@ -25,18 +25,48 @@ def diagnose():
     # Check raw database first to avoid Django ORM issues
     print("=== Raw Database Check ===")
     with connection.cursor() as cursor:
+        # Count total users
+        cursor.execute("SELECT COUNT(*) FROM custom_auth_user")
+        total_users = cursor.fetchone()[0]
+        print(f"Total users: {total_users}")
+        
+        # Count users with tenant_id
+        cursor.execute("SELECT COUNT(*) FROM custom_auth_user WHERE tenant_id IS NOT NULL")
+        users_with_tenant = cursor.fetchone()[0]
+        print(f"Users with tenant_id: {users_with_tenant}")
+        
+        # Count users without tenant_id
+        cursor.execute("SELECT COUNT(*) FROM custom_auth_user WHERE tenant_id IS NULL")
+        users_without_tenant = cursor.fetchone()[0]
+        print(f"Users without tenant_id: {users_without_tenant}\n")
+        
+        # Get sample of users with tenant_id
         cursor.execute("""
             SELECT id, email, tenant_id
             FROM custom_auth_user 
-            WHERE tenant_id IS NOT NULL AND tenant_id != ''
+            WHERE tenant_id IS NOT NULL
             LIMIT 20
         """)
         rows = cursor.fetchall()
-        print(f"Found {len(rows)} users with tenant_id\n")
+        print(f"Sample of users with tenant_id (showing {len(rows)}):")
         print("Raw user data (id, email, tenant_id):")
         for row in rows:
             print(f"  {row[0]}, {row[1]}, {row[2]}")
         print()
+        
+        # Get sample of users WITHOUT tenant_id
+        cursor.execute("""
+            SELECT id, email
+            FROM custom_auth_user 
+            WHERE tenant_id IS NULL
+            LIMIT 10
+        """)
+        rows_without = cursor.fetchall()
+        if rows_without:
+            print(f"Sample of users WITHOUT tenant_id (showing {len(rows_without)}):")
+            for row in rows_without:
+                print(f"  {row[0]}, {row[1]}")
+            print()
     
     # Check tenant table structure
     print("=== Tenant Table Structure ===")
@@ -98,8 +128,8 @@ def diagnose():
         cursor.execute("""
             SELECT u.email, u.tenant_id as user_tenant_id, t.id as tenant_id, t.name as tenant_name
             FROM custom_auth_user u
-            LEFT JOIN custom_auth_tenant t ON u.tenant_id::text = t.id::text
-            WHERE u.tenant_id IS NOT NULL AND u.tenant_id != ''
+            LEFT JOIN custom_auth_tenant t ON u.tenant_id = t.id
+            WHERE u.tenant_id IS NOT NULL
             LIMIT 10
         """)
         relationships = cursor.fetchall()
