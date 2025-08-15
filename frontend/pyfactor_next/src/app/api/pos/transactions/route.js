@@ -51,6 +51,18 @@ export async function GET(request) {
       );
     }
 
+    // Debug logging for currency
+    console.log('[POS API] 💰 Currency Debug - Backend response:', {
+      totalCount: data.count,
+      firstTransaction: data.results?.[0] ? {
+        id: data.results[0].id,
+        transaction_number: data.results[0].transaction_number,
+        currency_code: data.results[0].currency_code,
+        currency_symbol: data.results[0].currency_symbol,
+        total_amount: data.results[0].total_amount
+      } : null
+    });
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('[POS Transactions API] Error:', error);
