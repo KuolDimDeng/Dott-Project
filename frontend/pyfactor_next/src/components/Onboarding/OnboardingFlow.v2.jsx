@@ -8,7 +8,7 @@ import { onboardingStateMachine, ONBOARDING_STATES } from '@/utils/onboardingSta
 import { apiClient } from '@/utils/apiClient.v2';
 import { errorHandler } from '@/utils/errorHandler.v2';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import BusinessInfoFormV2 from './BusinessInfoForm.v2';
+import BusinessInfoFormV2 from './BusinessInfoForm.v2.enhanced';
 import SubscriptionSelectionFormV2 from './SubscriptionSelectionForm.v2';
 import { captureEvent } from '@/lib/posthog';
 import { usePostHog } from 'posthog-js/react';
