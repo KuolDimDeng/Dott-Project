@@ -160,6 +160,9 @@ def fix_business_currency():
                     
                     # Create Business record
                     business_id = str(uuid.uuid4())
+                    # Convert user_id to UUID format for owner_id field
+                    owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{user_id}'))
+                    
                     cursor.execute("""
                         INSERT INTO users_business (
                             id, tenant_id, name, country,
@@ -173,7 +176,7 @@ def fix_business_currency():
                         business_id, tenant_id, business_name, final_country,
                         currency_code, currency_symbol, currency_name,
                         'RETAIL', 'SOLE_PROPRIETORSHIP', 'IFRS',
-                        True, str(user_id)
+                        True, owner_uuid
                     ])
                     
                     print(f"✅ Created business for {email} with {currency_code}")
