@@ -275,10 +275,10 @@ const SalesDashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Total Transactions</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {posTransactions.length || stats.totalTransactions}
+                {(posTransactions && posTransactions.length) || stats.totalTransactions || 0}
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                {Math.round((posTransactions.length || stats.totalTransactions) / (timeRange * 30))} per day
+                {Math.round(((posTransactions && posTransactions.length) || stats.totalTransactions || 0) / (timeRange * 30))} per day
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
@@ -331,28 +331,31 @@ const SalesDashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
           </div>
           <div className="p-6">
-            {posTransactions.length > 0 ? (
+            {posTransactions && posTransactions.length > 0 ? (
               <div className="space-y-4">
-                {posTransactions.slice(0, 5).map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {transaction.customer_name || 'Walk-in Customer'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(transaction.created_at).toLocaleDateString()}
-                      </p>
+                {posTransactions.slice(0, 5).map((transaction) => {
+                  if (!transaction) return null;
+                  return (
+                    <div key={transaction.id || Math.random()} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {transaction.customer_name || transaction.customer__business_name || 'Walk-in Customer'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {transaction.created_at ? new Date(transaction.created_at).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">
+                          {formatCurrency(transaction.total_amount || 0, userCurrency)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {transaction.payment_method || 'Unknown'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">
-                        {formatCurrency(transaction.total_amount, userCurrency)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {transaction.payment_method}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-500 text-center py-8">No transactions yet</p>
@@ -368,24 +371,28 @@ const SalesDashboard = () => {
           <div className="p-6">
             {stats.topProducts && stats.topProducts.length > 0 ? (
               <div className="space-y-4">
-                {stats.topProducts.slice(0, 5).map((product, index) => {
-                  if (!product) return null;
+                {stats.topProducts.filter(Boolean).slice(0, 5).map((product, index) => {
+                  const productKey = product?.id || product?.name || `product-${index}`;
+                  const productName = product?.product__name || product?.name || 'Unknown Product';
+                  const productSales = product?.sales || product?.revenue || 0;
+                  const productQuantity = product?.quantity || 0;
+                  
                   return (
-                    <div key={product.id || index} className="flex items-center justify-between">
+                    <div key={productKey} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <span className="text-sm font-medium text-gray-500 w-6">
                           {index + 1}.
                         </span>
                         <p className="font-medium text-gray-900 ml-2">
-                          {product.product__name || product.name || 'Unknown Product'}
+                          {productName}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-gray-900">
-                          {formatCurrency(product.sales || product.revenue || 0, userCurrency)}
+                          {formatCurrency(productSales, userCurrency)}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {product.quantity || 0} sold
+                          {productQuantity} sold
                         </p>
                       </div>
                     </div>
