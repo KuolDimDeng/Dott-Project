@@ -177,8 +177,20 @@ const SalesDashboard = () => {
     loadData();
   }, [timeRange]);
 
-  // Calculate daily average
-  const dailyAverage = stats.totalSales / (timeRange * 30);
+  // Ensure stats is always an object with the right structure
+  const safeStats = {
+    totalSales: stats?.totalSales || 0,
+    totalTransactions: stats?.totalTransactions || 0,
+    averageOrderValue: stats?.averageOrderValue || 0,
+    topProducts: Array.isArray(stats?.topProducts) ? stats.topProducts : [],
+    recentSales: Array.isArray(stats?.recentSales) ? stats.recentSales : []
+  };
+
+  // Ensure posTransactions is always an array
+  const safePosTransactions = Array.isArray(posTransactions) ? posTransactions : [];
+
+  // Calculate daily average safely
+  const dailyAverage = safeStats.totalSales ? safeStats.totalSales / (timeRange * 30) : 0;
   
   // Calculate growth (mock data for now - would need previous period data)
   const growthRate = 12.5; // This should be calculated from actual data
@@ -246,7 +258,7 @@ const SalesDashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Total Sales</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {formatCurrency(stats.totalSales, userCurrency)}
+                {formatCurrency(safeStats.totalSales, userCurrency)}
               </p>
               <div className="flex items-center mt-2">
                 {growthRate > 0 ? (
@@ -275,10 +287,10 @@ const SalesDashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Total Transactions</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {(posTransactions && posTransactions.length) || stats.totalTransactions || 0}
+                {safePosTransactions.length || safeStats.totalTransactions || 0}
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                {Math.round(((posTransactions && posTransactions.length) || stats.totalTransactions || 0) / (timeRange * 30))} per day
+                {Math.round((safePosTransactions.length || safeStats.totalTransactions || 0) / (timeRange * 30))} per day
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
@@ -294,7 +306,7 @@ const SalesDashboard = () => {
               <p className="text-sm text-gray-500">Average Order Value</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatCurrency(
-                  stats.totalSales / ((posTransactions && posTransactions.length) || 1),
+                  safeStats.totalSales / (safePosTransactions.length || 1),
                   userCurrency
                 )}
               </p>
@@ -312,7 +324,7 @@ const SalesDashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Daily Average</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {formatCurrency(dailyAverage, userCurrency)}
+                {formatCurrency(dailyAverage || 0, userCurrency)}
               </p>
               <p className="text-sm text-gray-500 mt-2">Revenue per day</p>
             </div>
@@ -331,9 +343,9 @@ const SalesDashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
           </div>
           <div className="p-6">
-            {posTransactions && posTransactions.length > 0 ? (
+            {safePosTransactions && safePosTransactions.length > 0 ? (
               <div className="space-y-4">
-                {posTransactions.slice(0, 5).map((transaction) => {
+                {safePosTransactions.slice(0, 5).map((transaction) => {
                   if (!transaction) return null;
                   return (
                     <div key={transaction.id || Math.random()} className="flex items-center justify-between">
@@ -369,9 +381,9 @@ const SalesDashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900">Top Products</h2>
           </div>
           <div className="p-6">
-            {stats.topProducts && stats.topProducts.length > 0 ? (
+            {safeStats.topProducts && safeStats.topProducts.length > 0 ? (
               <div className="space-y-4">
-                {stats.topProducts.filter(Boolean).slice(0, 5).map((product, index) => {
+                {safeStats.topProducts.filter(Boolean).slice(0, 5).map((product, index) => {
                   const productKey = product?.id || product?.name || `product-${index}`;
                   const productName = product?.product__name || product?.name || 'Unknown Product';
                   const productSales = product?.sales || product?.revenue || 0;
