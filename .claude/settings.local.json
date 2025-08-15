@@ -310,6 +310,7 @@
       "Bash(/Users/kuoldeng/projectx/deploy_pos_schema_fix.sh)",
       "Bash(git cherry-pick:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

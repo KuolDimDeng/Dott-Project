@@ -942,7 +942,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         notes,
         tax_rate: taxRate,
         tax_amount: totals.taxAmount,
-        total_amount: totals.total
+        total_amount: totals.total,
+        currency_code: userCurrency,
+        currency_symbol: currencySymbol
       };
       
       // Store sale data for after payment
@@ -997,7 +999,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         notes,
         tax_rate: taxRate, // Include tax rate in sale data
         tax_amount: parseFloat(totals.taxAmount) || 0,
-        total_amount: parseFloat(totals.total) || 0 // Ensure it's a number
+        total_amount: parseFloat(totals.total) || 0, // Ensure it's a number
+        currency_code: userCurrency,
+        currency_symbol: currencySymbol
       };
 
       // Add amount_tendered for cash payments
