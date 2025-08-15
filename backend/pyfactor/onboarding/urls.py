@@ -28,6 +28,7 @@ from .views import (
 )
 from .views.setup import SetupStatusView, InitializeSetupView
 from .views.dashboard_setup import DashboardSchemaSetupView
+from .views.business_info_enhanced import SaveBusinessInfoEnhancedView
 from .api.views.webhook_views import stripe_webhook
 from .api.payment_views import payment_pending_view, complete_payment_view
 from .views.subscription import SubscriptionSaveView
@@ -77,6 +78,8 @@ urlpatterns = [
     path('business-info/', GetBusinessInfoView.as_view(), name='business-info'),
     path('business-info/validate/', ValidateSubscriptionAccessView.as_view(), name='validate-business-info'),
     path('save-business-info/', SaveStep1View.as_view(), name='save-business-info'),
+    # Enhanced business info endpoint with currency support
+    path('business-info-enhanced/', SaveBusinessInfoEnhancedView.as_view(), name='business-info-enhanced'),
     
     # Subscription routes
     path('subscription/validate/', ValidateSubscriptionAccessView.as_view(), name='validate-subscription'),

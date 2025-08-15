@@ -102,11 +102,12 @@ export default function OnboardingFlowV2({ initialStep, initialCountry }) {
       const updatedData = { ...formData, ...data };
       setFormData(updatedData);
       
-      // Prepare data for backend
+      // Prepare data for backend (including currency)
       const backendData = {
         business_name: data.businessName,
         business_type: data.businessType,
         country: data.country || 'US',
+        currency: data.currency || 'USD',  // Include currency
         legal_structure: data.legalStructure,
         date_founded: data.dateFounded
       };

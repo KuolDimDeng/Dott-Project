@@ -422,6 +422,7 @@ export async function POST(request) {
         business_type: businessData.businessType,
         // Convert country name to 2-letter code
         country: getCountryCode(businessData.country),
+        currency: data.currency || 'USD',  // Include currency from request
         legal_structure: businessData.legalStructure,
         date_founded: businessData.dateFounded,
         first_name: businessData.firstName || '',
@@ -450,7 +451,7 @@ export async function POST(request) {
       // Backend will create and assign tenant ID
       console.log('[api/onboarding/business-info] No tenant ID - backend will create one');
 
-      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/save-business-info/`, {
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info-enhanced/`, {
         method: 'POST',
         headers,
         body: JSON.stringify(djangoData),
