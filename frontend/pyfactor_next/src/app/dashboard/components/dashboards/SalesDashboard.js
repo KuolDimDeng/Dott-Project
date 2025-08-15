@@ -294,7 +294,7 @@ const SalesDashboard = () => {
               <p className="text-sm text-gray-500">Average Order Value</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatCurrency(
-                  stats.totalSales / (posTransactions.length || 1),
+                  stats.totalSales / ((posTransactions && posTransactions.length) || 1),
                   userCurrency
                 )}
               </p>
