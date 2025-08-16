@@ -19,6 +19,13 @@ logger = logging.getLogger(__name__)
 # Configure Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+# Log Stripe configuration status (without exposing the key)
+if stripe.api_key:
+    key_prefix = stripe.api_key[:7] if len(stripe.api_key) > 7 else 'SHORT'
+    logger.info(f"[POS Payment] Stripe configured with key starting: {key_prefix}...")
+else:
+    logger.error("[POS Payment] WARNING: Stripe API key not configured!")
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_pos_payment_intent(request):
@@ -144,11 +151,26 @@ def create_pos_payment_intent(request):
             )
             
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         logger.error(f"[POS Payment] Error creating payment intent: {str(e)}")
-        return Response(
-            {"error": "Failed to create payment intent"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        logger.error(f"[POS Payment] Full traceback:\n{error_details}")
+        
+        # Return more detailed error in staging/development
+        if settings.DEBUG or settings.CURRENT_ENVIRONMENT == 'staging':
+            return Response(
+                {
+                    "error": "Failed to create payment intent",
+                    "details": str(e),
+                    "type": type(e).__name__
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        else:
+            return Response(
+                {"error": "Failed to create payment intent"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
