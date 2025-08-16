@@ -525,18 +525,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     location_id: ''   // Add location_id field
   }));
   
-  // For edited product state - also use a single object
-  const [editFormState, setEditFormState] = useState(() => ({
-    name: '',
-    description: '',
-    price: '',
-    forSale: true,
-    forRent: false,
-    stockQuantity: '',
-    reorderLevel: '',
-    supplier_id: '',  // Add supplier_id field
-    location_id: ''   // Add location_id field
-  }));
+  // REMOVED editFormState - using editedProduct as single source of truth
 
   // State for supplier dropdown
   const [suppliers, setSuppliers] = useState([]);
@@ -926,17 +915,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     setSelectedProduct(product);
     setIsEditing(true);
     
-    // Set edit form state
-    setEditFormState({
-      name: product.name || '',
-      description: product.description || '',
-      price: product.price || '',
-      forSale: product.for_sale !== false,
-      forRent: !!product.for_rent,
-      stockQuantity: product.stock_quantity || '',
-      reorderLevel: product.reorder_level || '',
-      supplier_id: product.supplier_id || ''
-    });
+    // REMOVED setEditFormState - using editedProduct directly
     
     // Then switch to the create tab for editing
     setActiveTab(0);
@@ -973,31 +952,20 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     }));
   }, []);
   
-  // Handle edit form field changes
+  // Industry-standard handler for all edit form field changes
   const handleEditFormChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     
-    setEditFormState(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setEditedProduct(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+    });
   }, []);
 
-  // Initialize edit form when editing a product
-  useEffect(() => {
-    if (editedProduct) {
-      setEditFormState({
-        name: editedProduct.name || '',
-        description: editedProduct.description || '',
-        price: editedProduct.price || '',
-        forSale: editedProduct.for_sale !== false,
-        forRent: !!editedProduct.for_rent,
-        stockQuantity: editedProduct.stock_quantity || '',
-        reorderLevel: editedProduct.reorder_level || '',
-        supplier_id: editedProduct.supplier_id || ''
-      });
-    }
-  }, [editedProduct]);
+  // REMOVED - No longer needed since we're using editedProduct directly
 
   // Check API health
   const checkApiHealth = useCallback(async () => {
@@ -1057,14 +1025,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const handleStockQuantityChange = useCallback((e) => setFormState(prev => ({ ...prev, stockQuantity: e.target.value })), []);
   const handleReorderLevelChange = useCallback((e) => setFormState(prev => ({ ...prev, reorderLevel: e.target.value })), []);
   
-  // Create handlers for edit form field updates
-  const handleEditNameChange = useCallback((e) => setEditFormState(prev => ({ ...prev, name: e.target.value })), []);
-  const handleEditDescriptionChange = useCallback((e) => setEditFormState(prev => ({ ...prev, description: e.target.value })), []);
-  const handleEditPriceChange = useCallback((e) => setEditFormState(prev => ({ ...prev, price: e.target.value })), []);
-  const handleEditForSaleChange = useCallback((e) => setEditFormState(prev => ({ ...prev, forSale: e.target.checked })), []);
-  const handleEditForRentChange = useCallback((e) => setEditFormState(prev => ({ ...prev, forRent: e.target.checked })), []);
-  const handleEditStockQuantityChange = useCallback((e) => setEditFormState(prev => ({ ...prev, stockQuantity: e.target.value })), []);
-  const handleEditReorderLevelChange = useCallback((e) => setEditFormState(prev => ({ ...prev, reorderLevel: e.target.value })), []);
+  // REMOVED individual handlers - using unified handleEditFormChange instead
 
   // Create memoized tab navigation handlers
   const handleCreateTab = useCallback(() => {
@@ -2111,7 +2072,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               type="text"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.name || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, name: e.target.value})}
+              onChange={handleEditFormChange}
               required
             />
           </div>
@@ -2130,7 +2091,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               placeholder="Auto-generated if left blank"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.sku || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, sku: e.target.value})}
+              onChange={handleEditFormChange}
             />
             <p className="mt-1 text-xs text-gray-500">
               Current: {editedProduct.sku || editedProduct.product_code || 'Auto-generated'}
@@ -2152,7 +2113,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.price || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, price: e.target.value})}
+              onChange={handleEditFormChange}
               required
             />
           </div>
@@ -2172,37 +2133,37 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.cost || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, cost: e.target.value})}
+              onChange={handleEditFormChange}
             />
           </div>
           
           <div>
-            <label htmlFor="edit-stockQuantity" className="block text-sm font-medium text-black mb-1">
+            <label htmlFor="edit-stock_quantity" className="block text-sm font-medium text-black mb-1">
               Stock Quantity
             </label>
             <input
-              id="edit-stockQuantity"
-              name="stockQuantity"
+              id="edit-stock_quantity"
+              name="stock_quantity"
               type="number"
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              value={editedProduct.stockQuantity || editedProduct.stock_quantity || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, stockQuantity: e.target.value})}
+              value={editedProduct.stock_quantity || ''}
+              onChange={handleEditFormChange}
             />
           </div>
           
           <div>
-            <label htmlFor="edit-reorderLevel" className="block text-sm font-medium text-black mb-1">
+            <label htmlFor="edit-reorder_level" className="block text-sm font-medium text-black mb-1">
               Reorder Level
             </label>
             <input
-              id="edit-reorderLevel"
-              name="reorderLevel"
+              id="edit-reorder_level"
+              name="reorder_level"
               type="number"
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              value={editedProduct.reorderLevel || editedProduct.reorder_level || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, reorderLevel: e.target.value})}
+              value={editedProduct.reorder_level || ''}
+              onChange={handleEditFormChange}
             />
           </div>
 
@@ -2215,7 +2176,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               name="supplier_id"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.supplier_id || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, supplier_id: e.target.value})}
+              onChange={handleEditFormChange}
             >
               <option value="">Select a product supplier</option>
               {loadingSuppliers ? (
@@ -2262,7 +2223,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               name="location_id"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.location_id || ''}
-              onChange={(e) => setEditedProduct({...editedProduct, location_id: e.target.value})}
+              onChange={handleEditFormChange}
             >
               <option value="">Select a location</option>
               {loadingLocations ? (
@@ -2312,7 +2273,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             rows="4"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             value={editedProduct.description || ''}
-            onChange={(e) => setEditedProduct({...editedProduct, description: e.target.value})}
+            onChange={handleEditFormChange}
           ></textarea>
         </div>
         
@@ -2323,7 +2284,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             type="checkbox"
             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             checked={editedProduct.for_sale}
-            onChange={(e) => setEditedProduct({...editedProduct, for_sale: e.target.checked})}
+            onChange={handleEditFormChange}
           />
           <label htmlFor="edit-forSale" className="ml-2 text-sm text-black">
             Available for Sale
@@ -2337,7 +2298,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             type="checkbox"
             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             checked={editedProduct.for_rent}
-            onChange={(e) => setEditedProduct({...editedProduct, for_rent: e.target.checked})}
+            onChange={handleEditFormChange}
           />
           <label htmlFor="edit-forRent" className="ml-2 text-sm text-black">
             Available for Rent
@@ -3104,10 +3065,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         sku: editedProduct.sku || '',
         price: parseFloat(editedProduct.price) || 0,
         cost: parseFloat(editedProduct.cost) || 0,
-        stock_quantity: parseInt(editedProduct.stockQuantity || editedProduct.stock_quantity) || 0,
-        reorder_level: parseInt(editedProduct.reorderLevel || editedProduct.reorder_level) || 0,
-        for_sale: editedProduct.forSale || editedProduct.for_sale,
-        for_rent: editedProduct.forRent || editedProduct.for_rent,
+        stock_quantity: parseInt(editedProduct.stock_quantity) || 0,
+        reorder_level: parseInt(editedProduct.reorder_level) || 0,
+        for_sale: editedProduct.for_sale,
+        for_rent: editedProduct.for_rent,
         supplier_id: editedProduct.supplier_id || null,
         location_id: editedProduct.location_id || null
       };
