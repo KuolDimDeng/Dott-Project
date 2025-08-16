@@ -14,9 +14,7 @@ import toast from 'react-hot-toast';
 import { needsCurrencyConversion, getCachedExchangeRate, convertToUSD, formatCurrency } from '@/utils/currencyUtils';
 
 // Get Stripe key - in Next.js, this needs to be available at build time
-// Fallback to test key if environment variable not set (for emergency fix)
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-  'pk_test_51RI9epFls6i75mQBc3JI8lpcOUnaMlYAGmbDgOrIylbAqUaCOG035DlZFz35vneimME1QmdSiFiObsv3kcnCSNFi000AABL5EU';
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 
 // Log for debugging (remove in production)
 if (typeof window !== 'undefined' && !stripeKey) {
