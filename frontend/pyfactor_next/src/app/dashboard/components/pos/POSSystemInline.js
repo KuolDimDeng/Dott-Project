@@ -154,6 +154,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(null);
+  const [showZeroStock, setShowZeroStock] = useState(false); // Default to hiding zero stock
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [completedSaleData, setCompletedSaleData] = useState(null);
   const [showStripePayment, setShowStripePayment] = useState(false);
@@ -169,6 +170,20 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const { currency } = useCurrency();
   const userCurrency = currency?.code || 'USD';
   const currencySymbol = currency?.symbol || '$';
+  
+  // Load zero stock preference from localStorage on mount
+  useEffect(() => {
+    const savedPreference = localStorage.getItem('pos_showZeroStock');
+    if (savedPreference !== null) {
+      setShowZeroStock(savedPreference === 'true');
+    }
+  }, []);
+  
+  // Save zero stock preference to localStorage when it changes
+  const handleToggleZeroStock = (value) => {
+    setShowZeroStock(value);
+    localStorage.setItem('pos_showZeroStock', value.toString());
+  };
   
   // Debug currency on component mount
   useEffect(() => {
@@ -1394,12 +1409,23 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     console.log('[POS] POS reset complete');
   };
 
-  // Filter products based on search
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-    (product.sku && product.sku.toLowerCase().includes(productSearchTerm.toLowerCase())) ||
-    (product.barcode && product.barcode.includes(productSearchTerm))
-  );
+  // Filter products based on search and stock levels
+  const filteredProducts = products.filter(product => {
+    // First apply search filter
+    const matchesSearch = product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+      (product.sku && product.sku.toLowerCase().includes(productSearchTerm.toLowerCase())) ||
+      (product.barcode && product.barcode.includes(productSearchTerm));
+    
+    if (!matchesSearch) return false;
+    
+    // Then apply stock filter if enabled
+    if (!showZeroStock) {
+      const stockLevel = product.quantity_in_stock || product.stock_quantity || product.quantity || 0;
+      return stockLevel > 0;
+    }
+    
+    return true;
+  });
 
   // Fetch states for a country
   const fetchStates = async (country) => {
@@ -1523,8 +1549,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             </div>
           ) : null}
 
-          {/* Product Search */}
-          <div className="mb-4">
+          {/* Product Search and Stock Toggle */}
+          <div className="mb-4 space-y-3">
             <input
               type="text"
               placeholder={t('searchProducts')}
@@ -1532,6 +1558,27 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               onChange={(e) => setProductSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
+            
+            {/* Zero Stock Toggle */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span className="text-sm font-medium text-gray-700">
+                Show out of stock products
+              </span>
+              <button
+                onClick={() => handleToggleZeroStock(!showZeroStock)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  showZeroStock ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+                aria-pressed={showZeroStock}
+                aria-label="Toggle showing out of stock products"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    showZeroStock ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Products List */}
