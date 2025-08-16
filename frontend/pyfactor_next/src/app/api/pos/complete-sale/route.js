@@ -18,6 +18,12 @@ export async function POST(request) {
 
     const saleData = await request.json();
     logger.info('[POSProxy] Sale data received:', JSON.stringify(saleData, null, 2));
+    logger.info('[POSProxy] 💰 Currency Debug - Received from frontend:', {
+      currency_code: saleData.currency_code,
+      currency_symbol: saleData.currency_symbol,
+      currency: saleData.currency,
+      currencySymbol: saleData.currencySymbol
+    });
 
     // Validate required fields
     if (!saleData.items || !Array.isArray(saleData.items) || saleData.items.length === 0) {
@@ -66,8 +72,8 @@ export async function POST(request) {
       tax_rate: parseFloat(saleData.tax_rate || 0),
       notes: saleData.notes || '',
       // Include currency information from frontend
-      currency_code: saleData.currency || userCurrency || 'USD',
-      currency_symbol: saleData.currencySymbol || '$'
+      currency_code: saleData.currency_code || saleData.currency || userCurrency || 'USD',
+      currency_symbol: saleData.currency_symbol || saleData.currencySymbol || '$'
     };
 
     // Use the POS complete-sale endpoint

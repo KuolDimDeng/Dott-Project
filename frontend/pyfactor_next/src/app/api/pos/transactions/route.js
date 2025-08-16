@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
+  console.log('[POS API] GET /api/pos/transactions called at', new Date().toISOString());
+  
   try {
     const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
@@ -50,6 +52,18 @@ export async function GET(request) {
         { status: response.status }
       );
     }
+
+    // Debug logging for currency
+    console.log('[POS API] 💰 Currency Debug - Backend response:', {
+      totalCount: data.count,
+      firstTransaction: data.results?.[0] ? {
+        id: data.results[0].id,
+        transaction_number: data.results[0].transaction_number,
+        currency_code: data.results[0].currency_code,
+        currency_symbol: data.results[0].currency_symbol,
+        total_amount: data.results[0].total_amount
+      } : null
+    });
 
     return NextResponse.json(data);
   } catch (error) {

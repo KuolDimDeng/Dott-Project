@@ -170,6 +170,16 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const userCurrency = currency?.code || 'USD';
   const currencySymbol = currency?.symbol || '$';
   
+  // Debug currency on component mount
+  useEffect(() => {
+    console.log('[POS] 💰 Currency Debug - Component mounted with:', {
+      currency: currency,
+      userCurrency: userCurrency,
+      currencySymbol: currencySymbol,
+      currencyObject: JSON.stringify(currency)
+    });
+  }, [currency, userCurrency, currencySymbol]);
+  
   const [useShippingAddress, setUseShippingAddress] = useState(false);
   const [shippingAddress, setShippingAddress] = useState({
     street: '',
@@ -933,6 +943,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         }
       }
       
+      // Debug currency right before creating sale data
+      console.log('[POS] 💰 Currency Debug - Before creating sale data for CARD payment:', {
+        userCurrency: userCurrency,
+        currencySymbol: currencySymbol,
+        currencyFromContext: currency,
+        currencyCode: currency?.code,
+        currencySymbolFromContext: currency?.symbol
+      });
+      
       const saleData = {
         items: mappedItems,
         customer_id: selectedCustomer || null,
@@ -942,8 +961,16 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         notes,
         tax_rate: taxRate,
         tax_amount: totals.taxAmount,
-        total_amount: totals.total
+        total_amount: totals.total,
+        currency_code: userCurrency,
+        currency_symbol: currencySymbol
       };
+      
+      console.log('[POS] 💰 Currency Debug - Sale data created for CARD payment:', {
+        saleData: saleData,
+        currency_code: saleData.currency_code,
+        currency_symbol: saleData.currency_symbol
+      });
       
       // Store sale data for after payment
       setPendingSaleData(saleData);
@@ -988,6 +1015,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         }
       }
 
+      // Debug currency right before creating sale data
+      console.log('[POS] 💰 Currency Debug - Before creating sale data for NON-CARD payment:', {
+        userCurrency: userCurrency,
+        currencySymbol: currencySymbol,
+        currencyFromContext: currency,
+        currencyCode: currency?.code,
+        currencySymbolFromContext: currency?.symbol
+      });
+      
       const saleData = {
         items: mappedItems,
         customer_id: selectedCustomer || null,
@@ -997,8 +1033,16 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         notes,
         tax_rate: taxRate, // Include tax rate in sale data
         tax_amount: parseFloat(totals.taxAmount) || 0,
-        total_amount: parseFloat(totals.total) || 0 // Ensure it's a number
+        total_amount: parseFloat(totals.total) || 0, // Ensure it's a number
+        currency_code: userCurrency,
+        currency_symbol: currencySymbol
       };
+      
+      console.log('[POS] 💰 Currency Debug - Sale data created for NON-CARD payment:', {
+        saleData: saleData,
+        currency_code: saleData.currency_code,
+        currency_symbol: saleData.currency_symbol
+      });
 
       // Add amount_tendered for cash payments
       if (paymentMethod === 'cash') {
@@ -1017,6 +1061,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       }
 
       console.log('[POS] Submitting sale data:', JSON.stringify(saleData, null, 2));
+      console.log('[POS] 💰 Currency Debug - Final check before API call:', {
+        currency_code: saleData.currency_code,
+        currency_symbol: saleData.currency_symbol,
+        paymentMethod: saleData.payment_method,
+        totalAmount: saleData.total_amount
+      });
       
       // Call actual backend API
       const response = await fetch('/api/pos/complete-sale', {
