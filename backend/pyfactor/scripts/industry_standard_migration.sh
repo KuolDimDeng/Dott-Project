@@ -33,6 +33,8 @@ python manage.py migrate --noinput --verbosity 2
 echo ""
 echo "4. Verifying critical migrations..."
 python -c "
+import django
+django.setup()
 from django.db.migrations.recorder import MigrationRecorder
 from django.db import connection
 
