@@ -11,6 +11,7 @@ import {
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { CreditCardIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
+import { needsCurrencyConversion, getCachedExchangeRate, convertToUSD, formatCurrency } from '@/utils/currencyUtils';
 
 // Get Stripe key - in Next.js, this needs to be available at build time
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
@@ -49,6 +50,59 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName, curr
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [cardComplete, setCardComplete] = useState(false);
+  const [conversionInfo, setConversionInfo] = useState(null);
+  const [fetchingRate, setFetchingRate] = useState(false);
+
+  // Check if currency conversion is needed and fetch rate
+  useEffect(() => {
+    const checkAndFetchRate = async () => {
+      if (needsCurrencyConversion(currencyCode)) {
+        setFetchingRate(true);
+        try {
+          // Fetch live exchange rate from API
+          const response = await fetch(`/api/exchange-rate?from=${currencyCode}&to=USD`);
+          let exchangeRate;
+          
+          if (response.ok) {
+            const data = await response.json();
+            exchangeRate = data.rate;
+            console.log(`[StripePayment] Live exchange rate for ${currencyCode}: ${exchangeRate}`);
+          } else {
+            // Fallback to cached rate if API fails
+            exchangeRate = getCachedExchangeRate(currencyCode, 'USD');
+            console.log(`[StripePayment] Using fallback rate for ${currencyCode}: ${exchangeRate}`);
+          }
+          
+          const usdAmount = convertToUSD(amount, exchangeRate);
+          setConversionInfo({
+            originalAmount: amount,
+            originalCurrency: currencyCode,
+            usdAmount: usdAmount,
+            exchangeRate: exchangeRate,
+            display: formatCurrency(amount, currencyCode, currencySymbol)
+          });
+        } catch (error) {
+          console.error('[StripePayment] Error fetching exchange rate:', error);
+          // Use fallback rate on error
+          const exchangeRate = getCachedExchangeRate(currencyCode, 'USD');
+          const usdAmount = convertToUSD(amount, exchangeRate);
+          setConversionInfo({
+            originalAmount: amount,
+            originalCurrency: currencyCode,
+            usdAmount: usdAmount,
+            exchangeRate: exchangeRate,
+            display: formatCurrency(amount, currencyCode, currencySymbol)
+          });
+        }
+        setFetchingRate(false);
+      } else {
+        setConversionInfo(null);
+        setFetchingRate(false);
+      }
+    };
+    
+    checkAndFetchRate();
+  }, [amount, currencyCode, currencySymbol]);
 
   const handleCardChange = (event) => {
     setError(event.error ? event.error.message : null);
@@ -66,8 +120,19 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName, curr
     setError(null);
 
     try {
+      // Determine actual amount and currency to process
+      const processAmount = conversionInfo ? conversionInfo.usdAmount : amount;
+      const processCurrency = conversionInfo ? 'usd' : (currencyCode || 'USD').toLowerCase();
+      
       // Step 1: Create payment intent on backend
-      console.log('[StripePayment] Creating payment intent for amount:', amount, currencyCode || 'USD');
+      console.log('[StripePayment] Creating payment intent:', {
+        originalAmount: amount,
+        originalCurrency: currencyCode,
+        processAmount: processAmount,
+        processCurrency: processCurrency,
+        conversion: conversionInfo ? true : false
+      });
+      
       const response = await fetch('/api/payments/create-intent', {
         method: 'POST',
         headers: {
@@ -75,9 +140,14 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName, curr
         },
         credentials: 'include',
         body: JSON.stringify({
-          amount: Math.round(amount * 100), // Convert to smallest currency unit
-          currency: (currencyCode || 'USD').toLowerCase(), // Stripe requires lowercase
-          sale_data: saleData,
+          amount: Math.round(processAmount * 100), // Convert to smallest currency unit
+          currency: processCurrency,
+          sale_data: {
+            ...saleData,
+            original_amount: conversionInfo ? amount : undefined,
+            original_currency: conversionInfo ? currencyCode : undefined,
+            exchange_rate: conversionInfo ? conversionInfo.exchangeRate : undefined
+          },
           customer_name: customerName,
         }),
       });
@@ -136,15 +206,46 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName, curr
         <div className="flex justify-between items-center">
           <span className="text-lg font-medium text-gray-700">Total Amount:</span>
           <span className="text-2xl font-bold text-gray-900">
-            {currencySymbol || '$'}{amount.toFixed(2)} {currencyCode !== 'USD' ? currencyCode : ''}
+            {formatCurrency(amount, currencyCode, currencySymbol)}
           </span>
         </div>
+        
+        {/* Show loading state while fetching rate */}
+        {fetchingRate && needsCurrencyConversion(currencyCode) && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+            <div className="text-sm text-blue-800 flex items-center">
+              <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Fetching current exchange rate...
+            </div>
+          </div>
+        )}
+        
+        {/* Show conversion if needed */}
+        {conversionInfo && !fetchingRate && (
+          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <div className="text-sm text-yellow-800">
+              <div className="font-medium mb-1">Currency Conversion Required</div>
+              <div className="space-y-1">
+                <div>Original: {conversionInfo.display}</div>
+                <div>Charged: ${conversionInfo.usdAmount.toFixed(2)} USD</div>
+                <div className="text-xs text-yellow-600">
+                  Rate: 1 USD = {conversionInfo.exchangeRate} {currencyCode}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {customerName && (
           <div className="mt-2 text-sm text-gray-600">
             Customer: {customerName}
           </div>
         )}
-        {currencyCode && currencyCode !== 'USD' && (
+        
+        {currencyCode && currencyCode !== 'USD' && !conversionInfo && (
           <div className="mt-2 text-xs text-gray-500">
             Payment will be processed in {currencyCode}
           </div>
