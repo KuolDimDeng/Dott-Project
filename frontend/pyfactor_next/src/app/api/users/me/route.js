@@ -17,7 +17,7 @@ export async function GET(request) {
   console.log('🔍🔍🔍 [/api/users/me route] Session cookie exists:', !!sid);
   console.log('🔍🔍🔍 [/api/users/me route] Session value:', sid?.value?.substring(0, 8) + '...');
   
-  return proxyToBackend('users/me', request);
+  return proxyToBackend('users/me/', request);
 }
 
 /**
@@ -25,7 +25,13 @@ export async function GET(request) {
  * Updates current user profile
  */
 export async function PATCH(request) {
-  return proxyToBackend('users/me', request);
+  // Debug logging
+  const cookieStore = cookies();
+  const sid = cookieStore.get('sid');
+  console.log('🔍🔍🔍 [/api/users/me PATCH] Session cookie exists:', !!sid);
+  console.log('🔍🔍🔍 [/api/users/me PATCH] Session value:', sid?.value?.substring(0, 8) + '...');
+  
+  return proxyToBackend('users/me/', request);
 }
 
 /**
