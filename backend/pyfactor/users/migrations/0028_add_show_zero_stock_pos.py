@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0034_business_currency_updated_at'),  # Adjust this to match your latest migration
+        ('users', '0027_add_county_field'),  # Updated to reference the actual latest migration
     ]
 
     operations = [
