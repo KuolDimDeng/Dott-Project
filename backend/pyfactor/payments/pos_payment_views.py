@@ -70,21 +70,32 @@ def create_pos_payment_intent(request):
         
         # Create Stripe payment intent
         try:
+            # Clean metadata to ensure all values are strings (Stripe requirement)
+            stripe_metadata = {
+                'source': 'pos',  # Important: Mark as POS transaction for webhook
+                'user_id': str(request.user.id),
+                'business_id': str(business.id) if business else '',
+                'tenant_id': str(request.user.tenant_id),
+                'customer_name': customer_name,
+                'platform_fee': str(platform_fee_cents),
+                'merchant_receives': str(merchant_receives_cents),
+                'pos_transaction_id': sale_data.get('transaction_id', ''),  # Include POS transaction ID
+            }
+            
+            # Add any additional metadata, ensuring all values are strings
+            if metadata:
+                for key, value in metadata.items():
+                    # Skip complex objects, only add string values
+                    if isinstance(value, (str, int, float, bool)):
+                        stripe_metadata[key] = str(value)
+                    else:
+                        logger.warning(f"[POS Payment] Skipping non-string metadata key: {key}")
+            
             payment_intent = stripe.PaymentIntent.create(
                 amount=amount_cents,
                 currency=currency,
                 description=description,
-                metadata={
-                    'source': 'pos',  # Important: Mark as POS transaction for webhook
-                    'user_id': str(request.user.id),
-                    'business_id': str(business.id) if business else '',
-                    'tenant_id': str(request.user.tenant_id),
-                    'customer_name': customer_name,
-                    'platform_fee': platform_fee_cents,
-                    'merchant_receives': merchant_receives_cents,
-                    'pos_transaction_id': sale_data.get('transaction_id', ''),  # Include POS transaction ID
-                    **metadata
-                },
+                metadata=stripe_metadata,
                 # Enable automatic payment methods
                 automatic_payment_methods={
                     'enabled': True,
