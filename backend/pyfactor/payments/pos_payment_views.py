@@ -75,12 +75,14 @@ def create_pos_payment_intent(request):
                 currency=currency,
                 description=description,
                 metadata={
+                    'source': 'pos',  # Important: Mark as POS transaction for webhook
                     'user_id': str(request.user.id),
                     'business_id': str(business.id) if business else '',
                     'tenant_id': str(request.user.tenant_id),
                     'customer_name': customer_name,
                     'platform_fee': platform_fee_cents,
                     'merchant_receives': merchant_receives_cents,
+                    'pos_transaction_id': sale_data.get('transaction_id', ''),  # Include POS transaction ID
                     **metadata
                 },
                 # Enable automatic payment methods
