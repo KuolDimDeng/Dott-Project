@@ -103,16 +103,13 @@ class Command(BaseCommand):
         
         for settlement in settlements:
             try:
-                # Check if user has Wise account
+                # Get default POS bank account for user
                 from banking.models import WiseItem
-                wise_item = WiseItem.objects.filter(
-                    user=settlement.user,
-                    is_verified=True
-                ).first()
+                wise_item = WiseItem.get_default_pos_account(settlement.user)
                 
                 if not wise_item:
                     self.stdout.write(self.style.WARNING(
-                        f"Skipping {settlement.id}: User has no Wise account"
+                        f"Skipping {settlement.id}: User has no default POS bank account"
                     ))
                     skipped += 1
                     continue

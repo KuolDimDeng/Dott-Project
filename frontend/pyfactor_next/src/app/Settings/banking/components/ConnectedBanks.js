@@ -6,7 +6,12 @@ import {
   StarIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  CreditCardIcon,
+  DocumentTextIcon,
+  UserGroupIcon,
+  ReceiptRefundIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
@@ -15,8 +20,53 @@ import toast from 'react-hot-toast';
  * Connected Banks List Component
  * Displays and manages connected bank accounts
  */
-export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary }) {
+export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary, onSetPOSDefault }) {
   const [disconnecting, setDisconnecting] = useState(null);
+  const [settingPOSDefault, setSettingPOSDefault] = useState(null);
+
+  /**
+   * Handle setting module default account
+   */
+  const handleSetModuleDefault = async (connection, module) => {
+    setSettingPOSDefault(connection.id); // Using same state for all modules
+    console.log(`[ConnectedBanks] Setting ${module} default:`, connection.id);
+    
+    const moduleNames = {
+      pos: 'Point of Sale',
+      invoices: 'Invoices',
+      payroll: 'Payroll',
+      expenses: 'Expenses',
+      vendors: 'Vendor Payments'
+    };
+    
+    try {
+      const response = await fetch(`/api/banking/${module}/set-default`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ account_id: connection.id })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || `${moduleNames[module]} default account updated`);
+        if (onSetPOSDefault) {
+          onSetPOSDefault(connection.id); // Refresh the list
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`[ConnectedBanks] Set ${module} default error:`, errorData);
+        toast.error(errorData.error || `Failed to set ${moduleNames[module]} default account`);
+      }
+    } catch (error) {
+      console.error(`[ConnectedBanks] Error setting ${module} default:`, error);
+      toast.error(`Failed to set ${moduleNames[module]} default account`);
+    } finally {
+      setSettingPOSDefault(null);
+    }
+  };
 
   /**
    * Handle bank disconnection
@@ -96,6 +146,36 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                           Primary
                         </span>
                       )}
+                      {connection.is_default_for_pos && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <CreditCardIcon className="w-3 h-3 mr-1" />
+                          POS
+                        </span>
+                      )}
+                      {connection.is_default_for_invoices && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <DocumentTextIcon className="w-3 h-3 mr-1" />
+                          Invoices
+                        </span>
+                      )}
+                      {connection.is_default_for_payroll && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <UserGroupIcon className="w-3 h-3 mr-1" />
+                          Payroll
+                        </span>
+                      )}
+                      {connection.is_default_for_expenses && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          <ReceiptRefundIcon className="w-3 h-3 mr-1" />
+                          Expenses
+                        </span>
+                      )}
+                      {connection.is_default_for_vendors && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <BuildingOfficeIcon className="w-3 h-3 mr-1" />
+                          Vendors
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500">
                       {connection.provider === 'plaid' ? 'Connected via Plaid' : 'Connected via Wise'}
@@ -123,7 +203,32 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {!connection.is_primary && (connection.is_active !== false && connection.status !== 'inactive') && (
+                  {/* Module Defaults Dropdown */}
+                  {connection.is_verified && (connection.is_active !== false && connection.status !== 'inactive') && (
+                    <div className="relative inline-block text-left">
+                      <select
+                        onChange={(e) => {
+                          const module = e.target.value;
+                          if (module) {
+                            handleSetModuleDefault(connection, module);
+                            e.target.value = ''; // Reset after selection
+                          }
+                        }}
+                        className="block w-full px-3 py-1 text-xs border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-white"
+                        disabled={settingPOSDefault === connection.id}
+                      >
+                        <option value="">Set as Default for...</option>
+                        {!connection.is_default_for_pos && <option value="pos">💳 Point of Sale</option>}
+                        {!connection.is_default_for_invoices && <option value="invoices">📄 Invoices</option>}
+                        {!connection.is_default_for_payroll && <option value="payroll">👥 Payroll</option>}
+                        {!connection.is_default_for_expenses && <option value="expenses">🧾 Expenses</option>}
+                        {!connection.is_default_for_vendors && <option value="vendors">🏢 Vendor Payments</option>}
+                      </select>
+                    </div>
+                  )}
+                  
+                  {/* Primary Account Button */}
+                  {!connection.is_primary && (connection.is_active !== false && connection.status !== 'inactive') && onSetPrimary && (
                     <button
                       onClick={() => onSetPrimary(connection.id)}
                       className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

@@ -681,3 +681,164 @@ def manage_bank_connection(request, connection_id):
             'success': False,
             'error': 'Failed to manage bank connection'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_pos_bank_accounts(request):
+    """
+    Get all bank accounts for POS settings, showing which is default.
+    """
+    try:
+        user = request.user
+        
+        # Get all Wise accounts for the user
+        wise_accounts = WiseItem.objects.filter(
+            user=user,
+            is_active=True
+        ).order_by('-is_default_for_pos', '-is_verified', 'bank_name')
+        
+        accounts_data = []
+        for account in wise_accounts:
+            accounts_data.append({
+                'id': str(account.id),
+                'bank_name': account.bank_name,
+                'bank_country': account.bank_country,
+                'account_holder_name': account.account_holder_name,
+                'currency': account.currency,
+                'masked_account': account.get_masked_account_number(),
+                'is_verified': account.is_verified,
+                'is_default_for_pos': account.is_default_for_pos,
+                'is_active': account.is_active,
+                'last_transfer_date': account.last_transfer_date.isoformat() if account.last_transfer_date else None
+            })
+        
+        return Response({
+            'success': True,
+            'data': {
+                'accounts': accounts_data,
+                'has_default': any(acc['is_default_for_pos'] for acc in accounts_data)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"[Get POS Accounts] Error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to fetch POS bank accounts'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_pos_account(request):
+    """
+    Set a bank account as default for POS settlements.
+    Only OWNER and ADMIN can change this setting.
+    """
+    return _set_module_default_account(request, 'pos', 'set_as_default_for_pos')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_invoice_account(request):
+    """
+    Set a bank account as default for invoice payments.
+    Only OWNER and ADMIN can change this setting.
+    """
+    return _set_module_default_account(request, 'invoices', 'set_as_default_for_invoices')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_payroll_account(request):
+    """
+    Set a bank account as default for payroll disbursements.
+    Only OWNER and ADMIN can change this setting.
+    """
+    return _set_module_default_account(request, 'payroll', 'set_as_default_for_payroll')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_expense_account(request):
+    """
+    Set a bank account as default for expense reimbursements.
+    Only OWNER and ADMIN can change this setting.
+    """
+    return _set_module_default_account(request, 'expenses', 'set_as_default_for_expenses')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_vendor_account(request):
+    """
+    Set a bank account as default for vendor payments.
+    Only OWNER and ADMIN can change this setting.
+    """
+    return _set_module_default_account(request, 'vendors', 'set_as_default_for_vendors')
+
+
+def _set_module_default_account(request, module_name, method_name):
+    """
+    Generic function to set a bank account as default for a specific module.
+    """
+    try:
+        user = request.user
+        
+        # Check if user is OWNER or ADMIN
+        if hasattr(user, 'role') and user.role not in ['OWNER', 'ADMIN']:
+            return Response({
+                'success': False,
+                'error': f'Only owners and admins can change {module_name} bank settings'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        account_id = request.data.get('account_id')
+        if not account_id:
+            return Response({
+                'success': False,
+                'error': 'account_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get the account
+        try:
+            account = WiseItem.objects.get(
+                id=account_id,
+                user=user,
+                is_active=True
+            )
+        except WiseItem.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Bank account not found or not active'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if account is verified
+        if not account.is_verified:
+            return Response({
+                'success': False,
+                'error': f'Bank account must be verified before setting as default for {module_name}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set as default using the appropriate method
+        getattr(account, method_name)()
+        
+        logger.info(f"[Set Default {module_name.title()}] User {user.email} set {account.bank_name} as default {module_name} account")
+        
+        return Response({
+            'success': True,
+            'message': f'{account.bank_name} is now the default account for {module_name}',
+            'data': {
+                'account_id': str(account.id),
+                'bank_name': account.bank_name,
+                'currency': account.currency,
+                'module': module_name
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"[Set Default {module_name.title()}] Error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': f'Failed to set default {module_name} account'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
