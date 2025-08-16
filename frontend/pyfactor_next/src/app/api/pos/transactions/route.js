@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
+  console.log('[POS API] GET /api/pos/transactions called at', new Date().toISOString());
+  
   try {
     const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
