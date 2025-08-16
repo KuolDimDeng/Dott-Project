@@ -548,11 +548,15 @@ def list_bank_connections(request):
             # Try to get WiseItem details if available
             wise_item = None
             try:
-                if hasattr(conn, 'integration') and conn.integration:
-                    wise_item = conn.integration
+                # Direct query for WiseItem by user and bank name
+                wise_item = WiseItem.objects.filter(
+                    user=user,
+                    bank_name=conn.bank_name
+                ).first()
+                if wise_item:
                     logger.info(f"[List Connections] Found WiseItem for connection {conn.id}")
             except Exception as integration_error:
-                logger.warning(f"[List Connections] Could not fetch integration for connection {conn.id}: {integration_error}")
+                logger.warning(f"[List Connections] Could not fetch WiseItem for connection {conn.id}: {integration_error}")
             
             # Safely get last 4 digits of account number
             last4 = ''
@@ -570,7 +574,14 @@ def list_bank_connections(request):
                 'last4': last4,
                 'provider': 'wise',
                 'created_at': conn.last_synced.isoformat() if conn.last_synced else None,
-                'status': 'active'  # Could be enhanced with actual status checking
+                'status': 'active',  # Could be enhanced with actual status checking
+                # Add module default flags if WiseItem exists
+                'is_verified': wise_item.is_verified if wise_item else False,
+                'is_default_for_pos': wise_item.is_default_for_pos if wise_item else False,
+                'is_default_for_invoices': wise_item.is_default_for_invoices if wise_item else False,
+                'is_default_for_payroll': wise_item.is_default_for_payroll if wise_item else False,
+                'is_default_for_expenses': wise_item.is_default_for_expenses if wise_item else False,
+                'is_default_for_vendors': wise_item.is_default_for_vendors if wise_item else False,
             })
         
         return Response({
