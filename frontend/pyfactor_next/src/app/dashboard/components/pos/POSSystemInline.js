@@ -2305,6 +2305,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         amount={parseFloat(totals.total)}
         onSuccess={handleStripePaymentSuccess}
         saleData={pendingSaleData}
+        currencyCode={userCurrency}
+        currencySymbol={currencySymbol}
         customerName={
           selectedCustomer 
             ? customers.find(c => c.id === selectedCustomer)?.name || 

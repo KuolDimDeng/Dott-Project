@@ -43,7 +43,7 @@ const CARD_ELEMENT_OPTIONS = {
 };
 
 // Payment form component
-function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName }) {
+function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName, currencyCode, currencySymbol }) {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -67,7 +67,7 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName }) {
 
     try {
       // Step 1: Create payment intent on backend
-      console.log('[StripePayment] Creating payment intent for amount:', amount);
+      console.log('[StripePayment] Creating payment intent for amount:', amount, currencyCode || 'USD');
       const response = await fetch('/api/payments/create-intent', {
         method: 'POST',
         headers: {
@@ -75,8 +75,8 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName }) {
         },
         credentials: 'include',
         body: JSON.stringify({
-          amount: Math.round(amount * 100), // Convert to cents
-          currency: 'usd',
+          amount: Math.round(amount * 100), // Convert to smallest currency unit
+          currency: (currencyCode || 'USD').toLowerCase(), // Stripe requires lowercase
           sale_data: saleData,
           customer_name: customerName,
         }),
@@ -136,12 +136,17 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName }) {
         <div className="flex justify-between items-center">
           <span className="text-lg font-medium text-gray-700">Total Amount:</span>
           <span className="text-2xl font-bold text-gray-900">
-            ${amount.toFixed(2)}
+            {currencySymbol || '$'}{amount.toFixed(2)} {currencyCode !== 'USD' ? currencyCode : ''}
           </span>
         </div>
         {customerName && (
           <div className="mt-2 text-sm text-gray-600">
             Customer: {customerName}
+          </div>
+        )}
+        {currencyCode && currencyCode !== 'USD' && (
+          <div className="mt-2 text-xs text-gray-500">
+            Payment will be processed in {currencyCode}
           </div>
         )}
       </div>
@@ -225,7 +230,9 @@ export default function StripePaymentModal({
   amount, 
   onSuccess, 
   saleData,
-  customerName 
+  customerName,
+  currencyCode,
+  currencySymbol 
 }) {
   if (!isOpen) return null;
 
@@ -260,6 +267,8 @@ export default function StripePaymentModal({
                   onCancel={onClose}
                   saleData={saleData}
                   customerName={customerName}
+                  currencyCode={currencyCode}
+                  currencySymbol={currencySymbol}
                 />
               </Elements>
             ) : (
