@@ -172,15 +172,26 @@ WISE_API_TOKEN = os.getenv('WISE_API_TOKEN', '')
 WISE_API_KEY = WISE_API_TOKEN  # Alias for compatibility
 WISE_PROFILE_ID = os.getenv('WISE_PROFILE_ID', '')
 
+# Get environment for Wise configuration
+CURRENT_ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+
 # Use sandbox API for staging/development
-WISE_ENVIRONMENT = os.getenv('WISE_ENVIRONMENT', 'sandbox' if ENVIRONMENT in ['staging', 'development'] else 'live')
-WISE_BASE_URL = 'https://api.sandbox.wise.com' if WISE_ENVIRONMENT == 'sandbox' else 'https://api.wise.com'
+WISE_ENVIRONMENT = os.getenv('WISE_ENVIRONMENT', 'sandbox' if CURRENT_ENVIRONMENT in ['staging', 'development'] else 'live')
+
+# Use WISE_API_URL from environment if provided, otherwise use defaults
+WISE_BASE_URL = os.getenv('WISE_API_URL', '')
+if not WISE_BASE_URL:
+    # Default URLs based on environment
+    if WISE_ENVIRONMENT == 'sandbox':
+        WISE_BASE_URL = 'https://api.sandbox.transferwise.tech'  # Sandbox uses transferwise.tech
+    else:
+        WISE_BASE_URL = 'https://api.wise.com'  # Production uses wise.com
 
 # Print warning if Wise is not configured
 if not WISE_API_TOKEN:
     print("Warning: Wise API token not configured. International transfers will not work.")
 elif WISE_ENVIRONMENT == 'sandbox':
-    print(f"Info: Using Wise Sandbox API for {ENVIRONMENT} environment")
+    print(f"Info: Using Wise Sandbox API for {CURRENT_ENVIRONMENT} environment")
 
 # AWS Settings - COMMENTED OUT (using Auth0 and Render instead)
 # AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'placeholder_aws_key')
