@@ -13,6 +13,11 @@ class FinanceConfig(AppConfig):
         except:
             pass
 
+        # Skip SQL fix during migrations
+        import sys
+        if 'migrate' in sys.argv or 'makemigrations' in sys.argv:
+            return
+
         # Run any SQL fixers if needed
         # Skip the SQL fix in async contexts to avoid the error
         # This will run properly when Django starts in sync context

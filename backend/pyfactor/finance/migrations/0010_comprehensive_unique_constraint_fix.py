@@ -25,7 +25,7 @@ def reverse_fix(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('finance', '0009_add_tenant_id_fields'),
+        ('finance', '0009_fix_accountcategory_constraints_properly'),
     ]
 
     operations = [

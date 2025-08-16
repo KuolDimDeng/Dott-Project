@@ -1039,9 +1039,11 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=0)
     }
-    # Ensure proper SSL mode for production
-    DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
-    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+    # Only set sslmode if not already specified in the URL
+    if 'sslmode' not in DATABASE_URL.lower():
+        # Ensure proper SSL mode for production
+        DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
+        DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 else:
     # Fall back to individual environment variables
     DATABASES = {

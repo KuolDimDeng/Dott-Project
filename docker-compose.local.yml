@@ -39,7 +39,8 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=True
-      - DATABASE_URL=postgresql://dott_user:dott_password@db:5432/dott_local
+      - DATABASE_URL=postgresql://dott_user:dott_password_change_in_production@db:5432/dott_local?sslmode=disable
+      - PGSSLMODE=disable
       - REDIS_URL=redis://redis:6379/0
       - DJANGO_SECRET_KEY=local-development-secret-key-not-for-production
       - ALLOWED_HOSTS=localhost,127.0.0.1,backend
@@ -72,13 +73,9 @@ services:
         echo 'Waiting for database to be ready...' &&
         sleep 10 &&
         echo 'Running database migrations...' &&
-        python manage.py migrate &&
-        echo 'Creating superuser...' &&
-        python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='admin@dottapps.com').exists() or User.objects.create_superuser('admin@dottapps.com', 'admin123')\" &&
-        echo 'Collecting static files...' &&
-        python manage.py collectstatic --noinput &&
+        PGSSLMODE=disable python manage.py migrate --noinput &&
         echo 'Starting Django development server...' &&
-        python manage.py runserver 0.0.0.0:8000
+        PGSSLMODE=disable python manage.py runserver 0.0.0.0:8000
       "
 
   # Next.js Frontend
