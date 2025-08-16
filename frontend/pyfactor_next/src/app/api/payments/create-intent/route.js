@@ -37,6 +37,23 @@ export async function POST(request) {
     const platformFeeFixed = 30; // 30 cents
     const platformFee = Math.round(amount * platformFeePercentage) + platformFeeFixed;
 
+    // Prepare metadata - Stripe only accepts strings in metadata
+    const metadata = {
+      source: 'pos',
+      platform_fee: String(platformFee),
+      items_count: String(sale_data?.items?.length || 0),
+      customer_name: customer_name || 'Walk-In Customer',
+      // Add currency conversion info if present
+      original_amount: sale_data?.original_amount ? String(sale_data.original_amount) : undefined,
+      original_currency: sale_data?.original_currency || undefined,
+      exchange_rate: sale_data?.exchange_rate ? String(sale_data.exchange_rate) : undefined
+    };
+    
+    // Remove undefined values
+    Object.keys(metadata).forEach(key => 
+      metadata[key] === undefined && delete metadata[key]
+    );
+
     // Call backend to create payment intent
     const response = await fetch(`${BACKEND_URL}/api/payments/create-pos-intent/`, {
       method: 'POST',
@@ -48,15 +65,10 @@ export async function POST(request) {
         amount,
         currency: currency || 'usd',
         platform_fee: platformFee,
-        sale_data,
+        sale_data,  // Keep full sale_data for backend processing
         customer_name,
         description: `POS Sale - ${customer_name || 'Walk-In Customer'}`,
-        metadata: {
-          source: 'pos',
-          session_id: sidCookie.value,
-          platform_fee: platformFee,
-          ...sale_data
-        }
+        metadata  // Use cleaned metadata for Stripe
       }),
     });
 
