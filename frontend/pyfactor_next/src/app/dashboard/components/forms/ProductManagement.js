@@ -3079,6 +3079,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-tenant-id': tenantId
         },
         credentials: 'include',
         body: JSON.stringify(apiData)
