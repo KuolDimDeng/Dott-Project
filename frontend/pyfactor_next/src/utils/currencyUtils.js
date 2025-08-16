@@ -90,14 +90,16 @@ export function getConversionDisplay(currencyCode, originalAmount, usdAmount) {
 /**
  * Convert amount to USD using exchange rate
  * @param {number} amount - Amount in original currency
- * @param {number} exchangeRate - Exchange rate to USD
+ * @param {number} exchangeRate - Exchange rate to USD (how many units of currency per 1 USD)
  * @returns {number} Amount in USD
  */
 export function convertToUSD(amount, exchangeRate) {
   if (!exchangeRate || exchangeRate <= 0) {
     throw new Error('Invalid exchange rate');
   }
-  return amount / exchangeRate;
+  const usdAmount = amount / exchangeRate;
+  // Ensure minimum charge of $0.50 for Stripe (minimum processable amount)
+  return Math.max(0.50, usdAmount);
 }
 
 /**
@@ -172,7 +174,7 @@ export function getCachedExchangeRate(fromCurrency, toCurrency = 'USD') {
   // Approximate exchange rates to USD (as of 2024)
   // These should be updated periodically or fetched from API
   const FALLBACK_RATES = {
-    'SSP': 4500,    // South Sudanese Pound (highly volatile)
+    'SSP': 1300,    // South Sudanese Pound (market rate, highly volatile)
     'SYP': 13000,   // Syrian Pound
     'IRR': 42000,   // Iranian Rial
     'VES': 36,      // Venezuelan Bolívar

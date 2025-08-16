@@ -231,8 +231,14 @@ function PaymentForm({ amount, onSuccess, onCancel, saleData, customerName, curr
               <div className="space-y-1">
                 <div>Original: {conversionInfo.display}</div>
                 <div>Charged: ${conversionInfo.usdAmount.toFixed(2)} USD</div>
+                {/* Show minimum charge notice if applied */}
+                {conversionInfo.originalAmount / conversionInfo.exchangeRate < 0.50 && (
+                  <div className="text-xs text-orange-600 font-medium">
+                    Minimum charge of $0.50 USD applied
+                  </div>
+                )}
                 <div className="text-xs text-yellow-600">
-                  Rate: 1 USD = {conversionInfo.exchangeRate} {currencyCode}
+                  Rate: 1 USD = {conversionInfo.exchangeRate.toLocaleString()} {currencyCode}
                 </div>
               </div>
             </div>
