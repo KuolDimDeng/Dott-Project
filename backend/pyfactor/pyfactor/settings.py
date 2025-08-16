@@ -166,6 +166,22 @@ STRIPE_MODE = os.getenv('STRIPE_MODE', 'test')  # 'test' or 'live'
 if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.startswith('placeholder_'):
     print("Warning: Using placeholder Stripe credentials. Payments will not work.")
 
+# Wise API Configuration
+# For international bank transfers and currency exchange
+WISE_API_TOKEN = os.getenv('WISE_API_TOKEN', '')
+WISE_API_KEY = WISE_API_TOKEN  # Alias for compatibility
+WISE_PROFILE_ID = os.getenv('WISE_PROFILE_ID', '')
+
+# Use sandbox API for staging/development
+WISE_ENVIRONMENT = os.getenv('WISE_ENVIRONMENT', 'sandbox' if ENVIRONMENT in ['staging', 'development'] else 'live')
+WISE_BASE_URL = 'https://api.sandbox.wise.com' if WISE_ENVIRONMENT == 'sandbox' else 'https://api.wise.com'
+
+# Print warning if Wise is not configured
+if not WISE_API_TOKEN:
+    print("Warning: Wise API token not configured. International transfers will not work.")
+elif WISE_ENVIRONMENT == 'sandbox':
+    print(f"Info: Using Wise Sandbox API for {ENVIRONMENT} environment")
+
 # AWS Settings - COMMENTED OUT (using Auth0 and Render instead)
 # AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'placeholder_aws_key')
 # AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'placeholder_aws_secret')

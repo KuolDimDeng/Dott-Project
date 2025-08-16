@@ -31,6 +31,7 @@ from .views_v2 import (
 
 # Import Wise views
 from .api import wise_views
+from .api.wise_test_view import WiseTestView
 
 # Create router for ViewSets
 router = DefaultRouter()
@@ -71,6 +72,7 @@ urlpatterns = [
     path('wise/account/', wise_views.get_wise_account, name='wise_account'),
     path('wise/quote/', wise_views.get_transfer_quote, name='wise_quote'),
     path('wise/connect/', wise_views.connect_wise_account, name='wise_connect'),
+    path('wise/test/', WiseTestView.as_view(), name='wise_test'),  # Test endpoint for staging
     path('settlements/', wise_views.get_settlements, name='settlements'),
     path('settlements/process/', wise_views.process_manual_settlement, name='process_settlement'),
     

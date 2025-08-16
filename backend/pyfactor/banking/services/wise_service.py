@@ -19,11 +19,14 @@ class WiseService:
     def __init__(self):
         self.api_token = settings.WISE_API_TOKEN
         self.profile_id = settings.WISE_PROFILE_ID
-        self.base_url = "https://api.wise.com"
+        self.base_url = getattr(settings, 'WISE_BASE_URL', "https://api.wise.com")
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json"
         }
+        
+        # Log initialization for debugging
+        logger.info(f"WiseService initialized with base_url: {self.base_url}")
         
     def create_quote(self, source_currency, target_currency, amount, transfer_type="BALANCE"):
         """
