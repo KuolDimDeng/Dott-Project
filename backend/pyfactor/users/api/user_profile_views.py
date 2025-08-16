@@ -185,6 +185,7 @@ class UserProfileMeView(APIView):
                 'show_whatsapp_commerce': profile.get_whatsapp_commerce_preference(),
                 'whatsapp_commerce_explicit': profile.show_whatsapp_commerce,  # Explicit user setting (null if using default)
                 'display_legal_structure': profile.display_legal_structure,
+                'show_zero_stock_pos': profile.show_zero_stock_pos,  # POS preference for zero stock
                 'employee': employee_data,  # Add employee data
                 'request_id': request_id
             }
@@ -243,6 +244,19 @@ class UserProfileMeView(APIView):
             
             # Track if any updates were made
             updated = False
+            
+            # Update show_zero_stock_pos preference if provided
+            if 'show_zero_stock_pos' in request.data:
+                zero_stock_preference = request.data['show_zero_stock_pos']
+                if isinstance(zero_stock_preference, bool):
+                    profile.show_zero_stock_pos = zero_stock_preference
+                    updated = True
+                    logger.info(f"[UserProfileMeView] Updated show_zero_stock_pos to: {zero_stock_preference}")
+                else:
+                    return Response({
+                        'error': 'show_zero_stock_pos must be a boolean',
+                        'request_id': request_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
             
             # Update WhatsApp commerce preference if provided
             if 'show_whatsapp_commerce' in request.data:

@@ -557,6 +557,9 @@ class UserProfile(models.Model):
     # Legal structure display preference
     display_legal_structure = models.BooleanField(default=True, help_text='Whether to show legal structure (LLC, Corp, Ltd) after business name in header')
     
+    # POS preferences
+    show_zero_stock_pos = models.BooleanField(default=False, help_text='Whether to show products with zero stock in POS (for backorders)')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     # Add updated_at field to match database schema

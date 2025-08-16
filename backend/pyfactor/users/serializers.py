@@ -50,7 +50,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'business_data',
             'setup_status',
             'last_setup_attempt',
-            'is_business_owner'  # Added based on model
+            'is_business_owner',  # Added based on model
+            'show_zero_stock_pos'  # POS preference for showing zero stock
         ]
         extra_kwargs = {
             'occupation': {'required': False, 'allow_null': True},

@@ -171,18 +171,70 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const userCurrency = currency?.code || 'USD';
   const currencySymbol = currency?.symbol || '$';
   
-  // Load zero stock preference from localStorage on mount
+  // Load zero stock preference from user profile on mount
   useEffect(() => {
-    const savedPreference = localStorage.getItem('pos_showZeroStock');
-    if (savedPreference !== null) {
-      setShowZeroStock(savedPreference === 'true');
-    }
+    const loadUserPreference = async () => {
+      try {
+        const response = await fetch('/api/users/me/', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.show_zero_stock_pos !== undefined) {
+            setShowZeroStock(userData.show_zero_stock_pos);
+            console.log('[POS] Loaded show_zero_stock_pos preference from profile:', userData.show_zero_stock_pos);
+          }
+        }
+      } catch (error) {
+        console.error('[POS] Error loading user preference:', error);
+        // Fall back to localStorage if API fails
+        const savedPreference = localStorage.getItem('pos_showZeroStock');
+        if (savedPreference !== null) {
+          setShowZeroStock(savedPreference === 'true');
+        }
+      }
+    };
+    
+    loadUserPreference();
   }, []);
   
-  // Save zero stock preference to localStorage when it changes
-  const handleToggleZeroStock = (value) => {
+  // Save zero stock preference to database and localStorage
+  const handleToggleZeroStock = async (value) => {
     setShowZeroStock(value);
+    
+    // Save to localStorage immediately for quick access
     localStorage.setItem('pos_showZeroStock', value.toString());
+    
+    // Save to database
+    try {
+      const response = await fetch('/api/users/me/', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          show_zero_stock_pos: value
+        })
+      });
+      
+      if (response.ok) {
+        console.log('[POS] Successfully saved show_zero_stock_pos preference to database');
+        toast.success(value ? 'Now showing out of stock products' : 'Hiding out of stock products', {
+          duration: 2000,
+          icon: '📦'
+        });
+      } else {
+        console.error('[POS] Failed to save preference to database');
+      }
+    } catch (error) {
+      console.error('[POS] Error saving preference:', error);
+      // localStorage already updated, so preference is at least saved locally
+    }
   };
   
   // Debug currency on component mount
