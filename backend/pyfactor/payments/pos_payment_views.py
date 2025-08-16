@@ -7,6 +7,7 @@ import logging
 import stripe
 from decimal import Decimal
 from django.conf import settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -117,19 +118,14 @@ def create_pos_payment_intent(request):
             # This will be processed by the daily settlement cron job
             settlement = PaymentSettlement.objects.create(
                 user=request.user,
-                payment_intent_id=payment_intent.id,
-                stripe_payment_method='card',
+                stripe_payment_intent_id=payment_intent.id,  # Fixed field name
                 original_amount=Decimal(amount_cents) / 100,
                 stripe_fee=Decimal(stripe_fee_cents) / 100,
                 platform_fee=Decimal(platform_fee_cents) / 100,
                 settlement_amount=Decimal(merchant_receives_cents) / 100,
                 currency=currency.upper(),
-                status='pending',
-                metadata={
-                    'customer_name': customer_name,
-                    'sale_data': sale_data,
-                    'description': description
-                }
+                status='pending'
+                # Note: metadata and stripe_payment_method fields don't exist in model
             )
             
             logger.info(f"[POS Payment] Settlement record created: {settlement.id}")
@@ -201,11 +197,12 @@ def confirm_pos_payment(request):
         # Update settlement record
         try:
             settlement = PaymentSettlement.objects.get(
-                payment_intent_id=payment_intent_id
+                stripe_payment_intent_id=payment_intent_id
             )
-            settlement.status = 'paid'
-            settlement.stripe_payout_status = 'pending'
-            settlement.transaction_id = transaction_id
+            # Update with correct field names from model
+            settlement.status = 'processing'  # Mark as processing (will be completed after Wise transfer)
+            settlement.pos_transaction_id = transaction_id if transaction_id else ''
+            settlement.processed_at = timezone.now()
             settlement.save()
             
             logger.info(f"[POS Payment] Payment confirmed for settlement: {settlement.id}")
