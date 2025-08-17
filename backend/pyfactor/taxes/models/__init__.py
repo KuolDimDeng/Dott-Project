@@ -4,7 +4,7 @@ from .tax_accounting import (
     TaxTransaction,
     TaxPeriodSummary,
     TaxAccountingFiling,
-    TaxSettings as TaxAccountingSettings  # Rename to avoid conflict
+    TaxAccountingSettings
 )
 from .tax_validation import *
 from .tenant_tax_settings import *
