@@ -11,7 +11,8 @@
 - [Calendar/Event Management](#calendarevent-management)
 - [HR Employee Management](#hr-employee-management)
 - [API Integration Issues](#api-integration-issues)
-- [POS System Issues](#pos-system-issues) ⬅️ **NEW**
+  - [Product Edit/Delete Returns 401 Authentication Error](#product-editdelete-returns-401-authentication-error) ⬅️ **NEW**
+- [POS System Issues](#pos-system-issues)
   - [Customers Not Loading in POS Dropdown](#customers-not-loading-in-pos-dropdown)
 - [Performance Issues](#performance-issues)
 
@@ -1252,6 +1253,97 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': None,  # Disable pagination
 }
 ```
+
+---
+
+## 🔧 **Issue: Product Edit/Delete Returns 401 Authentication Error**
+
+**Date Fixed:** August 17, 2025
+
+**Symptoms:**
+- Clicking "Edit" on a product fails with 401 Unauthorized error
+- Deleting products fails with authentication error
+- Console shows: `Error updating product: Error: Failed to update product. Status: 401`
+- Server logs show: `[SERVER ERROR] Missing authentication tokens`
+- Product list and create work fine, only edit/delete fail
+
+**Root Cause Analysis:**
+1. **Authentication Mismatch**: The app uses session-based authentication with `sid` cookies, but the PUT/DELETE handlers in `/api/inventory/products/[id]/route.js` were using JWT-based authentication
+2. **Wrong Auth Method**: The API route was calling `getTokens()` looking for JWT access tokens that don't exist
+3. **Inconsistent Implementation**: Main products route (`/api/inventory/products/route.js`) correctly used session auth, but the `[id]` route didn't
+
+**Solution (Complete Fix):**
+
+1. **Update PUT handler** in `/api/inventory/products/[id]/route.js`:
+```javascript
+// ❌ WRONG - Looking for JWT tokens
+const { accessToken, idToken, tenantId } = await getTokens(request);
+if (!accessToken || !tenantId) {
+  return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+}
+// Using Bearer token
+headers: {
+  'Authorization': `Bearer ${accessToken}`,
+  'X-Id-Token': idToken || '',
+  'X-Tenant-ID': tenantId
+}
+
+// ✅ CORRECT - Use session cookie
+const { cookies } = await import('next/headers');
+const cookieStore = cookies();
+const sidCookie = cookieStore.get('sid');
+
+if (!sidCookie?.value) {
+  return NextResponse.json({ error: 'No session found' }, { status: 401 });
+}
+
+// Use Session authentication
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+const response = await fetch(`${BACKEND_URL}/api/inventory/products/${id}/`, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Session ${sidCookie.value}`,  // Session auth, not Bearer
+  },
+  body: JSON.stringify(productData),
+});
+```
+
+2. **Update DELETE handler** similarly:
+```javascript
+// Same pattern - use cookies().get('sid') and Session auth header
+```
+
+3. **Remove unnecessary frontend headers**:
+```javascript
+// ❌ REMOVE - Not needed with session auth
+headers: {
+  'x-tenant-id': tenantId  // Backend handles tenant isolation via session
+}
+
+// ✅ KEEP SIMPLE
+headers: {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+}
+```
+
+**Key Learnings:**
+- Always check what authentication method the app actually uses (session vs JWT)
+- Ensure consistency across all API routes - if main route uses sessions, all related routes should too
+- The backend Django app expects `Authorization: Session {sid}` header format
+- Session cookies already contain tenant information, no need for extra headers
+
+**Testing:**
+1. Check browser DevTools → Application → Cookies for `sid` cookie
+2. Verify network requests show `Authorization: Session ...` header
+3. Test edit and delete operations on products
+4. Check server logs for successful authentication
+
+**Related Files:**
+- `/frontend/pyfactor_next/src/app/api/inventory/products/[id]/route.js` - Fixed auth method
+- `/frontend/pyfactor_next/src/app/api/inventory/products/route.js` - Reference for correct auth
+- `/frontend/pyfactor_next/src/app/dashboard/components/forms/ProductManagement.js` - Frontend component
 
 ---
 
