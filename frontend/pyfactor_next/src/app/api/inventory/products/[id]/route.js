@@ -198,36 +198,48 @@ export async function PUT(request, { params }) {
     const productData = await request.json();
     logger.debug(`[${requestId}] Product PUT data for ID: ${id}:`, productData);
     
-    // Get authentication tokens - use the proper approach
-    const { accessToken, idToken, tenantId } = await getTokens(request);
+    // Get session cookie for authentication
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    if (!accessToken || !tenantId) {
-      logger.error(`[${requestId}] Missing authentication tokens`);
+    if (!sidCookie?.value) {
+      logger.error(`[${requestId}] Missing session cookie`);
       return NextResponse.json(
-        { error: 'Authentication required' }, 
+        { error: 'No session found' }, 
         { status: 401 }
       );
     }
     
-    logger.info(`[${requestId}] Updating product ${id} for tenant: ${tenantId}`);
+    logger.info(`[${requestId}] Updating product ${id} with session`);
     
-    // Forward the request to the backend API
-    const response = await serverAxiosInstance.put(
-      `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`,
-      productData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'X-Id-Token': idToken || '',
-          'X-Tenant-ID': tenantId,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // Forward the request to the backend API with session auth
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${BACKEND_URL}/api/inventory/products/${id}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+      body: JSON.stringify(productData),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      logger.error(`[${requestId}] Backend error: ${response.status} - ${data.detail || data.error}`);
+      return NextResponse.json(
+        {
+          error: data.detail || data.error || 'Failed to update product',
+          message: data.message || `Failed to update product`
+        },
+        { status: response.status }
+      );
+    }
     
     logger.info(`[${requestId}] Product ${id} updated successfully`);
     
-    return NextResponse.json(response.data);
+    return NextResponse.json(data);
     
   } catch (error) {
     logger.error(`[${requestId}] Error updating product ${id}: ${error.message}`, error);
@@ -266,59 +278,70 @@ export async function DELETE(request, { params }) {
   console.log('🔴 [API DELETE] === START DELETE REQUEST ===');
   console.log(`🔴 [API DELETE] Request ID: ${requestId}`);
   console.log(`🔴 [API DELETE] Product ID: ${id}`);
-  console.log(`🔴 [API DELETE] Request headers:`, request.headers);
   
   logger.info(`[${requestId}] DELETE /api/inventory/products/${id} - Start processing request`);
   
   try {
-    console.log('🔴 [API DELETE] Step 1: Getting authentication tokens...');
-    // Get authentication tokens - use the proper approach
-    const { accessToken, idToken, tenantId } = await getTokens(request);
+    console.log('🔴 [API DELETE] Step 1: Getting session cookie...');
+    // Get session cookie for authentication
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    console.log('🔴 [API DELETE] Step 2: Auth tokens retrieved:', {
-      hasAccessToken: !!accessToken,
-      hasIdToken: !!idToken,
-      tenantId: tenantId,
-      accessTokenLength: accessToken ? accessToken.length : 0
+    console.log('🔴 [API DELETE] Step 2: Session check:', {
+      hasSession: !!sidCookie?.value,
+      sessionLength: sidCookie?.value ? sidCookie.value.length : 0
     });
     
-    if (!accessToken || !tenantId) {
-      console.error('🔴 [API DELETE] ❌ Missing authentication tokens');
-      logger.error(`[${requestId}] Missing authentication tokens`);
+    if (!sidCookie?.value) {
+      console.error('🔴 [API DELETE] ❌ Missing session cookie');
+      logger.error(`[${requestId}] Missing session cookie`);
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'No session found' },
         { status: 401 }
       );
     }
     
     // Construct backend URL
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`;
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/api/inventory/products/${id}/`;
     console.log(`🔴 [API DELETE] Step 3: Backend URL: ${backendUrl}`);
     
-    logger.info(`[${requestId}] Deleting product ${id} for tenant: ${tenantId}`);
+    logger.info(`[${requestId}] Deleting product ${id} with session`);
     
     console.log('🔴 [API DELETE] Step 4: Sending DELETE to backend...');
     console.log('🔴 [API DELETE] Headers being sent:', {
-      Authorization: `Bearer ${accessToken.substring(0, 20)}...`,
-      'X-Id-Token': idToken ? `${idToken.substring(0, 20)}...` : 'none',
-      'X-Tenant-ID': tenantId
+      Authorization: `Session ${sidCookie.value.substring(0, 20)}...`
     });
     
-    // Forward the request to the backend API
-    const response = await serverAxiosInstance.delete(
-      backendUrl,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'X-Id-Token': idToken || '',
-          'X-Tenant-ID': tenantId
-        }
+    // Forward the request to the backend API with session auth
+    const response = await fetch(backendUrl, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       }
-    );
+    });
     
     console.log('🔴 [API DELETE] Step 5: Backend response received');
     console.log('🔴 [API DELETE] Response status:', response.status);
-    console.log('🔴 [API DELETE] Response data:', response.data);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('🔴 [API DELETE] Backend error:', errorData);
+      logger.error(`[${requestId}] Backend error: ${response.status} - ${errorData.detail || errorData.error}`);
+      
+      return NextResponse.json(
+        {
+          error: errorData.detail || errorData.error || 'Failed to delete product',
+          message: errorData.message || `Failed to delete product`
+        },
+        { status: response.status }
+      );
+    }
+    
+    const data = await response.json();
+    console.log('🔴 [API DELETE] Response data:', data);
     
     logger.info(`[${requestId}] Product ${id} deleted successfully`);
     
