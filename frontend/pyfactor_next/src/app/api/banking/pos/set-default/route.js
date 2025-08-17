@@ -1,5 +1,5 @@
-import { handleApiRequest } from '@/utils/api';
+import { proxyToBackend } from '@/lib/auth/api-auth';
 
 export async function POST(request) {
-  return handleApiRequest(request, 'banking/pos/set-default/', 'POST');
+  return proxyToBackend('banking/pos/set-default/', request);
 }
