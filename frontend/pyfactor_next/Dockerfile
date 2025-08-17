@@ -3,7 +3,7 @@
 # Cache bust: 2025-08-14-v2-fix-currency-display
 # ========================================
 FROM node:18-alpine AS base
-ARG CACHEBUST=2025-08-14-v2
+ARG CACHEBUST=2025-08-17-1413-stripe-fix
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0

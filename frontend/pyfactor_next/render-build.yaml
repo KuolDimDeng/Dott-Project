@@ -1,0 +1,21 @@
+# This file documents the required build arguments for Render
+# These must be configured in Render Dashboard under Environment Variables
+
+# Required build-time environment variables:
+build_args:
+  - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  - NEXT_PUBLIC_API_URL
+  - NEXT_PUBLIC_BASE_URL
+  - NEXT_PUBLIC_AUTH0_DOMAIN
+  - NEXT_PUBLIC_AUTH0_CLIENT_ID
+  - NEXT_PUBLIC_AUTH0_AUDIENCE
+  - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  - NEXT_PUBLIC_CRISP_WEBSITE_ID
+  - NEXT_PUBLIC_POSTHOG_KEY
+  - NEXT_PUBLIC_POSTHOG_HOST
+  - NEXT_PUBLIC_SENTRY_DSN
+  - NEXT_PUBLIC_PLAID_ENV
+
+# Note: In Render, these variables must be set as both:
+# 1. Environment Variables (for runtime)
+# 2. Available during build (Docker build args)
