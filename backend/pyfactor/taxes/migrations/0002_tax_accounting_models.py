@@ -1,0 +1,220 @@
+# Generated manually for tax accounting models
+from django.db import migrations, models
+import django.db.models.deletion
+import uuid
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('taxes', '0001_initial'),
+        ('finance', '0001_initial'),
+        ('users', '0001_initial'),
+        ('custom_auth', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='TaxAccount',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('tenant_id', models.UUIDField(db_index=True)),
+                ('name', models.CharField(help_text="e.g., 'Sales Tax Payable - California'", max_length=200)),
+                ('account_number', models.CharField(help_text="GL account number, e.g., '2150'", max_length=20)),
+                ('tax_type', models.CharField(choices=[('SALES_TAX', 'Sales Tax'), ('VAT', 'Value Added Tax'), ('GST', 'Goods and Services Tax'), ('EXCISE', 'Excise Tax'), ('USE_TAX', 'Use Tax'), ('PAYROLL_TAX', 'Payroll Tax'), ('INCOME_TAX', 'Income Tax Withholding')], max_length=20)),
+                ('jurisdiction_level', models.CharField(choices=[('FEDERAL', 'Federal'), ('STATE', 'State'), ('COUNTY', 'County'), ('CITY', 'City'), ('DISTRICT', 'Special District')], max_length=20)),
+                ('jurisdiction_name', models.CharField(help_text="e.g., 'California', 'Los Angeles County'", max_length=100)),
+                ('jurisdiction_code', models.CharField(blank=True, help_text='State/county/city code', max_length=20)),
+                ('tax_rate', models.DecimalField(decimal_places=4, help_text='Current tax rate (e.g., 0.095 for 9.5%)', max_digits=6, validators=[MinValueValidator(0), MaxValueValidator(1)])),
+                ('effective_date', models.DateField(help_text='When this tax rate became effective')),
+                ('end_date', models.DateField(blank=True, help_text='When this tax rate ends (if known)', null=True)),
+                ('filing_frequency', models.CharField(choices=[('MONTHLY', 'Monthly'), ('QUARTERLY', 'Quarterly'), ('SEMI_ANNUAL', 'Semi-Annual'), ('ANNUAL', 'Annual')], default='MONTHLY', max_length=20)),
+                ('filing_due_day', models.IntegerField(default=20, help_text='Day of month when filing is due', validators=[MinValueValidator(1), MaxValueValidator(31)])),
+                ('tax_agency_name', models.CharField(blank=True, max_length=200)),
+                ('tax_agency_id', models.CharField(blank=True, help_text='Your tax ID with this agency', max_length=50)),
+                ('is_active', models.BooleanField(default=True)),
+                ('is_destination_based', models.BooleanField(default=False, help_text="True if tax rate depends on buyer's location")),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('chart_account', models.ForeignKey(help_text='Link to Chart of Accounts', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_accounts', to='finance.chartofaccount')),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_accounts_created', to='users.user')),
+            ],
+            options={
+                'ordering': ['jurisdiction_level', 'jurisdiction_name', 'name'],
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
+            name='TaxAccountingFiling',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('tenant_id', models.UUIDField(db_index=True)),
+                ('filing_date', models.DateField()),
+                ('period_start', models.DateField()),
+                ('period_end', models.DateField()),
+                ('filing_type', models.CharField(choices=[('REGULAR', 'Regular Filing'), ('AMENDED', 'Amended Return'), ('FINAL', 'Final Return')], default='REGULAR', max_length=20)),
+                ('gross_sales', models.DecimalField(decimal_places=2, max_digits=15)),
+                ('taxable_sales', models.DecimalField(decimal_places=2, max_digits=15)),
+                ('non_taxable_sales', models.DecimalField(decimal_places=2, default=0, max_digits=15)),
+                ('tax_collected', models.DecimalField(decimal_places=2, max_digits=12)),
+                ('tax_due', models.DecimalField(decimal_places=2, max_digits=12)),
+                ('prior_period_adjustment', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('vendor_discount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('penalties', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('interest', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('confirmation_number', models.CharField(blank=True, max_length=100)),
+                ('filing_method', models.CharField(choices=[('ELECTRONIC', 'Electronic Filing'), ('PAPER', 'Paper Filing'), ('ONLINE', 'Online Portal')], default='ELECTRONIC', max_length=20)),
+                ('payment_date', models.DateField(blank=True, null=True)),
+                ('payment_amount', models.DecimalField(blank=True, decimal_places=2, max_digits=12, null=True)),
+                ('payment_method', models.CharField(blank=True, choices=[('ACH', 'ACH Transfer'), ('CHECK', 'Check'), ('CREDIT_CARD', 'Credit Card'), ('WIRE', 'Wire Transfer')], max_length=20)),
+                ('payment_confirmation', models.CharField(blank=True, max_length=100)),
+                ('filing_documents', models.JSONField(default=dict, help_text='Paths to filed documents, receipts, etc.')),
+                ('is_amended', models.BooleanField(default=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('notes', models.TextField(blank=True)),
+                ('amended_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='amendments', to='taxes.taxaccountingfiling')),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_filings_created', to='users.user')),
+                ('tax_account', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='filings', to='taxes.taxaccount')),
+            ],
+            options={
+                'ordering': ['-filing_date', '-period_end'],
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
+            name='TaxTransaction',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('tenant_id', models.UUIDField(db_index=True)),
+                ('transaction_date', models.DateTimeField()),
+                ('source_type', models.CharField(choices=[('POS', 'Point of Sale'), ('INVOICE', 'Invoice'), ('MANUAL', 'Manual Entry'), ('IMPORT', 'Imported'), ('ADJUSTMENT', 'Adjustment')], max_length=20)),
+                ('source_id', models.UUIDField(help_text='ID of source transaction (POS sale, Invoice, etc.)')),
+                ('source_reference', models.CharField(blank=True, help_text='Transaction number for reference', max_length=50)),
+                ('tax_collected', models.DecimalField(decimal_places=2, max_digits=12)),
+                ('tax_rate_applied', models.DecimalField(decimal_places=4, help_text='Actual rate applied to this transaction', max_digits=6)),
+                ('taxable_amount', models.DecimalField(decimal_places=2, help_text='Base amount tax was calculated on', max_digits=12)),
+                ('customer_name', models.CharField(max_length=200)),
+                ('customer_id', models.UUIDField(blank=True, null=True)),
+                ('customer_location', models.JSONField(default=dict, help_text='Customer address used for tax calculation')),
+                ('is_exempt', models.BooleanField(default=False)),
+                ('exemption_reason', models.CharField(blank=True, max_length=100)),
+                ('exemption_certificate', models.CharField(blank=True, max_length=50)),
+                ('status', models.CharField(choices=[('COLLECTED', 'Tax Collected'), ('ACCRUED', 'Tax Accrued'), ('FILED', 'Included in Filing'), ('PAID', 'Paid to Authority'), ('ADJUSTED', 'Adjusted'), ('REVERSED', 'Reversed')], default='COLLECTED', max_length=20)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('notes', models.TextField(blank=True)),
+                ('journal_entry', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_transactions', to='finance.journalentry')),
+                ('tax_account', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='transactions', to='taxes.taxaccount')),
+                ('tax_filing', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='transactions', to='taxes.taxaccountingfiling')),
+            ],
+            options={
+                'ordering': ['-transaction_date'],
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
+            name='TaxPeriodSummary',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('tenant_id', models.UUIDField(db_index=True)),
+                ('period_start', models.DateField()),
+                ('period_end', models.DateField()),
+                ('total_sales', models.DecimalField(decimal_places=2, default=0, max_digits=15)),
+                ('taxable_sales', models.DecimalField(decimal_places=2, default=0, max_digits=15)),
+                ('non_taxable_sales', models.DecimalField(decimal_places=2, default=0, max_digits=15)),
+                ('exempt_sales', models.DecimalField(decimal_places=2, default=0, max_digits=15)),
+                ('tax_collected', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('tax_adjustments', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('tax_paid', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('tax_due', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('transaction_count', models.IntegerField(default=0)),
+                ('exempt_transaction_count', models.IntegerField(default=0)),
+                ('filing_status', models.CharField(choices=[('PENDING', 'Pending'), ('READY', 'Ready to File'), ('FILED', 'Filed'), ('PAID', 'Paid'), ('OVERDUE', 'Overdue')], default='PENDING', max_length=20)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('last_calculated', models.DateTimeField(blank=True, null=True)),
+                ('tax_account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='period_summaries', to='taxes.taxaccount')),
+            ],
+            options={
+                'ordering': ['-period_end', 'tax_account'],
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
+            name='TaxSettings',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('tenant_id', models.UUIDField(db_index=True)),
+                ('federal_tax_id', models.CharField(blank=True, help_text='EIN or Federal Tax ID', max_length=20)),
+                ('state_tax_id', models.CharField(blank=True, max_length=50)),
+                ('state_sales_tax_permit', models.CharField(blank=True, max_length=50)),
+                ('auto_calculate_tax', models.BooleanField(default=True)),
+                ('include_tax_in_price', models.BooleanField(default=False, help_text='Tax-inclusive pricing')),
+                ('round_tax_at_line_item', models.BooleanField(default=False, help_text='Round tax per line vs. total')),
+                ('tax_filing_frequency', models.CharField(choices=[('MONTHLY', 'Monthly'), ('QUARTERLY', 'Quarterly'), ('ANNUAL', 'Annual')], default='MONTHLY', max_length=20)),
+                ('tax_year_end_month', models.IntegerField(default=12, validators=[MinValueValidator(1), MaxValueValidator(12)])),
+                ('has_multi_state_nexus', models.BooleanField(default=False)),
+                ('nexus_states', models.JSONField(blank=True, default=list)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('business', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='tax_settings', to='users.business')),
+                ('default_sales_tax_account', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='default_for_businesses', to='taxes.taxaccount')),
+            ],
+            options={
+                'verbose_name': 'Tax Settings',
+                'verbose_name_plural': 'Tax Settings',
+                'abstract': False,
+            },
+        ),
+        # Add indexes
+        migrations.AddIndex(
+            model_name='taxaccount',
+            index=models.Index(fields=['tenant_id', 'tax_type'], name='taxes_taxac_tenant__idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxaccount',
+            index=models.Index(fields=['tenant_id', 'jurisdiction_name'], name='taxes_taxac_tenant_juris_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxaccount',
+            index=models.Index(fields=['tenant_id', 'is_active'], name='taxes_taxac_tenant_active_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxtransaction',
+            index=models.Index(fields=['tenant_id', 'transaction_date'], name='taxes_taxtrans_tenant_date_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxtransaction',
+            index=models.Index(fields=['tenant_id', 'tax_account', 'status'], name='taxes_taxtrans_tenant_acc_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxtransaction',
+            index=models.Index(fields=['tenant_id', 'source_type', 'source_id'], name='taxes_taxtrans_tenant_src_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxperiodsummary',
+            index=models.Index(fields=['tenant_id', 'period_start', 'period_end'], name='taxes_taxperiod_tenant_period_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxperiodsummary',
+            index=models.Index(fields=['tenant_id', 'tax_account', 'filing_status'], name='taxes_taxperiod_tenant_status_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxaccountingfiling',
+            index=models.Index(fields=['tenant_id', 'filing_date'], name='taxes_taxfiling_tenant_date_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='taxaccountingfiling',
+            index=models.Index(fields=['tenant_id', 'tax_account', 'period_start', 'period_end'], name='taxes_taxfiling_tenant_period_idx'),
+        ),
+        # Add constraints
+        migrations.AddConstraint(
+            model_name='taxaccount',
+            constraint=models.UniqueConstraint(fields=['tenant_id', 'account_number'], name='unique_tax_account_number_per_tenant'),
+        ),
+        migrations.AddConstraint(
+            model_name='taxperiodsummary',
+            constraint=models.UniqueConstraint(fields=['tenant_id', 'tax_account', 'period_start', 'period_end'], name='unique_tax_period_per_account'),
+        ),
+    ]
