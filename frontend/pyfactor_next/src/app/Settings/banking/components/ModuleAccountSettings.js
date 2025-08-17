@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
  * Module Account Settings Component
  * Shows each payment module and allows selecting which bank account to use
  */
-export default function ModuleAccountSettings({ bankAccounts, onUpdate }) {
+export default function ModuleAccountSettings({ bankAccounts, onUpdate, onAccountsUpdate }) {
   const [settings, setSettings] = useState({
     pos: null,
     invoices: null,
@@ -122,17 +122,28 @@ export default function ModuleAccountSettings({ bankAccounts, onUpdate }) {
         const data = await response.json();
         toast.success(data.message || `${moduleId} default account updated`);
         
-        // Update local state
+        // Update local state optimistically
         setSettings(prev => ({
           ...prev,
           [moduleId]: accountId
         }));
 
-        // Notify parent to refresh after a short delay to allow backend to update
-        if (onUpdate) {
-          setTimeout(() => {
-            onUpdate();
-          }, 1000); // 1 second delay
+        // Update parent's bank accounts to reflect the change
+        if (onAccountsUpdate && bankAccounts) {
+          const fieldMap = {
+            'pos': 'is_default_for_pos',
+            'invoices': 'is_default_for_invoices',
+            'payroll': 'is_default_for_payroll',
+            'expenses': 'is_default_for_expenses',
+            'vendors': 'is_default_for_vendors'
+          };
+          
+          const updatedAccounts = bankAccounts.map(acc => ({
+            ...acc,
+            [fieldMap[moduleId]]: acc.id === accountId
+          }));
+          
+          onAccountsUpdate(updatedAccounts);
         }
       } else {
         const errorData = await response.json().catch(() => ({}));

@@ -242,7 +242,7 @@ export default function BankingDashboard() {
    */
   const fetchBankConnections = async () => {
     try {
-      const response = await fetch('/api/banking/connections/', {
+      const response = await fetch('/api/banking/connections', {  // Removed trailing slash
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -458,6 +458,7 @@ export default function BankingDashboard() {
               <ModuleAccountSettings
                 bankAccounts={bankConnections}
                 onUpdate={fetchBankConnections}
+                onAccountsUpdate={setBankConnections}
               />
             </div>
           )}
