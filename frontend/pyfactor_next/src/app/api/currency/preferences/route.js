@@ -120,3 +120,47 @@ export async function POST(request) {
     );
   }
 }
+
+export async function PUT(request) {
+  try {
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie?.value) {
+      return handleAuthError();
+    }
+
+    const body = await request.json();
+    
+    const response = await fetch(`${API_BASE_URL}/api/currency/preferences`, {
+      method: 'PUT',
+      headers: {
+        'Cookie': `sid=${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { success: false, error: errorData.error || 'Failed to update currency preferences' },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json({
+      success: true,
+      data: data
+    });
+
+  } catch (error) {
+    console.error('[Currency API] Update error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update currency preferences' },
+      { status: 500 }
+    );
+  }
+}
