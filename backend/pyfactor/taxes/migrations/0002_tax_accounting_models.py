@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('chart_account', models.ForeignKey(help_text='Link to Chart of Accounts', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_accounts', to='finance.chartofaccount')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_accounts_created', to='users.user')),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_accounts_created', to='custom_auth.user')),
             ],
             options={
                 'ordering': ['jurisdiction_level', 'jurisdiction_name', 'name'],
@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('notes', models.TextField(blank=True)),
                 ('amended_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='amendments', to='taxes.taxaccountingfiling')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_filings_created', to='users.user')),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tax_filings_created', to='custom_auth.user')),
                 ('tax_account', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='filings', to='taxes.taxaccount')),
             ],
             options={
