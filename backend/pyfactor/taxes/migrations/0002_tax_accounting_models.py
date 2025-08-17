@@ -142,7 +142,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='TaxSettings',
+            name='TaxAccountingSettings',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('tenant_id', models.UUIDField(db_index=True)),

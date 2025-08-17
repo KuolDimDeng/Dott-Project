@@ -407,9 +407,9 @@ class TaxPostingService:
             # First try to get from business settings
             from users.models import Business
             business = Business.objects.filter(tenant_id=tenant_id).first()
-            if business and hasattr(business, 'tax_settings'):
-                if business.tax_settings.default_sales_tax_account:
-                    return business.tax_settings.default_sales_tax_account
+            if business and hasattr(business, 'tax_accounting_settings'):
+                if business.tax_accounting_settings.default_sales_tax_account:
+                    return business.tax_accounting_settings.default_sales_tax_account
             
             # Otherwise get the first active sales tax account
             return TaxAccount.objects.filter(

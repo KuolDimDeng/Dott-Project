@@ -433,7 +433,7 @@ class TaxAccountingFiling(TenantAwareModel):
         return f"{self.tax_account.name} - {self.period_start} to {self.period_end} - Filed {self.filing_date}"
 
 
-class TaxSettings(TenantAwareModel):
+class TaxAccountingSettings(TenantAwareModel):
     """
     Business-level tax configuration and settings.
     """
