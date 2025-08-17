@@ -12,17 +12,10 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { CreditCardIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { needsCurrencyConversion, getCachedExchangeRate, convertToUSD, formatCurrency } from '@/utils/currencyUtils';
+import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from '@/utils/stripeConfig';
 
-// Get Stripe key - in Next.js, this needs to be available at build time
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-
-// Log for debugging (remove in production)
-if (typeof window !== 'undefined' && !stripeKey) {
-  console.warn('[StripePaymentModal] Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable');
-}
-
-// Initialize Stripe only if key exists
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
+// Initialize Stripe with key from config utility
+const stripePromise = isStripeConfigured() ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 // Card element options
 const CARD_ELEMENT_OPTIONS = {
@@ -364,7 +357,41 @@ export default function StripePaymentModal({
   currencyCode,
   currencySymbol 
 }) {
+  const [stripeLoaded, setStripeLoaded] = useState(false);
+  const [dynamicStripePromise, setDynamicStripePromise] = useState(stripePromise);
+  
+  useEffect(() => {
+    // Listen for runtime config updates
+    const handleRuntimeConfig = (event) => {
+      const config = event.detail;
+      if (config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && !stripePromise) {
+        // Load Stripe dynamically with runtime key
+        const promise = loadStripe(config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+        setDynamicStripePromise(promise);
+        setStripeLoaded(true);
+        console.log('[StripePaymentModal] Stripe loaded with runtime config');
+      }
+    };
+    
+    window.addEventListener('runtime-config-loaded', handleRuntimeConfig);
+    
+    // Check if config already loaded
+    if (window.__RUNTIME_CONFIG__ && window.__RUNTIME_CONFIG__.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && !stripePromise) {
+      const promise = loadStripe(window.__RUNTIME_CONFIG__.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      setDynamicStripePromise(promise);
+      setStripeLoaded(true);
+    } else if (stripePromise) {
+      setStripeLoaded(true);
+    }
+    
+    return () => {
+      window.removeEventListener('runtime-config-loaded', handleRuntimeConfig);
+    };
+  }, []);
+  
   if (!isOpen) return null;
+  
+  const activeStripePromise = dynamicStripePromise || stripePromise;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -389,8 +416,8 @@ export default function StripePaymentModal({
 
           {/* Content */}
           <div className="p-6">
-            {stripePromise ? (
-              <Elements stripe={stripePromise}>
+            {activeStripePromise ? (
+              <Elements stripe={activeStripePromise}>
                 <PaymentForm
                   amount={amount}
                   onSuccess={onSuccess}
