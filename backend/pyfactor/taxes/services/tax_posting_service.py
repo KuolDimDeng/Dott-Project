@@ -1,6 +1,19 @@
 """
 Tax Posting Service
 Handles automatic creation of journal entries for tax transactions
+
+Flow for POS Sales:
+1. POS sale is made → tax rate is fetched from GlobalSalesTaxRate table based on location
+2. Tax is calculated using that rate and stored in pos_transaction.tax_total
+3. The jurisdiction info (state, county, rate) is stored in pos_transaction.tax_jurisdiction
+4. When posting to accounting, this service:
+   - Uses the tax rate and jurisdiction from the POS transaction
+   - Creates/finds the appropriate tax liability account for that jurisdiction
+   - Posts journal entries: Debit Cash, Credit Revenue, Credit Tax Payable
+5. Tax transactions are tracked for reporting and filing
+
+Flow for Invoices:
+Similar to POS but tax is accrued (not yet collected) until invoice is paid
 """
 import logging
 from decimal import Decimal
@@ -9,6 +22,10 @@ from django.utils import timezone
 from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount
 from taxes.models import TaxAccount, TaxTransaction
 from sales.models import POSTransaction, Invoice
+try:
+    from taxes.models import GlobalSalesTaxRate
+except ImportError:
+    GlobalSalesTaxRate = None
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +57,10 @@ class TaxPostingService:
                 # Get or create default accounts
                 cash_account = self._get_cash_account(pos_transaction.tenant_id)
                 revenue_account = self._get_revenue_account(pos_transaction.tenant_id)
-                tax_account = self._get_default_tax_account(pos_transaction.tenant_id)
+                
+                # Get or create tax account based on the POS transaction's jurisdiction
+                # This uses the tax rate that was already pulled from GlobalSalesTaxRate during POS sale
+                tax_account = self._get_or_create_tax_account_from_pos(pos_transaction)
                 
                 if not all([cash_account, revenue_account, tax_account]):
                     self.logger.error(f"Missing required accounts for tenant {pos_transaction.tenant_id}")
@@ -399,6 +419,76 @@ class TaxPostingService:
             ).first()
         except:
             return None
+    
+    def _get_or_create_tax_account_from_pos(self, pos_transaction):
+        """
+        Get or create a tax account based on the POS transaction's tax jurisdiction.
+        The POS transaction already has the tax rate from GlobalSalesTaxRate.
+        """
+        try:
+            # Extract jurisdiction info from POS transaction
+            # The tax_jurisdiction field stores the location and rate used
+            jurisdiction_data = pos_transaction.tax_jurisdiction or {}
+            
+            # Try to find existing tax account for this jurisdiction
+            tax_account = TaxAccount.objects.filter(
+                tenant_id=pos_transaction.tenant_id,
+                tax_type='SALES_TAX',
+                jurisdiction_name=jurisdiction_data.get('state', 'Default'),
+                is_active=True
+            ).first()
+            
+            if not tax_account:
+                # Create a new tax account for this jurisdiction
+                # Get or create the chart of accounts entry for tax payable
+                tax_payable_coa = ChartOfAccount.objects.filter(
+                    tenant_id=pos_transaction.tenant_id,
+                    category__code__in=['2150', '2151', '2152'],  # Sales Tax Payable codes
+                    is_active=True
+                ).first()
+                
+                if not tax_payable_coa:
+                    # Create a default sales tax payable account
+                    from finance.models import AccountCategory
+                    category = AccountCategory.objects.filter(
+                        code='2150'  # Sales Tax Payable
+                    ).first()
+                    
+                    if category:
+                        tax_payable_coa = ChartOfAccount.objects.create(
+                            tenant_id=pos_transaction.tenant_id,
+                            account_number='2150',
+                            name='Sales Tax Payable',
+                            category=category,
+                            is_active=True
+                        )
+                
+                # Create the tax account
+                tax_account = TaxAccount.objects.create(
+                    tenant_id=pos_transaction.tenant_id,
+                    name=f"Sales Tax - {jurisdiction_data.get('state', 'Default')}",
+                    account_number='2150',
+                    tax_type='SALES_TAX',
+                    jurisdiction_level='STATE' if jurisdiction_data.get('state') else 'FEDERAL',
+                    jurisdiction_name=jurisdiction_data.get('state', 'Default'),
+                    jurisdiction_code=jurisdiction_data.get('state_code', ''),
+                    tax_rate=self._get_tax_rate_decimal(pos_transaction),
+                    effective_date=timezone.now().date(),
+                    filing_frequency='MONTHLY',
+                    filing_due_day=20,
+                    chart_account=tax_payable_coa,
+                    tax_agency_name=f"{jurisdiction_data.get('state', 'Default')} Department of Revenue",
+                    is_active=True
+                )
+                
+                self.logger.info(f"Created new tax account for {jurisdiction_data.get('state', 'Default')}")
+            
+            return tax_account
+            
+        except Exception as e:
+            self.logger.error(f"Error getting/creating tax account: {str(e)}")
+            # Fall back to default tax account
+            return self._get_default_tax_account(pos_transaction.tenant_id)
     
     def _get_tax_rate(self, pos_transaction):
         """Get tax rate as percentage from POS transaction"""

@@ -178,20 +178,23 @@ class PayrollFeeCalculator:
         #     rates['employee_medicare_rate'] = payroll_tax.employee_medicare_rate * 100
         #     rates['employer_medicare_rate'] = payroll_tax.employer_medicare_rate * 100
             
-            # Add other taxes to the general rate
-            employee_other = (payroll_tax.employee_unemployment_rate + payroll_tax.employee_other_rate) * 100
-            employer_other = (payroll_tax.employer_unemployment_rate + payroll_tax.employer_other_rate) * 100
-            
-            rates['employee_rate'] = employee_other
-            rates['employer_rate'] = employer_other
+        #     # Add other taxes to the general rate
+        #     employee_other = (payroll_tax.employee_unemployment_rate + payroll_tax.employee_other_rate) * 100
+        #     employer_other = (payroll_tax.employer_unemployment_rate + payroll_tax.employer_other_rate) * 100
+        #     
+        #     rates['employee_rate'] = employee_other
+        #     rates['employer_rate'] = employer_other
         
         # Apply tenant overrides if available
-        if self.tenant:
-            tenant_settings = TenantTaxSettings.objects.filter(tenant=self.tenant).first()
-            if tenant_settings:
-                if tenant_settings.payroll_employee_rate is not None:
-                    rates['employee_rate'] = tenant_settings.payroll_employee_rate
-                if tenant_settings.payroll_employer_rate is not None:
-                    rates['employer_rate'] = tenant_settings.payroll_employer_rate
+        if self.tenant and TenantTaxSettings:
+            try:
+                tenant_settings = TenantTaxSettings.objects.filter(tenant=self.tenant).first()
+                if tenant_settings:
+                    if hasattr(tenant_settings, 'payroll_employee_rate') and tenant_settings.payroll_employee_rate is not None:
+                        rates['employee_rate'] = tenant_settings.payroll_employee_rate
+                    if hasattr(tenant_settings, 'payroll_employer_rate') and tenant_settings.payroll_employer_rate is not None:
+                        rates['employer_rate'] = tenant_settings.payroll_employer_rate
+            except Exception as e:
+                logger.warning(f"Error getting tenant tax settings: {e}")
         
         return rates

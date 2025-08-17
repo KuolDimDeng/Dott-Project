@@ -3,7 +3,7 @@ from .tax_accounting import (
     TaxAccount,
     TaxTransaction,
     TaxPeriodSummary,
-    TaxFiling,
+    TaxAccountingFiling,
     TaxSettings
 )
 from .tax_validation import *
@@ -13,6 +13,6 @@ __all__ = [
     'TaxAccount',
     'TaxTransaction', 
     'TaxPeriodSummary',
-    'TaxFiling',
+    'TaxAccountingFiling',
     'TaxSettings',
 ]

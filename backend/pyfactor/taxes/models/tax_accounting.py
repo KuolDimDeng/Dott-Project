@@ -196,7 +196,7 @@ class TaxTransaction(TenantAwareModel):
     # Status and Filing
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='COLLECTED')
     tax_filing = models.ForeignKey(
-        'TaxFiling',
+        'TaxAccountingFiling',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -348,7 +348,7 @@ class TaxPeriodSummary(TenantAwareModel):
         self.save()
 
 
-class TaxFiling(TenantAwareModel):
+class TaxAccountingFiling(TenantAwareModel):
     """
     Record of actual tax filings submitted to authorities.
     """

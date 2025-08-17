@@ -11,12 +11,11 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from taxes.models import TaxAccount, TaxTransaction, TaxPeriodSummary, TaxFiling
+from taxes.models import TaxAccount, TaxTransaction, TaxPeriodSummary, TaxAccountingFiling
 from taxes.serializers import (
     TaxAccountSerializer,
     TaxTransactionSerializer,
-    TaxPeriodSummarySerializer,
-    TaxFilingSerializer
+    TaxPeriodSummarySerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -177,7 +176,7 @@ def create_tax_filing(request):
         )
         
         # Create filing
-        filing = TaxFiling.objects.create(
+        filing = TaxAccountingFiling.objects.create(
             tenant_id=request.user.tenant_id,
             filing_date=timezone.now().date(),
             period_start=datetime.strptime(data['period_start'], '%Y-%m-%d').date(),
@@ -218,12 +217,17 @@ def create_tax_filing(request):
         except TaxPeriodSummary.DoesNotExist:
             pass
         
-        serializer = TaxFilingSerializer(filing)
-        
         return Response({
             'success': True,
             'message': f'Tax filing created for {tax_account.name}',
-            'filing': serializer.data
+            'filing': {
+                'id': str(filing.id),
+                'filing_date': filing.filing_date.isoformat(),
+                'period_start': filing.period_start.isoformat(),
+                'period_end': filing.period_end.isoformat(),
+                'tax_collected': float(filing.tax_collected),
+                'tax_due': float(filing.tax_due)
+            }
         })
         
     except TaxAccount.DoesNotExist:
