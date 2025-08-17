@@ -59,7 +59,7 @@ with connection.cursor() as cursor:
         if rows:
             print("\nRecent settlements (raw query):")
             for row in rows:
-                print(f"  ID: {row[0][:8]}...")
+                print(f"  ID: {str(row[0])[:8]}...")
                 print(f"  User ID: {row[1]}")
                 print(f"  Tenant ID: {row[2]}")
                 print(f"  Status: {row[3]}")
@@ -135,7 +135,7 @@ with connection.cursor() as cursor:
             """)
             print("\nPOS default accounts:")
             for row in cursor.fetchall():
-                print(f"  ID: {row[0][:8]}...")
+                print(f"  ID: {str(row[0])[:8]}...")
                 print(f"  User ID: {row[1]}")
                 print(f"  Bank: {row[2]}")
                 print(f"  Verified: {row[3]}")
