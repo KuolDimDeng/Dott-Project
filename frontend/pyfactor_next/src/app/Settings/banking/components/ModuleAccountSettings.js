@@ -45,7 +45,15 @@ export default function ModuleAccountSettings({ bankAccounts, onUpdate }) {
         if (account.is_default_for_vendors) newSettings.vendors = account.id;
       });
 
-      setSettings(newSettings);
+      // Only update if settings actually changed to prevent resetting during saves
+      setSettings(prev => {
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(newSettings);
+        if (hasChanged) {
+          console.log('[ModuleAccountSettings] Settings changed from:', prev, 'to:', newSettings);
+          return newSettings;
+        }
+        return prev;
+      });
     }
   }, [bankAccounts]);
 
@@ -97,6 +105,8 @@ export default function ModuleAccountSettings({ bankAccounts, onUpdate }) {
 
     setSaving(moduleId);
     console.log(`[ModuleAccountSettings] Setting ${moduleId} default to account ${accountId}`);
+    console.log(`[ModuleAccountSettings] Current settings:`, settings);
+    console.log(`[ModuleAccountSettings] Available accounts:`, bankAccounts?.map(a => ({id: a.id, name: a.bank_name, is_default_for_pos: a.is_default_for_pos})));
 
     try {
       const response = await fetch(`/api/banking/${moduleId}/set-default`, {
@@ -118,9 +128,11 @@ export default function ModuleAccountSettings({ bankAccounts, onUpdate }) {
           [moduleId]: accountId
         }));
 
-        // Notify parent to refresh
+        // Notify parent to refresh after a short delay to allow backend to update
         if (onUpdate) {
-          onUpdate();
+          setTimeout(() => {
+            onUpdate();
+          }, 1000); // 1 second delay
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -196,7 +208,7 @@ export default function ModuleAccountSettings({ bankAccounts, onUpdate }) {
                     <option value="">Select account...</option>
                     {verifiedAccounts.map(account => (
                       <option key={account.id} value={account.id}>
-                        {account.bank_name} (****{account.last4 || account.account_last4 || '****'})
+                        {account.bank_name} (****{account.last4 || account.account_last4 || '****'}) [{account.id.substring(0, 8)}...]
                       </option>
                     ))}
                   </select>
