@@ -73,7 +73,7 @@ def reverse_currency_fields(apps, schema_editor):
 class Migration(migrations.Migration):
     
     dependencies = [
-        ('users', '0120_businessdetails_accounting_standard_and_more'),
+        ('users', '0027_add_county_field'),  # Last migration that exists in production
     ]
     
     operations = [
