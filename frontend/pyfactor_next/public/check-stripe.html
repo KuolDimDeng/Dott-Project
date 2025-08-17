@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stripe Configuration Check</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .check {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+        }
+        .check.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .check.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .check.warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .check h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .check pre {
+            margin: 10px 0 0 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Stripe Configuration Diagnostic</h1>
+        <p>This page checks if Stripe is properly configured in your environment.</p>
+        
+        <div id="checks"></div>
+        
+        <div style="margin-top: 30px;">
+            <button class="button" onclick="runChecks()">Re-run Checks</button>
+            <button class="button" onclick="testRuntimeConfig()">Test Runtime Config</button>
+            <button class="button" onclick="testStripeLoad()">Test Stripe Load</button>
+        </div>
+    </div>
+
+    <script>
+        async function runChecks() {
+            const checks = document.getElementById('checks');
+            checks.innerHTML = '';
+            
+            // Check 1: Environment Variable
+            const envCheck = document.createElement('div');
+            envCheck.className = 'check';
+            
+            // This won't work in production build, but useful for debugging
+            const hasEnvVar = false; // Build-time env vars not accessible in static HTML
+            
+            envCheck.innerHTML = `
+                <h3>1. Build-time Environment Variable</h3>
+                <p>Status: Not accessible from static HTML (expected)</p>
+                <p>This needs to be checked in React components.</p>
+            `;
+            envCheck.className += ' warning';
+            checks.appendChild(envCheck);
+            
+            // Check 2: Runtime Config API
+            const runtimeCheck = document.createElement('div');
+            runtimeCheck.className = 'check';
+            
+            try {
+                const response = await fetch('/api/runtime-config');
+                const config = await response.json();
+                
+                if (config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+                    runtimeCheck.innerHTML = `
+                        <h3>2. Runtime Configuration API</h3>
+                        <p>✅ Stripe key found in runtime config!</p>
+                        <pre>Key: ${config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.substring(0, 20)}...
+Type: ${config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith('pk_test') ? 'TEST' : 'LIVE'}
+Length: ${config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.length}</pre>
+                    `;
+                    runtimeCheck.className += ' success';
+                    
+                    // Store in window for other checks
+                    window.__STRIPE_KEY__ = config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+                } else {
+                    runtimeCheck.innerHTML = `
+                        <h3>2. Runtime Configuration API</h3>
+                        <p>❌ No Stripe key in runtime config</p>
+                        <pre>${JSON.stringify(config, null, 2)}</pre>
+                    `;
+                    runtimeCheck.className += ' error';
+                }
+            } catch (error) {
+                runtimeCheck.innerHTML = `
+                    <h3>2. Runtime Configuration API</h3>
+                    <p>❌ Failed to fetch runtime config</p>
+                    <pre>${error.message}</pre>
+                `;
+                runtimeCheck.className += ' error';
+            }
+            checks.appendChild(runtimeCheck);
+            
+            // Check 3: Stripe Library Loading
+            const stripeCheck = document.createElement('div');
+            stripeCheck.className = 'check';
+            
+            if (window.Stripe) {
+                stripeCheck.innerHTML = `
+                    <h3>3. Stripe Library</h3>
+                    <p>✅ Stripe library is loaded</p>
+                `;
+                stripeCheck.className += ' success';
+            } else {
+                stripeCheck.innerHTML = `
+                    <h3>3. Stripe Library</h3>
+                    <p>⚠️ Stripe library not loaded (expected - needs to be loaded with key)</p>
+                `;
+                stripeCheck.className += ' warning';
+            }
+            checks.appendChild(stripeCheck);
+            
+            // Check 4: Backend API Health
+            const backendCheck = document.createElement('div');
+            backendCheck.className = 'check';
+            
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                backendCheck.innerHTML = `
+                    <h3>4. Backend API Health</h3>
+                    <p>✅ Backend is reachable</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                backendCheck.className += ' success';
+            } catch (error) {
+                backendCheck.innerHTML = `
+                    <h3>4. Backend API Health</h3>
+                    <p>❌ Backend unreachable</p>
+                    <pre>${error.message}</pre>
+                `;
+                backendCheck.className += ' error';
+            }
+            checks.appendChild(backendCheck);
+        }
+        
+        async function testRuntimeConfig() {
+            try {
+                const response = await fetch('/api/runtime-config');
+                const config = await response.json();
+                alert('Runtime Config:\n\n' + JSON.stringify(config, null, 2));
+            } catch (error) {
+                alert('Failed to fetch runtime config: ' + error.message);
+            }
+        }
+        
+        async function testStripeLoad() {
+            if (!window.__STRIPE_KEY__) {
+                // Try to get it from runtime config first
+                try {
+                    const response = await fetch('/api/runtime-config');
+                    const config = await response.json();
+                    window.__STRIPE_KEY__ = config.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+                } catch (error) {
+                    alert('No Stripe key available. Run checks first.');
+                    return;
+                }
+            }
+            
+            if (!window.__STRIPE_KEY__) {
+                alert('No Stripe key available');
+                return;
+            }
+            
+            // Load Stripe dynamically
+            const script = document.createElement('script');
+            script.src = 'https://js.stripe.com/v3/';
+            script.onload = () => {
+                try {
+                    const stripe = Stripe(window.__STRIPE_KEY__);
+                    alert('✅ Stripe loaded successfully!\n\nKey type: ' + 
+                        (window.__STRIPE_KEY__.startsWith('pk_test') ? 'TEST' : 'LIVE'));
+                } catch (error) {
+                    alert('❌ Failed to initialize Stripe:\n' + error.message);
+                }
+            };
+            script.onerror = () => {
+                alert('❌ Failed to load Stripe library');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Run checks on page load
+        window.onload = runChecks;
+    </script>
+</body>
+</html>
