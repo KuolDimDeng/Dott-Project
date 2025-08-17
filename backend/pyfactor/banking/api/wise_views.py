@@ -539,7 +539,13 @@ def list_bank_connections(request):
         # Get all bank connections for the user
         # Note: BankAccount model uses 'last_synced' instead of 'created_at'
         connections = BankAccount.objects.filter(user=user).order_by('-last_synced')
-        logger.info(f"[List Connections] Found {connections.count()} connections")
+        logger.info(f"[List Connections] Found {connections.count()} BankAccount connections")
+        
+        # Also log WiseItem records for debugging
+        wise_items = WiseItem.objects.filter(user=user)
+        logger.info(f"[List Connections] Found {wise_items.count()} WiseItem records")
+        for wi in wise_items:
+            logger.info(f"  - WiseItem {wi.id}: {wi.bank_name}, POS default: {wi.is_default_for_pos}")
         
         connections_data = []
         for conn in connections:
@@ -548,13 +554,20 @@ def list_bank_connections(request):
             # Try to get WiseItem details if available
             wise_item = None
             try:
-                # Direct query for WiseItem by user and bank name
-                wise_item = WiseItem.objects.filter(
-                    user=user,
-                    bank_name=conn.bank_name
-                ).first()
-                if wise_item:
-                    logger.info(f"[List Connections] Found WiseItem for connection {conn.id}")
+                # First try to get WiseItem by integration_id
+                if conn.integration_id:
+                    wise_item = WiseItem.objects.filter(id=conn.integration_id).first()
+                    if wise_item:
+                        logger.info(f"[List Connections] Found WiseItem by integration_id for connection {conn.id}")
+                
+                # Fallback to query by user and bank name if not found
+                if not wise_item:
+                    wise_item = WiseItem.objects.filter(
+                        user=user,
+                        bank_name=conn.bank_name
+                    ).first()
+                    if wise_item:
+                        logger.info(f"[List Connections] Found WiseItem by bank_name for connection {conn.id}")
             except Exception as integration_error:
                 logger.warning(f"[List Connections] Could not fetch WiseItem for connection {conn.id}: {integration_error}")
             

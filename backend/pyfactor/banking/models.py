@@ -83,15 +83,26 @@ class WiseItem(BankIntegration):
     
     def set_as_default_for_pos(self):
         """Set this account as default for POS, removing default from others."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Remove default from all other accounts for this user
-        WiseItem.objects.filter(
+        removed = WiseItem.objects.filter(
             user=self.user,
             is_default_for_pos=True
         ).exclude(id=self.id).update(is_default_for_pos=False)
         
+        logger.info(f"[WiseItem] Removed default POS from {removed} other account(s)")
+        
         # Set this one as default
         self.is_default_for_pos = True
         self.save()
+        
+        logger.info(f"[WiseItem] Set account {self.id} as default for POS - {self.bank_name}")
+        
+        # Verify it was saved
+        self.refresh_from_db()
+        logger.info(f"[WiseItem] Verification: is_default_for_pos = {self.is_default_for_pos}")
     
     def set_as_default_for_invoices(self):
         """Set this account as default for invoices, removing default from others."""
