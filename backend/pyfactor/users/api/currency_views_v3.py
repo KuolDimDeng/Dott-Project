@@ -285,11 +285,19 @@ def currency_preferences_v3(request):
         logger.error(f"💥 [Currency V3] Error message: {str(e)}")
         logger.error(f"💥 [Currency V3] Traceback:\n{traceback.format_exc()}")
         
+        # Always include error details for debugging production issues
+        error_details = str(e)
+        
+        # For ProgrammingError, it's likely a database field issue
+        if 'ProgrammingError' in type(e).__name__:
+            error_details = f"Database error: {str(e)}"
+            logger.error(f"💥 [Currency V3] This is likely a missing field or table issue")
+        
         return Response({
             'success': False,
             'error': 'An unexpected error occurred',
             'error_type': type(e).__name__,
-            'error_details': str(e) if settings.DEBUG else None,
+            'error_details': error_details,  # Always show details for now
             'timestamp': timezone.now().isoformat()
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

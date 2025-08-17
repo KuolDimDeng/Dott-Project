@@ -319,7 +319,8 @@
       "Bash(render services)",
       "Bash(/Users/kuoldeng/projectx/fix_currency_production.sh)",
       "Bash(PGSSLMODE=disable python3 manage.py makemigrations users --name add_currency_symbol_field --no-input)",
-      "Bash(./deploy_currency_fix_final.sh:*)"
+      "Bash(./deploy_currency_fix_final.sh:*)",
+      "Bash(/Users/kuoldeng/projectx/test_currency_deployment.sh)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
