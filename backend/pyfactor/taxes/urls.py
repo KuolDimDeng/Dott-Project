@@ -60,6 +60,12 @@ from .views.location_data import (
     validate_location
 )
 from .views.sales_tax_config import SalesTaxConfigViewSet, get_tax_settings_summary
+from .views.tax_reporting_views import (
+    get_tax_summary,
+    get_tax_transactions,
+    create_tax_filing,
+    get_tax_liability
+)
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -161,4 +167,10 @@ urlpatterns = [
     
     # Sales tax configuration endpoints
     path('sales-tax-config/summary/', get_tax_settings_summary, name='tax-settings-summary'),
+    
+    # Tax accounting and reporting endpoints
+    path('accounting/summary/', get_tax_summary, name='tax-accounting-summary'),
+    path('accounting/transactions/', get_tax_transactions, name='tax-accounting-transactions'),
+    path('accounting/filing/', create_tax_filing, name='tax-accounting-filing'),
+    path('accounting/liability/', get_tax_liability, name='tax-accounting-liability'),
 ]

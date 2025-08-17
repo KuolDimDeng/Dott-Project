@@ -5,7 +5,8 @@ from .models import (
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
     TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder, TaxFiling, FilingDocument,
     FilingConfirmation, FilingNotification, NotificationType, NotificationStatus,
-    GlobalSalesTaxRate, SalesTaxJurisdictionOverride
+    GlobalSalesTaxRate, SalesTaxJurisdictionOverride,
+    TaxAccount, TaxTransaction, TaxPeriodSummary
 )
 import logging
 
@@ -470,3 +471,59 @@ class SalesTaxOverrideSerializer(serializers.ModelSerializer):
         }
         
         return data
+
+
+# Tax Accounting Serializers (New)
+class TaxAccountSerializer(serializers.ModelSerializer):
+    """Serializer for TaxAccount model (Tax Accounting)"""
+    
+    class Meta:
+        model = TaxAccount
+        fields = [
+            'id', 'name', 'account_number', 'tax_type',
+            'jurisdiction_level', 'jurisdiction_name', 'jurisdiction_code',
+            'tax_rate', 'effective_date', 'end_date',
+            'filing_frequency', 'filing_due_day',
+            'tax_agency_name', 'tax_agency_id',
+            'is_active', 'is_destination_based',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class TaxTransactionSerializer(serializers.ModelSerializer):
+    """Serializer for TaxTransaction model (Tax Accounting)"""
+    tax_account_name = serializers.CharField(source='tax_account.name', read_only=True)
+    jurisdiction = serializers.CharField(source='tax_account.jurisdiction_name', read_only=True)
+    
+    class Meta:
+        model = TaxTransaction
+        fields = [
+            'id', 'transaction_date', 'source_type', 'source_id', 'source_reference',
+            'tax_account', 'tax_account_name', 'jurisdiction',
+            'tax_collected', 'tax_rate_applied', 'taxable_amount',
+            'customer_name', 'customer_id', 'customer_location',
+            'is_exempt', 'exemption_reason', 'exemption_certificate',
+            'journal_entry', 'status', 'tax_filing',
+            'created_at', 'updated_at', 'notes'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class TaxPeriodSummarySerializer(serializers.ModelSerializer):
+    """Serializer for TaxPeriodSummary model (Tax Accounting)"""
+    tax_account_name = serializers.CharField(source='tax_account.name', read_only=True)
+    jurisdiction = serializers.CharField(source='tax_account.jurisdiction_name', read_only=True)
+    tax_type = serializers.CharField(source='tax_account.tax_type', read_only=True)
+    
+    class Meta:
+        model = TaxPeriodSummary
+        fields = [
+            'id', 'period_start', 'period_end',
+            'tax_account', 'tax_account_name', 'jurisdiction', 'tax_type',
+            'total_sales', 'taxable_sales', 'non_taxable_sales', 'exempt_sales',
+            'tax_collected', 'tax_adjustments', 'tax_paid', 'tax_due',
+            'transaction_count', 'exempt_transaction_count',
+            'filing_status', 'created_at', 'updated_at', 'last_calculated'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_calculated']

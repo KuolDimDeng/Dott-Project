@@ -220,6 +220,33 @@ def confirm_pos_payment(request):
             
             logger.info(f"[POS Payment] Payment confirmed for settlement: {settlement.id}")
             
+            # Post tax entries if POS transaction has tax
+            if transaction_id:
+                try:
+                    pos_transaction = POSTransaction.objects.get(
+                        id=transaction_id,
+                        tenant_id=request.user.tenant_id
+                    )
+                    
+                    # Only post tax if there's tax to post
+                    if pos_transaction.tax_total and pos_transaction.tax_total > 0:
+                        tax_service = TaxPostingService()
+                        journal_entry = tax_service.post_pos_sale_tax(pos_transaction)
+                        
+                        if journal_entry:
+                            logger.info(f"[POS Payment] Tax posted to journal entry: {journal_entry.id}")
+                        else:
+                            logger.warning(f"[POS Payment] Tax posting failed for transaction: {transaction_id}")
+                    else:
+                        logger.info(f"[POS Payment] No tax to post for transaction: {transaction_id}")
+                        
+                except POSTransaction.DoesNotExist:
+                    logger.warning(f"[POS Payment] POS transaction not found: {transaction_id}")
+                except Exception as e:
+                    logger.error(f"[POS Payment] Error posting tax: {str(e)}")
+                    # Don't fail the payment confirmation if tax posting fails
+                    # Tax can be posted later via management command
+            
         except PaymentSettlement.DoesNotExist:
             logger.warning(f"[POS Payment] Settlement not found for intent: {payment_intent_id}")
         

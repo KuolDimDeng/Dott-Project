@@ -2,7 +2,10 @@ from decimal import Decimal
 from typing import Dict, List
 import logging
 
-from taxes.models import GlobalPayrollTax, TenantTaxSettings
+try:
+    from taxes.models import TenantTaxSettings
+except ImportError:
+    TenantTaxSettings = None
 
 logger = logging.getLogger(__name__)
 
@@ -154,24 +157,26 @@ class PayrollFeeCalculator:
             'employer_medicare_rate': Decimal('1.45'),
         }
         
-        # Get global rates
-        if country_code == 'US' and state_code:
-            payroll_tax = GlobalPayrollTax.objects.filter(
-                country=country_code,
-                region_code=state_code
-            ).first()
-        else:
-            payroll_tax = GlobalPayrollTax.objects.filter(
-                country=country_code,
-                region_code__isnull=True
-            ).first()
-        
-        if payroll_tax:
-            # Use the specific rates from the database
-            rates['employee_social_security_rate'] = payroll_tax.employee_social_security_rate * 100
-            rates['employer_social_security_rate'] = payroll_tax.employer_social_security_rate * 100
-            rates['employee_medicare_rate'] = payroll_tax.employee_medicare_rate * 100
-            rates['employer_medicare_rate'] = payroll_tax.employer_medicare_rate * 100
+        # GlobalPayrollTax model not available yet - using defaults
+        # TODO: Uncomment when GlobalPayrollTax model is implemented
+        # # Get global rates
+        # if country_code == 'US' and state_code:
+        #     payroll_tax = GlobalPayrollTax.objects.filter(
+        #         country=country_code,
+        #         region_code=state_code
+        #     ).first()
+        # else:
+        #     payroll_tax = GlobalPayrollTax.objects.filter(
+        #         country=country_code,
+        #         region_code__isnull=True
+        #     ).first()
+        # 
+        # if payroll_tax:
+        #     # Use the specific rates from the database
+        #     rates['employee_social_security_rate'] = payroll_tax.employee_social_security_rate * 100
+        #     rates['employer_social_security_rate'] = payroll_tax.employer_social_security_rate * 100
+        #     rates['employee_medicare_rate'] = payroll_tax.employee_medicare_rate * 100
+        #     rates['employer_medicare_rate'] = payroll_tax.employer_medicare_rate * 100
             
             # Add other taxes to the general rate
             employee_other = (payroll_tax.employee_unemployment_rate + payroll_tax.employee_other_rate) * 100

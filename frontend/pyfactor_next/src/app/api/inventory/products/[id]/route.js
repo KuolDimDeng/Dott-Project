@@ -129,52 +129,48 @@ export async function PATCH(request, { params }) {
   logger.info(`[API] Product PATCH request received for ID: ${id}`);
   
   try {
+    // Get session cookie for authentication
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie) {
+      logger.error(`[API] Product PATCH failed - No session cookie found for ID: ${id}`);
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    
     // Get request body
     const productData = await request.json();
     logger.debug(`[API] Product PATCH data for ID: ${id}:`, productData);
     
-    // DEVELOPMENT MODE: Update mock data
-    if (mockProducts[id]) {
-      mockProducts[id] = {
-        ...mockProducts[id],
-        ...productData,
-        updated_at: new Date().toISOString()
-      };
-      logger.info(`[API] DEVELOPMENT MODE: Updated mock product data for ID: ${id}`);
-      return NextResponse.json(mockProducts[id]);
-    } else {
-      logger.error(`[API] DEVELOPMENT MODE: Product with ID ${id} not found`);
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    // Forward the request to backend with session authentication
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`;
+    logger.info(`[API] Forwarding PATCH to backend: ${backendUrl}`);
+    
+    const response = await fetch(backendUrl, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(productData)
+    });
+    
+    const responseData = await response.text();
+    logger.info(`[API] Backend PATCH response status: ${response.status}`);
+    
+    if (!response.ok) {
+      logger.error(`[API] Backend PATCH failed:`, responseData);
+      return NextResponse.json(
+        { error: 'Failed to update product', details: responseData },
+        { status: response.status }
+      );
     }
     
-    // COMMENTED OUT FOR DEVELOPMENT - RESTORE IN PRODUCTION
-    /*
-    // Get authentication tokens
-    const { accessToken, idToken, tenantId } = await getTokens(request);
-    if (!accessToken || !idToken) {
-      logger.error(`[API] Product PATCH failed - Missing authentication tokens for ID: ${id}`);
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    
-    // Log the request with tenant context
-    logger.debug(`[API] Product PATCH processing for ID: ${id}, tenantId: ${tenantId}`);
-    
-    // Forward the request to the backend API using serverAxiosInstance
-    const response = await serverAxiosInstance.patch(
-      `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`, 
-      productData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'X-Id-Token': idToken,
-          'X-Tenant-ID': tenantId
-        }
-      }
-    );
-    
+    const parsedData = JSON.parse(responseData);
     logger.info(`[API] Product PATCH successful for ID: ${id}`);
-    return NextResponse.json(response.data);
-    */
+    return NextResponse.json(parsedData);
+    
   } catch (error) {
     logger.error(`[API] Product PATCH error for ID: ${id}:`, error.message);
     return NextResponse.json({ error: `Failed to update product with ID: ${id}` }, { status: 500 });
