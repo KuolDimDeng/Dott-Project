@@ -132,23 +132,17 @@ def currency_preferences_v3(request):
             logger.info(f"🌍 [Currency V3] No country found, defaulting to USD")
         
         # Get or create BusinessDetails with auto-detected currency
-        # Build defaults dict, handling optional fields gracefully
-        defaults = {
-            'preferred_currency_code': currency_info['code'],
-            'preferred_currency_name': currency_info['name'],
-            'show_usd_on_invoices': currency_info['code'] != 'USD',
-            'show_usd_on_quotes': currency_info['code'] != 'USD',
-            'show_usd_on_reports': False,
-            'accounting_standard': 'GAAP' if country_code == 'US' else 'IFRS'
-        }
-        
-        # Only add preferred_currency_symbol if the field exists
-        if hasattr(BusinessDetails, 'preferred_currency_symbol'):
-            defaults['preferred_currency_symbol'] = currency_info['symbol']
-        
         business_details, created = BusinessDetails.objects.get_or_create(
             business=business,
-            defaults=defaults
+            defaults={
+                'preferred_currency_code': currency_info['code'],
+                'preferred_currency_name': currency_info['name'],
+                'preferred_currency_symbol': currency_info['symbol'],
+                'show_usd_on_invoices': currency_info['code'] != 'USD',
+                'show_usd_on_quotes': currency_info['code'] != 'USD',
+                'show_usd_on_reports': False,
+                'accounting_standard': 'GAAP' if country_code == 'US' else 'IFRS'
+            }
         )
         
         if created:
@@ -176,30 +170,22 @@ def currency_preferences_v3(request):
                 logger.warning(f"⚠️ [Currency V3] Could not get currency info for {current_currency}: {str(e)}")
                 currency_symbol = '$'
             
-            # Get currency symbol safely - use field if exists, otherwise from currency_info
-            if hasattr(business_details, 'preferred_currency_symbol') and business_details.preferred_currency_symbol:
-                currency_symbol = business_details.preferred_currency_symbol
-            elif currency_info:
-                currency_symbol = currency_info.get('symbol', '$')
-            else:
-                currency_symbol = '$'
-                
             response_data = {
                 'success': True,
                 'preferences': {
                     'currency_code': current_currency,
                     'currency_name': business_details.preferred_currency_name or 'US Dollar',
-                    'currency_symbol': currency_symbol,
-                    'show_usd_on_invoices': getattr(business_details, 'show_usd_on_invoices', True),
-                    'show_usd_on_quotes': getattr(business_details, 'show_usd_on_quotes', True),
-                    'show_usd_on_reports': getattr(business_details, 'show_usd_on_reports', False),
+                    'currency_symbol': business_details.preferred_currency_symbol or currency_symbol,
+                    'show_usd_on_invoices': business_details.show_usd_on_invoices,
+                    'show_usd_on_quotes': business_details.show_usd_on_quotes,
+                    'show_usd_on_reports': business_details.show_usd_on_reports,
                     'accounting_standard': getattr(business_details, 'accounting_standard', 'GAAP'),
-                    'last_updated': business_details.currency_updated_at.isoformat() if hasattr(business_details, 'currency_updated_at') and business_details.currency_updated_at else None
+                    'last_updated': business_details.currency_updated_at.isoformat() if business_details.currency_updated_at else None
                 },
                 'business': {
                     'id': str(business.id),
                     'name': business.name,
-                    'country': str(business_details.country) if hasattr(business_details, 'country') and business_details.country else None
+                    'country': str(business_details.country) if business_details.country else None
                 }
             }
             
