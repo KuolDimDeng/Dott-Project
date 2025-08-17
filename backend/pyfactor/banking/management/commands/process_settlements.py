@@ -56,6 +56,21 @@ class Command(BaseCommand):
             f"{'[DRY RUN] ' if dry_run else ''}Processing settlements >= ${minimum_amount}"
         ))
         
+        # Debug: Check total settlements in database
+        total_settlements = PaymentSettlement.objects.count()
+        self.stdout.write(f"Total settlements in database: {total_settlements}")
+        
+        # Debug: Check pending settlements
+        pending_settlements = PaymentSettlement.objects.filter(status='pending').count()
+        self.stdout.write(f"Pending settlements: {pending_settlements}")
+        
+        # Debug: Check settlements above minimum
+        above_minimum = PaymentSettlement.objects.filter(
+            status='pending', 
+            settlement_amount__gte=minimum_amount
+        ).count()
+        self.stdout.write(f"Pending settlements >= ${minimum_amount}: {above_minimum}")
+        
         # Build query
         query = Q(status='pending')
         
@@ -78,7 +93,18 @@ class Command(BaseCommand):
         total_amount = sum(s.settlement_amount for s in settlements)
         
         if total_count == 0:
+            # More detailed debug info when no settlements found
             self.stdout.write(self.style.WARNING('No settlements to process'))
+            
+            # Show recent settlements for debugging
+            recent = PaymentSettlement.objects.all().order_by('-created_at')[:5]
+            if recent:
+                self.stdout.write("\nRecent settlements for debugging:")
+                for s in recent:
+                    self.stdout.write(
+                        f"  - ID: {s.id}, User: {s.user_id}, Amount: ${s.settlement_amount}, "
+                        f"Status: {s.status}, Created: {s.created_at}"
+                    )
             return
         
         self.stdout.write(f"Found {total_count} settlements totaling ${total_amount}")

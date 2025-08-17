@@ -116,24 +116,35 @@ def create_pos_payment_intent(request):
             
             # Create settlement record for tracking
             # This will be processed by the daily settlement cron job
-            settlement = PaymentSettlement.objects.create(
-                user=request.user,
-                stripe_payment_intent_id=payment_intent.id,  # Fixed field name
-                original_amount=Decimal(amount_cents) / 100,
-                stripe_fee=Decimal(stripe_fee_cents) / 100,
-                platform_fee=Decimal(platform_fee_cents) / 100,
-                settlement_amount=Decimal(merchant_receives_cents) / 100,
-                currency=currency.upper(),
-                status='pending'
-                # Note: metadata and stripe_payment_method fields don't exist in model
-            )
-            
-            logger.info(f"[POS Payment] Settlement record created: {settlement.id}")
+            try:
+                settlement = PaymentSettlement.objects.create(
+                    user=request.user,
+                    stripe_payment_intent_id=payment_intent.id,  # Fixed field name
+                    original_amount=Decimal(amount_cents) / 100,
+                    stripe_fee=Decimal(stripe_fee_cents) / 100,
+                    platform_fee=Decimal(platform_fee_cents) / 100,
+                    settlement_amount=Decimal(merchant_receives_cents) / 100,
+                    currency=currency.upper(),
+                    status='pending'
+                    # Note: metadata and stripe_payment_method fields don't exist in model
+                )
+                
+                logger.info(f"[POS Payment] Settlement record created successfully:")
+                logger.info(f"  - ID: {settlement.id}")
+                logger.info(f"  - User: {settlement.user_id}")
+                logger.info(f"  - Amount: ${settlement.settlement_amount}")
+                logger.info(f"  - Status: {settlement.status}")
+                logger.info(f"  - Tenant: {settlement.tenant_id if hasattr(settlement, 'tenant_id') else 'N/A'}")
+                
+            except Exception as e:
+                logger.error(f"[POS Payment] Failed to create settlement: {str(e)}")
+                # Don't fail the payment, just log the error
+                settlement = None
             
             return Response({
                 'client_secret': payment_intent.client_secret,
                 'payment_intent_id': payment_intent.id,
-                'settlement_id': str(settlement.id),
+                'settlement_id': str(settlement.id) if settlement else None,
                 'amount': amount_cents,
                 'platform_fee': platform_fee_cents,
                 'merchant_receives': merchant_receives_cents
