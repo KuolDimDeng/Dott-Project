@@ -27,7 +27,7 @@
     "build:production": "NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true next build",
     "build:production-clean": "echo '🚨 FORCING PNPM BUILD - Enhanced OAuth v2.2 - CACHE CLEAR' && rm -rf .next && rm -rf node_modules/.cache && node scripts/check-env.js && node scripts/debug-stripe-env.js && NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "build:production-fast": "NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build --no-lint",
-    "build:render": "NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3584\" NEXT_TELEMETRY_DISABLED=1 next build",
+    "build:render": "npm run verify:stripe && NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3584\" NEXT_TELEMETRY_DISABLED=1 next build",
     "build:render-ultra-minimal": "rm -rf .next && rm -rf node_modules/.cache && NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=1536 --max-semi-space-size=32\" NEXT_TELEMETRY_DISABLED=1 next build",
     "build:render-fast": "NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3072\" NEXT_TELEMETRY_DISABLED=1 next build",
     "build:render-memory": "NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=1536\" NEXT_TELEMETRY_DISABLED=1 next build -c next.config.render-2gb.js",
@@ -63,7 +63,8 @@
     "session-metrics": "curl -s http://localhost:3000/api/metrics/session?detailed=true | jq",
     "session-dashboard": "open http://localhost:3000/api/admin/session-dashboard",
     "session-health": "curl -s http://localhost:3000/api/metrics/session | jq '.status,.score,.cache_hit_rate,.avg_response_time'",
-    "cache-status": "curl -s http://localhost:3000/api/cache/session | jq"
+    "cache-status": "curl -s http://localhost:3000/api/cache/session | jq",
+    "verify:stripe": "node scripts/verify-stripe-env.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.55.0",
