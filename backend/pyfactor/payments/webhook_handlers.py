@@ -16,14 +16,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-try:
-    from taxes.models import TaxFiling
-except ImportError:
-    # TaxFiling might be in the parent models.py
-    try:
-        from taxes.models import TaxFiling
-    except ImportError:
-        TaxFiling = None
+from taxes.models import TaxFiling
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from decimal import Decimal
@@ -111,12 +104,6 @@ def handle_successful_payment(session):
             return
         
         # Get the tax filing
-        if not TaxFiling:
-            logger.error("TaxFiling model not available")
-            return
-        if not TaxFiling:
-            logger.error("TaxFiling model not available")
-            return
         try:
             filing = TaxFiling.objects.get(filing_id=filing_id)
         except TaxFiling.DoesNotExist:
@@ -160,9 +147,6 @@ def handle_expired_payment(session):
         if not filing_id:
             return
         
-        if not TaxFiling:
-            logger.error("TaxFiling model not available")
-            return
         try:
             filing = TaxFiling.objects.get(filing_id=filing_id)
             
@@ -191,9 +175,6 @@ def handle_failed_payment(payment_intent):
         if not filing_id:
             return
         
-        if not TaxFiling:
-            logger.error("TaxFiling model not available")
-            return
         try:
             filing = TaxFiling.objects.get(filing_id=filing_id)
             
