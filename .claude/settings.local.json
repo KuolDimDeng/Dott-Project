@@ -316,7 +316,8 @@
       "Bash(PGSSLMODE=disable python3 manage.py makemigrations taxes)",
       "Bash(PGSSLMODE=disable python3 -c \"import os; os.environ.setdefault(''DJANGO_SETTINGS_MODULE'', ''pyfactor.settings''); import django; django.setup(); from taxes.models import State; print(''Import successful'')\")",
       "Bash(PGSSLMODE=disable python3 manage.py makemigrations --merge)",
-      "Bash(render services)"
+      "Bash(render services)",
+      "Bash(/Users/kuoldeng/projectx/fix_currency_production.sh)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
