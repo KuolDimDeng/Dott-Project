@@ -10,6 +10,7 @@ import { logger } from '@/utils/logger';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { canDeleteItem } from '@/utils/accountingRestrictions';
+import { useCurrency } from '@/context/CurrencyContext';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 // Tooltip component for field help
@@ -50,6 +51,11 @@ const FieldTooltip = ({ text, position = 'top' }) => {
 };
 
 const ServiceManagement = () => {
+  // Get currency context
+  const { currency } = useCurrency();
+  const currencyCode = currency?.code || 'USD';
+  const currencySymbol = currency?.symbol || '$';
+  
   // State management
   const [services, setServices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -254,7 +260,7 @@ const ServiceManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const response = await fetch(`/api/inventory/services?id=${selectedService.id}`, {
+      const response = await fetch(`/api/inventory/services/${selectedService.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -302,7 +308,7 @@ const ServiceManagement = () => {
     
     setIsDeletingService(true);
     try {
-      const response = await fetch(`/api/inventory/services?id=${serviceToDelete.id}`, {
+      const response = await fetch(`/api/inventory/services/${serviceToDelete.id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -327,6 +333,49 @@ const ServiceManagement = () => {
       toast.error('Failed to delete service.');
     } finally {
       setIsDeletingService(false);
+    }
+  };
+
+  // Handle activate/deactivate service
+  const handleToggleServiceStatus = async (service) => {
+    const newStatus = !service.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+    
+    console.log(`[ServiceManagement] ${action}ing service:`, service.id);
+    
+    try {
+      const response = await fetch(`/api/inventory/services/${service.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          is_active: newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} service: ${response.status}`);
+      }
+      
+      const updatedService = await response.json();
+      console.log(`[ServiceManagement] Service ${action}d:`, updatedService);
+      
+      toast.success(`Service ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      
+      // Update the service in the list
+      setServices(services.map(s => 
+        s.id === service.id ? { ...s, is_active: newStatus } : s
+      ));
+      
+      // Update selected service if it's the same
+      if (selectedService?.id === service.id) {
+        setSelectedService({ ...selectedService, is_active: newStatus });
+      }
+    } catch (error) {
+      console.error(`[ServiceManagement] Error ${action}ing service:`, error);
+      toast.error(`Failed to ${action} service.`);
     }
   };
 
@@ -620,12 +669,12 @@ const ServiceManagement = () => {
           
           <div>
             <h3 className="text-sm font-medium text-gray-500">Price</h3>
-            <p className="mt-1 text-sm text-gray-900">${parseFloat(selectedService.price || 0).toFixed(2)}</p>
+            <p className="mt-1 text-sm text-gray-900">{currencySymbol}{parseFloat(selectedService.price || 0).toFixed(2)} {currencyCode}</p>
           </div>
           
           <div>
             <h3 className="text-sm font-medium text-gray-500">Sales Tax</h3>
-            <p className="mt-1 text-sm text-gray-900">${parseFloat(selectedService.salestax || selectedService.cost || 0).toFixed(2)}</p>
+            <p className="mt-1 text-sm text-gray-900">{parseFloat(selectedService.salestax || selectedService.cost || 0).toFixed(2)}%</p>
           </div>
           
           <div>
@@ -645,7 +694,7 @@ const ServiceManagement = () => {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               selectedService.is_active !== false
                 ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
+                : 'bg-gray-100 text-gray-800'
             }`}>
               {selectedService.is_active !== false ? 'Active' : 'Inactive'}
             </span>
@@ -675,7 +724,7 @@ const ServiceManagement = () => {
             </div>
             <div className="bg-gray-50 p-3 rounded">
               <p className="text-xs text-gray-500">Total Revenue</p>
-              <p className="text-lg font-semibold">$0.00</p>
+              <p className="text-lg font-semibold">{currencySymbol}0.00</p>
             </div>
             <div className="bg-gray-50 p-3 rounded">
               <p className="text-xs text-gray-500">Profit Margin</p>
@@ -759,7 +808,7 @@ const ServiceManagement = () => {
                 <div className="text-sm text-black">{service.unit || service.sku || 'N/A'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">${parseFloat(service.price || 0).toFixed(2)}</div>
+                <div className="text-sm text-black">{currencySymbol}{parseFloat(service.price || 0).toFixed(2)}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">
@@ -771,11 +820,11 @@ const ServiceManagement = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  service.is_for_sale !== false
+                  service.is_active !== false
                     ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {service.is_for_sale !== false ? 'For Sale' : 'Not for Sale'}
+                  {service.is_active !== false ? 'Active' : 'Inactive'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -791,21 +840,30 @@ const ServiceManagement = () => {
                 <button
                   onClick={() => handleEditService(service)}
                   className="text-green-600 hover:text-green-900 mr-3"
+                  title="Edit Service"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
                 </button>
                 <button
-                  onClick={() => {
-                    setServiceToDelete(service);
-                    setDeleteDialogOpen(true);
-                  }}
-                  className="text-red-600 hover:text-red-900"
+                  onClick={() => handleToggleServiceStatus(service)}
+                  className={`${
+                    service.is_active !== false
+                      ? 'text-orange-600 hover:text-orange-900'
+                      : 'text-green-600 hover:text-green-900'
+                  }`}
+                  title={service.is_active !== false ? 'Deactivate Service' : 'Activate Service'}
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  {service.is_active !== false ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </button>
               </td>
             </tr>
@@ -915,7 +973,7 @@ const ServiceManagement = () => {
         
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-sm font-medium text-black">Inactive Services</h2>
-          <p className="text-3xl font-bold text-red-600 mt-2">
+          <p className="text-3xl font-bold text-gray-600 mt-2">
             {services.filter(s => s.is_active === false).length}
           </p>
         </div>
@@ -1013,13 +1071,14 @@ const ServiceManagement = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => {
-                      setServiceToDelete(selectedService);
-                      setDeleteDialogOpen(true);
-                    }}
-                    className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    onClick={() => handleToggleServiceStatus(selectedService)}
+                    className={`px-4 py-2 rounded-md text-white transition-colors ${
+                      selectedService.is_active !== false
+                        ? 'bg-orange-600 hover:bg-orange-700'
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
                   >
-                    Delete
+                    {selectedService.is_active !== false ? 'Deactivate' : 'Activate'}
                   </button>
                   <button
                     onClick={() => setShowServiceDetails(false)}

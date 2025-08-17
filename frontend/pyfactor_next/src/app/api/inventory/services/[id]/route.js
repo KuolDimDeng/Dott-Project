@@ -1,57 +1,61 @@
 import { NextResponse } from 'next/server';
-import { getPool } from '@/utils/dbConnect';
-import { serverLogger as logger } from '@/utils/logger';
-import { getTenantId } from '@/lib/tenantUtils';
-import { isUUID } from '@/utils/uuid-helpers';
+import { cookies } from 'next/headers';
+
+// Django backend API URL
+const DJANGO_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
  * GET handler for fetching a specific service by ID
  */
 export async function GET(request, { params }) {
-  const pool = await getPool();
-  const requestId = Math.floor(Math.random() * 10000);
   const { id } = params;
   
   try {
-    logger.info(`[Services][${requestId}] GET request received for service ID: ${id}`);
+    // Get session cookie
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    // Validate ID format
-    if (!isUUID(id)) {
+    if (!sidCookie) {
       return NextResponse.json(
-        { error: 'Invalid service ID format' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
-    
-    // Get tenant ID
-    const tenantId = await getTenantId();
-    
-    // Get the service
-    const query = `
-      SELECT * FROM services WHERE id = $1 ${tenantId ? 'AND tenant_id = $2' : ''};
-    `;
-    
-    const params = tenantId ? [id, tenantId] : [id];
-    const result = await pool.query(query, params);
-    
-    if (result.rows.length === 0) {
-      logger.warn(`[Services][${requestId}] Service not found: ${id}`);
+
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${id}/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Service GET] Backend error:', response.status, errorData);
+      
+      if (response.status === 404) {
+        return NextResponse.json(
+          { error: 'Service not found' },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Service not found' },
-        { status: 404 }
+        { error: 'Failed to fetch service', details: errorData },
+        { status: response.status }
       );
     }
-    
-    logger.info(`[Services][${requestId}] Returning service: ${id}`);
-    return NextResponse.json(result.rows[0]);
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    logger.error(`[Services][${requestId}] Error fetching service: ${error.message}`);
+    console.error('[Service GET] Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch service', message: error.message },
       { status: 500 }
     );
-  } finally {
-    await pool.end();
   }
 }
 
@@ -59,150 +63,171 @@ export async function GET(request, { params }) {
  * PUT handler for updating a service
  */
 export async function PUT(request, { params }) {
-  const pool = await getPool();
-  const requestId = Math.floor(Math.random() * 10000);
   const { id } = params;
   
   try {
-    logger.info(`[Services][${requestId}] PUT request received for service ID: ${id}`);
+    // Get session cookie
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    // Validate ID format
-    if (!isUUID(id)) {
+    if (!sidCookie) {
       return NextResponse.json(
-        { error: 'Invalid service ID format' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
-    
+
     // Get request body
     const body = await request.json();
-    
-    // Get tenant ID
-    const tenantId = await getTenantId();
-    
-    // Check if service exists and belongs to the tenant
-    const checkQuery = `
-      SELECT * FROM services WHERE id = $1 ${tenantId ? 'AND tenant_id = $2' : ''};
-    `;
-    
-    const checkParams = tenantId ? [id, tenantId] : [id];
-    const checkResult = await pool.query(checkQuery, checkParams);
-    
-    if (checkResult.rows.length === 0) {
-      logger.warn(`[Services][${requestId}] Service not found or access denied: ${id}`);
+
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${id}/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Service PUT] Backend error:', response.status, errorData);
+      
+      if (response.status === 404) {
+        return NextResponse.json(
+          { error: 'Service not found' },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Service not found or access denied' },
-        { status: 404 }
+        { error: 'Failed to update service', details: errorData },
+        { status: response.status }
       );
     }
-    
-    // Update the service
-    const updateQuery = `
-      UPDATE services
-      SET 
-        name = $1,
-        description = $2,
-        price = $3,
-        is_for_sale = $4,
-        is_recurring = $5,
-        salestax = $6,
-        duration = $7,
-        billing_cycle = $8,
-        unit = $9,
-        updated_at = NOW()
-      WHERE id = $10 ${tenantId ? 'AND tenant_id = $11' : ''}
-      RETURNING *;
-    `;
-    
-    const updateValues = [
-      body.name,
-      body.description,
-      body.price || 0,
-      body.is_for_sale !== undefined ? body.is_for_sale : true,
-      body.is_recurring !== undefined ? body.is_recurring : false,
-      body.salestax || 0,
-      body.duration || '',
-      body.billing_cycle || 'monthly',
-      body.unit || '',
-      id,
-      ...(tenantId ? [tenantId] : [])
-    ];
-    
-    const updateResult = await pool.query(updateQuery, updateValues);
-    
-    logger.info(`[Services][${requestId}] Service updated: ${id}`);
-    return NextResponse.json(updateResult.rows[0]);
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    logger.error(`[Services][${requestId}] Error updating service: ${error.message}`);
+    console.error('[Service PUT] Error:', error);
     return NextResponse.json(
       { error: 'Failed to update service', message: error.message },
       { status: 500 }
     );
-  } finally {
-    await pool.end();
   }
 }
 
 /**
- * DELETE handler for deleting a service
+ * PATCH handler for partial updates (e.g., activate/deactivate)
  */
-export async function DELETE(request, { params }) {
-  const pool = await getPool();
-  const requestId = Math.floor(Math.random() * 10000);
+export async function PATCH(request, { params }) {
   const { id } = params;
   
   try {
-    logger.info(`[Services][${requestId}] DELETE request received for service ID: ${id}`);
+    // Get session cookie
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
     
-    // Validate ID format
-    if (!isUUID(id)) {
+    if (!sidCookie) {
       return NextResponse.json(
-        { error: 'Invalid service ID format' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
-    
-    // Get tenant ID
-    const tenantId = await getTenantId();
-    
-    // Check if service exists and belongs to the tenant
-    const checkQuery = `
-      SELECT * FROM services WHERE id = $1 ${tenantId ? 'AND tenant_id = $2' : ''};
-    `;
-    
-    const checkParams = tenantId ? [id, tenantId] : [id];
-    const checkResult = await pool.query(checkQuery, checkParams);
-    
-    if (checkResult.rows.length === 0) {
-      logger.warn(`[Services][${requestId}] Service not found or access denied: ${id}`);
-      return NextResponse.json(
-        { error: 'Service not found or access denied' },
-        { status: 404 }
-      );
-    }
-    
-    // Delete the service
-    const deleteQuery = `
-      DELETE FROM services WHERE id = $1 ${tenantId ? 'AND tenant_id = $2' : ''}
-      RETURNING id;
-    `;
-    
-    const deleteParams = tenantId ? [id, tenantId] : [id];
-    const deleteResult = await pool.query(deleteQuery, deleteParams);
-    
-    logger.info(`[Services][${requestId}] Service deleted: ${id}`);
-    return NextResponse.json({ 
-      id: deleteResult.rows[0].id,
-      success: true,
-      message: 'Service deleted successfully'
+
+    // Get request body
+    const body = await request.json();
+
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Service PATCH] Backend error:', response.status, errorData);
+      
+      if (response.status === 404) {
+        return NextResponse.json(
+          { error: 'Service not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: 'Failed to update service', details: errorData },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    logger.error(`[Services][${requestId}] Error deleting service: ${error.message}`);
+    console.error('[Service PATCH] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update service', message: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE handler - We'll keep this but it should be used sparingly
+ * Prefer deactivating services instead for compliance
+ */
+export async function DELETE(request, { params }) {
+  const { id } = params;
+  
+  try {
+    // Get session cookie
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${id}/`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Service DELETE] Backend error:', response.status, errorData);
+      
+      if (response.status === 404) {
+        return NextResponse.json(
+          { error: 'Service not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: 'Failed to delete service', details: errorData },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: 'Service deleted successfully' });
+  } catch (error) {
+    console.error('[Service DELETE] Error:', error);
     return NextResponse.json(
       { error: 'Failed to delete service', message: error.message },
       { status: 500 }
     );
-  } finally {
-    await pool.end();
   }
-} 
+}

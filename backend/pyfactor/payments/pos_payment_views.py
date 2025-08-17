@@ -14,6 +14,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from banking.models import PaymentSettlement
 from users.models import Business
+from sales.models import POSTransaction
+from taxes.services.tax_posting_service import TaxPostingService
 
 logger = logging.getLogger(__name__)
 
