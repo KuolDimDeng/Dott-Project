@@ -12,6 +12,7 @@ import {
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import ConnectedBanks from './ConnectedBanks';
 import AddBankAccount from './AddBankAccount';
+import ModuleAccountSettings from './ModuleAccountSettings';
 import { useSession } from '@/hooks/useSession-v2';
 import toast from 'react-hot-toast';
 import {
@@ -241,7 +242,7 @@ export default function BankingDashboard() {
    */
   const fetchBankConnections = async () => {
     try {
-      const response = await fetch('/api/banking/connections/', {
+      const response = await fetch('/api/banking/connections', {  // Removed trailing slash
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -444,11 +445,24 @@ export default function BankingDashboard() {
 
       {/* Connected Banks List */}
       {!showAddBank && (
-        <ConnectedBanks
-          connections={bankConnections}
-          onDisconnect={handleBankDisconnected}
-          onSetPrimary={handleSetPrimary}
-        />
+        <>
+          <ConnectedBanks
+            connections={bankConnections}
+            onDisconnect={handleBankDisconnected}
+            onSetPrimary={handleSetPrimary}
+          />
+          
+          {/* Module Account Settings - Only show if there are bank accounts */}
+          {bankConnections.length > 0 && (
+            <div className="mt-6">
+              <ModuleAccountSettings
+                bankAccounts={bankConnections}
+                onUpdate={fetchBankConnections}
+                onAccountsUpdate={setBankConnections}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* Empty State */}

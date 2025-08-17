@@ -327,15 +327,12 @@ class WiseSettlementService:
             bool: True if successful, False otherwise
         """
         try:
-            # Get user's Wise bank details
+            # Get user's default POS bank account
             from banking.models import WiseItem
-            wise_item = WiseItem.objects.filter(
-                user=settlement.user,
-                is_verified=True
-            ).first()
+            wise_item = WiseItem.get_default_pos_account(settlement.user)
             
             if not wise_item:
-                raise Exception("No verified Wise bank account found for user")
+                raise Exception("No default POS bank account found for user")
             
             # Create or get recipient
             if not wise_item.wise_recipient_id:

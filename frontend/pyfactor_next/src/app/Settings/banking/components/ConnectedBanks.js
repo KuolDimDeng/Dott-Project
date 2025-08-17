@@ -6,14 +6,19 @@ import {
   StarIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  CreditCardIcon,
+  DocumentTextIcon,
+  UserGroupIcon,
+  ReceiptRefundIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
 /**
  * Connected Banks List Component
- * Displays and manages connected bank accounts
+ * Displays connected bank accounts with their assigned modules
  */
 export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary }) {
   const [disconnecting, setDisconnecting] = useState(null);
@@ -96,6 +101,36 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                           Primary
                         </span>
                       )}
+                      {connection.is_default_for_pos && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <CreditCardIcon className="w-3 h-3 mr-1" />
+                          POS
+                        </span>
+                      )}
+                      {connection.is_default_for_invoices && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <DocumentTextIcon className="w-3 h-3 mr-1" />
+                          Invoices
+                        </span>
+                      )}
+                      {connection.is_default_for_payroll && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <UserGroupIcon className="w-3 h-3 mr-1" />
+                          Payroll
+                        </span>
+                      )}
+                      {connection.is_default_for_expenses && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          <ReceiptRefundIcon className="w-3 h-3 mr-1" />
+                          Expenses
+                        </span>
+                      )}
+                      {connection.is_default_for_vendors && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <BuildingOfficeIcon className="w-3 h-3 mr-1" />
+                          Vendors
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500">
                       {connection.provider === 'plaid' ? 'Connected via Plaid' : 'Connected via Wise'}
@@ -123,7 +158,8 @@ export default function ConnectedBanks({ connections, onDisconnect, onSetPrimary
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {!connection.is_primary && (connection.is_active !== false && connection.status !== 'inactive') && (
+                  {/* Primary Account Button */}
+                  {!connection.is_primary && (connection.is_active !== false && connection.status !== 'inactive') && onSetPrimary && (
                     <button
                       onClick={() => onSetPrimary(connection.id)}
                       className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

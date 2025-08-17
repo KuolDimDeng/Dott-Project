@@ -59,6 +59,14 @@ class WiseItem(BankIntegration):
     verification_date = models.DateTimeField(null=True, blank=True)
     last_transfer_date = models.DateTimeField(null=True, blank=True)
     
+    # Module Default Settings
+    is_default_for_pos = models.BooleanField(default=False, help_text="Use this account for POS settlements")
+    is_default_for_invoices = models.BooleanField(default=False, help_text="Use this account for invoice payments")
+    is_default_for_payroll = models.BooleanField(default=False, help_text="Use this account for payroll disbursements")
+    is_default_for_expenses = models.BooleanField(default=False, help_text="Use this account for expense reimbursements")
+    is_default_for_vendors = models.BooleanField(default=False, help_text="Use this account for vendor payments")
+    is_active = models.BooleanField(default=True, help_text="Whether this bank account is active")
+    
     class Meta:
         db_table = 'banking_wise_item'
         
@@ -72,6 +80,119 @@ class WiseItem(BankIntegration):
         elif self.iban_last4:
             return f"****{self.iban_last4}"
         return "****"
+    
+    def set_as_default_for_pos(self):
+        """Set this account as default for POS, removing default from others."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Remove default from all other accounts for this user
+        removed = WiseItem.objects.filter(
+            user=self.user,
+            is_default_for_pos=True
+        ).exclude(id=self.id).update(is_default_for_pos=False)
+        
+        logger.info(f"[WiseItem] Removed default POS from {removed} other account(s)")
+        
+        # Set this one as default
+        self.is_default_for_pos = True
+        self.save()
+        
+        logger.info(f"[WiseItem] Set account {self.id} as default for POS - {self.bank_name}")
+        
+        # Verify it was saved
+        self.refresh_from_db()
+        logger.info(f"[WiseItem] Verification: is_default_for_pos = {self.is_default_for_pos}")
+    
+    def set_as_default_for_invoices(self):
+        """Set this account as default for invoices, removing default from others."""
+        WiseItem.objects.filter(
+            user=self.user,
+            is_default_for_invoices=True
+        ).exclude(id=self.id).update(is_default_for_invoices=False)
+        self.is_default_for_invoices = True
+        self.save()
+    
+    def set_as_default_for_payroll(self):
+        """Set this account as default for payroll, removing default from others."""
+        WiseItem.objects.filter(
+            user=self.user,
+            is_default_for_payroll=True
+        ).exclude(id=self.id).update(is_default_for_payroll=False)
+        self.is_default_for_payroll = True
+        self.save()
+    
+    def set_as_default_for_expenses(self):
+        """Set this account as default for expenses, removing default from others."""
+        WiseItem.objects.filter(
+            user=self.user,
+            is_default_for_expenses=True
+        ).exclude(id=self.id).update(is_default_for_expenses=False)
+        self.is_default_for_expenses = True
+        self.save()
+    
+    def set_as_default_for_vendors(self):
+        """Set this account as default for vendor payments, removing default from others."""
+        WiseItem.objects.filter(
+            user=self.user,
+            is_default_for_vendors=True
+        ).exclude(id=self.id).update(is_default_for_vendors=False)
+        self.is_default_for_vendors = True
+        self.save()
+    
+    @classmethod
+    def get_default_pos_account(cls, user):
+        """Get the default POS account for a user, or first active if none set."""
+        return cls._get_default_account(user, 'is_default_for_pos')
+    
+    @classmethod
+    def get_default_invoice_account(cls, user):
+        """Get the default invoice account for a user, or first active if none set."""
+        return cls._get_default_account(user, 'is_default_for_invoices')
+    
+    @classmethod
+    def get_default_payroll_account(cls, user):
+        """Get the default payroll account for a user, or first active if none set."""
+        return cls._get_default_account(user, 'is_default_for_payroll')
+    
+    @classmethod
+    def get_default_expense_account(cls, user):
+        """Get the default expense account for a user, or first active if none set."""
+        return cls._get_default_account(user, 'is_default_for_expenses')
+    
+    @classmethod
+    def get_default_vendor_account(cls, user):
+        """Get the default vendor payment account for a user, or first active if none set."""
+        return cls._get_default_account(user, 'is_default_for_vendors')
+    
+    @classmethod
+    def _get_default_account(cls, user, field_name):
+        """Generic method to get default account for any module."""
+        # Try to get explicitly set default
+        filter_kwargs = {
+            'user': user,
+            field_name: True,
+            'is_active': True,
+            'is_verified': True
+        }
+        default = cls.objects.filter(**filter_kwargs).first()
+        
+        if default:
+            return default
+        
+        # Fall back to first active verified account
+        first_active = cls.objects.filter(
+            user=user,
+            is_active=True,
+            is_verified=True
+        ).first()
+        
+        # Auto-set it as default if it's the only one
+        if first_active:
+            setattr(first_active, field_name, True)
+            first_active.save()
+        
+        return first_active
 
 class Country(TenantAwareModel):
     """

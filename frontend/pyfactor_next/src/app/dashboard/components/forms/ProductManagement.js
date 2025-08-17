@@ -4,6 +4,7 @@
 import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
+import { useCurrency } from '@/context/CurrencyContext';
 import { useRouter } from 'next/navigation';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
 import ProductQRCode from '@/components/ProductQRCode';
@@ -405,6 +406,11 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const notifyError = (message) => toast.error(message);
   const notifyInfo = (message) => toast.loading(message);
   const notifyWarning = (message) => toast.error(message, { icon: '⚠️' });
+  
+  // Get user's currency preferences
+  const { currency } = useCurrency();
+  const currencyCode = currency?.code || 'USD';
+  const currencySymbol = currency?.symbol || '$';
   
   // Track if component is mounted on client side
   const [isClientMounted, setIsClientMounted] = useState(false);
@@ -1439,7 +1445,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div>
               <label htmlFor="price" className="block text-sm font-medium text-black mb-1">
                 <span className="flex items-center">
-                  Price {productData.pricing_model === 'direct' && '*'}
+                  Price ({currencyCode}) {productData.pricing_model === 'direct' && '*'}
                   <FieldTooltip text={
                     productData.pricing_model === 'direct' 
                       ? "The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts."
@@ -1469,17 +1475,17 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               <p className="mt-1 text-xs text-gray-600">
                 {productData.pricing_model === 'time_weight' && productData.daily_rate && productData.weight && productData.entry_date && (
                   <>
-                    Calculated: ${productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days × {productData.weight} {productData.weight_unit || 'kg'} = ${productData.price}
+                    Calculated: {currencySymbol}{productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days × {productData.weight} {productData.weight_unit || 'kg'} = {currencySymbol}{productData.price}
                   </>
                 )}
                 {productData.pricing_model === 'time_only' && productData.daily_rate && productData.entry_date && (
                   <>
-                    Calculated: ${productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days = ${productData.price}
+                    Calculated: {currencySymbol}{productData.daily_rate} × {Math.max(1, Math.ceil((new Date() - new Date(productData.entry_date)) / (1000 * 60 * 60 * 24)))} days = {currencySymbol}{productData.price}
                   </>
                 )}
                 {productData.pricing_model === 'weight_only' && productData.weight && (
                   <>
-                    Calculated: Price per unit × {productData.weight} {productData.weight_unit || 'kg'} = ${productData.price}
+                    Calculated: Price per unit × {productData.weight} {productData.weight_unit || 'kg'} = {currencySymbol}{productData.price}
                   </>
                 )}
               </p>
@@ -1489,7 +1495,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div>
               <label htmlFor="cost" className="block text-sm font-medium text-black mb-1">
                 <span className="flex items-center">
-                  Cost
+                  Cost ({currencyCode})
                   <FieldTooltip text="Enter the total cost of acquiring this product from your supplier, including purchase price, delivery fees, taxes, and any other expenses. If buying in bulk, divide the total cost by quantity to get the unit cost." />
                 </span>
               </label>
@@ -1916,10 +1922,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               <div className="text-sm text-gray-500">
                 {selectedProduct.pricing_model === 'direct' ? 'Price:' : 'Base Price:'}
               </div>
-              <div className="text-sm text-black">${parseFloat(selectedProduct.price || 0).toFixed(2)}</div>
+              <div className="text-sm text-black">{currencySymbol}{parseFloat(selectedProduct.price || 0).toFixed(2)}</div>
               
               <div className="text-sm text-gray-500">Cost:</div>
-              <div className="text-sm text-black">${parseFloat(selectedProduct.cost || 0).toFixed(2)}</div>
+              <div className="text-sm text-black">{currencySymbol}{parseFloat(selectedProduct.cost || 0).toFixed(2)}</div>
               
               <div className="text-sm text-gray-500">Stock Quantity:</div>
               <div className="text-sm text-black">{selectedProduct.stock_quantity || 0}</div>
@@ -1942,7 +1948,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <>
                   <div className="text-sm text-gray-500">Current Price:</div>
                   <div className="text-sm">
-                    <div className="text-black font-medium">${parseFloat(selectedProduct.calculated_price || 0).toFixed(2)}</div>
+                    <div className="text-black font-medium">{currencySymbol}{parseFloat(selectedProduct.calculated_price || 0).toFixed(2)}</div>
                     {selectedProduct.price_breakdown && (
                       <div className="text-xs text-gray-500 mt-1">
                         {selectedProduct.pricing_model === 'time_weight' && selectedProduct.price_breakdown.days && (
@@ -1976,7 +1982,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               {selectedProduct.daily_rate && (
                 <>
                   <div className="text-sm text-gray-500">Daily Rate:</div>
-                  <div className="text-sm text-black">${parseFloat(selectedProduct.daily_rate || 0).toFixed(2)}</div>
+                  <div className="text-sm text-black">{currencySymbol}{parseFloat(selectedProduct.daily_rate || 0).toFixed(2)}</div>
                 </>
               )}
               
@@ -2101,7 +2107,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div>
             <label htmlFor="edit-price" className="block text-sm font-medium text-black mb-1">
               <span className="flex items-center">
-                Price *
+                Price ({currencyCode}) *
                 <FieldTooltip text="The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts." />
               </span>
             </label>
@@ -2121,7 +2127,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div>
             <label htmlFor="edit-cost" className="block text-sm font-medium text-black mb-1">
               <span className="flex items-center">
-                Cost
+                Cost ({currencyCode})
                 <FieldTooltip text="Enter the total cost of acquiring this product from your supplier, including purchase price, delivery fees, taxes, and any other expenses. If buying in bulk, divide the total cost by quantity to get the unit cost." />
               </span>
             </label>
@@ -2322,9 +2328,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         id: 'name',
       },
       { 
-        Header: 'Price',
+        Header: `Price (${currencyCode})`,
         accessor: 'price',
-        Cell: ({ value }) => `$${value || 0}`,
+        Cell: ({ value }) => `${currencySymbol}${value || 0}`,
       },
       {
         Header: 'Stock',
@@ -2613,7 +2619,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">
-                  ${parseFloat(product.calculated_price || product.price || 0).toFixed(2)}
+                  {currencySymbol}{parseFloat(product.calculated_price || product.price || 0).toFixed(2)}
                   {product.pricing_model !== 'direct' && (
                     <span className="text-xs text-gray-500 block">
                       {product.pricing_model_display}
@@ -3079,8 +3085,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'x-tenant-id': tenantId
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify(apiData)

@@ -79,4 +79,12 @@ urlpatterns = [
     # New Banking Connection Management endpoints
     path('connections/', wise_views.list_bank_connections, name='bank_connections'),
     path('connections/<uuid:connection_id>/', wise_views.manage_bank_connection, name='manage_bank_connection'),
+    
+    # Module-specific Bank Account Management endpoints
+    path('pos/accounts/', wise_views.get_pos_bank_accounts, name='pos_bank_accounts'),
+    path('pos/set-default/', wise_views.set_default_pos_account, name='set_default_pos_account'),
+    path('invoices/set-default/', wise_views.set_default_invoice_account, name='set_default_invoice_account'),
+    path('payroll/set-default/', wise_views.set_default_payroll_account, name='set_default_payroll_account'),
+    path('expenses/set-default/', wise_views.set_default_expense_account, name='set_default_expense_account'),
+    path('vendors/set-default/', wise_views.set_default_vendor_account, name='set_default_vendor_account'),
 ]
