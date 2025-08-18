@@ -1,59 +1,82 @@
 """
-Signals for the users app
+User-related signals for automatic tax cache updates
 """
-import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import BusinessDetails, Business, UserProfile
-from .accounting_standards import get_default_accounting_standard
-from finance.chart_of_accounts_init import initialize_chart_of_accounts
+import logging
+
+from users.models import Business, UserProfile
+from taxes.services.tax_cache_service import TaxRateCacheService
 
 logger = logging.getLogger(__name__)
 
-@receiver(post_save, sender=BusinessDetails)
-def set_default_accounting_standard(sender, instance, created, **kwargs):
-    """
-    Set default accounting standard based on country when BusinessDetails is created
-    """
-    if created and not instance.accounting_standard:
-        country_code = str(instance.country) if instance.country else 'US'
-        default_standard = get_default_accounting_standard(country_code)
-        
-        # Set the default accounting standard
-        instance.accounting_standard = default_standard
-        
-        # Set default inventory method
-        if not instance.inventory_valuation_method:
-            instance.inventory_valuation_method = 'WEIGHTED_AVERAGE'
-        
-        # Save without triggering the signal again
-        BusinessDetails.objects.filter(business=instance.business).update(
-            accounting_standard=default_standard,
-            inventory_valuation_method=instance.inventory_valuation_method
-        )
-        
-        logger.info(f"Set default accounting standard {default_standard} for business {instance.business.id} in country {country_code}")
-
 
 @receiver(post_save, sender=Business)
-def initialize_business_chart_of_accounts(sender, instance, created, **kwargs):
+def update_tax_cache_on_business_change(sender, instance, created, **kwargs):
     """
-    Initialize Chart of Accounts immediately when a business is created.
-    This follows industry standards - financial accounts should exist from day 1.
+    Update cached tax rates when business location changes
     """
-    if created and instance.tenant_id:
+    if not created:
+        # Check if location fields changed
+        update_fields = kwargs.get('update_fields', set())
+        location_fields = {'country', 'state', 'county', 'city'}
+        
+        # If update_fields is None, all fields were updated
+        # If it's a set, check if any location fields were updated
+        if update_fields is None or location_fields.intersection(update_fields):
+            logger.info(f"[TaxCache] Business location changed for {instance.name}, updating tax cache")
+            
+            # Invalidate cache for all users in this tenant
+            try:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                
+                # Find all users associated with this business
+                users = User.objects.filter(tenant_id=instance.tenant_id, is_active=True)
+                
+                updated_count = 0
+                for user in users:
+                    result = TaxRateCacheService.update_user_cached_tax_rate(user)
+                    if result.get("success"):
+                        updated_count += 1
+                        logger.info(f"[TaxCache] Updated cache for user {user.email}: {result.get('rate_percentage')}%")
+                
+                logger.info(f"[TaxCache] Updated tax cache for {updated_count} users after business location change")
+                
+            except Exception as e:
+                logger.error(f"[TaxCache] Error updating cache after business change: {e}")
+
+
+@receiver(post_save, sender=UserProfile)
+def populate_tax_cache_on_profile_creation(sender, instance, created, **kwargs):
+    """
+    Populate tax cache when user profile is created
+    """
+    if created:
         try:
-            # Initialize Chart of Accounts based on business type
-            result = initialize_chart_of_accounts(
-                tenant_id=instance.tenant_id,
-                business=instance
-            )
-            logger.info(
-                f"Chart of Accounts initialized for new business {instance.name}: "
-                f"{result.get('created', 0)} accounts created"
-            )
+            logger.info(f"[TaxCache] New profile created for user {instance.user.email}, populating tax cache")
+            result = TaxRateCacheService.update_user_cached_tax_rate(instance.user)
+            
+            if result.get("success"):
+                rate = result.get("rate_percentage", 0)
+                jurisdiction = result.get("jurisdiction", "Unknown")
+                logger.info(f"[TaxCache] Initial cache set: {rate}% for {jurisdiction}")
+            else:
+                logger.warning(f"[TaxCache] Could not set initial cache: {result.get('error')}")
+                
         except Exception as e:
-            logger.error(
-                f"Failed to initialize Chart of Accounts for business {instance.name}: {str(e)}"
-            )
-            # Don't fail business creation if CoA initialization fails
+            logger.error(f"[TaxCache] Error setting initial cache: {e}")
+
+
+def invalidate_tenant_tax_cache(tenant_id):
+    """
+    Helper function to invalidate all tax caches for a tenant
+    Call this when tenant-wide tax settings change
+    """
+    try:
+        count = TaxRateCacheService.invalidate_cache_for_tenant(tenant_id)
+        logger.info(f"[TaxCache] Invalidated {count} user caches for tenant {tenant_id}")
+        return count
+    except Exception as e:
+        logger.error(f"[TaxCache] Error invalidating tenant cache: {e}")
+        return 0
