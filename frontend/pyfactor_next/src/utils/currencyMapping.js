@@ -242,7 +242,7 @@ export const COUNTRY_TO_CURRENCY = {
   'SN': { code: 'XOF', symbol: 'CFA', name: 'CFA Franc BCEAO' },
   'SO': { code: 'SOS', symbol: 'S', name: 'Somali Shilling' },
   'SR': { code: 'SRD', symbol: '$', name: 'Surinam Dollar' },
-  'SS': { code: 'SSP', symbol: '£', name: 'South Sudanese Pound' },
+  'SS': { code: 'SSP', symbol: 'SSP', name: 'South Sudanese Pound' },
   'ST': { code: 'STN', symbol: 'Db', name: 'Dobra' },
   'SV': { code: 'USD', symbol: '$', name: 'US Dollar' },
   'SX': { code: 'ANG', symbol: 'ƒ', name: 'Netherlands Antillean Guilder' },
