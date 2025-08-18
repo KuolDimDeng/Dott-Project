@@ -3454,5 +3454,108 @@ python manage.py check_kenya_discount  # Verify Kenya is configured
 
 ---
 
-*Last Updated: 2025-08-02*
+## Product/Service/Customer Edit - 401 Authentication Error & Compliance Updates
+
+**Issue**: Edit and delete operations returning 401 authentication errors for products, services, and customers.
+
+**Date Fixed**: 2025-08-18
+
+**Symptoms**:
+- PUT/DELETE requests return 401 Unauthorized
+- Console shows: "Missing authentication tokens"
+- Operations work on first load but fail after navigation
+
+**Root Cause**: 
+The API routes were using JWT-based authentication (`getTokens()`) but the application uses session-based authentication with `sid` cookies.
+
+**Solution**:
+
+1. **Update API Routes to Use Session Authentication**:
+   ```javascript
+   // BEFORE (Wrong - JWT auth)
+   const { accessToken, idToken, tenantId } = await getTokens(request);
+   headers: { 'Authorization': `Bearer ${accessToken}` }
+   
+   // AFTER (Correct - Session auth)
+   const { cookies } = await import('next/headers');
+   const cookieStore = cookies();
+   const sidCookie = cookieStore.get('sid');
+   headers: { 'Authorization': `Session ${sidCookie.value}` }
+   ```
+
+2. **Add PATCH Handler for Status Updates**:
+   ```javascript
+   export async function PATCH(request, { params }) {
+     const { id } = params;
+     const cookieStore = cookies();
+     const sidCookie = cookieStore.get('sid');
+     
+     if (!sidCookie) {
+       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+     }
+     
+     const body = await request.json();
+     const response = await fetch(`${BACKEND_URL}/api/endpoint/${id}/`, {
+       method: 'PATCH',
+       headers: {
+         'Authorization': `Session ${sidCookie.value}`,
+         'Content-Type': 'application/json',
+       },
+       body: JSON.stringify(body),
+     });
+     
+     const data = await response.json();
+     return NextResponse.json(data);
+   }
+   ```
+
+3. **Implement Activate/Deactivate Instead of Delete (Compliance)**:
+   ```javascript
+   const handleToggleStatus = async (item) => {
+     const newStatus = !item.is_active;
+     const action = newStatus ? 'activate' : 'deactivate';
+     
+     const response = await fetch(`/api/endpoint/${item.id}`, {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       credentials: 'include',
+       body: JSON.stringify({ is_active: newStatus })
+     });
+     
+     if (response.ok) {
+       toast.success(`Item ${action}d successfully!`);
+       // Update state
+     }
+   };
+   ```
+
+4. **UI Updates for Compliance**:
+   - Replace delete buttons with activate/deactivate toggles
+   - Add Status column showing Active/Inactive badges
+   - Use orange for deactivate, green for activate
+   - Gray badges for inactive items (less alarming than red)
+
+**Key Insights**:
+- Session authentication must be used consistently across all API routes
+- Soft deletes (deactivation) maintain audit trails for compliance
+- The `sid` cookie contains the session token for backend authentication
+- Always include `credentials: 'include'` in fetch requests
+
+**Files Modified**:
+- `/src/app/api/inventory/products/[id]/route.js` - Added session auth & PATCH
+- `/src/app/api/inventory/services/[id]/route.js` - Added session auth & PATCH
+- `/src/app/api/crm/customers/[id]/route.js` - Added PATCH handler
+- `/src/app/dashboard/components/forms/ProductManagement.js` - Activate/deactivate UI
+- `/src/app/dashboard/components/forms/ServiceManagement.js` - Activate/deactivate UI
+- `/src/app/dashboard/components/forms/CustomerManagement.js` - Activate/deactivate UI
+
+**Benefits**:
+- **Compliance**: Maintains complete audit trail, no data is permanently deleted
+- **Reversible**: Items can be reactivated if needed
+- **Regulatory**: Meets data retention requirements
+- **Financial**: Preserves transaction history linked to items
+
+---
+
+*Last Updated: 2025-08-18*
 *Next Review: When new patterns emerge*

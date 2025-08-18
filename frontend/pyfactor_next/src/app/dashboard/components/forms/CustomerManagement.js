@@ -316,7 +316,50 @@ const CustomerManagement = () => {
     }
   };
 
-  // Handle delete customer
+  // Handle activate/deactivate customer
+  const handleToggleCustomerStatus = async (customer) => {
+    const newStatus = !customer.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+    
+    console.log(`[CustomerManagement] ${action}ing customer:`, customer.id);
+    
+    try {
+      const response = await fetch(`/api/crm/customers/${customer.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          is_active: newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} customer: ${response.status}`);
+      }
+      
+      const updatedCustomer = await response.json();
+      console.log(`[CustomerManagement] Customer ${action}d:`, updatedCustomer);
+      
+      toast.success(`Customer ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      
+      // Update the customer in the list
+      setCustomers(customers.map(c => 
+        c.id === customer.id ? { ...c, is_active: newStatus } : c
+      ));
+      
+      // Update selected customer if it's the same
+      if (selectedCustomer?.id === customer.id) {
+        setSelectedCustomer({ ...selectedCustomer, is_active: newStatus });
+      }
+    } catch (error) {
+      console.error(`[CustomerManagement] Error ${action}ing customer:`, error);
+      toast.error(`Failed to ${action} customer.`);
+    }
+  };
+
+  // Handle delete customer (kept for critical cases, but prefer deactivation)
   const handleDeleteCustomer = async () => {
     if (!customerToDelete) return;
     
@@ -863,6 +906,17 @@ const CustomerManagement = () => {
             <p className="mt-1 text-sm text-gray-900">{selectedCustomer.phone || 'Not provided'}</p>
           </div>
           
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Status</h3>
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              selectedCustomer.is_active !== false
+                ? 'bg-green-100 text-green-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {selectedCustomer.is_active !== false ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+          
         </div>
         
         {(selectedCustomer.address || selectedCustomer.city || selectedCustomer.state || selectedCustomer.zip_code || selectedCustomer.country) && (
@@ -935,6 +989,7 @@ const CustomerManagement = () => {
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Email</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Phone</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Location</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -955,6 +1010,15 @@ const CustomerManagement = () => {
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">{customer.city || customer.country || '-'}</div>
               </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  customer.is_active !== false
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {customer.is_active !== false ? 'Active' : 'Inactive'}
+                </span>
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
                   onClick={() => handleViewCustomer(customer)}
@@ -974,15 +1038,23 @@ const CustomerManagement = () => {
                   </svg>
                 </button>
                 <button
-                  onClick={() => {
-                    setCustomerToDelete(customer);
-                    setDeleteDialogOpen(true);
-                  }}
-                  className="text-red-600 hover:text-red-900"
+                  onClick={() => handleToggleCustomerStatus(customer)}
+                  className={`${
+                    customer.is_active !== false
+                      ? 'text-orange-600 hover:text-orange-900'
+                      : 'text-green-600 hover:text-green-900'
+                  }`}
+                  title={customer.is_active !== false ? 'Deactivate Customer' : 'Activate Customer'}
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  {customer.is_active !== false ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </button>
               </td>
             </tr>
@@ -1066,6 +1138,20 @@ const CustomerManagement = () => {
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Customers</h2>
           <p className="text-3xl font-bold text-blue-600 mt-2">{customers.length}</p>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Customers</h2>
+          <p className="text-3xl font-bold text-green-600 mt-2">
+            {customers.filter(c => c.is_active !== false).length}
+          </p>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Inactive Customers</h2>
+          <p className="text-3xl font-bold text-gray-600 mt-2">
+            {customers.filter(c => c.is_active === false).length}
+          </p>
         </div>
         
         <div className="bg-white shadow rounded-lg p-6">
@@ -1172,13 +1258,14 @@ const CustomerManagement = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => {
-                      setCustomerToDelete(selectedCustomer);
-                      setDeleteDialogOpen(true);
-                    }}
-                    className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    onClick={() => handleToggleCustomerStatus(selectedCustomer)}
+                    className={`px-4 py-2 rounded-md text-white transition-colors ${
+                      selectedCustomer.is_active !== false
+                        ? 'bg-orange-600 hover:bg-orange-700'
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
                   >
-                    Delete
+                    {selectedCustomer.is_active !== false ? 'Deactivate' : 'Activate'}
                   </button>
                   <button
                     onClick={() => setShowCustomerDetails(false)}

@@ -110,6 +110,43 @@ export async function PUT(request, { params }) {
   }
 }
 
+export async function PATCH(request, { params }) {
+  try {
+    const cookieStore = await cookies();
+    const { id } = await params;
+    
+    // Get session ID from sid cookie
+    const sidCookie = cookieStore.get('sid');
+    if (!sidCookie) {
+      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    }
+    
+    // Get request body
+    const body = await request.json();
+    
+    // Forward request to Django backend
+    const response = await fetch(`${BACKEND_URL}/api/crm/customers/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      return NextResponse.json({ error }, { status: response.status });
+    }
+    
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('[CRM Customer PATCH API] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     const cookieStore = await cookies();
