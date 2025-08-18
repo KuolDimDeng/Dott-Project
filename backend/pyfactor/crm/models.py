@@ -48,6 +48,10 @@ class Customer(TenantAwareModel):
     is_tax_exempt = models.BooleanField(default=False, help_text='Customer is exempt from sales tax')
     tax_exempt_certificate = models.CharField(max_length=100, blank=True, null=True, help_text='Tax exemption certificate number')
     tax_exempt_expiry = models.DateField(blank=True, null=True, help_text='Tax exemption expiry date')
+    
+    # Active status for soft delete
+    is_active = models.BooleanField(default=True, help_text='Whether this customer is active')
+    
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     

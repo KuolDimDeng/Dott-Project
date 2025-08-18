@@ -2686,32 +2686,37 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     e.preventDefault();
                     e.stopPropagation();
                     
+                    const newStatus = product.is_active === false;
+                    const action = newStatus ? 'activate' : 'deactivate';
+                    
                     try {
-                      const endpoint = product.is_active !== false ? 'deactivate' : 'activate';
-                      const response = await fetch(`/api/inventory/products/${product.id}/${endpoint}`, {
-                        method: 'POST',
+                      const response = await fetch(`/api/inventory/products/${product.id}`, {
+                        method: 'PATCH',
                         headers: {
                           'Content-Type': 'application/json',
                         },
                         credentials: 'include',
+                        body: JSON.stringify({
+                          is_active: newStatus
+                        })
                       });
                       
                       if (response.ok) {
                         const data = await response.json();
-                        toast.success(data.message);
+                        toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully!`);
                         // Refresh the products list
                         fetchProducts();
                       } else {
                         try {
                           const error = await response.json();
-                          toast.error(error.message || 'Failed to update product status');
+                          toast.error(error.message || `Failed to ${action} product`);
                         } catch (parseError) {
                           toast.error(`Server error: ${response.status} ${response.statusText}`);
                         }
                       }
                     } catch (error) {
                       console.error('Error toggling product status:', error);
-                      toast.error('Failed to update product status');
+                      toast.error(`Failed to ${action} product`);
                     }
                   }}
                   className={product.is_active !== false ? "text-yellow-600 hover:text-yellow-900 mr-3 focus:outline-none" : "text-green-600 hover:text-green-900 mr-3 focus:outline-none"}

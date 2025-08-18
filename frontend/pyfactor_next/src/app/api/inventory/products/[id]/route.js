@@ -144,7 +144,7 @@ export async function PATCH(request, { params }) {
     logger.debug(`[API] Product PATCH data for ID: ${id}:`, productData);
     
     // Forward the request to backend with session authentication
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/${id}/`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/inventory/products/${id}/`;
     logger.info(`[API] Forwarding PATCH to backend: ${backendUrl}`);
     
     const response = await fetch(backendUrl, {
