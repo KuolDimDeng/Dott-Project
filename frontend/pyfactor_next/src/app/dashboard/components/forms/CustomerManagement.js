@@ -1155,18 +1155,8 @@ const CustomerManagement = () => {
         </div>
         
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Customers</h2>
-          <p className="text-3xl font-bold text-green-600 mt-2">{customers.filter(c => c.is_active !== false).length}</p>
-        </div>
-        
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-sm font-medium text-black">New This Month</h2>
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">New This Month</h2>
           <p className="text-3xl font-bold text-purple-600 mt-2">0</p>
-        </div>
-        
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-sm font-medium text-black">Total Revenue</h2>
-          <p className="text-3xl font-bold text-orange-600 mt-2">$0</p>
         </div>
       </div>
       

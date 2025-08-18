@@ -166,7 +166,17 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const data = await response.json();
+    // Try to parse response as JSON, but handle empty or non-JSON responses
+    const responseText = await response.text();
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : { success: true, is_active: updateData.is_active };
+    } catch (parseError) {
+      console.warn('[Service PATCH] Response is not JSON, returning success with request data');
+      // If backend doesn't return JSON, return the data we sent
+      data = { ...updateData, id, success: true };
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
     console.error('[Service PATCH] Error:', error);

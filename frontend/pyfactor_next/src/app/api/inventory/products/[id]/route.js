@@ -167,7 +167,16 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    const parsedData = JSON.parse(responseData);
+    // Try to parse as JSON, but handle empty or non-JSON responses
+    let parsedData;
+    try {
+      parsedData = responseData ? JSON.parse(responseData) : { success: true, is_active: productData.is_active };
+    } catch (parseError) {
+      logger.warn(`[API] Response is not JSON, returning success with request data`);
+      // If backend doesn't return JSON, return the data we sent
+      parsedData = { ...productData, id, success: true };
+    }
+    
     logger.info(`[API] Product PATCH successful for ID: ${id}`);
     return NextResponse.json(parsedData);
     
