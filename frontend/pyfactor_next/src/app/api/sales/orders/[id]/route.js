@@ -97,6 +97,52 @@ export async function PUT(request, { params }) {
   }
 }
 
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = params;
+    logger.info(`[Orders API] PATCH request for order ${id}`);
+    
+    // Get session cookie
+    const sidCookie = await getSessionCookie();
+    if (!sidCookie) {
+      logger.error('[Orders API] No session cookie found');
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    
+    // Get request body
+    const body = await request.json();
+    
+    // Forward request to Django backend
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/orders/${id}`;
+    
+    const response = await fetch(backendUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+      body: JSON.stringify(body),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      logger.error('[Orders API] Backend error:', data);
+      return NextResponse.json(data, { status: response.status });
+    }
+    
+    logger.info('[Orders API] Order status updated successfully:', id);
+    return NextResponse.json(data);
+    
+  } catch (error) {
+    logger.error('[Orders API] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update order status' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
