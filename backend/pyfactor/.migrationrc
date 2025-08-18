@@ -1,0 +1,36 @@
+# Django Migration Configuration
+# Industry-standard defaults for auto-migrations
+
+[makemigrations]
+# Always use non-interactive mode
+interactive = false
+noinput = true
+merge = true
+
+# Default answers for common prompts
+[prompts]
+# When asked about renaming fields
+rename_field = "y"
+
+# When asked about deleting fields
+delete_field = "n"  # Safe default - don't delete
+
+# When asked about nullable fields
+allow_null = "y"    # Allow NULL for new fields
+
+# When asked about default values
+use_default = ""    # Empty string for CharField
+use_default_numeric = "0"  # Zero for numeric fields
+use_default_boolean = "False"  # False for BooleanField
+use_default_datetime = "timezone.now"  # Current time
+
+[squashing]
+# Auto-squash when migrations exceed this count
+threshold = 20
+keep_recent = 5  # Keep last 5 migrations unsquashed
+
+[deployment]
+# Production deployment settings
+fake_initial = true  # Fake initial migrations on new deployments
+atomic = true        # Use database transactions
+verbosity = 2        # Detailed output
