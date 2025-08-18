@@ -1,12 +1,11 @@
-# Generated migration to add is_active field to Customer model
+# Generated migration for adding is_active field to Customer model
 
 from django.db import migrations, models
-
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('crm', '0002_crm_customer_new_fields'),
+        ('crm', '0007_add_county_and_tax_exempt_fields'),
     ]
 
     operations = [
