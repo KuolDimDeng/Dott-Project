@@ -9,6 +9,7 @@ import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import { useCurrency } from '@/context/CurrencyContext';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -537,6 +538,8 @@ const InvoiceTemplateDialog = ({ isOpen, onClose, onSelect }) => {
 };
 
 const InvoiceManagement = () => {
+  const { currency } = useCurrency();
+  
   // State management
   const [activeTab, setActiveTab] = useState('orders'); // orders, transactions, invoices
   const [salesOrders, setSalesOrders] = useState([]);
@@ -750,6 +753,80 @@ const InvoiceManagement = () => {
     setSelectedItem({ ...item, type });
     setIsEditing(true);
     setShowDetails(true);
+  };
+
+  const handleToggleInvoiceStatus = async (invoice) => {
+    const newStatus = !invoice.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+    
+    console.log(`[InvoiceManagement] ${action}ing invoice:`, invoice.id);
+    
+    try {
+      const response = await fetch(`/api/sales/invoices/${invoice.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          is_active: newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} invoice: ${response.status}`);
+      }
+      
+      const updatedInvoice = await response.json();
+      console.log(`[InvoiceManagement] Invoice ${action}d:`, updatedInvoice);
+      
+      toast.success(`Invoice ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      
+      // Update the invoice in the list
+      setInvoices(invoices.map(i => 
+        i.id === invoice.id ? { ...i, is_active: newStatus } : i
+      ));
+    } catch (error) {
+      console.error(`[InvoiceManagement] Error ${action}ing invoice:`, error);
+      toast.error(`Failed to ${action} invoice.`);
+    }
+  };
+
+  const handleToggleOrderStatus = async (order) => {
+    const newStatus = !order.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+    
+    console.log(`[InvoiceManagement] ${action}ing order:`, order.id);
+    
+    try {
+      const response = await fetch(`/api/sales/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          is_active: newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} order: ${response.status}`);
+      }
+      
+      const updatedOrder = await response.json();
+      console.log(`[InvoiceManagement] Order ${action}d:`, updatedOrder);
+      
+      toast.success(`Order ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      
+      // Update the order in the list
+      setSalesOrders(salesOrders.map(o => 
+        o.id === order.id ? { ...o, is_active: newStatus } : o
+      ));
+    } catch (error) {
+      console.error(`[InvoiceManagement] Error ${action}ing order:`, error);
+      toast.error(`Failed to ${action} order.`);
+    }
   };
 
   const handleDelete = async (item, type) => {
@@ -1084,6 +1161,9 @@ const InvoiceManagement = () => {
                           Total
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Order Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1104,7 +1184,7 @@ const InvoiceManagement = () => {
                             {order.items?.length || 0} items
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${parseFloat(order.total_amount || 0).toFixed(2)}
+                            {currency} {parseFloat(order.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1113,6 +1193,13 @@ const InvoiceManagement = () => {
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {order.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              order.is_active !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {order.is_active !== false ? 'Active' : 'Inactive'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1136,10 +1223,14 @@ const InvoiceManagement = () => {
                                 Invoice
                               </button>
                               <button
-                                onClick={() => handleDelete(order, 'order')}
-                                className="text-red-600 hover:text-red-900"
+                                onClick={() => handleToggleOrderStatus(order)}
+                                className={`${
+                                  order.is_active !== false
+                                    ? 'text-orange-600 hover:text-orange-900'
+                                    : 'text-green-600 hover:text-green-900'
+                                }`}
                               >
-                                Delete
+                                {order.is_active !== false ? 'Deactivate' : 'Activate'}
                               </button>
                             </div>
                           </td>
@@ -1198,7 +1289,7 @@ const InvoiceManagement = () => {
                             {transaction.items?.length || 0} items
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${parseFloat(transaction.total_amount || 0).toFixed(2)}
+                            {currency} {parseFloat(transaction.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1271,10 +1362,13 @@ const InvoiceManagement = () => {
                           Amount
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
+                          Payment Status
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
@@ -1296,7 +1390,7 @@ const InvoiceManagement = () => {
                             {invoice.customer_name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${parseFloat(invoice.total_amount || 0).toFixed(2)}
+                            {currency} {parseFloat(invoice.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1310,6 +1404,13 @@ const InvoiceManagement = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {invoice.invoice_type === 'proforma' ? 'Pro Forma' : 'Standard'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              invoice.is_active !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {invoice.is_active !== false ? 'Active' : 'Inactive'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-2">
@@ -1364,13 +1465,23 @@ const InvoiceManagement = () => {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleDelete(invoice, 'invoice')}
-                                className="text-red-600 hover:text-red-900"
-                                title="Delete"
+                                onClick={() => handleToggleInvoiceStatus(invoice)}
+                                className={`${
+                                  invoice.is_active !== false
+                                    ? 'text-orange-600 hover:text-orange-900'
+                                    : 'text-green-600 hover:text-green-900'
+                                }`}
+                                title={invoice.is_active !== false ? 'Deactivate' : 'Activate'}
                               >
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
+                                {invoice.is_active !== false ? (
+                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                  </svg>
+                                ) : (
+                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                )}
                               </button>
                             </div>
                           </td>

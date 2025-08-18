@@ -9,9 +9,12 @@ import { logger } from '@/utils/logger';
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { canDeleteItem } from '@/utils/accountingRestrictions';
+import { useCurrency } from '@/context/CurrencyContext';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 const EstimateManagement = () => {
+  const { currency } = useCurrency();
+  
   // State management
   const [estimates, setEstimates] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -359,7 +362,50 @@ const EstimateManagement = () => {
     }
   };
 
-  // Handle delete estimate
+  // Handle activate/deactivate estimate
+  const handleToggleEstimateStatus = async (estimate) => {
+    const newStatus = !estimate.is_active;
+    const action = newStatus ? 'activate' : 'deactivate';
+    
+    console.log(`[EstimateManagement] ${action}ing estimate:`, estimate.id);
+    
+    try {
+      const response = await fetch(`/api/sales/estimates/${estimate.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          is_active: newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} estimate: ${response.status}`);
+      }
+      
+      const updatedEstimate = await response.json();
+      console.log(`[EstimateManagement] Estimate ${action}d:`, updatedEstimate);
+      
+      toast.success(`Estimate ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      
+      // Update the estimate in the list
+      setEstimates(estimates.map(e => 
+        e.id === estimate.id ? { ...e, is_active: newStatus } : e
+      ));
+      
+      // Update selected estimate if it's the same
+      if (selectedEstimate?.id === estimate.id) {
+        setSelectedEstimate({ ...selectedEstimate, is_active: newStatus });
+      }
+    } catch (error) {
+      console.error(`[EstimateManagement] Error ${action}ing estimate:`, error);
+      toast.error(`Failed to ${action} estimate.`);
+    }
+  };
+
+  // Handle delete estimate (kept for critical cases, but prefer deactivation)
   const handleDeleteEstimate = async () => {
     if (!estimateToDelete) return;
     
@@ -956,6 +1002,7 @@ const EstimateManagement = () => {
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Date</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Expiry</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Amount</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Document Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
           </tr>
@@ -994,7 +1041,7 @@ const EstimateManagement = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">
-                  ${parseFloat(estimate.total || estimate.totalAmount || 0).toFixed(2)}
+                  {currency} {parseFloat(estimate.total || estimate.totalAmount || 0).toFixed(2)}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -1006,6 +1053,13 @@ const EstimateManagement = () => {
                   'bg-yellow-100 text-yellow-800'
                 }`}>
                   {estimate.status?.charAt(0).toUpperCase() + estimate.status?.slice(1)}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  estimate.is_active !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {estimate.is_active !== false ? 'Active' : 'Inactive'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1027,15 +1081,23 @@ const EstimateManagement = () => {
                   </svg>
                 </button>
                 <button
-                  onClick={() => {
-                    setEstimateToDelete(estimate);
-                    setDeleteDialogOpen(true);
-                  }}
-                  className="text-red-600 hover:text-red-900"
+                  onClick={() => handleToggleEstimateStatus(estimate)}
+                  className={`${
+                    estimate.is_active !== false
+                      ? 'text-orange-600 hover:text-orange-900'
+                      : 'text-green-600 hover:text-green-900'
+                  }`}
+                  title={estimate.is_active !== false ? 'Deactivate' : 'Activate'}
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  {estimate.is_active !== false ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </button>
               </td>
             </tr>
