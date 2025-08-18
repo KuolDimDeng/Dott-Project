@@ -1,5 +1,6 @@
 'use client';
 
+// Version: 2025-08-18-v2 - Fixed product deactivation to use PATCH instead of POST /deactivate
 
 import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
@@ -2688,6 +2689,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     
                     const newStatus = product.is_active === false;
                     const action = newStatus ? 'activate' : 'deactivate';
+                    
+                    // Use PATCH method for status updates (v2 - fixed)
+                    console.log(`[ProductManagement] Toggling product status to ${newStatus} using PATCH`);
                     
                     try {
                       const response = await fetch(`/api/inventory/products/${product.id}`, {
