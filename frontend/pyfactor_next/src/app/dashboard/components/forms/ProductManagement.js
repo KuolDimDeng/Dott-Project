@@ -2702,21 +2702,36 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                       });
                       
                       if (response.ok) {
-                        const data = await response.json();
+                        // Try to parse response, but handle non-JSON responses
+                        let data;
+                        const responseText = await response.text();
+                        try {
+                          data = responseText ? JSON.parse(responseText) : { success: true };
+                        } catch (parseError) {
+                          console.warn('Response is not JSON, assuming success');
+                          data = { success: true };
+                        }
+                        
                         toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully!`);
                         // Refresh the products list
                         fetchProducts();
                       } else {
+                        // Try to get error message from response
+                        let errorMessage = `Failed to ${action} product`;
                         try {
-                          const error = await response.json();
-                          toast.error(error.message || `Failed to ${action} product`);
+                          const responseText = await response.text();
+                          if (responseText) {
+                            const error = JSON.parse(responseText);
+                            errorMessage = error.message || error.error || errorMessage;
+                          }
                         } catch (parseError) {
-                          toast.error(`Server error: ${response.status} ${response.statusText}`);
+                          errorMessage = `Server error: ${response.status} ${response.statusText}`;
                         }
+                        toast.error(errorMessage);
                       }
                     } catch (error) {
                       console.error('Error toggling product status:', error);
-                      toast.error(`Failed to ${action} product`);
+                      toast.error(`Error: ${error.message || `Failed to ${action} product`}`);
                     }
                   }}
                   className={product.is_active !== false ? "text-yellow-600 hover:text-yellow-900 mr-3 focus:outline-none" : "text-green-600 hover:text-green-900 mr-3 focus:outline-none"}
