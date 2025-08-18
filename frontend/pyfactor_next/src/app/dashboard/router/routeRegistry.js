@@ -178,7 +178,7 @@ export const routeRegistry = {
     description: 'Create new invoice'
   },
   'create-estimate': {
-    component: enhancedLazy(() => import('../components/forms/EstimateManagement'), 'Create Estimate'),
+    component: enhancedLazy(() => import('../components/forms/EstimateManagementWrapper'), 'Create Estimate'),
     title: 'Create Estimate',
     description: 'Create new estimate'
   },
@@ -208,12 +208,12 @@ export const routeRegistry = {
     description: 'View completed POS transactions'
   },
   'estimates': {
-    component: enhancedLazy(() => import('../components/forms/EstimateManagement'), 'Estimate Management'),
+    component: enhancedLazy(() => import('../components/forms/EstimateManagementWrapper'), 'Estimate Management'),
     title: 'Estimates',
     description: 'Create and manage estimates'
   },
   'estimate-management': {
-    component: enhancedLazy(() => import('../components/forms/EstimateManagement'), 'Estimate Management'),
+    component: enhancedLazy(() => import('../components/forms/EstimateManagementWrapper'), 'Estimate Management'),
     title: 'Estimates',
     description: 'Manage estimates'
   },
