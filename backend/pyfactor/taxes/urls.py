@@ -66,6 +66,11 @@ from .views.tax_reporting_views import (
     create_tax_filing,
     get_tax_liability
 )
+from .views.pos_tax_views import (
+    get_pos_default_tax_rate,
+    get_pos_customer_tax_rate,
+    refresh_cached_tax_rate
+)
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -173,4 +178,9 @@ urlpatterns = [
     path('accounting/transactions/', get_tax_transactions, name='tax-accounting-transactions'),
     path('accounting/filing/', create_tax_filing, name='tax-accounting-filing'),
     path('accounting/liability/', get_tax_liability, name='tax-accounting-liability'),
+    
+    # POS-specific tax endpoints (optimized for speed)
+    path('pos/default-rate/', get_pos_default_tax_rate, name='pos-default-tax-rate'),
+    path('pos/customer-rate/', get_pos_customer_tax_rate, name='pos-customer-tax-rate'),
+    path('pos/refresh-cache/', refresh_cached_tax_rate, name='pos-refresh-tax-cache'),
 ]

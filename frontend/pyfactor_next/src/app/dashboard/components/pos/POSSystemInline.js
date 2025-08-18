@@ -523,7 +523,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     };
 
     const fetchEstimatedTaxRate = async () => {
-      console.log('[POS] 🔍 === START FETCHING DEFAULT TAX RATE ===');
+      console.log('[POS] 🔍 === START FETCHING DEFAULT TAX RATE (OPTIMIZED) ===');
       console.log('[POS] 📍 Business Location State:', {
         country: businessCountry || 'NOT_SET',
         state: businessState || 'NOT_SET',
@@ -531,8 +531,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       });
       
       try {
-        console.log('[POS] 🌐 Calling: /api/taxes/tenant-settings');
-        const response = await fetch('/api/taxes/tenant-settings', {
+        console.log('[POS] 🌐 Calling: /api/pos/tax-rate-optimized (cached endpoint)');
+        // Use optimized endpoint that returns cached rates for instant loading
+        const response = await fetch('/api/pos/tax-rate-optimized', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -549,8 +550,10 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           // Check if user has tax settings (either custom or from global)
           if (taxData.settings && taxData.settings.sales_tax_rate !== undefined) {
             const rawRate = taxData.settings.sales_tax_rate;
-            // Convert from decimal to percentage (0.18 → 18%)
-            const taxRatePercentage = parseFloat(rawRate) * 100;
+            // Use rate_percentage if provided (already in percentage), else convert
+            const taxRatePercentage = taxData.settings.rate_percentage !== undefined 
+              ? parseFloat(taxData.settings.rate_percentage)
+              : parseFloat(rawRate) * 100;
             
             console.log('[POS] 🧮 === DEFAULT TAX RATE CALCULATION ===');
             console.log('[POS] Source:', taxData.source);
@@ -571,11 +574,14 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             console.log('[POS] ✅ Default tax rate set successfully:', {
               rate: taxRatePercentage + '%',
               source: source,
-              location: fullLocation
+              location: fullLocation,
+              cached: taxData.settings.cached || false
             });
             
+            // Show cached indicator if rate was from cache (lightning bolt = fast/cached)
+            const cacheIndicator = taxData.settings.cached ? ' ⚡' : '';
             toast.success(
-              `Default: ${taxRatePercentage.toFixed(1)}% (${location})`,
+              `Default: ${taxRatePercentage.toFixed(1)}% (${location})${cacheIndicator}`,
               { duration: 4000 }
             );
             
