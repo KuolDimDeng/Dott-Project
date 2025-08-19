@@ -23,6 +23,7 @@ import CardScanner from './components/CardScanner';
 import MobileProductGrid from './components/MobileProductGrid';
 import MobileCart from './components/MobileCart';
 import OfflineIndicator from './components/OfflineIndicator';
+import MobileReceiptDialog from './components/MobileReceiptDialog';
 
 export default function MobilePOSPage() {
   const router = useRouter();
@@ -41,6 +42,9 @@ export default function MobilePOSPage() {
   const [taxRate, setTaxRate] = useState(0);
   const [showCardScanner, setShowCardScanner] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [lastSaleData, setLastSaleData] = useState(null);
+  const [businessInfo, setBusinessInfo] = useState({});
 
   // Check online status
   useEffect(() => {
@@ -58,11 +62,12 @@ export default function MobilePOSPage() {
     };
   }, []);
 
-  // Fetch products
+  // Fetch products and business info
   useEffect(() => {
     if (session?.tenantId) {
       fetchProducts();
       fetchTaxRate();
+      fetchBusinessInfo();
     }
   }, [session]);
 
@@ -134,6 +139,28 @@ export default function MobilePOSPage() {
     } catch (error) {
       console.error('Error fetching tax rate:', error);
       setTaxRate(0);
+    }
+  };
+
+  const fetchBusinessInfo = async () => {
+    try {
+      const response = await fetch('/api/users/me/', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBusinessInfo({
+          name: data.business_name || session?.user?.business_name || 'My Business',
+          address: data.business_address || '',
+          phone: data.business_phone || data.phone || '',
+          email: data.business_email || data.email || '',
+          website: data.business_website || '',
+          taxId: data.tax_id || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching business info:', error);
     }
   };
 
@@ -262,13 +289,25 @@ export default function MobilePOSPage() {
         const result = await response.json();
         
         toast.success('Sale completed successfully!');
+        
+        // Prepare sale data for receipt
+        setLastSaleData({
+          ...result,
+          items: cart,
+          subtotal: getSubtotal().toFixed(2),
+          tax_amount: getTaxAmount().toFixed(2),
+          total_amount: getTotalAmount().toFixed(2),
+          payment_method: paymentMethod,
+          customer: null,
+          currency: currencyCode,
+          currencySymbol: currencySymbol,
+          invoice_number: result.invoice_number || result.id
+        });
+        
+        // Clear cart and show receipt dialog
         clearCart();
         setIsCartOpen(false);
-        
-        // Show receipt or share options
-        if (result.id) {
-          router.push(`/pos/receipt/${result.id}`);
-        }
+        setShowReceiptDialog(true);
       } else {
         throw new Error('Failed to process sale');
       }
@@ -401,6 +440,20 @@ export default function MobilePOSPage() {
           onClose={() => setShowCardScanner(false)}
           amount={getTotalAmount()}
           currencyCode={currencyCode}
+        />
+      )}
+
+      {/* Receipt Dialog - Mobile Optimized */}
+      {showReceiptDialog && lastSaleData && (
+        <MobileReceiptDialog
+          isOpen={showReceiptDialog}
+          onClose={() => setShowReceiptDialog(false)}
+          saleData={lastSaleData}
+          businessInfo={businessInfo}
+          onReceiptHandled={() => {
+            setShowReceiptDialog(false);
+            setLastSaleData(null);
+          }}
         />
       )}
     </div>
