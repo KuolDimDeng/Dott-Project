@@ -264,6 +264,35 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [shippingCounties, setShippingCounties] = useState([]);
   const [locationLoading, setLocationLoading] = useState(false);
 
+  // Function to fetch default tax rate - defined here so it can be called from anywhere
+  const fetchDefaultTaxRate = async () => {
+    if (!businessInfo?.country && !businessCountry) {
+      console.log('[POS] No business country available yet');
+      return 0;
+    }
+    
+    const countryCode = businessInfo?.country || businessCountry;
+    console.log('[POS] Fetching default tax rate for country:', countryCode);
+    
+    try {
+      const response = await fetch(`/api/taxes/global-rate?country=${countryCode}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.rate) {
+          setDefaultTaxRate(data.rate);
+          console.log('[POS] Fetched default tax rate:', data.rate, '%');
+          return data.rate;
+        }
+      }
+    } catch (error) {
+      console.error('[POS] Error fetching tax rate:', error);
+    }
+    return 0;
+  };
+
   // USB/Keyboard barcode scanner handler
   const scannerTimeoutRef = useRef(null);
   const scannerBufferRef = useRef('');
@@ -1854,45 +1883,25 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       setCustomerSelected(true);
                       setShowCustomerDropdown(false);
                       
-                      // Fetch the business default tax rate
-                      console.log('[POS] Walk-In selected, fetching business default tax rate...');
+                      // Use the pre-loaded business default tax rate
+                      console.log('[POS] Walk-In selected, using pre-loaded business default tax rate:', defaultTaxRate + '%');
                       
-                      try {
-                        // Use the POS-specific endpoint for default tax rate
-                        const response = await fetch('/api/taxes/pos/default-rate/', {
-                          credentials: 'include',
-                          headers: {
-                            'Content-Type': 'application/json'
-                          }
-                        });
+                      if (defaultTaxRate > 0) {
+                        setTaxRate(defaultTaxRate);
+                        setTaxJurisdiction(businessInfo.country || businessCountry || 'Business Location');
                         
-                        if (response.ok) {
-                          const taxData = await response.json();
-                          console.log('[POS] Walk-in tax data received:', taxData);
-                          
-                          // Convert decimal rate to percentage
-                          const taxRatePercentage = taxData.rate * 100;
-                          
-                          setTaxRate(taxRatePercentage);
-                          setDefaultTaxRate(taxRatePercentage);
-                          setTaxJurisdiction(taxData.settings?.country_name || 'Business Location');
-                          
-                          console.log('[POS] Walk-In tax rate set to:', taxRatePercentage + '%');
-                          toast.success(`Tax: ${taxRatePercentage.toFixed(1)}% (${taxData.settings?.country_name || 'Business default'})`);
-                        } else {
-                          console.error('[POS] Failed to fetch walk-in tax rate');
-                          // Fall back to cached default if available
-                          if (defaultTaxRate > 0) {
-                            setTaxRate(defaultTaxRate);
-                            toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Cached rate)`);
-                          }
-                        }
-                      } catch (error) {
-                        console.error('[POS] Error fetching walk-in tax rate:', error);
-                        // Fall back to cached default if available
-                        if (defaultTaxRate > 0) {
-                          setTaxRate(defaultTaxRate);
-                          toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Cached rate)`);
+                        const locationName = businessInfo.country || businessCountry || 'Business default';
+                        console.log('[POS] Walk-In tax rate set to:', defaultTaxRate + '%');
+                        toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (${locationName})`);
+                      } else {
+                        console.warn('[POS] No default tax rate loaded yet. Loading now...');
+                        // If for some reason the default rate isn't loaded, fetch it now
+                        const rate = await fetchDefaultTaxRate();
+                        if (rate > 0) {
+                          setTaxRate(rate);
+                          const locationName = businessInfo.country || businessCountry || 'Business default';
+                          setTaxJurisdiction(businessInfo.country || businessCountry || 'Business Location');
+                          toast.success(`Tax: ${rate.toFixed(1)}% (${locationName})`);
                         }
                       }
                     }}
