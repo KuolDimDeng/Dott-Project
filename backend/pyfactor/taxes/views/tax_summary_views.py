@@ -13,10 +13,12 @@ from decimal import Decimal
 import logging
 
 from taxes.models import (
-    TaxPosting, 
-    TaxAccountBalance,
+    TaxTransaction,
+    TaxAccount,
     GlobalSalesTaxRate,
-    TenantTaxSettings
+    TenantTaxSettings,
+    TaxAccountingFiling,
+    TaxPeriodSummary
 )
 from sales.models import Sale, Invoice
 from payments.models import POSTransaction
@@ -57,43 +59,42 @@ def tax_summary(request):
             end = timezone.now()
             start = end - timedelta(days=days)
         
-        # Get tax postings for the period
-        tax_postings = TaxPosting.objects.filter(
+        # Get tax transactions for the period
+        tax_transactions = TaxTransaction.objects.filter(
             tenant_id=tenant_id,
-            posting_date__gte=start,
-            posting_date__lte=end,
-            status='posted'
-        )
+            transaction_date__gte=start,
+            transaction_date__lte=end
+        ).exclude(status='REVERSED')
         
         # Calculate total tax collected
-        total_collected = tax_postings.aggregate(
-            total=Sum('tax_amount')
+        total_collected = tax_transactions.aggregate(
+            total=Sum('tax_collected')
         )['total'] or Decimal('0')
         
-        # Get tax by jurisdiction
-        by_jurisdiction = tax_postings.values('jurisdiction').annotate(
-            amount=Sum('tax_amount'),
+        # Get tax by jurisdiction (using customer_location field to determine jurisdiction)
+        by_jurisdiction = tax_transactions.values('tax_account__jurisdiction').annotate(
+            amount=Sum('tax_collected'),
             count=Count('id'),
-            rate=Avg('tax_rate')
+            rate=Avg('tax_rate_applied')
         ).order_by('-amount')[:10]
         
         # Format jurisdiction data
         jurisdiction_data = []
         for item in by_jurisdiction:
             jurisdiction_data.append({
-                'jurisdiction': item['jurisdiction'] or 'Unknown',
+                'jurisdiction': item['tax_account__jurisdiction'] or 'Unknown',
                 'amount': float(item['amount'] or 0),
                 'count': item['count'],
-                'rate': float(item['rate'] or 0)
+                'rate': float(item['rate'] or 0) if item['rate'] else 0
             })
         
         # Calculate average tax rate
-        avg_rate = tax_postings.aggregate(
-            avg=Avg('tax_rate')
+        avg_rate = tax_transactions.aggregate(
+            avg=Avg('tax_rate_applied')
         )['avg'] or Decimal('0')
         
         # Count taxable transactions
-        taxable_count = tax_postings.values('reference_number').distinct().count()
+        taxable_count = tax_transactions.values('source_id').distinct().count()
         
         # Get POS transactions for additional data
         pos_transactions = POSTransaction.objects.filter(
@@ -125,16 +126,16 @@ def tax_summary(request):
         tax_credits = Decimal('0')
         
         try:
-            # Get tax account balances
-            tax_accounts = TaxAccountBalance.objects.filter(
+            # Get tax accounts
+            tax_accounts = TaxAccount.objects.filter(
                 tenant_id=tenant_id
             )
             
             for account in tax_accounts:
-                if account.account_type == 'payable':
-                    tax_liability += account.balance
-                elif account.account_type == 'receivable':
-                    tax_credits += account.balance
+                if account.account_type == 'liability':
+                    tax_liability += account.current_balance
+                elif account.account_type == 'asset':
+                    tax_credits += account.current_balance
         except Exception as e:
             logger.warning(f"Could not fetch tax account balances: {e}")
         
@@ -214,31 +215,30 @@ def tax_report_detail(request):
             start = datetime(year, 1, 1)
             end = datetime(year, 12, 31)
         
-        # Get tax postings
-        postings = TaxPosting.objects.filter(
+        # Get tax transactions
+        transactions = TaxTransaction.objects.filter(
             tenant_id=tenant_id,
-            posting_date__gte=start,
-            posting_date__lte=end,
-            status='posted'
-        )
+            transaction_date__gte=start,
+            transaction_date__lte=end
+        ).exclude(status='REVERSED')
         
         # Group by jurisdiction and tax type
         report_data = {}
         
-        for posting in postings:
-            jurisdiction = posting.jurisdiction or 'Unknown'
+        for transaction in transactions:
+            jurisdiction = transaction.tax_account.jurisdiction if transaction.tax_account else 'Unknown'
             if jurisdiction not in report_data:
                 report_data[jurisdiction] = {
                     'gross_sales': Decimal('0'),
                     'taxable_sales': Decimal('0'),
                     'exempt_sales': Decimal('0'),
                     'tax_collected': Decimal('0'),
-                    'tax_rate': posting.tax_rate or Decimal('0'),
+                    'tax_rate': transaction.tax_rate_applied or Decimal('0'),
                     'transactions': 0
                 }
             
-            report_data[jurisdiction]['taxable_sales'] += posting.taxable_amount
-            report_data[jurisdiction]['tax_collected'] += posting.tax_amount
+            report_data[jurisdiction]['taxable_sales'] += transaction.taxable_amount
+            report_data[jurisdiction]['tax_collected'] += transaction.tax_collected
             report_data[jurisdiction]['transactions'] += 1
         
         # Convert to list format
