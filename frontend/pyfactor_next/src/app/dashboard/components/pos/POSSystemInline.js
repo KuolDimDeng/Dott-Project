@@ -1848,17 +1848,52 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               {showCustomerDropdown && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                   <div
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedCustomer('walk-in');
                       setCustomerSearchTerm('Walk-in Customer');
                       setCustomerSelected(true);
                       setShowCustomerDropdown(false);
-                      // Use business default tax for walk-in customer
-                      if (defaultTaxRate > 0) {
-                        setTaxRate(defaultTaxRate);
-                        setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
-                        console.log('[POS] Walk-In selected, using business default tax rate:', defaultTaxRate + '%');
-                        toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Business default)`);
+                      
+                      // Fetch the business default tax rate
+                      console.log('[POS] Walk-In selected, fetching business default tax rate...');
+                      
+                      try {
+                        // Use the POS-specific endpoint for default tax rate
+                        const response = await fetch('/api/taxes/pos/default-rate/', {
+                          credentials: 'include',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          }
+                        });
+                        
+                        if (response.ok) {
+                          const taxData = await response.json();
+                          console.log('[POS] Walk-in tax data received:', taxData);
+                          
+                          // Convert decimal rate to percentage
+                          const taxRatePercentage = taxData.rate * 100;
+                          
+                          setTaxRate(taxRatePercentage);
+                          setDefaultTaxRate(taxRatePercentage);
+                          setTaxJurisdiction(taxData.settings?.country_name || 'Business Location');
+                          
+                          console.log('[POS] Walk-In tax rate set to:', taxRatePercentage + '%');
+                          toast.success(`Tax: ${taxRatePercentage.toFixed(1)}% (${taxData.settings?.country_name || 'Business default'})`);
+                        } else {
+                          console.error('[POS] Failed to fetch walk-in tax rate');
+                          // Fall back to cached default if available
+                          if (defaultTaxRate > 0) {
+                            setTaxRate(defaultTaxRate);
+                            toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Cached rate)`);
+                          }
+                        }
+                      } catch (error) {
+                        console.error('[POS] Error fetching walk-in tax rate:', error);
+                        // Fall back to cached default if available
+                        if (defaultTaxRate > 0) {
+                          setTaxRate(defaultTaxRate);
+                          toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Cached rate)`);
+                        }
                       }
                     }}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b font-medium"
