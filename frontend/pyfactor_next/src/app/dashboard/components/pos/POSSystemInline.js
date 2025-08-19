@@ -139,6 +139,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [cartItems, setCartItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [customerSelected, setCustomerSelected] = useState(false); // Track if customer has been selected
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // percentage or amount
@@ -638,24 +639,21 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   }, []);
 
   // Set initial tax rate to default business rate when it's loaded
+  // Don't set tax rate automatically - wait for customer selection
   useEffect(() => {
-    if (defaultTaxRate > 0 && taxRate === 0 && !selectedCustomer) {
-      console.log('[POS] Setting initial tax rate to business default:', defaultTaxRate + '%');
-      setTaxRate(defaultTaxRate);
-    }
+    // Tax rate remains 0 until customer is selected
+    console.log('[POS] Default tax rate loaded:', defaultTaxRate + '%, waiting for customer selection');
   }, [defaultTaxRate]);
 
   // Update tax rate when customer is selected
   
   useEffect(() => {
     const fetchCustomerTaxRate = async () => {
-      if (!selectedCustomer) {
-        // No customer selected - use business default tax rate
-        if (defaultTaxRate > 0) {
-          console.log('[POS] No customer selected, using business default tax rate:', defaultTaxRate + '%');
-          setTaxRate(defaultTaxRate);
-          return;
-        }
+      if (!selectedCustomer || !customerSelected) {
+        // No customer selected - tax rate stays at 0
+        console.log('[POS] No customer selected, tax rate remains at 0%');
+        setTaxRate(0);
+        return;
         
         // If default rate not loaded yet, wait
         if (!businessInfo.country && !businessCountry) {
@@ -939,6 +937,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   // Helper function to get customer display name
   const getCustomerDisplayName = (customerId) => {
     if (!customerId) return '';
+    if (customerId === 'walk-in') return 'Walk-in Customer';
     const customer = customers.find(c => c.id === customerId);
     if (!customer) return '';
     
@@ -1047,7 +1046,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       
       const saleData = {
         items: mappedItems,
-        customer_id: selectedCustomer || null,
+        customer_id: (selectedCustomer === 'walk-in' ? null : selectedCustomer) || null,
         discount_percentage: discountPercentage,
         payment_method: paymentMethod,
         use_shipping_address: useShippingAddress,
@@ -1119,7 +1118,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       
       const saleData = {
         items: mappedItems,
-        customer_id: selectedCustomer || null,
+        customer_id: (selectedCustomer === 'walk-in' ? null : selectedCustomer) || null,
         discount_percentage: discountPercentage,
         payment_method: paymentMethod,
         use_shipping_address: useShippingAddress,
@@ -1453,9 +1452,11 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const resetCart = () => {
     setCartItems([]);
     setSelectedCustomer('');
+    setCustomerSearchTerm('');
+    setCustomerSelected(false);
     setDiscount(0);
-    setTaxRate(defaultTaxRate); // Use business default tax rate for walk-in customers
-    setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
+    setTaxRate(0); // Reset to 0 until new customer selected
+    setTaxJurisdiction(null);
     setNotes('');
     setProductSearchTerm('');
     setAmountTendered(''); // Reset cash drawer amount
@@ -1824,7 +1825,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                     }
                   }}
                   onFocus={() => setShowCustomerDropdown(true)}
-                  placeholder={selectedCustomer ? getCustomerDisplayName(selectedCustomer) : t('walkInCustomer')}
+                  placeholder={selectedCustomer ? getCustomerDisplayName(selectedCustomer) : 'Select a customer'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 {selectedCustomer && (
@@ -1832,6 +1833,9 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                     onClick={() => {
                       setSelectedCustomer('');
                       setCustomerSearchTerm('');
+                      setCustomerSelected(false);
+                      setTaxRate(0); // Reset tax rate to 0 when no customer selected
+                      setTaxJurisdiction(null);
                     }}
                     className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
                   >
@@ -1845,18 +1849,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                   <div
                     onClick={() => {
-                      setSelectedCustomer('');
-                      setCustomerSearchTerm('');
+                      setSelectedCustomer('walk-in');
+                      setCustomerSearchTerm('Walk-in Customer');
+                      setCustomerSelected(true);
                       setShowCustomerDropdown(false);
-                      // Reset to business default tax for walk-in customer
+                      // Use business default tax for walk-in customer
                       if (defaultTaxRate > 0) {
                         setTaxRate(defaultTaxRate);
                         setTaxJurisdiction(null); // Clear any customer-specific jurisdiction
-                        console.log('[POS] Walk-In selected, reset to business default tax rate:', defaultTaxRate + '%');
+                        console.log('[POS] Walk-In selected, using business default tax rate:', defaultTaxRate + '%');
                         toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (Business default)`);
                       }
                     }}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b font-medium"
                   >
                     <div className="font-medium">{t('walkInCustomer')}</div>
                     <div className="text-sm text-gray-500">No customer record</div>
@@ -1882,6 +1887,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                         onClick={() => {
                           setSelectedCustomer(customer.id);
                           setCustomerSearchTerm(getCustomerDisplayName(customer.id));
+                          setCustomerSelected(true);
                           setShowCustomerDropdown(false);
                           // Calculate tax for this customer
                           calculateCustomerTax(customer);
