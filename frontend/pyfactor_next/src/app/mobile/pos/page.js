@@ -29,7 +29,9 @@ import { encryptForStorage, decryptFromStorage, logSecurityEvent } from './utils
 export default function MobilePOSPage() {
   const router = useRouter();
   const { session, loading, isAuthenticated, tenantId } = useSession();
-  const { formatCurrency, currencyCode, currencySymbol } = useCurrency();
+  const { currency } = useCurrency();
+  const currencyCode = currency?.code || 'USD';
+  const currencySymbol = currency?.symbol || '$';
   
   // State management
   const [products, setProducts] = useState([]);
@@ -75,13 +77,19 @@ export default function MobilePOSPage() {
       loading: loading
     });
     
+    console.log('[Mobile POS] Currency check:', {
+      currency: currency,
+      currencyCode: currencyCode,
+      currencySymbol: currencySymbol
+    });
+    
     // Use tenantId from hook or from session.user.tenantId
     if (!loading && (tenantId || session?.user?.tenantId)) {
       fetchProducts();
       fetchTaxRate();
       fetchBusinessInfo();
     }
-  }, [session, tenantId, loading, isAuthenticated]);
+  }, [session, tenantId, loading, isAuthenticated, currency]);
 
   const fetchProducts = async () => {
     try {

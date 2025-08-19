@@ -96,6 +96,11 @@ function Providers({ children }) {
                     {children}
                   </CurrencyProvider>
                 </AuthWrapper>
+              ) : pathname.startsWith('/mobile/') && !pathname.includes('/landing') ? (
+                // Wrap mobile routes with CurrencyProvider even if not in AuthWrapper
+                <CurrencyProvider>
+                  {children}
+                </CurrencyProvider>
               ) : (
                 children
               )}
