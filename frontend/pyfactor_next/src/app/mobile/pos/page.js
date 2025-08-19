@@ -28,7 +28,7 @@ import { encryptForStorage, decryptFromStorage, logSecurityEvent } from './utils
 
 export default function MobilePOSPage() {
   const router = useRouter();
-  const { session, loading } = useSession();
+  const { session, loading, isAuthenticated, tenantId } = useSession();
   const { formatCurrency, currencyCode, currencySymbol } = useCurrency();
   
   // State management
@@ -65,23 +65,40 @@ export default function MobilePOSPage() {
 
   // Fetch products and business info
   useEffect(() => {
-    if (session?.tenantId) {
+    console.log('[Mobile POS] Session check:', {
+      hasSession: !!session,
+      tenantId: tenantId,
+      hookTenantId: session?.user?.tenantId,
+      authenticated: session?.authenticated,
+      isAuthenticated: isAuthenticated,
+      user: session?.user?.email,
+      loading: loading
+    });
+    
+    // Use tenantId from hook or from session.user.tenantId
+    if (!loading && (tenantId || session?.user?.tenantId)) {
       fetchProducts();
       fetchTaxRate();
       fetchBusinessInfo();
     }
-  }, [session]);
+  }, [session, tenantId, loading, isAuthenticated]);
 
   const fetchProducts = async () => {
     try {
       setIsLoadingProducts(true);
       
+      console.log('[Mobile POS] fetchProducts called with session:', {
+        hasSession: !!session,
+        tenantId: session?.tenantId,
+        user: session?.user?.email
+      });
+      
       // Check encrypted cache first (offline support)
       const encryptedCache = localStorage.getItem('pos_products_cache');
       if (encryptedCache && !navigator.onLine) {
         try {
-          // Use session ID as encryption key
-          const encryptionKey = session?.tenantId || 'default-key';
+          // Use tenant ID as encryption key
+          const encryptionKey = tenantId || session?.user?.tenantId || 'default-key';
           const cached = decryptFromStorage(encryptedCache, encryptionKey);
           if (cached && cached.products) {
             setProducts(cached.products);
@@ -96,19 +113,37 @@ export default function MobilePOSPage() {
         }
       }
 
+      console.log('[Mobile POS] Fetching products from /api/products');
       const response = await fetch('/api/products', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('[Mobile POS] Products response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Mobile POS] Products data received:', {
+          hasData: !!data,
+          hasProducts: !!data.products,
+          productCount: data.products?.length || 0,
+          success: data.success
+        });
+        
         const activeProducts = (data.products || []).filter(p => p.is_active !== false);
+        console.log('[Mobile POS] Active products:', activeProducts.length);
         
         setProducts(activeProducts);
         setFilteredProducts(activeProducts);
         
         // Encrypt and cache for offline use
-        const encryptionKey = session?.tenantId || 'default-key';
+        const encryptionKey = tenantId || session?.user?.tenantId || 'default-key';
         const cacheData = {
           products: activeProducts,
           timestamp: Date.now()
@@ -276,13 +311,13 @@ export default function MobilePOSPage() {
         currency_code: currencyCode,
         currency_symbol: currencySymbol,
         card_token: cardToken, // For card payments
-        tenant_id: session.tenantId
+        tenant_id: tenantId || session?.user?.tenantId
       };
 
       // If offline, encrypt and queue the sale
       if (!navigator.onLine) {
         try {
-          const encryptionKey = session?.tenantId || 'default-key';
+          const encryptionKey = tenantId || session?.user?.tenantId || 'default-key';
           const encryptedSales = localStorage.getItem('pendingSales');
           
           let pendingSales = [];
