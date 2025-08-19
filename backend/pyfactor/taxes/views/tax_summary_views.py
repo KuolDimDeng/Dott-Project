@@ -20,8 +20,7 @@ from taxes.models import (
     TaxAccountingFiling,
     TaxPeriodSummary
 )
-from sales.models import Sale, Invoice
-from payments.models import POSTransaction
+from sales.models import Sale, Invoice, POSTransaction
 
 logger = logging.getLogger(__name__)
 

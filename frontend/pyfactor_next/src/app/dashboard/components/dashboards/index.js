@@ -2,7 +2,7 @@
 // This file exports all dashboard components to prevent circular dependencies
 
 export { default as BusinessOverviewDashboard } from './BusinessOverviewDashboard';
-export { default as SalesDashboard } from './SalesDashboard';
+export { default as SalesDashboard } from './SalesDashboardEnhanced';
 export { default as InventoryDashboard } from './InventoryDashboard';
 export { default as AccountingDashboard } from './AccountingDashboard';
 export { default as TaxDashboard } from './TaxDashboard';
