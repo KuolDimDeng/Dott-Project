@@ -167,7 +167,7 @@ export default function MobilePage() {
       title: 'Quick Sale',
       description: 'Process sales instantly',
       icon: CurrencyDollarIcon,
-      href: '/pos',
+      href: '/mobile/pos',
       color: 'bg-blue-500'
     },
     {
@@ -441,7 +441,7 @@ export default function MobilePage() {
             <span className="text-xs mt-1">Jobs</span>
           </button>
           <button 
-            onClick={() => router.push('/pos')}
+            onClick={() => router.push('/mobile/pos')}
             className="flex flex-col items-center py-2 text-gray-600 hover:text-blue-600"
           >
             <CurrencyDollarIcon className="w-6 h-6" />
