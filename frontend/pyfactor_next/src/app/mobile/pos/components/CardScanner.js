@@ -4,6 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import { XMarkIcon, CameraIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { loadStripe } from '@stripe/stripe-js';
 import toast from 'react-hot-toast';
+import { 
+  isValidCardNumber, 
+  isValidExpiry, 
+  isValidCVC, 
+  getCardType,
+  paymentRateLimiter,
+  clearSensitiveData,
+  logSecurityEvent,
+  sanitizeCardNumber
+} from '../utils/security';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -20,6 +30,7 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const formRef = useRef(null);
 
   // Check for Web Payment API support
   const supportsPaymentRequest = typeof window !== 'undefined' && 'PaymentRequest' in window;
@@ -182,11 +193,23 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
     });
   };
 
-  // Method 3: Manual Entry
+  // Method 3: Manual Entry with Enhanced Security
   const handleManualEntry = async () => {
     setIsProcessing(true);
 
     try {
+      // Check rate limiting
+      try {
+        paymentRateLimiter.canAttempt();
+      } catch (rateLimitError) {
+        toast.error(rateLimitError.message);
+        logSecurityEvent('PAYMENT_RATE_LIMITED', { 
+          timestamp: new Date().toISOString() 
+        });
+        setIsProcessing(false);
+        return;
+      }
+
       // Validate card data
       if (!cardData.number || !cardData.expiry || !cardData.cvc) {
         toast.error('Please fill all card fields');
@@ -194,8 +217,43 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
         return;
       }
 
+      // Enhanced card validation
+      if (!isValidCardNumber(cardData.number)) {
+        paymentRateLimiter.recordAttempt();
+        logSecurityEvent('INVALID_CARD_NUMBER', { 
+          attempted: sanitizeCardNumber(cardData.number) 
+        });
+        toast.error('Invalid card number');
+        setIsProcessing(false);
+        return;
+      }
+
+      if (!isValidExpiry(cardData.expiry)) {
+        paymentRateLimiter.recordAttempt();
+        logSecurityEvent('INVALID_EXPIRY', { expiry: cardData.expiry });
+        toast.error('Invalid or expired card');
+        setIsProcessing(false);
+        return;
+      }
+
+      const cardType = getCardType(cardData.number);
+      if (!isValidCVC(cardData.cvc, cardType)) {
+        paymentRateLimiter.recordAttempt();
+        logSecurityEvent('INVALID_CVC', { cardType });
+        toast.error('Invalid security code');
+        setIsProcessing(false);
+        return;
+      }
+
       // Parse expiry
       const [expMonth, expYear] = cardData.expiry.split('/');
+
+      // Log payment attempt
+      logSecurityEvent('PAYMENT_ATTEMPT', {
+        cardType,
+        last4: cardData.number.slice(-4),
+        amount: amount
+      });
 
       // Create Stripe token
       const stripe = await stripePromise;
@@ -210,19 +268,43 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
       });
 
       if (error) {
+        paymentRateLimiter.recordAttempt();
+        logSecurityEvent('STRIPE_TOKEN_ERROR', { 
+          error: error.message,
+          type: error.type 
+        });
         throw error;
       }
+
+      // Success - reset rate limiter
+      paymentRateLimiter.recordSuccess();
+      
+      // Log successful tokenization
+      logSecurityEvent('PAYMENT_TOKEN_CREATED', {
+        token: token.id.substring(0, 10) + '...',
+        last4: token.card.last4,
+        brand: token.card.brand,
+        amount: amount
+      });
+
+      // Clear sensitive data from memory
+      const clearedData = clearSensitiveData(formRef);
+      setCardData(clearedData);
 
       // Send token to parent
       onCardScanned({ 
         token: token.id, 
-        last4: cardData.number.slice(-4),
+        last4: token.card.last4,
         brand: token.card.brand 
       });
       
     } catch (error) {
       console.error('Tokenization error:', error);
       toast.error(error.message || 'Invalid card details');
+      
+      // Clear sensitive data on error
+      const clearedData = clearSensitiveData(formRef);
+      setCardData(clearedData);
     } finally {
       setIsProcessing(false);
     }
@@ -431,6 +513,18 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
                     />
                   </div>
                 </div>
+
+                {/* Card Type Indicator */}
+                {cardData.number.length >= 4 && (
+                  <div className="text-sm text-gray-600 mb-2">
+                    Card Type: <span className="font-medium">
+                      {getCardType(cardData.number).toUpperCase()}
+                    </span>
+                    {isValidCardNumber(cardData.number) && (
+                      <span className="ml-2 text-green-600">✓ Valid</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Cardholder Name */}
                 <div>

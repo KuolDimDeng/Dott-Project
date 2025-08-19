@@ -24,6 +24,7 @@ import MobileProductGrid from './components/MobileProductGrid';
 import MobileCart from './components/MobileCart';
 import OfflineIndicator from './components/OfflineIndicator';
 import MobileReceiptDialog from './components/MobileReceiptDialog';
+import { encryptForStorage, decryptFromStorage, logSecurityEvent } from './utils/security';
 
 export default function MobilePOSPage() {
   const router = useRouter();
@@ -75,14 +76,24 @@ export default function MobilePOSPage() {
     try {
       setIsLoadingProducts(true);
       
-      // Check cache first (offline support)
-      const cachedProducts = localStorage.getItem('pos_products_cache');
-      if (cachedProducts && !navigator.onLine) {
-        const cached = JSON.parse(cachedProducts);
-        setProducts(cached.products);
-        setFilteredProducts(cached.products);
-        setIsLoadingProducts(false);
-        return;
+      // Check encrypted cache first (offline support)
+      const encryptedCache = localStorage.getItem('pos_products_cache');
+      if (encryptedCache && !navigator.onLine) {
+        try {
+          // Use session ID as encryption key
+          const encryptionKey = session?.tenantId || 'default-key';
+          const cached = decryptFromStorage(encryptedCache, encryptionKey);
+          if (cached && cached.products) {
+            setProducts(cached.products);
+            setFilteredProducts(cached.products);
+            setIsLoadingProducts(false);
+            logSecurityEvent('OFFLINE_CACHE_LOADED', { itemCount: cached.products.length });
+            return;
+          }
+        } catch (decryptError) {
+          console.error('Failed to decrypt cache:', decryptError);
+          localStorage.removeItem('pos_products_cache');
+        }
       }
 
       const response = await fetch('/api/products', {
@@ -96,11 +107,19 @@ export default function MobilePOSPage() {
         setProducts(activeProducts);
         setFilteredProducts(activeProducts);
         
-        // Cache for offline use
-        localStorage.setItem('pos_products_cache', JSON.stringify({
+        // Encrypt and cache for offline use
+        const encryptionKey = session?.tenantId || 'default-key';
+        const cacheData = {
           products: activeProducts,
           timestamp: Date.now()
-        }));
+        };
+        const encryptedData = encryptForStorage(cacheData, encryptionKey);
+        localStorage.setItem('pos_products_cache', encryptedData);
+        
+        logSecurityEvent('PRODUCTS_CACHED', { 
+          itemCount: activeProducts.length,
+          encrypted: true 
+        });
       } else if (response.status === 401) {
         router.push('/auth/mobile-login');
       } else {
@@ -260,20 +279,49 @@ export default function MobilePOSPage() {
         tenant_id: session.tenantId
       };
 
-      // If offline, queue the sale
+      // If offline, encrypt and queue the sale
       if (!navigator.onLine) {
-        const pendingSales = JSON.parse(localStorage.getItem('pendingSales') || '[]');
-        pendingSales.push({
-          ...saleData,
-          timestamp: new Date().toISOString(),
-          id: `offline_${Date.now()}`
-        });
-        localStorage.setItem('pendingSales', JSON.stringify(pendingSales));
-        
-        toast.success('Sale saved offline. Will sync when online.');
-        clearCart();
-        setIsCartOpen(false);
-        return;
+        try {
+          const encryptionKey = session?.tenantId || 'default-key';
+          const encryptedSales = localStorage.getItem('pendingSales');
+          
+          let pendingSales = [];
+          if (encryptedSales) {
+            try {
+              pendingSales = decryptFromStorage(encryptedSales, encryptionKey) || [];
+            } catch (e) {
+              console.error('Failed to decrypt pending sales:', e);
+              pendingSales = [];
+            }
+          }
+          
+          const offlineSale = {
+            ...saleData,
+            timestamp: new Date().toISOString(),
+            id: `offline_${Date.now()}`
+          };
+          
+          pendingSales.push(offlineSale);
+          
+          // Encrypt before storing
+          const encrypted = encryptForStorage(pendingSales, encryptionKey);
+          localStorage.setItem('pendingSales', encrypted);
+          
+          logSecurityEvent('OFFLINE_SALE_QUEUED', {
+            saleId: offlineSale.id,
+            encrypted: true,
+            amount: saleData.total_amount
+          });
+          
+          toast.success('Sale saved offline. Will sync when online.');
+          clearCart();
+          setIsCartOpen(false);
+          return;
+        } catch (error) {
+          console.error('Failed to save offline sale:', error);
+          toast.error('Failed to save sale offline');
+          return;
+        }
       }
 
       const response = await fetch('/api/pos/complete-sale', {
@@ -287,6 +335,15 @@ export default function MobilePOSPage() {
 
       if (response.ok) {
         const result = await response.json();
+        
+        // Log successful sale
+        logSecurityEvent('SALE_COMPLETED', {
+          saleId: result.id,
+          amount: getTotalAmount(),
+          paymentMethod: paymentMethod,
+          itemCount: cart.length,
+          hasCardToken: !!cardToken
+        });
         
         toast.success('Sale completed successfully!');
         
@@ -313,6 +370,15 @@ export default function MobilePOSPage() {
       }
     } catch (error) {
       console.error('Error processing sale:', error);
+      
+      // Log sale failure
+      logSecurityEvent('SALE_FAILED', {
+        error: error.message,
+        amount: getTotalAmount(),
+        paymentMethod: paymentMethod,
+        itemCount: cart.length
+      });
+      
       toast.error('Failed to process sale. Please try again.');
     } finally {
       setIsProcessing(false);
