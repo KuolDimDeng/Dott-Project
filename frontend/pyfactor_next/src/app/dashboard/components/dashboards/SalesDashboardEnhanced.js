@@ -80,8 +80,14 @@ const SalesDashboardEnhanced = () => {
           recentSales: Array.isArray(data.recent_sales) ? data.recent_sales : []
         });
         
-        // Process data for charts
-        processChartData(data.daily_sales || [], chartView);
+        // Process data for charts - use POS transactions if no daily_sales
+        if (data.daily_sales && data.daily_sales.length > 0) {
+          processChartData(data.daily_sales, chartView);
+        } else {
+          // Generate chart data from stats if daily_sales not available
+          const mockDailyData = generateChartDataFromStats(stats);
+          processChartData(mockDailyData, chartView);
+        }
       }
     } catch (error) {
       console.error('[SalesDashboard] Error fetching sales data:', error);

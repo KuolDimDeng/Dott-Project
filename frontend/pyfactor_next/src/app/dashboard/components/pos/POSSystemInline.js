@@ -516,18 +516,27 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             county: (data.county || '').toUpperCase().trim(),
             raw: { country: data.country, state: data.state, county: data.county }
           });
+          
+          // Return the business location for the tax rate function to use
+          return { country: countryValue, state: data.state, county: data.county };
         }
       } catch (error) {
         console.error('[POS] Error fetching business info:', error);
       }
+      return null;
     };
 
-    const fetchEstimatedTaxRate = async () => {
+    const fetchEstimatedTaxRate = async (businessLocation) => {
+      // Wait a moment to ensure state variables are set
+      if (businessLocation) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       console.log('[POS] 🔍 === START FETCHING DEFAULT TAX RATE (OPTIMIZED) ===');
       console.log('[POS] 📍 Business Location State:', {
-        country: businessCountry || 'NOT_SET',
-        state: businessState || 'NOT_SET',
-        county: businessCounty || 'NOT_SET'
+        country: businessLocation?.country || businessCountry || 'NOT_SET',
+        state: businessLocation?.state || businessState || 'NOT_SET',
+        county: businessLocation?.county || businessCounty || 'NOT_SET'
       });
       
       try {
@@ -613,8 +622,19 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       }
     };
 
-    fetchBusinessInfo();
-    fetchEstimatedTaxRate();
+    // Execute in sequence: first get business info, then fetch tax rate with that info
+    const initializePOS = async () => {
+      console.log('[POS] === INITIALIZING POS ===');
+      console.log('[POS] Step 1: Fetching business info...');
+      const businessLocation = await fetchBusinessInfo();
+      
+      console.log('[POS] Step 2: Business info loaded, now fetching tax rate with location:', businessLocation);
+      await fetchEstimatedTaxRate(businessLocation);
+      
+      console.log('[POS] === POS INITIALIZATION COMPLETE ===');
+    };
+    
+    initializePOS();
   }, []);
 
   // Set initial tax rate to default business rate when it's loaded
