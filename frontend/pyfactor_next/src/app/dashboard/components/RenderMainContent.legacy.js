@@ -173,7 +173,7 @@ const ProfitAndLossAnalysis = enhancedLazy(() => import('./forms/ProfitAndLossAn
 const CashFlowAnalysis = enhancedLazy(() => import('./forms/CashFlowAnalysis.js'), 'Cash Flow Analysis');
 const BudgetVsActualAnalysis = enhancedLazy(() => import('./forms/BudgetVsActualAnalysis.js'), 'Budget vs Actual Analysis');
 const SalesAnalysis = enhancedLazy(() => import('./forms/SalesAnalysis.js'), 'Sales Analysis');
-const SalesDashboard = enhancedLazy(() => import('./forms/SalesDashboard.js'), 'Sales Dashboard');
+const SalesDashboard = enhancedLazy(() => import('./dashboards/SalesDashboardEnhanced.js'), 'Sales Dashboard');
 const BusinessOverview = enhancedLazy(() => import('./forms/BusinessOverview.js'), 'Business Overview');
 const ExpenseAnalysis = enhancedLazy(() => import('./forms/ExpenseAnalysis.js'), 'Expense Analysis');
 const KPIDashboard = enhancedLazy(() => import('./dashboards/KPIDashboard'), 'KPI Dashboard');
