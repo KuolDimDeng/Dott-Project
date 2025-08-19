@@ -63,5 +63,5 @@ USER nextjs
 # Expose port
 EXPOSE 10000
 
-# Start the application
-CMD ["pnpm", "start"]
+# Start the application using Next.js directly
+CMD ["pnpm", "next", "start", "-p", "10000"]
