@@ -80,13 +80,17 @@ const SalesDashboardEnhanced = () => {
           recentSales: Array.isArray(data.recent_sales) ? data.recent_sales : []
         });
         
-        // Process data for charts - use POS transactions if no daily_sales
-        if (data.daily_sales && data.daily_sales.length > 0) {
-          processChartData(data.daily_sales, chartView);
+        // Process data for charts - API returns sales_over_time not daily_sales
+        if (data.sales_over_time && data.sales_over_time.length > 0) {
+          console.log('[SalesDashboard] Processing chart data:', data.sales_over_time.length, 'items');
+          processChartData(data.sales_over_time, chartView);
+        } else if (data.salesOverTime && data.salesOverTime.length > 0) {
+          // Fallback to camelCase version if present
+          console.log('[SalesDashboard] Processing chart data (camelCase):', data.salesOverTime.length, 'items');
+          processChartData(data.salesOverTime, chartView);
         } else {
-          // Generate chart data from stats if daily_sales not available
-          const mockDailyData = generateChartDataFromStats(stats);
-          processChartData(mockDailyData, chartView);
+          console.log('[SalesDashboard] No sales_over_time data available');
+          setChartData([]);
         }
       }
     } catch (error) {
@@ -232,8 +236,10 @@ const SalesDashboardEnhanced = () => {
   }, [timeRange]);
 
   useEffect(() => {
-    if (salesData?.daily_sales) {
-      processChartData(salesData.daily_sales, chartView);
+    if (salesData?.sales_over_time && salesData.sales_over_time.length > 0) {
+      processChartData(salesData.sales_over_time, chartView);
+    } else if (salesData?.salesOverTime && salesData.salesOverTime.length > 0) {
+      processChartData(salesData.salesOverTime, chartView);
     }
   }, [chartView, salesData]);
 
