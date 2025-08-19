@@ -266,25 +266,33 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
 
   // Function to fetch default tax rate - defined here so it can be called from anywhere
   const fetchDefaultTaxRate = async () => {
-    if (!businessInfo?.country && !businessCountry) {
-      console.log('[POS] No business country available yet');
-      return 0;
-    }
-    
-    const countryCode = businessInfo?.country || businessCountry;
-    console.log('[POS] Fetching default tax rate for country:', countryCode);
+    console.log('[POS] fetchDefaultTaxRate called - fetching business default tax rate');
     
     try {
-      const response = await fetch(`/api/taxes/global-rate?country=${countryCode}`, {
-        credentials: 'include'
+      // Use the same optimized endpoint that works during initialization
+      const response = await fetch('/api/pos/tax-rate-optimized', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
       });
       
       if (response.ok) {
-        const data = await response.json();
-        if (data.rate) {
-          setDefaultTaxRate(data.rate);
-          console.log('[POS] Fetched default tax rate:', data.rate, '%');
-          return data.rate;
+        const taxData = await response.json();
+        console.log('[POS] Tax rate response:', taxData);
+        
+        // Check if user has tax settings (either custom or from global)
+        if (taxData.settings && taxData.settings.sales_tax_rate !== undefined) {
+          const rawRate = taxData.settings.sales_tax_rate;
+          // Use rate_percentage if provided (already in percentage), else convert
+          const taxRatePercentage = taxData.settings.rate_percentage !== undefined 
+            ? parseFloat(taxData.settings.rate_percentage)
+            : parseFloat(rawRate) * 100;
+          
+          console.log('[POS] Fetched default tax rate:', taxRatePercentage, '%');
+          setDefaultTaxRate(taxRatePercentage);
+          return taxRatePercentage;
         }
       }
     } catch (error) {
