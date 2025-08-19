@@ -5,13 +5,13 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 export default function MobileProductGrid({ products, onAddToCart, isLoading, currencySymbol }) {
   if (isLoading) {
     return (
-      <div className="px-4 py-8">
-        <div className="grid grid-cols-2 gap-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 animate-pulse">
-              <div className="aspect-square bg-gray-200 rounded-lg mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded mb-1"></div>
-              <div className="h-6 bg-gray-200 rounded w-2/3"></div>
+      <div className="px-3 py-3">
+        <div className="grid grid-cols-3 gap-2">
+          {[...Array(9)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg p-2 animate-pulse">
+              <div className="h-16 w-full bg-gray-200 rounded-md mb-1.5"></div>
+              <div className="h-3 bg-gray-200 rounded mb-0.5"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
             </div>
           ))}
         </div>
@@ -34,43 +34,43 @@ export default function MobileProductGrid({ products, onAddToCart, isLoading, cu
   }
 
   return (
-    <div className="px-4 py-4">
-      <div className="grid grid-cols-2 gap-3">
+    <div className="px-3 py-3">
+      <div className="grid grid-cols-3 gap-2">
         {products.map((product) => (
           <button
             key={product.id}
             onClick={() => onAddToCart(product)}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 hover:shadow-md transition-all active:scale-95"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 hover:shadow-md transition-all active:scale-95"
           >
-            {/* Product Image or Icon */}
-            <div className="aspect-square bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg mb-2 flex items-center justify-center">
+            {/* Product Image or Icon - Smaller */}
+            <div className="h-16 w-full bg-gradient-to-br from-blue-50 to-indigo-100 rounded-md mb-1.5 flex items-center justify-center">
               {product.image_url ? (
                 <img 
                   src={product.image_url} 
                   alt={product.name}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover rounded-md"
                 />
               ) : (
-                <span className="text-3xl">📦</span>
+                <span className="text-xl">📦</span>
               )}
             </div>
 
-            {/* Product Info */}
+            {/* Product Info - Compact */}
             <div className="text-left">
-              <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+              <h3 className="text-xs font-medium text-gray-900 line-clamp-1 mb-0.5">
                 {product.name}
               </h3>
               <div className="flex items-center justify-between">
-                <p className="text-base font-bold text-blue-600">
-                  {currencySymbol}{(product.price || 0).toFixed(2)}
+                <p className="text-sm font-bold text-blue-600">
+                  {currencySymbol || '$'}{(product.price || 0).toFixed(2)}
                 </p>
-                <div className="bg-blue-600 text-white rounded-full p-1">
-                  <PlusIcon className="w-4 h-4" />
+                <div className="bg-blue-600 text-white rounded-full p-0.5">
+                  <PlusIcon className="w-3 h-3" />
                 </div>
               </div>
               {product.quantity_in_stock !== undefined && product.quantity_in_stock < 10 && (
-                <p className="text-xs text-orange-600 mt-1">
-                  Only {product.quantity_in_stock} left
+                <p className="text-[10px] text-orange-600 mt-0.5">
+                  {product.quantity_in_stock} left
                 </p>
               )}
             </div>

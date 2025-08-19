@@ -113,11 +113,11 @@ export default function MobileCart({
                                       <div className="flex justify-between text-base font-medium text-gray-900">
                                         <h3>{item.name}</h3>
                                         <p className="ml-4">
-                                          {currencySymbol}{(item.price * item.quantity).toFixed(2)}
+                                          {currencySymbol || '$'}{(item.price * item.quantity).toFixed(2)}
                                         </p>
                                       </div>
                                       <p className="mt-1 text-sm text-gray-500">
-                                        {currencySymbol}{item.price.toFixed(2)} each
+                                        {currencySymbol || '$'}{item.price.toFixed(2)} each
                                       </p>
                                     </div>
                                     <div className="flex flex-1 items-end justify-between text-sm">
@@ -163,15 +163,15 @@ export default function MobileCart({
                         <div className="space-y-2 mb-4">
                           <div className="flex justify-between text-base text-gray-900">
                             <p>Subtotal</p>
-                            <p>{currencySymbol}{subtotal.toFixed(2)}</p>
+                            <p>{currencySymbol || '$'}{subtotal.toFixed(2)}</p>
                           </div>
                           <div className="flex justify-between text-base text-gray-900">
                             <p>Tax</p>
-                            <p>{currencySymbol}{tax.toFixed(2)}</p>
+                            <p>{currencySymbol || '$'}{tax.toFixed(2)}</p>
                           </div>
                           <div className="flex justify-between text-lg font-medium text-gray-900 pt-2 border-t">
                             <p>Total</p>
-                            <p>{currencySymbol}{total.toFixed(2)}</p>
+                            <p>{currencySymbol || '$'}{total.toFixed(2)}</p>
                           </div>
                         </div>
 
@@ -221,7 +221,7 @@ export default function MobileCart({
                               Processing...
                             </>
                           ) : (
-                            `Complete Sale (${currencySymbol}${total.toFixed(2)})`
+                            `Complete Sale (${currencySymbol || '$'}${total.toFixed(2)})`
                           )}
                         </button>
 

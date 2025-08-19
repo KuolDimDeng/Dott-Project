@@ -524,8 +524,12 @@ export default function MobilePOSPage() {
         paymentMethod={paymentMethod}
         onPaymentMethodChange={setPaymentMethod}
         onCheckout={() => {
+          // Close cart when proceeding to checkout
+          setIsCartOpen(false);
+          
           if (paymentMethod === 'card') {
-            setShowCardScanner(true);
+            // Small delay to allow cart animation to complete
+            setTimeout(() => setShowCardScanner(true), 300);
           } else {
             processSale();
           }
