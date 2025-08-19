@@ -71,6 +71,10 @@ from .views.pos_tax_views import (
     get_pos_customer_tax_rate,
     refresh_cached_tax_rate
 )
+from .views.tax_summary_views import (
+    tax_summary,
+    tax_report_detail
+)
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -183,4 +187,8 @@ urlpatterns = [
     path('pos/default-rate/', get_pos_default_tax_rate, name='pos-default-tax-rate'),
     path('pos/customer-rate/', get_pos_customer_tax_rate, name='pos-customer-tax-rate'),
     path('pos/refresh-cache/', refresh_cached_tax_rate, name='pos-refresh-tax-cache'),
+    
+    # Tax summary endpoints for dashboard widgets
+    path('summary/', tax_summary, name='tax-summary'),
+    path('report/', tax_report_detail, name='tax-report-detail'),
 ]

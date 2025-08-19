@@ -25,7 +25,7 @@ export const PayrollWizard = dynamic(
 
 // Sales Components
 export const SalesDashboard = dynamic(
-  () => import('./dashboards/SalesDashboard'),
+  () => import('./dashboards/SalesDashboardEnhanced'),
   { loading: () => <DashboardSkeleton />, ssr: false }
 );
 
