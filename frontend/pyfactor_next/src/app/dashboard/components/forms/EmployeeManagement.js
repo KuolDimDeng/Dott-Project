@@ -1027,11 +1027,16 @@ function EmployeeManagement({ onNavigate }) {
         newStatus: newStatus
       });
       
-      // Use PATCH for status update
-      const response = await fetch(`/api/hr/employees/${employee.id}/`, {
+      // Get tenant ID from the current path (for consistency with other API calls)
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1];
+      
+      // Use PATCH for status update - use v2 endpoint to match the rest of the app
+      const response = await fetch(`/api/hr/v2/employees/${employee.id}/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         },
         body: JSON.stringify({ status: newStatus }),
       });
