@@ -142,6 +142,60 @@ export async function PUT(request, { params }) {
   }
 }
 
+export async function PATCH(request, { params }) {
+  try {
+    const { employeeId } = params;
+    logger.info(`[HR v2 Proxy] PATCH /api/hr/v2/employees/${employeeId}`);
+
+    // Get session from cookies - await is required in Next.js 15
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No session' },
+        { status: 401 }
+      );
+    }
+
+    // Get request body
+    const body = await request.json();
+    logger.info(`[HR v2 Proxy] PATCH request body:`, JSON.stringify(body, null, 2));
+
+    // Get tenant ID from headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    
+    // Build headers for backend request
+    const headers = {
+      'Authorization': `Session ${sessionId.value}`,
+      'Cookie': `session_token=${sessionId.value}`,
+    };
+    
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
+
+    // Make request to Django backend
+    const backendUrl = `${BACKEND_URL}/api/hr/v2/employees/${employeeId}/`;
+    const { response, data } = await makeBackendRequest(backendUrl, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    logger.info(`[HR v2 Proxy] Backend PATCH response: ${response.status}`);
+    
+    return NextResponse.json(data, { status: response.status });
+    
+  } catch (error) {
+    logger.error('[HR v2 Proxy] PATCH error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     const { employeeId } = params;

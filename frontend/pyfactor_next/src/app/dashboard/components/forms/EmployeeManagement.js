@@ -587,7 +587,7 @@ function EmployeeManagement({ onNavigate }) {
         Header: 'Actions',
         id: 'actions',
         Cell: ({ row }) => (
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-2">
             <button
               onClick={() => handleView(row.original)}
               className="text-blue-600 hover:text-blue-900 p-1"
@@ -602,7 +602,17 @@ function EmployeeManagement({ onNavigate }) {
             >
               <PencilIcon className="h-4 w-4" />
             </button>
-            {/* Removed delete button for legal compliance - employee data must be retained */}
+            <button
+              onClick={() => handleToggleEmployeeStatus(row.original)}
+              className={`px-2 py-1 text-xs font-medium rounded ${
+                row.original.status === 'active' 
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+              }`}
+              title={row.original.status === 'active' ? 'Deactivate Employee' : 'Activate Employee'}
+            >
+              {row.original.status === 'active' ? 'Deactivate' : 'Activate'}
+            </button>
           </div>
         ),
       },
@@ -996,6 +1006,55 @@ function EmployeeManagement({ onNavigate }) {
       }
       
       toast.error(userMessage);
+    }
+  };
+
+  // Toggle employee status (activate/deactivate)
+  const handleToggleEmployeeStatus = async (employee) => {
+    const newStatus = employee.status === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? 'activate' : 'deactivate';
+    
+    // Confirm the action
+    const confirmMessage = `Are you sure you want to ${action} ${employee.firstName} ${employee.lastName}?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    
+    try {
+      logger.info(`🔄 [EmployeeManagement] Toggling employee status:`, {
+        id: employee.id,
+        currentStatus: employee.status,
+        newStatus: newStatus
+      });
+      
+      // Use PATCH for status update
+      const response = await fetch(`/api/hr/employees/${employee.id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to update status: ${error}`);
+      }
+      
+      const updatedEmployee = await response.json();
+      logger.info(`✅ [EmployeeManagement] Employee status updated successfully:`, {
+        id: employee.id,
+        newStatus: updatedEmployee.status
+      });
+      
+      toast.success(`Employee ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
+      
+      // Refresh the employee list
+      await fetchEmployees();
+      
+    } catch (error) {
+      logger.error(`❌ [EmployeeManagement] Error toggling employee status:`, error);
+      toast.error(`Failed to ${action} employee: ${error.message}`);
     }
   };
 
