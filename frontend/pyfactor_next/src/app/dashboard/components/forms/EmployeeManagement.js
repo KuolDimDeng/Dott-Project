@@ -1027,29 +1027,26 @@ function EmployeeManagement({ onNavigate }) {
         newStatus: newStatus
       });
       
-      // Get tenant ID from the current path (for consistency with other API calls)
-      const pathParts = window.location.pathname.split('/');
-      const tenantId = pathParts[1];
+      // Since backend doesn't support PATCH, we need to use PUT with minimal data
+      // Prepare the update data with only status change
+      const updateData = {
+        status: newStatus,
+        // Include required fields for PUT (backend may require these)
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        email: employee.email,
+        // Set active field based on status for backend compatibility
+        active: newStatus === 'active'
+      };
       
-      // Use PATCH for status update - use v2 endpoint to match the rest of the app
-      const response = await fetch(`/api/hr/v2/employees/${employee.id}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId || '',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      logger.info(`📤 [EmployeeManagement] Sending status update:`, updateData);
       
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to update status: ${error}`);
-      }
+      // Use hrApi.employees.update which handles the proper endpoint and headers
+      const updatedEmployee = await hrApi.employees.update(employee.id, updateData);
       
-      const updatedEmployee = await response.json();
       logger.info(`✅ [EmployeeManagement] Employee status updated successfully:`, {
         id: employee.id,
-        newStatus: updatedEmployee.status
+        newStatus: updatedEmployee.status || newStatus
       });
       
       toast.success(`Employee ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);

@@ -185,7 +185,7 @@ const ServiceManagement = () => {
       setIsLoadingCustomers(true);
       console.log('[ServiceManagement] Fetching customers...');
       
-      const response = await fetch('/api/customers', {
+      const response = await fetch('/api/customers/', {
         credentials: 'include'
       });
       
