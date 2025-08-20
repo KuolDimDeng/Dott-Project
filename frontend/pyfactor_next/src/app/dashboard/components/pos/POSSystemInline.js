@@ -1851,7 +1851,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       // Use the pre-loaded business default tax rate
                       console.log('[POS] Walk-In selected, using pre-loaded business default tax rate:', defaultTaxRate + '%');
                       
-                      if (defaultTaxRate > 0) {
+                      if (defaultTaxRate !== undefined && defaultTaxRate !== null) {
                         setTaxRate(defaultTaxRate);
                         setTaxJurisdiction(businessInfo.country || businessCountry || 'Business Location');
                         
@@ -1862,7 +1862,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                         console.warn('[POS] No default tax rate loaded yet. Loading now...');
                         // If for some reason the default rate isn't loaded, fetch it now
                         const rate = await fetchDefaultTaxRate();
-                        if (rate > 0) {
+                        if (rate !== undefined && rate !== null) {
                           setTaxRate(rate);
                           const locationName = businessInfo.country || businessCountry || 'Business default';
                           setTaxJurisdiction(businessInfo.country || businessCountry || 'Business Location');
