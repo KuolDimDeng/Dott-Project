@@ -15,8 +15,10 @@ import {
   sanitizeCardNumber
 } from '../utils/security';
 
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe with error handling
+const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+console.log('[CardScanner] Stripe key configured:', !!STRIPE_KEY);
+const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : null;
 
 export default function CardScanner({ onCardScanned, onClose, amount, currencyCode }) {
   const [scanMode, setScanMode] = useState('choose'); // choose, camera, manual, payment-api
@@ -88,16 +90,27 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
       // Show payment UI
       const paymentResponse = await request.show();
       
+      // Check if we have Stripe
+      if (!stripePromise) {
+        await paymentResponse.complete('fail');
+        throw new Error('Payment system not ready');
+      }
+      
       // Get card details (securely handled by browser)
       const stripe = await stripePromise;
-      const { token, error } = await stripe.createToken({
-        card: {
-          number: paymentResponse.details.cardNumber,
-          exp_month: paymentResponse.details.expiryMonth,
-          exp_year: paymentResponse.details.expiryYear,
-          cvc: paymentResponse.details.cardSecurityCode,
-          name: paymentResponse.details.cardholderName
-        }
+      
+      if (!stripe) {
+        await paymentResponse.complete('fail');
+        throw new Error('Payment service unavailable');
+      }
+      
+      // Create token with the correct format
+      const { token, error } = await stripe.createToken('card', {
+        number: paymentResponse.details.cardNumber,
+        exp_month: parseInt(paymentResponse.details.expiryMonth),
+        exp_year: parseInt(paymentResponse.details.expiryYear),
+        cvc: paymentResponse.details.cardSecurityCode,
+        name: paymentResponse.details.cardholderName || undefined
       });
 
       if (error) {
@@ -255,16 +268,33 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
         amount: amount
       });
 
-      // Create Stripe token
+      // Create Stripe token using the correct method
+      if (!stripePromise) {
+        throw new Error('Stripe not initialized - missing API key');
+      }
+
       const stripe = await stripePromise;
-      const { token, error } = await stripe.createToken({
-        card: {
-          number: cardData.number.replace(/\s/g, ''),
-          exp_month: parseInt(expMonth),
-          exp_year: parseInt('20' + expYear),
-          cvc: cardData.cvc,
-          name: cardData.name
-        }
+      
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
+
+      console.log('[CardScanner] Creating token with:', {
+        hasNumber: !!cardData.number,
+        numberLength: cardData.number.replace(/\s/g, '').length,
+        expMonth: parseInt(expMonth),
+        expYear: parseInt('20' + expYear),
+        hasCVC: !!cardData.cvc,
+        hasName: !!cardData.name
+      });
+
+      // Use createToken with 'card' type
+      const { token, error } = await stripe.createToken('card', {
+        number: cardData.number.replace(/\s/g, ''),
+        exp_month: parseInt(expMonth),
+        exp_year: parseInt('20' + expYear),
+        cvc: cardData.cvc,
+        name: cardData.name || undefined
       });
 
       if (error) {
@@ -300,7 +330,20 @@ export default function CardScanner({ onCardScanned, onClose, amount, currencyCo
       
     } catch (error) {
       console.error('Tokenization error:', error);
-      toast.error(error.message || 'Invalid card details');
+      
+      // Provide better error messages
+      let errorMessage = 'Invalid card details';
+      if (error.message.includes('Stripe not initialized')) {
+        errorMessage = 'Payment system not ready. Please try again.';
+      } else if (error.message.includes('Stripe failed to load')) {
+        errorMessage = 'Payment service unavailable. Please check your connection.';
+      } else if (error.type === 'validation_error') {
+        errorMessage = 'Please check your card details and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
       
       // Clear sensitive data on error
       const clearedData = clearSensitiveData(formRef);
