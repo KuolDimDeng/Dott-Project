@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('crm', '0001_initial'),
-        ('inventory', '0009_alter_material_material_type'),
+        ('inventory', '0015_add_service_is_active'),
     ]
 
     operations = [
