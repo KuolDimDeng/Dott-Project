@@ -691,56 +691,13 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         console.log('[POS] No customer selected, tax rate remains at 0%');
         setTaxRate(0);
         return;
-        
-        // If default rate not loaded yet, wait
-        if (!businessInfo.country && !businessCountry) {
-          console.log('[POS] Business location not yet loaded, waiting...');
-          return; // Wait for business info to load
-        }
-        
-        console.log('[POS] Walk-In/No customer, calculating tax for business location');
-        console.log('[POS] Business location state:', {
-          country: businessCountry || businessInfo.country || 'EMPTY',
-          state: businessState || businessInfo.state || 'EMPTY',
-          county: businessCounty || businessInfo.county || 'EMPTY'
-        });
-        
-        // Create a pseudo-customer object with business location
-        // Use businessInfo as fallback if state variables not yet set
-        const walkInCountry = businessCountry || businessInfo.country || '';
-        const walkInState = businessState || businessInfo.state || '';
-        const walkInCounty = businessCounty || businessInfo.county || '';
-        
-        console.log('[POS] Creating Walk-In customer with location:', {
-          country: walkInCountry,
-          state: walkInState, 
-          county: walkInCounty,
-          businessInfo: businessInfo,
-          businessCountry: businessCountry,
-          businessState: businessState
-        });
-        
-        const walkInCustomer = {
-          id: 'walk-in',
-          first_name: 'Walk-In',
-          last_name: 'Customer',
-          billing_country: walkInCountry,
-          billing_state: walkInState,
-          billing_county: walkInCounty,
-          shipping_country: walkInCountry,
-          shipping_state: walkInState,
-          shipping_county: walkInCounty
-        };
-        
-        // If no country is set, use default tax rate (likely business default)
-        if (!walkInCountry) {
-          console.log('[POS] No country for walk-in, using default tax rate:', defaultTaxRate);
-          setTaxRate(defaultTaxRate || 0);
-          return;
-        }
-        
-        // Always call calculateCustomerTax for Walk-In
-        await calculateCustomerTax(walkInCustomer);
+      }
+
+      // Special handling for Walk-in customer
+      if (selectedCustomer === 'walk-in') {
+        console.log('[POS] Walk-In customer selected in useEffect, tax rate already set by onClick handler');
+        // The onClick handler already sets the tax rate for Walk-in
+        // We don't need to do anything here as it's handled in the dropdown onClick
         return;
       }
 
