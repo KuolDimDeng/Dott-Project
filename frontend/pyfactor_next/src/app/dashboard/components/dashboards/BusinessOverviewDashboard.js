@@ -157,7 +157,7 @@ export default function BusinessOverviewDashboard() {
 
       {/* Quick Actions */}
       <Suspense fallback={<WidgetSkeleton />}>
-        <QuickActions userRole={user?.role} />
+        <QuickActions userRole={session?.user?.role} />
       </Suspense>
 
       {/* Additional Widgets based on business type - Placeholder for future widgets */}
