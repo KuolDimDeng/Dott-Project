@@ -71,7 +71,20 @@ export async function GET(request) {
       );
     }
 
-    const products = await response.json();
+    const data = await response.json();
+    
+    // Extract products array from response (handle different response formats)
+    let products = [];
+    if (Array.isArray(data)) {
+      products = data;
+    } else if (data.products && Array.isArray(data.products)) {
+      products = data.products;
+    } else if (data.results && Array.isArray(data.results)) {
+      products = data.results;
+    } else {
+      console.log('[Expiring Products API] Unexpected data format:', data);
+      products = [];
+    }
 
     // Transform product data to calendar events
     const expiryEvents = products
