@@ -58,7 +58,9 @@ const ServiceManagement = () => {
   
   // State management
   const [services, setServices] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -79,7 +81,7 @@ const ServiceManagement = () => {
     description: '',
     unit: '', // was sku
     price: '',
-    salestax: '', // was cost
+    customer: '', // Optional customer for recurring services
     duration: '',
     billing_cycle: 'monthly', // was duration_unit
     is_for_sale: true, // was is_active
@@ -91,6 +93,7 @@ const ServiceManagement = () => {
   useEffect(() => {
     isMounted.current = true;
     fetchServices();
+    fetchCustomers();
     return () => {
       isMounted.current = false;
     };
@@ -176,6 +179,47 @@ const ServiceManagement = () => {
     }
   }, []);
 
+  // Fetch customers for the dropdown
+  const fetchCustomers = useCallback(async () => {
+    try {
+      setIsLoadingCustomers(true);
+      console.log('[ServiceManagement] Fetching customers...');
+      
+      const response = await fetch('/api/customers', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        console.error('[ServiceManagement] Failed to fetch customers:', response.status);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // Handle both paginated and direct array responses
+      let customersList = [];
+      if (Array.isArray(data)) {
+        customersList = data;
+      } else if (data && Array.isArray(data.results)) {
+        customersList = data.results;
+      } else if (data && Array.isArray(data.data)) {
+        customersList = data.data;
+      }
+      
+      console.log('[ServiceManagement] Fetched customers:', customersList.length);
+      
+      if (isMounted.current) {
+        setCustomers(customersList);
+      }
+    } catch (error) {
+      console.error('[ServiceManagement] Error fetching customers:', error);
+    } finally {
+      if (isMounted.current) {
+        setIsLoadingCustomers(false);
+      }
+    }
+  }, []);
+
   // Handle form changes
   const handleFormChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
@@ -210,7 +254,7 @@ const ServiceManagement = () => {
           description: formData.description,
           unit: formData.unit,
           price: parseFloat(formData.price) || 0,
-          salestax: parseFloat(formData.salestax) || 0,
+          customer: formData.customer || null,
           duration: formData.duration,
           billing_cycle: formData.billing_cycle,
           is_for_sale: formData.is_for_sale,
@@ -234,7 +278,7 @@ const ServiceManagement = () => {
         description: '',
         unit: '',
         price: '',
-        salestax: '',
+        customer: '',
         duration: '',
         billing_cycle: 'monthly',
         is_for_sale: true,
@@ -271,7 +315,7 @@ const ServiceManagement = () => {
           description: formData.description,
           unit: formData.unit,
           price: parseFloat(formData.price) || 0,
-          salestax: parseFloat(formData.salestax) || 0,
+          customer: formData.customer || null,
           duration: formData.duration,
           billing_cycle: formData.billing_cycle,
           is_for_sale: formData.is_for_sale,
@@ -397,7 +441,7 @@ const ServiceManagement = () => {
       description: service.description || '',
       unit: service.unit || service.sku || '',
       price: service.price || '',
-      salestax: service.salestax || service.cost || '',
+      customer: service.customer || '',
       duration: service.duration || '',
       billing_cycle: service.billing_cycle || service.duration_unit || 'monthly',
       is_for_sale: service.is_for_sale !== undefined ? service.is_for_sale : (service.is_active !== false),
@@ -476,20 +520,26 @@ const ServiceManagement = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sales Tax (%)
-              <FieldTooltip text="Enter the tax percentage for this service. Leave as 0 if tax-exempt." />
+              Customer (Optional)
+              <FieldTooltip text="Link this service to a specific customer for automated recurring invoices. Perfect for rentals, subscriptions, or customer-specific pricing. Leave blank for general services." />
             </label>
-            <input
-              type="number"
-              name="salestax"
-              value={formData.salestax}
+            <select
+              name="customer"
+              value={formData.customer}
               onChange={handleFormChange}
-              step="0.01"
-              min="0"
-              max="100"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-            />
+            >
+              <option value="">-- No Customer --</option>
+              {isLoadingCustomers ? (
+                <option disabled>Loading customers...</option>
+              ) : (
+                customers.map(customer => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name} {!customer.is_active && '(Inactive)'}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
         </div>
         
@@ -672,10 +722,17 @@ const ServiceManagement = () => {
             <p className="mt-1 text-sm text-gray-900">{currencySymbol}{parseFloat(selectedService.price || 0).toFixed(2)} {currencyCode}</p>
           </div>
           
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Sales Tax</h3>
-            <p className="mt-1 text-sm text-gray-900">{parseFloat(selectedService.salestax || selectedService.cost || 0).toFixed(2)}%</p>
-          </div>
+          {selectedService.customer_name && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Customer</h3>
+              <p className="mt-1 text-sm text-gray-900">
+                {selectedService.customer_name}
+                {selectedService.customer_is_active === false && (
+                  <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">Inactive</span>
+                )}
+              </p>
+            </div>
+          )}
           
           <div>
             <h3 className="text-sm font-medium text-gray-500">Duration</h3>
@@ -785,10 +842,10 @@ const ServiceManagement = () => {
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Name</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Customer</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Unit</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Duration</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Type</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
           </tr>
@@ -805,6 +862,18 @@ const ServiceManagement = () => {
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
+                {service.customer_name ? (
+                  <div>
+                    <div className="text-sm text-black">{service.customer_name}</div>
+                    {service.customer_is_active === false && (
+                      <span className="text-xs text-red-600">Inactive</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400">-</div>
+                )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">{service.unit || service.sku || 'N/A'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -812,11 +881,14 @@ const ServiceManagement = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">
-                  {service.duration ? `${service.duration} ${service.duration_unit || 'hours'}` : '-'}
+                  {service.is_recurring ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      🔄 {service.billing_cycle || 'Recurring'}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">One-time</span>
+                  )}
                 </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">{service.category || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

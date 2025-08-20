@@ -428,6 +428,17 @@ class Service(Item):
     is_recurring = models.BooleanField(default=False, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
     
+    # Customer relationship for recurring services (rentals, subscriptions, etc.)
+    customer = models.ForeignKey('crm.Customer', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='services', 
+                                help_text='Link to specific customer for automated recurring invoices')
+    
+    # Invoice tracking for recurring services
+    next_invoice_date = models.DateField(null=True, blank=True,
+                                        help_text='Date when next invoice should be generated')
+    last_invoice_date = models.DateField(null=True, blank=True,
+                                        help_text='Date when last invoice was generated')
+    
     # Use TenantManager for tenant isolation
     objects = TenantManager()
     

@@ -88,11 +88,14 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class ServiceSerializer(serializers.ModelSerializer):
     type_fields = ServiceTypeFieldsSerializer(read_only=True)
-
+    # Add customer details for display
+    customer_name = serializers.ReadOnlyField(source='customer.name', allow_null=True)
+    customer_is_active = serializers.ReadOnlyField(source='customer.is_active', allow_null=True)
+    
     class Meta:
         model = Service
         fields = '__all__'
-        read_only_fields = ('service_code',)
+        read_only_fields = ('service_code', 'next_invoice_date', 'last_invoice_date')
 
 
 class BillOfMaterialsSerializer(serializers.ModelSerializer):
