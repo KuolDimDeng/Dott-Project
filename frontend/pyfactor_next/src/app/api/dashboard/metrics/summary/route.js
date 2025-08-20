@@ -14,7 +14,7 @@ export async function GET(request) {
     const metricsResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/dashboard/metrics/`, {
       method: 'GET',
       headers: {
-        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `sid=${sessionId.value}`,
         'Content-Type': 'application/json',
       },
     });
@@ -29,14 +29,14 @@ export async function GET(request) {
       fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/sales/invoices/`, {
         method: 'GET',
         headers: {
-          'Authorization': `Session ${sessionId.value}`,
+          'Cookie': `sid=${sessionId.value}`,
           'Content-Type': 'application/json',
         },
       }),
       fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/sales/orders/`, {
         method: 'GET',
         headers: {
-          'Authorization': `Session ${sessionId.value}`,
+          'Cookie': `sid=${sessionId.value}`,
           'Content-Type': 'application/json',
         },
       })
