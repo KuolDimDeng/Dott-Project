@@ -266,10 +266,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
 
   // Function to fetch default tax rate - defined here so it can be called from anywhere
   const fetchDefaultTaxRate = async () => {
-    console.log('[POS] fetchDefaultTaxRate called - fetching business default tax rate');
+    console.log('🔍 [FETCH TAX DEBUG] === fetchDefaultTaxRate CALLED ===');
+    console.log('🔍 [FETCH TAX DEBUG] Current defaultTaxRate state:', defaultTaxRate);
     
     try {
       // Use the same optimized endpoint that works during initialization
+      console.log('🔍 [FETCH TAX DEBUG] Calling /api/pos/tax-rate-optimized...');
       const response = await fetch('/api/pos/tax-rate-optimized', {
         method: 'GET',
         headers: {
@@ -278,9 +280,11 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         credentials: 'include',
       });
       
+      console.log('🔍 [FETCH TAX DEBUG] Response status:', response.status, 'OK:', response.ok);
+      
       if (response.ok) {
         const taxData = await response.json();
-        console.log('[POS] Tax rate response:', taxData);
+        console.log('🔍 [FETCH TAX DEBUG] Full response data:', JSON.stringify(taxData, null, 2));
         
         // Check if user has tax settings (either custom or from global)
         if (taxData.settings && taxData.settings.sales_tax_rate !== undefined) {
@@ -290,13 +294,28 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
             ? parseFloat(taxData.settings.rate_percentage)
             : parseFloat(rawRate) * 100;
           
-          console.log('[POS] Fetched default tax rate:', taxRatePercentage, '%');
+          console.log('🔍 [FETCH TAX DEBUG] Calculated rate:', {
+            rawRate: rawRate,
+            ratePercentageField: taxData.settings.rate_percentage,
+            calculatedPercentage: taxRatePercentage
+          });
+          console.log('🔍 [FETCH TAX DEBUG] Setting defaultTaxRate to:', taxRatePercentage);
           setDefaultTaxRate(taxRatePercentage);
+          console.log('🔍 [FETCH TAX DEBUG] ✅ Returning rate:', taxRatePercentage);
           return taxRatePercentage;
+        } else {
+          console.warn('🔍 [FETCH TAX DEBUG] ⚠️ No tax settings in response:', taxData);
+          return undefined;
         }
+      } else {
+        console.error('🔍 [FETCH TAX DEBUG] ❌ Response not OK:', response.status);
+        return undefined;
       }
     } catch (error) {
-      console.error('[POS] Error fetching tax rate:', error);
+      console.error('🔍 [FETCH TAX DEBUG] ❌ Error fetching tax rate:', error);
+      return undefined;
+    } finally {
+      console.log('🔍 [FETCH TAX DEBUG] === END fetchDefaultTaxRate ===');
     }
     return 0;
   };
@@ -570,15 +589,16 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      console.log('[POS] 🔍 === START FETCHING DEFAULT TAX RATE (OPTIMIZED) ===');
-      console.log('[POS] 📍 Business Location State:', {
+      console.log('🔍 [INIT TAX DEBUG] === START FETCHING DEFAULT TAX RATE (OPTIMIZED) ===');
+      console.log('🔍 [INIT TAX DEBUG] 📍 Business Location State:', {
         country: businessLocation?.country || businessCountry || 'NOT_SET',
         state: businessLocation?.state || businessState || 'NOT_SET',
         county: businessLocation?.county || businessCounty || 'NOT_SET'
       });
+      console.log('🔍 [INIT TAX DEBUG] Current defaultTaxRate before fetch:', defaultTaxRate);
       
       try {
-        console.log('[POS] 🌐 Calling: /api/pos/tax-rate-optimized (cached endpoint)');
+        console.log('🔍 [INIT TAX DEBUG] 🌐 Calling: /api/pos/tax-rate-optimized (cached endpoint)');
         // Use optimized endpoint that returns cached rates for instant loading
         const response = await fetch('/api/pos/tax-rate-optimized', {
           method: 'GET',
@@ -587,12 +607,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
           },
           credentials: 'include',
         });
-        console.log('[POS] 📨 Tenant settings response status:', response.status);
+        console.log('🔍 [INIT TAX DEBUG] 📨 Response status:', response.status);
         
         if (response.ok) {
           const taxData = await response.json();
-          console.log('[POS] 📊 === TAX SETTINGS RECEIVED ===');
-          console.log('[POS] Raw response data:', JSON.stringify(taxData, null, 2));
+          console.log('🔍 [INIT TAX DEBUG] 📊 === TAX SETTINGS RECEIVED ===');
+          console.log('🔍 [INIT TAX DEBUG] Raw response data:', JSON.stringify(taxData, null, 2));
           
           // Check if user has tax settings (either custom or from global)
           if (taxData.settings && taxData.settings.sales_tax_rate !== undefined) {
@@ -602,15 +622,18 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               ? parseFloat(taxData.settings.rate_percentage)
               : parseFloat(rawRate) * 100;
             
-            console.log('[POS] 🧮 === DEFAULT TAX RATE CALCULATION ===');
-            console.log('[POS] Source:', taxData.source);
-            console.log('[POS] Country:', taxData.settings.country);
-            console.log('[POS] Country Name:', taxData.settings.country_name);
-            console.log('[POS] Raw Rate (decimal):', rawRate);
-            console.log('[POS] Converted Rate (percentage):', taxRatePercentage + '%');
+            console.log('🔍 [INIT TAX DEBUG] 🧮 === DEFAULT TAX RATE CALCULATION ===');
+            console.log('🔍 [INIT TAX DEBUG] Source:', taxData.source);
+            console.log('🔍 [INIT TAX DEBUG] Country:', taxData.settings.country);
+            console.log('🔍 [INIT TAX DEBUG] Country Name:', taxData.settings.country_name);
+            console.log('🔍 [INIT TAX DEBUG] Raw Rate (decimal):', rawRate);
+            console.log('🔍 [INIT TAX DEBUG] rate_percentage field:', taxData.settings.rate_percentage);
+            console.log('🔍 [INIT TAX DEBUG] Converted Rate (percentage):', taxRatePercentage + '%');
             
+            console.log('🔍 [INIT TAX DEBUG] ⚡ Setting BOTH taxRate and defaultTaxRate to:', taxRatePercentage);
             setTaxRate(taxRatePercentage);
             setDefaultTaxRate(taxRatePercentage); // Save as default for when no customer is selected
+            console.log('🔍 [INIT TAX DEBUG] ✅ Both rates set successfully');
             
             // Show notification based on source
             const source = taxData.source === 'tenant' ? 'your custom settings' : 'default rates';
@@ -632,10 +655,12 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               { duration: 4000 }
             );
             
-            console.log(`[POS] ✅ Default tax rate set to ${taxRatePercentage}% from ${taxData.source}`);
+            console.log(`🔍 [INIT TAX DEBUG] ✅ Default tax rate set to ${taxRatePercentage}% from ${taxData.source}`);
           } else {
-            console.log('[POS] ⚠️ No tax settings found, defaulting to 0%');
+            console.log('🔍 [INIT TAX DEBUG] ⚠️ No tax settings found, defaulting to 0%');
+            console.log('🔍 [INIT TAX DEBUG] Setting both rates to 0');
             setTaxRate(0);
+            setDefaultTaxRate(0);
             toast.warning(
               'No tax rate configured. Please set it in Settings → Taxes.',
               { duration: 5000 }
@@ -1849,26 +1874,51 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
                       setShowCustomerDropdown(false);
                       
                       // Use the pre-loaded business default tax rate
-                      console.log('[POS] Walk-In selected, using pre-loaded business default tax rate:', defaultTaxRate + '%');
+                      console.log('🔍 [WALK-IN DEBUG] === WALK-IN CUSTOMER SELECTED ===');
+                      console.log('🔍 [WALK-IN DEBUG] Current state values:', {
+                        defaultTaxRate: defaultTaxRate,
+                        defaultTaxRateType: typeof defaultTaxRate,
+                        defaultTaxRateIsNull: defaultTaxRate === null,
+                        defaultTaxRateIsUndefined: defaultTaxRate === undefined,
+                        defaultTaxRateIsZero: defaultTaxRate === 0,
+                        currentTaxRate: taxRate,
+                        businessInfo: businessInfo,
+                        businessCountry: businessCountry,
+                        businessState: businessState,
+                        businessCounty: businessCounty
+                      });
                       
                       if (defaultTaxRate !== undefined && defaultTaxRate !== null) {
+                        console.log('🔍 [WALK-IN DEBUG] Default tax rate exists, setting it now');
+                        console.log('🔍 [WALK-IN DEBUG] About to call setTaxRate with:', defaultTaxRate);
                         setTaxRate(defaultTaxRate);
-                        setTaxJurisdiction(businessInfo.country || businessCountry || 'Business Location');
+                        
+                        const jurisdiction = businessInfo.country || businessCountry || 'Business Location';
+                        console.log('🔍 [WALK-IN DEBUG] Setting jurisdiction to:', jurisdiction);
+                        setTaxJurisdiction(jurisdiction);
                         
                         const locationName = businessInfo.country || businessCountry || 'Business default';
-                        console.log('[POS] Walk-In tax rate set to:', defaultTaxRate + '%');
+                        console.log('🔍 [WALK-IN DEBUG] ✅ Walk-In tax rate SET to:', defaultTaxRate + '%', 'Location:', locationName);
                         toast.success(`Tax: ${defaultTaxRate.toFixed(1)}% (${locationName})`);
                       } else {
-                        console.warn('[POS] No default tax rate loaded yet. Loading now...');
+                        console.warn('🔍 [WALK-IN DEBUG] ⚠️ No default tax rate loaded yet. Current value:', defaultTaxRate);
+                        console.warn('🔍 [WALK-IN DEBUG] Fetching tax rate now...');
                         // If for some reason the default rate isn't loaded, fetch it now
                         const rate = await fetchDefaultTaxRate();
+                        console.log('🔍 [WALK-IN DEBUG] Fetched rate result:', rate, 'Type:', typeof rate);
+                        
                         if (rate !== undefined && rate !== null) {
+                          console.log('🔍 [WALK-IN DEBUG] Setting fetched rate:', rate);
                           setTaxRate(rate);
                           const locationName = businessInfo.country || businessCountry || 'Business default';
                           setTaxJurisdiction(businessInfo.country || businessCountry || 'Business Location');
+                          console.log('🔍 [WALK-IN DEBUG] ✅ Walk-In tax rate SET after fetch to:', rate + '%');
                           toast.success(`Tax: ${rate.toFixed(1)}% (${locationName})`);
+                        } else {
+                          console.error('🔍 [WALK-IN DEBUG] ❌ Failed to fetch tax rate, result was:', rate);
                         }
                       }
+                      console.log('🔍 [WALK-IN DEBUG] === END WALK-IN SELECTION ===');
                     }}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b font-medium"
                   >
