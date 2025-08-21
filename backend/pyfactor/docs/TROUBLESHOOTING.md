@@ -2,6 +2,57 @@
 
 *This document contains backend-specific recurring issues and their proven solutions.*
 
+## 🚨 **Issue: Business Logo Upload Returns 404 Error**
+
+**Date Added:** August 21, 2025
+
+**Symptoms:**
+- Logo upload in Settings → Business tab fails with 404 error
+- Error message: "Upload failed (404 Not Found)"
+- Frontend console shows: `[CompanyProfile] Upload failed with response: Object { error: "Upload failed (404 Not Found)" }`
+
+**Root Cause:**
+- Incorrect URL path in frontend API route
+- Common confusion with Django URL patterns and includes
+- Backend expects `/api/business/logo/upload` (without `/users/` prefix)
+
+**Solution:**
+
+The correct backend URL path is `/api/business/logo/upload` (defined in `users/urls.py` at root level).
+
+**Frontend Fix:**
+```javascript
+// File: /frontend/pyfactor_next/src/app/api/business/logo/upload/route.js
+
+// ❌ WRONG - These paths will return 404:
+const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/upload/`, {...})
+const response = await fetch(`${BACKEND_URL}/api/users/business/logo/upload/`, {...})
+
+// ✅ CORRECT - This is the right path:
+const response = await fetch(`${BACKEND_URL}/api/business/logo/upload`, {
+  method: "POST",
+  headers,
+  body: formData,
+});
+```
+
+**Key Points:**
+1. No `/users/` prefix in the URL
+2. No trailing slash at the end
+3. The endpoint is defined in `backend/pyfactor/users/urls.py` at line 67
+4. It's included at root level via `pyfactor/urls.py` line 176
+
+**How to Debug Similar Issues:**
+1. Check backend URL patterns: `grep -r "logo/upload" backend/pyfactor/`
+2. Trace the includes in main urls.py to understand the full path
+3. Remember that patterns in `users/urls.py` are included at root level
+4. Use backend logs to see what URL is actually being requested
+
+**Prevention:**
+- Always verify the complete URL path by checking Django's URL configuration
+- Test uploads locally before deploying to staging/production
+- Add debug logging to track the exact URLs being called
+
 ## 🚨 **Issue: POS Transaction Failing - Currency Columns Missing**
 
 **Date Added:** August 14, 2025
