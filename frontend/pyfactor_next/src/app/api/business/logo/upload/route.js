@@ -57,14 +57,14 @@ export async function POST(request) {
     console.log("[Logo Upload] CSRF token:", csrfToken);
     console.log("[Logo Upload] Tenant ID:", tenantId);
 
-    const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/upload`, {
+    const response = await fetch(`${BACKEND_URL}/api/business/logo/upload`, {
       method: "POST",
       headers,
       body: formData, // Pass the FormData directly
     });
 
     console.log("[Logo Upload] Response status:", response.status);
-    console.log("[Logo Upload] Backend URL used:", `${BACKEND_URL}/api/users/api/business/logo/upload`);
+    console.log("[Logo Upload] Backend URL used:", `${BACKEND_URL}/api/business/logo/upload`);
 
     if (!response.ok) {
       let errorMessage = "Upload failed";
