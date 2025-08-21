@@ -456,7 +456,8 @@ export default function BarcodeScannerPage() {
                     autoCapitalize="off"
                     spellCheck="false"
                     inputMode="none"
-                />
+                  />
+                </div>
                 <button
                   type="submit"
                   className="mt-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700 transition-colors"
