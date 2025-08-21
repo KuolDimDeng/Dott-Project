@@ -99,5 +99,8 @@
   "related_applications": [],
   "lang": "en-US",
   "dir": "ltr",
-  "splash_pages": "/splash.html"
+  "splash_pages": "/splash.html",
+  "permissions": [
+    "camera"
+  ]
 }

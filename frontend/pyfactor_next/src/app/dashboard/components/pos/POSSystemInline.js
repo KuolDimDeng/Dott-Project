@@ -33,11 +33,17 @@ const safeLogger = logger || { info: console.log, error: console.error };
 
 // QR Scanner library - import dynamically to avoid SSR issues
 let QrScannerLib = null;
+let QrScannerLoadPromise = null;
+
 if (typeof window !== 'undefined') {
-  import('qr-scanner').then(module => {
+  // Create a promise that resolves when the library is loaded
+  QrScannerLoadPromise = import('qr-scanner').then(module => {
     QrScannerLib = module.default;
+    console.log('[POSSystemInline] QR scanner library loaded successfully');
+    return module.default;
   }).catch(err => {
     console.error('[POSSystemInline] Failed to load QR scanner:', err);
+    throw err;
   });
 }
 
@@ -46,6 +52,20 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
   const qrScannerRef = useRef(null);
   const [hasPermission, setHasPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [permissionError, setPermissionError] = useState(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [libraryReady, setLibraryReady] = useState(false);
+  const [manualBarcodeValue, setManualBarcodeValue] = useState('');
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  
+  // Detect iOS
+  useEffect(() => {
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(iOS);
+    if (iOS && window.navigator.standalone) {
+      console.warn('[QRScanner] Running as iOS PWA - camera may have limitations');
+    }
+  }, []);
 
   useEffect(() => {
     if (isActive) {
@@ -59,20 +79,60 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
 
   const startCamera = async () => {
     setIsLoading(true);
+    setPermissionError(null);
+    
     try {
       if (!videoRef.current) {
         setIsLoading(false);
         return;
       }
 
-      // Initialize QR Scanner only if library is loaded
+      // First, check if we have camera permissions
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          // Request camera permission explicitly
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } 
+          });
+          
+          // Stop the stream immediately - we just wanted to check permissions
+          stream.getTracks().forEach(track => track.stop());
+        } catch (permError) {
+          console.error('[QRScanner] Camera permission denied:', permError);
+          setPermissionError('Camera permission denied. Please allow camera access in your browser settings.');
+          setHasPermission(false);
+          setIsLoading(false);
+          
+          if (isIOS) {
+            setPermissionError('On iOS: Please use Safari browser and allow camera access. If using the app from home screen, try opening in Safari first.');
+          }
+          return;
+        }
+      }
+
+      // Wait for library to load if not ready
+      if (!QrScannerLib && QrScannerLoadPromise) {
+        console.log('[QRScanner] Waiting for library to load...');
+        try {
+          await QrScannerLoadPromise;
+          setLibraryReady(true);
+        } catch (loadError) {
+          console.error('[QRScanner] Failed to load library:', loadError);
+          setPermissionError('Failed to load scanner. Please refresh and try again.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Double-check library is loaded
       if (!QrScannerLib) {
-        console.error('[QRScanner] QR Scanner library not loaded yet');
+        console.error('[QRScanner] QR Scanner library still not loaded');
+        setPermissionError('Scanner not ready. Please refresh the page and try again.');
         setIsLoading(false);
-        onError && onError(new Error('QR Scanner library not loaded'));
         return;
       }
 
+      // Initialize scanner
       qrScannerRef.current = new QrScannerLib(
         videoRef.current,
         (result) => {
@@ -89,10 +149,22 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
 
       await qrScannerRef.current.start();
       setHasPermission(true);
+      console.log('[QRScanner] Camera started successfully');
       
     } catch (error) {
-      console.error('Camera access denied:', error);
-      onError(t('allowCameraAccess'));
+      console.error('[QRScanner] Error starting camera:', error);
+      
+      // Provide specific error messages
+      if (error.name === 'NotAllowedError') {
+        setPermissionError('Camera access denied. Please enable camera permissions for this site.');
+      } else if (error.name === 'NotFoundError') {
+        setPermissionError('No camera found. Please ensure your device has a camera.');
+      } else if (error.name === 'NotReadableError') {
+        setPermissionError('Camera is in use by another application. Please close other apps using the camera.');
+      } else {
+        setPermissionError(`Camera error: ${error.message || 'Unknown error'}`);
+      }
+      
       setHasPermission(false);
     } finally {
       setIsLoading(false);
@@ -108,24 +180,106 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
   };
 
   return (
-    <div className="h-full flex items-center justify-center bg-gray-900 rounded-lg">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
-          <div className="text-white">{t('loadingCamera')}</div>
-        </div>
-      )}
+    <div className="h-full flex flex-col bg-gray-900 rounded-lg relative">
+      {/* Main scanner area */}
+      <div className="flex-1 relative">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
+              <p>{t('loadingCamera') || 'Loading camera...'}</p>
+            </div>
+          </div>
+        )}
+        
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          style={{ transform: 'scaleX(-1)', display: hasPermission ? 'block' : 'none' }}
+        />
+        
+        {/* Permission error or no permission state */}
+        {!hasPermission && !isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="text-white text-center max-w-md">
+              <CameraIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              
+              {permissionError ? (
+                <>
+                  <p className="text-red-400 mb-4">{permissionError}</p>
+                  {isIOS && (
+                    <div className="bg-yellow-900 bg-opacity-50 rounded-lg p-3 mb-4">
+                      <p className="text-yellow-200 text-sm">
+                        iOS Instructions:
+                      </p>
+                      <ol className="text-yellow-100 text-xs mt-2 text-left">
+                        <li>1. Open Settings → Safari</li>
+                        <li>2. Tap "Camera" and select "Allow"</li>
+                        <li>3. For PWA: Reinstall from Safari</li>
+                      </ol>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-300">{t('cameraPermissionRequired') || 'Camera permission required'}</p>
+              )}
+              
+              {/* Manual entry option */}
+              <button
+                onClick={() => setShowManualEntry(true)}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Enter Barcode Manually
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       
-      <video
-        ref={videoRef}
-        className="w-full h-full object-cover"
-        style={{ transform: 'scaleX(-1)' }} // Mirror the video for better UX
-      />
-      
-      {!hasPermission && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-white text-center">
-            <CameraIcon className="w-12 h-12 mx-auto mb-2" />
-            <p>{t('cameraPermissionRequired')}</p>
+      {/* Manual barcode entry */}
+      {showManualEntry && (
+        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-20">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4">Enter Barcode/SKU</h3>
+            <input
+              type="text"
+              value={manualBarcodeValue}
+              onChange={(e) => setManualBarcodeValue(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && manualBarcodeValue.trim()) {
+                  onScan(manualBarcodeValue.trim());
+                  setManualBarcodeValue('');
+                  setShowManualEntry(false);
+                }
+              }}
+              placeholder="Type or paste barcode"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              autoFocus
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  if (manualBarcodeValue.trim()) {
+                    onScan(manualBarcodeValue.trim());
+                    setManualBarcodeValue('');
+                    setShowManualEntry(false);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                disabled={!manualBarcodeValue.trim()}
+              >
+                Add Product
+              </button>
+              <button
+                onClick={() => {
+                  setManualBarcodeValue('');
+                  setShowManualEntry(false);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
