@@ -48,19 +48,39 @@ def send_receipt_email(request):
         
         # Generate email content
         receipt_number = receipt_data.get('receipt', {}).get('number', 'Unknown')
-        business_name = receipt_data.get('business', {}).get('name', '')
         
         # Add user context to receipt_data for logo retrieval
         receipt_data['user'] = request.user
+        
+        # Get business name from database (same source as logo)
+        business_name = ''
+        try:
+            from users.models import UserProfile
+            user_profile = UserProfile.objects.get(user=request.user)
+            if user_profile.business:
+                business_name = user_profile.business.name or ''
+                logger.info(f"Retrieved business name: {business_name}")
+        except Exception as e:
+            logger.debug(f"Could not get business name from profile: {e}")
+            # Fallback to receipt data if database lookup fails
+            business_name = receipt_data.get('business', {}).get('name', '')
         
         # Create HTML email from receipt data
         html_content = generate_receipt_html(receipt_data)
         text_content = generate_receipt_text(receipt_data)
         
-        # Prepare sender name - use business name if available, fallback to Dott POS
-        sender_name = business_name.strip() if business_name else "Dott POS"
-        # Limit sender name length and remove problematic characters
-        sender_name = sender_name[:50].replace('\n', ' ').replace('\r', ' ').strip()
+        # Prepare sender name with format: "{Business Name} Receipt" or fallback to "Sale Receipt"
+        if business_name and business_name.strip():
+            # Clean the business name
+            clean_name = business_name.strip()[:40].replace('\n', ' ').replace('\r', ' ').strip()
+            sender_name = f"{clean_name} Receipt"
+            # If the full name is too long, just use "Sale Receipt"
+            if len(sender_name) > 50:
+                sender_name = "Sale Receipt"
+        else:
+            sender_name = "Sale Receipt"
+        
+        logger.info(f"Using sender name: {sender_name}")
         
         # Send email using Resend API via HTTP request
         logger.info(f"Sending receipt email to {email_to} using Resend API from {sender_name}")
