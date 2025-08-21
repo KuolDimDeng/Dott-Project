@@ -98,12 +98,22 @@ class PlaidLinkTokenView(APIView):
     def post(self, request):
         try:
             user = request.user
-            logger.debug(f"Creating link token for user: {user.id}")
+            # Get country code from request, default to US if not provided
+            country_code = request.data.get('country_code', 'US').upper()
+            
+            logger.debug(f"Creating link token for user: {user.id} with country: {country_code}")
+            
+            # Validate country code is supported by Plaid
+            # These are the countries currently supported by Plaid
+            supported_countries = ['US', 'CA', 'GB', 'FR', 'ES', 'NL', 'IE', 'DE', 'IT', 'PL', 'DK', 'NO', 'SE', 'EE', 'LT', 'LV', 'PT', 'BE']
+            if country_code not in supported_countries:
+                logger.warning(f"Unsupported country code: {country_code}, defaulting to US")
+                country_code = 'US'
 
             link_token_request = LinkTokenCreateRequest(
                 products=[Products('transactions')],
-                client_name="Pyfactor",
-                country_codes=[CountryCode('US')],
+                client_name="Dott",
+                country_codes=[CountryCode(country_code)],
                 language='en',
                 user=LinkTokenCreateRequestUser(
                     client_user_id=str(user.id)
