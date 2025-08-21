@@ -34,16 +34,22 @@ export async function GET(request) {
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/`, {
+    console.log('[Logo GET] Fetching from:', `${BACKEND_URL}/api/business/logo`);
+    
+    const response = await fetch(`${BACKEND_URL}/api/business/logo`, {
       method: "GET",
       headers,
     });
 
+    console.log('[Logo GET] Response status:', response.status);
+
     if (!response.ok) {
       // Handle 404 gracefully - user likely doesn't have a logo
       if (response.status === 404) {
+        console.log('[Logo GET] 404 - No logo found for user');
         return NextResponse.json({ 
           logo_data: null,
+          logo_url: null,
           message: 'No logo found' 
         });
       }
@@ -51,6 +57,10 @@ export async function GET(request) {
     }
 
     const data = await response.json();
+    console.log('[Logo GET] Response data:', { 
+      has_logo: data.has_logo, 
+      logo_url_length: data.logo_url ? data.logo_url.length : 0 
+    });
     return NextResponse.json(data);
   } catch (error) {
     console.log("[Business Logo API] Fetch failed (expected for users without logos):", error.message);
@@ -93,7 +103,7 @@ export async function DELETE(request) {
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/delete/`, {
+    const response = await fetch(`${BACKEND_URL}/api/business/logo/delete`, {
       method: "DELETE",
       headers,
     });
