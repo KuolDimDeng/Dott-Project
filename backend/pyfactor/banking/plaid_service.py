@@ -38,9 +38,12 @@ class PlaidService:
     def create_link_token(self, user_id):
         try:
             logger.debug(f"Creating link token for user ID: {user_id}...")
+            from django.conf import settings
+            client_name = getattr(settings, 'PLAID_CLIENT_NAME', 'Dott')
+            
             request = LinkTokenCreateRequest(
                 products=[Products('transactions')],
-                client_name="Dott",
+                client_name=client_name,
                 country_codes=[CountryCode('US')],
                 language='en',
                 user=LinkTokenCreateRequestUser(

@@ -122,6 +122,8 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
 PLAID_SECRET = os.getenv('PLAID_SECRET')
 PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
+# Client name shown in Plaid Link interface (appears as "Connect to [name]")
+PLAID_CLIENT_NAME = os.getenv('PLAID_CLIENT_NAME', 'Dott')
 
 # Check for Plaid credentials and use sandbox credentials if not set
 if not PLAID_CLIENT_ID or not PLAID_SECRET:

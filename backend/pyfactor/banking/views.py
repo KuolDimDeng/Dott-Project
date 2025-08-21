@@ -110,9 +110,13 @@ class PlaidLinkTokenView(APIView):
                 logger.warning(f"Unsupported country code: {country_code}, defaulting to US")
                 country_code = 'US'
 
+            # Get client name from settings or use default
+            from django.conf import settings
+            client_name = getattr(settings, 'PLAID_CLIENT_NAME', 'Dott')
+            
             link_token_request = LinkTokenCreateRequest(
                 products=[Products('transactions')],
-                client_name="Dott",
+                client_name=client_name,
                 country_codes=[CountryCode(country_code)],
                 language='en',
                 user=LinkTokenCreateRequestUser(
