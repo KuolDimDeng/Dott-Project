@@ -64,6 +64,7 @@ export async function POST(request) {
     });
 
     console.log("[Logo Upload] Response status:", response.status);
+    console.log("[Logo Upload] Backend URL used:", `${BACKEND_URL}/api/users/business/logo/upload/`);
 
     if (!response.ok) {
       let errorMessage = "Upload failed";
