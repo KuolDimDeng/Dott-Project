@@ -54,16 +54,23 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [permissionError, setPermissionError] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [isIOSPWA, setIsIOSPWA] = useState(false);
   const [libraryReady, setLibraryReady] = useState(false);
   const [manualBarcodeValue, setManualBarcodeValue] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
   
-  // Detect iOS
+  // Detect iOS and PWA mode
   useEffect(() => {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    
     setIsIOS(iOS);
-    if (iOS && window.navigator.standalone) {
-      console.warn('[QRScanner] Running as iOS PWA - camera may have limitations');
+    setIsIOSPWA(iOS && isStandalone);
+    
+    if (iOS && isStandalone) {
+      console.warn('[QRScanner] Running as iOS PWA - camera will not work!');
+      setPermissionError('Camera scanning is not available in iOS app mode. For scanning, please open in Safari browser or use manual entry below.');
+      setHasPermission(false);
     }
   }, []);
 
@@ -78,6 +85,14 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
   }, [isActive]);
 
   const startCamera = async () => {
+    // Don't even try to start camera on iOS PWA
+    if (isIOSPWA) {
+      setPermissionError('Camera is not available in iOS app mode. Please use manual entry or open this page in Safari browser.');
+      setHasPermission(false);
+      setShowManualEntry(true);
+      return;
+    }
+    
     setIsLoading(true);
     setPermissionError(null);
     
@@ -204,7 +219,27 @@ const QRScanner = ({ isActive, onScan, onError, t }) => {
             <div className="text-white text-center max-w-md">
               <CameraIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
               
-              {permissionError ? (
+              {isIOSPWA ? (
+                <div className="bg-yellow-500 bg-opacity-90 rounded-lg p-4 mb-4">
+                  <p className="text-white font-semibold mb-2">iOS App Mode Detected</p>
+                  <p className="text-yellow-100 text-sm mb-3">
+                    Camera scanning doesn't work when using the app from your home screen on iOS.
+                  </p>
+                  <div className="space-y-2">
+                    <a
+                      href={window.location.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full px-4 py-2 bg-white text-yellow-700 rounded-lg font-medium text-center"
+                    >
+                      Open in Safari Browser
+                    </a>
+                    <p className="text-yellow-100 text-xs text-center">
+                      Or use manual entry below
+                    </p>
+                  </div>
+                </div>
+              ) : permissionError ? (
                 <>
                   <p className="text-red-400 mb-4">{permissionError}</p>
                   {isIOS && (

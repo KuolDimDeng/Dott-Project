@@ -33,6 +33,7 @@ export default function BarcodeScannerPage() {
   const [product, setProduct] = useState(null);
   const [cameraError, setCameraError] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isIOSPWA, setIsIOSPWA] = useState(false);
   const [permissionError, setPermissionError] = useState(null);
 
   useEffect(() => {
@@ -41,12 +42,21 @@ export default function BarcodeScannerPage() {
     }
   }, [session, loading, router]);
 
-  // Detect iOS
+  // Detect iOS and PWA mode
   useEffect(() => {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    
     setIsIOS(iOS);
-    if (iOS && window.navigator.standalone) {
-      console.warn('[BarcodeScannerPage] Running as iOS PWA - camera may have limitations');
+    setIsIOSPWA(iOS && isStandalone);
+    
+    if (iOS) {
+      console.log('[BarcodeScannerPage] iOS detected');
+      if (isStandalone) {
+        console.warn('[BarcodeScannerPage] Running as iOS PWA - camera will not work!');
+        setCameraError(true);
+        setPermissionError('Camera access is not available in iOS app mode. Please open this page in Safari browser to use the camera scanner.');
+      }
     }
   }, []);
 
@@ -260,28 +270,94 @@ export default function BarcodeScannerPage() {
                 <CameraIcon className="w-16 h-16 text-gray-400" />
               </div>
               
-              <button
-                onClick={startScanning}
-                disabled={cameraError}
-                className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${
-                  cameraError
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {cameraError ? 'Camera Not Available - Use Manual Entry Below' : 'Start Scanning'}
-              </button>
+              {/* iOS PWA Warning */}
+              {isIOSPWA && (
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm font-semibold text-yellow-800 mb-2">
+                    Camera Not Available in App Mode
+                  </p>
+                  <p className="text-xs text-yellow-700 mb-3">
+                    iOS doesn't allow camera access when using the app from your home screen.
+                  </p>
+                  <a
+                    href={window.location.href}
+                    target="_blank"
+                    className="inline-block px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium"
+                  >
+                    Open in Safari
+                  </a>
+                </div>
+              )}
+              
+              {/* iOS Camera File Input (Native Camera) */}
+              {isIOS && !isIOSPWA && (
+                <div className="mb-4">
+                  <label className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-medium cursor-pointer hover:bg-green-700">
+                    <CameraIcon className="inline w-5 h-5 mr-2" />
+                    Use iOS Camera
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Process the image for QR/barcode
+                          try {
+                            const reader = new FileReader();
+                            reader.onload = async (event) => {
+                              // Try to decode QR/barcode from image
+                              if (QrScannerLib) {
+                                try {
+                                  const result = await QrScannerLib.scanImage(event.target.result);
+                                  handleScanResult(result);
+                                  toast.success('Barcode detected!');
+                                } catch (err) {
+                                  toast.error('No barcode found in image. Try again or enter manually.');
+                                }
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (error) {
+                            toast.error('Failed to process image');
+                          }
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Take a photo of the barcode with your camera
+                  </p>
+                </div>
+              )}
+              
+              {/* Regular Scanner Button (non-iOS or iOS Safari) */}
+              {!isIOSPWA && (
+                <button
+                  onClick={startScanning}
+                  disabled={cameraError}
+                  className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${
+                    cameraError
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {cameraError ? 'Camera Not Available - Use Manual Entry Below' : (isIOS ? 'Try Live Scanner (Safari Only)' : 'Start Scanning')}
+                </button>
+              )}
 
-              {permissionError && (
+              {permissionError && !isIOSPWA && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-700">{permissionError}</p>
                   {isIOS && (
                     <div className="mt-2 text-xs text-red-600">
-                      <p className="font-semibold">iOS Instructions:</p>
+                      <p className="font-semibold">iOS Safari Settings:</p>
                       <ol className="mt-1 space-y-1">
                         <li>1. Open Settings → Safari</li>
-                        <li>2. Tap "Camera" and select "Allow"</li>
-                        <li>3. For PWA: Reinstall from Safari</li>
+                        <li>2. Scroll to "Settings for Websites"</li>
+                        <li>3. Tap "Camera" → "Allow"</li>
+                        <li>4. Refresh this page</li>
                       </ol>
                     </div>
                   )}
