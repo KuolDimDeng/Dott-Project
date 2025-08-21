@@ -133,6 +133,32 @@ def generate_receipt_html(receipt_data):
     currency_symbol = receipt_data.get('currencySymbol', '$')
     currency_code = receipt_data.get('currency', 'USD')
     
+    # Try to get business logo
+    logo_html = ""
+    try:
+        # Get the current user's tenant from the request context
+        from users.models import BusinessDetails
+        
+        # Try to get business logo using business ID if available
+        business_id = business.get('id')
+        if business_id:
+            business_details = BusinessDetails.objects.filter(
+                business_id=business_id
+            ).first()
+            
+            if business_details and business_details.logo_data:
+                # Include logo as embedded base64 image
+                logo_html = f'''
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <img src="{business_details.logo_data}" 
+                         style="max-width: 180px; max-height: 70px; object-fit: contain;" 
+                         alt="{business.get('name', 'Business')} Logo" />
+                </div>
+                '''
+                logger.debug(f"Added logo to receipt for business {business_id}")
+    except Exception as e:
+        logger.debug(f"Could not add logo to receipt: {e}")
+    
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -153,6 +179,7 @@ def generate_receipt_html(receipt_data):
     <body>
         <div class="container">
             <div class="header">
+                {logo_html}
                 {f"<div class='business-name'>{business.get('name')}</div>" if business.get('name') else ""}
                 <div>Receipt #{receipt_info.get('number', 'N/A')}</div>
                 <div>{receipt_info.get('date', '')} {receipt_info.get('time', '')}</div>

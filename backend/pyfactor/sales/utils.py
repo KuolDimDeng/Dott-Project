@@ -12,13 +12,98 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.utils import ImageReader
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from users.models import UserProfile
+from PIL import Image
+import base64
 
 
 
 logger = get_logger()
 
+
+def get_business_logo_for_pdf(document):
+    """
+    Get business logo as base64 data for PDF generation.
+    Returns the logo data or None if not available.
+    """
+    try:
+        # Try to get business details through tenant relationship
+        if hasattr(document, 'tenant') and document.tenant:
+            from users.models import BusinessDetails
+            
+            # Get business details using tenant ID
+            business_details = BusinessDetails.objects.filter(
+                business_id=document.tenant.id
+            ).first()
+            
+            if business_details and business_details.logo_data:
+                logger.debug(f"Found logo for tenant {document.tenant.id}")
+                return business_details.logo_data
+        
+        # Fallback: try to get through tenant_id directly
+        elif hasattr(document, 'tenant_id') and document.tenant_id:
+            from users.models import BusinessDetails
+            
+            business_details = BusinessDetails.objects.filter(
+                business_id=document.tenant_id
+            ).first()
+            
+            if business_details and business_details.logo_data:
+                logger.debug(f"Found logo for tenant_id {document.tenant_id}")
+                return business_details.logo_data
+                
+    except Exception as e:
+        logger.debug(f"Could not fetch business logo: {e}")
+    
+    return None
+
+
+def draw_logo_on_pdf(p, logo_data, x, y, max_width=150, max_height=60):
+    """
+    Draw logo on PDF canvas at specified position.
+    Returns the actual height used by the logo (for layout adjustment).
+    """
+    try:
+        if not logo_data:
+            return 0
+            
+        # Extract base64 data from data URL
+        if logo_data.startswith('data:image'):
+            # Split on comma to get the base64 part
+            base64_data = logo_data.split(',')[1]
+            image_data = base64.b64decode(base64_data)
+            
+            # Open image with PIL to get dimensions
+            img = Image.open(BytesIO(image_data))
+            img_width, img_height = img.size
+            
+            # Calculate scaling to fit within max dimensions
+            scale = min(max_width / img_width, max_height / img_height)
+            if scale < 1:
+                new_width = int(img_width * scale)
+                new_height = int(img_height * scale)
+            else:
+                new_width = img_width
+                new_height = img_height
+            
+            # Create image reader from buffer
+            img_buffer = BytesIO(image_data)
+            img_reader = ImageReader(img_buffer)
+            
+            # Draw the image
+            p.drawImage(img_reader, x, y - new_height, 
+                       width=new_width, height=new_height,
+                       preserveAspectRatio=True, mask='auto')
+            
+            logger.debug(f"Drew logo at ({x}, {y}) with size {new_width}x{new_height}")
+            return new_height + 10  # Return height plus some padding
+            
+    except Exception as e:
+        logger.warning(f"Failed to draw logo on PDF: {e}")
+    
+    return 0
 
 
 def ensure_date(value):
@@ -102,24 +187,31 @@ def generate_pdf(estimate):
         title_style = styles['Heading1']
         normal_style = styles['Normal']
 
-        # Draw company logo (if available)
-        # p.drawInlineImage("path/to/logo.png", 40, height - 50, width=100, height=50)
+        # Get and draw company logo (if available)
+        logo_data = get_business_logo_for_pdf(estimate)
+        logo_height = draw_logo_on_pdf(p, logo_data, 40, height - 40, max_width=150, max_height=60)
+        
+        # Adjust starting position based on whether logo was drawn
+        if logo_height > 0:
+            y_start = height - 40 - logo_height - 10
+        else:
+            y_start = height - 40
 
         # Draw estimate details
         p.setFont("Helvetica-Bold", 16)
-        p.drawString(40, height - 40, f"Estimate #{estimate.estimate_num}")
+        p.drawString(40, y_start, f"Estimate #{estimate.estimate_num}")
 
         p.setFont("Helvetica", 12)
-        p.drawString(40, height - 60, f"Date: {estimate.date.strftime('%Y-%m-%d')}")
-        p.drawString(40, height - 80, f"Valid Until: {estimate.valid_until.strftime('%Y-%m-%d')}")
+        p.drawString(40, y_start - 20, f"Date: {estimate.date.strftime('%Y-%m-%d')}")
+        p.drawString(40, y_start - 40, f"Valid Until: {estimate.valid_until.strftime('%Y-%m-%d')}")
 
         # Draw customer details
-        p.drawString(40, height - 110, "Bill To:")
+        p.drawString(40, y_start - 70, "Bill To:")
         customer_name = f"{estimate.customer.first_name} {estimate.customer.last_name}"
-        p.drawString(40, height - 130, customer_name)
+        p.drawString(40, y_start - 90, customer_name)
 
-        p.drawString(40, height - 150, estimate.customer.street)
-        p.drawString(40, height - 170, f"{estimate.customer.city}, {estimate.customer.billingState} {estimate.customer.postcode}")
+        p.drawString(40, y_start - 110, estimate.customer.street)
+        p.drawString(40, y_start - 130, f"{estimate.customer.city}, {estimate.customer.billingState} {estimate.customer.postcode}")
 
         # Draw estimate items
         data = [['Item', 'Description', 'Quantity', 'Unit Price', 'Total']]
@@ -158,7 +250,9 @@ def generate_pdf(estimate):
             ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ]))
         table.wrapOn(p, width - 80, height)
-        table.drawOn(p, 40, height - 400)
+        # Adjust table position based on logo
+        table_y = y_start - 360 if logo_height > 0 else height - 400
+        table.drawOn(p, 40, table_y)
 
         # Draw footer
         if estimate.footer:
@@ -189,38 +283,48 @@ def generate_invoice_pdf(invoice):
         title_style = styles['Heading1']
         normal_style = styles['Normal']
 
+        # Get and draw company logo (if available)
+        logo_data = get_business_logo_for_pdf(invoice)
+        logo_height = draw_logo_on_pdf(p, logo_data, 40, height - 40, max_width=150, max_height=60)
+        
+        # Adjust starting position based on whether logo was drawn
+        if logo_height > 0:
+            y_start = height - 40 - logo_height - 10
+        else:
+            y_start = height - 40
+
         # Draw invoice header
         p.setFont("Helvetica-Bold", 20)
-        p.drawString(40, height - 40, "INVOICE")
+        p.drawString(40, y_start, "INVOICE")
         
         # Draw invoice details on the right
         p.setFont("Helvetica", 10)
         invoice_num = getattr(invoice, 'invoice_num', f'INV-{invoice.id}')
-        p.drawRightString(width - 40, height - 40, f"Invoice #: {invoice_num}")
+        p.drawRightString(width - 40, y_start, f"Invoice #: {invoice_num}")
         
         # Handle date formatting
         try:
             date_str = invoice.date.strftime('%Y-%m-%d')
         except:
             date_str = str(invoice.date)
-        p.drawRightString(width - 40, height - 55, f"Date: {date_str}")
+        p.drawRightString(width - 40, y_start - 15, f"Date: {date_str}")
         
         try:
             due_date_str = invoice.due_date.strftime('%Y-%m-%d')
         except:
             due_date_str = str(invoice.due_date)
-        p.drawRightString(width - 40, height - 70, f"Due Date: {due_date_str}")
+        p.drawRightString(width - 40, y_start - 30, f"Due Date: {due_date_str}")
         
         # Draw status
         status_color = colors.green if invoice.status == 'paid' else colors.orange if invoice.status == 'sent' else colors.grey
         p.setFillColor(status_color)
         p.setFont("Helvetica-Bold", 12)
-        p.drawRightString(width - 40, height - 90, invoice.status.upper())
+        p.drawRightString(width - 40, y_start - 50, invoice.status.upper())
         p.setFillColor(colors.black)
 
         # Draw business info from tenant
         p.setFont("Helvetica", 10)
-        y_pos = height - 120
+        y_pos = y_start - 80
         
         # Try to get tenant information
         business_name = "Your Business"
