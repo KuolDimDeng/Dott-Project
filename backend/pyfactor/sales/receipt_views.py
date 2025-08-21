@@ -48,7 +48,7 @@ def send_receipt_email(request):
         
         # Generate email content
         receipt_number = receipt_data.get('receipt', {}).get('number', 'Unknown')
-        business_name = receipt_data.get('business', {}).get('name', 'Business')
+        business_name = receipt_data.get('business', {}).get('name', '')
         
         # Add user context to receipt_data for logo retrieval
         receipt_data['user'] = request.user
@@ -57,8 +57,13 @@ def send_receipt_email(request):
         html_content = generate_receipt_html(receipt_data)
         text_content = generate_receipt_text(receipt_data)
         
+        # Prepare sender name - use business name if available, fallback to Dott POS
+        sender_name = business_name.strip() if business_name else "Dott POS"
+        # Limit sender name length and remove problematic characters
+        sender_name = sender_name[:50].replace('\n', ' ').replace('\r', ' ').strip()
+        
         # Send email using Resend API via HTTP request
-        logger.info(f"Sending receipt email to {email_to} using Resend API")
+        logger.info(f"Sending receipt email to {email_to} using Resend API from {sender_name}")
         
         try:
             # Use requests library to call Resend API directly
@@ -69,9 +74,9 @@ def send_receipt_email(request):
                     'Content-Type': 'application/json'
                 },
                 json={
-                    "from": "Dott POS <noreply@dottapps.com>",
+                    "from": f"{sender_name} <noreply@dottapps.com>",
                     "to": [email_to],
-                    "subject": f"Receipt #{receipt_number} - {business_name}",
+                    "subject": "Sale Receipt",
                     "html": html_content,
                     "text": text_content
                 },
