@@ -186,11 +186,26 @@ const ServiceManagement = () => {
       console.log('[ServiceManagement] Fetching customers...');
       
       const response = await fetch('/api/customers/', {
-        credentials: 'include'
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
       
+      console.log('[ServiceManagement] Customer fetch response status:', response.status);
+      
       if (!response.ok) {
-        console.error('[ServiceManagement] Failed to fetch customers:', response.status);
+        const errorText = await response.text();
+        console.error('[ServiceManagement] Failed to fetch customers:', response.status, errorText);
+        
+        // Show user-friendly error message
+        if (response.status === 401) {
+          toast.error('Session expired. Please refresh the page.');
+        } else if (response.status === 403) {
+          toast.error('You do not have permission to view customers.');
+        }
         return;
       }
       
@@ -200,12 +215,15 @@ const ServiceManagement = () => {
       let customersList = [];
       if (Array.isArray(data)) {
         customersList = data;
+      } else if (data && Array.isArray(data.customers)) {
+        customersList = data.customers;  // API proxy returns { customers: [...] }
       } else if (data && Array.isArray(data.results)) {
         customersList = data.results;
       } else if (data && Array.isArray(data.data)) {
         customersList = data.data;
       }
       
+      console.log('[ServiceManagement] Response data:', data);
       console.log('[ServiceManagement] Fetched customers:', customersList.length);
       
       if (isMounted.current) {
@@ -535,7 +553,8 @@ const ServiceManagement = () => {
               ) : (
                 customers.map(customer => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.name} {!customer.is_active && '(Inactive)'}
+                    {customer.customer_name || customer.business_name || customer.name || 'Unnamed Customer'} 
+                    {customer.is_active === false && ' (Inactive)'}
                   </option>
                 ))
               )}
