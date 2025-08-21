@@ -57,7 +57,7 @@ export async function POST(request) {
     console.log("[Logo Upload] CSRF token:", csrfToken);
     console.log("[Logo Upload] Tenant ID:", tenantId);
 
-    const response = await fetch(`${BACKEND_URL}/api/users/api/business/logo/upload/`, {
+    const response = await fetch(`${BACKEND_URL}/api/users/business/logo/upload/`, {
       method: "POST",
       headers,
       body: formData, // Pass the FormData directly
