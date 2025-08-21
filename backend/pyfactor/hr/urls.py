@@ -8,6 +8,7 @@ from .views import (
     LocationCheckInViewSet, clock_in_with_location, clock_out_with_location,
     GeofenceViewSet, EmployeeGeofenceViewSet, GeofenceEventViewSet, test_geofence_creation
 )
+from .api_banking import employee_banking_info
 from rest_framework.routers import DefaultRouter
 
 # Add router for viewsets
@@ -40,6 +41,7 @@ urlpatterns = [
     
     # Employee-related URLs (permissions and setup only)
     path('employees/<uuid:pk>/permissions/', views.set_employee_permissions, name='set-employee-permissions'),
+    path('employees/<uuid:employee_id>/banking/', employee_banking_info, name='employee-banking-info'),
     path('permissions/available/', views.get_available_permissions, name='get-available-permissions'),
     path('setup-password/', views.setup_employee_password, name='setup-employee-password'),
     

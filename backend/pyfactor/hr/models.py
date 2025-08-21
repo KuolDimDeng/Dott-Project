@@ -135,6 +135,18 @@ class Employee(models.Model):
     stripe_account_id = models.CharField(max_length=255, blank=True, null=True)
     ssn_stored_in_stripe = models.BooleanField(default=False)
     
+    # Banking Information (secure storage)
+    bank_account_name = models.CharField(max_length=100, blank=True, null=True)
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    account_number_last4 = models.CharField(max_length=4, blank=True, null=True)
+    routing_number_last4 = models.CharField(max_length=4, blank=True, null=True)
+    stripe_bank_account_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Mobile Money fields (for Kenya, Nigeria, etc.)
+    mobile_money_provider = models.CharField(max_length=50, blank=True, null=True)  # M-Pesa, MTN, etc.
+    mobile_money_number = models.CharField(max_length=20, blank=True, null=True)
+    prefer_mobile_money = models.BooleanField(default=False)  # If true, use mobile money instead of bank
+    
     # Benefits
     direct_deposit = models.BooleanField(default=False)
     vacation_time = models.BooleanField(default=False)
