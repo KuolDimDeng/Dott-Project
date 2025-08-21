@@ -50,6 +50,9 @@ def send_receipt_email(request):
         receipt_number = receipt_data.get('receipt', {}).get('number', 'Unknown')
         business_name = receipt_data.get('business', {}).get('name', 'Business')
         
+        # Add user context to receipt_data for logo retrieval
+        receipt_data['user'] = request.user
+        
         # Create HTML email from receipt data
         html_content = generate_receipt_html(receipt_data)
         text_content = generate_receipt_text(receipt_data)
@@ -136,28 +139,40 @@ def generate_receipt_html(receipt_data):
     # Try to get business logo
     logo_html = ""
     try:
-        # Get the current user's tenant from the request context
-        from users.models import BusinessDetails
+        from users.models import BusinessDetails, UserProfile
         
-        # Try to get business logo using business ID if available
-        business_id = business.get('id')
-        if business_id:
-            business_details = BusinessDetails.objects.filter(
-                business_id=business_id
-            ).first()
+        # Get user from receipt data (passed from the view)
+        user = receipt_data.get('user')
+        
+        if user:
+            # Get user's business through UserProfile
+            try:
+                user_profile = UserProfile.objects.get(user=user)
+                if user_profile.business_id:
+                    # Get business details using the business_id from user profile
+                    business_details = BusinessDetails.objects.filter(
+                        business_id=user_profile.business_id
+                    ).first()
+                    
+                    if business_details and business_details.logo_data:
+                        # Include logo as embedded base64 image
+                        logo_html = f'''
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <img src="{business_details.logo_data}" 
+                                 style="max-width: 180px; max-height: 70px; object-fit: contain;" 
+                                 alt="{business.get('name', 'Business')} Logo" />
+                        </div>
+                        '''
+                        logger.info(f"Added logo to receipt for user {user.email}, business {user_profile.business_id}")
+                    else:
+                        logger.debug(f"No logo found for business {user_profile.business_id}")
+            except UserProfile.DoesNotExist:
+                logger.debug(f"UserProfile not found for user {user.email}")
+        else:
+            logger.debug("No user context available for logo retrieval")
             
-            if business_details and business_details.logo_data:
-                # Include logo as embedded base64 image
-                logo_html = f'''
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <img src="{business_details.logo_data}" 
-                         style="max-width: 180px; max-height: 70px; object-fit: contain;" 
-                         alt="{business.get('name', 'Business')} Logo" />
-                </div>
-                '''
-                logger.debug(f"Added logo to receipt for business {business_id}")
     except Exception as e:
-        logger.debug(f"Could not add logo to receipt: {e}")
+        logger.error(f"Error adding logo to receipt: {e}", exc_info=True)
     
     html = f"""
     <!DOCTYPE html>
