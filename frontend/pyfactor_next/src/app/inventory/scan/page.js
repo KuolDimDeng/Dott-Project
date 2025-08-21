@@ -35,6 +35,7 @@ export default function BarcodeScannerPage() {
   const [isIOS, setIsIOS] = useState(false);
   const [isIOSPWA, setIsIOSPWA] = useState(false);
   const [permissionError, setPermissionError] = useState(null);
+  const [showScanditGuide, setShowScanditGuide] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) {
@@ -270,27 +271,99 @@ export default function BarcodeScannerPage() {
                 <CameraIcon className="w-16 h-16 text-gray-400" />
               </div>
               
-              {/* iOS PWA Warning */}
-              {isIOSPWA && (
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm font-semibold text-yellow-800 mb-2">
-                    Camera Not Available in App Mode
+              {/* iOS PWA Scanner Options - Scandit Keyboard Only */}
+              {isIOSPWA ? (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-semibold text-blue-800 mb-2">
+                    📱 iOS Scanning Solutions Available!
                   </p>
-                  <p className="text-xs text-yellow-700 mb-3">
-                    iOS doesn't allow camera access when using the app from your home screen.
+                  <p className="text-xs text-blue-700 mb-3">
+                    While direct camera access isn't available in app mode, you have these options:
                   </p>
-                  <a
-                    href={window.location.href}
-                    target="_blank"
-                    className="inline-block px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium"
-                  >
-                    Open in Safari
-                  </a>
+                  
+                  {/* Scandit Keyboard Option */}
+                  <div className="bg-white rounded-lg p-3 mb-3 border border-blue-100">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 mb-1">
+                          🎯 Scandit Keyboard (Recommended)
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Free keyboard that scans directly into the field below
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowScanditGuide(!showScanditGuide)}
+                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded-lg"
+                      >
+                        {showScanditGuide ? 'Hide' : 'Setup'}
+                      </button>
+                    </div>
+                    
+                    {showScanditGuide && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs font-medium text-gray-700 mb-2">Quick Setup (2 minutes):</p>
+                        <ol className="text-xs text-gray-600 space-y-1 ml-4">
+                          <li>1. Download <a href="https://apps.apple.com/app/scandit-keyboard-wedge/id1476912279" className="text-blue-600 underline" target="_blank">Scandit Keyboard</a> from App Store</li>
+                          <li>2. Open Settings → General → Keyboard → Keyboards</li>
+                          <li>3. Add New Keyboard → Select "Scandit"</li>
+                          <li>4. Tap "Scandit" → Allow Full Access</li>
+                          <li>5. Return here and tap the barcode field below</li>
+                          <li>6. Switch keyboard (🌐 globe icon) to Scandit</li>
+                          <li>7. Tap the scan button on keyboard to scan!</li>
+                        </ol>
+                        <a 
+                          href="https://apps.apple.com/app/scandit-keyboard-wedge/id1476912279"
+                          target="_blank"
+                          className="inline-block mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-medium w-full text-center"
+                        >
+                          📲 Get Scandit Keyboard (Free)
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Alternative Options */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text) {
+                            setManualCode(text);
+                            handleManualSubmit({ preventDefault: () => {} });
+                          }
+                        } catch (err) {
+                          toast.error('Please copy a barcode first');
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium"
+                    >
+                      📋 Paste from Clipboard
+                    </button>
+                    <a
+                      href={window.location.href}
+                      target="_blank"
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium text-center"
+                    >
+                      🌐 Open in Safari
+                    </a>
+                  </div>
                 </div>
+              ) : (
+                /* Regular Camera Scanner for non-iOS PWA users */
+                !cameraError && (
+                  <button
+                    onClick={startScanning}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    Start Camera Scanning
+                  </button>
+                )
               )}
               
-              {/* iOS Camera File Input (Native Camera) */}
-              {isIOS && !isIOSPWA && (
+              {/* iOS Safari Camera File Input (Native Camera) - Keep this for iOS Safari */}
+              {isIOS && !isIOSPWA && !scanning && (
                 <div className="mb-4">
                   <label className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-medium cursor-pointer hover:bg-green-700">
                     <CameraIcon className="inline w-5 h-5 mr-2" />
@@ -332,19 +405,11 @@ export default function BarcodeScannerPage() {
                 </div>
               )}
               
-              {/* Regular Scanner Button (non-iOS or iOS Safari) */}
-              {!isIOSPWA && (
-                <button
-                  onClick={startScanning}
-                  disabled={cameraError}
-                  className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${
-                    cameraError
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  {cameraError ? 'Camera Not Available - Use Manual Entry Below' : (isIOS ? 'Try Live Scanner (Safari Only)' : 'Start Scanning')}
-                </button>
+              {/* Show camera error for non-iOS users */}
+              {!isIOS && cameraError && (
+                <div className="text-red-600 text-sm mb-2">
+                  Camera not available - Please use manual entry below
+                </div>
               )}
 
               {permissionError && !isIOSPWA && (
@@ -374,12 +439,23 @@ export default function BarcodeScannerPage() {
               </div>
 
               <form onSubmit={handleManualSubmit} className="mt-4">
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Enter barcode number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <div className="relative">
+                  {isIOS && (
+                    <div className="absolute -top-6 left-0 text-xs text-blue-600 font-medium">
+                      💡 Tip: Tap here and switch to Scandit keyboard to scan
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    placeholder={isIOS ? "Tap here → Switch to Scandit → Scan" : "Enter barcode number"}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-mono"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    inputMode="none"
                 />
                 <button
                   type="submit"

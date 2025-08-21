@@ -48,8 +48,12 @@ export default function MobilePOSPage() {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [lastSaleData, setLastSaleData] = useState(null);
   const [businessInfo, setBusinessInfo] = useState({});
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [showScanditGuide, setShowScanditGuide] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isIOSPWA, setIsIOSPWA] = useState(false);
 
-  // Check online status
+  // Check online status and iOS
   useEffect(() => {
     const updateOnlineStatus = () => {
       setIsOnline(navigator.onLine);
@@ -58,6 +62,12 @@ export default function MobilePOSPage() {
     updateOnlineStatus();
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
+    
+    // Detect iOS and PWA
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    setIsIOS(iOS);
+    setIsIOSPWA(iOS && isStandalone);
 
     return () => {
       window.removeEventListener('online', updateOnlineStatus);
@@ -443,13 +453,29 @@ export default function MobilePOSPage() {
 
   // Handle barcode scan
   const handleBarcodeScan = async (barcode) => {
-    const product = products.find(p => p.sku === barcode);
+    if (!barcode || !barcode.trim()) return;
+    
+    // Try to find by SKU or barcode field
+    const product = products.find(p => 
+      p.sku === barcode || 
+      p.barcode === barcode ||
+      p.upc === barcode ||
+      p.ean === barcode
+    );
+    
     if (product) {
       addToCart(product);
       toast.success(`Added ${product.name} to cart`);
+      setBarcodeInput(''); // Clear the input after successful scan
     } else {
-      toast.error('Product not found');
+      toast.error(`Product not found: ${barcode}`);
     }
+  };
+  
+  // Handle barcode input submission
+  const handleBarcodeSubmit = (e) => {
+    e.preventDefault();
+    handleBarcodeScan(barcodeInput);
   };
 
   if (loading) {
@@ -496,16 +522,98 @@ export default function MobilePOSPage() {
             </div>
           </div>
           
-          {/* Search Bar */}
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+          {/* Search and Barcode Scanner */}
+          <div className="space-y-2">
+            {/* Product Search */}
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="search"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            {/* Barcode Scanner Input */}
+            <div className="space-y-1">
+              {isIOSPWA && (
+                <button
+                  onClick={() => setShowScanditGuide(!showScanditGuide)}
+                  className="text-xs text-blue-600 font-medium flex items-center"
+                >
+                  💡 iOS Scanning: Use Scandit Keyboard {showScanditGuide ? '▼' : '▶'}
+                </button>
+              )}
+              
+              {showScanditGuide && (
+                <div className="bg-blue-50 rounded-lg p-3 mb-2 text-xs">
+                  <p className="font-semibold text-blue-800 mb-2">Quick Setup:</p>
+                  <ol className="space-y-1 text-blue-700">
+                    <li>1. Get <a href="https://apps.apple.com/app/scandit-keyboard-wedge/id1476912279" className="underline">Scandit Keyboard</a> (free)</li>
+                    <li>2. Settings → Keyboard → Add Scandit</li>
+                    <li>3. Tap barcode field below</li>
+                    <li>4. Switch keyboard (🌐) to Scandit</li>
+                    <li>5. Tap scan button to scan!</li>
+                  </ol>
+                </div>
+              )}
+              
+              <form onSubmit={handleBarcodeSubmit} className="flex gap-2">
+                <div className="relative flex-1">
+                  <CameraIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder={isIOS ? "Tap → Switch to Scandit → Scan" : "Scan or enter barcode"}
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    inputMode="none"
+                  />
+                </div>
+                {barcodeInput && (
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
+                  >
+                    Add
+                  </button>
+                )}
+              </form>
+              
+              {/* iOS PWA additional options */}
+              {isIOSPWA && (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                          setBarcodeInput(text);
+                          handleBarcodeScan(text);
+                        }
+                      } catch (err) {
+                        toast.error('Copy a barcode first');
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                  >
+                    📋 Paste Barcode
+                  </button>
+                  <button
+                    onClick={() => router.push('/inventory/scan')}
+                    className="flex-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                  >
+                    📷 Scanner Page
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
