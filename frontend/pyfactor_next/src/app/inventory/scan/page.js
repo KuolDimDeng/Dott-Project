@@ -3,9 +3,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession-v2';
-import QrScanner from 'qr-scanner';
 import { ArrowLeftIcon, CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+
+// QR Scanner library - import dynamically to avoid SSR issues
+let QrScannerLib = null;
+let QrScannerLoadPromise = null;
+
+if (typeof window !== 'undefined') {
+  // Create a promise that resolves when the library is loaded
+  QrScannerLoadPromise = import('qr-scanner').then(module => {
+    QrScannerLib = module.default;
+    console.log('[BarcodeScannerPage] QR scanner library loaded successfully');
+    return module.default;
+  }).catch(err => {
+    console.error('[BarcodeScannerPage] Failed to load QR scanner:', err);
+    throw err;
+  });
+}
 
 export default function BarcodeScannerPage() {
   const router = useRouter();
@@ -17,12 +32,23 @@ export default function BarcodeScannerPage() {
   const [manualCode, setManualCode] = useState('');
   const [product, setProduct] = useState(null);
   const [cameraError, setCameraError] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [permissionError, setPermissionError] = useState(null);
 
   useEffect(() => {
     if (!loading && !session) {
       router.push('/auth/login');
     }
   }, [session, loading, router]);
+
+  // Detect iOS
+  useEffect(() => {
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(iOS);
+    if (iOS && window.navigator.standalone) {
+      console.warn('[BarcodeScannerPage] Running as iOS PWA - camera may have limitations');
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -37,11 +63,73 @@ export default function BarcodeScannerPage() {
       setScanning(true);
       setCameraError(false);
       
-      if (!videoRef.current) return;
+      if (!videoRef.current) {
+        console.error('[BarcodeScannerPage] Video ref not ready');
+        setScanning(false);
+        return;
+      }
 
-      const scanner = new QrScanner(
+      // First, check if we have camera permissions
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          // Request camera permission explicitly
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } 
+          });
+          
+          // Stop the stream immediately - we just wanted to check permissions
+          stream.getTracks().forEach(track => track.stop());
+        } catch (permError) {
+          console.error('[BarcodeScannerPage] Camera permission denied:', permError);
+          setCameraError(true);
+          setScanning(false);
+          
+          // Provide specific error messages
+          let errorMsg = 'Unable to access camera. Please check your settings.';
+          if (permError.name === 'NotAllowedError') {
+            errorMsg = 'Camera access denied. Please enable camera permissions for this site.';
+            if (isIOS) {
+              errorMsg = 'Camera access denied. On iOS: Go to Settings → Safari → Camera and allow access. If using the app from home screen, try opening in Safari first.';
+            }
+          } else if (permError.name === 'NotFoundError') {
+            errorMsg = 'No camera found. Please ensure your device has a camera.';
+          } else if (permError.name === 'NotReadableError') {
+            errorMsg = 'Camera is in use by another application. Please close other apps using the camera.';
+          }
+          
+          setPermissionError(errorMsg);
+          toast.error(errorMsg);
+          return;
+        }
+      }
+
+      // Wait for library to load if not ready
+      if (!QrScannerLib && QrScannerLoadPromise) {
+        console.log('[BarcodeScannerPage] Waiting for library to load...');
+        try {
+          await QrScannerLoadPromise;
+        } catch (loadError) {
+          console.error('[BarcodeScannerPage] Failed to load library:', loadError);
+          setCameraError(true);
+          setScanning(false);
+          toast.error('Scanner not ready. Please refresh and try again.');
+          return;
+        }
+      }
+
+      // Double-check library is loaded
+      if (!QrScannerLib) {
+        console.error('[BarcodeScannerPage] QR Scanner library still not loaded');
+        setCameraError(true);
+        setScanning(false);
+        toast.error('Scanner not ready. Please refresh the page.');
+        return;
+      }
+
+      const scanner = new QrScannerLib(
         videoRef.current,
         (result) => {
+          console.log('[BarcodeScannerPage] Scanned:', result.data);
           handleScanResult(result.data);
           scanner.stop();
           setScanning(false);
@@ -50,17 +138,19 @@ export default function BarcodeScannerPage() {
           returnDetailedScanResult: true,
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: 'environment'
+          preferredCamera: 'environment',
+          maxScansPerSecond: 5
         }
       );
 
       scannerRef.current = scanner;
       await scanner.start();
+      console.log('[BarcodeScannerPage] Scanner started successfully');
     } catch (error) {
-      console.error('Camera error:', error);
+      console.error('[BarcodeScannerPage] Error starting scanner:', error);
       setCameraError(true);
       setScanning(false);
-      toast.error('Unable to access camera');
+      toast.error('Unable to start scanner: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -179,8 +269,24 @@ export default function BarcodeScannerPage() {
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {cameraError ? 'Camera Not Available' : 'Start Scanning'}
+                {cameraError ? 'Camera Not Available - Use Manual Entry Below' : 'Start Scanning'}
               </button>
+
+              {permissionError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">{permissionError}</p>
+                  {isIOS && (
+                    <div className="mt-2 text-xs text-red-600">
+                      <p className="font-semibold">iOS Instructions:</p>
+                      <ol className="mt-1 space-y-1">
+                        <li>1. Open Settings → Safari</li>
+                        <li>2. Tap "Camera" and select "Allow"</li>
+                        <li>3. For PWA: Reinstall from Safari</li>
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-6 relative">
                 <div className="absolute inset-0 flex items-center">
@@ -213,11 +319,14 @@ export default function BarcodeScannerPage() {
             <video
               ref={videoRef}
               className="w-full"
-              style={{ maxHeight: '400px' }}
+              style={{ maxHeight: '400px', minHeight: '300px' }}
+              autoPlay
+              playsInline
+              muted
             />
             <button
               onClick={stopScanning}
-              className="absolute top-4 right-4 p-2 bg-white rounded-full text-gray-700 hover:bg-gray-100"
+              className="absolute top-4 right-4 p-2 bg-white rounded-full text-gray-700 hover:bg-gray-100 z-10"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
@@ -225,6 +334,19 @@ export default function BarcodeScannerPage() {
               <p className="text-sm text-gray-700">
                 Position barcode within the frame
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                If camera is black, check permissions in your browser settings
+              </p>
+            </div>
+            
+            {/* Scanning overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="border-2 border-white rounded-lg w-64 h-32 relative opacity-50">
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-green-500 rounded-tl-lg"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-green-500 rounded-tr-lg"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-green-500 rounded-bl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-500 rounded-br-lg"></div>
+              </div>
             </div>
           </div>
         )}
