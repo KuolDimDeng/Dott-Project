@@ -31,8 +31,8 @@ export async function GET(request) {
       );
     }
     
-    // Use the new callback URL
-    const redirectUri = `${baseUrl}/auth/oauth-callback-v2`;
+    // Use the existing callback URL that's configured in Auth0
+    const redirectUri = `${baseUrl}/auth/oauth-callback`;
     
     const authParams = new URLSearchParams({
       response_type: 'code',

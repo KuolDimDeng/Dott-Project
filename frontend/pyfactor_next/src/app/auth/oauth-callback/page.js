@@ -98,12 +98,16 @@ export default function Auth0OAuthCallbackPage() {
         console.log('🔄 [OAuthCallback] Expected: Exchange will retrieve PKCE verifier from cookie');
         console.log('🔄 [OAuthCallback] ========== END STEP 4 ==========');
 
-        // Call our API to exchange the code for tokens - Fixed URL to match dynamic route
+        // Call our improved V2 API to exchange the code for tokens
         let exchangeResponse;
         try {
-          console.log('🔄 [OAuthCallback] Making fetch request to /api/auth/exchange...');
+          console.log('🔄 [OAuthCallback] Making fetch request to /api/auth/exchange-v2...');
           
-          // Add timeout to prevent hanging requests
+          // Use window.location for full page navigation to ensure cookies are set
+          window.location.href = `/api/auth/exchange-v2?code=${code}&state=${state}`;
+          return; // Stop execution here as we're navigating away
+          
+          // Old code kept for reference but won't execute
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
           
