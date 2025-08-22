@@ -17,6 +17,9 @@ export async function GET(request) {
   const startTime = Date.now();
   console.log('🔄 [Exchange-V2] Starting OAuth token exchange');
   
+  // Determine the proper base URL to use for redirects
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://staging.dottapps.com';
+  
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
@@ -27,7 +30,7 @@ export async function GET(request) {
     if (error) {
       console.error('[Exchange-V2] OAuth error:', error);
       return NextResponse.redirect(
-        new URL(`/auth/error?error=${error}`, request.url)
+        new URL(`/auth/error?error=${error}`, baseUrl)
       );
     }
     
@@ -35,7 +38,7 @@ export async function GET(request) {
     if (!code) {
       console.error('[Exchange-V2] Missing authorization code');
       return NextResponse.redirect(
-        new URL('/auth/error?error=missing_code', request.url)
+        new URL('/auth/error?error=missing_code', baseUrl)
       );
     }
     
@@ -43,7 +46,7 @@ export async function GET(request) {
     if (usedCodes.has(code)) {
       console.error('[Exchange-V2] Authorization code already used');
       return NextResponse.redirect(
-        new URL('/auth/error?error=code_reused', request.url)
+        new URL('/auth/error?error=code_reused', baseUrl)
       );
     }
     
@@ -80,7 +83,7 @@ export async function GET(request) {
       console.error('[Exchange-V2] Backend exchange failed:', errorData);
       const errorDetails = errorData.error || errorData.message || 'Unknown error';
       return NextResponse.redirect(
-        new URL(`/auth/error?error=exchange_failed&details=${encodeURIComponent(errorDetails)}`, request.url)
+        new URL(`/auth/error?error=exchange_failed&details=${encodeURIComponent(errorDetails)}`, baseUrl)
       );
     }
     
@@ -93,7 +96,7 @@ export async function GET(request) {
     
     // Always redirect to callback-v2 which will handle onboarding check
     const response = NextResponse.redirect(
-      new URL('/auth/callback-v2', request.url)
+      new URL('/auth/callback-v2', baseUrl)
     );
     
     // Set session cookie (sid) - single source of truth
@@ -133,13 +136,13 @@ export async function GET(request) {
     response.cookies.delete('auth0_verifier');
     response.cookies.delete('auth0_nonce');
     
-    console.log(`[Exchange-V2] Completed in ${Date.now() - startTime}ms, redirecting to ${redirectUrl}`);
+    console.log(`[Exchange-V2] Completed in ${Date.now() - startTime}ms, redirecting to /auth/callback-v2`);
     return response;
     
   } catch (error) {
     console.error('[Exchange-V2] Unexpected error:', error);
     return NextResponse.redirect(
-      new URL(`/auth/error?error=unexpected_error&details=${encodeURIComponent(error.message)}`, request.url)
+      new URL(`/auth/error?error=unexpected_error&details=${encodeURIComponent(error.message)}`, baseUrl)
     );
   }
 }
