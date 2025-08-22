@@ -12,6 +12,10 @@ import { useTranslation } from 'react-i18next';
 
 // Import components
 import UserManagement from './sections/UserManagement';
+import EnhancedUserManagement from './sections/EnhancedUserManagement';
+import PermissionTemplates from './sections/PermissionTemplates';
+import DepartmentManagement from './sections/DepartmentManagement';
+import PermissionAuditLog from './sections/PermissionAuditLog';
 import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
@@ -39,7 +43,10 @@ import {
   Squares2X2Icon,
   CalculatorIcon,
   BuildingLibraryIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  SparklesIcon,
+  ClipboardDocumentListIcon,
+  ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -69,7 +76,31 @@ const SettingsManagement = () => {
       title: 'Users', // Changed from User Management
       icon: UserGroupIcon,
       description: t('userManagement.title'),
-      component: UserManagement,
+      component: EnhancedUserManagement, // Use enhanced version
+      requiredRole: 'admin' // Admin and Owner can access
+    },
+    {
+      id: 'permission-templates',
+      title: 'Permission Templates',
+      icon: SparklesIcon,
+      description: 'Manage permission templates for roles',
+      component: PermissionTemplates,
+      requiredRole: 'admin' // Admin and Owner can access
+    },
+    {
+      id: 'departments',
+      title: 'Departments',
+      icon: BuildingOfficeIcon,
+      description: 'Organize users into departments',
+      component: DepartmentManagement,
+      requiredRole: 'admin' // Admin and Owner can access
+    },
+    {
+      id: 'audit-log',
+      title: 'Audit Log',
+      icon: ClipboardDocumentListIcon,
+      description: 'Track permission changes and access',
+      component: PermissionAuditLog,
       requiredRole: 'admin' // Admin and Owner can access
     },
     {
