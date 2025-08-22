@@ -37,7 +37,7 @@ const EnhancedUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/auth/rbac/users/', {
+      const response = await fetch('/api/auth/rbac/users', {
         credentials: 'include'
       });
       
@@ -56,7 +56,7 @@ const EnhancedUserManagement = () => {
   // Fetch permission templates
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/auth/rbac/permission-templates/', {
+      const response = await fetch('/api/auth/rbac/permission-templates', {
         credentials: 'include'
       });
       
@@ -72,7 +72,7 @@ const EnhancedUserManagement = () => {
   // Fetch departments
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/auth/rbac/departments/', {
+      const response = await fetch('/api/auth/rbac/departments', {
         credentials: 'include'
       });
       
@@ -88,7 +88,7 @@ const EnhancedUserManagement = () => {
   // Fetch temporary permissions for a user
   const fetchTemporaryPermissions = async (userId) => {
     try {
-      const response = await fetch(`/api/auth/rbac/temporary-permissions/?user_id=${userId}`, {
+      const response = await fetch(`/api/auth/rbac/temporary-permissions?user_id=${userId}`, {
         credentials: 'include'
       });
       
@@ -107,7 +107,7 @@ const EnhancedUserManagement = () => {
   // Fetch delegations for a user
   const fetchDelegations = async (userId) => {
     try {
-      const response = await fetch(`/api/auth/rbac/delegations/?user_id=${userId}`, {
+      const response = await fetch(`/api/auth/rbac/delegations?user_id=${userId}`, {
         credentials: 'include'
       });
       
@@ -134,7 +134,7 @@ const EnhancedUserManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/permission-templates/${templateId}/apply/`, {
+      const response = await fetch(`/api/auth/rbac/permission-templates/${templateId}/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ const EnhancedUserManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/rbac/permission-validation/bulk-update/', {
+      const response = await fetch('/api/auth/rbac/permission-validation/bulk-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +202,7 @@ const EnhancedUserManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/rbac/temporary-permissions/', {
+      const response = await fetch('/api/auth/rbac/temporary-permissions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

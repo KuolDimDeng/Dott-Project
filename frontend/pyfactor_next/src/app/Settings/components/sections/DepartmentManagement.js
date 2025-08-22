@@ -41,7 +41,7 @@ const DepartmentManagement = () => {
   const fetchDepartments = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/auth/rbac/departments/', {
+      const response = await fetch('/api/auth/rbac/departments', {
         credentials: 'include'
       });
       
@@ -60,7 +60,7 @@ const DepartmentManagement = () => {
   // Fetch department members
   const fetchDepartmentMembers = async (departmentId) => {
     try {
-      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/members/`, {
+      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/members`, {
         credentials: 'include'
       });
       
@@ -98,7 +98,7 @@ const DepartmentManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/rbac/departments/', {
+      const response = await fetch('/api/auth/rbac/departments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ const DepartmentManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/`, {
+      const response = await fetch(`/api/auth/rbac/departments/${departmentId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ const DepartmentManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/`, {
+      const response = await fetch(`/api/auth/rbac/departments/${departmentId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -191,7 +191,7 @@ const DepartmentManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/add_member/`, {
+      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/add_member`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -222,7 +222,7 @@ const DepartmentManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/remove_member/`, {
+      const response = await fetch(`/api/auth/rbac/departments/${departmentId}/remove_member`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

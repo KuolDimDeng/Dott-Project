@@ -38,7 +38,7 @@ const PermissionAuditLog = () => {
         if (filters[key]) params.append(key, filters[key]);
       });
       
-      const response = await fetch(`/api/auth/rbac/audit-logs/?${params}`, {
+      const response = await fetch(`/api/auth/rbac/audit-logs?${params}`, {
         credentials: 'include'
       });
       
@@ -57,7 +57,7 @@ const PermissionAuditLog = () => {
   // Fetch summary statistics
   const fetchSummary = async () => {
     try {
-      const response = await fetch('/api/auth/rbac/audit-logs/summary/', {
+      const response = await fetch('/api/auth/rbac/audit-logs/summary', {
         credentials: 'include'
       });
       

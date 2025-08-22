@@ -33,7 +33,7 @@ const PermissionTemplates = ({ onTemplateSelect, embedded = false }) => {
       setLoading(true);
       
       // Fetch custom templates
-      const response = await fetch('/api/auth/rbac/permission-templates/', {
+      const response = await fetch('/api/auth/rbac/permission-templates', {
         credentials: 'include'
       });
       
@@ -43,7 +43,7 @@ const PermissionTemplates = ({ onTemplateSelect, embedded = false }) => {
       }
       
       // Fetch system templates
-      const systemResponse = await fetch('/api/auth/rbac/permission-templates/system_templates/', {
+      const systemResponse = await fetch('/api/auth/rbac/permission-templates/system_templates', {
         credentials: 'include'
       });
       
@@ -68,7 +68,7 @@ const PermissionTemplates = ({ onTemplateSelect, embedded = false }) => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/rbac/permission-templates/', {
+      const response = await fetch('/api/auth/rbac/permission-templates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const PermissionTemplates = ({ onTemplateSelect, embedded = false }) => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/permission-templates/${template.id}/duplicate/`, {
+      const response = await fetch(`/api/auth/rbac/permission-templates/${template.id}/duplicate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ const PermissionTemplates = ({ onTemplateSelect, embedded = false }) => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/permission-templates/${templateId}/`, {
+      const response = await fetch(`/api/auth/rbac/permission-templates/${templateId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -162,7 +162,7 @@ const PermissionTemplates = ({ onTemplateSelect, embedded = false }) => {
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/auth/rbac/permission-templates/${templateId}/apply/`, {
+      const response = await fetch(`/api/auth/rbac/permission-templates/${templateId}/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
