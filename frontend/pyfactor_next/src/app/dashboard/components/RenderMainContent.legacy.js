@@ -299,7 +299,7 @@ const TaxManagement = enhancedLazy(() => {
     });
 }, 'Tax Management');
 const BenefitsManagement = enhancedLazy(() => import('./forms/BenefitsManagement.js'), 'Benefits Management');
-const PayManagement = enhancedLazy(() => import('./forms/PayManagement.js'), 'Pay Management');
+const PayForm = enhancedLazy(() => import('./forms/pay/PayForm.js'), 'Pay Form');
 const HRReportsManagement = enhancedLazy(() => import('./forms/ReportsManagement.js'), 'HR Reports Management');
 const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
 
@@ -1024,7 +1024,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {view === 'hr-dashboard' && <HRDashboard />}
               {view === 'hr-employees' && <EmployeeManagement />}
               {view === 'hr-timesheets' && <TimesheetManagement />}
-              {view === 'hr-pay' && <PayManagement />}
+              {view === 'hr-pay' && <PayForm />}
               {view === 'hr-benefits' && <BenefitsManagement />}
               {view === 'hr-reports' && <ReportDisplay type="hr" />}
               {view === 'hr-performance' && <PerformanceManagement />}
@@ -1033,7 +1033,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 <>
                   {view === 'employees' && <EmployeeManagement />}
                   {view === 'timesheets' && <TimesheetManagement />}
-                  {view === 'pay' && <PayManagement />}
+                  {view === 'pay' && <PayForm />}
                   {view === 'benefits' && <BenefitsManagement />}
                   {view === 'performance' && <PerformanceManagement />}
                 </>
@@ -2615,7 +2615,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showPayManagement) {
-        console.log('[RenderMainContent] Rendering PayManagement component');
+        console.log('[RenderMainContent] Rendering PayForm component');
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup 
@@ -2626,7 +2626,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 </div>
               }
             >
-              <PayManagement />
+              <PayForm />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

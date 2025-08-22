@@ -457,17 +457,17 @@ export const routeRegistry = {
     description: 'Time tracking'
   },
   'payroll': {
-    component: enhancedLazy(() => import('../components/forms/PayManagement'), 'Payroll Management'),
+    component: enhancedLazy(() => import('../components/forms/pay/PayForm'), 'Pay Form'),
     title: 'Payroll',
     description: 'Process payroll'
   },
   'pay': {
-    component: enhancedLazy(() => import('../components/forms/PayManagement'), 'Pay Management'),
+    component: enhancedLazy(() => import('../components/forms/pay/PayForm'), 'Pay Form'),
     title: 'Payroll',
     description: 'Manage payroll'
   },
   'hr-pay': {
-    component: enhancedLazy(() => import('../components/forms/PayManagement'), 'Pay Management'),
+    component: enhancedLazy(() => import('../components/forms/pay/PayForm'), 'Pay Form'),
     title: 'Payroll',
     description: 'Manage payroll'
   },
