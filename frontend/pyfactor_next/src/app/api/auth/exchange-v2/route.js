@@ -92,17 +92,26 @@ export async function GET(request) {
     }
     
     const exchangeData = await exchangeResponse.json();
+    console.log('[Exchange-V2] Exchange response from backend:', JSON.stringify(exchangeData, null, 2));
     console.log('[Exchange-V2] Exchange successful:', {
       hasUser: !!exchangeData.user,
       hasSessionToken: !!exchangeData.session_token,
+      hasToken: !!exchangeData.token,
+      hasAccessToken: !!exchangeData.access_token,
       sessionTokenLength: exchangeData.session_token?.length,
       needsOnboarding: exchangeData.needs_onboarding,
       authenticated: exchangeData.authenticated
     });
     
-    // Check if we got a session token
-    if (!exchangeData.session_token) {
+    // Check for session token in different possible fields
+    const sessionToken = exchangeData.session_token || 
+                        exchangeData.token || 
+                        exchangeData.access_token ||
+                        exchangeData.sessionToken;
+    
+    if (!sessionToken) {
       console.error('[Exchange-V2] No session token received from backend');
+      console.error('[Exchange-V2] Full response:', exchangeData);
       return NextResponse.redirect(
         new URL('/auth/error?error=no_session_token', baseUrl)
       );

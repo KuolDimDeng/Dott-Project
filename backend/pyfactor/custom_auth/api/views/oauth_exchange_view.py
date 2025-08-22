@@ -5,13 +5,17 @@ Handles Auth0 OAuth token exchange securely on the backend
 
 import logging
 import requests
+import jwt
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from django.contrib.auth import get_user_model
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class OAuthExchangeView(APIView):
@@ -103,15 +107,118 @@ class OAuthExchangeView(APIView):
                 if response.status_code == 200:
                     tokens = response.json()
                     logger.info("🔐 [OAUTH_EXCHANGE] Token exchange successful")
+                    logger.info(f"🔐 [OAUTH_EXCHANGE] Tokens received: access_token={bool(tokens.get('access_token'))}, id_token={bool(tokens.get('id_token'))}")
                     
-                    # Return the tokens to frontend
-                    return Response({
-                        'access_token': tokens.get('access_token'),
-                        'id_token': tokens.get('id_token'),
-                        'refresh_token': tokens.get('refresh_token'),
-                        'expires_in': tokens.get('expires_in'),
-                        'token_type': tokens.get('token_type', 'Bearer')
-                    }, status=status.HTTP_200_OK)
+                    # Decode the ID token to get user info
+                    id_token = tokens.get('id_token')
+                    if not id_token:
+                        logger.error("🔐 [OAUTH_EXCHANGE] No ID token received")
+                        return Response({
+                            'error': 'No ID token received from Auth0'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
+                    try:
+                        # Decode without verification for user info (verification done by Auth0)
+                        user_info = jwt.decode(id_token, options={"verify_signature": False})
+                        logger.info(f"🔐 [OAUTH_EXCHANGE] User info from ID token: email={user_info.get('email')}, sub={user_info.get('sub')}")
+                        
+                        # Get or create user
+                        email = user_info.get('email')
+                        if not email:
+                            logger.error("🔐 [OAUTH_EXCHANGE] No email in ID token")
+                            return Response({
+                                'error': 'No email found in authentication response'
+                            }, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        # Create or update user
+                        with transaction.atomic():
+                            user, created = User.objects.get_or_create(
+                                email=email.lower(),
+                                defaults={
+                                    'username': email.lower(),
+                                    'auth0_id': user_info.get('sub'),
+                                    'name': user_info.get('name', ''),
+                                    'picture': user_info.get('picture', ''),
+                                    'is_active': True
+                                }
+                            )
+                            
+                            if not created:
+                                # Update existing user
+                                user.auth0_id = user_info.get('sub')
+                                user.name = user_info.get('name', user.name)
+                                user.picture = user_info.get('picture', user.picture)
+                                user.save()
+                            
+                            logger.info(f"🔐 [OAUTH_EXCHANGE] User {'created' if created else 'updated'}: {user.email}")
+                            
+                            # Get or create tenant for user
+                            from custom_auth.models import Tenant
+                            tenant = None
+                            if hasattr(user, 'tenant'):
+                                tenant = user.tenant
+                            else:
+                                # Create tenant for new users
+                                tenant, _ = Tenant.objects.get_or_create(
+                                    owner=user,
+                                    defaults={
+                                        'name': f"{user.email.split('@')[0]}'s Organization",
+                                        'subdomain': f"org-{user.id}"
+                                    }
+                                )
+                                user.tenant = tenant
+                                user.save()
+                            
+                            # Create session
+                            from session_manager.services import SessionService
+                            session_service = SessionService()
+                            
+                            # Extract request metadata
+                            request_meta = {
+                                'ip_address': request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0] or request.META.get('REMOTE_ADDR'),
+                                'user_agent': request.META.get('HTTP_USER_AGENT', '')
+                            }
+                            
+                            session = session_service.create_session(
+                                user=user,
+                                access_token=tokens.get('access_token'),
+                                request_meta=request_meta,
+                                tenant=tenant,
+                                auth_method='oauth',
+                                provider='google'
+                            )
+                            
+                            logger.info(f"🔐 [OAUTH_EXCHANGE] Session created with ID: {session.session_id}")
+                            
+                            # Return session token and user info
+                            return Response({
+                                'success': True,
+                                'authenticated': True,
+                                'session_token': str(session.session_id),  # This is what the frontend expects
+                                'user': {
+                                    'id': user.id,
+                                    'email': user.email,
+                                    'name': user.name,
+                                    'picture': user.picture,
+                                    'tenant_id': tenant.id if tenant else None,
+                                    'onboarding_completed': user.onboarding_completed
+                                },
+                                'needs_onboarding': not user.onboarding_completed,
+                                'access_token': tokens.get('access_token'),  # Keep for backward compatibility
+                                'id_token': tokens.get('id_token'),
+                                'expires_in': tokens.get('expires_in')
+                            }, status=status.HTTP_200_OK)
+                            
+                    except jwt.DecodeError as e:
+                        logger.error(f"🔐 [OAUTH_EXCHANGE] Failed to decode ID token: {e}")
+                        return Response({
+                            'error': 'Invalid ID token'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    except Exception as e:
+                        logger.error(f"🔐 [OAUTH_EXCHANGE] User/session creation failed: {e}")
+                        return Response({
+                            'error': 'Failed to create user session'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                     
                 else:
                     error_data = response.json() if response.text else {}
