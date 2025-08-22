@@ -63,7 +63,11 @@ export async function GET(request) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const backendUrl = `${apiUrl}/api/auth/oauth-exchange/`;
     
+    // Use the same base URL we use for redirects
+    const redirectUri = `${baseUrl}/auth/oauth-callback`;
+    
     console.log('[Exchange-V2] Calling backend exchange:', backendUrl);
+    console.log('[Exchange-V2] Using redirect_uri:', redirectUri);
     
     const exchangeResponse = await fetch(backendUrl, {
       method: 'POST',
@@ -72,7 +76,7 @@ export async function GET(request) {
       },
       body: JSON.stringify({
         code,
-        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`,
+        redirect_uri: redirectUri,
         code_verifier: verifier?.value || null,
         state
       })
@@ -91,8 +95,18 @@ export async function GET(request) {
     console.log('[Exchange-V2] Exchange successful:', {
       hasUser: !!exchangeData.user,
       hasSessionToken: !!exchangeData.session_token,
-      needsOnboarding: exchangeData.needs_onboarding
+      sessionTokenLength: exchangeData.session_token?.length,
+      needsOnboarding: exchangeData.needs_onboarding,
+      authenticated: exchangeData.authenticated
     });
+    
+    // Check if we got a session token
+    if (!exchangeData.session_token) {
+      console.error('[Exchange-V2] No session token received from backend');
+      return NextResponse.redirect(
+        new URL('/auth/error?error=no_session_token', baseUrl)
+      );
+    }
     
     // Always redirect to callback-v2 which will handle onboarding check
     const response = NextResponse.redirect(
@@ -102,15 +116,23 @@ export async function GET(request) {
     // Set session cookie (sid) - single source of truth
     if (exchangeData.session_token) {
       const isProduction = process.env.NODE_ENV === 'production';
+      const isStaging = baseUrl.includes('staging');
+      
+      console.log('[Exchange-V2] Setting session cookie:', {
+        isProduction,
+        isStaging,
+        tokenLength: exchangeData.session_token.length,
+        domain: isProduction || isStaging ? '.dottapps.com' : undefined
+      });
       
       // Main session cookie
       response.cookies.set('sid', exchangeData.session_token, {
         httpOnly: true,
         secure: true,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: 'none', // Use 'none' for cross-origin requests with Cloudflare
         path: '/',
         maxAge: 86400, // 24 hours
-        ...(isProduction && { domain: '.dottapps.com' })
+        ...((isProduction || isStaging) && { domain: '.dottapps.com' })
       });
       
       // Set user data in a separate cookie for client access
@@ -124,10 +146,10 @@ export async function GET(request) {
       response.cookies.set('user_data', JSON.stringify(userData), {
         httpOnly: false, // Allow client access
         secure: true,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: 'none', // Use 'none' for cross-origin requests with Cloudflare
         path: '/',
         maxAge: 86400,
-        ...(isProduction && { domain: '.dottapps.com' })
+        ...((isProduction || isStaging) && { domain: '.dottapps.com' })
       });
     }
     
