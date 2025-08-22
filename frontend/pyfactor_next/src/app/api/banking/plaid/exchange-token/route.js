@@ -10,5 +10,5 @@ import { proxyToBackend } from '@/lib/auth/api-auth';
  * Exchanges Plaid public token for access token
  */
 export async function POST(request) {
-  return proxyToBackend('banking/plaid/exchange-token', request);
+  return proxyToBackend('banking/exchange_token', request);
 }

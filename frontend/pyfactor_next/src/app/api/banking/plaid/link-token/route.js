@@ -10,5 +10,5 @@ import { proxyToBackend } from '@/lib/auth/api-auth';
  * Creates a Plaid Link token
  */
 export async function POST(request) {
-  return proxyToBackend('banking/plaid/link-token', request);
+  return proxyToBackend('banking/link_token', request);
 }
