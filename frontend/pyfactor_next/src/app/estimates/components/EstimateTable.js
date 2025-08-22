@@ -205,7 +205,7 @@ const EstimateTable = ({
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900">
-                  {formatCurrency(estimate.totalAmount, estimate.currency)}
+                  {formatCurrency(estimate.totalAmount, typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                 </div>
                 {estimate.discount > 0 && (
                   <div className="text-xs text-gray-500">({estimate.discount}% discount)</div>

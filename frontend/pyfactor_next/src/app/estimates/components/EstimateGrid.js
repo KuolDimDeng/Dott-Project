@@ -140,7 +140,7 @@ const EstimateGrid = ({
 
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold text-gray-900">
-                  {formatCurrency(estimate.totalAmount, estimate.currency)}
+                  {formatCurrency(estimate.totalAmount, typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                 </span>
                 {estimate.discount > 0 && (
                   <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">

@@ -23,7 +23,6 @@ import Integrations from './sections/Integrations';
 import BankingSettings from '../banking/page';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettingsSimple';
-import MainMenuSettings from './sections/MainMenuSettings';
 import TaxSettings from './sections/TaxSettings';
 import CurrencySettings from './sections/CurrencySettings';
 import Accounting from './sections/Accounting';
@@ -40,7 +39,6 @@ import {
   CurrencyDollarIcon,
   MapPinIcon,
   ChatBubbleLeftRightIcon,
-  Squares2X2Icon,
   CalculatorIcon,
   BuildingLibraryIcon,
   DocumentTextIcon,
@@ -102,14 +100,6 @@ const SettingsManagement = () => {
       description: 'Track permission changes and access',
       component: PermissionAuditLog,
       requiredRole: 'admin' // Admin and Owner can access
-    },
-    {
-      id: 'main-menu',
-      title: 'Main Menu',
-      icon: Squares2X2Icon,
-      description: 'Customize which menu items are visible',
-      component: MainMenuSettings,
-      requiredRole: 'admin' // Admin and Owner can configure
     },
     {
       id: 'bank-connections',

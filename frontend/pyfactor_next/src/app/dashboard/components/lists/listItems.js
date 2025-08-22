@@ -987,7 +987,7 @@ const MainListItems = ({
             const payload = { 
               item: 'jobs-list', 
               navigationKey,
-              originalItem: 'All Jobs'
+              originalItem: 'Manage Jobs'
             };
             
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));

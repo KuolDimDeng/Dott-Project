@@ -139,7 +139,7 @@ const EstimateDetailDialog = ({ estimate, onClose, onEdit, onConvert, onSend }) 
               <div className="text-right">
                 {getStatusBadge()}
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {formatCurrency(estimate.totalAmount, estimate.currency)}
+                  {formatCurrency(estimate.totalAmount, typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ const EstimateDetailDialog = ({ estimate, onClose, onEdit, onConvert, onSend }) 
                 )}
                 <div>
                   <p className="text-sm text-gray-500">Currency</p>
-                  <p className="text-sm font-medium text-gray-900">{estimate.currency}</p>
+                  <p className="text-sm font-medium text-gray-900">{typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency}</p>
                 </div>
               </div>
               {estimate.summary && (
@@ -238,10 +238,10 @@ const EstimateDetailDialog = ({ estimate, onClose, onEdit, onConvert, onSend }) 
                             {item.quantity}
                           </td>
                           <td className="px-4 py-3 text-right text-sm text-gray-900">
-                            {formatCurrency(item.unit_price, estimate.currency)}
+                            {formatCurrency(item.unit_price, typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                            {formatCurrency(item.quantity * item.unit_price, estimate.currency)}
+                            {formatCurrency(item.quantity * item.unit_price, typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                           </td>
                         </tr>
                       ))}
@@ -252,7 +252,7 @@ const EstimateDetailDialog = ({ estimate, onClose, onEdit, onConvert, onSend }) 
                           Subtotal
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                          {formatCurrency(calculateSubtotal(), estimate.currency)}
+                          {formatCurrency(calculateSubtotal(), typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                         </td>
                       </tr>
                       {estimate.discount > 0 && (
@@ -261,7 +261,7 @@ const EstimateDetailDialog = ({ estimate, onClose, onEdit, onConvert, onSend }) 
                             Discount ({estimate.discount}%)
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                            -{formatCurrency(calculateDiscountAmount(), estimate.currency)}
+                            -{formatCurrency(calculateDiscountAmount(), typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                           </td>
                         </tr>
                       )}
@@ -270,7 +270,7 @@ const EstimateDetailDialog = ({ estimate, onClose, onEdit, onConvert, onSend }) 
                           Total
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                          {formatCurrency(estimate.totalAmount, estimate.currency)}
+                          {formatCurrency(estimate.totalAmount, typeof estimate.currency === 'object' ? estimate.currency.code : estimate.currency)}
                         </td>
                       </tr>
                     </tfoot>

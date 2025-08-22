@@ -197,48 +197,40 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
       console.log('[JobForm] 👷 === FETCHING EMPLOYEES START ===');
       logger.info('[JobForm] 👷 === FETCHING EMPLOYEES START ===');
       
-      // Try the new job data endpoint first
+      // Use the HR v2 employees endpoint which exists
       let employeesData;
       try {
-        const response = await fetch('/api/jobs/data/employees/', {
+        const response = await fetch('/api/hr/v2/employees', {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         });
-        logger.info('[JobForm] 👷 Job data API response:', {
+        logger.info('[JobForm] 👷 HR v2 API response:', {
           status: response.status,
           ok: response.ok,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers)
+          statusText: response.statusText
         });
         
         if (response.ok) {
-          const responseText = await response.text();
-          logger.info('[JobForm] 👷 Raw response:', responseText.substring(0, 200));
-          
-          try {
-            employeesData = JSON.parse(responseText);
-            logger.info('[JobForm] 👷 Parsed employees data:', {
-              type: typeof employeesData,
-              isArray: Array.isArray(employeesData),
-              count: Array.isArray(employeesData) ? employeesData.length : 'N/A',
-              hasResults: employeesData?.results ? employeesData.results.length : 'N/A',
-              sample: Array.isArray(employeesData) ? employeesData[0] : employeesData
-            });
-          } catch (parseError) {
-            logger.error('[JobForm] 👷 Failed to parse employees JSON:', parseError);
-            throw new Error(`Invalid JSON response: ${parseError.message}`);
-          }
+          employeesData = await response.json();
+          logger.info('[JobForm] 👷 Parsed employees data:', {
+            type: typeof employeesData,
+            isArray: Array.isArray(employeesData),
+            count: Array.isArray(employeesData) ? employeesData.length : 'N/A',
+            hasResults: employeesData?.results ? employeesData.results.length : 'N/A',
+            sample: Array.isArray(employeesData) ? employeesData[0] : employeesData
+          });
         } else {
           const errorText = await response.text();
-          logger.error('[JobForm] 👷 Job data API error response:', errorText);
-          throw new Error(`Job data API failed with status ${response.status}`);
+          logger.error('[JobForm] 👷 HR v2 API error response:', errorText);
+          throw new Error(`HR v2 API failed with status ${response.status}`);
         }
       } catch (apiError) {
-        logger.warn('[JobForm] 👷 Job data API failed, trying fallback:', apiError);
+        logger.warn('[JobForm] 👷 HR v2 API failed, trying fallback:', apiError);
         logger.warn('[JobForm] 👷 Error details:', {
           message: apiError.message,
           stack: apiError.stack
         });
+        // Fallback to jobService which also uses HR v2
         employeesData = await jobService.getAvailableEmployees();
         logger.info('[JobForm] 👷 Fallback employees data:', {
           type: typeof employeesData,

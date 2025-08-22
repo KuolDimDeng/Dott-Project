@@ -404,6 +404,10 @@ const nextConfig = {
         destination: `${BACKEND_API_URL}/health/`
       },
       {
+        source: '/api/auth/:path*',
+        destination: `${BACKEND_API_URL}/auth/:path*`
+      },
+      {
         source: '/api/backend/:path*',
         destination: `${BACKEND_API_URL}/:path*`
       }
