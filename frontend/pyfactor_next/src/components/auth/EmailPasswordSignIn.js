@@ -181,9 +181,8 @@ export default function EmailPasswordSignIn() {
       userAgent: navigator.userAgent
     });
     
-    // Use the existing OAuth flow that's already configured in Auth0
-    // TODO: Switch to google-v2 after adding staging URL to Auth0 allowed callbacks
-    let oauthUrl = '/api/auth/login?connection=google-oauth2';
+    // Use the improved OAuth flow - staging URL is now configured in Auth0
+    let oauthUrl = '/api/auth/oauth/google-v2';
     const langParam = searchParams.get('lang');
     if (langParam) {
       console.log('🌐 [GoogleOAuth] Storing language for OAuth:', langParam);
