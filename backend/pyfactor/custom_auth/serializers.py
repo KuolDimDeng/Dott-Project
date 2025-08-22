@@ -3,8 +3,15 @@ import uuid
 # from allauth.account.adapter import get_adapter  # Commented out - using Auth0
 # from dj_rest_auth.registration.serializers import RegisterSerializer  # Commented out - using Auth0
 from rest_framework import serializers
-from django.db import models
+from django.db import models, transaction
+from django.utils import timezone
 from .models import User, Tenant, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
+from .permission_models import (
+    PermissionTemplate, Department, UserDepartment,
+    TemporaryPermission, PermissionDelegation,
+    PermissionAuditLog, PermissionRequest
+)
+from .permission_service import PermissionService
 from users.models import Subscription
 
 class TenantSerializer(serializers.ModelSerializer):
@@ -392,3 +399,198 @@ class RoleTemplateSerializer(serializers.ModelSerializer):
     
     def get_pages_count(self, obj):
         return obj.pages.count()
+
+
+class PermissionTemplateSerializer(serializers.ModelSerializer):
+    """Serializer for permission templates"""
+    created_by_name = serializers.CharField(source='created_by.name', read_only=True)
+    usage_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PermissionTemplate
+        fields = [
+            'id', 'name', 'code', 'description', 'permissions',
+            'template_type', 'is_active', 'created_at', 'updated_at',
+            'created_by', 'created_by_name', 'usage_count'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
+    
+    def get_usage_count(self, obj):
+        """Get count of users using this template"""
+        # This would be implemented based on your tracking mechanism
+        return 0
+    
+    def validate_code(self, value):
+        """Ensure code is unique within tenant"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'tenant'):
+            exists = PermissionTemplate.objects.filter(
+                code=value,
+                tenant=request.tenant
+            ).exclude(pk=self.instance.pk if self.instance else None).exists()
+            if exists:
+                raise serializers.ValidationError("Template code must be unique.")
+        return value
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    """Serializer for departments"""
+    manager_name = serializers.CharField(source='manager.name', read_only=True)
+    member_count = serializers.SerializerMethodField()
+    default_template_name = serializers.CharField(source='default_template.name', read_only=True)
+    
+    class Meta:
+        model = Department
+        fields = [
+            'id', 'name', 'code', 'description', 'default_template',
+            'default_template_name', 'default_permissions', 'parent_department',
+            'manager', 'manager_name', 'member_count', 'is_active',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_member_count(self, obj):
+        return obj.members.filter(is_active=True).count()
+
+
+class UserDepartmentSerializer(serializers.ModelSerializer):
+    """Serializer for user department assignments"""
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    
+    class Meta:
+        model = UserDepartment
+        fields = [
+            'id', 'user', 'user_name', 'user_email', 'department',
+            'department_name', 'role', 'joined_date', 'left_date',
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class TemporaryPermissionSerializer(serializers.ModelSerializer):
+    """Serializer for temporary permissions"""
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    approved_by_name = serializers.CharField(source='approved_by.name', read_only=True)
+    is_valid = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TemporaryPermission
+        fields = [
+            'id', 'user', 'user_name', 'permissions', 'reason',
+            'valid_from', 'valid_until', 'approved_by', 'approved_by_name',
+            'approved_at', 'is_active', 'revoked', 'revoked_by',
+            'revoked_at', 'revoke_reason', 'created_at', 'created_by',
+            'is_valid'
+        ]
+        read_only_fields = [
+            'id', 'created_at', 'approved_at', 'revoked_at'
+        ]
+    
+    def get_is_valid(self, obj):
+        return obj.is_valid()
+    
+    def validate(self, data):
+        """Ensure valid_until is after valid_from"""
+        valid_from = data.get('valid_from', timezone.now())
+        valid_until = data.get('valid_until')
+        
+        if valid_until and valid_until <= valid_from:
+            raise serializers.ValidationError(
+                "Valid until must be after valid from."
+            )
+        return data
+
+
+class PermissionDelegationSerializer(serializers.ModelSerializer):
+    """Serializer for permission delegation"""
+    delegator_name = serializers.CharField(source='delegator.name', read_only=True)
+    delegate_name = serializers.CharField(source='delegate.name', read_only=True)
+    is_valid = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PermissionDelegation
+        fields = [
+            'id', 'delegator', 'delegator_name', 'delegate', 'delegate_name',
+            'permissions_to_delegate', 'reason', 'start_date', 'end_date',
+            'is_active', 'accepted', 'accepted_at', 'revoked', 'revoked_at',
+            'revoke_reason', 'created_at', 'is_valid'
+        ]
+        read_only_fields = ['id', 'created_at', 'accepted_at', 'revoked_at']
+    
+    def get_is_valid(self, obj):
+        return obj.is_valid()
+
+
+class PermissionAuditLogSerializer(serializers.ModelSerializer):
+    """Serializer for permission audit logs"""
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    changed_by_name = serializers.CharField(source='changed_by.name', read_only=True)
+    
+    class Meta:
+        model = PermissionAuditLog
+        fields = [
+            'id', 'user', 'user_name', 'user_email', 'action',
+            'old_permissions', 'new_permissions', 'changes_summary',
+            'changed_by', 'changed_by_name', 'change_reason',
+            'ip_address', 'user_agent', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class PermissionRequestSerializer(serializers.ModelSerializer):
+    """Serializer for permission requests"""
+    requester_name = serializers.CharField(source='requester.name', read_only=True)
+    requester_email = serializers.CharField(source='requester.email', read_only=True)
+    reviewed_by_name = serializers.CharField(source='reviewed_by.name', read_only=True)
+    
+    class Meta:
+        model = PermissionRequest
+        fields = [
+            'id', 'requester', 'requester_name', 'requester_email',
+            'requested_permissions', 'justification', 'is_permanent',
+            'requested_duration_days', 'status', 'reviewed_by',
+            'reviewed_by_name', 'reviewed_at', 'review_notes',
+            'approved_permissions', 'valid_until', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'created_at', 'updated_at', 'reviewed_at',
+            'approved_permissions', 'valid_until'
+        ]
+
+
+class ApplyTemplateSerializer(serializers.Serializer):
+    """Serializer for applying permission template to users"""
+    template_id = serializers.UUIDField(required=False)
+    template_code = serializers.CharField(required=False)
+    user_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True
+    )
+    merge_permissions = serializers.BooleanField(
+        default=False,
+        help_text="If true, merge with existing permissions. If false, replace."
+    )
+    
+    def validate(self, data):
+        if not data.get('template_id') and not data.get('template_code'):
+            raise serializers.ValidationError(
+                "Either template_id or template_code is required."
+            )
+        return data
+
+
+class BulkPermissionUpdateSerializer(serializers.Serializer):
+    """Serializer for bulk permission updates"""
+    user_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True
+    )
+    permissions = serializers.JSONField(required=True)
+    action = serializers.ChoiceField(
+        choices=['add', 'remove', 'replace'],
+        default='replace'
+    )
+    reason = serializers.CharField(required=False, allow_blank=True)

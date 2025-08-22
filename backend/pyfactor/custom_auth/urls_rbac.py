@@ -7,6 +7,12 @@ from .views.rbac_views import (
     UserInvitationViewSet, RoleTemplateViewSet,
     DirectUserCreationViewSet, UserPagePermissionsView
 )
+from .views.permission_views import (
+    PermissionTemplateViewSet, DepartmentViewSet,
+    TemporaryPermissionViewSet, PermissionDelegationViewSet,
+    PermissionAuditLogViewSet, PermissionRequestViewSet,
+    PermissionValidationViewSet
+)
 
 @api_view(['GET'])
 def test_rbac_api(request):
@@ -19,6 +25,15 @@ router.register(r'pages', PagePermissionViewSet, basename='page-permissions')
 router.register(r'invitations', UserInvitationViewSet, basename='user-invitations')
 router.register(r'role-templates', RoleTemplateViewSet, basename='role-templates')
 router.register(r'direct-users', DirectUserCreationViewSet, basename='direct-user-creation')
+
+# Enhanced permission system endpoints
+router.register(r'permission-templates', PermissionTemplateViewSet, basename='permission-templates')
+router.register(r'departments', DepartmentViewSet, basename='departments')
+router.register(r'temporary-permissions', TemporaryPermissionViewSet, basename='temporary-permissions')
+router.register(r'delegations', PermissionDelegationViewSet, basename='delegations')
+router.register(r'audit-logs', PermissionAuditLogViewSet, basename='audit-logs')
+router.register(r'permission-requests', PermissionRequestViewSet, basename='permission-requests')
+router.register(r'permission-validation', PermissionValidationViewSet, basename='permission-validation')
 
 urlpatterns = [
     path('', include(router.urls)),

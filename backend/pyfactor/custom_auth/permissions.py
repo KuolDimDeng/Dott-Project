@@ -24,6 +24,28 @@ class TenantAccessPermission(permissions.BasePermission):
         return True
 
 
+class IsOwnerOrAdmin(permissions.BasePermission):
+    """
+    Permission class that only allows OWNER or ADMIN users.
+    """
+    
+    def has_permission(self, request, view):
+        # User must be authenticated
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Check if user has OWNER or ADMIN role
+        return request.user.role in ['OWNER', 'ADMIN']
+    
+    def has_object_permission(self, request, view, obj):
+        # User must be authenticated
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Check if user has OWNER or ADMIN role
+        return request.user.role in ['OWNER', 'ADMIN']
+
+
 class SetupEndpointPermission(permissions.BasePermission):
     """
     Custom permission class for setup endpoints.
