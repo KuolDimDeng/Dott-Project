@@ -21,7 +21,7 @@ const DepartmentManagement = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
   const [departmentMembers, setDepartmentMembers] = useState({});
   const [expandedDepartments, setExpandedDepartments] = useState({});
@@ -110,7 +110,7 @@ const DepartmentManagement = () => {
       if (response.ok) {
         setSuccess('Department created successfully');
         fetchDepartments();
-        setShowCreateModal(false);
+        setShowCreateForm(false);
         setNewDepartment({
           name: '',
           code: '',
@@ -269,11 +269,11 @@ const DepartmentManagement = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => setShowCreateForm(!showCreateForm)}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
         >
           <PlusIcon className="h-4 w-4 mr-2" />
-          New Department
+          {showCreateForm ? 'Cancel' : 'New Department'}
         </button>
       </div>
 
@@ -312,8 +312,81 @@ const DepartmentManagement = () => {
         </div>
       )}
 
+      {/* Inline Create Department Form */}
+      {showCreateForm && (
+        <div className="bg-white border-2 border-blue-200 rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Department</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Department Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newDepartment.name}
+                onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="e.g., Sales Team"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Department Code <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newDepartment.code}
+                onChange={(e) => setNewDepartment({ ...newDepartment, code: e.target.value.toUpperCase() })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="e.g., SALES"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                value={newDepartment.description}
+                onChange={(e) => setNewDepartment({ ...newDepartment, description: e.target.value })}
+                rows={2}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Brief description of the department"
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowCreateForm(false);
+                setNewDepartment({
+                  name: '',
+                  code: '',
+                  description: '',
+                  manager: null,
+                  default_template: null
+                });
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={createDepartment}
+              disabled={!newDepartment.name || !newDepartment.code || loading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Creating...' : 'Create Department'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Departments List */}
-      {departments.length === 0 ? (
+      {departments.length === 0 && !showCreateForm ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <BuildingOfficeIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No departments</h3>
@@ -322,7 +395,7 @@ const DepartmentManagement = () => {
           </p>
           <div className="mt-6">
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => setShowCreateForm(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -433,81 +506,6 @@ const DepartmentManagement = () => {
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {/* Create Department Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg px-6 py-4 max-w-md w-full">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Department</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Department Name
-                </label>
-                <input
-                  type="text"
-                  value={newDepartment.name}
-                  onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="e.g., Sales Team"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Department Code
-                </label>
-                <input
-                  type="text"
-                  value={newDepartment.code}
-                  onChange={(e) => setNewDepartment({ ...newDepartment, code: e.target.value.toUpperCase() })}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="e.g., SALES"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  value={newDepartment.description}
-                  onChange={(e) => setNewDepartment({ ...newDepartment, description: e.target.value })}
-                  rows={3}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Brief description of the department"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setNewDepartment({
-                    name: '',
-                    code: '',
-                    description: '',
-                    manager: null,
-                    default_template: null
-                  });
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createDepartment}
-                disabled={!newDepartment.name || !newDepartment.code}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Create Department
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
