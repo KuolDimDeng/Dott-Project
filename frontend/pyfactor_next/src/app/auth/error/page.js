@@ -1,156 +1,127 @@
 'use client';
 
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/error/page.js
-
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { logger } from '@/utils/logger';
-import { toast } from 'react-toastify';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const ERROR_MESSAGES = {
-  OAuthCallback: 'There was an issue with the OAuth login process. Please try again.',
-  AccessDenied: 'Access denied. You do not have permission to access this resource.',
-  Configuration: 'There was an issue with the authentication configuration.',
-  Unauthorized: 'Your session has expired or you are not authorized. Please sign in again.',
-  Verification: 'Email verification is required. Please check your inbox.',
-  tenant_verification_failed: 'Account verification required. Please contact support for assistance.',
-  Default: 'An unknown error occurred. Please try again.',
+  missing_code: 'Authorization code is missing. Please try signing in again.',
+  code_reused: 'This sign-in link has already been used. Please sign in again.',
+  exchange_failed: 'Failed to complete sign-in. Please try again.',
+  auth_failed: 'Authentication failed. Please sign in again.',
+  session_expired: 'Your session has expired. Please sign in again.',
+  network_error: 'Network error occurred. Please check your connection and try again.',
+  unexpected_error: 'An unexpected error occurred. Please try again.',
+  oauth_configuration_error: 'OAuth configuration error. Please contact support.',
+  invalid_grant: 'Invalid authorization grant. Please try signing in again.',
+  timeout: 'The request timed out. Please try again.',
+  access_denied: 'Access was denied. Please ensure you have the correct permissions.',
+  // User-friendly messages
+  default: 'Something went wrong. Please try signing in again.'
 };
 
-const REDIRECT_DELAY = 5000; // 5 seconds
-
 export default function AuthErrorPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const error = searchParams.get('error');
-  const errorDescription = searchParams.get('error_description');
-  const supportCode = searchParams.get('code');
-  const supportEmail = searchParams.get('email');
-  const message = searchParams.get('message');
-
+  const router = useRouter();
+  const [countdown, setCountdown] = useState(5);
+  
+  const errorCode = searchParams.get('error') || 'default';
+  const errorMessage = ERROR_MESSAGES[errorCode] || ERROR_MESSAGES.default;
+  const details = searchParams.get('details');
+  
   useEffect(() => {
-    // Log error
-    logger.error('Authentication error occurred', {
-      error,
-      description: errorDescription,
-      supportCode,
-    });
-
-    // Show error toast
-    toast.error(message || ERROR_MESSAGES[error] || ERROR_MESSAGES.Default, {
-      toastId: error, // Prevent duplicate toasts
-      autoClose: REDIRECT_DELAY - 1000, // Close just before redirect
-    });
-
-    // Don't auto-redirect for tenant verification failures
-    if (error === 'tenant_verification_failed') {
-      return;
-    }
-
-    // Redirect to sign-in page
-    const timer = setTimeout(() => {
-      logger.info('Redirecting to sign-in page...');
-      router.push('/auth/signin');
-    }, REDIRECT_DELAY);
-
-    return () => clearTimeout(timer);
-  }, [router, error, errorDescription, supportCode, message]);
-
-  const getErrorDetails = () => {
-    return {
-      title: 'Authentication Error',
-      message: ERROR_MESSAGES[error] || ERROR_MESSAGES.Default,
-      description: errorDescription || 'Please try signing in again.',
-      severity: error === 'Verification' ? 'info' : 'error',
-    };
+    // Countdown to redirect
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          router.push('/auth/signin');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [router]);
+  
+  const handleRetry = () => {
+    router.push('/auth/signin');
   };
-
-  const errorDetails = getErrorDetails();
-
+  
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center space-y-8">
-      <Image
-        src="/static/images/Page-Not-Found-3--Streamline-Brooklyn.png"
-        alt="Error Illustration"
-        width={400}
-        height={300}
-        priority
-        style={{
-          maxWidth: '100%',
-          height: 'auto',
-        }}
-      />
-
-      <div className="max-w-lg w-full">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          {errorDetails.title}
-        </h1>
-
-        <div className={`border rounded-md p-4 mb-6 ${
-          errorDetails.severity === 'info' 
-            ? 'bg-blue-50 border-blue-200 text-blue-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <p className="mb-2">
-            {message || errorDetails.message}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+        <div className="text-center">
+          {/* Error Icon */}
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+            <svg 
+              className="h-8 w-8 text-red-600" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+              />
+            </svg>
+          </div>
+          
+          {/* Error Title */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Authentication Error
+          </h1>
+          
+          {/* Error Message */}
+          <p className="text-gray-600 mb-4">
+            {errorMessage}
           </p>
-          {errorDescription && (
-            <p className="text-sm text-gray-600">
-              {errorDetails.description}
-            </p>
-          )}
-          {error === 'tenant_verification_failed' && supportCode && (
-            <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
-              <p className="font-semibold">Support Information:</p>
-              <p>Reference Code: <code className="bg-gray-200 px-1 rounded">{supportCode}</code></p>
-              <p>Email: <a href={`mailto:${supportEmail}`} className="text-blue-600 hover:underline">{decodeURIComponent(supportEmail || 'support@dottapps.com')}</a></p>
+          
+          {/* Error Details (if available) */}
+          {details && (
+            <div className="bg-gray-50 rounded p-3 mb-4">
+              <p className="text-sm text-gray-500">
+                Error details: {details}
+              </p>
             </div>
           )}
-        </div>
-
-        {error !== 'tenant_verification_failed' && (
-          <p className="text-sm text-gray-600 mb-4">
-            You will be redirected to the sign-in page in 5 seconds.
+          
+          {/* Error Code */}
+          <p className="text-xs text-gray-400 mb-6">
+            Error code: {errorCode}
           </p>
-        )}
-
-        <div className="flex gap-4 justify-center mt-4">
-          <Link
-            href="/auth/signin"
-            className="px-6 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 transition-colors font-medium"
-          >
-            Return to Sign In
-          </Link>
-          <Link
-            href="/"
-            className="px-6 py-2 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors font-medium"
-          >
-            Go to Homepage
-          </Link>
+          
+          {/* Actions */}
+          <div className="space-y-3">
+            <button
+              onClick={handleRetry}
+              className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Try Again
+            </button>
+            
+            <p className="text-sm text-gray-500">
+              Redirecting to sign in page in {countdown} seconds...
+            </p>
+          </div>
+          
+          {/* Support Link */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Need help?{' '}
+              <a 
+                href="mailto:support@dottapps.com" 
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Contact support
+              </a>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// Error boundary component
-export function ErrorBoundary({ error }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6 max-w-lg">
-        <h2 className="text-lg font-semibold mb-2">
-          Something went wrong
-        </h2>
-        <p className="text-sm">{error.message}</p>
-      </div>
-      <button 
-        className="px-6 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 transition-colors"
-        onClick={() => window.location.reload()}
-      >
-        Try Again
-      </button>
     </div>
   );
 }
