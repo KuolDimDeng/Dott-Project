@@ -1124,7 +1124,27 @@ class Auth0OnboardingStatusView(APIView):
     Get current onboarding status.
     Endpoint: GET /api/onboarding/status
     """
-    authentication_classes = [Auth0JWTAuthentication]
+    # Use all available authentication classes to support both JWT and session auth
+    authentication_classes = [
+        Auth0JWTAuthentication,  # Auth0 JWT tokens
+    ]
+    # Import session auth classes
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Import session authentication classes dynamically
+        try:
+            from core.authentication.session_token_auth import SessionTokenAuthentication
+            from session_manager.authentication import SessionAuthentication as CustomSessionAuth
+            self.authentication_classes = [
+                SessionTokenAuthentication,  # Primary: Custom session auth
+                CustomSessionAuth,          # Fallback: Original session auth
+                Auth0JWTAuthentication,     # Auth0 JWT tokens
+            ]
+        except ImportError as e:
+            logger.warning(f"Could not import session auth classes: {e}")
+            # Fallback to just Auth0 JWT if imports fail
+            self.authentication_classes = [Auth0JWTAuthentication]
+    
     permission_classes = [IsAuthenticated]
     
     def get(self, request):

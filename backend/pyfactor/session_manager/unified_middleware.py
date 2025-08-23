@@ -62,6 +62,10 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         # Add custom paths from settings
         self.session_exempt_paths = self.SESSION_EXEMPT_PATHS + getattr(settings, 'TENANT_EXEMPT_PATHS', [])
         
+        # Store TENANT_AUTH_ONLY_PATHS separately - these need auth but can use JWT instead of session
+        self.tenant_auth_only_paths = getattr(settings, 'TENANT_AUTH_ONLY_PATHS', [])
+        logger.info(f"TENANT_AUTH_ONLY_PATHS configured: {self.tenant_auth_only_paths}")
+        
         logger.info("UnifiedSessionMiddleware initialized")
         logger.info(f"SESSION_EXEMPT_PATHS: {self.session_exempt_paths}")
     
@@ -86,6 +90,12 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
         
         if not session:
             # No session for non-exempt path
+            # Check if this is a TENANT_AUTH_ONLY_PATH that can use JWT instead
+            if self._is_tenant_auth_only_path(request.path):
+                logger.info(f"[UnifiedSessionMiddleware] Path {request.path} is TENANT_AUTH_ONLY - allowing JWT auth")
+                # Don't set user - let the view's authentication classes handle it
+                return None
+            
             # Set AnonymousUser for compatibility
             from django.contrib.auth.models import AnonymousUser
             request.user = AnonymousUser()
@@ -212,6 +222,10 @@ class UnifiedSessionMiddleware(MiddlewareMixin):
     def _is_exempt_path(self, path):
         """Check if path is exempt from session requirements"""
         return any(path.startswith(p) for p in self.session_exempt_paths)
+    
+    def _is_tenant_auth_only_path(self, path):
+        """Check if path requires auth but not necessarily session auth (can use JWT)"""
+        return any(path.startswith(p) for p in self.tenant_auth_only_paths)
     
     def _get_session(self, request):
         """Get session from request (cookie, header, or database)"""
