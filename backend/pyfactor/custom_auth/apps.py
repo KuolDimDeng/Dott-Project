@@ -35,6 +35,13 @@ class CustomAuthConfig(AppConfig):
         except ImportError as e:
             logger.warning(f"Could not import onboarding signals: {e}")
             
+        # Import edge case prevention signals
+        try:
+            from custom_auth.signals import edge_case_prevention
+            logger.info("✅ Edge case prevention signals registered")
+        except ImportError as e:
+            logger.warning(f"Could not import edge case prevention signals: {e}")
+            
         # Import employee sync utilities (signals are disabled - employee creation is now explicit)
         try:
             from . import employee_sync

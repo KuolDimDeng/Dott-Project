@@ -113,7 +113,26 @@ class UnifiedTenantMiddleware(MiddlewareMixin):
             try:
                 from users.models import UserProfile
                 profile = UserProfile.objects.get(user=user)
-                tenant_id = profile.tenant_id
+                
+                # Edge case fix: Check if session has tenant_id but profile doesn't
+                session_tenant_id = request.session.get('tenant_id') if hasattr(request, 'session') else None
+                if session_tenant_id and not profile.tenant_id:
+                    # Verify tenant exists
+                    from custom_auth.models import Tenant
+                    try:
+                        tenant = Tenant.objects.get(id=session_tenant_id)
+                        # Sync session tenant_id to UserProfile
+                        profile.tenant_id = session_tenant_id
+                        profile.save()
+                        logger.warning(f"[UnifiedTenantMiddleware] Fixed edge case: synced tenant {session_tenant_id} from session to UserProfile for {user.email}")
+                        tenant_id = session_tenant_id
+                    except Tenant.DoesNotExist:
+                        logger.error(f"[UnifiedTenantMiddleware] Session has invalid tenant_id {session_tenant_id} for {user.email}")
+                        # Clear invalid tenant from session
+                        if hasattr(request, 'session'):
+                            del request.session['tenant_id']
+                else:
+                    tenant_id = profile.tenant_id
             except:
                 pass
         
