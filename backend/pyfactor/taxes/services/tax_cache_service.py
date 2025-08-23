@@ -173,7 +173,7 @@ class TaxRateCacheService:
                 }
             
             # No rate found - set to zero
-            logger.warning(f"[TaxCache] No global rate found for country={country}, state={state}")
+            logger.warning(f"[TaxCache] ⚠️ No global rate found for country={country}, state={state}")
             # Log what rates exist for debugging
             all_ss_rates = GlobalSalesTaxRate.objects.filter(country=country)
             logger.info(f"[TaxCache] All rates for {country}: {list(all_ss_rates.values('country', 'region_code', 'rate', 'is_current'))}")
