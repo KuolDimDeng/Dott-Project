@@ -1,28 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Pie, Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-} from 'chart.js';
+import { SafePieChart, SafeLineChart } from '@/components/charts/SafeCharts';
 import { axiosInstance } from '@/lib/axiosConfig';
-
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title
-);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -140,7 +118,7 @@ export default function CashFlowAnalysis() {
             Cash Flow Breakdown
           </h2>
           <div className="p-4 bg-white rounded-lg shadow-md">
-            <Pie data={pieChartData} />
+            <SafePieChart data={pieChartData} />
           </div>
         </div>
         <div className="w-full md:w-1/2">
@@ -148,7 +126,7 @@ export default function CashFlowAnalysis() {
             Cash Flow Trends Over Time
           </h2>
           <div className="p-4 bg-white rounded-lg shadow-md">
-            <Line data={lineChartData} />
+            <SafeLineChart data={lineChartData} />
           </div>
         </div>
       </div>
