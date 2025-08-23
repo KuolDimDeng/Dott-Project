@@ -133,6 +133,14 @@ class UnifiedTenantMiddleware(MiddlewareMixin):
                             del request.session['tenant_id']
                 else:
                     tenant_id = profile.tenant_id
+                    
+                # Additional fix: If user owns a tenant but onboarding not complete, auto-complete it
+                if tenant_id and not user.onboarding_completed:
+                    from custom_auth.models import Tenant
+                    if Tenant.objects.filter(id=tenant_id, owner_id=user.id).exists():
+                        user.onboarding_completed = True
+                        user.save()
+                        logger.warning(f"[UnifiedTenantMiddleware] Auto-completed onboarding for {user.email} who owns tenant {tenant_id}")
             except:
                 pass
         
