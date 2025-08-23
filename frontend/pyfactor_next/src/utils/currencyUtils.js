@@ -134,6 +134,36 @@ export function formatCurrency(amount, currencyCode, currencySymbol) {
 }
 
 /**
+ * Get current user pricing information based on location
+ * @returns {Promise<object>} Pricing information with potential discounts
+ */
+export async function getCurrentUserPricing() {
+  try {
+    const response = await fetch('/api/pricing/current');
+    if (response.ok) {
+      return await response.json();
+    }
+    // Return default pricing if API fails
+    return {
+      basic: { monthly: '$0', annual: '$0' },
+      professional: { monthly: '$15', annual: '$144' },
+      enterprise: { monthly: '$45', annual: '$432' },
+      hasDiscount: false,
+      discountPercentage: 0
+    };
+  } catch (error) {
+    console.error('Failed to fetch user pricing:', error);
+    return {
+      basic: { monthly: '$0', annual: '$0' },
+      professional: { monthly: '$15', annual: '$144' },
+      enterprise: { monthly: '$45', annual: '$432' },
+      hasDiscount: false,
+      discountPercentage: 0
+    };
+  }
+}
+
+/**
  * Fetch current exchange rate from API
  * @param {string} fromCurrency - Source currency code
  * @param {string} toCurrency - Target currency code (default USD)

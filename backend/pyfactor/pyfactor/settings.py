@@ -912,6 +912,10 @@ TENANT_AUTH_ONLY_PATHS = [
     '/api/users/me/',  # User profile before tenant creation
     '/api/onboarding/business-info/',  # Business info collection
     '/api/onboarding/subscription/',  # Subscription setup
+    '/api/onboarding/status/',  # Check onboarding status
+    '/api/onboarding/payment/',  # Payment setup
+    '/api/onboarding/complete/',  # Complete onboarding
+    '/api/currency/preferences/',  # Currency preferences (needed during onboarding)
 ]
 
 # Session configuration
