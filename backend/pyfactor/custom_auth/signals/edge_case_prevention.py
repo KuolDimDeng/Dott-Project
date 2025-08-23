@@ -93,7 +93,7 @@ def check_and_fix_user_tenant_consistency(user):
         
         # Check if user owns a tenant but profile doesn't have it
         if not profile.tenant_id:
-            owned_tenant = Tenant.objects.filter(owner=user).first()
+            owned_tenant = Tenant.objects.filter(owner_id=user.id).first()
             if owned_tenant:
                 profile.tenant_id = owned_tenant.id
                 profile.save()

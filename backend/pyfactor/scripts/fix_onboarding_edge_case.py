@@ -97,7 +97,7 @@ def analyze_edge_case(email):
         print(f"  - UserProfile.business_id: {profile.business_id}")
         
         # Check if user owns any tenants
-        owned_tenants = Tenant.objects.filter(owner=user)
+        owned_tenants = Tenant.objects.filter(owner_id=user.id)
         if owned_tenants.exists():
             print(f"\n📁 User owns {owned_tenants.count()} tenant(s):")
             for tenant in owned_tenants:
