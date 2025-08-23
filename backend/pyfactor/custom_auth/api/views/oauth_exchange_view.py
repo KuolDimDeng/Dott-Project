@@ -135,39 +135,38 @@ class OAuthExchangeView(APIView):
                             user, created = User.objects.get_or_create(
                                 email=email.lower(),
                                 defaults={
-                                    'username': email.lower(),
-                                    'auth0_id': user_info.get('sub'),
                                     'name': user_info.get('name', ''),
                                     'picture': user_info.get('picture', ''),
-                                    'is_active': True
+                                    'is_active': True,
+                                    'email_verified': user_info.get('email_verified', False)
                                 }
                             )
                             
                             if not created:
                                 # Update existing user
-                                user.auth0_id = user_info.get('sub')
                                 user.name = user_info.get('name', user.name)
                                 user.picture = user_info.get('picture', user.picture)
+                                user.email_verified = user_info.get('email_verified', user.email_verified)
                                 user.save()
                             
                             logger.info(f"🔐 [OAUTH_EXCHANGE] User {'created' if created else 'updated'}: {user.email}")
                             
                             # Get or create tenant for user
                             from custom_auth.models import Tenant
-                            tenant = None
-                            if hasattr(user, 'tenant'):
-                                tenant = user.tenant
-                            else:
+                            
+                            # Try to find existing tenant for user
+                            tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
+                            
+                            if not tenant:
                                 # Create tenant for new users
-                                tenant, _ = Tenant.objects.get_or_create(
-                                    owner=user,
-                                    defaults={
-                                        'name': f"{user.email.split('@')[0]}'s Organization",
-                                        'subdomain': f"org-{user.id}"
-                                    }
+                                tenant = Tenant.objects.create(
+                                    owner_id=str(user.id),
+                                    name=f"{user.email.split('@')[0]}'s Organization",
+                                    schema_name=f"tenant_{user.id}",  # Required for backward compatibility
+                                    is_active=True,
+                                    rls_enabled=True
                                 )
-                                user.tenant = tenant
-                                user.save()
+                                logger.info(f"🔐 [OAUTH_EXCHANGE] Created tenant {tenant.id} for user {user.email}")
                             
                             # Create session
                             from session_manager.services import SessionService
@@ -184,8 +183,11 @@ class OAuthExchangeView(APIView):
                                 access_token=tokens.get('access_token'),
                                 request_meta=request_meta,
                                 tenant=tenant,
-                                auth_method='oauth',
-                                provider='google'
+                                session_data={
+                                    'auth_method': 'oauth',
+                                    'provider': 'google',
+                                    'auth0_sub': user_info.get('sub')
+                                }
                             )
                             
                             logger.info(f"🔐 [OAUTH_EXCHANGE] Session created with ID: {session.session_id}")
