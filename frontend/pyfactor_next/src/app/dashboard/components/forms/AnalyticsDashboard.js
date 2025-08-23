@@ -61,9 +61,6 @@ const AnalyticsDashboard = ({ userData }) => {
           cashFlow: metricsResponse.data.cashFlow || { inflow: 0, outflow: 0, net: 0 }
         };
         setMetrics(metricsData);
-      } else {
-        // Use mock data if no response
-        setMetrics(generateMockMetrics());
       }
       
       // Fetch chart data
@@ -84,15 +81,27 @@ const AnalyticsDashboard = ({ userData }) => {
           cashFlow: chartResponse.data.cashFlow || []
         };
         setChartData(chartDataResponse);
-      } else {
-        // Use mock data if no response
-        setChartData(generateMockChartData());
       }
     } catch (error) {
       console.error('Error fetching analytics data:', error);
-      // Use mock data for demonstration
-      setMetrics(generateMockMetrics());
-      setChartData(generateMockChartData());
+      toast.error('Failed to load analytics data. Please try again later.');
+      // Set empty data instead of mock data
+      setMetrics({
+        revenue: { current: 0, previous: 0, growth: 0 },
+        expenses: { current: 0, previous: 0, growth: 0 },
+        profit: { current: 0, previous: 0, growth: 0 },
+        customers: { current: 0, new: 0, growth: 0 },
+        cashFlow: { inflow: 0, outflow: 0, net: 0 }
+      });
+      setChartData({
+        revenue: [],
+        expenses: [],
+        profitTrend: [],
+        customerGrowth: [],
+        topProducts: [],
+        topCustomers: [],
+        cashFlow: []
+      });
     } finally {
       setLoading(false);
     }
@@ -363,7 +372,7 @@ const AnalyticsDashboard = ({ userData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Top Products & Services</h3>
           <div className="space-y-3">
-            {chartData.topProducts.map((product, index) => (
+            {chartData.topProducts?.length > 0 ? chartData.topProducts.map((product, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
@@ -376,10 +385,12 @@ const AnalyticsDashboard = ({ userData }) => {
                       style={{ width: `${product.percentage}%` }}
                     ></div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{product.units} units sold</p>
+                  <p className="text-xs text-gray-500 mt-1">{product.units || 0} units sold</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-gray-500 text-center py-4">No product data available</p>
+            )}
           </div>
         </div>
 
@@ -387,7 +398,7 @@ const AnalyticsDashboard = ({ userData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Top Customers</h3>
           <div className="space-y-3">
-            {chartData.topCustomers.map((customer, index) => (
+            {chartData.topCustomers?.length > 0 ? chartData.topCustomers.map((customer, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
@@ -400,10 +411,12 @@ const AnalyticsDashboard = ({ userData }) => {
                       style={{ width: `${customer.percentage}%` }}
                     ></div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{customer.orders} orders</p>
+                  <p className="text-xs text-gray-500 mt-1">{customer.orders || 0} orders</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-gray-500 text-center py-4">No customer data available</p>
+            )}
           </div>
         </div>
       </div>

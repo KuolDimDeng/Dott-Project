@@ -85,10 +85,12 @@ class UnifiedTenantMiddleware(MiddlewareMixin):
         # Check if path requires auth but not tenant
         if self._is_auth_only_path(request.path):
             logger.info(f"[UnifiedTenantMiddleware] Path {request.path} requires auth only (no tenant)")
-            # Just ensure user is authenticated, don't require tenant
-            if not hasattr(request, 'user') or not request.user.is_authenticated:
-                logger.warning(f"[UnifiedTenantMiddleware] No authenticated user for auth-only path {request.path}")
-                return JsonResponse({'error': 'Authentication required'}, status=401)
+            # For auth-only paths, don't check authentication in middleware
+            # Let the view's authentication classes handle it (JWT or session)
+            # This allows onboarding endpoints to use JWT authentication
+            clear_current_tenant_id()
+            request.tenant_id = None
+            logger.info(f"[UnifiedTenantMiddleware] Allowing view to handle auth for {request.path}")
             return None
         
         # For all other paths, require both auth and tenant
