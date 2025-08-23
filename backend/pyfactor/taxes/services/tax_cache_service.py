@@ -115,6 +115,7 @@ class TaxRateCacheService:
                 }
             
             # Check global rates
+            logger.info(f"[TaxCache] Searching for global rate: country={country}, state={state}")
             global_rate = GlobalSalesTaxRate.objects.filter(
                 country=country,
                 region_code=state,
@@ -131,8 +132,18 @@ class TaxRateCacheService:
             
             if global_rate:
                 # Use global rate
-                rate = global_rate.rate
-                rate_percentage = Decimal(str(rate * 100))
+                logger.info(f"[TaxCache] Found global rate for {country}: {global_rate}")
+                try:
+                    rate = global_rate.rate
+                    logger.info(f"[TaxCache] Rate field value: {rate}")
+                    rate_percentage = Decimal(str(rate * 100))
+                    logger.info(f"[TaxCache] Calculated percentage: {rate_percentage}%")
+                except AttributeError as e:
+                    logger.error(f"[TaxCache] ERROR accessing rate field: {e}")
+                    logger.error(f"[TaxCache] Available fields: {dir(global_rate)}")
+                    # Fallback to 0 if field doesn't exist
+                    rate = Decimal('0')
+                    rate_percentage = Decimal('0')
                 jurisdiction = f"{global_rate.country_name or country}"
                 if global_rate.region_name:
                     jurisdiction += f", {global_rate.region_name}"
@@ -162,6 +173,11 @@ class TaxRateCacheService:
                 }
             
             # No rate found - set to zero
+            logger.warning(f"[TaxCache] No global rate found for country={country}, state={state}")
+            # Log what rates exist for debugging
+            all_ss_rates = GlobalSalesTaxRate.objects.filter(country=country)
+            logger.info(f"[TaxCache] All rates for {country}: {list(all_ss_rates.values('country', 'region_code', 'rate', 'is_current'))}")
+            
             profile.cached_tax_rate = Decimal('0')
             profile.cached_tax_rate_percentage = Decimal('0')
             profile.cached_tax_jurisdiction = f"{country} (No rate configured)"

@@ -22,11 +22,13 @@ def get_pos_default_tax_rate(request):
     """
     try:
         logger.info(f"[POS Tax] Getting default rate for user {request.user.id}")
+        logger.info(f"[POS Tax] User email: {request.user.email}, Tenant: {request.user.tenant_id}")
         
         # First try to get from cache (instant response)
         result = TaxRateCacheService.get_cached_rate_or_update(request.user)
         
         if result.get("success"):
+            logger.info(f"[POS Tax] SUCCESS - Rate: {result.get('rate')}, Percentage: {result.get('rate_percentage')}%, Jurisdiction: {result.get('jurisdiction')}")
             return Response({
                 "success": True,
                 "tax_rate": result.get("rate", 0),  # As decimal (0.18)
@@ -38,6 +40,7 @@ def get_pos_default_tax_rate(request):
             })
         else:
             # Return zero rate rather than error to not break POS
+            logger.warning(f"[POS Tax] No rate found for user {request.user.id}, returning 0%")
             return Response({
                 "success": True,
                 "tax_rate": 0,

@@ -41,6 +41,13 @@ const AnalyticsDashboard = ({ userData }) => {
   useEffect(() => {
     fetchAnalyticsData();
   }, [dateRange]);
+  
+  // Refresh data when userData changes (e.g., currency preference)
+  useEffect(() => {
+    if (userData) {
+      fetchAnalyticsData();
+    }
+  }, [userData?.preferred_currency_code, userData?.preferredCurrencyCode]);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -229,9 +236,10 @@ const AnalyticsDashboard = ({ userData }) => {
           <div className="flex items-end gap-2">
             <button
               onClick={fetchAnalyticsData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Update
+              {loading ? 'Loading...' : 'Update'}
             </button>
           </div>
         </div>
