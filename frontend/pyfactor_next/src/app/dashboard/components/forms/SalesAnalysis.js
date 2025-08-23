@@ -1,32 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  RadialLinearScale,
-} from 'chart.js';
+import { SafeBarChart, SafeLineChart, SafePieChart, SafeDoughnutChart } from '@/components/charts/SafeCharts';
 import { axiosInstance } from '@/lib/axiosConfig';
-
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  RadialLinearScale
-);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -413,7 +387,7 @@ export default function SalesAnalysis() {
               <h2 className="text-lg font-medium text-gray-700 mb-3">
                 Sales Trend
               </h2>
-              <Line 
+              <SafeLineChart 
                 data={salesOverTimeData} 
                 options={{
                   responsive: true,
@@ -435,7 +409,7 @@ export default function SalesAnalysis() {
                 Top Products
               </h2>
               <div className="h-64">
-                <Doughnut 
+                <SafeDoughnutChart 
                   data={topProductsData}
                   options={{
                     responsive: true,
@@ -456,7 +430,7 @@ export default function SalesAnalysis() {
                 Sales by Category
               </h2>
               <div className="h-64">
-                <Pie 
+                <SafePieChart 
                   data={salesByCategoryData}
                   options={{
                     responsive: true,
@@ -480,7 +454,7 @@ export default function SalesAnalysis() {
             Top Products
           </h2>
           <div className="h-80">
-            <Doughnut 
+            <SafeDoughnutChart 
               data={topProductsData} 
               options={{
                 responsive: true,
@@ -497,7 +471,7 @@ export default function SalesAnalysis() {
             Sales by Customer
           </h2>
           <div className="h-80">
-            <Bar 
+            <SafeBarChart 
               data={salesByCustomerData} 
               options={{
                 responsive: true,
@@ -519,7 +493,7 @@ export default function SalesAnalysis() {
             Sales by Category
           </h2>
           <div className="h-80">
-            <Pie 
+            <SafePieChart 
               data={salesByCategoryData}
               options={{
                 responsive: true,

@@ -44,7 +44,7 @@ function updateFile(filePath) {
   
   // Replace react-chartjs-2 imports
   const chartImportMatch = content.match(reactChartJS2Pattern);
-  if (chartImportMatch) {
+  if (chartImportMatch && chartImportMatch[1]) {
     const chartTypes = chartImportMatch[1].split(',').map(t => t.trim());
     const safeImports = chartTypes.map(type => {
       switch(type) {
