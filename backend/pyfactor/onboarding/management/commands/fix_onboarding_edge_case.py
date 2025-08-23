@@ -53,7 +53,7 @@ class Command(BaseCommand):
             self.stdout.write("✅ UserProfile found:")
             self.stdout.write(f"   - Business ID: {profile.business_id}")
             self.stdout.write(f"   - Tenant ID: {profile.tenant_id}")
-            self.stdout.write(f"   - Onboarding Completed: {profile.onboarding_completed}")
+            self.stdout.write(f"   - User Onboarding Completed: {user.onboarding_completed}")
         except UserProfile.DoesNotExist:
             profile = None
             self.stdout.write("❌ No UserProfile found")
@@ -89,12 +89,12 @@ class Command(BaseCommand):
         # Detect edge case
         has_edge_case = False
         if profile and (profile.tenant_id or profile.business_id):
-            if not profile.onboarding_completed:
+            if not user.onboarding_completed:
                 has_edge_case = True
                 self.stdout.write(self.style.WARNING("\n⚠️ EDGE CASE: User has tenant/business but onboarding not completed"))
             elif onboarding and onboarding.onboarding_status != 'complete':
                 has_edge_case = True
-                self.stdout.write(self.style.WARNING(f"\n⚠️ EDGE CASE: Profile says complete but OnboardingProgress says {onboarding.onboarding_status}"))
+                self.stdout.write(self.style.WARNING(f"\n⚠️ EDGE CASE: User says complete but OnboardingProgress says {onboarding.onboarding_status}"))
         
         if not has_edge_case:
             self.stdout.write(self.style.SUCCESS("\n✅ No edge case detected"))
@@ -147,26 +147,29 @@ class Command(BaseCommand):
                     profile.save()
                 self.stdout.write(f"✅ Created new business: {business.name}")
         
-        # Update UserProfile
+        # Update User onboarding status
+        user.onboarding_completed = True
+        user.onboarding_completed_at = timezone.now()
+        if not hasattr(user, 'user_subscription') or not user.user_subscription:
+            user.user_subscription = 'professional'
+        user.save()
+        self.stdout.write("✅ Updated User - onboarding_completed = True")
+        
+        # Update or create UserProfile
         if profile:
-            profile.onboarding_completed = True
             if tenant:
                 profile.tenant_id = tenant.id
             if business:
                 profile.business_id = business.id
-            if not profile.user_subscription:
-                profile.user_subscription = 'professional'
             profile.save()
-            self.stdout.write("✅ Updated UserProfile - onboarding_completed = True")
+            self.stdout.write("✅ Updated UserProfile with tenant/business IDs")
         else:
             profile = UserProfile.objects.create(
                 user=user,
-                onboarding_completed=True,
                 tenant_id=tenant.id if tenant else None,
-                business_id=business.id if business else None,
-                user_subscription='professional'
+                business_id=business.id if business else None
             )
-            self.stdout.write("✅ Created UserProfile with onboarding_completed = True")
+            self.stdout.write("✅ Created UserProfile with tenant/business IDs")
         
         # Update OnboardingProgress
         if onboarding:
@@ -213,12 +216,13 @@ class Command(BaseCommand):
         self.stdout.write("\n🔍 Searching for users with onboarding edge case...")
         
         # Find users with tenant/business but incomplete onboarding
+        # Note: onboarding_completed is on User model, not UserProfile
         profiles_with_issue = UserProfile.objects.filter(
             tenant_id__isnull=False,
-            onboarding_completed=False
+            user__onboarding_completed=False
         ) | UserProfile.objects.filter(
             business_id__isnull=False,
-            onboarding_completed=False
+            user__onboarding_completed=False
         )
         
         if profiles_with_issue.exists():
