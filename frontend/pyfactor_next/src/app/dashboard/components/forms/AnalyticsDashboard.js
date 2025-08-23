@@ -4,13 +4,22 @@ import React, { useState, useEffect } from 'react';
 import { analyticsApi } from '@/services/api/analytics';
 import { toast } from 'react-hot-toast';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import { useSession } from '@/hooks/useSession-v2';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area, ComposedChart
 } from 'recharts';
 
-const AnalyticsDashboard = ({ userData }) => {
+const AnalyticsDashboard = ({ userData: propUserData }) => {
+  // Use session hook to get user data
+  const { session, loading: sessionLoading } = useSession();
+  const userData = propUserData || session?.user;
+  
+  // Debug: Log userData to see what's being used
+  console.log('[AnalyticsDashboard] userData:', userData);
+  console.log('[AnalyticsDashboard] session:', session);
+  
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
@@ -20,6 +29,8 @@ const AnalyticsDashboard = ({ userData }) => {
   // Get currency preferences from userData
   const currencyCode = userData?.preferred_currency_code || userData?.preferredCurrencyCode || 'USD';
   const currencySymbol = userData?.preferred_currency_symbol || userData?.preferredCurrencySymbol || '$';
+  
+  console.log('[AnalyticsDashboard] Using currency:', currencyCode, 'Symbol:', currencySymbol);
   const [metrics, setMetrics] = useState({
     revenue: { current: 0, previous: 0, growth: 0 },
     expenses: { current: 0, previous: 0, growth: 0 },
@@ -52,12 +63,14 @@ const AnalyticsDashboard = ({ userData }) => {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
+      console.log('[AnalyticsDashboard] Fetching analytics data for date range:', dateRange);
       
       // Fetch key metrics
       const metricsResponse = await analyticsApi.getKeyMetrics({
         start_date: dateRange.startDate,
         end_date: dateRange.endDate
       });
+      console.log('[AnalyticsDashboard] Metrics response:', metricsResponse);
       if (metricsResponse?.data) {
         // Ensure proper structure with defaults
         const metricsData = {
@@ -90,8 +103,18 @@ const AnalyticsDashboard = ({ userData }) => {
         setChartData(chartDataResponse);
       }
     } catch (error) {
-      console.error('Error fetching analytics data:', error);
-      toast.error('Failed to load analytics data. Please try again later.');
+      console.error('[AnalyticsDashboard] Error fetching analytics data:', error);
+      console.error('[AnalyticsDashboard] Error details:', error.response);
+      
+      // Check for authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        toast.error('Authentication error. Please log in again.');
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('Failed to load analytics data. Please try again later.');
+      }
+      
       // Set empty data instead of mock data
       setMetrics({
         revenue: { current: 0, previous: 0, growth: 0 },
@@ -198,8 +221,23 @@ const AnalyticsDashboard = ({ userData }) => {
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-  if (loading) {
+  // Show loading state while session is loading
+  if (sessionLoading || loading) {
     return <CenteredSpinner size="large" minHeight="h-96" />;
+  }
+  
+  // Show message if no user data available
+  if (!userData) {
+    return (
+      <div className="p-6 text-center">
+        <h2 className="text-xl font-semibold text-gray-700 mb-2">
+          Unable to Load Analytics
+        </h2>
+        <p className="text-gray-500">
+          Please refresh the page or try logging in again.
+        </p>
+      </div>
+    );
   }
 
   return (
