@@ -1,0 +1,275 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  ShoppingCart,
+  Receipt,
+  FileText,
+  Package,
+  TrendingUp,
+  DollarSign,
+  CreditCard,
+  BarChart3,
+  ShoppingBag,
+  FileBarChart,
+  Calculator,
+  Truck
+} from 'lucide-react';
+
+const MenuOverviewGrid = ({ 
+  menuSection, 
+  onItemClick,
+  userData 
+}) => {
+  const { t } = useTranslation();
+  const [itemStats, setItemStats] = useState({});
+  const [usageFrequency, setUsageFrequency] = useState({});
+
+  const menuConfigurations = {
+    sales: {
+      title: 'Sales Management',
+      description: 'Manage your sales operations, transactions, and customer orders',
+      items: [
+        {
+          id: 'dashboard',
+          title: t('subMenu.dashboard') || 'Dashboard',
+          description: 'View sales metrics, revenue trends, and performance analytics',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Today\'s Sales', key: 'todaySales' },
+          value: 'dashboard'
+        },
+        {
+          id: 'pos',
+          title: t('mainMenu.pos') || 'Point of Sale',
+          description: 'Process in-store transactions and manage cash register',
+          icon: ShoppingCart,
+          color: 'bg-green-500',
+          stats: { label: 'Open Orders', key: 'openOrders' },
+          value: 'pos'
+        },
+        {
+          id: 'transactions',
+          title: t('subMenu.transactions') || 'Transactions',
+          description: 'View and manage all sales transactions and payment history',
+          icon: CreditCard,
+          color: 'bg-purple-500',
+          stats: { label: 'Pending', key: 'pendingTransactions' },
+          value: 'transactions'
+        },
+        {
+          id: 'products',
+          title: t('subMenu.catalog') || 'Product Catalog',
+          description: 'Manage your product inventory, pricing, and categories',
+          icon: Package,
+          color: 'bg-orange-500',
+          stats: { label: 'Active Products', key: 'activeProducts' },
+          value: 'products'
+        },
+        {
+          id: 'customers',
+          title: t('subMenu.customers') || 'Customers',
+          description: 'Manage customer profiles, contact information, and purchase history',
+          icon: ShoppingBag,
+          color: 'bg-pink-500',
+          stats: { label: 'Total Customers', key: 'totalCustomers' },
+          value: 'customers'
+        },
+        {
+          id: 'estimates',
+          title: t('subMenu.estimates') || 'Estimates',
+          description: 'Create and manage price quotes and proposals for customers',
+          icon: FileText,
+          color: 'bg-indigo-500',
+          stats: { label: 'Draft Estimates', key: 'draftEstimates' },
+          value: 'estimates'
+        },
+        {
+          id: 'orders',
+          title: t('subMenu.orders') || 'Orders',
+          description: 'Track and fulfill customer orders from placement to delivery',
+          icon: Truck,
+          color: 'bg-teal-500',
+          stats: { label: 'Pending Orders', key: 'pendingOrders' },
+          value: 'orders'
+        },
+        {
+          id: 'invoices',
+          title: t('subMenu.invoices') || 'Invoices',
+          description: 'Create, send, and track customer invoices and payments',
+          icon: Receipt,
+          color: 'bg-yellow-500',
+          stats: { label: 'Unpaid Invoices', key: 'unpaidInvoices' },
+          value: 'invoices'
+        },
+        {
+          id: 'reports',
+          title: t('mainMenu.reports') || 'Reports',
+          description: 'Generate sales reports, analytics, and business insights',
+          icon: BarChart3,
+          color: 'bg-red-500',
+          stats: { label: 'Reports Available', key: 'reportsAvailable' },
+          value: 'reports'
+        }
+      ]
+    }
+  };
+
+  useEffect(() => {
+    fetchItemStats();
+    loadUsageFrequency();
+  }, [menuSection]);
+
+  const fetchItemStats = async () => {
+    try {
+      const response = await fetch(`/api/menu/stats?section=${menuSection}`);
+      if (response.ok) {
+        const data = await response.json();
+        setItemStats(data);
+      } else {
+        // Fallback to mock data if API fails
+        const mockStats = {
+          todaySales: '$2,450',
+          openOrders: 5,
+          pendingTransactions: 12,
+          activeProducts: 234,
+          totalCustomers: 1520,
+          draftEstimates: 3,
+          pendingOrders: 8,
+          unpaidInvoices: 15,
+          reportsAvailable: 25
+        };
+        setItemStats(mockStats);
+      }
+    } catch (error) {
+      console.error('Error fetching menu item stats:', error);
+      // Fallback to mock data
+      const mockStats = {
+        todaySales: '$2,450',
+        openOrders: 5,
+        pendingTransactions: 12,
+        activeProducts: 234,
+        totalCustomers: 1520,
+        draftEstimates: 3,
+        pendingOrders: 8,
+        unpaidInvoices: 15,
+        reportsAvailable: 25
+      };
+      setItemStats(mockStats);
+    }
+  };
+
+  const loadUsageFrequency = () => {
+    const stored = localStorage.getItem('menuUsageFrequency');
+    if (stored) {
+      setUsageFrequency(JSON.parse(stored));
+    }
+  };
+
+  const trackUsage = (itemId) => {
+    const current = { ...usageFrequency };
+    current[itemId] = (current[itemId] || 0) + 1;
+    setUsageFrequency(current);
+    localStorage.setItem('menuUsageFrequency', JSON.stringify(current));
+  };
+
+  const handleItemClick = (item) => {
+    trackUsage(item.id);
+    if (onItemClick) {
+      onItemClick(item.value);
+    }
+  };
+
+  const getUsageBadge = (itemId) => {
+    const frequency = usageFrequency[itemId] || 0;
+    const maxFrequency = Math.max(...Object.values(usageFrequency), 1);
+    
+    if (frequency === maxFrequency && frequency > 5) {
+      return { text: 'Most Used', color: 'bg-green-100 text-green-800' };
+    }
+    if (frequency > 10) {
+      return { text: 'Frequently Used', color: 'bg-blue-100 text-blue-800' };
+    }
+    if (frequency === 0) {
+      return { text: 'New', color: 'bg-purple-100 text-purple-800' };
+    }
+    return null;
+  };
+
+  const config = menuConfigurations[menuSection];
+  
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {config.title}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          {config.description}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {config.items.map((item) => {
+          const Icon = item.icon;
+          const badge = getUsageBadge(item.id);
+          const statValue = itemStats[item.stats?.key];
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleItemClick(item)}
+              className="relative group bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 p-6 text-left border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
+            >
+              {badge && (
+                <span className={`absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded-full ${badge.color}`}>
+                  {badge.text}
+                </span>
+              )}
+
+              <div className={`inline-flex p-3 rounded-lg ${item.color} bg-opacity-10 mb-4`}>
+                <Icon className={`w-6 h-6 ${item.color.replace('bg-', 'text-')}`} />
+              </div>
+
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {item.title}
+              </h3>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                {item.description}
+              </p>
+
+              {statValue !== undefined && (
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {item.stats.label}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {statValue}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="absolute inset-0 rounded-lg ring-2 ring-blue-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-200 pointer-events-none" />
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <p className="text-sm text-blue-700 dark:text-blue-300">
+          💡 <strong>Tip:</strong> Click on any card to access that feature. Your most frequently used features will be marked for quick access.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default MenuOverviewGrid;

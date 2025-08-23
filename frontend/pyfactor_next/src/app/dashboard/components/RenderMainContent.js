@@ -15,6 +15,7 @@ const eventToRouteMap = {
   'customer-list': 'customers',
   
   // Sales
+  'sales-overview': 'sales-overview',
   'sales-dashboard': 'sales-dashboard',
   'estimate-management': 'estimates',
   'order-management': 'orders',

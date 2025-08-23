@@ -43,6 +43,11 @@ export const routeRegistry = {
     title: 'Dashboard',
     description: 'Business overview dashboard'
   },
+  'sales-overview': {
+    component: enhancedLazy(() => import('../components/sales/SalesOverview'), 'Sales Overview'),
+    title: 'Sales',
+    description: 'Sales management overview'
+  },
   'sales-dashboard': {
     component: enhancedLazy(() => import('../components/dashboards/SalesDashboardEnhanced'), 'Sales Dashboard'),
     title: 'Sales Dashboard',

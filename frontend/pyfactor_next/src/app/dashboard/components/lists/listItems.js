@@ -2944,6 +2944,25 @@ const MainListItems = ({
               }, 300); // Wait for drawer animation
             } else if (item.subItems) {
               handleMenuToggle(item.label);
+              
+              // For Sales menu, also navigate to the overview page
+              if (item.label === t('mainMenu.sales')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'sales-overview', 
+                  navigationKey,
+                  originalItem: 'Sales Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+                
+                // Call the sales handler to load the overview
+                if (typeof handleSalesClick === 'function') {
+                  handleSalesClick('overview');
+                }
+              }
             } else if (item.onClick) {
               item.onClick(e);
             }
