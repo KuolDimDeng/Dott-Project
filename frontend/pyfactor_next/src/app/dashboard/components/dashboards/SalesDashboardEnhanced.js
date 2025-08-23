@@ -32,8 +32,11 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import TestChart from '@/components/charts/TestChart';
 
 const SalesDashboardEnhanced = () => {
+  console.log('[SalesDashboardEnhanced] Component rendering');
+  
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState(null);
   const [taxData, setTaxData] = useState(null);
@@ -49,6 +52,10 @@ const SalesDashboardEnhanced = () => {
     topProducts: [],
     recentSales: []
   });
+  
+  // Debug: Check if recharts is loaded
+  console.log('[SalesDashboardEnhanced] BarChart available:', typeof BarChart);
+  console.log('[SalesDashboardEnhanced] ResponsiveContainer available:', typeof ResponsiveContainer);
   
   const { currency } = useCurrency();
   const userCurrency = currency?.code || 'USD';
@@ -396,23 +403,39 @@ const SalesDashboardEnhanced = () => {
         </div>
       </div>
 
+      {/* Test Chart First */}
+      <TestChart />
+      
       {/* Sales Chart */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Sales Trends</h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip 
-              formatter={(value) => formatCurrency(value, userCurrency)}
-              labelStyle={{ color: '#111827' }}
-            />
-            <Legend />
-            <Bar dataKey="sales" fill="#3B82F6" name="Sales" />
-            <Bar dataKey="tax" fill="#F59E0B" name="Tax" />
-          </BarChart>
-        </ResponsiveContainer>
+        {console.log('[SalesDashboardEnhanced] Chart data:', chartData)}
+        {chartData?.length === 0 && (
+          <p className="text-center text-gray-500 py-8">No data available for charts</p>
+        )}
+        {(() => {
+          try {
+            return (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value) => formatCurrency(value, userCurrency)}
+                    labelStyle={{ color: '#111827' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="sales" fill="#3B82F6" name="Sales" />
+                  <Bar dataKey="tax" fill="#F59E0B" name="Tax" />
+                </BarChart>
+              </ResponsiveContainer>
+            );
+          } catch (error) {
+            console.error('[SalesDashboardEnhanced] Error rendering chart:', error);
+            return <div className="text-red-500 p-4">Error rendering chart: {error.message}</div>;
+          }
+        })()}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
