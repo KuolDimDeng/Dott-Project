@@ -16,6 +16,10 @@ const AnalyticsDashboard = ({ userData }) => {
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
+  
+  // Get currency preferences from userData
+  const currencyCode = userData?.preferred_currency_code || userData?.preferredCurrencyCode || 'USD';
+  const currencySymbol = userData?.preferred_currency_symbol || userData?.preferredCurrencySymbol || '$';
   const [metrics, setMetrics] = useState({
     revenue: { current: 0, previous: 0, growth: 0 },
     expenses: { current: 0, previous: 0, growth: 0 },
@@ -155,12 +159,21 @@ const AnalyticsDashboard = ({ userData }) => {
   };
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+    // Use user's preferred currency
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
+    } catch (error) {
+      // Fallback to manual formatting if currency code is not supported
+      return `${currencySymbol}${Math.abs(value).toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      })}`;
+    }
   };
 
   const formatPercentage = (value) => {
@@ -178,6 +191,9 @@ const AnalyticsDashboard = ({ userData }) => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
         <p className="text-gray-600 mt-2">Track your business performance and insights</p>
+        {currencyCode !== 'USD' && (
+          <p className="text-sm text-blue-600 mt-1">Displaying values in {currencyCode}</p>
+        )}
       </div>
 
       {/* Date Range Selector */}

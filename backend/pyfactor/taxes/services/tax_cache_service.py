@@ -131,7 +131,7 @@ class TaxRateCacheService:
             
             if global_rate:
                 # Use global rate
-                rate = global_rate.standard_rate
+                rate = global_rate.rate
                 rate_percentage = Decimal(str(rate * 100))
                 jurisdiction = f"{global_rate.country_name or country}"
                 if global_rate.region_name:

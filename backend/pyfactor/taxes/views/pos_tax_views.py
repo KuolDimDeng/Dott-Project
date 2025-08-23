@@ -136,7 +136,7 @@ def get_pos_customer_tax_rate(request):
                 ).first()
             
             if global_rate:
-                rate_percentage = float(global_rate.standard_rate * 100)
+                rate_percentage = float(global_rate.rate * 100)
                 jurisdiction = global_rate.country_name or customer_country
                 if global_rate.region_name:
                     jurisdiction += f", {global_rate.region_name}"
@@ -145,7 +145,7 @@ def get_pos_customer_tax_rate(request):
                 
                 return Response({
                     "success": True,
-                    "tax_rate": float(global_rate.standard_rate),
+                    "tax_rate": float(global_rate.rate),
                     "rate_percentage": rate_percentage,
                     "jurisdiction": jurisdiction,
                     "source": "global",
