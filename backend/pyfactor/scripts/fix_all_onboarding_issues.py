@@ -54,7 +54,7 @@ def find_stuck_users():
     # 2. Users with OnboardingProgress mismatch
     users_with_mismatch = User.objects.filter(
         onboarding_completed=False,
-        onboardingprogress__onboarding_status='complete'
+        onboarding_progress__onboarding_status='complete'
     )
     
     for user in users_with_mismatch:
