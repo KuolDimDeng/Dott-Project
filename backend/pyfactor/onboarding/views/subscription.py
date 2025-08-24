@@ -170,22 +170,22 @@ class SubscriptionSaveView(APIView):
                 import traceback
                 logger.error(f"[get_business_sync] Traceback: {traceback.format_exc()}")
                 raise
-                
-                # Create or update UserProfile to link to business
-                profile, created = UserProfile.objects.get_or_create(
-                    user=request.user,
-                    defaults={
-                        'business': business,
-                        'business_id': business_id
-                    }
-                )
-                if not created and not profile.business:
-                    profile.business = business
-                    profile.business_id = business_id
-                    profile.save(update_fields=['business', 'business_id'])
-                
-                logger.info(f"Created business {business_id} with name '{business_name}' for user {request.user.email}")
-                return business
+            
+            # Create or update UserProfile to link to business
+            profile, created = UserProfile.objects.get_or_create(
+                user=request.user,
+                defaults={
+                    'business': business,
+                    'business_id': business_id
+                }
+            )
+            if not created and not profile.business:
+                profile.business = business
+                profile.business_id = business_id
+                profile.save(update_fields=['business', 'business_id'])
+            
+            logger.info(f"Created business {business_id} with name '{business_name}' for user {request.user.email}")
+            return business
             
         except Exception as e:
             logger.error(f"Error retrieving/creating business: {str(e)}")
