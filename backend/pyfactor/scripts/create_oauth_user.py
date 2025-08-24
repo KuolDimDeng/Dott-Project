@@ -65,23 +65,33 @@ def create_oauth_user(email, name=None, create_session=False):
         print(f"  - Email: {user.email}")
         print(f"  - Name: {user.get_full_name() or user.first_name}")
         
-        # Create UserProfile
-        profile = UserProfile.objects.create(
+        # Create or get UserProfile (signals may have created it)
+        profile, created = UserProfile.objects.get_or_create(
             user=user,
-            # Leave tenant_id and business_id empty for new users
+            defaults={
+                # Leave tenant_id and business_id empty for new users
+            }
         )
-        print(f"✅ UserProfile created")
+        if created:
+            print(f"✅ UserProfile created")
+        else:
+            print(f"✅ UserProfile already exists (created by signal)")
         
-        # Create OnboardingProgress
-        progress = OnboardingProgress.objects.create(
+        # Create or get OnboardingProgress
+        progress, created = OnboardingProgress.objects.get_or_create(
             user=user,
-            onboarding_status='not_started',
-            current_step='business_info',
-            completed_steps=[],
-            setup_completed=False,
-            payment_completed=False,
+            defaults={
+                'onboarding_status': 'not_started',
+                'current_step': 'business_info',
+                'completed_steps': [],
+                'setup_completed': False,
+                'payment_completed': False,
+            }
         )
-        print(f"✅ OnboardingProgress created (status: not_started)")
+        if created:
+            print(f"✅ OnboardingProgress created (status: not_started)")
+        else:
+            print(f"✅ OnboardingProgress already exists (status: {progress.onboarding_status})")
         
         # Optionally create a session
         if create_session:
