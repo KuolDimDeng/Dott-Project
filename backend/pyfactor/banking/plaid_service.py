@@ -22,14 +22,32 @@ class PlaidService:
             # Check if credentials are configured
             if not settings.PLAID_CLIENT_ID or not settings.PLAID_SECRET:
                 logger.warning("Plaid credentials not configured - PlaidService will be disabled")
+                logger.warning(f"PLAID_CLIENT_ID present: {bool(settings.PLAID_CLIENT_ID)}")
+                logger.warning(f"PLAID_SECRET present: {bool(settings.PLAID_SECRET)}")
                 self.client = None
                 self.enabled = False
                 return
             
             logger.debug(f"PLAID_ENV: {settings.PLAID_ENV}")
             
+            # Determine Plaid environment
+            if settings.PLAID_ENV == 'sandbox':
+                plaid_host = plaid.Environment.Sandbox
+            elif settings.PLAID_ENV == 'development':
+                plaid_host = plaid.Environment.Development
+            elif settings.PLAID_ENV == 'production':
+                plaid_host = plaid.Environment.Production
+            else:
+                # Default to sandbox for safety
+                logger.warning(f"Unknown PLAID_ENV: {settings.PLAID_ENV}, defaulting to sandbox")
+                plaid_host = plaid.Environment.Sandbox
+            
+            logger.info(f"Initializing Plaid with environment: {settings.PLAID_ENV}")
+            logger.info(f"Using Plaid host: {plaid_host}")
+            logger.info(f"Client ID (first 10 chars): {settings.PLAID_CLIENT_ID[:10] if settings.PLAID_CLIENT_ID else 'None'}...")
+            
             configuration = plaid.Configuration(
-                host=plaid.Environment.Sandbox if settings.PLAID_ENV == 'sandbox' else plaid.Environment.Production,
+                host=plaid_host,
                 api_key={
                     'clientId': settings.PLAID_CLIENT_ID,
                     'secret': settings.PLAID_SECRET,
@@ -37,7 +55,7 @@ class PlaidService:
             )
             self.client = plaid_api.PlaidApi(plaid.ApiClient(configuration))
             self.enabled = True
-            logger.info("PlaidService initialized successfully.")
+            logger.info(f"PlaidService initialized successfully with {settings.PLAID_ENV} environment.")
         except Exception as e:
             logger.error(f"Error initializing PlaidService: {e}", exc_info=True)
             self.client = None

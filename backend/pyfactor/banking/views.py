@@ -49,8 +49,22 @@ logger = get_logger()
 
 # Initialize Plaid API configuration only if credentials are available
 if settings.PLAID_CLIENT_ID and settings.PLAID_SECRET:
+    # Determine Plaid environment
+    if settings.PLAID_ENV == 'sandbox':
+        plaid_host = plaid.Environment.Sandbox
+    elif settings.PLAID_ENV == 'development':
+        plaid_host = plaid.Environment.Development
+    elif settings.PLAID_ENV == 'production':
+        plaid_host = plaid.Environment.Production
+    else:
+        # Default to sandbox for safety
+        logger.warning(f"Unknown PLAID_ENV: {settings.PLAID_ENV}, defaulting to sandbox")
+        plaid_host = plaid.Environment.Sandbox
+    
+    logger.info(f"Initializing Plaid client with {settings.PLAID_ENV} environment")
+    
     configuration = Configuration(
-        host=plaid.Environment.Sandbox,
+        host=plaid_host,
         api_key={
             'clientId': settings.PLAID_CLIENT_ID,
             'secret': settings.PLAID_SECRET,
