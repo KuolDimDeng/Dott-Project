@@ -87,6 +87,15 @@ const MenuOverviewGrid = ({
           value: 'products'
         },
         {
+          id: 'services',
+          title: 'Services',
+          description: 'Manage service offerings, pricing, and service categories',
+          icon: Briefcase,
+          color: 'bg-cyan-500',
+          stats: { label: 'Active Services', key: 'activeServices' },
+          value: 'services'
+        },
+        {
           id: 'customers',
           title: 'Customers',
           description: 'Manage customer profiles, contact information, and purchase history',

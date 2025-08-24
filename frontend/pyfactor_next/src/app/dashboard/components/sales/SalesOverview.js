@@ -29,6 +29,7 @@ const SalesOverview = ({ userData, ...props }) => {
       'dashboard': 'sales-dashboard',
       'transactions': 'sales-transactions',
       'products': 'products',
+      'services': 'services',
       'customers': 'customers',
       'estimates': 'estimates',
       'orders': 'orders',

@@ -444,6 +444,12 @@ def menu_stats(request):
             is_active=True
         ).count()
         
+        # Active services
+        active_services = Service.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
         # Total customers
         total_customers = Customer.objects.filter(
             tenant=tenant
@@ -472,6 +478,7 @@ def menu_stats(request):
             'openOrders': open_orders,
             'pendingTransactions': pending_transactions,
             'activeProducts': active_products,
+            'activeServices': active_services,
             'totalCustomers': total_customers,
             'draftEstimates': draft_estimates,
             'pendingOrders': pending_orders,
