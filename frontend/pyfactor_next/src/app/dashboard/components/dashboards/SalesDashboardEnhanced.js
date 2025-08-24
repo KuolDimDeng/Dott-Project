@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   CurrencyDollarIcon, 
   ShoppingCartIcon, 
@@ -25,14 +25,12 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
   LineChart,
   Line,
   PieChart,
   Pie,
   Cell
 } from 'recharts';
-import TestChart from '@/components/charts/TestChart';
 
 const SalesDashboardEnhanced = () => {
   console.log('[SalesDashboardEnhanced] Component rendering');
@@ -45,6 +43,8 @@ const SalesDashboardEnhanced = () => {
   const [timeRange, setTimeRange] = useState(30); // Days
   const [chartView, setChartView] = useState('day'); // day, week, month, year
   const [fetchError, setFetchError] = useState(null);
+  const [chartWidth, setChartWidth] = useState(800);
+  const chartContainerRef = useRef(null);
   const [stats, setStats] = useState({
     totalSales: 0,
     totalTransactions: 0,
@@ -55,7 +55,6 @@ const SalesDashboardEnhanced = () => {
   
   // Debug: Check if recharts is loaded
   console.log('[SalesDashboardEnhanced] BarChart available:', typeof BarChart);
-  console.log('[SalesDashboardEnhanced] ResponsiveContainer available:', typeof ResponsiveContainer);
   
   const { currency } = useCurrency();
   const userCurrency = currency?.code || 'USD';
@@ -236,6 +235,20 @@ const SalesDashboardEnhanced = () => {
     }
   };
 
+  // Update chart width on mount and resize
+  useEffect(() => {
+    const updateChartWidth = () => {
+      if (chartContainerRef.current) {
+        const width = chartContainerRef.current.offsetWidth - 48; // Subtract padding
+        setChartWidth(Math.max(width, 300)); // Minimum width of 300
+      }
+    };
+
+    updateChartWidth();
+    window.addEventListener('resize', updateChartWidth);
+    return () => window.removeEventListener('resize', updateChartWidth);
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     Promise.all([fetchSalesData(), fetchPOSTransactions(), fetchTaxData()])
@@ -403,39 +416,27 @@ const SalesDashboardEnhanced = () => {
         </div>
       </div>
 
-      {/* Test Chart First */}
-      <TestChart />
-      
       {/* Sales Chart */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6" ref={chartContainerRef}>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Sales Trends</h2>
-        {console.log('[SalesDashboardEnhanced] Chart data:', chartData)}
-        {chartData?.length === 0 && (
+        {chartData?.length === 0 ? (
           <p className="text-center text-gray-500 py-8">No data available for charts</p>
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <BarChart width={chartWidth} height={400} data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip 
+                formatter={(value) => formatCurrency(value, userCurrency)}
+                labelStyle={{ color: '#111827' }}
+              />
+              <Legend />
+              <Bar dataKey="sales" fill="#3B82F6" name="Sales" />
+              <Bar dataKey="tax" fill="#F59E0B" name="Tax" />
+            </BarChart>
+          </div>
         )}
-        {(() => {
-          try {
-            return (
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value) => formatCurrency(value, userCurrency)}
-                    labelStyle={{ color: '#111827' }}
-                  />
-                  <Legend />
-                  <Bar dataKey="sales" fill="#3B82F6" name="Sales" />
-                  <Bar dataKey="tax" fill="#F59E0B" name="Tax" />
-                </BarChart>
-              </ResponsiveContainer>
-            );
-          } catch (error) {
-            console.error('[SalesDashboardEnhanced] Error rendering chart:', error);
-            return <div className="text-red-500 p-4">Error rendering chart: {error.message}</div>;
-          }
-        })()}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
