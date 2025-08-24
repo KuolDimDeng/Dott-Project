@@ -382,4 +382,231 @@ def get_dashboard_data(request):
         return Response(
             {"error": "Failed to fetch dashboard data"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )"""
+Menu stats API endpoint for dashboard overview grids.
+Returns real-time statistics for Sales, Inventory, and Jobs menus.
+"""
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.db.models import Count, Sum, Q, F, Avg
+from django.utils import timezone
+from datetime import timedelta
+from decimal import Decimal
+
+from sales.models import Invoice, Order, Estimate, Transaction
+from inventory.models import Product, Supplier, Warehouse, StockAdjustment
+from crm.models import Customer
+from jobs.models import Job, JobMaterial, Vehicle
+from timesheets.models import TimeEntry
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def menu_stats(request):
+    """
+    Get menu statistics for the specified section.
+    """
+    section = request.GET.get('section', '')
+    user = request.user
+    
+    # Get the tenant from user profile
+    tenant = getattr(user.userprofile, 'tenant', None)
+    if not tenant:
+        return Response({})
+    
+    stats = {}
+    
+    if section == 'sales':
+        # Get today's date range
+        today = timezone.now().date()
+        today_start = timezone.make_aware(
+            timezone.datetime.combine(today, timezone.datetime.min.time())
         )
+        today_end = timezone.make_aware(
+            timezone.datetime.combine(today, timezone.datetime.max.time())
+        )
+        
+        # Today's sales
+        today_sales = Invoice.objects.filter(
+            tenant=tenant,
+            created_at__range=(today_start, today_end),
+            status='paid'
+        ).aggregate(total=Sum('total'))['total'] or Decimal('0')
+        
+        # Open orders
+        open_orders = Order.objects.filter(
+            tenant=tenant,
+            status__in=['pending', 'processing']
+        ).count()
+        
+        # Pending transactions
+        pending_transactions = Transaction.objects.filter(
+            tenant=tenant,
+            status='pending'
+        ).count()
+        
+        # Active products
+        active_products = Product.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Total customers
+        total_customers = Customer.objects.filter(
+            tenant=tenant
+        ).count()
+        
+        # Draft estimates
+        draft_estimates = Estimate.objects.filter(
+            tenant=tenant,
+            status='draft'
+        ).count()
+        
+        # Pending orders
+        pending_orders = Order.objects.filter(
+            tenant=tenant,
+            status='pending'
+        ).count()
+        
+        # Unpaid invoices
+        unpaid_invoices = Invoice.objects.filter(
+            tenant=tenant,
+            status__in=['sent', 'overdue', 'partially_paid']
+        ).count()
+        
+        stats = {
+            'todaySales': f"${today_sales:,.2f}",
+            'openOrders': open_orders,
+            'pendingTransactions': pending_transactions,
+            'activeProducts': active_products,
+            'totalCustomers': total_customers,
+            'draftEstimates': draft_estimates,
+            'pendingOrders': pending_orders,
+            'unpaidInvoices': unpaid_invoices,
+            'reportsAvailable': 25  # Static for now
+        }
+        
+    elif section == 'inventory':
+        # Total items (active products)
+        total_items = Product.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Active products (same as total items for simplicity)
+        active_products = total_items
+        
+        # Low stock items (quantity < reorder point)
+        low_stock_items = Product.objects.filter(
+            tenant=tenant,
+            is_active=True,
+            quantity__lt=10  # Assuming 10 as default reorder point
+        ).count()
+        
+        # Active suppliers
+        active_suppliers = Supplier.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Recent adjustments (last 7 days)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        recent_adjustments = StockAdjustment.objects.filter(
+            tenant=tenant,
+            created_at__gte=seven_days_ago
+        ).count()
+        
+        # Warehouse count
+        warehouse_count = Warehouse.objects.filter(
+            tenant=tenant
+        ).count()
+        
+        stats = {
+            'totalItems': total_items,
+            'activeProducts': active_products,
+            'lowStockItems': low_stock_items,
+            'activeSuppliers': active_suppliers,
+            'recentAdjustments': recent_adjustments,
+            'warehouseCount': warehouse_count,
+            'inventoryReports': 15  # Static for now
+        }
+        
+    elif section == 'jobs':
+        # Active jobs
+        active_jobs = Job.objects.filter(
+            tenant=tenant,
+            status__in=['in_progress', 'scheduled']
+        ).count()
+        
+        # Total jobs
+        total_jobs = Job.objects.filter(
+            tenant=tenant
+        ).count()
+        
+        # Jobs this month
+        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        jobs_this_month = Job.objects.filter(
+            tenant=tenant,
+            created_at__gte=month_start
+        ).count()
+        
+        # Over budget jobs
+        over_budget_jobs = Job.objects.filter(
+            tenant=tenant,
+            actual_cost__gt=F('budget')
+        ).count()
+        
+        # Material requests
+        material_requests = JobMaterial.objects.filter(
+            job__tenant=tenant,
+            status='pending'
+        ).count()
+        
+        # Hours today
+        today = timezone.now().date()
+        hours_today = TimeEntry.objects.filter(
+            tenant=tenant,
+            date=today
+        ).aggregate(
+            total=Sum('hours')
+        )['total'] or 0
+        
+        # Average margin (simplified calculation)
+        avg_margin = Job.objects.filter(
+            tenant=tenant,
+            status='completed',
+            revenue__gt=0
+        ).aggregate(
+            avg_margin=Avg(
+                (F('revenue') - F('actual_cost')) * 100.0 / F('revenue')
+            )
+        )['avg_margin'] or 25
+        
+        # Active vehicles
+        active_vehicles = Vehicle.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Jobs today
+        jobs_today = Job.objects.filter(
+            tenant=tenant,
+            scheduled_date=today
+        ).count()
+        
+        stats = {
+            'activeJobs': active_jobs,
+            'totalJobs': total_jobs,
+            'jobsThisMonth': jobs_this_month,
+            'overBudgetJobs': over_budget_jobs,
+            'materialRequests': material_requests,
+            'hoursToday': hours_today,
+            'avgMargin': f"{avg_margin:.1f}%",
+            'activeVehicles': active_vehicles,
+            'jobsToday': jobs_today,
+            'jobReports': 20  # Static for now
+        }
+    
+    return Response(stats)

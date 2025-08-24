@@ -1,55 +1,43 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { headers } from 'next/headers';
 
 export async function GET(request) {
   try {
-    const session = await getServerSession();
+    // Get session from headers
+    const headersList = headers();
+    const cookie = headersList.get('cookie');
     
-    if (!session) {
+    if (!cookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     
-    // Mock data for now - replace with actual database queries
-    const stats = {
-      sales: {
-        todaySales: '$2,450',
-        openOrders: 5,
-        pendingTransactions: 12,
-        activeProducts: 234,
-        totalCustomers: 1520,
-        draftEstimates: 3,
-        pendingOrders: 8,
-        unpaidInvoices: 15,
-        reportsAvailable: 25
-      },
-      inventory: {
-        totalProducts: 456,
-        lowStock: 23,
-        outOfStock: 5,
-        pendingOrders: 12,
-        suppliers: 45,
-        warehouses: 3,
-        stockValue: '$125,000',
-        reportsAvailable: 15
-      },
-      accounting: {
-        unpaidInvoices: 25,
-        overdueInvoices: 5,
-        pendingBills: 18,
-        bankAccounts: 4,
-        unreconciledTransactions: 32,
-        journalEntries: 156,
-        fixedAssets: 12,
-        reportsAvailable: 30
-      }
-    };
+    // Prepare the backend API URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     
-    return NextResponse.json(stats[section] || {});
+    // Fetch stats from backend menu stats endpoint
+    const response = await fetch(`${apiUrl}/api/analytics/menu/stats/?section=${section}`, {
+      headers: { 
+        'Cookie': cookie,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`[Menu Stats API] Backend returned ${response.status}`);
+      return NextResponse.json({});
+    }
+    
+    const data = await response.json();
+    console.log(`[Menu Stats API] Fetched ${section} stats:`, data);
+    
+    return NextResponse.json(data);
+    
   } catch (error) {
-    console.error('Error fetching menu stats:', error);
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
+    console.error('[Menu Stats API] Error:', error);
+    // Return empty stats instead of error to prevent UI issues
+    return NextResponse.json({});
   }
 }

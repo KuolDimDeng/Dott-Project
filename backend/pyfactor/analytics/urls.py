@@ -12,4 +12,7 @@ urlpatterns = [
     
     # Dashboard Data (combined)
     path('dashboard/', views.get_dashboard_data, name='dashboard-data'),
+    
+    # Menu Stats for overview grids
+    path('menu/stats/', views.menu_stats, name='menu-stats'),
 ]

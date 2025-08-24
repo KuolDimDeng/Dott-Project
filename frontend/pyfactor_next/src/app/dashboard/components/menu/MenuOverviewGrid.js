@@ -43,6 +43,7 @@ const MenuOverviewGrid = ({
   const { t } = useTranslation();
   const [itemStats, setItemStats] = useState({});
   const [usageFrequency, setUsageFrequency] = useState({});
+  const [loadingStats, setLoadingStats] = useState(true);
 
   const menuConfigurations = {
     sales: {
@@ -279,84 +280,30 @@ const MenuOverviewGrid = ({
 
   const fetchItemStats = async () => {
     try {
-      const response = await fetch(`/api/menu/stats?section=${menuSection}`);
+      setLoadingStats(true);
+      console.log(`[MenuOverviewGrid] Fetching stats for section: ${menuSection}`);
+      const response = await fetch(`/api/menu/stats?section=${menuSection}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log(`[MenuOverviewGrid] Stats fetched for ${menuSection}:`, data);
         setItemStats(data);
       } else {
-        // Fallback to mock data if API fails
-        const mockStats = {
-          // Sales stats
-          todaySales: '$2,450',
-          openOrders: 5,
-          pendingTransactions: 12,
-          activeProducts: 234,
-          totalCustomers: 1520,
-          draftEstimates: 3,
-          pendingOrders: 8,
-          unpaidInvoices: 15,
-          reportsAvailable: 25,
-          // Inventory stats
-          totalItems: 1234,
-          categoriesCount: 45,
-          lowStockItems: 12,
-          activeSuppliers: 28,
-          pendingPurchaseOrders: 7,
-          recentAdjustments: 3,
-          warehouseCount: 2,
-          pendingTransfers: 4,
-          inventoryReports: 15,
-          // Jobs stats
-          activeJobs: 18,
-          totalJobs: 145,
-          jobsThisMonth: 22,
-          overBudgetJobs: 3,
-          materialRequests: 9,
-          hoursToday: 42,
-          avgMargin: '28%',
-          activeVehicles: 8,
-          jobsToday: 5,
-          jobReports: 20
-        };
-        setItemStats(mockStats);
+        console.warn(`[MenuOverviewGrid] Failed to fetch stats, status: ${response.status}`);
+        // Set empty stats instead of mock data - shows real state
+        setItemStats({});
       }
     } catch (error) {
-      console.error('Error fetching menu item stats:', error);
-      // Fallback to mock data
-      const mockStats = {
-        // Sales stats
-        todaySales: '$2,450',
-        openOrders: 5,
-        pendingTransactions: 12,
-        activeProducts: 234,
-        totalCustomers: 1520,
-        draftEstimates: 3,
-        pendingOrders: 8,
-        unpaidInvoices: 15,
-        reportsAvailable: 25,
-        // Inventory stats
-        totalItems: 1234,
-        categoriesCount: 45,
-        lowStockItems: 12,
-        activeSuppliers: 28,
-        pendingPurchaseOrders: 7,
-        recentAdjustments: 3,
-        warehouseCount: 2,
-        pendingTransfers: 4,
-        inventoryReports: 15,
-        // Jobs stats
-        activeJobs: 18,
-        totalJobs: 145,
-        jobsThisMonth: 22,
-        overBudgetJobs: 3,
-        materialRequests: 9,
-        hoursToday: 42,
-        avgMargin: '28%',
-        activeVehicles: 8,
-        jobsToday: 5,
-        jobReports: 20
-      };
-      setItemStats(mockStats);
+      console.error('[MenuOverviewGrid] Error fetching menu item stats:', error);
+      // Set empty stats on error - shows real state
+      setItemStats({});
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -444,14 +391,18 @@ const MenuOverviewGrid = ({
                 {item.description}
               </p>
 
-              {statValue !== undefined && (
+              {item.stats && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-500">
                       {item.stats.label}
                     </span>
                     <span className="text-sm font-semibold text-gray-900">
-                      {statValue}
+                      {loadingStats ? (
+                        <span className="inline-block w-12 h-4 bg-gray-200 rounded animate-pulse"></span>
+                      ) : (
+                        statValue !== undefined ? statValue : '0'
+                      )}
                     </span>
                   </div>
                 </div>
