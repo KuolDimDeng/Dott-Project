@@ -5,6 +5,7 @@ import { analyticsApi } from '@/services/api/analytics';
 import { toast } from 'react-hot-toast';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { useSession } from '@/hooks/useSession-v2';
+import { formatCurrency as formatCurrencyUtil, getCurrencyInfo } from '@/utils/currencyFormatter';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -26,11 +27,35 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
     endDate: new Date().toISOString().split('T')[0]
   });
   
-  // Get currency preferences from userData
-  const currencyCode = userData?.preferred_currency_code || userData?.preferredCurrencyCode || 'USD';
-  const currencySymbol = userData?.preferred_currency_symbol || userData?.preferredCurrencySymbol || '$';
+  // State for currency preferences
+  const [currencyCode, setCurrencyCode] = useState('USD');
+  const [currencySymbol, setCurrencySymbol] = useState('$');
   
-  console.log('[AnalyticsDashboard] Using currency:', currencyCode, 'Symbol:', currencySymbol);
+  // Fetch currency preferences
+  useEffect(() => {
+    const fetchCurrencyPreferences = async () => {
+      try {
+        const response = await fetch('/api/currency/preferences', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.preferences?.currency_code) {
+            const code = data.preferences.currency_code;
+            setCurrencyCode(code);
+            const currencyInfo = getCurrencyInfo(code);
+            setCurrencySymbol(currencyInfo?.symbol || code);
+            console.log('[AnalyticsDashboard] Currency set to:', code);
+          }
+        }
+      } catch (error) {
+        console.log('[AnalyticsDashboard] Using default currency USD');
+      }
+    };
+    
+    fetchCurrencyPreferences();
+  }, [userData]);
   const [metrics, setMetrics] = useState({
     revenue: { current: 0, previous: 0, growth: 0 },
     expenses: { current: 0, previous: 0, growth: 0 },
@@ -57,12 +82,15 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
   useEffect(() => {
     const updateChartWidth = () => {
       if (chartContainerRef.current) {
-        const width = chartContainerRef.current.offsetWidth - 48; // Subtract padding
-        setChartWidth(Math.max(width, 300)); // Minimum width of 300
+        const containerWidth = chartContainerRef.current.offsetWidth || 800;
+        const width = Math.max(containerWidth - 48, 300); // Subtract padding, minimum width of 300
+        setChartWidth(width);
       }
     };
     
-    updateChartWidth();
+    // Initial update after a short delay to ensure DOM is ready
+    setTimeout(updateChartWidth, 100);
+    
     window.addEventListener('resize', updateChartWidth);
     return () => window.removeEventListener('resize', updateChartWidth);
   }, []);
@@ -71,12 +99,12 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
     fetchAnalyticsData();
   }, [dateRange]);
   
-  // Refresh data when userData changes (e.g., currency preference)
+  // Refresh data when currency changes
   useEffect(() => {
-    if (userData) {
+    if (currencyCode && currencyCode !== 'USD') {
       fetchAnalyticsData();
     }
-  }, [userData?.preferred_currency_code, userData?.preferredCurrencyCode]);
+  }, [currencyCode]);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -216,21 +244,12 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
   };
 
   const formatCurrency = (value) => {
-    // Use user's preferred currency
-    try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currencyCode,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(value);
-    } catch (error) {
-      // Fallback to manual formatting if currency code is not supported
-      return `${currencySymbol}${Math.abs(value).toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      })}`;
-    }
+    // Use the comprehensive currency formatter with user's preferred currency
+    return formatCurrencyUtil(value || 0, currencyCode, {
+      includeCode: false,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
   };
 
   const formatPercentage = (value) => {
@@ -364,7 +383,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Revenue Trend</h3>
           <div className="w-full overflow-x-auto">
-            <ComposedChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.revenue}>
+            <ComposedChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.revenue}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -381,7 +400,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Expense Breakdown</h3>
           <div className="w-full overflow-x-auto">
-            <BarChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.expenses}>
+            <BarChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.expenses}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -399,7 +418,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Profit & Margin Trend</h3>
           <div className="w-full overflow-x-auto">
-            <ComposedChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.profitTrend}>
+            <ComposedChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.profitTrend}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis yAxisId="left" />
@@ -416,7 +435,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Customer Growth</h3>
           <div className="w-full overflow-x-auto">
-            <AreaChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.customerGrowth}>
+            <AreaChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.customerGrowth}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -489,7 +508,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
       <div className="bg-white rounded-lg shadow p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4">Cash Flow Analysis</h3>
         <div className="w-full overflow-x-auto">
-          <BarChart width={Math.max(chartWidth - 48, 600)} height={300} data={chartData.cashFlow}>
+          <BarChart width={Math.max((chartWidth || 800) - 48, 600)} height={300} data={chartData.cashFlow}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
