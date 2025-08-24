@@ -597,8 +597,18 @@ const MainListItems = ({
       handleBillingClick && handleBillingClick('invoices'); 
     } else if ((item === 'Dashboard' || item === 'dashboard') && handleMainDashboardClick) {
       handleMainDashboardClick();
-    } else if ((item === 'Sales' || item === 'sales') && handleSalesClick) {
-      handleSalesClick('overview');
+    } else if ((item === 'Sales' || item === 'sales')) {
+      // For Sales, dispatch the sales-overview event
+      const navigationKey = `nav-${Date.now()}`;
+      const payload = { 
+        item: 'sales-overview', 
+        navigationKey,
+        originalItem: 'Sales Overview'
+      };
+      
+      // Dispatch navigation events
+      window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+      window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
     } else if ((item === 'CRM' || item === 'crm') && handleCRMClick) {
       handleCRMClick('dashboard');
     }
@@ -2945,7 +2955,7 @@ const MainListItems = ({
             } else if (item.subItems) {
               handleMenuToggle(item.label);
               
-              // For Sales menu, also navigate to the overview page
+              // For Sales menu, navigate to the overview page
               if (item.label === t('mainMenu.sales')) {
                 const navigationKey = `nav-${Date.now()}`;
                 const payload = { 
@@ -2958,10 +2968,7 @@ const MainListItems = ({
                 window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
                 window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
                 
-                // Call the sales handler to load the overview
-                if (typeof handleSalesClick === 'function') {
-                  handleSalesClick('overview');
-                }
+                // Don't call handleSalesClick as it might override the event
               }
             } else if (item.onClick) {
               item.onClick(e);
