@@ -155,24 +155,6 @@ const MenuOverviewGrid = ({
           value: 'products'
         },
         {
-          id: 'categories',
-          title: 'Categories',
-          description: 'Organize products into categories and subcategories',
-          icon: Layers,
-          color: 'bg-purple-500',
-          stats: { label: 'Categories', key: 'categoriesCount' },
-          value: 'categories'
-        },
-        {
-          id: 'stock-management',
-          title: 'Stock Levels',
-          description: 'Monitor current stock, set reorder points, and track movements',
-          icon: Archive,
-          color: 'bg-orange-500',
-          stats: { label: 'Low Stock Items', key: 'lowStockItems' },
-          value: 'stock-management'
-        },
-        {
           id: 'suppliers',
           title: 'Suppliers',
           description: 'Manage supplier information, contacts, and lead times',
@@ -180,15 +162,6 @@ const MenuOverviewGrid = ({
           color: 'bg-pink-500',
           stats: { label: 'Active Suppliers', key: 'activeSuppliers' },
           value: 'suppliers'
-        },
-        {
-          id: 'purchase-orders',
-          title: 'Purchase Orders',
-          description: 'Create and track purchase orders from suppliers',
-          icon: ClipboardList,
-          color: 'bg-indigo-500',
-          stats: { label: 'Pending Orders', key: 'pendingPurchaseOrders' },
-          value: 'purchase-orders'
         },
         {
           id: 'stock-adjustments',
@@ -207,15 +180,6 @@ const MenuOverviewGrid = ({
           color: 'bg-yellow-500',
           stats: { label: 'Locations', key: 'warehouseCount' },
           value: 'warehouses'
-        },
-        {
-          id: 'transfers',
-          title: 'Stock Transfers',
-          description: 'Transfer inventory between warehouse locations',
-          icon: ArrowRightLeft,
-          color: 'bg-red-500',
-          stats: { label: 'Pending Transfers', key: 'pendingTransfers' },
-          value: 'transfers'
         },
         {
           id: 'reports',
@@ -249,15 +213,6 @@ const MenuOverviewGrid = ({
           color: 'bg-green-500',
           stats: { label: 'Total Jobs', key: 'totalJobs' },
           value: 'jobs-list'
-        },
-        {
-          id: 'create-job',
-          title: 'New Job',
-          description: 'Create new jobs, set milestones, and assign resources',
-          icon: PlusCircle,
-          color: 'bg-purple-500',
-          stats: { label: 'This Month', key: 'jobsThisMonth' },
-          value: 'create-job'
         },
         {
           id: 'job-costing',
@@ -303,15 +258,6 @@ const MenuOverviewGrid = ({
           color: 'bg-yellow-500',
           stats: { label: 'Active Vehicles', key: 'activeVehicles' },
           value: 'vehicles'
-        },
-        {
-          id: 'scheduling',
-          title: 'Scheduling',
-          description: 'Schedule jobs, resources, and track timelines',
-          icon: Calendar,
-          color: 'bg-red-500',
-          stats: { label: 'Today\'s Jobs', key: 'jobsToday' },
-          value: 'scheduling'
         },
         {
           id: 'reports',

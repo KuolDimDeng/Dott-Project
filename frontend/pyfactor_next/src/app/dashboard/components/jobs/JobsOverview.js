@@ -12,13 +12,11 @@ const JobsOverview = ({ userData, ...props }) => {
     const routeMapping = {
       'dashboard': 'job-dashboard',
       'jobs-list': 'jobs-list',
-      'create-job': 'create-job',
       'job-costing': 'job-costing',
       'job-materials': 'job-materials',
       'job-labor': 'job-labor',
       'job-profitability': 'job-profitability',
       'vehicles': 'vehicles',
-      'scheduling': 'job-scheduling',
       'reports': 'jobs-reports'
     };
     
