@@ -47,21 +47,25 @@ plaid_service = PlaidService()
 # Initialize logger
 logger = get_logger()
 
-# Initialize Plaid API configuration
-configuration = Configuration(
-    host=plaid.Environment.Sandbox,
-    api_key={
-        'clientId': settings.PLAID_CLIENT_ID,
-        'secret': settings.PLAID_SECRET,
-    }
-)
-
-# Create SSL context using certifi to ensure proper SSL certificate verification
-ssl_context = ssl.create_default_context(cafile=certifi.where())
-
-# Create Plaid API client
-api_client = plaid.ApiClient(configuration)
-plaid_client = plaid_api.PlaidApi(api_client)
+# Initialize Plaid API configuration only if credentials are available
+if settings.PLAID_CLIENT_ID and settings.PLAID_SECRET:
+    configuration = Configuration(
+        host=plaid.Environment.Sandbox,
+        api_key={
+            'clientId': settings.PLAID_CLIENT_ID,
+            'secret': settings.PLAID_SECRET,
+        }
+    )
+    
+    # Create SSL context using certifi to ensure proper SSL certificate verification
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+    
+    # Create Plaid API client
+    api_client = plaid.ApiClient(configuration)
+    plaid_client = plaid_api.PlaidApi(api_client)
+else:
+    logger.warning("Plaid credentials not configured - Plaid features will be disabled")
+    plaid_client = None
 
 # Bank Account ViewSet
 class BankAccountViewSet(TenantIsolatedViewSet):
@@ -97,6 +101,13 @@ class PlaidLinkTokenView(APIView):
 
     def post(self, request):
         try:
+            # Check if Plaid credentials are configured
+            if not settings.PLAID_CLIENT_ID or not settings.PLAID_SECRET:
+                logger.error("Plaid credentials not configured")
+                return JsonResponse({
+                    'error': 'Plaid integration is not configured. Please set PLAID_CLIENT_ID and PLAID_SECRET environment variables.'
+                }, status=503)
+            
             user = request.user
             # Get country code from request, default to US if not provided
             country_code = request.data.get('country_code', 'US').upper()

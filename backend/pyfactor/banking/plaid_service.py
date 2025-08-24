@@ -18,8 +18,14 @@ class PlaidService:
     def __init__(self):
         try:
             logger.debug("Initializing PlaidService...")
-            # Removed sensitive credential logging
-            # Removed sensitive credential logging
+            
+            # Check if credentials are configured
+            if not settings.PLAID_CLIENT_ID or not settings.PLAID_SECRET:
+                logger.warning("Plaid credentials not configured - PlaidService will be disabled")
+                self.client = None
+                self.enabled = False
+                return
+            
             logger.debug(f"PLAID_ENV: {settings.PLAID_ENV}")
             
             configuration = plaid.Configuration(
@@ -30,12 +36,18 @@ class PlaidService:
                 }
             )
             self.client = plaid_api.PlaidApi(plaid.ApiClient(configuration))
+            self.enabled = True
             logger.info("PlaidService initialized successfully.")
         except Exception as e:
             logger.error(f"Error initializing PlaidService: {e}", exc_info=True)
+            self.client = None
+            self.enabled = False
             raise
 
     def create_link_token(self, user_id):
+        if not self.enabled or not self.client:
+            raise Exception("Plaid service is not enabled. Please configure PLAID_CLIENT_ID and PLAID_SECRET.")
+        
         try:
             logger.debug(f"Creating link token for user ID: {user_id}...")
             from django.conf import settings
