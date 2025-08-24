@@ -1,5 +1,6 @@
 /**
- * Currency utilities for handling Stripe-supported and unsupported currencies
+ * Payment conversion utilities for handling Stripe-supported and unsupported currencies
+ * For currency formatting, use currencyFormatter.js instead
  */
 
 // Currencies NOT supported by Stripe (requires conversion to USD)
@@ -102,36 +103,7 @@ export function convertToUSD(amount, exchangeRate) {
   return Math.max(0.50, usdAmount);
 }
 
-/**
- * Format currency for display
- * @param {number} amount - Amount to format
- * @param {string} currencyCode - Currency code
- * @param {string} currencySymbol - Currency symbol
- * @returns {string} Formatted currency string
- */
-export function formatCurrency(amount, currencyCode, currencySymbol) {
-  const formatted = amount.toFixed(2);
-  
-  // Special formatting for certain currencies
-  switch (currencyCode) {
-    case 'SSP':
-      return `SSP ${formatted}`;
-    case 'KES':
-      return `KSh ${formatted}`;
-    case 'NGN':
-      return `₦${formatted}`;
-    case 'ZAR':
-      return `R ${formatted}`;
-    case 'INR':
-      return `₹${formatted}`;
-    case 'EGP':
-      return `E£ ${formatted}`;
-    case 'GHS':
-      return `GH₵ ${formatted}`;
-    default:
-      return `${currencySymbol || ''}${formatted} ${currencyCode || ''}`.trim();
-  }
-}
+// formatCurrency function removed - use formatCurrency from currencyFormatter.js instead
 
 /**
  * Get current user pricing information based on location

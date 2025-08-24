@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentUserPricing } from '@/utils/currencyUtils';
+import { getCurrentUserPricing } from '@/utils/paymentConversionUtils';
 import { getCacheValue } from '@/utils/appCache';
 import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
 import { getDevelopingCountryName, isDevelopingCountry } from '@/utils/developingCountries';

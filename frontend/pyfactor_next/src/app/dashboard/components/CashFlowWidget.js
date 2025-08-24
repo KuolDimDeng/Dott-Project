@@ -9,6 +9,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency as formatCurrencyUtil, getCurrencyInfo } from '@/utils/currencyFormatter';
 
 // Dynamically import Recharts to avoid SSR issues
 
@@ -88,13 +89,13 @@ function CashFlowWidget({ onNavigate, userData }) {
         
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.preferences?.currency) {
-            setCurrency(data.preferences.currency);
-            console.log('[CashFlowWidget] Currency set to:', data.preferences.currency);
-          }
+          // Check for currency_code first (correct field), then currency as fallback
+          const currencyCode = data.preferences?.currency_code || data.preferences?.currency || 'USD';
+          setCurrency(currencyCode);
+          console.log('[CashFlowWidget] Currency set to:', currencyCode);
         }
       } catch (error) {
-        console.log('[CashFlowWidget] Using default currency');
+        console.log('[CashFlowWidget] Using default currency USD');
       }
     };
     
@@ -176,8 +177,7 @@ function CashFlowWidget({ onNavigate, userData }) {
                 {entry.name}:
               </span>
               <span className="font-medium">
-                {currency === 'SSP' ? 'SSP' : currency === 'KES' ? 'KSh' : '$'}
-                {entry.value?.toLocaleString()}
+                {formatCurrency(entry.value)}
               </span>
             </div>
           ))}
@@ -189,17 +189,18 @@ function CashFlowWidget({ onNavigate, userData }) {
   
   // Format Y-axis
   const formatYAxis = (value) => {
-    const currencySymbol = currency === 'SSP' ? 'SSP' : currency === 'KES' ? 'KSh' : '$';
+    const currencyInfo = getCurrencyInfo(currency);
     if (value >= 1000) {
-      return `${currencySymbol}${(value / 1000).toFixed(0)}k`;
+      // For large numbers, show abbreviated format
+      const symbol = currencyInfo.symbol || currency;
+      return `${symbol}${(value / 1000).toFixed(0)}k`;
     }
-    return `${currencySymbol}${value}`;
+    return formatCurrencyUtil(value, currency, { includeCode: false });
   };
   
-  // Format currency display
+  // Format currency display using the comprehensive formatter
   const formatCurrency = (value) => {
-    const currencySymbol = currency === 'SSP' ? 'SSP ' : currency === 'KES' ? 'KSh ' : '$';
-    return `${currencySymbol}${value?.toLocaleString() || '0'}`;
+    return formatCurrencyUtil(value || 0, currency, { includeCode: false });
   };
   
   return (

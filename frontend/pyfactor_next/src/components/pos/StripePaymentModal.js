@@ -11,7 +11,8 @@ import {
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { CreditCardIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
-import { needsCurrencyConversion, getCachedExchangeRate, convertToUSD, formatCurrency } from '@/utils/currencyUtils';
+import { needsCurrencyConversion, getCachedExchangeRate, convertToUSD } from '@/utils/paymentConversionUtils';
+import { formatCurrency } from '@/utils/currencyFormatter';
 import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from '@/utils/stripeConfig';
 
 // Initialize Stripe with key from config utility
