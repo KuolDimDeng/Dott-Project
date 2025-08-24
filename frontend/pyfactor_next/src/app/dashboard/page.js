@@ -3,11 +3,14 @@
 // Dashboard page (Client Component)
 
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PageTitle from '@/components/PageTitle';
+import { useSession } from '@/hooks/useSession-v2';
 
 export default function DashboardPage() {
+  const { sessionData, loading } = useSession();
+  
   return (
     <>
       <PageTitle />
@@ -35,8 +38,28 @@ export default function DashboardPage() {
             </div>
             
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Welcome to Dott Dashboard!
+              Welcome{!loading && sessionData?.user?.first_name ? `, ${sessionData.user.first_name}` : ''} to Dott Dashboard!
             </h2>
+            
+            {!loading && (
+              <div className="text-gray-600 mb-6 space-y-2">
+                {sessionData?.user?.email && (
+                  <p className="text-sm">
+                    <span className="font-medium">Email:</span> {sessionData.user.email}
+                  </p>
+                )}
+                {sessionData?.user?.business_name && (
+                  <p className="text-sm">
+                    <span className="font-medium">Business:</span> {sessionData.user.business_name}
+                  </p>
+                )}
+                {sessionData?.user?.subscription_plan && (
+                  <p className="text-sm">
+                    <span className="font-medium">Plan:</span> {sessionData.user.subscription_plan.charAt(0).toUpperCase() + sessionData.user.subscription_plan.slice(1)}
+                  </p>
+                )}
+              </div>
+            )}
             
             <p className="text-gray-600 mb-6">
               You have successfully authenticated with Auth0. The Cognito → Auth0 migration is working!

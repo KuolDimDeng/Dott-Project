@@ -2,6 +2,63 @@
 
 *This document contains backend-specific recurring issues and their proven solutions.*
 
+## 🚨 **Issue: Onboarding Redirect Loop - Users Stuck at Business Info Step**
+
+**Date Added:** August 24, 2025
+
+**Symptoms:**
+- After selecting a subscription plan (especially free plan), users are redirected back to business info step
+- Browser shows redirect from `/onboarding/subscription` back to `/onboarding/business-info`
+- Backend logs show "Failed to retrieve or create business" with 500 error
+- Affects both OAuth (Google) and regular Auth0 users
+
+**Root Cause:**
+- Critical bug in `/backend/pyfactor/onboarding/views/subscription.py`
+- A misplaced `raise` statement at line 172 was ALWAYS executed after successfully creating a business
+- This caused business creation to fail even when it succeeded
+- The UserProfile creation code was unreachable due to being placed after the `raise`
+
+**The Bug:**
+```python
+# ❌ WRONG - The raise statement was incorrectly indented, making it always execute:
+try:
+    with db_transaction.atomic():
+        business = Business.objects.create(...)
+        logger.info(f"Successfully created business: {business.id}")
+except Exception as create_error:
+    logger.error(f"Failed to create business: {str(create_error)}")
+    raise
+    
+    # This code was UNREACHABLE due to the raise above!
+    profile, created = UserProfile.objects.get_or_create(...)
+```
+
+**Solution:**
+```python
+# ✅ CORRECT - UserProfile creation moved outside the exception handler:
+try:
+    with db_transaction.atomic():
+        business = Business.objects.create(...)
+        logger.info(f"Successfully created business: {business.id}")
+except Exception as create_error:
+    logger.error(f"Failed to create business: {str(create_error)}")
+    raise  # Only raises if there's an actual error
+
+# Now this code is reachable and executes after successful business creation
+profile, created = UserProfile.objects.get_or_create(...)
+```
+
+**Impact:**
+- Business was created in database but marked as failed
+- UserProfile was never linked to the business
+- Tenant creation failed due to missing business link
+- Onboarding completion failed, causing redirect loop
+
+**Key Lesson:**
+- Always check indentation and flow control in exception handlers
+- Code after a `raise` statement in the same block is unreachable
+- Use comprehensive logging to identify exact failure points
+
 ## 🚨 **Issue: Business Logo Upload Returns 404 Error**
 
 **Date Added:** August 21, 2025

@@ -132,10 +132,25 @@ class OAuthExchangeView(APIView):
                         
                         # Create or update user
                         with transaction.atomic():
+                            # Extract first and last name from Google OAuth data
+                            first_name = user_info.get('given_name', '')
+                            last_name = user_info.get('family_name', '')
+                            full_name = user_info.get('name', '')
+                            
+                            # If given_name/family_name not provided, try to extract from full name
+                            if not first_name and not last_name and full_name:
+                                name_parts = full_name.strip().split(' ', 1)
+                                first_name = name_parts[0] if len(name_parts) >= 1 else ''
+                                last_name = name_parts[1] if len(name_parts) >= 2 else ''
+                            
+                            logger.info(f"🔐 [OAUTH_EXCHANGE] Extracted names - first: '{first_name}', last: '{last_name}', full: '{full_name}'")
+                            
                             user, created = User.objects.get_or_create(
                                 email=email.lower(),
                                 defaults={
-                                    'name': user_info.get('name', ''),
+                                    'name': full_name,
+                                    'first_name': first_name,
+                                    'last_name': last_name,
                                     'picture': user_info.get('picture', ''),
                                     'is_active': True,
                                     'email_verified': user_info.get('email_verified', False)
@@ -144,9 +159,16 @@ class OAuthExchangeView(APIView):
                             
                             if not created:
                                 # Update existing user
-                                user.name = user_info.get('name', user.name)
+                                user.name = full_name or user.name
                                 user.picture = user_info.get('picture', user.picture)
                                 user.email_verified = user_info.get('email_verified', user.email_verified)
+                                
+                                # Update first and last name if provided and user doesn't have them
+                                if first_name and not user.first_name:
+                                    user.first_name = first_name
+                                if last_name and not user.last_name:
+                                    user.last_name = last_name
+                                
                                 user.save()
                             
                             logger.info(f"🔐 [OAUTH_EXCHANGE] User {'created' if created else 'updated'}: {user.email}")
