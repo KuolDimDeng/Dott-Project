@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { analyticsApi } from '@/services/api/analytics';
 import { toast } from 'react-hot-toast';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { useSession } from '@/hooks/useSession-v2';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   AreaChart, Area, ComposedChart
 } from 'recharts';
 
@@ -48,6 +48,24 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
     cashFlow: []
   });
   const [selectedMetric, setSelectedMetric] = useState('revenue');
+  
+  // Chart width management for responsive charts without ResponsiveContainer
+  const [chartWidth, setChartWidth] = useState(800);
+  const chartContainerRef = useRef(null);
+
+  // Handle chart resizing
+  useEffect(() => {
+    const updateChartWidth = () => {
+      if (chartContainerRef.current) {
+        const width = chartContainerRef.current.offsetWidth - 48; // Subtract padding
+        setChartWidth(Math.max(width, 300)); // Minimum width of 300
+      }
+    };
+    
+    updateChartWidth();
+    window.addEventListener('resize', updateChartWidth);
+    return () => window.removeEventListener('resize', updateChartWidth);
+  }, []);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -341,12 +359,12 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" ref={chartContainerRef}>
         {/* Revenue Trend */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Revenue Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={chartData.revenue}>
+          <div className="w-full overflow-x-auto">
+            <ComposedChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.revenue}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -356,14 +374,14 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
               <Line type="monotone" dataKey="target" stroke="#EF4444" name="Target" strokeWidth={2} />
               <Line type="monotone" dataKey="lastYear" stroke="#10B981" name="Last Year" strokeDasharray="5 5" />
             </ComposedChart>
-          </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Expense Breakdown */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Expense Breakdown</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData.expenses}>
+          <div className="w-full overflow-x-auto">
+            <BarChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.expenses}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -374,14 +392,14 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
               <Bar dataKey="payroll" stackId="a" fill="#F59E0B" />
               <Bar dataKey="other" stackId="a" fill="#8B5CF6" />
             </BarChart>
-          </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Profit Margin Trend */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Profit & Margin Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={chartData.profitTrend}>
+          <div className="w-full overflow-x-auto">
+            <ComposedChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.profitTrend}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis yAxisId="left" />
@@ -391,14 +409,14 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
               <Bar yAxisId="left" dataKey="profit" fill="#10B981" name="Profit ($)" />
               <Line yAxisId="right" type="monotone" dataKey="margin" stroke="#EF4444" name="Margin (%)" strokeWidth={2} />
             </ComposedChart>
-          </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Customer Growth */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Customer Growth</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData.customerGrowth}>
+          <div className="w-full overflow-x-auto">
+            <AreaChart width={Math.min(chartWidth / 2 - 20, 600)} height={300} data={chartData.customerGrowth}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -408,7 +426,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
               <Area type="monotone" dataKey="new" stackId="2" stroke="#10B981" fill="#10B981" name="New Customers" />
               <Area type="monotone" dataKey="churn" stackId="2" stroke="#EF4444" fill="#EF4444" name="Churned" />
             </AreaChart>
-          </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
@@ -470,8 +488,8 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
       {/* Cash Flow Chart */}
       <div className="bg-white rounded-lg shadow p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4">Cash Flow Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData.cashFlow}>
+        <div className="w-full overflow-x-auto">
+          <BarChart width={Math.max(chartWidth - 48, 600)} height={300} data={chartData.cashFlow}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
@@ -481,7 +499,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
             <Bar dataKey="outflow" fill="#EF4444" name="Cash Outflow" />
             <Bar dataKey="net" fill="#3B82F6" name="Net Cash Flow" />
           </BarChart>
-        </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
