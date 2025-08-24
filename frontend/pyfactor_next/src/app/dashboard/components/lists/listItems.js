@@ -3065,6 +3065,7 @@ const MainListItems = ({
               
               // For Accounting menu, navigate to the overview page
               if (item.label === t('mainMenu.accounting')) {
+                console.log('[MainMenu] Accounting clicked - navigating to overview');
                 const navigationKey = `nav-${Date.now()}`;
                 const payload = { 
                   item: 'accounting-overview', 
@@ -3076,6 +3077,69 @@ const MainListItems = ({
                 window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
                 window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
               }
+              
+              // For Banking menu, navigate to the overview page
+              if (item.label === t('mainMenu.banking')) {
+                console.log('[MainMenu] Banking clicked - navigating to overview');
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'banking-overview', 
+                  navigationKey,
+                  originalItem: 'Banking Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For HR menu, navigate to the overview page
+              if (item.label === t('mainMenu.hr')) {
+                console.log('[MainMenu] HR clicked - navigating to overview');
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'hr-overview', 
+                  navigationKey,
+                  originalItem: 'HR Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Payroll menu, navigate to the overview page
+              if (item.label === t('mainMenu.payroll')) {
+                console.log('[MainMenu] Payroll clicked - navigating to overview');
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payroll-overview', 
+                  navigationKey,
+                  originalItem: 'Payroll Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Taxes menu, navigate to the overview page
+              if (item.label === t('mainMenu.taxes')) {
+                console.log('[MainMenu] Taxes clicked - navigating to overview');
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'taxes-overview', 
+                  navigationKey,
+                  originalItem: 'Taxes Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // Debug: Log which menu was clicked
+              console.log('[MainMenu] Menu clicked:', item.label, 'Has subItems:', !!item.subItems);
             } else if (item.onClick) {
               item.onClick(e);
             }
