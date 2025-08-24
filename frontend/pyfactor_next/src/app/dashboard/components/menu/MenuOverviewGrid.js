@@ -52,7 +52,12 @@ import {
   Book,
   CheckSquare,
   FileCheck,
-  Building
+  Building,
+  ArrowUpDown,
+  CheckCircle,
+  Heart,
+  Play,
+  History
 } from 'lucide-react';
 
 const MenuOverviewGrid = ({ 
