@@ -12,9 +12,10 @@ const InventoryOverview = ({ userData, ...props }) => {
     const routeMapping = {
       'dashboard': 'inventory-dashboard',
       'products': 'products',
+      'materials': 'inventory-supplies',
       'suppliers': 'inventory-suppliers',
-      'stock-adjustments': 'stock-adjustments',
-      'warehouses': 'warehouses',
+      'stock-adjustments': 'inventory-stock-adjustments',
+      'warehouses': 'inventory-locations',
       'reports': 'inventory-reports'
     };
     

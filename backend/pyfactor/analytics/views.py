@@ -514,9 +514,16 @@ def menu_stats(request):
             tenant=tenant
         ).count()
         
+        # Material types count (count distinct categories or use a default)
+        material_types = Product.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).values('category').distinct().count()
+        
         stats = {
             'totalItems': total_items,
             'activeProducts': active_products,
+            'materialTypes': material_types,
             'lowStockItems': low_stock_items,
             'activeSuppliers': active_suppliers,
             'recentAdjustments': recent_adjustments,

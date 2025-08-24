@@ -156,8 +156,17 @@ const MenuOverviewGrid = ({
           value: 'products'
         },
         {
+          id: 'materials',
+          title: 'Materials/Supplies',
+          description: 'Track raw materials, consumables, and office supplies',
+          icon: Box,
+          color: 'bg-purple-500',
+          stats: { label: 'Material Types', key: 'materialTypes' },
+          value: 'materials'
+        },
+        {
           id: 'suppliers',
-          title: 'Suppliers',
+          title: 'Product Suppliers',
           description: 'Manage supplier information, contacts, and lead times',
           icon: Users,
           color: 'bg-pink-500',
@@ -175,8 +184,8 @@ const MenuOverviewGrid = ({
         },
         {
           id: 'warehouses',
-          title: 'Warehouses',
-          description: 'Manage multiple warehouse locations and stock distribution',
+          title: 'Locations',
+          description: 'Manage warehouse locations and stock distribution',
           icon: Warehouse,
           color: 'bg-yellow-500',
           stats: { label: 'Locations', key: 'warehouseCount' },
