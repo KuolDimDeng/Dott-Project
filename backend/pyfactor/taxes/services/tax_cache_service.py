@@ -76,11 +76,15 @@ class TaxRateCacheService:
                 }
             
             # Check for tenant-specific settings first
-            tenant_settings = TenantTaxSettings.objects.filter(
-                tenant_id=user.tenant_id,
-                country=country,
-                region_code=state
-            ).first()
+            try:
+                tenant_settings = TenantTaxSettings.objects.filter(
+                    tenant_id=user.tenant_id,
+                    country=country,
+                    region_code=state
+                ).first()
+            except Exception as e:
+                logger.warning(f"[TaxCache] Error querying tenant settings: {e}")
+                tenant_settings = None
             
             if tenant_settings:
                 # Use tenant custom rate
@@ -89,8 +93,12 @@ class TaxRateCacheService:
                 jurisdiction = f"{country}"
                 if state:
                     jurisdiction += f", {state}"
-                if county and tenant_settings.locality:
-                    jurisdiction += f", {county}"
+                # Safe check for locality field
+                try:
+                    if county and hasattr(tenant_settings, 'locality') and tenant_settings.locality:
+                        jurisdiction += f", {county}"
+                except Exception:
+                    pass  # Ignore locality errors
                 
                 profile.cached_tax_rate = rate
                 profile.cached_tax_rate_percentage = rate_percentage

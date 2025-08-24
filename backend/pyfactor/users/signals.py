@@ -53,6 +53,15 @@ def populate_tax_cache_on_profile_creation(sender, instance, created, **kwargs):
     Populate tax cache when user profile is created
     """
     if created:
+        # Delay tax cache update to avoid transaction issues during OAuth
+        from django.db import connection
+        
+        # Check if we're in a transaction (OAuth flow)
+        if connection.in_atomic_block:
+            logger.info(f"[TaxCache] Skipping tax cache update during transaction for {instance.user.email}")
+            # Schedule for later or skip entirely - tax cache will be populated on first use
+            return
+            
         try:
             logger.info(f"[TaxCache] New profile created for user {instance.user.email}, populating tax cache")
             result = TaxRateCacheService.update_user_cached_tax_rate(instance.user)
