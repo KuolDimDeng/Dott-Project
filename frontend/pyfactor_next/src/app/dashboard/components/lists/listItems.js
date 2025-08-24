@@ -3076,6 +3076,62 @@ const MainListItems = ({
                 window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
                 window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
               }
+              
+              // For Banking menu, navigate to the overview page
+              if (item.label === t('mainMenu.banking')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'banking-overview', 
+                  navigationKey,
+                  originalItem: 'Banking Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For HR menu, navigate to the overview page
+              if (item.label === t('mainMenu.hr')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'hr-overview', 
+                  navigationKey,
+                  originalItem: 'HR Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Payroll menu, navigate to the overview page
+              if (item.label === t('mainMenu.payroll')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payroll-overview', 
+                  navigationKey,
+                  originalItem: 'Payroll Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Taxes menu, navigate to the overview page
+              if (item.label === t('mainMenu.taxes')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'taxes-overview', 
+                  navigationKey,
+                  originalItem: 'Taxes Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
             } else if (item.onClick) {
               item.onClick(e);
             }
