@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { 
   ArrowTrendingUpIcon, 
@@ -11,13 +11,6 @@ import {
 import { useTranslation } from 'react-i18next';
 
 // Dynamically import Recharts to avoid SSR issues
-const ResponsiveContainer = dynamic(
-  () => import('recharts').then(mod => mod.ResponsiveContainer),
-  { 
-    ssr: false,
-    loading: () => <div className="h-64 flex items-center justify-center">Loading chart...</div>
-  }
-);
 
 const ComposedChart = dynamic(
   () => import('recharts').then(mod => mod.ComposedChart),
@@ -66,10 +59,23 @@ function CashFlowWidget({ onNavigate, userData }) {
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('USD');
   const [mounted, setMounted] = useState(false);
+  const [chartWidth, setChartWidth] = useState(600);
+  const chartContainerRef = useRef(null);
   
-  // Ensure component is mounted before rendering charts
+  // Ensure component is mounted before rendering charts and handle resize
   useEffect(() => {
     setMounted(true);
+    
+    const updateChartWidth = () => {
+      if (chartContainerRef.current) {
+        const width = chartContainerRef.current.offsetWidth - 32; // Subtract padding
+        setChartWidth(Math.max(width, 300)); // Minimum width of 300
+      }
+    };
+    
+    updateChartWidth();
+    window.addEventListener('resize', updateChartWidth);
+    return () => window.removeEventListener('resize', updateChartWidth);
   }, []);
   
   // Get currency from userData or business
@@ -287,11 +293,12 @@ function CashFlowWidget({ onNavigate, userData }) {
             </div>
           </div>
         ) : mounted && cashFlowData.length > 0 ? (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={cashFlowData}
-                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+          <div className="h-64 w-full overflow-x-auto" ref={chartContainerRef}>
+            <ComposedChart
+              width={chartWidth}
+              height={256}
+              data={cashFlowData}
+              margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
               >
                 <defs>
                   <linearGradient id="colorInflow" x1="0" y1="0" x2="0" y2="1">
@@ -341,7 +348,6 @@ function CashFlowWidget({ onNavigate, userData }) {
                   activeDot={{ r: 6 }}
                 />
               </ComposedChart>
-            </ResponsiveContainer>
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center">

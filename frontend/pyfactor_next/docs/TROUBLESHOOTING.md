@@ -8,6 +8,7 @@
   - [Mobile Login Session Bridge Issues](#mobile-login-session-bridge-issues)
   - [Session Cookie Persistence with Cloudflare (2-Day Debug)](#session-cookie-persistence-with-cloudflare-2-day-debug) ⬅️ **NEW**
 - [Frontend Component Issues](#frontend-component-issues)
+  - [Recharts Not Rendering with ResponsiveContainer](#recharts-not-rendering-with-responsivecontainer) ⬅️ **NEW**
 - [Calendar/Event Management](#calendarevent-management)
 - [HR Employee Management](#hr-employee-management)
 - [API Integration Issues](#api-integration-issues)
@@ -218,6 +219,92 @@ Mobile login was not properly establishing browser sessions after authentication
 ---
 
 # Frontend Component Issues
+
+## Recharts Not Rendering with ResponsiveContainer
+
+**Issue**: Charts using Recharts library don't render when wrapped in ResponsiveContainer, showing blank space or no visual output.
+
+**Symptoms**:
+- Charts appear blank despite having valid data
+- Console shows no errors but chart doesn't display
+- ResponsiveContainer returns 0 width/height
+- Charts work in development but fail in production
+- Test charts with explicit dimensions work fine
+
+**Root Cause**:
+ResponsiveContainer relies on parent container dimensions which may not be available during initial render or in certain deployment environments (especially with server-side rendering or when parent containers don't have explicit dimensions).
+
+**Solution**:
+
+1. **Replace ResponsiveContainer with explicit dimensions**:
+   ```javascript
+   // ❌ BROKEN - ResponsiveContainer not working
+   <ResponsiveContainer width="100%" height={400}>
+     <BarChart data={chartData}>
+       ...
+     </BarChart>
+   </ResponsiveContainer>
+
+   // ✅ FIXED - Use explicit dimensions with dynamic width
+   const [chartWidth, setChartWidth] = useState(800);
+   const chartContainerRef = useRef(null);
+
+   useEffect(() => {
+     const updateChartWidth = () => {
+       if (chartContainerRef.current) {
+         const width = chartContainerRef.current.offsetWidth - 48; // Subtract padding
+         setChartWidth(Math.max(width, 300)); // Minimum width
+       }
+     };
+     
+     updateChartWidth();
+     window.addEventListener('resize', updateChartWidth);
+     return () => window.removeEventListener('resize', updateChartWidth);
+   }, []);
+
+   // In render:
+   <div ref={chartContainerRef}>
+     <BarChart width={chartWidth} height={400} data={chartData}>
+       ...
+     </BarChart>
+   </div>
+   ```
+
+2. **Remove ResponsiveContainer import**:
+   ```javascript
+   // Remove this line
+   import { ResponsiveContainer, BarChart, ... } from 'recharts';
+   
+   // Keep only necessary imports
+   import { BarChart, Bar, XAxis, YAxis, ... } from 'recharts';
+   ```
+
+3. **Add overflow handling for responsive behavior**:
+   ```javascript
+   <div className="w-full overflow-x-auto">
+     <BarChart width={chartWidth} height={400} data={chartData}>
+       ...
+     </BarChart>
+   </div>
+   ```
+
+**Files Commonly Affected**:
+- `/src/app/dashboard/components/dashboards/SalesDashboardEnhanced.js`
+- `/src/app/dashboard/components/dashboards/BusinessOverviewDashboard.js`
+- Any component using Recharts with ResponsiveContainer
+
+**Testing**:
+After applying the fix, test that:
+1. Charts render on initial page load
+2. Charts remain visible after page refresh
+3. Charts adapt to window resize
+4. Charts work in both development and production environments
+
+**Date Fixed**: 2025-08-24
+**Debug Time**: 2 hours
+**Impact**: All Recharts-based visualizations
+
+---
 
 ## Dashboard Drawer Toggle Not Working
 
