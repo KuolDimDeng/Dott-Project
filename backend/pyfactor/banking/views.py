@@ -122,7 +122,6 @@ class PlaidLinkTokenView(APIView):
                 country_code = 'US'
 
             # Get client name from settings or use default
-            from django.conf import settings
             client_name = getattr(settings, 'PLAID_CLIENT_NAME', 'Dott')
             
             link_token_request = LinkTokenCreateRequest(
