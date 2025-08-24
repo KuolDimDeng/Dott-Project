@@ -123,6 +123,26 @@ export const routeRegistry = {
     title: 'Taxes Dashboard',
     description: 'Tax management overview'
   },
+  'banking-overview': {
+    component: enhancedLazy(() => import('../components/banking/BankingOverview'), 'Banking Overview'),
+    title: 'Banking',
+    description: 'Banking management overview'
+  },
+  'hr-overview': {
+    component: enhancedLazy(() => import('../components/hr/HROverview'), 'HR Overview'),
+    title: 'Human Resources',
+    description: 'HR management overview'
+  },
+  'payroll-overview': {
+    component: enhancedLazy(() => import('../components/payroll/PayrollOverview'), 'Payroll Overview'),
+    title: 'Payroll',
+    description: 'Payroll management overview'
+  },
+  'taxes-overview': {
+    component: enhancedLazy(() => import('../components/taxes/TaxesOverview'), 'Taxes Overview'),
+    title: 'Taxes',
+    description: 'Tax management overview'
+  },
   'reports-dashboard': {
     component: enhancedLazy(() => import('../components/dashboards/ReportsDashboard'), 'Reports Dashboard'),
     title: 'Reports Dashboard',
