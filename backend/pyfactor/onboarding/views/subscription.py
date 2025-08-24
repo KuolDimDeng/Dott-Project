@@ -66,29 +66,42 @@ class SubscriptionSaveView(APIView):
     
     def get_business_sync(self, request):
         """Retrieve or create business for the current user"""
+        logger.info(f"[get_business_sync] === START === for user {request.user.email}")
         try:
             from users.models import Business
             
             # First try to get business from user profile
+            logger.info(f"[get_business_sync] Checking UserProfile for user {request.user.id}")
             try:
                 profile = UserProfile.objects.get(user=request.user)
+                logger.info(f"[get_business_sync] Found UserProfile: {profile.id}")
                 if profile.business:
+                    logger.info(f"[get_business_sync] Profile has business: {profile.business.id}")
                     return profile.business
-            except (UserProfile.DoesNotExist, Exception) as e:
-                logger.warning(f"Error getting business from profile: {str(e)}")
+                else:
+                    logger.info(f"[get_business_sync] Profile exists but has no business")
+            except UserProfile.DoesNotExist:
+                logger.warning(f"[get_business_sync] UserProfile does not exist for user {request.user.id}")
+            except Exception as e:
+                logger.warning(f"[get_business_sync] Error getting business from profile: {str(e)}")
             
             # Then try direct query for business owned by user
             # Generate the same UUID that would be used for this user
             owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}'))
+            logger.info(f"[get_business_sync] Looking for business with owner_id: {owner_uuid}")
             business = Business.objects.filter(owner_id=owner_uuid).first()
             if business:
+                logger.info(f"[get_business_sync] Found business by owner_id: {business.id}")
                 return business
+            else:
+                logger.info(f"[get_business_sync] No business found with owner_id: {owner_uuid}")
             
             # Try to find business by expected ID (same logic as SaveStep1View)
             business_id = uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}')
+            logger.info(f"[get_business_sync] Looking for business with ID: {business_id}")
             business = Business.objects.filter(id=business_id).first()
             if business:
-                logger.info(f"Found business by ID {business_id} for user {request.user.email}")
+                logger.info(f"[get_business_sync] Found business by ID {business_id} for user {request.user.email}")
                 # Link it to profile if not already linked
                 try:
                     profile, created = UserProfile.objects.get_or_create(
@@ -138,16 +151,25 @@ class SubscriptionSaveView(APIView):
                     business_name = f"{user_name}'s Business"
                 logger.warning(f"Creating business with default name: {business_name}")
             
-            logger.info(f"Creating new business for user {request.user.email} with name: {business_name}")
+            logger.info(f"[get_business_sync] Creating new business for user {request.user.email} with name: {business_name}")
+            logger.info(f"[get_business_sync] Business details - ID: {business_id}, owner_id: {owner_uuid}")
             
-            with db_transaction.atomic():
-                business = Business.objects.create(
-                    id=business_id,
-                    name=business_name,
-                    owner_id=owner_uuid,
-                    is_active=True,
-                    created_at=timezone.now()
-                )
+            try:
+                with db_transaction.atomic():
+                    business = Business.objects.create(
+                        id=business_id,
+                        name=business_name,
+                        owner_id=owner_uuid,
+                        is_active=True,
+                        created_at=timezone.now()
+                    )
+                    logger.info(f"[get_business_sync] Successfully created business: {business.id}")
+            except Exception as create_error:
+                logger.error(f"[get_business_sync] Failed to create business: {str(create_error)}")
+                logger.error(f"[get_business_sync] Error type: {type(create_error).__name__}")
+                import traceback
+                logger.error(f"[get_business_sync] Traceback: {traceback.format_exc()}")
+                raise
                 
                 # Create or update UserProfile to link to business
                 profile, created = UserProfile.objects.get_or_create(
@@ -426,13 +448,19 @@ class SubscriptionSaveView(APIView):
         For paid tiers, prepare for payment and defer RLS setup.
         """
         request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
-        logger.info(f"Processing subscription plan selection - Request ID: {request_id}")
+        logger.info(f"[SubscriptionSave] === START SUBSCRIPTION SAVE === Request ID: {request_id}")
+        logger.info(f"[SubscriptionSave] User: {request.user.email}, ID: {request.user.id}")
+        logger.info(f"[SubscriptionSave] User has tenant: {hasattr(request.user, 'tenant') and request.user.tenant}")
+        logger.info(f"[SubscriptionSave] User tenant_id: {getattr(request.user, 'tenant_id', None)}")
+        logger.info(f"[SubscriptionSave] User business_id: {getattr(request.user, 'business_id', None)}")
+        logger.info(f"[SubscriptionSave] Request data: {request.data}")
         
         try:
             # Validate input data
             data = request.data.copy()
             valid, error_message = self.validate_subscription_data(data)
             if not valid:
+                logger.error(f"[SubscriptionSave] Validation failed: {error_message}")
                 return Response({
                     'error': error_message,
                     'code': 'validation_error'
@@ -442,12 +470,17 @@ class SubscriptionSaveView(APIView):
             billing_cycle = data.get('billing_cycle', 'monthly')
             
             # Get user's business
+            logger.info(f"[SubscriptionSave] Attempting to get business for user {request.user.email}")
             business = self.get_business_sync(request)
             if not business:
+                logger.error(f"[SubscriptionSave] CRITICAL: Failed to get/create business for user {request.user.email}")
+                logger.error(f"[SubscriptionSave] User details - ID: {request.user.id}, has UserProfile: {hasattr(request.user, 'userprofile')}")
                 return Response({
                     'error': 'Failed to retrieve or create business',
                     'code': 'business_error'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            logger.info(f"[SubscriptionSave] Successfully got business: ID={business.id}, Name={business.name}")
             
             # Update onboarding progress
             progress = self.update_onboarding_progress_sync(request, business, selected_plan, billing_cycle)
