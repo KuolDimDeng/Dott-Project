@@ -46,13 +46,14 @@ def create_oauth_user(email, name=None, create_session=False):
         # Create user
         user = User.objects.create(
             email=email,
-            username=email,  # Use email as username
             first_name=name.split()[0] if ' ' in name else name,
             last_name=name.split()[1] if ' ' in name and len(name.split()) > 1 else '',
+            name=name,  # Full name field
             is_active=True,
             email_verified=True,  # OAuth users are pre-verified
-            date_joined=timezone.now(),
             onboarding_completed=False,  # New users need onboarding
+            subscription_plan='free',  # Start with free plan
+            role='OWNER',  # Default role for new users
         )
         
         # Set unusable password (OAuth users don't have passwords)

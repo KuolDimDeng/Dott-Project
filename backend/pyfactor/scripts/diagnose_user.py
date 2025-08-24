@@ -67,7 +67,7 @@ def diagnose_user(email):
     print(f"\n🎯 Onboarding Status:")
     print(f"  - User.onboarding_completed: {user.onboarding_completed}")
     print(f"  - User.onboarding_completed_at: {user.onboarding_completed_at if hasattr(user, 'onboarding_completed_at') else 'N/A'}")
-    print(f"  - User.user_subscription: {user.user_subscription if hasattr(user, 'user_subscription') else 'N/A'}")
+    print(f"  - User.subscription_plan: {user.subscription_plan if hasattr(user, 'subscription_plan') else 'N/A'}")
     
     # Check OnboardingProgress
     try:

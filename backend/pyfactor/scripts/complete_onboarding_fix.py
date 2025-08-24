@@ -59,8 +59,8 @@ def complete_onboarding_fix(email):
             if not user.onboarding_completed:
                 user.onboarding_completed = True
                 user.onboarding_completed_at = timezone.now()
-                if not hasattr(user, 'user_subscription') or not user.user_subscription:
-                    user.user_subscription = 'professional'
+                if not user.subscription_plan or user.subscription_plan == 'free':
+                    user.subscription_plan = 'professional'
                 user.save()
                 print(f"  ✅ Marked User.onboarding_completed = True")
             
@@ -72,7 +72,7 @@ def complete_onboarding_fix(email):
                     'setup_completed': True,
                     'current_step': 'completed',
                     'completed_steps': ['business_info', 'subscription', 'payment', 'setup'],
-                    'selected_plan': user.user_subscription or 'professional',
+                    'selected_plan': user.subscription_plan or 'professional',
                     'payment_completed': True,
                     'completed_at': timezone.now()
                 }
