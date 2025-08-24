@@ -32,11 +32,18 @@ const SalesOverview = ({ userData, ...props }) => {
     console.log('[SalesOverview] Item clicked:', itemValue);
     
     if (itemValue === 'pos') {
-      if (typeof props.handleShowCreateOptions === 'function') {
-        props.handleShowCreateOptions('Sales');
-      } else {
-        console.warn('[SalesOverview] POS handler not available');
-      }
+      // Dispatch POS navigation event
+      const navigationKey = `nav-${Date.now()}`;
+      const payload = {
+        item: 'pos',
+        navigationKey,
+        originalItem: 'Point of Sale',
+        showCreateOptions: true,
+        selectedOption: 'Sales'
+      };
+      
+      window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+      window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
       return;
     }
     
@@ -115,10 +122,10 @@ const SalesOverview = ({ userData, ...props }) => {
   return (
     <div className="w-full h-full">
       {!isDirectNavigation && selectedView !== 'overview' && (
-        <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-3 border-b border-gray-200">
           <button
             onClick={() => setSelectedView('overview')}
-            className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2"
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
