@@ -331,14 +331,17 @@ class ImprovedOAuthExchangeView(APIView):
             try:
                 user, created = self.create_user_safely(email, user_info)
                 
-                # Create tenant for new users (optional, can fail)
+                # Get tenant ONLY for users who have completed onboarding
                 tenant = None
-                if not user.onboarding_completed:
-                    tenant = self.create_tenant_safely(user)
-                else:
+                if user.onboarding_completed:
                     # Get existing tenant for completed users
                     from custom_auth.models import Tenant
                     tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
+                    if not tenant:
+                        logger.warning(f"User {user.email} marked as onboarding_completed but has no tenant")
+                else:
+                    # New users don't get a tenant until they complete onboarding
+                    logger.info(f"New user {user.email} - tenant will be created during onboarding")
                 
                 # Create session (critical - must succeed)
                 session_data = self.create_session_safely(user, tokens, request, tenant)

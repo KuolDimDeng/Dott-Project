@@ -151,22 +151,20 @@ class OAuthExchangeView(APIView):
                             
                             logger.info(f"🔐 [OAUTH_EXCHANGE] User {'created' if created else 'updated'}: {user.email}")
                             
-                            # Get or create tenant for user
+                            # Get tenant ONLY for users who have completed onboarding
                             from custom_auth.models import Tenant
                             
-                            # Try to find existing tenant for user
-                            tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
-                            
-                            if not tenant:
-                                # Create tenant for new users
-                                tenant = Tenant.objects.create(
-                                    owner_id=str(user.id),
-                                    name=f"{user.email.split('@')[0]}'s Organization",
-                                    schema_name=f"tenant_{user.id}",  # Required for backward compatibility
-                                    is_active=True,
-                                    rls_enabled=True
-                                )
-                                logger.info(f"🔐 [OAUTH_EXCHANGE] Created tenant {tenant.id} for user {user.email}")
+                            tenant = None
+                            if user.onboarding_completed:
+                                # Try to find existing tenant for user
+                                tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
+                                
+                                if not tenant:
+                                    # This shouldn't happen - completed users should have a tenant
+                                    logger.warning(f"🔐 [OAUTH_EXCHANGE] User {user.email} marked as onboarding_completed but has no tenant")
+                            else:
+                                # New users don't get a tenant until they complete onboarding
+                                logger.info(f"🔐 [OAUTH_EXCHANGE] New user {user.email} - tenant will be created during onboarding")
                             
                             # Create session
                             from session_manager.services import SessionService
@@ -193,7 +191,7 @@ class OAuthExchangeView(APIView):
                             logger.info(f"🔐 [OAUTH_EXCHANGE] Session created with ID: {session.session_id}")
                             
                             # Return session token and user info
-                            return Response({
+                            response_data = {
                                 'success': True,
                                 'authenticated': True,
                                 'session_token': str(session.session_id),  # This is what the frontend expects
@@ -202,14 +200,19 @@ class OAuthExchangeView(APIView):
                                     'email': user.email,
                                     'name': user.name,
                                     'picture': user.picture,
-                                    'tenant_id': tenant.id if tenant else None,
                                     'onboarding_completed': user.onboarding_completed
                                 },
                                 'needs_onboarding': not user.onboarding_completed,
                                 'access_token': tokens.get('access_token'),  # Keep for backward compatibility
                                 'id_token': tokens.get('id_token'),
                                 'expires_in': tokens.get('expires_in')
-                            }, status=status.HTTP_200_OK)
+                            }
+                            
+                            # Only include tenant_id for users who have completed onboarding
+                            if tenant:
+                                response_data['user']['tenant_id'] = tenant.id
+                            
+                            return Response(response_data, status=status.HTTP_200_OK)
                             
                     except jwt.DecodeError as e:
                         logger.error(f"🔐 [OAUTH_EXCHANGE] Failed to decode ID token: {e}")
