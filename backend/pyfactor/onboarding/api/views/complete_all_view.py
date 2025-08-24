@@ -14,6 +14,7 @@ from custom_auth.api.authentication import Auth0JWTAuthentication
 from onboarding.models import OnboardingProgress
 from user_sessions.models import UserSession
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +29,90 @@ def complete_all_onboarding(request):
         user = request.user
         
         with db_transaction.atomic():
-            # 1. Ensure user has a tenant
+            # 1. Ensure user has a tenant - if not, try to get or create one
             if not user.tenant:
-                return Response({
-                    'error': 'User has no tenant assigned',
-                    'details': 'Tenant must be created during onboarding'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            tenant_id = user.tenant.id
+                logger.warning(f"[Complete-All] User {user.email} has no tenant, attempting to create one")
+                
+                # Try to find existing tenant for this user
+                from custom_auth.models import Tenant
+                existing_tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
+                
+                if existing_tenant:
+                    logger.info(f"[Complete-All] Found existing tenant {existing_tenant.id} for user {user.email}")
+                    user.tenant = existing_tenant
+                    user.save(update_fields=['tenant'])
+                    tenant_id = existing_tenant.id
+                else:
+                    # Create a new tenant for the user
+                    import uuid
+                    from users.models import Business, UserProfile
+                    
+                    # First ensure business exists
+                    profile = UserProfile.objects.filter(user=user).first()
+                    business = None
+                    
+                    if profile and profile.business:
+                        business = profile.business
+                    else:
+                        # Try to find business by owner_id
+                        owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{user.id}'))
+                        business = Business.objects.filter(owner_id=owner_uuid).first()
+                        
+                        if not business:
+                            # Create a minimal business
+                            business_id = uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{user.id}')
+                            business_name = f"{user.email.split('@')[0]}'s Business"
+                            if user.first_name or user.last_name:
+                                user_name = f"{user.first_name} {user.last_name}".strip()
+                                business_name = f"{user_name}'s Business"
+                            
+                            logger.info(f"[Complete-All] Creating business for user {user.email}")
+                            business = Business.objects.create(
+                                id=business_id,
+                                name=business_name,
+                                owner_id=owner_uuid,
+                                is_active=True,
+                                created_at=timezone.now()
+                            )
+                            
+                            # Link to profile
+                            if not profile:
+                                profile = UserProfile.objects.create(
+                                    user=user,
+                                    business=business,
+                                    business_id=business_id
+                                )
+                            else:
+                                profile.business = business
+                                profile.business_id = business_id
+                                profile.save(update_fields=['business', 'business_id'])
+                    
+                    # Now create the tenant
+                    tenant_id = str(uuid.uuid4())
+                    logger.info(f"[Complete-All] Creating tenant {tenant_id} for user {user.email}")
+                    
+                    new_tenant = Tenant.objects.create(
+                        id=tenant_id,
+                        name=business.name if business else f"{user.email.split('@')[0]}'s Organization",
+                        owner_id=str(user.id),
+                        setup_status='active',
+                        is_active=True,
+                        rls_enabled=True,
+                        rls_setup_date=timezone.now(),
+                        created_at=timezone.now()
+                    )
+                    
+                    user.tenant = new_tenant
+                    user.save(update_fields=['tenant'])
+                    
+                    # Update profile with tenant_id
+                    if profile:
+                        profile.tenant_id = tenant_id
+                        profile.save(update_fields=['tenant_id'])
+                    
+                    logger.info(f"[Complete-All] Successfully created and assigned tenant {tenant_id} to user {user.email}")
+            else:
+                tenant_id = user.tenant.id
             
             # 2. Update or create OnboardingProgress
             progress, created = OnboardingProgress.objects.get_or_create(
