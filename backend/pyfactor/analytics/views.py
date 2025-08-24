@@ -382,16 +382,7 @@ def get_dashboard_data(request):
         return Response(
             {"error": "Failed to fetch dashboard data"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )"""
-Menu stats API endpoint for dashboard overview grids.
-Returns real-time statistics for Sales, Inventory, and Jobs menus.
-"""
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from django.db.models import Count, Sum, Q, F, Avg
-from django.utils import timezone
+        )
 from datetime import timedelta
 from decimal import Decimal
 
