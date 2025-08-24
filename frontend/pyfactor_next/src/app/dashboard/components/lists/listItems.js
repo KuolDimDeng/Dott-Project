@@ -598,7 +598,7 @@ const MainListItems = ({
     } else if ((item === 'Dashboard' || item === 'dashboard') && handleMainDashboardClick) {
       handleMainDashboardClick();
     } else if ((item === 'Sales' || item === 'sales') && handleSalesClick) {
-      handleSalesClick('dashboard');
+      handleSalesClick('overview');
     } else if ((item === 'CRM' || item === 'crm') && handleCRMClick) {
       handleCRMClick('dashboard');
     }
