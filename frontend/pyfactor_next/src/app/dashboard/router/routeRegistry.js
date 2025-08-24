@@ -58,6 +58,21 @@ export const routeRegistry = {
     title: 'Jobs',
     description: 'Jobs and projects overview'
   },
+  'payments-overview': {
+    component: enhancedLazy(() => import('../components/payments/PaymentsOverview'), 'Payments Overview'),
+    title: 'Payments',
+    description: 'Payments management overview'
+  },
+  'purchases-overview': {
+    component: enhancedLazy(() => import('../components/purchases/PurchasesOverview'), 'Purchases Overview'),
+    title: 'Purchases',
+    description: 'Purchases management overview'
+  },
+  'accounting-overview': {
+    component: enhancedLazy(() => import('../components/accounting/AccountingOverview'), 'Accounting Overview'),
+    title: 'Accounting',
+    description: 'Accounting management overview'
+  },
   'sales-dashboard': {
     component: enhancedLazy(() => import('../components/dashboards/SalesDashboardEnhanced'), 'Sales Dashboard'),
     title: 'Sales Dashboard',

@@ -32,7 +32,27 @@ import {
   Clock,
   TrendingDown,
   Car,
-  Calendar
+  Calendar,
+  Wallet,
+  Send,
+  ArrowDownCircle,
+  CreditCard as Card,
+  RefreshCw,
+  Undo2,
+  GitMerge,
+  Globe,
+  FileSpreadsheet,
+  UserCheck,
+  ShoppingCart as Cart,
+  FileInvoice,
+  RotateCcw,
+  Search,
+  BookOpen,
+  PenTool,
+  Book,
+  CheckSquare,
+  FileCheck,
+  Building
 } from 'lucide-react';
 
 const MenuOverviewGrid = ({ 
@@ -285,6 +305,249 @@ const MenuOverviewGrid = ({
           icon: BarChart3,
           color: 'bg-gray-500',
           stats: { label: 'Reports Available', key: 'jobReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    payments: {
+      title: 'Payments Management',
+      description: 'Process payments, manage transactions, and track payment methods',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Overview of payment activity, pending payments, and cash flow',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Pending Payments', key: 'pendingPayments' },
+          value: 'dashboard'
+        },
+        {
+          id: 'receive-payment',
+          title: 'Receive Payment',
+          description: 'Record customer payments and apply to invoices',
+          icon: ArrowDownCircle,
+          color: 'bg-green-500',
+          stats: { label: 'Due Today', key: 'dueToday' },
+          value: 'receive-payment'
+        },
+        {
+          id: 'make-payment',
+          title: 'Make Payment',
+          description: 'Process vendor payments and pay bills',
+          icon: Send,
+          color: 'bg-purple-500',
+          stats: { label: 'Bills Due', key: 'billsDue' },
+          value: 'make-payment'
+        },
+        {
+          id: 'payment-methods',
+          title: 'Payment Methods',
+          description: 'Manage accepted payment methods and settings',
+          icon: Card,
+          color: 'bg-orange-500',
+          stats: { label: 'Active Methods', key: 'activeMethods' },
+          value: 'payment-methods'
+        },
+        {
+          id: 'recurring-payments',
+          title: 'Recurring Payments',
+          description: 'Set up and manage subscription payments',
+          icon: RefreshCw,
+          color: 'bg-pink-500',
+          stats: { label: 'Active Subscriptions', key: 'activeSubscriptions' },
+          value: 'recurring-payments'
+        },
+        {
+          id: 'refunds',
+          title: 'Refunds',
+          description: 'Process refunds and payment reversals',
+          icon: Undo2,
+          color: 'bg-red-500',
+          stats: { label: 'Pending Refunds', key: 'pendingRefunds' },
+          value: 'refunds'
+        },
+        {
+          id: 'reconciliation',
+          title: 'Reconciliation',
+          description: 'Match payments with bank transactions',
+          icon: GitMerge,
+          color: 'bg-indigo-500',
+          stats: { label: 'Unreconciled', key: 'unreconciled' },
+          value: 'reconciliation'
+        },
+        {
+          id: 'payment-gateways',
+          title: 'Payment Gateways',
+          description: 'Configure online payment processors',
+          icon: Globe,
+          color: 'bg-teal-500',
+          stats: { label: 'Active Gateways', key: 'activeGateways' },
+          value: 'payment-gateways'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Payment analytics and transaction reports',
+          icon: BarChart3,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'paymentReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    purchases: {
+      title: 'Purchases Management',
+      description: 'Manage vendors, purchase orders, bills, and expenses',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Overview of purchasing activity and spending',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Total Spending', key: 'totalSpending' },
+          value: 'dashboard'
+        },
+        {
+          id: 'vendors',
+          title: 'Vendors',
+          description: 'Manage vendor information and relationships',
+          icon: UserCheck,
+          color: 'bg-green-500',
+          stats: { label: 'Active Vendors', key: 'activeVendors' },
+          value: 'vendors'
+        },
+        {
+          id: 'purchase-orders',
+          title: 'Purchase Orders',
+          description: 'Create and track purchase orders',
+          icon: Cart,
+          color: 'bg-purple-500',
+          stats: { label: 'Open POs', key: 'openPurchaseOrders' },
+          value: 'purchase-orders'
+        },
+        {
+          id: 'bills',
+          title: 'Bills',
+          description: 'Manage vendor bills and payment schedules',
+          icon: FileInvoice,
+          color: 'bg-orange-500',
+          stats: { label: 'Unpaid Bills', key: 'unpaidBills' },
+          value: 'bills'
+        },
+        {
+          id: 'expenses',
+          title: 'Expenses',
+          description: 'Track and categorize business expenses',
+          icon: Receipt,
+          color: 'bg-pink-500',
+          stats: { label: 'This Month', key: 'monthlyExpenses' },
+          value: 'expenses'
+        },
+        {
+          id: 'purchase-returns',
+          title: 'Purchase Returns',
+          description: 'Process returns and credits from vendors',
+          icon: RotateCcw,
+          color: 'bg-red-500',
+          stats: { label: 'Pending Returns', key: 'pendingReturns' },
+          value: 'purchase-returns'
+        },
+        {
+          id: 'procurement',
+          title: 'Procurement',
+          description: 'Manage procurement processes and approvals',
+          icon: Search,
+          color: 'bg-indigo-500',
+          stats: { label: 'Approval Pending', key: 'approvalPending' },
+          value: 'procurement'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Purchasing analytics and vendor reports',
+          icon: BarChart3,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'purchaseReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    accounting: {
+      title: 'Accounting Management',
+      description: 'Complete accounting system with journals, ledgers, and financial reporting',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Financial overview and key accounting metrics',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Net Income', key: 'netIncome' },
+          value: 'dashboard'
+        },
+        {
+          id: 'chart-of-accounts',
+          title: 'Chart of Accounts',
+          description: 'Manage account structure and categories',
+          icon: BookOpen,
+          color: 'bg-green-500',
+          stats: { label: 'Total Accounts', key: 'totalAccounts' },
+          value: 'chart-of-accounts'
+        },
+        {
+          id: 'journal-entries',
+          title: 'Journal Entries',
+          description: 'Record and manage journal entries',
+          icon: PenTool,
+          color: 'bg-purple-500',
+          stats: { label: 'This Month', key: 'monthlyEntries' },
+          value: 'journal-entries'
+        },
+        {
+          id: 'general-ledger',
+          title: 'General Ledger',
+          description: 'View and analyze general ledger transactions',
+          icon: Book,
+          color: 'bg-orange-500',
+          stats: { label: 'Transactions', key: 'ledgerTransactions' },
+          value: 'general-ledger'
+        },
+        {
+          id: 'reconciliation',
+          title: 'Reconciliation',
+          description: 'Reconcile accounts and bank statements',
+          icon: CheckSquare,
+          color: 'bg-pink-500',
+          stats: { label: 'To Reconcile', key: 'toReconcile' },
+          value: 'reconciliation'
+        },
+        {
+          id: 'financial-statements',
+          title: 'Financial Statements',
+          description: 'Generate income statements, balance sheets, and cash flow',
+          icon: FileCheck,
+          color: 'bg-indigo-500',
+          stats: { label: 'Reports Ready', key: 'reportsReady' },
+          value: 'financial-statements'
+        },
+        {
+          id: 'fixed-assets',
+          title: 'Fixed Assets',
+          description: 'Track depreciation and manage fixed assets',
+          icon: Building,
+          color: 'bg-teal-500',
+          stats: { label: 'Total Assets', key: 'totalAssets' },
+          value: 'fixed-assets'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Comprehensive accounting and financial reports',
+          icon: BarChart3,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'accountingReports' },
           value: 'reports'
         }
       ]

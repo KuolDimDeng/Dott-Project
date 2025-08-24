@@ -609,6 +609,42 @@ const MainListItems = ({
       // Dispatch navigation events
       window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
       window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+    } else if ((item === 'Payments' || item === 'payments')) {
+      // For Payments, dispatch the payments-overview event
+      const navigationKey = `nav-${Date.now()}`;
+      const payload = { 
+        item: 'payments-overview', 
+        navigationKey,
+        originalItem: 'Payments Overview'
+      };
+      
+      // Dispatch navigation events
+      window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+      window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+    } else if ((item === 'Purchases' || item === 'purchases')) {
+      // For Purchases, dispatch the purchases-overview event
+      const navigationKey = `nav-${Date.now()}`;
+      const payload = { 
+        item: 'purchases-overview', 
+        navigationKey,
+        originalItem: 'Purchases Overview'
+      };
+      
+      // Dispatch navigation events
+      window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+      window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+    } else if ((item === 'Accounting' || item === 'accounting')) {
+      // For Accounting, dispatch the accounting-overview event
+      const navigationKey = `nav-${Date.now()}`;
+      const payload = { 
+        item: 'accounting-overview', 
+        navigationKey,
+        originalItem: 'Accounting Overview'
+      };
+      
+      // Dispatch navigation events
+      window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+      window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
     } else if ((item === 'CRM' || item === 'crm') && handleCRMClick) {
       handleCRMClick('dashboard');
     }
@@ -2992,6 +3028,48 @@ const MainListItems = ({
                   item: 'jobs-overview', 
                   navigationKey,
                   originalItem: 'Jobs Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Payments menu, navigate to the overview page
+              if (item.label === t('mainMenu.payments')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'payments-overview', 
+                  navigationKey,
+                  originalItem: 'Payments Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Purchases menu, navigate to the overview page
+              if (item.label === t('mainMenu.purchases')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'purchases-overview', 
+                  navigationKey,
+                  originalItem: 'Purchases Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Accounting menu, navigate to the overview page
+              if (item.label === t('mainMenu.accounting')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'accounting-overview', 
+                  navigationKey,
+                  originalItem: 'Accounting Overview'
                 };
                 
                 // Dispatch navigation events

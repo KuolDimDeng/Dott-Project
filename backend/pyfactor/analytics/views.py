@@ -391,6 +391,8 @@ from inventory.models import Product, Supplier, Warehouse, StockAdjustment
 from crm.models import Customer
 from jobs.models import Job, JobMaterial, Vehicle
 from timesheets.models import TimeEntry
+from payments.models import PaymentMethod, Transaction as PaymentTransaction, InvoicePayment
+from purchases.models import PurchaseOrder, Bill, PurchaseReturn, Procurement
 
 
 @api_view(['GET'])
@@ -612,6 +614,216 @@ def menu_stats(request):
             'activeVehicles': active_vehicles,
             'jobsToday': jobs_today,
             'jobReports': 20  # Static for now
+        }
+    
+    elif section == 'payments':
+        # Today's date
+        today = timezone.now().date()
+        today_start = timezone.make_aware(
+            timezone.datetime.combine(today, timezone.datetime.min.time())
+        )
+        today_end = timezone.make_aware(
+            timezone.datetime.combine(today, timezone.datetime.max.time())
+        )
+        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        week_ago = timezone.now() - timedelta(days=7)
+        
+        # Payments received today
+        payments_today = InvoicePayment.objects.filter(
+            invoice__tenant=tenant,
+            created_at__range=(today_start, today_end),
+            status='paid'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Pending payments (unpaid invoices)
+        pending_payments = Invoice.objects.filter(
+            tenant=tenant,
+            status__in=['sent', 'viewed', 'overdue']
+        ).count()
+        
+        # Overdue invoices
+        overdue_invoices = Invoice.objects.filter(
+            tenant=tenant,
+            due_date__lt=today,
+            status__in=['sent', 'viewed', 'overdue']
+        ).count()
+        
+        # Active payment methods
+        payment_methods = PaymentMethod.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Payment transactions this month
+        transactions_this_month = PaymentTransaction.objects.filter(
+            tenant=tenant,
+            created_at__gte=month_start
+        ).count()
+        
+        # Failed transactions this week
+        failed_payments = PaymentTransaction.objects.filter(
+            tenant=tenant,
+            status='failed',
+            created_at__gte=week_ago
+        ).count()
+        
+        # Total collected this month
+        collected_this_month = InvoicePayment.objects.filter(
+            invoice__tenant=tenant,
+            status='paid',
+            created_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Invoice count this month
+        invoices_this_month = Invoice.objects.filter(
+            tenant=tenant,
+            created_at__gte=month_start
+        ).count()
+        
+        # Recurring invoices (approximation - invoices with similar amounts)
+        recurring_payments = Invoice.objects.filter(
+            tenant=tenant,
+            is_recurring=True
+        ).count() if hasattr(Invoice, 'is_recurring') else 5
+        
+        stats = {
+            'paymentsToday': f"${payments_today:,.2f}",
+            'pendingPayments': pending_payments,
+            'overdueInvoices': overdue_invoices,
+            'paymentMethods': payment_methods,
+            'recurringPayments': recurring_payments,
+            'transactionsThisMonth': transactions_this_month,
+            'invoicesThisMonth': invoices_this_month,
+            'failedPayments': failed_payments,
+            'collectedThisMonth': f"${collected_this_month:,.2f}"
+        }
+    
+    elif section == 'purchases':
+        # Today's date
+        today = timezone.now().date()
+        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        week_ago = timezone.now() - timedelta(days=7)
+        
+        # Active vendors
+        active_vendors = Vendor.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Open purchase orders
+        open_orders = PurchaseOrder.objects.filter(
+            tenant=tenant,
+            status__in=['draft', 'sent', 'partial']
+        ).count()
+        
+        # Unpaid bills
+        unpaid_bills = Bill.objects.filter(
+            tenant=tenant,
+            status__in=['unpaid', 'partial']
+        ).count()
+        
+        # This month's expenses
+        expenses_this_month = Expense.objects.filter(
+            tenant=tenant,
+            created_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Pending returns
+        pending_returns = PurchaseReturn.objects.filter(
+            tenant=tenant,
+            status='pending'
+        ).count()
+        
+        # Active procurements
+        active_procurements = Procurement.objects.filter(
+            tenant=tenant,
+            status__in=['requested', 'approved', 'in_progress']
+        ).count()
+        
+        # Overdue bills
+        overdue_bills = Bill.objects.filter(
+            tenant=tenant,
+            due_date__lt=today,
+            status__in=['unpaid', 'partial']
+        ).count()
+        
+        # Purchase reports
+        purchase_reports = 15  # Static for now
+        
+        stats = {
+            'activeVendors': active_vendors,
+            'openPurchaseOrders': open_orders,
+            'unpaidBills': unpaid_bills,
+            'expensesThisMonth': f"${expenses_this_month:,.2f}",
+            'pendingReturns': pending_returns,
+            'activeProcurements': active_procurements,
+            'overdueBills': overdue_bills,
+            'purchaseReports': purchase_reports
+        }
+    
+    elif section == 'accounting':
+        # Today's date
+        today = timezone.now().date()
+        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        year_start = timezone.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Unreconciled bank transactions
+        unreconciled = BankTransaction.objects.filter(
+            tenant=tenant,
+            is_reconciled=False
+        ).count()
+        
+        # Total invoices this year
+        invoices_year = Invoice.objects.filter(
+            tenant=tenant,
+            created_at__gte=year_start
+        ).count()
+        
+        # Total expenses this year
+        expenses_year = Expense.objects.filter(
+            tenant=tenant,
+            created_at__gte=year_start
+        ).count()
+        
+        # Bank accounts
+        bank_accounts = BankAccount.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).count()
+        
+        # Revenue this month
+        revenue_month = Invoice.objects.filter(
+            tenant=tenant,
+            status='paid',
+            created_at__gte=month_start
+        ).aggregate(total=Sum('total'))['total'] or Decimal('0')
+        
+        # Expenses this month
+        expenses_month = Expense.objects.filter(
+            tenant=tenant,
+            created_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Products/Inventory value
+        inventory_value = Product.objects.filter(
+            tenant=tenant,
+            is_active=True
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'))
+        )['total'] or Decimal('0')
+        
+        # Accounting reports (placeholder)
+        accounting_reports = 25
+        
+        stats = {
+            'bankAccounts': bank_accounts,
+            'invoicesThisYear': invoices_year,
+            'expensesThisYear': expenses_year,
+            'unreconciledTransactions': unreconciled,
+            'revenueThisMonth': f"${revenue_month:,.2f}",
+            'expensesThisMonth': f"${expenses_month:,.2f}",
+            'inventoryValue': f"${inventory_value:,.2f}",
+            'accountingReports': accounting_reports
         }
     
     return Response(stats)
