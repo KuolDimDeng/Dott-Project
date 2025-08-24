@@ -14,7 +14,25 @@ import {
   ShoppingBag,
   FileBarChart,
   Calculator,
-  Truck
+  Truck,
+  Box,
+  Layers,
+  Tags,
+  Archive,
+  Users,
+  ClipboardList,
+  Settings,
+  Warehouse,
+  ArrowRightLeft,
+  Briefcase,
+  List,
+  PlusCircle,
+  DollarSign as Dollar,
+  PackageSearch,
+  Clock,
+  TrendingDown,
+  Car,
+  Calendar
 } from 'lucide-react';
 
 const MenuOverviewGrid = ({ 
@@ -113,6 +131,198 @@ const MenuOverviewGrid = ({
           value: 'reports'
         }
       ]
+    },
+    inventory: {
+      title: 'Inventory Management',
+      description: 'Track and manage your products, stock levels, and supply chain',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'View inventory metrics, stock levels, and reorder alerts',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Total Items', key: 'totalItems' },
+          value: 'dashboard'
+        },
+        {
+          id: 'products',
+          title: 'Products',
+          description: 'Manage product catalog, SKUs, and specifications',
+          icon: Package,
+          color: 'bg-green-500',
+          stats: { label: 'Active Products', key: 'activeProducts' },
+          value: 'products'
+        },
+        {
+          id: 'categories',
+          title: 'Categories',
+          description: 'Organize products into categories and subcategories',
+          icon: Layers,
+          color: 'bg-purple-500',
+          stats: { label: 'Categories', key: 'categoriesCount' },
+          value: 'categories'
+        },
+        {
+          id: 'stock-management',
+          title: 'Stock Levels',
+          description: 'Monitor current stock, set reorder points, and track movements',
+          icon: Archive,
+          color: 'bg-orange-500',
+          stats: { label: 'Low Stock Items', key: 'lowStockItems' },
+          value: 'stock-management'
+        },
+        {
+          id: 'suppliers',
+          title: 'Suppliers',
+          description: 'Manage supplier information, contacts, and lead times',
+          icon: Users,
+          color: 'bg-pink-500',
+          stats: { label: 'Active Suppliers', key: 'activeSuppliers' },
+          value: 'suppliers'
+        },
+        {
+          id: 'purchase-orders',
+          title: 'Purchase Orders',
+          description: 'Create and track purchase orders from suppliers',
+          icon: ClipboardList,
+          color: 'bg-indigo-500',
+          stats: { label: 'Pending Orders', key: 'pendingPurchaseOrders' },
+          value: 'purchase-orders'
+        },
+        {
+          id: 'stock-adjustments',
+          title: 'Adjustments',
+          description: 'Record stock adjustments, write-offs, and corrections',
+          icon: Settings,
+          color: 'bg-teal-500',
+          stats: { label: 'Recent Adjustments', key: 'recentAdjustments' },
+          value: 'stock-adjustments'
+        },
+        {
+          id: 'warehouses',
+          title: 'Warehouses',
+          description: 'Manage multiple warehouse locations and stock distribution',
+          icon: Warehouse,
+          color: 'bg-yellow-500',
+          stats: { label: 'Locations', key: 'warehouseCount' },
+          value: 'warehouses'
+        },
+        {
+          id: 'transfers',
+          title: 'Stock Transfers',
+          description: 'Transfer inventory between warehouse locations',
+          icon: ArrowRightLeft,
+          color: 'bg-red-500',
+          stats: { label: 'Pending Transfers', key: 'pendingTransfers' },
+          value: 'transfers'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Inventory valuation, movement reports, and analytics',
+          icon: BarChart3,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'inventoryReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    jobs: {
+      title: 'Jobs & Projects',
+      description: 'Manage projects, track costs, schedule resources, and monitor profitability',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Overview of active jobs, timelines, and performance metrics',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Active Jobs', key: 'activeJobs' },
+          value: 'dashboard'
+        },
+        {
+          id: 'jobs-list',
+          title: 'All Jobs',
+          description: 'View and manage all jobs, projects, and work orders',
+          icon: Briefcase,
+          color: 'bg-green-500',
+          stats: { label: 'Total Jobs', key: 'totalJobs' },
+          value: 'jobs-list'
+        },
+        {
+          id: 'create-job',
+          title: 'New Job',
+          description: 'Create new jobs, set milestones, and assign resources',
+          icon: PlusCircle,
+          color: 'bg-purple-500',
+          stats: { label: 'This Month', key: 'jobsThisMonth' },
+          value: 'create-job'
+        },
+        {
+          id: 'job-costing',
+          title: 'Job Costing',
+          description: 'Track costs, budgets, and expenses for each job',
+          icon: Dollar,
+          color: 'bg-orange-500',
+          stats: { label: 'Over Budget', key: 'overBudgetJobs' },
+          value: 'job-costing'
+        },
+        {
+          id: 'job-materials',
+          title: 'Materials',
+          description: 'Manage materials, supplies, and inventory usage per job',
+          icon: PackageSearch,
+          color: 'bg-pink-500',
+          stats: { label: 'Material Requests', key: 'materialRequests' },
+          value: 'job-materials'
+        },
+        {
+          id: 'job-labor',
+          title: 'Labor Tracking',
+          description: 'Track employee time, labor costs, and productivity',
+          icon: Clock,
+          color: 'bg-indigo-500',
+          stats: { label: 'Hours Today', key: 'hoursToday' },
+          value: 'job-labor'
+        },
+        {
+          id: 'job-profitability',
+          title: 'Profitability',
+          description: 'Analyze job margins, profitability, and performance',
+          icon: TrendingDown,
+          color: 'bg-teal-500',
+          stats: { label: 'Avg Margin', key: 'avgMargin' },
+          value: 'job-profitability'
+        },
+        {
+          id: 'vehicles',
+          title: 'Vehicles',
+          description: 'Manage fleet vehicles, maintenance, and assignments',
+          icon: Car,
+          color: 'bg-yellow-500',
+          stats: { label: 'Active Vehicles', key: 'activeVehicles' },
+          value: 'vehicles'
+        },
+        {
+          id: 'scheduling',
+          title: 'Scheduling',
+          description: 'Schedule jobs, resources, and track timelines',
+          icon: Calendar,
+          color: 'bg-red-500',
+          stats: { label: 'Today\'s Jobs', key: 'jobsToday' },
+          value: 'scheduling'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Job reports, profitability analysis, and insights',
+          icon: BarChart3,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'jobReports' },
+          value: 'reports'
+        }
+      ]
     }
   };
 
@@ -130,6 +340,7 @@ const MenuOverviewGrid = ({
       } else {
         // Fallback to mock data if API fails
         const mockStats = {
+          // Sales stats
           todaySales: '$2,450',
           openOrders: 5,
           pendingTransactions: 12,
@@ -138,7 +349,28 @@ const MenuOverviewGrid = ({
           draftEstimates: 3,
           pendingOrders: 8,
           unpaidInvoices: 15,
-          reportsAvailable: 25
+          reportsAvailable: 25,
+          // Inventory stats
+          totalItems: 1234,
+          categoriesCount: 45,
+          lowStockItems: 12,
+          activeSuppliers: 28,
+          pendingPurchaseOrders: 7,
+          recentAdjustments: 3,
+          warehouseCount: 2,
+          pendingTransfers: 4,
+          inventoryReports: 15,
+          // Jobs stats
+          activeJobs: 18,
+          totalJobs: 145,
+          jobsThisMonth: 22,
+          overBudgetJobs: 3,
+          materialRequests: 9,
+          hoursToday: 42,
+          avgMargin: '28%',
+          activeVehicles: 8,
+          jobsToday: 5,
+          jobReports: 20
         };
         setItemStats(mockStats);
       }
@@ -146,6 +378,7 @@ const MenuOverviewGrid = ({
       console.error('Error fetching menu item stats:', error);
       // Fallback to mock data
       const mockStats = {
+        // Sales stats
         todaySales: '$2,450',
         openOrders: 5,
         pendingTransactions: 12,
@@ -154,7 +387,28 @@ const MenuOverviewGrid = ({
         draftEstimates: 3,
         pendingOrders: 8,
         unpaidInvoices: 15,
-        reportsAvailable: 25
+        reportsAvailable: 25,
+        // Inventory stats
+        totalItems: 1234,
+        categoriesCount: 45,
+        lowStockItems: 12,
+        activeSuppliers: 28,
+        pendingPurchaseOrders: 7,
+        recentAdjustments: 3,
+        warehouseCount: 2,
+        pendingTransfers: 4,
+        inventoryReports: 15,
+        // Jobs stats
+        activeJobs: 18,
+        totalJobs: 145,
+        jobsThisMonth: 22,
+        overBudgetJobs: 3,
+        materialRequests: 9,
+        hoursToday: 42,
+        avgMargin: '28%',
+        activeVehicles: 8,
+        jobsToday: 5,
+        jobReports: 20
       };
       setItemStats(mockStats);
     }

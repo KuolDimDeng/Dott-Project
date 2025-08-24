@@ -2970,6 +2970,34 @@ const MainListItems = ({
                 
                 // Don't call handleSalesClick as it might override the event
               }
+              
+              // For Inventory menu, navigate to the overview page
+              if (item.label === t('mainMenu.inventory')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'inventory-overview', 
+                  navigationKey,
+                  originalItem: 'Inventory Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
+              
+              // For Jobs menu, navigate to the overview page  
+              if (item.label === t('mainMenu.jobs')) {
+                const navigationKey = `nav-${Date.now()}`;
+                const payload = { 
+                  item: 'jobs-overview', 
+                  navigationKey,
+                  originalItem: 'Jobs Overview'
+                };
+                
+                // Dispatch navigation events
+                window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+              }
             } else if (item.onClick) {
               item.onClick(e);
             }
