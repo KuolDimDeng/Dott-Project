@@ -94,8 +94,13 @@ def check_onboarding_on_tenant_creation(sender, instance, created, **kwargs):
     When a tenant is created, check if user should be marked as onboarded
     """
     
-    if created and instance.owner:
-        user = instance.owner
+    if created and instance.owner_id:
+        # Get the user by owner_id
+        user = User.objects.filter(id=instance.owner_id).first()
+        if not user:
+            logger.warning(f"Tenant {instance.id} has owner_id {instance.owner_id} but user not found")
+            return
+            
         profile = UserProfile.objects.filter(user=user).first()
         
         if profile:

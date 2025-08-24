@@ -69,16 +69,22 @@ def ensure_owner_has_tenant_in_profile(sender, instance, created, **kwargs):
     """
     When a tenant is created, ensure owner's UserProfile has the tenant_id
     """
-    if created and instance.owner:
+    if created and instance.owner_id:
         try:
-            profile, _ = UserProfile.objects.get_or_create(user=instance.owner)
+            # Get the user by owner_id
+            user = User.objects.filter(id=instance.owner_id).first()
+            if not user:
+                logger.warning(f"[EdgeCasePrevention] Tenant {instance.id} has owner_id {instance.owner_id} but user not found")
+                return
+                
+            profile, _ = UserProfile.objects.get_or_create(user=user)
             
             if not profile.tenant_id:
                 profile.tenant_id = instance.id
                 profile.save()
-                logger.info(f"[EdgeCasePrevention] Set tenant {instance.id} in UserProfile for owner {instance.owner.email}")
+                logger.info(f"[EdgeCasePrevention] Set tenant {instance.id} in UserProfile for owner {user.email}")
             elif profile.tenant_id != instance.id:
-                logger.warning(f"[EdgeCasePrevention] User {instance.owner.email} owns multiple tenants: {profile.tenant_id} and {instance.id}")
+                logger.warning(f"[EdgeCasePrevention] User {user.email} owns multiple tenants: {profile.tenant_id} and {instance.id}")
         except Exception as e:
             logger.error(f"[EdgeCasePrevention] Error ensuring owner has tenant in profile: {e}")
 

@@ -43,12 +43,13 @@ class Command(BaseCommand):
             user_tenant_counts = defaultdict(int)
             
             # Check users who own tenants
-            owners = User.objects.filter(owned_tenants__isnull=False).annotate(
-                owned_count=Count('owned_tenants')
-            ).filter(owned_count__gt=0)
+            # Note: Tenant model uses owner_id field, not a foreign key relation
+            tenant_owner_ids = Tenant.objects.values_list('owner_id', flat=True).distinct()
+            owners = User.objects.filter(id__in=tenant_owner_ids)
             
             for user in owners:
-                user_tenant_counts[user.id] += user.owned_count
+                owned_count = Tenant.objects.filter(owner_id=str(user.id)).count()
+                user_tenant_counts[user.id] += owned_count
             
             # Check users linked to tenants
             linked_users = User.objects.filter(tenant__isnull=False)
@@ -73,7 +74,7 @@ class Command(BaseCommand):
         consolidated_count = 0
         for user in users:
             # Count owned tenants
-            owned_tenants = Tenant.objects.filter(owner=user)
+            owned_tenants = Tenant.objects.filter(owner_id=str(user.id))
             # Count linked tenants
             linked_tenants = Tenant.objects.filter(users=user)
             

@@ -15,7 +15,7 @@ class Command(BaseCommand):
         try:
             # Get user and tenant
             user = User.objects.get(email=email)
-            tenant = Tenant.objects.filter(owner=user).first()
+            tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
             
             if not tenant:
                 self.stdout.write(self.style.WARNING(f'No tenant found for user {email}'))
