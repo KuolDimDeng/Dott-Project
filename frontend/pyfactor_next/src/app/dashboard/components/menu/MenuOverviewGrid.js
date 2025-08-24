@@ -551,6 +551,197 @@ const MenuOverviewGrid = ({
           value: 'reports'
         }
       ]
+    },
+    banking: {
+      title: 'Banking',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Banking overview, account balances, and cash flow',
+          icon: BarChart3,
+          color: 'bg-blue-500',
+          stats: { label: 'Active Accounts', key: 'activeAccounts' },
+          value: 'dashboard'
+        },
+        {
+          id: 'transactions',
+          title: 'Transactions',
+          description: 'View and manage bank transactions',
+          icon: ArrowUpDown,
+          color: 'bg-green-500',
+          stats: { label: 'Recent Transactions', key: 'recentTransactions' },
+          value: 'transactions'
+        },
+        {
+          id: 'reconciliation',
+          title: 'Reconciliation',
+          description: 'Reconcile bank statements with your records',
+          icon: CheckCircle,
+          color: 'bg-purple-500',
+          stats: { label: 'Unreconciled', key: 'unreconciledItems' },
+          value: 'reconciliation'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Banking reports and cash flow analysis',
+          icon: FileText,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'bankingReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    hr: {
+      title: 'Human Resources',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'HR overview, team metrics, and insights',
+          icon: BarChart3,
+          color: 'bg-blue-500',
+          stats: { label: 'Active Employees', key: 'activeEmployees' },
+          value: 'dashboard'
+        },
+        {
+          id: 'teams',
+          title: 'Teams',
+          description: 'Manage employees and team structure',
+          icon: Users,
+          color: 'bg-green-500',
+          stats: { label: 'Total Employees', key: 'totalEmployees' },
+          value: 'teams'
+        },
+        {
+          id: 'timesheets',
+          title: 'Timesheets',
+          description: 'Track and approve employee work hours',
+          icon: Clock,
+          color: 'bg-orange-500',
+          stats: { label: 'Pending Approval', key: 'pendingTimesheets' },
+          value: 'timesheets'
+        },
+        {
+          id: 'manage-pay',
+          title: 'Manage Pay',
+          description: 'Set up pay rates, deductions, and benefits',
+          icon: DollarSign,
+          color: 'bg-purple-500',
+          stats: { label: 'Pay Schedules', key: 'paySchedules' },
+          value: 'manage-pay'
+        },
+        {
+          id: 'benefits',
+          title: 'Benefits',
+          description: 'Manage employee benefits and enrollments',
+          icon: Heart,
+          color: 'bg-pink-500',
+          stats: { label: 'Active Benefits', key: 'activeBenefits' },
+          value: 'benefits'
+        },
+        {
+          id: 'performance',
+          title: 'Performance',
+          description: 'Track employee performance and reviews',
+          icon: TrendingUp,
+          color: 'bg-indigo-500',
+          stats: { label: 'Reviews Due', key: 'reviewsDue' },
+          value: 'performance'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'HR analytics and compliance reports',
+          icon: FileText,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'hrReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    payroll: {
+      title: 'Payroll',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Payroll overview and upcoming runs',
+          icon: BarChart3,
+          color: 'bg-blue-500',
+          stats: { label: 'Next Payroll', key: 'nextPayrollDate' },
+          value: 'dashboard'
+        },
+        {
+          id: 'process-payroll',
+          title: 'Process Payroll',
+          description: 'Run payroll wizard and process payments',
+          icon: Play,
+          color: 'bg-green-500',
+          stats: { label: 'Employees to Pay', key: 'employeesToPay' },
+          value: 'process-payroll'
+        },
+        {
+          id: 'transactions',
+          title: 'Transactions',
+          description: 'View payroll history and transactions',
+          icon: List,
+          color: 'bg-purple-500',
+          stats: { label: 'Last Payroll', key: 'lastPayrollAmount' },
+          value: 'transactions'
+        },
+        {
+          id: 'reports',
+          title: 'Reports',
+          description: 'Payroll reports, tax forms, and analytics',
+          icon: FileText,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'payrollReports' },
+          value: 'reports'
+        }
+      ]
+    },
+    taxes: {
+      title: 'Taxes',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Tax overview and compliance status',
+          icon: BarChart3,
+          color: 'bg-blue-500',
+          stats: { label: 'Tax Liabilities', key: 'taxLiabilities' },
+          value: 'dashboard'
+        },
+        {
+          id: 'sales-tax',
+          title: 'Sales Tax Filing',
+          description: 'Manage and file sales tax returns',
+          icon: Receipt,
+          color: 'bg-green-500',
+          stats: { label: 'Returns Due', key: 'returnsDue' },
+          value: 'sales-tax'
+        },
+        {
+          id: 'file-return',
+          title: 'File Tax Return',
+          description: 'Prepare and submit tax returns',
+          icon: Send,
+          color: 'bg-purple-500',
+          stats: { label: 'Pending Filings', key: 'pendingFilings' },
+          value: 'file-return'
+        },
+        {
+          id: 'filing-history',
+          title: 'Filing History',
+          description: 'View past tax filings and documents',
+          icon: History,
+          color: 'bg-orange-500',
+          stats: { label: 'Filed This Year', key: 'filedThisYear' },
+          value: 'filing-history'
+        }
+      ]
     }
   };
 
