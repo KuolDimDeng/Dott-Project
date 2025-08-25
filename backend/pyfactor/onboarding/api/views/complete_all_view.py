@@ -191,7 +191,10 @@ def complete_all_onboarding(request):
             # Extract billing cycle from request data
             billing_cycle = request.data.get('billingCycle') or request.data.get('billing_cycle') or 'monthly'
             
-            logger.info(f"[Complete-All] Extracted subscription plan: {subscription_plan}, billing cycle: {billing_cycle}")
+            # Extract currency from request data
+            currency = request.data.get('currency') or request.data.get('preferredCurrency') or 'USD'
+            
+            logger.info(f"[Complete-All] Extracted subscription plan: {subscription_plan}, billing cycle: {billing_cycle}, currency: {currency}")
             
             # Update subscription plan on User model
             if subscription_plan in ['free', 'professional', 'enterprise']:
@@ -273,7 +276,44 @@ def complete_all_onboarding(request):
             # Log user data after save
             logger.info(f"[Complete-All] After save - subscription_plan: {user.subscription_plan}, first_name: '{user.first_name}', last_name: '{user.last_name}'")
             
-            # 3.5. Create or update Subscription record for the business
+            # 3.5. Save currency preference to BusinessSettings and BusinessDetails
+            try:
+                from users.models import BusinessSettings, BusinessDetails
+                
+                # Save to BusinessSettings for the tenant
+                if tenant_id:
+                    business_settings, created = BusinessSettings.objects.get_or_create(
+                        tenant_id=tenant_id,
+                        defaults={
+                            'preferred_currency_code': currency,
+                            'business': profile.business if 'profile' in locals() and profile.business else None
+                        }
+                    )
+                    if not created and business_settings.preferred_currency_code != currency:
+                        business_settings.preferred_currency_code = currency
+                        business_settings.save()
+                        logger.info(f"[Complete-All] Updated currency preference to {currency} for tenant {tenant_id}")
+                    else:
+                        logger.info(f"[Complete-All] {'Created' if created else 'Kept'} currency preference as {currency} for tenant {tenant_id}")
+                
+                # Also save to BusinessDetails if business exists
+                if 'profile' in locals() and profile and profile.business:
+                    business_details, created = BusinessDetails.objects.get_or_create(
+                        business=profile.business,
+                        defaults={
+                            'preferred_currency_code': currency,
+                            'country': profile.business.country if hasattr(profile.business, 'country') else 'US'
+                        }
+                    )
+                    if not created and business_details.preferred_currency_code != currency:
+                        business_details.preferred_currency_code = currency
+                        business_details.save()
+                        logger.info(f"[Complete-All] Updated BusinessDetails currency to {currency}")
+            except Exception as e:
+                logger.error(f"[Complete-All] Error saving currency preference: {str(e)}")
+                # Don't fail the whole operation if currency save fails
+            
+            # 3.6. Create or update Subscription record for the business
             try:
                 from users.models import UserProfile, Subscription
                 profile = UserProfile.objects.select_related('business').get(user=user)

@@ -3414,7 +3414,7 @@ class TokenVerifyView(APIView):
 
 class GetBusinessInfoView(APIView):
     """
-    View to retrieve business information for the authenticated user.
+    View to retrieve and save business information for the authenticated user.
     """
     permission_classes = [IsAuthenticated]
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
@@ -3434,6 +3434,113 @@ class GetBusinessInfoView(APIView):
             logger.error(f"Error getting business info: {str(e)}")
             return Response({
                 'error': 'Failed to retrieve business information',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Save business information including currency preference
+        """
+        try:
+            logger.info(f"[GetBusinessInfoView] Saving business info for user {request.user.id}")
+            logger.info(f"[GetBusinessInfoView] Request data: {request.data}")
+            
+            # Get or create OnboardingProgress
+            progress, created = OnboardingProgress.objects.get_or_create(
+                user=request.user,
+                defaults={'current_step': 'business_info'}
+            )
+            
+            # Update business information
+            from users.models import Business, BusinessDetails, BusinessSettings
+            
+            # Create or get Business
+            business_name = request.data.get('business_name', '')
+            business_type = request.data.get('business_type', '')
+            country = request.data.get('country', 'US')
+            currency = request.data.get('currency', 'USD')
+            legal_structure = request.data.get('legal_structure', '')
+            date_founded = request.data.get('date_founded')
+            
+            # Create business if it doesn't exist
+            if not progress.business:
+                business = Business.objects.create(
+                    name=business_name,
+                    business_type=business_type,
+                    country=country,
+                    owner=request.user,
+                    is_active=True
+                )
+                progress.business = business
+                progress.business_id = business.id
+            else:
+                # Update existing business
+                business = progress.business
+                business.name = business_name
+                business.business_type = business_type
+                business.country = country
+                business.save()
+            
+            # Update progress fields
+            progress.business_name = business_name
+            progress.business_type = business_type
+            progress.country = country
+            progress.legal_structure = legal_structure
+            if date_founded:
+                progress.date_founded = date_founded
+            
+            # Mark business info as completed
+            if 'business_info' not in progress.completed_steps:
+                progress.completed_steps.append('business_info')
+            progress.current_step = 'subscription'
+            progress.save()
+            
+            # Save currency preference to BusinessSettings
+            tenant_id = request.user.tenant.id if hasattr(request.user, 'tenant') and request.user.tenant else None
+            if tenant_id:
+                business_settings, created = BusinessSettings.objects.get_or_create(
+                    tenant_id=tenant_id,
+                    defaults={
+                        'preferred_currency_code': currency,
+                        'business': business
+                    }
+                )
+                if not created and business_settings.preferred_currency_code != currency:
+                    business_settings.preferred_currency_code = currency
+                    business_settings.save()
+                    logger.info(f"[GetBusinessInfoView] Updated currency preference to {currency} for tenant {tenant_id}")
+            
+            # Also save to BusinessDetails if it exists
+            try:
+                business_details, created = BusinessDetails.objects.get_or_create(
+                    business=business,
+                    defaults={
+                        'preferred_currency_code': currency,
+                        'country': country
+                    }
+                )
+                if not created:
+                    business_details.preferred_currency_code = currency
+                    business_details.country = country
+                    business_details.save()
+                logger.info(f"[GetBusinessInfoView] Saved currency {currency} to BusinessDetails")
+            except Exception as e:
+                logger.warning(f"[GetBusinessInfoView] Could not save to BusinessDetails: {e}")
+            
+            logger.info(f"[GetBusinessInfoView] Business info saved successfully with currency: {currency}")
+            
+            return Response({
+                'success': True,
+                'message': 'Business information saved successfully',
+                'next_step': 'subscription',
+                'currency': currency
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"[GetBusinessInfoView] Error saving business info: {str(e)}")
+            return Response({
+                'success': False,
+                'error': 'Failed to save business information',
                 'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
