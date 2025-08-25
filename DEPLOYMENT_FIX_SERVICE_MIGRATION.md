@@ -1,7 +1,7 @@
 # URGENT: Fix Service Management Database Issue
 
 ## Problem
-Service Management is failing with 503 errors because the database is missing the `customer_id` column in the `inventory_service` table. The migration file exists but hasn't been applied to production.
+Service Management is failing with 503 errors because the database is missing the `customer_id` column in the `inventory_service` table. The migration file exists but hasn't been applied to staging/production.
 
 ## Error Details
 ```
@@ -12,7 +12,31 @@ LINE 1: ...ventory_service"."is_active", "inventory_service"."customer...
 ## Solution
 Apply migration `0016_add_customer_to_service` to add the missing database columns.
 
-## Deployment Steps
+## Quick Fix for Staging
+
+### Option 1: Use the Quick Fix Script (Recommended)
+```bash
+# SSH into staging server
+# Navigate to backend directory
+cd /app
+
+# Run the quick fix
+python scripts/quick_migration_fix.py
+```
+
+### Option 2: Manual Commands
+```bash
+# Check current status
+python manage.py showmigrations inventory | grep 0016
+
+# Apply the migration
+python manage.py migrate inventory 0016
+
+# Verify it worked
+python manage.py shell -c "from django.db import connection; cursor = connection.cursor(); cursor.execute('SELECT column_name FROM information_schema.columns WHERE table_name=\\'inventory_service\\' AND column_name=\\'customer_id\\';'); print('Column exists:', bool(cursor.fetchone()))"
+```
+
+## Deployment Steps (Detailed)
 
 ### 1. Check Current Status (Production Server)
 ```bash
