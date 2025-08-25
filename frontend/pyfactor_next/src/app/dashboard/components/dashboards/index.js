@@ -12,4 +12,3 @@ export { default as CRMDashboard } from './CRMDashboard';
 export { default as JobsDashboard } from './JobsDashboard';
 export { default as AnalyticsDashboard } from './AnalyticsDashboard';
 export { default as POSDashboard } from './POSDashboard';
-export { default as ReportsDashboard } from './ReportsDashboard';

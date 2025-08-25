@@ -150,12 +150,6 @@ export const POSDashboard = dynamic(
   { loading: () => <DashboardSkeleton />, ssr: false }
 );
 
-// Reports Components
-export const ReportsDashboard = dynamic(
-  () => import('./dashboards/ReportsDashboard'),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-
 // Main Business Overview Dashboard
 export const BusinessOverviewDashboard = dynamic(
   () => {

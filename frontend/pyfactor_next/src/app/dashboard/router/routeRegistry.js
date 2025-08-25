@@ -143,11 +143,6 @@ export const routeRegistry = {
     title: 'Taxes',
     description: 'Tax management overview'
   },
-  'reports-dashboard': {
-    component: enhancedLazy(() => import('../components/dashboards/ReportsDashboard'), 'Reports Dashboard'),
-    title: 'Reports Dashboard',
-    description: 'All reports overview'
-  },
   
   // Analytics & Insights
   'analytics': {
