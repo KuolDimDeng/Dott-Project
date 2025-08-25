@@ -48,6 +48,7 @@ class UnifiedTenantMiddleware(MiddlewareMixin):
         # Onboarding paths
         '/api/onboarding/pricing/',
         '/api/onboarding/complete/',
+        '/api/onboarding/ensure-complete/',
     ]
     
     # Paths that require auth but not tenant (during onboarding)

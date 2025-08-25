@@ -331,3 +331,16 @@ def complete_all_onboarding(request):
             'error': 'Failed to complete onboarding',
             'details': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ensure_complete_onboarding(request):
+    """
+    Ensure onboarding is complete - wrapper around complete_all_onboarding
+    This endpoint is called by the frontend as a backup to make sure onboarding is saved
+    """
+    logger.info(f"[Ensure-Complete] Called by user {request.user.email}")
+    
+    # Simply forward to complete_all_onboarding with the same request
+    return complete_all_onboarding(request)

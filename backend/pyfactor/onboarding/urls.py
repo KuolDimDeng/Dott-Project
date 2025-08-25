@@ -38,7 +38,7 @@ from .api.data_views import OnboardingDataView
 from rest_framework.routers import DefaultRouter
 # Import the new complete-all view if it exists
 try:
-    from .api.views.complete_all_view import complete_all_onboarding
+    from .api.views.complete_all_view import complete_all_onboarding, ensure_complete_onboarding
 except ImportError:
     complete_all_onboarding = None
 
@@ -132,6 +132,9 @@ urlpatterns = [
 if complete_all_onboarding:
     urlpatterns.append(
         path('api/onboarding/complete-all/', complete_all_onboarding, name='complete-all-onboarding')
+    )
+    urlpatterns.append(
+        path('api/onboarding/ensure-complete/', ensure_complete_onboarding, name='ensure-complete-onboarding')
     )
 
 # Add discount URLs

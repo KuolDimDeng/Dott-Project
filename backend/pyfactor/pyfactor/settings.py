@@ -916,6 +916,7 @@ TENANT_AUTH_ONLY_PATHS = [
     '/api/onboarding/payment/',  # Payment setup
     '/api/onboarding/complete/',  # Complete onboarding
     '/api/onboarding/complete-all/',  # Complete all onboarding (OAuth flow)
+    '/api/onboarding/ensure-complete/',  # Ensure complete onboarding (frontend fallback)
     '/api/onboarding/force-complete/',  # Force complete onboarding
     '/api/currency/preferences/',  # Currency preferences (needed during onboarding)
 ]
