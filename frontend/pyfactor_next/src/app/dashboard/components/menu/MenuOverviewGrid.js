@@ -612,7 +612,7 @@ const MenuOverviewGrid = ({
         },
         {
           id: 'teams',
-          title: 'Teams',
+          title: 'Employees',
           description: 'Manage employees and team structure',
           icon: Users,
           color: 'bg-green-500',

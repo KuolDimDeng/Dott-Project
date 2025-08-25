@@ -1,7 +1,8 @@
 # Staging Migration Fix Instructions
 
-## Current Issue
-Service Management is not working on staging due to missing database column `customer_id` in the `inventory_service` table.
+## Current Issues
+1. Service Management is not working due to missing database column `customer_id` in the `inventory_service` table.
+2. Employee Management is not working due to missing banking columns (`bank_account_name`, etc.) in the `hr_employee` table.
 
 ## How to Fix on Staging Server
 
@@ -19,11 +20,15 @@ cd /app
 
 ### Step 3: Run the Migration Fix
 ```bash
-# Option A: Use the quick fix script (RECOMMENDED)
+# Option A: Use the updated quick fix script (RECOMMENDED - fixes both issues)
 python scripts/quick_migration_fix.py
 
-# Option B: Apply migration directly
+# Option B: Fix individually
+# For Service Management:
 python manage.py migrate inventory 0016
+
+# For Employee Management:
+python manage.py migrate hr
 
 # Option C: Apply all pending migrations
 python manage.py migrate
