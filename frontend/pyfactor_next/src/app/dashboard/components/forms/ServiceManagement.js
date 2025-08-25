@@ -112,12 +112,25 @@ const ServiceManagement = () => {
         return;
       }
       
+      let response;
       try {
-        const response = await fetch('/api/inventory/services', {
+        response = await fetch('/api/inventory/services', {
           credentials: 'include'
         });
         
         if (!response.ok) {
+          // Check for 503 error before throwing
+          if (response.status === 503) {
+            if (isMounted.current) {
+              setServices([]);
+              setServiceError({
+                title: 'Service Temporarily Unavailable',
+                message: 'The service management feature is currently being upgraded. Please try again later.',
+                type: 'maintenance'
+              });
+            }
+            return;
+          }
           throw new Error(`Failed to fetch services: ${response.status}`);
         }
         
@@ -155,6 +168,7 @@ const ServiceManagement = () => {
         console.error('[ServiceManagement] API error:', apiError);
         if (isMounted.current) {
           setServices([]);
+          // Check if we have response and it's a 503 error
           if (response && response.status === 503) {
             setServiceError({
               title: 'Service Temporarily Unavailable',
