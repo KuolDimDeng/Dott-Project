@@ -5,9 +5,9 @@ import toast from 'react-hot-toast';
 import { ButtonSpinner } from '@/components/ui/StandardSpinner';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
-// Comprehensive country code to name mapping
+// Comprehensive country code to name mapping - ALL countries
 const COUNTRY_NAMES = {
-  // Africa
+  // Africa (54 countries)
   'DZ': 'Algeria',
   'AO': 'Angola',
   'BJ': 'Benin',
@@ -42,12 +42,15 @@ const COUNTRY_NAMES = {
   'ML': 'Mali',
   'MR': 'Mauritania',
   'MU': 'Mauritius',
+  'YT': 'Mayotte',
   'MA': 'Morocco',
   'MZ': 'Mozambique',
   'NA': 'Namibia',
   'NE': 'Niger',
   'NG': 'Nigeria',
+  'RE': 'Réunion',
   'RW': 'Rwanda',
+  'SH': 'Saint Helena',
   'ST': 'São Tomé and Príncipe',
   'SN': 'Senegal',
   'SC': 'Seychelles',
@@ -60,10 +63,11 @@ const COUNTRY_NAMES = {
   'TG': 'Togo',
   'TN': 'Tunisia',
   'UG': 'Uganda',
+  'EH': 'Western Sahara',
   'ZM': 'Zambia',
   'ZW': 'Zimbabwe',
   
-  // Asia
+  // Asia (49 countries)
   'AF': 'Afghanistan',
   'AM': 'Armenia',
   'AZ': 'Azerbaijan',
@@ -73,8 +77,11 @@ const COUNTRY_NAMES = {
   'BN': 'Brunei',
   'KH': 'Cambodia',
   'CN': 'China',
+  'CX': 'Christmas Island',
+  'CC': 'Cocos Islands',
   'CY': 'Cyprus',
   'GE': 'Georgia',
+  'HK': 'Hong Kong',
   'IN': 'India',
   'ID': 'Indonesia',
   'IR': 'Iran',
@@ -87,6 +94,7 @@ const COUNTRY_NAMES = {
   'KG': 'Kyrgyzstan',
   'LA': 'Laos',
   'LB': 'Lebanon',
+  'MO': 'Macau',
   'MY': 'Malaysia',
   'MV': 'Maldives',
   'MN': 'Mongolia',
@@ -114,7 +122,8 @@ const COUNTRY_NAMES = {
   'VN': 'Vietnam',
   'YE': 'Yemen',
   
-  // Europe
+  // Europe (50 countries)
+  'AX': 'Åland Islands',
   'AL': 'Albania',
   'AD': 'Andorra',
   'AT': 'Austria',
@@ -126,14 +135,20 @@ const COUNTRY_NAMES = {
   'CZ': 'Czech Republic',
   'DK': 'Denmark',
   'EE': 'Estonia',
+  'FO': 'Faroe Islands',
   'FI': 'Finland',
   'FR': 'France',
   'DE': 'Germany',
+  'GI': 'Gibraltar',
   'GR': 'Greece',
+  'GL': 'Greenland',
+  'GG': 'Guernsey',
   'HU': 'Hungary',
   'IS': 'Iceland',
   'IE': 'Ireland',
+  'IM': 'Isle of Man',
   'IT': 'Italy',
+  'JE': 'Jersey',
   'XK': 'Kosovo',
   'LV': 'Latvia',
   'LI': 'Liechtenstein',
@@ -155,44 +170,64 @@ const COUNTRY_NAMES = {
   'SK': 'Slovakia',
   'SI': 'Slovenia',
   'ES': 'Spain',
+  'SJ': 'Svalbard and Jan Mayen',
   'SE': 'Sweden',
   'CH': 'Switzerland',
   'UA': 'Ukraine',
   'GB': 'United Kingdom',
   'VA': 'Vatican City',
   
-  // North America
+  // North America (41 countries/territories)
+  'AI': 'Anguilla',
   'AG': 'Antigua and Barbuda',
+  'AW': 'Aruba',
   'BS': 'Bahamas',
   'BB': 'Barbados',
   'BZ': 'Belize',
+  'BM': 'Bermuda',
+  'BQ': 'Bonaire',
+  'VG': 'British Virgin Islands',
   'CA': 'Canada',
+  'KY': 'Cayman Islands',
   'CR': 'Costa Rica',
   'CU': 'Cuba',
+  'CW': 'Curaçao',
   'DM': 'Dominica',
   'DO': 'Dominican Republic',
   'SV': 'El Salvador',
   'GD': 'Grenada',
+  'GP': 'Guadeloupe',
   'GT': 'Guatemala',
   'HT': 'Haiti',
   'HN': 'Honduras',
   'JM': 'Jamaica',
+  'MQ': 'Martinique',
   'MX': 'Mexico',
+  'MS': 'Montserrat',
   'NI': 'Nicaragua',
   'PA': 'Panama',
+  'PR': 'Puerto Rico',
+  'BL': 'Saint Barthélemy',
   'KN': 'Saint Kitts and Nevis',
   'LC': 'Saint Lucia',
+  'MF': 'Saint Martin',
+  'PM': 'Saint Pierre and Miquelon',
   'VC': 'Saint Vincent and the Grenadines',
+  'SX': 'Sint Maarten',
   'TT': 'Trinidad and Tobago',
+  'TC': 'Turks and Caicos Islands',
   'US': 'United States',
+  'VI': 'U.S. Virgin Islands',
   
-  // South America
+  // South America (14 countries/territories)
   'AR': 'Argentina',
   'BO': 'Bolivia',
   'BR': 'Brazil',
   'CL': 'Chile',
   'CO': 'Colombia',
   'EC': 'Ecuador',
+  'FK': 'Falkland Islands',
+  'GF': 'French Guiana',
   'GY': 'Guyana',
   'PY': 'Paraguay',
   'PE': 'Peru',
@@ -200,30 +235,39 @@ const COUNTRY_NAMES = {
   'UY': 'Uruguay',
   'VE': 'Venezuela',
   
-  // Oceania
+  // Oceania (27 countries/territories)
+  'AS': 'American Samoa',
   'AU': 'Australia',
+  'CK': 'Cook Islands',
   'FJ': 'Fiji',
+  'PF': 'French Polynesia',
+  'GU': 'Guam',
   'KI': 'Kiribati',
   'MH': 'Marshall Islands',
   'FM': 'Micronesia',
   'NR': 'Nauru',
+  'NC': 'New Caledonia',
   'NZ': 'New Zealand',
+  'NU': 'Niue',
+  'NF': 'Norfolk Island',
+  'MP': 'Northern Mariana Islands',
   'PW': 'Palau',
   'PG': 'Papua New Guinea',
+  'PN': 'Pitcairn Islands',
   'WS': 'Samoa',
   'SB': 'Solomon Islands',
+  'TK': 'Tokelau',
   'TO': 'Tonga',
   'TV': 'Tuvalu',
   'VU': 'Vanuatu',
+  'WF': 'Wallis and Futuna',
   
-  // Special regions
-  'HK': 'Hong Kong',
-  'MO': 'Macau',
-  'PR': 'Puerto Rico',
-  'GU': 'Guam',
-  'VI': 'U.S. Virgin Islands',
-  'AS': 'American Samoa',
-  'MP': 'Northern Mariana Islands'
+  // Antarctica
+  'AQ': 'Antarctica',
+  'BV': 'Bouvet Island',
+  'TF': 'French Southern Territories',
+  'HM': 'Heard Island and McDonald Islands',
+  'GS': 'South Georgia and South Sandwich Islands'
 };
 
 // Common currencies by region
@@ -247,9 +291,10 @@ function getRegionFromCountry(country) {
     'CF': 'AF', 'TD': 'AF', 'KM': 'AF', 'CG': 'AF', 'CD': 'AF', 'CI': 'AF', 'DJ': 'AF', 'EG': 'AF', 
     'GQ': 'AF', 'ER': 'AF', 'SZ': 'AF', 'ET': 'AF', 'GA': 'AF', 'GM': 'AF', 'GH': 'AF', 'GN': 'AF', 
     'GW': 'AF', 'KE': 'AF', 'LS': 'AF', 'LR': 'AF', 'LY': 'AF', 'MG': 'AF', 'MW': 'AF', 'ML': 'AF', 
-    'MR': 'AF', 'MU': 'AF', 'MA': 'AF', 'MZ': 'AF', 'NA': 'AF', 'NE': 'AF', 'NG': 'AF', 'RW': 'AF', 
-    'ST': 'AF', 'SN': 'AF', 'SC': 'AF', 'SL': 'AF', 'SO': 'AF', 'ZA': 'AF', 'SS': 'AF', 'SD': 'AF', 
-    'TZ': 'AF', 'TG': 'AF', 'TN': 'AF', 'UG': 'AF', 'ZM': 'AF', 'ZW': 'AF',
+    'MR': 'AF', 'MU': 'AF', 'YT': 'AF', 'MA': 'AF', 'MZ': 'AF', 'NA': 'AF', 'NE': 'AF', 'NG': 'AF', 
+    'RE': 'AF', 'RW': 'AF', 'SH': 'AF', 'ST': 'AF', 'SN': 'AF', 'SC': 'AF', 'SL': 'AF', 'SO': 'AF', 
+    'ZA': 'AF', 'SS': 'AF', 'SD': 'AF', 'TZ': 'AF', 'TG': 'AF', 'TN': 'AF', 'UG': 'AF', 'EH': 'AF', 
+    'ZM': 'AF', 'ZW': 'AF',
     
     // Asia
     'AF': 'AS', 'AM': 'AS', 'AZ': 'AS', 'BH': 'AS', 'BD': 'AS', 'BT': 'AS', 'BN': 'AS', 'KH': 'AS',
@@ -753,6 +798,7 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
           <input
             type="text"
             name="country"
+            list="country-list"
             value={COUNTRY_NAMES[formData.country] || formData.country}  // Display name but store code
             onChange={(e) => {
               // If user types a known country name, convert to code
@@ -777,17 +823,23 @@ export default function WiseConnector({ userCountry, onSuccess, onCancel, isConn
                 country: countryCode
               }));
             }}
-            placeholder="e.g., South Sudan, Nigeria, Kenya"
+            placeholder="Type to search or select a country..."
             className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
               errors.country ? 'border-red-300' : ''
             }`}
-            readOnly  // Make it read-only since it's pre-filled from user's business country
           />
+          <datalist id="country-list">
+            {Object.entries(COUNTRY_NAMES)
+              .sort(([, a], [, b]) => a.localeCompare(b))
+              .map(([code, name]) => (
+                <option key={code} value={name} />
+              ))}
+          </datalist>
           {errors.country && (
             <p className="mt-1 text-sm text-red-600">{errors.country}</p>
           )}
           <p className="mt-1 text-xs text-gray-500">
-            Bank country detected from your business location: {COUNTRY_NAMES[formData.country] || formData.country}
+            {formData.country ? `Selected: ${COUNTRY_NAMES[formData.country] || formData.country} (${formData.country})` : 'Start typing to search from 250+ countries'}
           </p>
         </div>
 
