@@ -105,9 +105,6 @@ const eventToRouteMap = {
   'payroll-tax-setup': 'payroll-tax-setup',
   'tax-reports': 'tax-reports',
   
-  // Reports
-  'reports-dashboard': 'reports-dashboard',
-  
   // Analytics
   'analytics-dashboard': 'analytics',
   'smart-insight': 'smart-insights',
