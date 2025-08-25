@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { analyticsApi } from '@/services/api/analytics';
 import { toast } from 'react-hot-toast';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
@@ -73,27 +73,6 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
     cashFlow: []
   });
   const [selectedMetric, setSelectedMetric] = useState('revenue');
-  
-  // Chart width management for responsive charts without ResponsiveContainer
-  const [chartWidth, setChartWidth] = useState(800);
-  const chartContainerRef = useRef(null);
-
-  // Handle chart resizing
-  useEffect(() => {
-    const updateChartWidth = () => {
-      if (chartContainerRef.current) {
-        const containerWidth = chartContainerRef.current.offsetWidth || 800;
-        const width = Math.max(containerWidth - 48, 300); // Subtract padding, minimum width of 300
-        setChartWidth(width);
-      }
-    };
-    
-    // Initial update after a short delay to ensure DOM is ready
-    setTimeout(updateChartWidth, 100);
-    
-    window.addEventListener('resize', updateChartWidth);
-    return () => window.removeEventListener('resize', updateChartWidth);
-  }, []);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -378,12 +357,12 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" ref={chartContainerRef}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Revenue Trend */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Revenue Trend</h3>
           <div className="w-full overflow-x-auto">
-            <ComposedChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.revenue}>
+            <ComposedChart width={500} height={300} data={chartData.revenue}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -400,7 +379,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Expense Breakdown</h3>
           <div className="w-full overflow-x-auto">
-            <BarChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.expenses}>
+            <BarChart width={500} height={300} data={chartData.expenses}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -418,7 +397,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Profit & Margin Trend</h3>
           <div className="w-full overflow-x-auto">
-            <ComposedChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.profitTrend}>
+            <ComposedChart width={500} height={300} data={chartData.profitTrend}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis yAxisId="left" />
@@ -435,7 +414,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Customer Growth</h3>
           <div className="w-full overflow-x-auto">
-            <AreaChart width={Math.max(Math.min((chartWidth || 800) / 2 - 20, 600), 300)} height={300} data={chartData.customerGrowth}>
+            <AreaChart width={500} height={300} data={chartData.customerGrowth}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -508,7 +487,7 @@ const AnalyticsDashboard = ({ userData: propUserData }) => {
       <div className="bg-white rounded-lg shadow p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4">Cash Flow Analysis</h3>
         <div className="w-full overflow-x-auto">
-          <BarChart width={Math.max((chartWidth || 800) - 48, 600)} height={300} data={chartData.cashFlow}>
+          <BarChart width={800} height={300} data={chartData.cashFlow}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
