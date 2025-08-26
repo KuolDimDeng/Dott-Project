@@ -7,6 +7,7 @@ import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
 import PropTypes from 'prop-types';
 import { toast } from 'react-hot-toast';
+import { useCurrency } from '@/context/CurrencyContext';
 
 // Tailwind theme utility to replace useTheme from MUI
 const getTailwindColor = (colorName, shade = 500) => {
@@ -77,6 +78,8 @@ const getTailwindColor = (colorName, shade = 500) => {
 };
 
 const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
+  const { currency } = useCurrency();
+  
   // Handle both newInvoice prop and mode prop for backward compatibility
   const isNewInvoice = isNewInvoiceProp || mode === 'create';
   
@@ -88,7 +91,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
     date: new Date(),
     items: [],
     discount: 0,
-    currency: 'USD',
+    currency: currency?.code || 'USD',
     totalAmount: 0,
   }));
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useNotification();
@@ -112,6 +115,16 @@ const [state, dispatch] = useReducer(reducer, initialState);
     fetchProducts();
     fetchServices();
   }, []);
+
+  // Update currency when it changes
+  useEffect(() => {
+    if (currency?.code) {
+      setNewInvoice(prev => ({
+        ...prev,
+        currency: currency.code
+      }));
+    }
+  }, [currency]);
 
   const fetchInvoices = async () => {
     try {
@@ -283,7 +296,7 @@ const totalAmount = useMemo(() => newItems.reduce((sum, item) => sum + item.quan
         date: new Date(),
         items: [],
         discount: 0,
-        currency: 'USD',
+        currency: currency?.code || 'USD',
         totalAmount: 0,
       });
       fetchInvoices();

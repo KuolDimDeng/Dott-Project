@@ -7,6 +7,7 @@ import { orderApi } from '@/utils/apiClient';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { useCurrency } from '@/context/CurrencyContext';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -46,6 +47,8 @@ const FieldTooltip = ({ text, position = 'top' }) => {
 };
 
 const SalesOrderManagement = () => {
+  const { currency } = useCurrency();
+  
   // State management
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +82,7 @@ const SalesOrderManagement = () => {
     tax_rate: 0,
     notes: '',
     payment_terms: 'net_30',
+    currency: currency?.code || 'USD',
     items: []
   });
 
@@ -100,6 +104,16 @@ const SalesOrderManagement = () => {
       isMounted.current = false;
     };
   }, []);
+
+  // Update currency when it changes
+  useEffect(() => {
+    if (currency?.code) {
+      setFormData(prev => ({
+        ...prev,
+        currency: currency.code
+      }));
+    }
+  }, [currency]);
 
   const fetchOrders = useCallback(async () => {
     try {

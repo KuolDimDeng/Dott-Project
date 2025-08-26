@@ -714,6 +714,7 @@ const InvoiceManagement = () => {
         customer_id: item.customer_id,
         template: template,
         invoice_type: type === 'order' ? 'proforma' : 'standard',
+        currency: currency?.code || 'USD',
         items: item.items,
         subtotal: item.subtotal,
         tax_amount: item.tax_amount,
