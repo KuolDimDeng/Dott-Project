@@ -746,7 +746,7 @@ export const routeRegistry = {
     description: 'View and edit your profile'
   },
   'settings': {
-    component: enhancedLazy(() => import('../../Settings/components/SettingsManagement'), 'Settings'),
+    component: enhancedLazy(() => import('../components/settings/SettingsManagementGrid'), 'Settings'),
     title: 'Settings',
     description: 'Account settings'
   },
