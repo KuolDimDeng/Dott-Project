@@ -37,18 +37,8 @@ const ProfileManagementGrid = () => {
     'pay': { title: 'Pay & Compensation', icon: 'Wallet' },
     'documents': { title: 'Documents', icon: 'FileText' },
     'timesheet': { title: 'Timesheets', icon: 'Clock' },
-    'approvals': { title: 'Approvals', icon: 'CheckCircle' },
     'organization': { title: 'Organization', icon: 'Building' },
-    'security': { title: 'Security', icon: 'Shield' },
-    'preferences': { title: 'Preferences', icon: 'Settings' },
-    'benefits': { title: 'Benefits', icon: 'Heart' },
-    'leave': { title: 'Leave & Time Off', icon: 'Calendar' },
-    'expenses': { title: 'Expenses', icon: 'CreditCard' },
-    'training': { title: 'Training', icon: 'Award' },
-    'performance': { title: 'Performance', icon: 'TrendingUp' },
-    'notifications': { title: 'Notifications', icon: 'Bell' },
-    'language': { title: 'Language & Region', icon: 'Globe' },
-    'appearance': { title: 'Appearance', icon: 'Camera' }
+    'security': { title: 'Security', icon: 'Shield' }
   };
 
   // Map sections to existing tabs in ProfilePage
@@ -57,19 +47,8 @@ const ProfileManagementGrid = () => {
     'pay': 'pay',
     'documents': 'documents',
     'timesheet': 'timesheet',
-    'approvals': 'approvals',
     'organization': 'organization',
-    'security': 'security',
-    // These will need to be added as new tabs or handled separately
-    'preferences': 'profile',
-    'benefits': 'pay',
-    'leave': 'timesheet',
-    'expenses': 'documents',
-    'training': 'documents',
-    'performance': 'documents',
-    'notifications': 'profile',
-    'language': 'profile',
-    'appearance': 'profile'
+    'security': 'security'
   };
 
   // Handle navigation from overview

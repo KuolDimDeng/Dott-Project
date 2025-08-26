@@ -8,18 +8,8 @@ import {
   Wallet,
   FileText,
   Clock,
-  CheckCircle,
   Building,
-  Shield,
-  Settings,
-  Heart,
-  Calendar,
-  CreditCard,
-  Award,
-  TrendingUp,
-  Camera,
-  Bell,
-  Globe
+  Shield
 } from 'lucide-react';
 
 const ProfileOverview = ({ onItemClick }) => {
@@ -35,7 +25,7 @@ const ProfileOverview = ({ onItemClick }) => {
     }
   }, [session]);
 
-  // Profile grid configuration
+  // Profile grid configuration - Only essential sections
   const profileItems = [
     {
       id: 'profile',
@@ -74,15 +64,6 @@ const ProfileOverview = ({ onItemClick }) => {
       available: true
     },
     {
-      id: 'approvals',
-      title: 'Approvals',
-      description: 'Review and approve team timesheets and requests',
-      icon: CheckCircle,
-      color: 'bg-teal-500',
-      value: 'approvals',
-      available: isSupervisor
-    },
-    {
       id: 'organization',
       title: 'Organization',
       description: 'View company org chart and team structure',
@@ -98,87 +79,6 @@ const ProfileOverview = ({ onItemClick }) => {
       icon: Shield,
       color: 'bg-red-500',
       value: 'security',
-      available: true
-    },
-    {
-      id: 'preferences',
-      title: 'Preferences',
-      description: 'Customize your app experience and notifications',
-      icon: Settings,
-      color: 'bg-gray-500',
-      value: 'preferences',
-      available: true
-    },
-    {
-      id: 'benefits',
-      title: 'Benefits',
-      description: 'View health insurance, retirement, and other benefits',
-      icon: Heart,
-      color: 'bg-pink-500',
-      value: 'benefits',
-      available: true
-    },
-    {
-      id: 'leave',
-      title: 'Leave & Time Off',
-      description: 'Request time off and view leave balances',
-      icon: Calendar,
-      color: 'bg-yellow-500',
-      value: 'leave',
-      available: true
-    },
-    {
-      id: 'expenses',
-      title: 'Expenses',
-      description: 'Submit and track expense reports and reimbursements',
-      icon: CreditCard,
-      color: 'bg-emerald-500',
-      value: 'expenses',
-      available: true
-    },
-    {
-      id: 'training',
-      title: 'Training',
-      description: 'Access training materials and track certifications',
-      icon: Award,
-      color: 'bg-violet-500',
-      value: 'training',
-      available: true
-    },
-    {
-      id: 'performance',
-      title: 'Performance',
-      description: 'View performance reviews and goals',
-      icon: TrendingUp,
-      color: 'bg-cyan-500',
-      value: 'performance',
-      available: true
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      description: 'Manage notification preferences and alerts',
-      icon: Bell,
-      color: 'bg-lime-500',
-      value: 'notifications',
-      available: true
-    },
-    {
-      id: 'language',
-      title: 'Language & Region',
-      description: 'Set your preferred language and regional settings',
-      icon: Globe,
-      color: 'bg-rose-500',
-      value: 'language',
-      available: true
-    },
-    {
-      id: 'appearance',
-      title: 'Appearance',
-      description: 'Customize theme, colors, and display preferences',
-      icon: Camera,
-      color: 'bg-slate-500',
-      value: 'appearance',
       available: true
     }
   ];
@@ -224,8 +124,8 @@ const ProfileOverview = ({ onItemClick }) => {
         </div>
       </div>
 
-      {/* Grid Layout - 4 columns on desktop, responsive on smaller screens */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Grid Layout - 3 columns on desktop, responsive on smaller screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {availableItems.map((item) => {
           const Icon = item.icon;
           const isHovered = hoveredItem === item.id;
@@ -272,15 +172,6 @@ const ProfileOverview = ({ onItemClick }) => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </div>
-              )}
-
-              {/* Supervisor Badge */}
-              {item.id === 'approvals' && isSupervisor && (
-                <div className="absolute top-2 right-2">
-                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                    Supervisor Only
-                  </span>
                 </div>
               )}
             </button>
