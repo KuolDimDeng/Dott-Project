@@ -26,8 +26,6 @@ import GeofencingSettings from '@/app/Settings/components/sections/GeofencingSet
 import TaxSettings from '@/app/Settings/components/sections/TaxSettings';
 import CurrencySettings from '@/app/Settings/components/sections/CurrencySettings';
 import Accounting from '@/app/Settings/components/sections/Accounting';
-import ProfileSettings from '@/app/Settings/components/ProfileSettings';
-import DeviceSettings from '@/app/Settings/components/DeviceSettings';
 
 const SettingsManagementGrid = () => {
   const { t } = useTranslation('settings');
@@ -55,9 +53,7 @@ const SettingsManagementGrid = () => {
     'geofencing': GeofencingSettings,
     'billing-subscriptions': BillingSubscriptions,
     'integrations': Integrations,
-    'security': SecuritySettings,
-    'profile-settings': ProfileSettings,
-    'device-settings': DeviceSettings
+    'security': SecuritySettings
   };
 
   // Section metadata for display
@@ -75,9 +71,7 @@ const SettingsManagementGrid = () => {
     'geofencing': { title: 'Geofencing Settings', icon: 'MapPin' },
     'billing-subscriptions': { title: 'Billing & Subscriptions', icon: 'CreditCard' },
     'integrations': { title: 'Integrations', icon: 'Puzzle' },
-    'security': { title: 'Security Settings', icon: 'Shield' },
-    'profile-settings': { title: 'Profile Settings', icon: 'Globe' },
-    'device-settings': { title: 'Device Settings', icon: 'Lock' }
+    'security': { title: 'Security Settings', icon: 'Shield' }
   };
 
   // Handle navigation from overview

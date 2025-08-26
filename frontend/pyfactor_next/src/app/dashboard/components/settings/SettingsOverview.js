@@ -9,7 +9,6 @@ import {
   Users,
   Shield,
   CreditCard,
-  Globe,
   Calculator,
   Wallet,
   MapPin,
@@ -19,7 +18,6 @@ import {
   Star,
   FolderOpen,
   History,
-  Lock,
   Server
 } from 'lucide-react';
 
@@ -156,24 +154,6 @@ const SettingsOverview = ({ onItemClick }) => {
       color: 'bg-rose-500',
       value: 'security',
       requiredRole: 'admin'
-    },
-    {
-      id: 'profile',
-      title: 'Profile',
-      description: 'Personal profile and account preferences',
-      icon: Globe,
-      color: 'bg-lime-500',
-      value: 'profile-settings',
-      requiredRole: 'user'
-    },
-    {
-      id: 'device',
-      title: 'Device',
-      description: 'Device settings and display preferences',
-      icon: Lock,
-      color: 'bg-slate-500',
-      value: 'device-settings',
-      requiredRole: 'user'
     }
   ];
 

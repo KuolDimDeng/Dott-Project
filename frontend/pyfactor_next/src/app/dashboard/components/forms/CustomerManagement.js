@@ -615,6 +615,11 @@ const CustomerManagement = () => {
       }
     }
     
+    // Fetch payment methods for the customer
+    if (customer.id) {
+      fetchPaymentMethods(customer.id);
+    }
+    
     setIsEditing(true);
     setShowCustomerDetails(true);
   }, []);
@@ -991,6 +996,85 @@ const CustomerManagement = () => {
             </div>
           </div>
         </div>
+        
+        {/* Payment Methods Section - Only show in edit mode */}
+        {isEditMode && selectedCustomer && (
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Methods</h3>
+            {paymentMethods.length > 0 ? (
+              <div className="space-y-3 mb-4">
+                {paymentMethods.map((method, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      {method.type === 'card' && (
+                        <svg className="h-5 w-5 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      )}
+                      {method.type === 'bank_account' && (
+                        <svg className="h-5 w-5 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {method.type === 'card' ? `${method.brand} •••• ${method.last4}` : `Bank Account •••• ${method.last4}`}
+                        </p>
+                        {method.exp_month && method.exp_year && (
+                          <p className="text-xs text-gray-500">Expires {method.exp_month}/{method.exp_year}</p>
+                        )}
+                      </div>
+                    </div>
+                    {method.is_default && (
+                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">Default</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 bg-gray-50 rounded-lg mb-4">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                <p className="mt-2 text-sm text-gray-900">No payment methods on file</p>
+                <p className="mt-1 text-xs text-gray-500">Choose how to add payment methods</p>
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowManualPaymentEntry(true)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Enter Manually
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendPaymentSetupLink(selectedCustomer)}
+                disabled={isSendingPaymentLink}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {isSendingPaymentLink ? (
+                  <>
+                    <ButtonSpinner />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8" />
+                    </svg>
+                    Send Setup Link
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
         
         <div className="flex justify-end space-x-3 pt-6 border-t">
           <button
