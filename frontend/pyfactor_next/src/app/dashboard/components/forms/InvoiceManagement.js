@@ -49,7 +49,7 @@ const FieldTooltip = ({ text, position = 'top' }) => {
 };
 
 // Record Payment Dialog
-const RecordPaymentDialog = ({ isOpen, onClose, invoice, onRecord }) => {
+const RecordPaymentDialog = ({ isOpen, onClose, invoice, onRecord, currency }) => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amount, setAmount] = useState(invoice?.total_amount || '');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -1530,6 +1530,7 @@ const InvoiceManagement = () => {
         }}
         invoice={invoiceToRecordPayment}
         onRecord={handleRecordPaymentConfirm}
+        currency={currency}
       />
     </div>
   );
