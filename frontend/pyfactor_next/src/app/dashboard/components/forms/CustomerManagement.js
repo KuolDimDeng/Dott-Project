@@ -218,11 +218,27 @@ const CustomerManagement = () => {
       }
 
       const data = await response.json();
-      toast.success('Payment setup link sent successfully!');
+      toast.success('Payment setup link sent to customer\'s email!');
       
-      // Optionally show the link in a dialog for manual sharing
+      // Show the link in console and optionally in a dialog for manual sharing
       if (data.payment_link_url) {
         console.log('[CustomerManagement] Payment link created:', data.payment_link_url);
+        
+        // Show dialog with link for manual sharing
+        const showLink = window.confirm(
+          'Payment link has been emailed to the customer.\n\n' +
+          'Would you like to copy the link for manual sharing?'
+        );
+        
+        if (showLink) {
+          // Copy to clipboard
+          navigator.clipboard.writeText(data.payment_link_url).then(() => {
+            toast.success('Payment link copied to clipboard!');
+          }).catch(() => {
+            // Fallback: show the link in a prompt
+            window.prompt('Copy this payment setup link:', data.payment_link_url);
+          });
+        }
       }
     } catch (error) {
       console.error('[CustomerManagement] Error sending payment setup link:', error);

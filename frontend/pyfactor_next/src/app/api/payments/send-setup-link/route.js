@@ -60,8 +60,45 @@ export async function POST(request) {
       },
     });
 
-    // Send email with the payment setup link (you can implement email sending here)
-    // For now, we'll return the URL for the frontend to display
+    // Send email with the payment setup link using Resend
+    try {
+      // Import Resend
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      // Send the email
+      const emailResult = await resend.emails.send({
+        from: 'Dott <noreply@dottapps.com>',
+        to: customer_email,
+        subject: 'Set up your payment method',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Set Up Your Payment Method</h2>
+            <p>Hi ${customer_name},</p>
+            <p>Please click the button below to securely add your payment method to your account:</p>
+            <div style="margin: 30px 0;">
+              <a href="${session.url}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Add Payment Method
+              </a>
+            </div>
+            <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+            <p style="color: #2563eb; font-size: 14px; word-break: break-all;">${session.url}</p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="color: #999; font-size: 12px;">This is a secure link from Stripe. Your payment information will be encrypted and stored securely.</p>
+            <p style="color: #999; font-size: 12px;">If you didn't request this link, please ignore this email.</p>
+          </div>
+        `,
+      });
+      
+      console.log('[Payment Setup] Email sent:', {
+        customer_email,
+        email_id: emailResult.data?.id,
+        status: 'sent'
+      });
+    } catch (emailError) {
+      console.error('[Payment Setup] Failed to send email:', emailError);
+      // Don't fail the whole request if email fails - link is still created
+    }
     
     console.log('[Payment Setup] Created setup link for customer:', {
       customer_id,
@@ -78,7 +115,7 @@ export async function POST(request) {
       payment_link_url: session.url,
       checkout_session_id: session.id,
       stripe_customer_id: stripeCustomer.id,
-      message: 'Payment setup link created successfully',
+      message: 'Payment setup link sent to customer email',
     });
   } catch (error) {
     console.error('[Payment Setup] Error creating setup link:', error);
