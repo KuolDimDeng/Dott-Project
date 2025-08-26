@@ -205,27 +205,28 @@ const CustomerManagement = () => {
       }
 
       const data = await response.json();
-      toast.success('Payment setup link sent to customer\'s email!');
       
       // Show the link in console and optionally in a dialog for manual sharing
       if (data.payment_link_url) {
         console.log('[CustomerManagement] Payment link created:', data.payment_link_url);
         
-        // Show dialog with link for manual sharing
-        const showLink = window.confirm(
-          'Payment link has been emailed to the customer.\n\n' +
-          'Would you like to copy the link for manual sharing?'
-        );
+        // Since email might fail, always offer to copy the link
+        toast.success('Payment setup link created successfully!');
         
-        if (showLink) {
-          // Copy to clipboard
-          navigator.clipboard.writeText(data.payment_link_url).then(() => {
-            toast.success('Payment link copied to clipboard!');
-          }).catch(() => {
-            // Fallback: show the link in a prompt
-            window.prompt('Copy this payment setup link:', data.payment_link_url);
-          });
-        }
+        // Automatically copy to clipboard
+        navigator.clipboard.writeText(data.payment_link_url).then(() => {
+          toast.success('Payment link copied to clipboard! You can share it with the customer.');
+        }).catch(() => {
+          // Fallback: show the link in a prompt
+          window.prompt('Copy this payment setup link to share with the customer:', data.payment_link_url);
+        });
+        
+        // Also show in a dialog for visibility
+        const message = data.message?.includes('sent to customer email') 
+          ? 'Payment link has been emailed to the customer and copied to your clipboard.'
+          : 'Payment link created and copied to your clipboard. Please share it with the customer.';
+        
+        window.alert(message + '\n\nLink: ' + data.payment_link_url);
       }
     } catch (error) {
       console.error('[CustomerManagement] Error sending payment setup link:', error);

@@ -61,13 +61,18 @@ export async function POST(request) {
     });
 
     // Send email with the payment setup link using Resend
+    let emailSent = false;
     try {
-      // Import Resend
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      // Send the email
-      const emailResult = await resend.emails.send({
+      // Check if RESEND_API_KEY is configured
+      if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'undefined') {
+        console.warn('[Payment Setup] RESEND_API_KEY not configured - email will not be sent');
+      } else {
+        // Import Resend
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        // Send the email
+        const emailResult = await resend.emails.send({
         from: 'Dott <noreply@dottapps.com>',
         to: customer_email,
         subject: 'Set up your payment method',
@@ -90,11 +95,13 @@ export async function POST(request) {
         `,
       });
       
-      console.log('[Payment Setup] Email sent:', {
-        customer_email,
-        email_id: emailResult.data?.id,
-        status: 'sent'
-      });
+        console.log('[Payment Setup] Email sent:', {
+          customer_email,
+          email_id: emailResult.data?.id,
+          status: 'sent'
+        });
+        emailSent = true;
+      }
     } catch (emailError) {
       console.error('[Payment Setup] Failed to send email:', emailError);
       // Don't fail the whole request if email fails - link is still created
@@ -115,7 +122,10 @@ export async function POST(request) {
       payment_link_url: session.url,
       checkout_session_id: session.id,
       stripe_customer_id: stripeCustomer.id,
-      message: 'Payment setup link sent to customer email',
+      message: emailSent 
+        ? 'Payment setup link sent to customer email'
+        : 'Payment setup link created (email not configured)',
+      email_sent: emailSent,
     });
   } catch (error) {
     console.error('[Payment Setup] Error creating setup link:', error);
