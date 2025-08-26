@@ -39,13 +39,21 @@ export async function POST(request) {
       });
     }
 
+    // Get base URL with proper scheme
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                   process.env.NEXT_PUBLIC_BASE_URL || 
+                   (process.env.ENVIRONMENT === 'staging' ? 'https://staging.dottapps.com' : 'https://app.dottapps.com');
+    
+    // Ensure URL has https:// scheme
+    const appUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+    
     // Create a Stripe Checkout Session for setup mode (no payment, just save card)
     const session = await stripe.checkout.sessions.create({
       mode: 'setup',
       customer: stripeCustomer.id,
       payment_method_types: ['card', 'us_bank_account'],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/customers?setup=success&customer=${customer_id}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/customers?setup=cancelled`,
+      success_url: `${appUrl}/dashboard/customers?setup=success&customer=${customer_id}`,
+      cancel_url: `${appUrl}/dashboard/customers?setup=cancelled`,
       metadata: {
         customer_id: customer_id.toString(),
         purpose: 'payment_method_setup',
@@ -61,6 +69,8 @@ export async function POST(request) {
       stripe_customer_id: stripeCustomer.id,
       checkout_session_id: session.id,
       setup_url: session.url,
+      success_url: `${appUrl}/dashboard/customers?setup=success&customer=${customer_id}`,
+      cancel_url: `${appUrl}/dashboard/customers?setup=cancelled`,
     });
 
     return NextResponse.json({
