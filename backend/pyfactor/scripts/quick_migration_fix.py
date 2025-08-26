@@ -114,6 +114,7 @@ with connection.cursor() as cursor:
             ADD COLUMN IF NOT EXISTS bank_account_name VARCHAR(100),
             ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100),
             ADD COLUMN IF NOT EXISTS account_number_last4 VARCHAR(4),
+            ADD COLUMN IF NOT EXISTS routing_number_last4 VARCHAR(4),
             ADD COLUMN IF NOT EXISTS stripe_bank_account_id VARCHAR(255)
         ''')
         connection.commit()

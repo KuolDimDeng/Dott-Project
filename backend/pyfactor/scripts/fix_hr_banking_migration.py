@@ -43,7 +43,7 @@ with connection.cursor() as cursor:
         print("\n🔍 Checking other banking columns...")
         
         # Check other columns
-        for column in ['bank_name', 'account_number_last4', 'stripe_bank_account_id']:
+        for column in ['bank_name', 'account_number_last4', 'routing_number_last4', 'stripe_bank_account_id']:
             check_cmd = f"""python manage.py shell -c "
 from django.db import connection
 with connection.cursor() as cursor:
@@ -83,6 +83,7 @@ with connection.cursor() as cursor:
             ADD COLUMN IF NOT EXISTS bank_account_name VARCHAR(100),
             ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100),
             ADD COLUMN IF NOT EXISTS account_number_last4 VARCHAR(4),
+            ADD COLUMN IF NOT EXISTS routing_number_last4 VARCHAR(4),
             ADD COLUMN IF NOT EXISTS stripe_bank_account_id VARCHAR(255)
         ''')
         print('✅ Columns added manually')
@@ -94,7 +95,7 @@ with connection.cursor() as cursor:
     
     print("\n=== Final Status ===")
     # Check final status
-    for column in ['bank_account_name', 'bank_name', 'account_number_last4']:
+    for column in ['bank_account_name', 'bank_name', 'account_number_last4', 'routing_number_last4']:
         check_cmd = f"""python manage.py shell -c "
 from django.db import connection
 with connection.cursor() as cursor:

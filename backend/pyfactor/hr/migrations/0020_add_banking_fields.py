@@ -26,6 +26,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='employee',
+            name='routing_number_last4',
+            field=models.CharField(blank=True, max_length=4, null=True),
+        ),
+        migrations.AddField(
+            model_name='employee',
             name='stripe_bank_account_id',
             field=models.CharField(blank=True, help_text='Stripe bank account ID for secure storage', max_length=255, null=True),
         ),
