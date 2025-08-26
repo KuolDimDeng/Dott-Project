@@ -419,6 +419,14 @@ const CustomerManagement = () => {
       const displayName = formData.business_name || `${formData.first_name} ${formData.last_name}`.trim() || formData.email;
       toast.success(`Customer "${displayName}" created successfully!`);
       
+      // Show additional prompt for payment method setup
+      setTimeout(() => {
+        toast('💳 You can now add payment methods for this customer', {
+          icon: 'ℹ️',
+          duration: 5000,
+        });
+      }, 1500);
+      
       // Reset form and refresh list
       setFormData({
         first_name: '',
@@ -434,6 +442,10 @@ const CustomerManagement = () => {
         notes: ''
       });
       setIsCreating(false);
+      
+      // Show the customer details view with payment options
+      handleViewCustomer(response);
+      
       fetchCustomers();
     } catch (error) {
       console.error('[CustomerManagement] DEBUG: Error creating customer:', error);
