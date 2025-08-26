@@ -46,7 +46,8 @@ const EstimateManagement = () => {
     discount: 0,
     notes: '',
     terms: '',
-    items: []
+    items: [],
+    currency: currency?.code || 'USD'
   });
 
   useEffect(() => {
@@ -59,6 +60,16 @@ const EstimateManagement = () => {
       isMounted.current = false;
     };
   }, []);
+
+  // Update currency when it changes
+  useEffect(() => {
+    if (currency?.code) {
+      setFormData(prev => ({
+        ...prev,
+        currency: currency.code
+      }));
+    }
+  }, [currency]);
 
   const fetchEstimates = useCallback(async () => {
     try {
@@ -1041,7 +1052,7 @@ const EstimateManagement = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">
-                  {currency} {parseFloat(estimate.total || estimate.totalAmount || 0).toFixed(2)}
+                  {currency?.code || 'USD'} {parseFloat(estimate.total || estimate.totalAmount || 0).toFixed(2)}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -1138,7 +1149,7 @@ const EstimateManagement = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
           <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Estimate Management
+          Estimates
         </h1>
         <p className="text-gray-600 text-sm">
           Create detailed quotes and estimates for potential customers. Set validity periods, track approval status, and convert accepted estimates into sales orders or invoices.

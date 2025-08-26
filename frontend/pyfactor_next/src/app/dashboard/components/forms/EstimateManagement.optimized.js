@@ -5,8 +5,10 @@ import { logger } from '@/utils/logger';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { useToast } from '@/components/Toast/ToastProvider';
 import DatePickerWrapper from '@/components/ui/DatePickerWrapper';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
+  const { currency } = useCurrency();
   const [activeTab, setActiveTab] = useState(isNewEstimate ? 0 : 2);
   const [estimates, setEstimates] = useState(() => []);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
@@ -27,7 +29,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     items: [],
     discount: 0,
-    currency: 'USD',
+    currency: currency?.code || 'USD',
     footer: '',
     totalAmount: 0, // Initialize with 0
   }));
@@ -89,6 +91,16 @@ const [state, dispatch] = useReducer(reducer, initialState);
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
+
+  // Update currency when it changes
+  useEffect(() => {
+    if (currency?.code) {
+      setNewEstimate(prev => ({
+        ...prev,
+        currency: currency.code
+      }));
+    }
+  }, [currency]);
 
   // Memoize the transformEstimates function
   const transformEstimates = useCallback((estimatesList) => {
@@ -347,7 +359,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         items: [],
         discount: 0,
-        currency: 'USD',
+        currency: currency?.code || 'USD',
         footer: '',
         totalAmount: 0,
       });
@@ -650,7 +662,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   return (
     <div className="bg-gray-50 p-6 rounded-lg">
       <h1 className="text-2xl font-semibold mb-4">
-        Estimate Management
+        Estimates
       </h1>
       
       {/* Tabs */}

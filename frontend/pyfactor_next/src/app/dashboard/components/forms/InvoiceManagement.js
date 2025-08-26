@@ -1036,7 +1036,7 @@ const InvoiceManagement = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Invoice Management
+          Invoices
         </h1>
         <p className="text-gray-600 text-sm">
           Generate professional invoices for your customers. Track payment status, send reminders, and manage overdue accounts. Convert estimates and orders to invoices seamlessly.

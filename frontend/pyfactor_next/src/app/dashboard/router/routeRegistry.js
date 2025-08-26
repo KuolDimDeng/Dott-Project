@@ -277,6 +277,11 @@ export const routeRegistry = {
     title: 'Sales Reports',
     description: 'Sales analytics and reports'
   },
+  'sales-reports': {
+    component: enhancedLazy(() => import('../components/forms/SalesReportsManagement'), 'Sales Reports'),
+    title: 'Sales Reports',
+    description: 'Sales analytics and reports'
+  },
 
   // Customer Management
   'customers': {

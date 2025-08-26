@@ -410,7 +410,7 @@ const totalAmount = useMemo(() => newItems.reduce((sum, item) => sum + item.quan
   return (
       <div className="bg-white p-6 rounded-lg shadow">
         <h1 className="text-2xl font-bold mb-4">
-          Invoice Management
+          Invoices
         </h1>
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px">

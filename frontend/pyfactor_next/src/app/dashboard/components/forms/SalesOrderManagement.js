@@ -1084,7 +1084,7 @@ const SalesOrderManagement = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
             <ShoppingCartIcon className="h-6 w-6 text-blue-600 mr-2" />
-            Sales Order Management
+            Sales Orders
           </h1>
           <p className="text-gray-600 text-sm">
             Create and manage sales orders from customers. Track order status, add products or services, apply discounts, and monitor fulfillment progress.

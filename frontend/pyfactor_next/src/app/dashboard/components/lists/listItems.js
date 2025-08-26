@@ -837,14 +837,14 @@ const MainListItems = ({
           value: 'estimates' 
         },
         { 
-          label: t('subMenu.orders'), 
+          label: t('subMenu.salesOrders'), 
           onClick: (value) => {
             // Create navigation event for orders
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
               item: 'order-management', 
               navigationKey,
-              originalItem: 'Orders'
+              originalItem: 'Sales Orders'
             };
             
             // Dispatch navigation events

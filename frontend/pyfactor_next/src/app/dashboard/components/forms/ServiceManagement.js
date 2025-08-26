@@ -1009,7 +1009,7 @@ const ServiceManagement = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
           <WrenchScrewdriverIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Service Management
+          Services
         </h1>
         <p className="text-gray-600 text-sm">
           Define and manage the services you offer to customers. Set pricing, duration, and descriptions for each service. Track service availability and categorize by type.

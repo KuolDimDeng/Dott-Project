@@ -3193,7 +3193,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
           <CubeIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Product Management
+          Products
         </h1>
         <p className="text-gray-600 text-sm">
           Manage your inventory of products including stock levels, pricing, and supplier information. Track product availability and organize items by categories.
