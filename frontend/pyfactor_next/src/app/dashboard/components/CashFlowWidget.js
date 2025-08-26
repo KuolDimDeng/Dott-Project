@@ -61,6 +61,7 @@ function CashFlowWidget({ onNavigate, userData }) {
   const [currency, setCurrency] = useState('USD');
   const [mounted, setMounted] = useState(false);
   const [chartWidth, setChartWidth] = useState(600);
+  const [showingSampleData, setShowingSampleData] = useState(false);
   const chartContainerRef = useRef(null);
   
   // Ensure component is mounted before rendering charts and handle resize
@@ -78,6 +79,52 @@ function CashFlowWidget({ onNavigate, userData }) {
     window.addEventListener('resize', updateChartWidth);
     return () => window.removeEventListener('resize', updateChartWidth);
   }, []);
+  
+  // Generate sample data for demonstration
+  const generateSampleData = (range) => {
+    const currentDate = new Date();
+    const data = [];
+    let periods = 6; // Default for months
+    
+    if (range === 'quarter') {
+      periods = 4;
+    } else if (range === 'year') {
+      periods = 3;
+    }
+    
+    // Generate data going backwards from current date
+    for (let i = periods - 1; i >= 0; i--) {
+      let periodLabel = '';
+      const baseInflow = 8000 + Math.random() * 4000;
+      const baseOutflow = 6000 + Math.random() * 3000;
+      
+      if (range === 'month') {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+        periodLabel = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      } else if (range === 'quarter') {
+        const quarter = Math.floor((currentDate.getMonth() - (i * 3)) / 3) + 1;
+        const year = currentDate.getFullYear();
+        periodLabel = `Q${quarter} ${year}`;
+      } else {
+        periodLabel = (currentDate.getFullYear() - i).toString();
+      }
+      
+      const inflow = Math.round(baseInflow);
+      const outflow = Math.round(baseOutflow);
+      const netFlow = inflow - outflow;
+      const previousBalance = data.length > 0 ? data[data.length - 1].balance : 10000;
+      
+      data.push({
+        period: periodLabel,
+        inflow: inflow,
+        outflow: outflow,
+        netFlow: netFlow,
+        balance: previousBalance + netFlow
+      });
+    }
+    
+    return data;
+  };
   
   // Get currency from userData or business
   useEffect(() => {
@@ -119,19 +166,28 @@ function CashFlowWidget({ onNavigate, userData }) {
           
           if (data.success && data.data && data.data.length > 0) {
             setCashFlowData(data.data);
+            setShowingSampleData(false);
             console.log('[CashFlowWidget] Real data loaded:', data.data.length, 'records');
           } else {
-            // No data available - don't generate mock data
-            console.log('[CashFlowWidget] No cash flow data in database');
-            setCashFlowData([]);
+            // No real data available - show sample data for better UX
+            console.log('[CashFlowWidget] No real data, showing sample data for demonstration');
+            const sampleData = generateSampleData(timeRange);
+            setCashFlowData(sampleData);
+            setShowingSampleData(true);
           }
         } else {
           console.error('[CashFlowWidget] Failed to fetch data:', response.status);
-          setCashFlowData([]);
+          // Show sample data on error
+          const sampleData = generateSampleData(timeRange);
+          setCashFlowData(sampleData);
+          setShowingSampleData(true);
         }
       } catch (error) {
         console.error('[CashFlowWidget] Error fetching cash flow:', error);
-        setCashFlowData([]);
+        // Show sample data on error
+        const sampleData = generateSampleData(timeRange);
+        setCashFlowData(sampleData);
+        setShowingSampleData(true);
       } finally {
         setLoading(false);
       }
@@ -216,7 +272,12 @@ function CashFlowWidget({ onNavigate, userData }) {
                 Track money in and out of your business
               </div>
             </div>
-            {currency !== 'USD' && (
+            {showingSampleData && (
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full font-medium">
+                Sample Data
+              </span>
+            )}
+            {currency !== 'USD' && !showingSampleData && (
               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                 {currency}
               </span>
@@ -294,7 +355,16 @@ function CashFlowWidget({ onNavigate, userData }) {
             </div>
           </div>
         ) : mounted && cashFlowData.length > 0 ? (
-          <div className="h-64 w-full overflow-x-auto" ref={chartContainerRef}>
+          <div className="relative">
+            {showingSampleData && (
+              <div className="absolute top-2 right-2 z-10 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 max-w-xs">
+                <p className="text-xs text-amber-800 font-medium">This is sample data</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Start adding invoices and expenses to see your actual cash flow
+                </p>
+              </div>
+            )}
+            <div className="h-64 w-full overflow-x-auto" ref={chartContainerRef} className={showingSampleData ? 'opacity-90' : ''}>
             <ComposedChart
               width={chartWidth}
               height={256}
@@ -349,6 +419,7 @@ function CashFlowWidget({ onNavigate, userData }) {
                   activeDot={{ r: 6 }}
                 />
               </ComposedChart>
+            </div>
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center">

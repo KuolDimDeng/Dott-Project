@@ -1134,192 +1134,6 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <NavIcons.Payments className="w-5 h-5" />,
-      label: t('mainMenu.payments'),
-      subItems: [
-        { 
-          label: t('subMenu.dashboard'), 
-          onClick: (value) => {
-            // Create navigation event for payments dashboard
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payments-dashboard', 
-              navigationKey,
-              originalItem: 'Dashboard'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'payments-dashboard' 
-        },
-        { 
-          label: t('subMenu.invoicePayment'), 
-          onClick: (value) => {
-            // Create navigation event for receive payments
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'receive-payments', 
-              navigationKey,
-              originalItem: 'Receive Payments'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'receive-payments' 
-        },
-        { 
-          label: t('subMenu.vendorPayment'), 
-          onClick: (value) => {
-            // Create navigation event for make payments
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'make-payments', 
-              navigationKey,
-              originalItem: 'Make Payments'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'make-payments' 
-        },
-        { 
-          label: t('subMenu.paymentMethods'), 
-          onClick: (value) => {
-            // Create navigation event for payment methods
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payment-methods', 
-              navigationKey,
-              originalItem: 'Payment Methods'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'payment-methods' 
-        },
-        { 
-          label: t('subMenu.recurringPayments'), 
-          onClick: (value) => {
-            // Create navigation event for recurring payments
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'recurring-payments', 
-              navigationKey,
-              originalItem: 'Recurring Payments'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'recurring-payments' 
-        },
-        { 
-          label: t('subMenu.paymentHistory'), 
-          onClick: (value) => {
-            // Create navigation event for refunds
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'refunds', 
-              navigationKey,
-              originalItem: 'Refunds'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'refunds' 
-        },
-        { 
-          label: t('subMenu.reconciliation'), 
-          onClick: (value) => {
-            // Create navigation event for payment reconciliation
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payment-reconciliation', 
-              navigationKey,
-              originalItem: 'Payment Reconciliation'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'payment-reconciliation' 
-        },
-        { 
-          label: t('subMenu.paymentMethods'), 
-          onClick: (value) => {
-            // Create navigation event for payment gateways
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payment-gateways', 
-              navigationKey,
-              originalItem: 'Payment Gateways'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'payment-gateways' 
-        },
-        { 
-          label: t('mainMenu.reports'), 
-          onClick: (value) => {
-            // Create navigation event for payment reports
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payment-reports', 
-              navigationKey,
-              originalItem: 'Reports'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'payment-reports' 
-        },
-      ],
-    },
-    {
       icon: <NavIcons.Cart className="w-5 h-5" />,
       label: t('mainMenu.purchases'),
       subItems: [
@@ -1346,26 +1160,26 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: t('subMenu.vendors'), 
+          label: 'Suppliers/Materials', 
           onClick: (value) => {
-            // Create navigation event for vendor management
+            // Create navigation event for product suppliers management
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'vendor-management', 
+              item: 'product-supplier-management', 
               navigationKey,
-              originalItem: 'Vendors'
+              originalItem: 'Product Suppliers'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the VendorManagement component
+            // Load the ProductSupplierManagement component - pulls Product suppliers data from backend
             if (typeof handlePurchasesClick === 'function') {
-              handlePurchasesClick('vendors');
+              handlePurchasesClick('product-suppliers');
             }
           }, 
-          value: 'vendors' 
+          value: 'product-suppliers' 
         },
         { 
           label: t('subMenu.purchaseOrders'), 
@@ -1390,7 +1204,7 @@ const MainListItems = ({
           value: 'purchase-orders' 
         },
         { 
-          label: t('subMenu.billsExpenses'), 
+          label: 'Bill Management', 
           onClick: (value) => {
             // Create navigation event for bills management
             const navigationKey = `nav-${Date.now()}`;
@@ -1412,70 +1226,26 @@ const MainListItems = ({
           value: 'bills' 
         },
         { 
-          label: t('subMenu.billsExpenses'), 
+          label: 'Vendor Management', 
           onClick: (value) => {
-            // Create navigation event for expenses management
+            // Create navigation event for vendor management
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'expenses-management', 
+              item: 'vendor-management', 
               navigationKey,
-              originalItem: 'Expenses'
+              originalItem: 'Vendors'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the ExpensesManagement component
+            // Load the VendorManagement component
             if (typeof handlePurchasesClick === 'function') {
-              handlePurchasesClick('expenses');
+              handlePurchasesClick('vendors');
             }
           }, 
-          value: 'expenses' 
-        },
-        { 
-          label: t('subMenu.purchaseOrders'), 
-          onClick: (value) => {
-            // Create navigation event for purchase returns management
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'purchase-returns-management', 
-              navigationKey,
-              originalItem: 'Purchase Returns'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the PurchaseReturnsManagement component
-            if (typeof handlePurchasesClick === 'function') {
-              handlePurchasesClick('purchase-returns');
-            }
-          }, 
-          value: 'purchase-returns' 
-        },
-        { 
-          label: t('subMenu.purchaseOrders'), 
-          onClick: (value) => {
-            // Create navigation event for procurement management
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'procurement-management', 
-              navigationKey,
-              originalItem: 'Procurement'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the ProcurementManagement component
-            if (typeof handlePurchasesClick === 'function') {
-              handlePurchasesClick('procurement');
-            }
-          }, 
-          value: 'procurement' 
+          value: 'vendors' 
         },
         { 
           label: t('mainMenu.reports'), 
