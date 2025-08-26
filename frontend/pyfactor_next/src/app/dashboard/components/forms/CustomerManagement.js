@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { toast } from 'react-hot-toast';
+import { Dialog, Transition } from '@headlessui/react';
 import { customerApi } from '@/utils/apiClient';
 import { getCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
@@ -27,6 +28,21 @@ const CustomerManagement = () => {
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [autopayEnabled, setAutopayEnabled] = useState(false);
     const [isUpdatingAutopay, setIsUpdatingAutopay] = useState(false);
+    const [showManualPaymentEntry, setShowManualPaymentEntry] = useState(false);
+    const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
+    const [manualPaymentData, setManualPaymentData] = useState({
+      type: 'card',
+      card_number: '',
+      exp_month: '',
+      exp_year: '',
+      cvc: '',
+      cardholder_name: '',
+      // Bank account fields
+      account_number: '',
+      routing_number: '',
+      account_holder_name: '',
+      account_type: 'checking'
+    });
     
     // Location dropdown states
     const [countries, setCountries] = useState([]);
@@ -230,6 +246,54 @@ const CustomerManagement = () => {
       }
     } catch (error) {
       console.error('[CustomerManagement] Error fetching payment methods:', error);
+    }
+  };
+
+  // Handle manual payment method addition
+  const handleAddPaymentMethodManually = async () => {
+    setIsAddingPaymentMethod(true);
+    
+    try {
+      const response = await fetch('/api/payments/add-payment-method', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          customer_id: selectedCustomer.id,
+          customer_email: selectedCustomer.email,
+          payment_data: manualPaymentData
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Payment method added successfully');
+        setShowManualPaymentEntry(false);
+        setManualPaymentData({
+          type: 'card',
+          card_number: '',
+          exp_month: '',
+          exp_year: '',
+          cvc: '',
+          cardholder_name: '',
+          account_number: '',
+          routing_number: '',
+          account_holder_name: '',
+          account_type: 'checking'
+        });
+        // Refresh payment methods
+        await fetchPaymentMethods(selectedCustomer.id);
+      } else {
+        toast.error(data.error || 'Failed to add payment method');
+      }
+    } catch (error) {
+      console.error('[CustomerManagement] Error adding payment method:', error);
+      toast.error('An error occurred while adding payment method');
+    } finally {
+      setIsAddingPaymentMethod(false);
     }
   };
 
@@ -1073,26 +1137,37 @@ const CustomerManagement = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
               <p className="mt-2 text-sm text-gray-900">No payment methods on file</p>
-              <p className="mt-1 text-xs text-gray-500">Send a payment setup link to add payment methods</p>
-              <button
-                onClick={() => handleSendPaymentSetupLink(selectedCustomer)}
-                disabled={isSendingPaymentLink}
-                className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {isSendingPaymentLink ? (
-                  <>
-                    <ButtonSpinner />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8" />
-                    </svg>
-                    Send Payment Setup Link
-                  </>
-                )}
-              </button>
+              <p className="mt-1 text-xs text-gray-500">Choose how to add payment methods</p>
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => handleSendPaymentSetupLink(selectedCustomer)}
+                  disabled={isSendingPaymentLink}
+                  className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {isSendingPaymentLink ? (
+                    <>
+                      <ButtonSpinner />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8" />
+                      </svg>
+                      Send Setup Link
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowManualPaymentEntry(true)}
+                  className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Enter Manually
+                </button>
+              </div>
             </div>
           )}
           {paymentMethods.length > 0 && (
@@ -1125,7 +1200,16 @@ const CustomerManagement = () => {
                   </div>
                 )}
               </div>
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setShowManualPaymentEntry(true)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Enter Manually
+                </button>
                 <button
                   onClick={() => handleSendPaymentSetupLink(selectedCustomer)}
                   disabled={isSendingPaymentLink}
@@ -1139,9 +1223,9 @@ const CustomerManagement = () => {
                   ) : (
                     <>
                       <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8" />
                       </svg>
-                      Add Payment Method
+                      Send Setup Link
                     </>
                   )}
                 </button>
@@ -1498,6 +1582,230 @@ const CustomerManagement = () => {
       
       {/* Delete Confirmation Dialog */}
       {renderDeleteDialog()}
+      
+      {/* Manual Payment Entry Modal */}
+      <Transition appear show={showManualPaymentEntry} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setShowManualPaymentEntry(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-medium leading-6 text-gray-900"
+                  >
+                    Add Payment Method Manually
+                  </Dialog.Title>
+                  
+                  <div className="mt-4">
+                    {/* Payment Type Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Payment Type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setManualPaymentData(prev => ({ ...prev, type: 'card' }))}
+                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                            manualPaymentData.type === 'card'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          💳 Credit/Debit Card
+                        </button>
+                        <button
+                          onClick={() => setManualPaymentData(prev => ({ ...prev, type: 'bank' }))}
+                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                            manualPaymentData.type === 'bank'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          🏦 Bank Account
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card Fields */}
+                    {manualPaymentData.type === 'card' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Cardholder Name
+                          </label>
+                          <input
+                            type="text"
+                            value={manualPaymentData.cardholder_name}
+                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, cardholder_name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="John Doe"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Card Number
+                          </label>
+                          <input
+                            type="text"
+                            value={manualPaymentData.card_number}
+                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, card_number: e.target.value.replace(/\s/g, '') }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="4242 4242 4242 4242"
+                            maxLength="16"
+                          />
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Month
+                            </label>
+                            <input
+                              type="text"
+                              value={manualPaymentData.exp_month}
+                              onChange={(e) => setManualPaymentData(prev => ({ ...prev, exp_month: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="MM"
+                              maxLength="2"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Year
+                            </label>
+                            <input
+                              type="text"
+                              value={manualPaymentData.exp_year}
+                              onChange={(e) => setManualPaymentData(prev => ({ ...prev, exp_year: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="YY"
+                              maxLength="2"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              CVC
+                            </label>
+                            <input
+                              type="text"
+                              value={manualPaymentData.cvc}
+                              onChange={(e) => setManualPaymentData(prev => ({ ...prev, cvc: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="123"
+                              maxLength="4"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bank Account Fields */}
+                    {manualPaymentData.type === 'bank' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Account Holder Name
+                          </label>
+                          <input
+                            type="text"
+                            value={manualPaymentData.account_holder_name}
+                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, account_holder_name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="John Doe"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Account Type
+                          </label>
+                          <select
+                            value={manualPaymentData.account_type}
+                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, account_type: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Routing Number
+                          </label>
+                          <input
+                            type="text"
+                            value={manualPaymentData.routing_number}
+                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, routing_number: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="110000000"
+                            maxLength="9"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Account Number
+                          </label>
+                          <input
+                            type="text"
+                            value={manualPaymentData.account_number}
+                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, account_number: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="000123456789"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      onClick={() => setShowManualPaymentEntry(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleAddPaymentMethodManually}
+                      disabled={isAddingPaymentMethod}
+                    >
+                      {isAddingPaymentMethod ? (
+                        <span className="flex items-center">
+                          <ButtonSpinner />
+                          Adding...
+                        </span>
+                      ) : (
+                        'Add Payment Method'
+                      )}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };
