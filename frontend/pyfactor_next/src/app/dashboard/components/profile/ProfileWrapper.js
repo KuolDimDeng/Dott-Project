@@ -1,9 +1,9 @@
 'use client';
 
-import ProfilePage from '@/app/profile/page';
+import ProfileManagementGrid from './ProfileManagementGrid';
 
 const ProfileWrapper = () => {
-  return <ProfilePage />;
+  return <ProfileManagementGrid />;
 };
 
 export default ProfileWrapper;
