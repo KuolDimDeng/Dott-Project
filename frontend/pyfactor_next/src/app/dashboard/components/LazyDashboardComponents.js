@@ -154,7 +154,7 @@ export const POSDashboard = dynamic(
 export const BusinessOverviewDashboard = dynamic(
   () => {
     console.log('🎯 [LazyDashboardComponents] Loading BusinessOverviewDashboard component...');
-    return import('./dashboards/BusinessOverviewDashboard').then(module => {
+    return import('./dashboards/BusinessOverviewDashboard-fixed').then(module => {
       console.log('✅ [LazyDashboardComponents] BusinessOverviewDashboard loaded successfully');
       return module;
     }).catch(err => {

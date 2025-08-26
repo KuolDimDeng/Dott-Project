@@ -1,7 +1,7 @@
 // Dashboard Components Index
 // This file exports all dashboard components to prevent circular dependencies
 
-export { default as BusinessOverviewDashboard } from './BusinessOverviewDashboard';
+export { default as BusinessOverviewDashboard } from './BusinessOverviewDashboard-fixed';
 export { default as SalesDashboard } from './SalesDashboardEnhanced';
 export { default as InventoryDashboard } from './InventoryDashboard';
 export { default as AccountingDashboard } from './AccountingDashboard';

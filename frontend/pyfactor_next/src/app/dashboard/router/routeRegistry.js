@@ -39,7 +39,7 @@ const enhancedLazy = (importFn, componentName) => {
 export const routeRegistry = {
   // Dashboard Views
   'dashboard': {
-    component: enhancedLazy(() => import('../components/dashboards/BusinessOverviewDashboard'), 'Business Overview'),
+    component: enhancedLazy(() => import('../components/dashboards/BusinessOverviewDashboard-fixed'), 'Business Overview'),
     title: 'Dashboard',
     description: 'Business overview dashboard'
   },
