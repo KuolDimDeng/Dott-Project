@@ -188,10 +188,15 @@
 - **Documentation**: `/STRIPE_SSN_MIGRATION_GUIDE.md`
 
 ### [35.0.0] - 2025-07-14 - CURRENT - Platform Fee Structure
-- **Invoice/Vendor Payments**: 2.9% + $0.60 (profit: $0.30/transaction)
-- **Payroll**: 2.4% (configurable)
+- **Card Payments (Invoice/Vendor)**: 
+  - Stripe charges: 2.9% + $0.30
+  - Platform fee: 0.1% + $0.30
+  - Total to customer: 3.0% + $0.60
+- **Mobile Money Payments**: 2% platform fee
+- **Bank Transfers**: 0.1% + $0.30 platform fee
+- **Payroll**: 2.4% platform fee (configurable)
 - **Subscriptions**: 2.5% (configurable)
-- **Revenue**: 1,000 transactions/month = $300
+- **Revenue Example**: 1,000 card transactions/month = $300 profit
 
 ### [36.0.0] - 2025-07-14 - CURRENT - WhatsApp Business API Integration
 - **Phone Number ID**: 676188225586230
@@ -314,7 +319,9 @@
 - **Configuration**: TENANT_EXEMPT_PATHS for public endpoints
 - **Impact**: Lower costs, better UX, easier debugging
 - **Documentation**: `/docs/MIDDLEWARE_ARCHITECTURE_2025.md`
-- **Fees**: Stripe (2.9% + $0.30) + Platform (0.1% + $0.30) + Wise (user pays)
+- **Fees**: Card: Stripe (2.9% + $0.30) + Platform (0.1% + $0.30) = Total 3.0% + $0.60
+- **Mobile Money Fees**: 2% platform fee only
+- **Bank Transfer Fees**: 0.1% + $0.30 platform fee + Wise fees (user pays)
 - **Webhook**: `/api/payments/webhooks/stripe/pos-settlements/`
 - **Cron Job**: Daily settlement processing at 2 AM UTC
 - **Countries**: 80+ non-Plaid countries supported

@@ -23,6 +23,10 @@ const CustomerManagement = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState(null);
     const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+    const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
+    const [paymentMethods, setPaymentMethods] = useState([]);
+    const [autopayEnabled, setAutopayEnabled] = useState(false);
+    const [isUpdatingAutopay, setIsUpdatingAutopay] = useState(false);
     
     // Location dropdown states
     const [countries, setCountries] = useState([]);
@@ -167,6 +171,96 @@ const CustomerManagement = () => {
       console.error('[CustomerManagement] Error fetching states:', error);
     } finally {
       setLocationLoading(false);
+    }
+  };
+
+  // Handle sending payment setup link
+  const handleSendPaymentSetupLink = async (customer) => {
+    if (!customer.email) {
+      toast.error('Customer email is required to send payment setup link');
+      return;
+    }
+
+    setIsSendingPaymentLink(true);
+    try {
+      const response = await fetch('/api/payments/send-setup-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          customer_id: customer.id,
+          customer_email: customer.email,
+          customer_name: customer.business_name || `${customer.first_name} ${customer.last_name}`,
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send payment setup link');
+      }
+
+      const data = await response.json();
+      toast.success('Payment setup link sent successfully!');
+      
+      // Optionally show the link in a dialog for manual sharing
+      if (data.payment_link_url) {
+        console.log('[CustomerManagement] Payment link created:', data.payment_link_url);
+      }
+    } catch (error) {
+      console.error('[CustomerManagement] Error sending payment setup link:', error);
+      toast.error(error.message || 'Failed to send payment setup link');
+    } finally {
+      setIsSendingPaymentLink(false);
+    }
+  };
+
+  // Fetch customer payment methods
+  const fetchPaymentMethods = async (customerId) => {
+    try {
+      const response = await fetch(`/api/payments/customer/${customerId}/payment-methods`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPaymentMethods(data.payment_methods || []);
+      }
+    } catch (error) {
+      console.error('[CustomerManagement] Error fetching payment methods:', error);
+    }
+  };
+
+  // Handle autopay toggle
+  const handleAutopayToggle = async (customer) => {
+    setIsUpdatingAutopay(true);
+    const newAutopayStatus = !autopayEnabled;
+    
+    try {
+      const response = await fetch(`/api/customers/${customer.id}/autopay`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          autopay_enabled: newAutopayStatus
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update autopay setting');
+      }
+
+      setAutopayEnabled(newAutopayStatus);
+      toast.success(`Autopay ${newAutopayStatus ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      console.error('[CustomerManagement] Error updating autopay:', error);
+      toast.error('Failed to update autopay setting');
+    } finally {
+      setIsUpdatingAutopay(false);
     }
   };
 
@@ -394,6 +488,10 @@ const CustomerManagement = () => {
     setShowCustomerDetails(true);
     setIsCreating(false);
     setIsEditing(false);
+    // Fetch payment methods when viewing customer
+    if (customer.id) {
+      fetchPaymentMethods(customer.id);
+    }
   }, []);
 
   // Handle edit customer
@@ -936,6 +1034,121 @@ const CustomerManagement = () => {
             <p className="mt-1 text-sm text-gray-900">{selectedCustomer.notes}</p>
           </div>
         )}
+        
+        <div className="pt-6 border-t">
+          <h3 className="text-sm font-medium text-gray-500 mb-4">Payment Methods</h3>
+          {paymentMethods.length > 0 ? (
+            <div className="space-y-3">
+              {paymentMethods.map((method, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    {method.type === 'card' && (
+                      <svg className="h-5 w-5 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    )}
+                    {method.type === 'bank_account' && (
+                      <svg className="h-5 w-5 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {method.type === 'card' ? `${method.brand} •••• ${method.last4}` : `Bank Account •••• ${method.last4}`}
+                      </p>
+                      {method.exp_month && method.exp_year && (
+                        <p className="text-xs text-gray-500">Expires {method.exp_month}/{method.exp_year}</p>
+                      )}
+                    </div>
+                  </div>
+                  {method.is_default && (
+                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">Default</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-gray-50 rounded-lg">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <p className="mt-2 text-sm text-gray-900">No payment methods on file</p>
+              <p className="mt-1 text-xs text-gray-500">Send a payment setup link to add payment methods</p>
+              <button
+                onClick={() => handleSendPaymentSetupLink(selectedCustomer)}
+                disabled={isSendingPaymentLink}
+                className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {isSendingPaymentLink ? (
+                  <>
+                    <ButtonSpinner />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8" />
+                    </svg>
+                    Send Payment Setup Link
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+          {paymentMethods.length > 0 && (
+            <>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">Automatic Payments</h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Automatically charge customer for recurring services
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleAutopayToggle(selectedCustomer)}
+                    disabled={isUpdatingAutopay}
+                    className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                      autopayEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${
+                        autopayEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+                {autopayEnabled && (
+                  <div className="mt-3 text-xs text-gray-600">
+                    ✓ Customer will be automatically charged for recurring services
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => handleSendPaymentSetupLink(selectedCustomer)}
+                  disabled={isSendingPaymentLink}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {isSendingPaymentLink ? (
+                    <>
+                      <ButtonSpinner />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Add Payment Method
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
         
         <div className="pt-6 border-t">
           <h3 className="text-sm font-medium text-gray-500 mb-2">Customer Activity</h3>
