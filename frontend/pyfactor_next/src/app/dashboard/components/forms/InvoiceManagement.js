@@ -1185,7 +1185,7 @@ const InvoiceManagement = () => {
                             {order.items?.length || 0} items
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {currency} {parseFloat(order.total_amount || 0).toFixed(2)}
+                            {currency?.code || 'USD'} {parseFloat(order.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1290,7 +1290,7 @@ const InvoiceManagement = () => {
                             {transaction.items?.length || 0} items
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {currency} {parseFloat(transaction.total_amount || 0).toFixed(2)}
+                            {currency?.code || 'USD'} {parseFloat(transaction.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1391,7 +1391,7 @@ const InvoiceManagement = () => {
                             {invoice.customer_name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {currency} {parseFloat(invoice.total_amount || 0).toFixed(2)}
+                            {currency?.code || 'USD'} {parseFloat(invoice.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
