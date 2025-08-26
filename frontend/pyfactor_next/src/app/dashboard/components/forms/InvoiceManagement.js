@@ -120,7 +120,7 @@ const RecordPaymentDialog = ({ isOpen, onClose, invoice, onRecord }) => {
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Invoice #{invoice?.invoice_number}</span>
-                    <span className="font-medium text-gray-900">${parseFloat(invoice?.total_amount || 0).toFixed(2)}</span>
+                    <span className="font-medium text-gray-900">{currency?.code || 'USD'} {parseFloat(invoice?.total_amount || 0).toFixed(2)}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">{invoice?.customer_name}</div>
                 </div>
@@ -172,7 +172,7 @@ const RecordPaymentDialog = ({ isOpen, onClose, invoice, onRecord }) => {
                   </div>
                   {isPartialPayment && (
                     <p className="mt-1 text-xs text-orange-600">
-                      This is a partial payment. Remaining: ${(parseFloat(invoice?.total_amount || 0) - parseFloat(amount || 0)).toFixed(2)}
+                      This is a partial payment. Remaining: {currency?.code || 'USD'} {(parseFloat(invoice?.total_amount || 0) - parseFloat(amount || 0)).toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -904,7 +904,7 @@ const InvoiceManagement = () => {
       toast.success(
         isPaidInFull 
           ? 'Payment recorded successfully. Invoice marked as paid.'
-          : `Partial payment of $${paymentData.amount.toFixed(2)} recorded successfully.`
+          : `Partial payment of ${currency?.code || 'USD'} ${paymentData.amount.toFixed(2)} recorded successfully.`
       );
       
       await fetchData();
@@ -1050,7 +1050,7 @@ const InvoiceManagement = () => {
           <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Pending Orders</h3>
           <p className="text-3xl font-bold text-blue-600 mt-2">{summaryStats.orders.pending}</p>
           <p className="text-gray-600 text-sm mt-1">
-            ${summaryStats.orders.totalValue.toFixed(2)} total value
+            {currency?.code || 'USD'} {summaryStats.orders.totalValue.toFixed(2)} total value
           </p>
         </div>
         
@@ -1066,7 +1066,7 @@ const InvoiceManagement = () => {
           <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Unpaid Invoices</h3>
           <p className="text-3xl font-bold text-red-600 mt-2">{summaryStats.invoices.unpaid}</p>
           <p className="text-gray-600 text-sm mt-1">
-            ${summaryStats.invoices.totalValue.toFixed(2)} outstanding
+            {currency?.code || 'USD'} {summaryStats.invoices.totalValue.toFixed(2)} outstanding
           </p>
         </div>
       </div>
