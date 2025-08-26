@@ -9,6 +9,7 @@ import { logger } from '@/utils/logger';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { canDeleteItem } from '@/utils/accountingRestrictions';
+import { StripePaymentModal } from '@/components/payments/StripePaymentModal';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 const CustomerManagement = () => {
@@ -29,20 +30,6 @@ const CustomerManagement = () => {
     const [autopayEnabled, setAutopayEnabled] = useState(false);
     const [isUpdatingAutopay, setIsUpdatingAutopay] = useState(false);
     const [showManualPaymentEntry, setShowManualPaymentEntry] = useState(false);
-    const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
-    const [manualPaymentData, setManualPaymentData] = useState({
-      type: 'card',
-      card_number: '',
-      exp_month: '',
-      exp_year: '',
-      cvc: '',
-      cardholder_name: '',
-      // Bank account fields
-      account_number: '',
-      routing_number: '',
-      account_holder_name: '',
-      account_type: 'checking'
-    });
     
     // Location dropdown states
     const [countries, setCountries] = useState([]);
@@ -265,51 +252,15 @@ const CustomerManagement = () => {
     }
   };
 
-  // Handle manual payment method addition
-  const handleAddPaymentMethodManually = async () => {
-    setIsAddingPaymentMethod(true);
+  // Handle payment method added via Stripe Elements
+  const handlePaymentMethodAdded = async (paymentMethod) => {
+    console.log('[CustomerManagement] Payment method added:', paymentMethod);
+    toast.success('Payment method added successfully');
+    setShowManualPaymentEntry(false);
     
-    try {
-      const response = await fetch('/api/payments/add-payment-method', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          customer_id: selectedCustomer.id,
-          customer_email: selectedCustomer.email,
-          payment_data: manualPaymentData
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success('Payment method added successfully');
-        setShowManualPaymentEntry(false);
-        setManualPaymentData({
-          type: 'card',
-          card_number: '',
-          exp_month: '',
-          exp_year: '',
-          cvc: '',
-          cardholder_name: '',
-          account_number: '',
-          routing_number: '',
-          account_holder_name: '',
-          account_type: 'checking'
-        });
-        // Refresh payment methods
-        await fetchPaymentMethods(selectedCustomer.id);
-      } else {
-        toast.error(data.error || 'Failed to add payment method');
-      }
-    } catch (error) {
-      console.error('[CustomerManagement] Error adding payment method:', error);
-      toast.error('An error occurred while adding payment method');
-    } finally {
-      setIsAddingPaymentMethod(false);
+    // Refresh payment methods
+    if (selectedCustomer?.id) {
+      await fetchPaymentMethods(selectedCustomer.id);
     }
   };
 
@@ -1695,229 +1646,14 @@ const CustomerManagement = () => {
       {/* Delete Confirmation Dialog */}
       {renderDeleteDialog()}
       
-      {/* Manual Payment Entry Modal */}
-      <Transition appear show={showManualPaymentEntry} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setShowManualPaymentEntry(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900"
-                  >
-                    Add Payment Method Manually
-                  </Dialog.Title>
-                  
-                  <div className="mt-4">
-                    {/* Payment Type Selection */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Payment Type
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => setManualPaymentData(prev => ({ ...prev, type: 'card' }))}
-                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                            manualPaymentData.type === 'card'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          💳 Credit/Debit Card
-                        </button>
-                        <button
-                          onClick={() => setManualPaymentData(prev => ({ ...prev, type: 'bank' }))}
-                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                            manualPaymentData.type === 'bank'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          🏦 Bank Account
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Card Fields */}
-                    {manualPaymentData.type === 'card' && (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Cardholder Name
-                          </label>
-                          <input
-                            type="text"
-                            value={manualPaymentData.cardholder_name}
-                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, cardholder_name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="John Doe"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Card Number
-                          </label>
-                          <input
-                            type="text"
-                            value={manualPaymentData.card_number}
-                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, card_number: e.target.value.replace(/\s/g, '') }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="4242 4242 4242 4242"
-                            maxLength="16"
-                          />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Month
-                            </label>
-                            <input
-                              type="text"
-                              value={manualPaymentData.exp_month}
-                              onChange={(e) => setManualPaymentData(prev => ({ ...prev, exp_month: e.target.value }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="MM"
-                              maxLength="2"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Year
-                            </label>
-                            <input
-                              type="text"
-                              value={manualPaymentData.exp_year}
-                              onChange={(e) => setManualPaymentData(prev => ({ ...prev, exp_year: e.target.value }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="YY"
-                              maxLength="2"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              CVC
-                            </label>
-                            <input
-                              type="text"
-                              value={manualPaymentData.cvc}
-                              onChange={(e) => setManualPaymentData(prev => ({ ...prev, cvc: e.target.value }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="123"
-                              maxLength="4"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Bank Account Fields */}
-                    {manualPaymentData.type === 'bank' && (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Account Holder Name
-                          </label>
-                          <input
-                            type="text"
-                            value={manualPaymentData.account_holder_name}
-                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, account_holder_name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="John Doe"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Account Type
-                          </label>
-                          <select
-                            value={manualPaymentData.account_type}
-                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, account_type: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="checking">Checking</option>
-                            <option value="savings">Savings</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Routing Number
-                          </label>
-                          <input
-                            type="text"
-                            value={manualPaymentData.routing_number}
-                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, routing_number: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="110000000"
-                            maxLength="9"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Account Number
-                          </label>
-                          <input
-                            type="text"
-                            value={manualPaymentData.account_number}
-                            onChange={(e) => setManualPaymentData(prev => ({ ...prev, account_number: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="000123456789"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      onClick={() => setShowManualPaymentEntry(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleAddPaymentMethodManually}
-                      disabled={isAddingPaymentMethod}
-                    >
-                      {isAddingPaymentMethod ? (
-                        <span className="flex items-center">
-                          <ButtonSpinner />
-                          Adding...
-                        </span>
-                      ) : (
-                        'Add Payment Method'
-                      )}
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      {/* Stripe Elements Payment Modal (PCI Compliant) */}
+      <StripePaymentModal
+        isOpen={showManualPaymentEntry}
+        onClose={() => setShowManualPaymentEntry(false)}
+        customerId={selectedCustomer?.id}
+        customerEmail={selectedCustomer?.email}
+        onSuccess={handlePaymentMethodAdded}
+      />
     </div>
   );
 };
