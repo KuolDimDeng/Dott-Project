@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Offline Persistence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+        }
+        .success { border-color: #10b981; background: #dcfce7; }
+        .error { border-color: #ef4444; background: #fee2e2; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 6px;
+            border: none;
+            background: #0f172a;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Offline Data Persistence Test</h1>
+    <div id="results"></div>
+    
+    <button onclick="testSaveData()">Test Save Data</button>
+    <button onclick="testLoadData()">Test Load Data</button>
+    <button onclick="testQueueTransaction()">Queue Transaction</button>
+    <button onclick="clearData()">Clear All Data</button>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        async function log(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isError ? 'error' : 'success'}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            results.insertBefore(div, results.firstChild);
+        }
+
+        async function testSaveData() {
+            try {
+                // Test with Capacitor Preferences if available
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    await Preferences.set({
+                        key: 'test_products',
+                        value: JSON.stringify([
+                            { id: 1, name: 'Test Product', price: 9.99 },
+                            { id: 2, name: 'Another Product', price: 19.99 }
+                        ])
+                    });
+                    log('✓ Saved products to Capacitor Preferences');
+                    
+                    await Preferences.set({
+                        key: 'test_transaction',
+                        value: JSON.stringify({
+                            id: Date.now(),
+                            total: 29.98,
+                            items: 2,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                    log('✓ Saved transaction to Capacitor Preferences');
+                } else {
+                    // Fallback to localStorage
+                    localStorage.setItem('test_products', JSON.stringify([
+                        { id: 1, name: 'Test Product', price: 9.99 },
+                        { id: 2, name: 'Another Product', price: 19.99 }
+                    ]));
+                    log('✓ Saved products to localStorage');
+                    
+                    localStorage.setItem('test_transaction', JSON.stringify({
+                        id: Date.now(),
+                        total: 29.98,
+                        items: 2,
+                        timestamp: new Date().toISOString()
+                    }));
+                    log('✓ Saved transaction to localStorage');
+                }
+            } catch (error) {
+                log(`✗ Save failed: ${error.message}`, true);
+            }
+        }
+
+        async function testLoadData() {
+            try {
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    
+                    const { value: productsStr } = await Preferences.get({ key: 'test_products' });
+                    if (productsStr) {
+                        const products = JSON.parse(productsStr);
+                        log(`✓ Loaded ${products.length} products from Capacitor`);
+                    } else {
+                        log('⚠ No products found in Capacitor', true);
+                    }
+                    
+                    const { value: transactionStr } = await Preferences.get({ key: 'test_transaction' });
+                    if (transactionStr) {
+                        const transaction = JSON.parse(transactionStr);
+                        log(`✓ Loaded transaction #${transaction.id} from Capacitor`);
+                    } else {
+                        log('⚠ No transaction found in Capacitor', true);
+                    }
+                } else {
+                    const productsStr = localStorage.getItem('test_products');
+                    if (productsStr) {
+                        const products = JSON.parse(productsStr);
+                        log(`✓ Loaded ${products.length} products from localStorage`);
+                    } else {
+                        log('⚠ No products found in localStorage', true);
+                    }
+                    
+                    const transactionStr = localStorage.getItem('test_transaction');
+                    if (transactionStr) {
+                        const transaction = JSON.parse(transactionStr);
+                        log(`✓ Loaded transaction #${transaction.id} from localStorage`);
+                    } else {
+                        log('⚠ No transaction found in localStorage', true);
+                    }
+                }
+            } catch (error) {
+                log(`✗ Load failed: ${error.message}`, true);
+            }
+        }
+
+        async function testQueueTransaction() {
+            try {
+                const queueKey = 'offline_queue';
+                const transaction = {
+                    id: Date.now(),
+                    type: 'pos_sale',
+                    total: 49.99,
+                    items: [
+                        { name: 'Product A', quantity: 2, price: 24.99 }
+                    ],
+                    timestamp: new Date().toISOString(),
+                    synced: false
+                };
+
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    const { value: queueStr } = await Preferences.get({ key: queueKey });
+                    const queue = queueStr ? JSON.parse(queueStr) : [];
+                    queue.push(transaction);
+                    await Preferences.set({
+                        key: queueKey,
+                        value: JSON.stringify(queue)
+                    });
+                    log(`✓ Queued transaction #${transaction.id} (${queue.length} total in queue)`);
+                } else {
+                    const queueStr = localStorage.getItem(queueKey);
+                    const queue = queueStr ? JSON.parse(queueStr) : [];
+                    queue.push(transaction);
+                    localStorage.setItem(queueKey, JSON.stringify(queue));
+                    log(`✓ Queued transaction #${transaction.id} (${queue.length} total in queue)`);
+                }
+            } catch (error) {
+                log(`✗ Queue failed: ${error.message}`, true);
+            }
+        }
+
+        async function clearData() {
+            try {
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    await Preferences.clear();
+                    log('✓ Cleared all Capacitor Preferences');
+                } else {
+                    localStorage.clear();
+                    log('✓ Cleared all localStorage');
+                }
+            } catch (error) {
+                log(`✗ Clear failed: ${error.message}`, true);
+            }
+        }
+
+        // Auto-detect environment on load
+        window.addEventListener('load', () => {
+            if (window.Capacitor) {
+                log('🔵 Running in Capacitor environment');
+            } else {
+                log('🌐 Running in browser environment');
+            }
+            log(`📱 Online status: ${navigator.onLine ? 'Online' : 'Offline'}`);
+        });
+
+        // Monitor online/offline changes
+        window.addEventListener('online', () => log('🟢 Network: Back online'));
+        window.addEventListener('offline', () => log('🔴 Network: Gone offline'));
+    </script>
+</body>
+</html>
