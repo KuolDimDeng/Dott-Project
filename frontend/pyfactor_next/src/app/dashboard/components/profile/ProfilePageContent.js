@@ -31,8 +31,14 @@ import {
   ChevronUpIcon,
   EyeIcon,
   EyeSlashIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  DocumentTextIcon,
+  ShieldExclamationIcon,
+  CakeIcon
 } from '@heroicons/react/24/outline';
+import TermsOfServiceInternal from '@/app/Settings/components/legal/TermsOfServiceInternal';
+import PrivacyPolicyInternal from '@/app/Settings/components/legal/PrivacyPolicyInternal';
+import CookiePolicyInternal from '@/app/Settings/components/legal/CookiePolicyInternal';
 
 /**
  * ProfilePageContent - Renders only the content for a specific tab without the tab navigation
@@ -52,6 +58,7 @@ export default function ProfilePageContent({ activeTab = 'profile', hideTabNavig
   const [editedData, setEditedData] = useState({});
   const [savingProfile, setSavingProfile] = useState(false);
   const fileInputRef = useRef(null);
+  const [selectedDocument, setSelectedDocument] = useState(null);
   
   // Security tab states
   const [sessions, setSessions] = useState([]);
@@ -526,22 +533,109 @@ export default function ProfilePageContent({ activeTab = 'profile', hideTabNavig
     </div>
   );
 
-  const renderDocumentsTab = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Employment Documents</CardTitle>
-          <CardDescription>Access your important documents</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <DocumentIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p>No documents available</p>
+  const renderDocumentsTab = () => {
+    if (selectedDocument) {
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={() => setSelectedDocument(null)}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Documents
+            </button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+          <Card>
+            <CardContent className="p-6">
+              {selectedDocument === 'terms' && <TermsOfServiceInternal />}
+              {selectedDocument === 'privacy' && <PrivacyPolicyInternal />}
+              {selectedDocument === 'cookie' && <CookiePolicyInternal />}
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Company Documents</CardTitle>
+            <CardDescription>Access your important documents and policies</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              {/* Employment Documents Section */}
+              <div className="border-b pb-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Employment Documents</h3>
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                  <DocumentIcon className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+                  <p className="text-sm">No employment documents available</p>
+                </div>
+              </div>
+              
+              {/* Legal Documents Section */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Legal Documents</h3>
+                <div className="grid gap-3">
+                  <button
+                    onClick={() => setSelectedDocument('terms')}
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-sm transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <DocumentTextIcon className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Terms of Service</h4>
+                        <p className="text-sm text-gray-500">Review our terms and conditions</p>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedDocument('privacy')}
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-sm transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ShieldExclamationIcon className="w-6 h-6 text-green-600" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Privacy Policy</h4>
+                        <p className="text-sm text-gray-500">How we protect your information</p>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedDocument('cookie')}
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-sm transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <CakeIcon className="w-6 h-6 text-purple-600" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Cookie Policy</h4>
+                        <p className="text-sm text-gray-500">Learn about our cookie usage</p>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const renderTimesheetTab = () => (
     <TimesheetTab employeeId={session?.employee?.id} />
