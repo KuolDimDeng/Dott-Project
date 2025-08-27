@@ -19,6 +19,11 @@ const config: CapacitorConfig = {
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert']
+    },
+    SecureStorage: {
+      encrypt: true,
+      keychainService: 'com.dottapps.mobile.keychain',
+      sharedPreferencesName: 'com.dottapps.mobile.secure'
     }
   },
   ios: {
