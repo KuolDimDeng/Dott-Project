@@ -90,6 +90,9 @@ urlpatterns = [
     
     # Include router URLs
     path('', include(router.urls)),
+    
+    # RBAC endpoints
+    path('rbac/', include('custom_auth.urls_rbac')),
 ]
 
 # Add new Auth0 endpoints if available
