@@ -415,11 +415,20 @@ const MenuOverviewGrid = ({
           value: 'dashboard'
         },
         {
-          id: 'vendors',
-          title: 'Vendors',
-          description: 'Manage vendor information and relationships',
+          id: 'suppliers',
+          title: 'Suppliers/Materials',
+          description: 'Manage product suppliers and materials',
           icon: UserCheck,
           color: 'bg-green-500',
+          stats: { label: 'Active Suppliers', key: 'activeSuppliers' },
+          value: 'suppliers'
+        },
+        {
+          id: 'vendors',
+          title: 'Vendor Management',
+          description: 'Manage vendor information and relationships',
+          icon: UserCheck,
+          color: 'bg-indigo-500',
           stats: { label: 'Active Vendors', key: 'activeVendors' },
           value: 'vendors'
         },
@@ -434,39 +443,12 @@ const MenuOverviewGrid = ({
         },
         {
           id: 'bills',
-          title: 'Bills',
+          title: 'Bill Management',
           description: 'Manage vendor bills and payment schedules',
           icon: FileInvoice,
           color: 'bg-orange-500',
           stats: { label: 'Unpaid Bills', key: 'unpaidBills' },
           value: 'bills'
-        },
-        {
-          id: 'expenses',
-          title: 'Expenses',
-          description: 'Track and categorize business expenses',
-          icon: Receipt,
-          color: 'bg-pink-500',
-          stats: { label: 'This Month', key: 'monthlyExpenses' },
-          value: 'expenses'
-        },
-        {
-          id: 'purchase-returns',
-          title: 'Purchase Returns',
-          description: 'Process returns and credits from vendors',
-          icon: RotateCcw,
-          color: 'bg-red-500',
-          stats: { label: 'Pending Returns', key: 'pendingReturns' },
-          value: 'purchase-returns'
-        },
-        {
-          id: 'procurement',
-          title: 'Procurement',
-          description: 'Manage procurement processes and approvals',
-          icon: Search,
-          color: 'bg-indigo-500',
-          stats: { label: 'Approval Pending', key: 'approvalPending' },
-          value: 'procurement'
         },
         {
           id: 'reports',

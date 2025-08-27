@@ -12,6 +12,8 @@ const PurchasesOverview = ({ userData, ...props }) => {
     const routeMapping = {
       'dashboard': 'purchases-dashboard',
       'vendors': 'vendor-management',
+      'suppliers': 'product-supplier-management', // Added for Suppliers/Materials
+      'product-suppliers': 'product-supplier-management', // Alias
       'purchase-orders': 'purchase-order-management',
       'bills': 'bill-management',
       'expenses': 'expenses-management',

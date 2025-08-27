@@ -8,6 +8,7 @@ import '@/utils/bindPolyfill';
 import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
 // Security notification removed - CSP now handled properly
 import Providers from '@/providers';
+import CapacitorInitializer from '@/components/CapacitorInitializer';
 import { headers } from 'next/headers';
 
 const inter = Inter({ subsets: ["latin"] });
@@ -80,6 +81,9 @@ export default function RootLayout({ children }) {
         
         {/* TDZ Protection Initializer */}
         <TDZProtectionInitializer />
+        
+        {/* Capacitor Initializer for Native Apps */}
+        <CapacitorInitializer />
         
         <Providers>
           {children}
