@@ -364,14 +364,23 @@ CORS_ALLOWED_ORIGINS = [
     # Local development
     'https://localhost:3000',
     'https://127.0.0.1:3000',
+    'http://localhost:3000',
+    'http://localhost:3001',
     # Backend URLs
     'https://localhost:8000',
     'https://127.0.0.1:8000',
+    # Staging domains
+    'https://staging.dottapps.com',
+    'https://dott-front-staging.onrender.com',
     # Production - Dott domains
     'https://dottapps.com',
     'https://www.dottapps.com',
     'https://app.dottapps.com',
     'https://api.dottapps.com',
+    # Mobile app origins (Capacitor)
+    'capacitor://localhost',
+    'capacitor://app.dottapps.com',
+    'ionic://localhost',
     # Sentry domains for error tracking
     'https://sentry.io',
     'https://o4509614361804800.ingest.us.sentry.io',
