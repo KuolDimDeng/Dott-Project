@@ -13,7 +13,7 @@ export async function POST(request) {
     }
     
     // Verify invitation with backend
-    const response = await djangoApiClient.post('/api/auth/rbac/invitations/verify/', {
+    const response = await djangoApiClient.post('/auth/rbac/invitations/verify/', {
       token,
       email
     });

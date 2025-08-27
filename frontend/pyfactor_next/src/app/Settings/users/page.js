@@ -50,9 +50,9 @@ export default function UserManagementPage() {
       
       // Fetch users, pages, and invitations in parallel
       const [usersRes, pagesRes, invitationsRes] = await Promise.all([
-        djangoApiClient.get('/api/auth/rbac/users/'),
-        djangoApiClient.get('/api/auth/rbac/pages/'),
-        djangoApiClient.get('/api/auth/rbac/invitations/')
+        djangoApiClient.get('/auth/rbac/users/'),
+        djangoApiClient.get('/auth/rbac/pages/'),
+        djangoApiClient.get('/auth/rbac/invitations/')
       ]);
 
       setUsers(usersRes.data);
@@ -87,7 +87,7 @@ export default function UserManagementPage() {
         }
       });
 
-      const response = await djangoApiClient.post('/api/auth/rbac/invitations/', {
+      const response = await djangoApiClient.post('/auth/rbac/invitations/', {
         email: inviteForm.email,
         role: inviteForm.role,
         page_permissions: pagePermissions
@@ -119,7 +119,7 @@ export default function UserManagementPage() {
         }
       });
 
-      await djangoApiClient.post(`/api/auth/rbac/users/${selectedUser.id}/update_permissions/`, {
+      await djangoApiClient.post(`/auth/rbac/users/${selectedUser.id}/update_permissions/`, {
         role: selectedUser.role,
         page_permissions: pagePermissions
       });
@@ -136,7 +136,7 @@ export default function UserManagementPage() {
   const handleDeactivateUser = async (userId) => {
     if (confirm('Are you sure you want to deactivate this user?')) {
       try {
-        await djangoApiClient.post(`/api/auth/rbac/users/${userId}/deactivate/`);
+        await djangoApiClient.post(`/auth/rbac/users/${userId}/deactivate/`);
         toast.success('User deactivated');
         fetchData();
       } catch (error) {
@@ -148,7 +148,7 @@ export default function UserManagementPage() {
 
   const handleActivateUser = async (userId) => {
     try {
-      await djangoApiClient.post(`/api/auth/rbac/users/${userId}/activate/`);
+      await djangoApiClient.post(`/auth/rbac/users/${userId}/activate/`);
       toast.success('User activated');
       fetchData();
     } catch (error) {
@@ -159,7 +159,7 @@ export default function UserManagementPage() {
 
   const handleResendInvitation = async (invitationId) => {
     try {
-      await djangoApiClient.post(`/api/auth/rbac/invitations/${invitationId}/resend/`);
+      await djangoApiClient.post(`/auth/rbac/invitations/${invitationId}/resend/`);
       toast.success('Invitation resent');
       fetchData();
     } catch (error) {
@@ -171,7 +171,7 @@ export default function UserManagementPage() {
   const handleCancelInvitation = async (invitationId) => {
     if (confirm('Are you sure you want to cancel this invitation?')) {
       try {
-        await djangoApiClient.post(`/api/auth/rbac/invitations/${invitationId}/cancel/`);
+        await djangoApiClient.post(`/auth/rbac/invitations/${invitationId}/cancel/`);
         toast.success('Invitation cancelled');
         fetchData();
       } catch (error) {

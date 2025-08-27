@@ -25,7 +25,7 @@ export async function POST(request) {
     }
     
     // Accept invitation with backend
-    const response = await djangoApiClient.post('/api/auth/rbac/invitations/accept/', {
+    const response = await djangoApiClient.post('/auth/rbac/invitations/accept/', {
       token,
       email
     });
