@@ -395,6 +395,16 @@ export const routeRegistry = {
     title: 'Purchase Orders',
     description: 'Create and manage POs'
   },
+  'purchase-order-management': {
+    component: enhancedLazy(() => import('../components/forms/PurchaseOrderManagement'), 'Purchase Order Management'),
+    title: 'Purchase Orders',
+    description: 'Manage purchase orders'
+  },
+  'product-supplier-management': {
+    component: enhancedLazy(() => import('../components/forms/ProductSupplierManagement'), 'Product Supplier Management'),
+    title: 'Suppliers/Materials',
+    description: 'Manage product suppliers and materials'
+  },
   'expenses': {
     component: enhancedLazy(() => import('../components/forms/ExpenseManagement'), 'Expense Management'),
     title: 'Expenses',

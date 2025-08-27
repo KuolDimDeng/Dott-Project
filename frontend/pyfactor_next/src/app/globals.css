@@ -27,7 +27,7 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
-  --primary-main: #0a3977; /* Navy blue */
+  --primary-main: #0d4f8a; /* Slightly lighter navy blue - more approachable */
   --primary-light: #1a5bc0; /* Standard blue */
   --primary-dark: #041e42; /* Dark navy blue */
   --error-main: #d32f2f;
