@@ -23,18 +23,18 @@ export const logger = {
 };
 
 // Performance monitoring helpers (no-op)
-export const startTransaction = (name: string, op: string = 'navigation') => {
+export const startTransaction = (_name: string, _op?: string) => {
   // Return a transaction-like object for compatibility
   return {
-    setStatus: (status: string) => {},
+    setStatus: (_status: string) => {},
     finish: () => {},
   };
 };
 
 export const measurePerformance = async <T>(
-  name: string,
+  _name: string,
   operation: () => Promise<T>,
-  context?: Record<string, any>
+  _context?: Record<string, any>
 ): Promise<T> => {
   try {
     const result = await operation();
@@ -45,7 +45,7 @@ export const measurePerformance = async <T>(
 };
 
 // User identification (no-op)
-export const identifyUser = (user: { id: string; email?: string; name?: string }) => {
+export const identifyUser = (_user: { id: string; email?: string; name?: string }) => {
   // No-op: Sentry removed
 };
 
@@ -55,17 +55,17 @@ export const clearUser = () => {
 };
 
 // Add custom context (no-op)
-export const addContext = (key: string, context: Record<string, any>) => {
+export const addContext = (_key: string, _context: Record<string, any>) => {
   // No-op: Sentry removed
 };
 
 // Track custom events (no-op)
-export const trackEvent = (eventName: string, data?: Record<string, any>) => {
+export const trackEvent = (_eventName: string, _data?: Record<string, any>) => {
   // No-op: Sentry removed
 };
 
 // Capture feedback (no-op)
-export const captureFeedback = (feedback: {
+export const captureFeedback = (_feedback: {
   name?: string;
   email?: string;
   message: string;

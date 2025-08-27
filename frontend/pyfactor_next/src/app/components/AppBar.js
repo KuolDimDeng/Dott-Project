@@ -270,11 +270,11 @@ export default function AppBar() {
               onClick={() => router.push('/')}
             >
               <img
-                src="/static/images/PyfactorLandingpage.png"
-                alt={t('appBar.logoAlt', 'PyFactor Logo')}
-                width={270}
-                height={90}
-                className="h-14 md:h-20 w-auto object-contain"
+                src="/static/images/Landingpagelogo.png"
+                alt={t('appBar.logoAlt', 'Dott Logo')}
+                width={180}
+                height={50}
+                className="h-10 md:h-12 w-auto object-contain"
               />
             </div>
           </div>

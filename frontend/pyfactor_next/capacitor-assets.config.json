@@ -1,0 +1,18 @@
+{
+  "assets": {
+    "icon": {
+      "input": "resources/icon.png",
+      "output": {
+        "android": "android/app/src/main/res",
+        "ios": "ios/App/App/Assets.xcassets/AppIcon.appiconset"
+      }
+    },
+    "splash": {
+      "input": "resources/splash.png", 
+      "output": {
+        "android": "android/app/src/main/res",
+        "ios": "ios/App/App/Assets.xcassets/Splash.imageset"
+      }
+    }
+  }
+}

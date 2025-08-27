@@ -11,8 +11,8 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to Sentry
-    Sentry.captureException(error);
+    // Log the error to console (Sentry removed for mobile build)
+    console.error('Application error:', error);
   }, [error]);
 
   return (

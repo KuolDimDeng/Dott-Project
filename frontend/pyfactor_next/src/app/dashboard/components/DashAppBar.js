@@ -1418,10 +1418,10 @@ const DashAppBar = ({
             {/* Logo */}
             <div className="cursor-pointer flex items-center">
               <Image 
-                src="/static/images/PyfactorDashboard.png"
-                alt="Pyfactor Dashboard Logo"
-                width={90}
-                height={80}
+                src="/static/images/Dashappbarlogo.png"
+                alt="Dott Dashboard Logo"
+                width={140}
+                height={40}
                 className="object-contain"
                 priority
               />
