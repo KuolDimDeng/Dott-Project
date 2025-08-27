@@ -144,13 +144,42 @@ export async function GET(request) {
         ...((isProduction || isStaging) && { domain: '.dottapps.com' })
       });
       
+      // Get OAuth provider from cookie to handle provider-specific data
+      const provider = request.cookies.get('oauth_provider')?.value || 'google';
+      
       // Set user data in a separate cookie for client access
-      const userData = {
+      let userData = {
         email: exchangeData.user?.email,
-        name: exchangeData.user?.name,
+        provider: provider,
         picture: exchangeData.user?.picture,
         tenantId: exchangeData.user?.tenant_id
       };
+      
+      // Handle provider-specific user data
+      if (provider === 'apple') {
+        // Apple provides name only on first sign-in
+        userData.firstName = exchangeData.user?.given_name || 
+                           exchangeData.user?.fullName?.givenName || 
+                           exchangeData.user?.first_name || 
+                           '';
+        userData.lastName = exchangeData.user?.family_name || 
+                          exchangeData.user?.fullName?.familyName || 
+                          exchangeData.user?.last_name || 
+                          '';
+        userData.name = exchangeData.user?.name || 
+                       `${userData.firstName} ${userData.lastName}`.trim() ||
+                       exchangeData.user?.email?.split('@')[0];
+        
+        // Handle Apple's private relay email
+        userData.isPrivateRelay = userData.email?.includes('@privaterelay.appleid.com');
+      } else {
+        // Google/other provider data handling
+        userData.firstName = exchangeData.user?.given_name || 
+                           exchangeData.user?.first_name || '';
+        userData.lastName = exchangeData.user?.family_name || 
+                          exchangeData.user?.last_name || '';
+        userData.name = exchangeData.user?.name;
+      }
       
       response.cookies.set('user_data', JSON.stringify(userData), {
         httpOnly: false, // Allow client access

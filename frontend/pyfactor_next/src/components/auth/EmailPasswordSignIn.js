@@ -15,6 +15,7 @@ import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 import { useSession } from '@/hooks/useSession-v2';
 import PageTitle from '@/components/PageTitle';
+import AppleSignInButton from './AppleSignInButton';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
@@ -161,6 +162,27 @@ export default function EmailPasswordSignIn() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleAppleLogin = () => {
+    console.log('🍎 [AppleOAuth] Starting Apple Sign-In flow');
+    
+    // Track the OAuth attempt
+    trackEvent(posthog, EVENTS.OAUTH_STARTED, { 
+      provider: 'apple',
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    });
+    
+    // Store language preference
+    const langParam = searchParams.get('lang');
+    if (langParam) {
+      sessionStorage.setItem('oauth_language', langParam);
+      localStorage.setItem('preferredLanguage', langParam);
+    }
+    
+    // Redirect to Apple OAuth endpoint
+    window.location.href = '/api/auth/oauth/apple-v2';
   };
 
   const handleGoogleLogin = () => {
@@ -937,6 +959,14 @@ export default function EmailPasswordSignIn() {
                   </svg>
                   {t('signin.googleSignin')}
                 </button>
+              </div>
+              
+              {/* Apple Sign In */}
+              <div className="mt-3">
+                <AppleSignInButton 
+                  onClick={handleAppleLogin}
+                  disabled={isLoading}
+                />
               </div>
             </div>
           )}
