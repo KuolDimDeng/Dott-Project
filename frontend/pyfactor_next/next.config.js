@@ -375,7 +375,7 @@ const nextConfig = {
           // This provides industry-standard security while allowing authentication
         ]
       },
-      // API routes should not be cached
+      // API routes should not be cached and should allow CORS for mobile app
       {
         source: '/api/:path*',
         headers: [
@@ -390,6 +390,18 @@ const nextConfig = {
           {
             key: 'Expires',
             value: '0',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
           },
         ],
       },
