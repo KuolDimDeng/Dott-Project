@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { loadReactPdfRenderer } from '@/utils/dynamic-imports';
 
 const EstimatePdfViewer = ({ pdfBlob }) => {
   const [numPages, setNumPages] = useState(null);
@@ -10,7 +9,8 @@ const EstimatePdfViewer = ({ pdfBlob }) => {
   useEffect(() => {
     async function loadPdfComponents() {
       try {
-        const ReactPDF = await loadReactPdfRenderer();
+        // Dynamically import react-pdf
+        const ReactPDF = await import('react-pdf');
         // Set up worker if needed
         if (ReactPDF.pdfjs && ReactPDF.pdfjs.GlobalWorkerOptions) {
           // Always use CDN version to avoid syntax errors in minified file

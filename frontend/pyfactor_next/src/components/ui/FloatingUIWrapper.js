@@ -1,8 +1,6 @@
 'use client';
 
-
 import React, { useState, useEffect } from 'react';
-import { loadFloatingUI } from '@/utils/dynamic-imports';
 
 /**
  * A wrapper component that dynamically loads Floating UI
@@ -19,7 +17,8 @@ export default function FloatingUIWrapper({ children, onLoad, fallback = null })
     async function loadUI() {
       try {
         setIsLoading(true);
-        const module = await loadFloatingUI();
+        // Dynamically import @floating-ui/react
+        const module = await import('@floating-ui/react');
         
         if (isMounted) {
           setFloatingUI(module);

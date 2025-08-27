@@ -1,17 +1,27 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
-import { setupChart } from '@/utils/chartSetup';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import { 
   ChartBarIcon, 
   EyeIcon, 
   EyeSlashIcon,
   ArrowsPointingOutIcon 
 } from '@heroicons/react/24/outline';
-
-// Ensure Chart.js is set up
-setupChart();
 
 const SmartInsightVisualization = ({ visualizations, className = '' }) => {
   const [collapsedCharts, setCollapsedCharts] = useState(new Set());
@@ -76,33 +86,108 @@ const SmartInsightVisualization = ({ visualizations, className = '' }) => {
   const renderChart = (visualization, size = 'normal') => {
     const { chartType, data, options, title } = visualization;
     
-    const chartProps = {
-      data,
-      options: {
-        ...options,
-        responsive: true,
-        maintainAspectRatio: size === 'normal',
-        plugins: {
-          ...options.plugins,
-          legend: {
-            ...options.plugins?.legend,
-            position: size === 'expanded' ? 'top' : 'bottom'
-          }
-        }
-      }
-    };
+    // Transform Chart.js data format to Recharts format
+    const transformedData = data.labels?.map((label, index) => {
+      const point = { name: label };
+      data.datasets?.forEach((dataset) => {
+        point[dataset.label || 'value'] = dataset.data[index];
+      });
+      return point;
+    }) || [];
+
+    // Define colors for charts
+    const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
     switch (chartType) {
       case 'bar':
-        return <Bar {...chartProps} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={transformedData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              {size === 'expanded' ? <Legend /> : null}
+              {data.datasets?.map((dataset, index) => (
+                <Bar 
+                  key={dataset.label} 
+                  dataKey={dataset.label || 'value'} 
+                  fill={dataset.backgroundColor || COLORS[index % COLORS.length]}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        );
       case 'line':
-        return <Line {...chartProps} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={transformedData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              {size === 'expanded' ? <Legend /> : null}
+              {data.datasets?.map((dataset, index) => (
+                <Line 
+                  key={dataset.label}
+                  type="monotone" 
+                  dataKey={dataset.label || 'value'} 
+                  stroke={dataset.borderColor || COLORS[index % COLORS.length]}
+                  strokeWidth={2}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        );
       case 'doughnut':
-        return <Doughnut {...chartProps} />;
       case 'pie':
-        return <Pie {...chartProps} />;
+        // For pie/doughnut, use first dataset only
+        const pieData = data.labels?.map((label, index) => ({
+          name: label,
+          value: data.datasets?.[0]?.data?.[index] || 0
+        })) || [];
+        const pieColors = data.datasets?.[0]?.backgroundColor || COLORS;
+        
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={chartType === 'doughnut' ? 60 : 0}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                label
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={Array.isArray(pieColors) ? pieColors[index % pieColors.length] : pieColors} />
+                ))}
+              </Pie>
+              <Tooltip />
+              {size === 'expanded' ? <Legend /> : null}
+            </PieChart>
+          </ResponsiveContainer>
+        );
       default:
-        return <Bar {...chartProps} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={transformedData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              {data.datasets?.map((dataset, index) => (
+                <Bar 
+                  key={dataset.label} 
+                  dataKey={dataset.label || 'value'} 
+                  fill={dataset.backgroundColor || COLORS[index % COLORS.length]}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        );
     }
   };
 
