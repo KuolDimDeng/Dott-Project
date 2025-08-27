@@ -405,6 +405,11 @@ export const routeRegistry = {
     title: 'Suppliers/Materials',
     description: 'Manage product suppliers and materials'
   },
+  'product-suppliers': {
+    component: enhancedLazy(() => import('../components/forms/ProductSupplierManagement'), 'Product Suppliers'),
+    title: 'Suppliers/Materials',
+    description: 'Manage product suppliers'
+  },
   'expenses': {
     component: enhancedLazy(() => import('../components/forms/ExpenseManagement'), 'Expense Management'),
     title: 'Expenses',
