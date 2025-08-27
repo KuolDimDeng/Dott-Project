@@ -51,7 +51,7 @@ urlpatterns = [
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
     
     # Industry-standard session management v2
-    path('auth/session-v2', SessionV2View.as_view(), name='session-v2'),
+    path('auth/session-v2/', SessionV2View.as_view(), name='session-v2'),
     
     # Session refresh endpoints for auto-recovery
     path('auth/refresh', refresh_session, name='auth-refresh'),
