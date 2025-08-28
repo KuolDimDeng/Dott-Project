@@ -99,10 +99,13 @@ const ProductSupplierManagement = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/api/product-suppliers/');
-      setSuppliers(response.data.results || response.data || []);
+      // Handle various response formats
+      const suppliersData = response?.data?.results || response?.data || [];
+      setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
     } catch (error) {
       logger.error('Error fetching suppliers:', error);
       toast.error('Failed to load suppliers');
+      setSuppliers([]);
     } finally {
       setLoading(false);
     }
@@ -111,10 +114,15 @@ const ProductSupplierManagement = () => {
   // Fetch products for the dropdown
   const fetchProducts = useCallback(async () => {
     try {
-      const response = await apiClient.get('/api/products/');
-      setProducts(response.data.results || response.data || []);
+      // Products are under inventory module
+      const response = await apiClient.get('/api/inventory/products/');
+      // Handle various response formats
+      const productsData = response?.data?.results || response?.data || [];
+      setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
       logger.error('Error fetching products:', error);
+      // Don't crash if products fail to load
+      setProducts([]);
     }
   }, []);
 
@@ -365,7 +373,7 @@ const ProductSupplierManagement = () => {
         )
       }
     ],
-    [suppliers]
+    [toggleSupplierStatus]
   );
 
   // Table instance

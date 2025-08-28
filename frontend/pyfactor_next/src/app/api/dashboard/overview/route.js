@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export async function GET(request) {
   try {
-    // Get session
-    const session = await getServerSession(request);
-    if (!session) {
+    // Get session from cookies
+    const cookieStore = cookies();
+    const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value;
+    
+    if (!sessionToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -20,7 +22,7 @@ export async function GET(request) {
       method: 'GET',
       headers: {
         'Cookie': request.headers.get('cookie') || '',
-        'X-Session-ID': session.sid,
+        'X-Session-ID': sessionToken,
       },
     });
 
