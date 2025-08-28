@@ -1177,6 +1177,9 @@ class POSSaleCompletionSerializer(serializers.Serializer):
     currency_code = serializers.CharField(max_length=3, required=False, default='USD')
     currency_symbol = serializers.CharField(max_length=10, required=False, default='$')
     
+    # Backorder fields
+    has_backorders = serializers.BooleanField(default=False, required=False)
+    
     # Optional fields
     notes = serializers.CharField(required=False, allow_blank=True)
     
@@ -1215,17 +1218,23 @@ class POSSaleCompletionSerializer(serializers.Serializer):
             if item['type'] == 'product':
                 try:
                     product = Product.objects.get(pk=item_id)
-                    # Check stock availability
-                    if hasattr(product, 'quantity') and product.quantity < quantity:
-                        raise serializers.ValidationError(
-                            f"Insufficient stock for {product.name}. "
-                            f"Available: {product.quantity}, Requested: {quantity}"
-                        )
+                    # Check stock availability (skip if backorder allowed)
+                    is_backorder = item.get('is_backorder', False)
+                    if hasattr(product, 'quantity') and product.quantity < quantity and not is_backorder:
+                        # Only raise error if not a backorder
+                        if not self.initial_data.get('has_backorders', False):
+                            raise serializers.ValidationError(
+                                f"Insufficient stock for {product.name}. "
+                                f"Available: {product.quantity}, Requested: {quantity}"
+                            )
                     validated_items.append({
                         'type': 'product',
                         'item': product,
                         'quantity': quantity,
                         'unit_price': Decimal(str(item.get('unit_price', product.price or 0))),
+                        'is_backorder': is_backorder,
+                        'is_partial_backorder': item.get('is_partial_backorder', False),
+                        'backorder_quantity': item.get('backorder_quantity', 0)
                     })
                 except Product.DoesNotExist:
                     raise serializers.ValidationError(f"Product with id {item_id} does not exist")

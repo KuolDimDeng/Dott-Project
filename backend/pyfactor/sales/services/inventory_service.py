@@ -18,61 +18,79 @@ class InventoryService:
     """
     
     @staticmethod
-    def validate_stock_availability(items):
+    def validate_stock_availability(items, allow_backorders=False):
         """
         Validate that all products have sufficient stock.
         
         Args:
-            items: List of dicts with 'item', 'quantity', 'type' keys
+            items: List of dicts with 'item', 'quantity', 'type', 'is_backorder' keys
+            allow_backorders: If True, allows negative inventory for backorder items
             
         Returns:
             List of validation errors (empty if all valid)
             
         Raises:
-            ValidationError: If stock is insufficient
+            ValidationError: If stock is insufficient and backorders not allowed
         """
         errors = []
+        backorder_info = []
         
         for item_data in items:
             if item_data['type'] == 'product':
                 product = item_data['item']
                 requested_qty = item_data['quantity']
+                is_backorder = item_data.get('is_backorder', False)
                 
                 # Check if product tracks inventory
                 if hasattr(product, 'quantity'):
                     available_qty = product.quantity or 0
                     
                     if available_qty < requested_qty:
-                        errors.append({
-                            'product_id': str(product.id),
-                            'product_name': product.name,
-                            'available': available_qty,
-                            'requested': requested_qty,
-                            'error': f"Insufficient stock for {product.name}. Available: {available_qty}, Requested: {requested_qty}"
-                        })
+                        if allow_backorders or is_backorder:
+                            # Track backorder info but don't error
+                            backorder_qty = requested_qty - available_qty
+                            backorder_info.append({
+                                'product_id': str(product.id),
+                                'product_name': product.name,
+                                'available': available_qty,
+                                'requested': requested_qty,
+                                'backorder_quantity': backorder_qty,
+                                'is_full_backorder': available_qty == 0
+                            })
+                            logger.info(f"Backorder allowed for {product.name}: {backorder_qty} units")
+                        else:
+                            errors.append({
+                                'product_id': str(product.id),
+                                'product_name': product.name,
+                                'available': available_qty,
+                                'requested': requested_qty,
+                                'error': f"Insufficient stock for {product.name}. Available: {available_qty}, Requested: {requested_qty}"
+                            })
         
         if errors:
             error_messages = [error['error'] for error in errors]
             raise ValidationError('; '.join(error_messages))
         
-        return errors
+        return backorder_info  # Return backorder info instead of errors
     
     @staticmethod
-    def reduce_stock(items, transaction_ref=None):
+    def reduce_stock(items, transaction_ref=None, allow_negative=False):
         """
         Reduce stock quantities for products in the transaction.
         
         Args:
             items: List of validated item data
             transaction_ref: Reference to the POS transaction (for logging)
+            allow_negative: If True, allows negative inventory for backorders
             
         Returns:
-            Dict with updated product quantities
+            Dict with updated product quantities and backorder info
             
         Raises:
             ValidationError: If stock reduction fails
         """
         updated_products = {}
+        backorder_items = []
         
         try:
             with db_transaction.atomic():
@@ -80,6 +98,7 @@ class InventoryService:
                     if item_data['type'] == 'product':
                         product = item_data['item']
                         quantity_to_reduce = item_data['quantity']
+                        is_backorder = item_data.get('is_backorder', False)
                         
                         # Lock the product row for update to prevent race conditions
                         product = Product.objects.select_for_update().get(pk=product.pk)
@@ -88,14 +107,22 @@ class InventoryService:
                         if hasattr(product, 'quantity'):
                             old_quantity = product.quantity or 0
                             
-                            # Final stock check (in case another transaction modified it)
+                            # Calculate backorder quantity if needed
+                            backorder_qty = 0
                             if old_quantity < quantity_to_reduce:
-                                raise ValidationError(
-                                    f"Insufficient stock for {product.name}. "
-                                    f"Available: {old_quantity}, Requested: {quantity_to_reduce}"
-                                )
+                                if not (allow_negative or is_backorder):
+                                    raise ValidationError(
+                                        f"Insufficient stock for {product.name}. "
+                                        f"Available: {old_quantity}, Requested: {quantity_to_reduce}"
+                                    )
+                                backorder_qty = quantity_to_reduce - old_quantity
+                                backorder_items.append({
+                                    'product': product,
+                                    'backorder_quantity': backorder_qty,
+                                    'total_requested': quantity_to_reduce
+                                })
                             
-                            # Reduce the stock
+                            # Reduce the stock (can go negative for backorders)
                             new_quantity = old_quantity - quantity_to_reduce
                             product.quantity = new_quantity
                             product.save()
@@ -111,10 +138,14 @@ class InventoryService:
                             logger.info(
                                 f"Stock reduced for product {product.name} (ID: {product.id}). "
                                 f"Old: {old_quantity}, New: {new_quantity}, Reduced: {quantity_to_reduce}. "
+                                f"Backorder: {backorder_qty if backorder_qty > 0 else 'No'}. "
                                 f"Transaction: {transaction_ref}"
                             )
                 
-                return updated_products
+                return {
+                    'updated_products': updated_products,
+                    'backorder_items': backorder_items
+                }
                 
         except Exception as e:
             logger.error(f"Error reducing stock for transaction {transaction_ref}: {str(e)}")

@@ -327,6 +327,8 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
                     ],
                     'inventory_updates': updated_products,
                     'low_stock_alerts': low_stock_alerts,
+                    'backorder_info': backorder_info,
+                    'sales_order_created': sales_order.order_number if sales_order else None,
                     'accounting': {
                         'journal_entry_id': str(journal_entry.id),
                         'status': 'posted'
