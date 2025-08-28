@@ -63,7 +63,11 @@ export async function POST(request) {
         id: item.product_id || item.id,
         type: item.type || 'product', // Default to product if not specified
         quantity: parseFloat(item.quantity || 1),
-        unit_price: parseFloat(item.unit_price || item.price || 0)
+        unit_price: parseFloat(item.unit_price || item.price || 0),
+        // Include backorder information
+        is_backorder: item.is_backorder || false,
+        is_partial_backorder: item.is_partial_backorder || false,
+        backorder_quantity: item.backorder_quantity || 0
       })),
       customer_id: saleData.customer_id || null,
       payment_method: saleData.payment_method,
@@ -73,7 +77,9 @@ export async function POST(request) {
       notes: saleData.notes || '',
       // Include currency information from frontend
       currency_code: saleData.currency_code || saleData.currency || userCurrency || 'USD',
-      currency_symbol: saleData.currency_symbol || saleData.currencySymbol || '$'
+      currency_symbol: saleData.currency_symbol || saleData.currencySymbol || '$',
+      // Include backorder flag
+      has_backorders: saleData.has_backorders || false
     };
 
     // Use the POS complete-sale endpoint

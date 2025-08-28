@@ -1229,7 +1229,10 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         id: item.id,
         type: 'product',
         quantity: item.quantity || 1,
-        unit_price: parseFloat(item.price || 0)
+        unit_price: parseFloat(item.price || 0),
+        is_backorder: item.isBackorder || false,
+        is_partial_backorder: item.isPartialBackorder || false,
+        backorder_quantity: item.backorderQuantity || 0
       }));
       
       // Calculate discount percentage even if discount is entered as amount
@@ -1263,7 +1266,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         tax_amount: totals.taxAmount,
         total_amount: totals.total,
         currency_code: userCurrency,
-        currency_symbol: currencySymbol
+        currency_symbol: currencySymbol,
+        has_backorders: cartItems.some(item => item.isBackorder || item.isPartialBackorder)
       };
       
       console.log('[POS] 💰 Currency Debug - Sale data created for CARD payment:', {
@@ -1285,12 +1289,15 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       
       console.log('[POS] Cart items before mapping:', cartItems);
       
-      // Map cart items to backend format
+      // Map cart items to backend format with backorder information
       const mappedItems = cartItems.map(item => ({
         id: item.id,
         type: 'product', // Currently only supporting products
         quantity: item.quantity || 1,
-        unit_price: parseFloat(item.price || 0)
+        unit_price: parseFloat(item.price || 0),
+        is_backorder: item.isBackorder || false,
+        is_partial_backorder: item.isPartialBackorder || false,
+        backorder_quantity: item.backorderQuantity || 0
       }));
 
       // Debug logging for tax calculation
@@ -1335,7 +1342,8 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         tax_amount: parseFloat(totals.taxAmount) || 0,
         total_amount: parseFloat(totals.total) || 0, // Ensure it's a number
         currency_code: userCurrency,
-        currency_symbol: currencySymbol
+        currency_symbol: currencySymbol,
+        has_backorders: cartItems.some(item => item.isBackorder || item.isPartialBackorder) // Flag if any backorders
       };
       
       console.log('[POS] 💰 Currency Debug - Sale data created for NON-CARD payment:', {
