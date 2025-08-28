@@ -23,16 +23,18 @@ import { formatCurrency } from '@/utils/formatters';
 import MetricsGrid from '../widgets/MetricsGrid';
 import RecentTransactions from '../widgets/RecentTransactions';
 import QuickActions from '../widgets/QuickActions';
+import { useCurrency } from '@/context/CurrencyContext';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Custom tooltip for charts
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, currencySymbol = '$' }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
         <p className="text-sm font-medium text-gray-900">{label}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {formatCurrency(entry.value)}
+            {entry.name}: {currencySymbol}{typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
           </p>
         ))}
       </div>
@@ -42,7 +44,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // Revenue Chart Component using Recharts
-const RevenueChartRecharts = ({ data }) => {
+const RevenueChartRecharts = ({ data, currencySymbol = '$' }) => {
   const { t } = useTranslation('dashboard');
   
   if (!data || !data.labels?.length) {
@@ -89,7 +91,7 @@ const RevenueChartRecharts = ({ data }) => {
               axisLine={{ stroke: '#E5E7EB' }}
               tickFormatter={(value) => formatCurrency(value, null, true)}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip currencySymbol={currencySymbol} />} />
             <Area 
               type="monotone" 
               dataKey="revenue" 
@@ -107,7 +109,7 @@ const RevenueChartRecharts = ({ data }) => {
 };
 
 // Cash Flow Chart Component
-const CashFlowChart = ({ data }) => {
+const CashFlowChart = ({ data, currencySymbol = '$' }) => {
   const { t } = useTranslation('dashboard');
   
   if (!data || !data.labels?.length) {
@@ -150,7 +152,7 @@ const CashFlowChart = ({ data }) => {
               axisLine={{ stroke: '#E5E7EB' }}
               tickFormatter={(value) => formatCurrency(value, null, true)}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip currencySymbol={currencySymbol} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Bar dataKey="inflow" fill="#10B981" name={t('charts.inflow', 'Inflow')} />
             <Bar dataKey="outflow" fill="#EF4444" name={t('charts.outflow', 'Outflow')} />
@@ -162,7 +164,7 @@ const CashFlowChart = ({ data }) => {
 };
 
 // Expense Breakdown Chart
-const ExpenseBreakdown = ({ data }) => {
+const ExpenseBreakdown = ({ data, currencySymbol = '$' }) => {
   const { t } = useTranslation('dashboard');
   
   if (!data || !data.categories?.length) {
@@ -208,7 +210,7 @@ const ExpenseBreakdown = ({ data }) => {
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip currencySymbol={currencySymbol} />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -222,6 +224,14 @@ export default function BusinessOverviewDashboardRecharts() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { currency } = useCurrency();
+  const { user } = useSession();
+  
+  // Get currency symbol and code
+  const currencySymbol = currency?.symbol || user?.currency?.symbol || '$';
+  const currencyCode = currency?.code || user?.currency?.code || 'USD';
+  
+  console.log('[Dashboard] Currency:', { currency, currencySymbol, currencyCode });
 
   // Fetch dashboard data
   useEffect(() => {
@@ -295,22 +305,37 @@ export default function BusinessOverviewDashboardRecharts() {
 
   return (
     <div className="space-y-6">
+      {/* Currency Display */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-blue-900">Currency Settings</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Displaying all amounts in: <span className="font-semibold">{currencyCode} ({currencySymbol})</span>
+            </p>
+          </div>
+          <a href="/Settings" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            Change Currency →
+          </a>
+        </div>
+      </div>
+      
       {/* Metrics Grid */}
-      <MetricsGrid data={dashboardData?.metrics} />
+      <MetricsGrid data={dashboardData?.metrics} currencySymbol={currencySymbol} />
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
-        <RevenueChartRecharts data={dashboardData?.revenue} />
+        <RevenueChartRecharts data={dashboardData?.revenue} currencySymbol={currencySymbol} />
 
         {/* Cash Flow Chart */}
-        <CashFlowChart data={dashboardData?.cashFlow} />
+        <CashFlowChart data={dashboardData?.cashFlow} currencySymbol={currencySymbol} />
 
         {/* Expense Breakdown */}
-        <ExpenseBreakdown data={dashboardData?.expenses} />
+        <ExpenseBreakdown data={dashboardData?.expenses} currencySymbol={currencySymbol} />
 
         {/* Recent Transactions */}
-        <RecentTransactions data={dashboardData?.transactions} />
+        <RecentTransactions data={dashboardData?.transactions} currencySymbol={currencySymbol} />
       </div>
 
       {/* Quick Actions */}

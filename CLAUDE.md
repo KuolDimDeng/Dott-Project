@@ -477,3 +477,18 @@ RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ
   - Generate new Django SECRET_KEY
   - Ensure DEBUG=False in all production configs
   - Run security audit: `./scripts/security-env-audit.sh`
+
+### [57.0.0] - 2025-08-28 - CURRENT - Mobile App Color Scheme Standardization
+- **CRITICAL**: DO NOT CHANGE THESE COLORS - Approved and finalized
+- **Primary Blue**: `#2563eb` - All buttons and active states (matches web app)
+- **Splash Screen**: Pure white background (`#ffffff`) - DO NOT CHANGE
+- **Sign-In Page**: White background, blue button (`#3b82f6`)
+- **Content Pages**: Light gray background (`#f8f9fa`) for readability
+- **Navigation Active**: Blue (`#2563eb`) instead of navy
+- **Special Buttons**: Clock In (blue), Clock Out (red `#ef4444`)
+- **Configuration Files**:
+  - `capacitor.config.ts`: SplashScreen backgroundColor: `#ffffff`
+  - `LaunchScreen.storyboard`: White background color
+- **Documentation**: `/docs/MOBILE_APP_COLOR_SCHEME.md` - Complete color reference
+- **Key Learning**: Capacitor config overrides storyboard for splash colors
+- **Files Updated**: All mobile HTML files in `/out/` directory
