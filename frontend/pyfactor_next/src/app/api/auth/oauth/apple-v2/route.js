@@ -7,6 +7,8 @@ export async function GET(request) {
     
     const { searchParams } = new URL(request.url);
     const returnUrl = searchParams.get('return_url') || '/dashboard';
+    const platform = searchParams.get('platform'); // 'mobile' or null
+    const device = searchParams.get('device'); // 'ios', 'android', or null
     
     // Generate PKCE challenge
     const verifier = crypto.randomBytes(32).toString('base64url');
@@ -15,8 +17,14 @@ export async function GET(request) {
       .update(verifier)
       .digest('base64url');
     
-    // Generate state for CSRF protection
-    const state = crypto.randomBytes(16).toString('base64url');
+    // Generate state for CSRF protection - include platform info
+    const stateData = {
+      random: crypto.randomBytes(16).toString('base64url'),
+      platform: platform,
+      device: device,
+      returnUrl: returnUrl
+    };
+    const state = Buffer.from(JSON.stringify(stateData)).toString('base64url');
     
     // Build Auth0 authorization URL
     const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
@@ -31,7 +39,15 @@ export async function GET(request) {
       );
     }
     
-    const redirectUri = `${baseUrl}/auth/oauth-callback`;
+    // Use different callback URL based on platform
+    let redirectUri;
+    if (platform === 'mobile') {
+      // For mobile, we still need to use the web callback because Auth0 doesn't support custom schemes
+      // But we'll handle the redirect back to the app in the callback handler
+      redirectUri = `${baseUrl}/auth/mobile-oauth-callback`;
+    } else {
+      redirectUri = `${baseUrl}/auth/oauth-callback`;
+    }
     
     const authParams = new URLSearchParams({
       response_type: 'code',

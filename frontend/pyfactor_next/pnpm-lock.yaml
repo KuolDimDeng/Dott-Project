@@ -20,6 +20,9 @@ importers:
       '@auth0/nextjs-auth0':
         specifier: ^4.6.0
         version: 4.6.0(next@15.3.1)(react-dom@18.3.1)(react@18.3.1)
+      '@capacitor-community/http':
+        specifier: ^1.4.1
+        version: 1.4.1
       '@capacitor/android':
         specifier: ^7.4.3
         version: 7.4.3(@capacitor/core@7.4.3)
@@ -2605,6 +2608,23 @@ packages:
     resolution: {integrity: sha512-i1L7noDNxtFyL5DmZafWy1wRVhGehQmzZaz1HiN5e7iylJMSZR7ekOV7NsIqa5qBldlLrsKv4HbgFUVlQrz8Mw==}
     dev: false
 
+  /@capacitor-community/http@1.4.1:
+    resolution: {integrity: sha512-+pCkBXrwfm97UfjOgjV950H/qZ8SE36Mrcb46BlL1ps3VIsGuIO+AulL8GqTC6LewheRVtGJpRspNtneXQotNA==}
+    dependencies:
+      '@capacitor/android': 3.9.0(@capacitor/core@3.9.0)
+      '@capacitor/core': 3.9.0
+      '@capacitor/filesystem': 1.1.0(@capacitor/core@3.9.0)
+      '@capacitor/ios': 3.9.0(@capacitor/core@3.9.0)
+    dev: false
+
+  /@capacitor/android@3.9.0(@capacitor/core@3.9.0):
+    resolution: {integrity: sha512-YTPyrh1NozEuYXWGtfqN27TLXUrLbZX9fggyd4JQ1yMaUZTmLPm5dCuznONhQ49aPkJnUJB02JfpHy/qGwa2Lw==}
+    peerDependencies:
+      '@capacitor/core': ^3.9.0
+    dependencies:
+      '@capacitor/core': 3.9.0
+    dev: false
+
   /@capacitor/android@7.4.3(@capacitor/core@7.4.3):
     resolution: {integrity: sha512-VpjvnOcmYGPLgvXRhe3CGLs62Cg7sxOyp77NddCr+Y06qqgnoaj6OGeBVTc2DZlqZ6bSmh15JvFu82pkvmdgfQ==}
     peerDependencies:
@@ -2708,10 +2728,24 @@ packages:
       - supports-color
     dev: false
 
+  /@capacitor/core@3.9.0:
+    resolution: {integrity: sha512-j1lL0+/7stY8YhIq1Lm6xixvUqIn89vtyH5ZpJNNmcZ0kwz6K9eLkcG6fvq1UWMDgSVZg9JrRGSFhb4LLoYOsw==}
+    dependencies:
+      tslib: 2.8.1
+    dev: false
+
   /@capacitor/core@7.4.3:
     resolution: {integrity: sha512-wCWr8fQ9Wxn0466vPg7nMn0tivbNVjNy1yL4GvDSIZuZx7UpU2HeVGNe9QjN/quEd+YLRFeKEBLBw619VqUiNg==}
     dependencies:
       tslib: 2.8.1
+    dev: false
+
+  /@capacitor/filesystem@1.1.0(@capacitor/core@3.9.0):
+    resolution: {integrity: sha512-8O3UuvL8HNUEJvZnmn8yUmvgB1evtXfcF0oxIo3YbSlylqywJwS3JTiuhKmsvSxCdpbTy8IaTsutVh3gZgWbKg==}
+    peerDependencies:
+      '@capacitor/core': ^3.0.0
+    dependencies:
+      '@capacitor/core': 3.9.0
     dev: false
 
   /@capacitor/filesystem@7.1.4(@capacitor/core@7.4.3):
@@ -2729,6 +2763,14 @@ packages:
       '@capacitor/core': '>=7.0.0'
     dependencies:
       '@capacitor/core': 7.4.3
+    dev: false
+
+  /@capacitor/ios@3.9.0(@capacitor/core@3.9.0):
+    resolution: {integrity: sha512-GezPCJIujRHnF4wbrKJx6Q/mgFz0f9rmh/steTTXQZI+nEl6mHk6NWh8235p7YbhonYi5WD0rFNirrjGg1EaGw==}
+    peerDependencies:
+      '@capacitor/core': ^3.9.0
+    dependencies:
+      '@capacitor/core': 3.9.0
     dev: false
 
   /@capacitor/ios@7.4.3(@capacitor/core@7.4.3):

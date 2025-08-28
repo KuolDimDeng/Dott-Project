@@ -47,6 +47,9 @@ const CustomTooltip = ({ active, payload, label, currencySymbol = '$' }) => {
 const RevenueChartRecharts = ({ data, currencySymbol = '$' }) => {
   const { t } = useTranslation('dashboard');
   
+  console.log('[RevenueChart] Data received:', data);
+  console.log('[RevenueChart] Currency symbol:', currencySymbol);
+  
   if (!data || !data.labels?.length) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -54,7 +57,7 @@ const RevenueChartRecharts = ({ data, currencySymbol = '$' }) => {
           {t('charts.revenueChart', 'Revenue Trend')}
         </h3>
         <div className="h-64 flex items-center justify-center">
-          <p className="text-gray-500">{t('empty.noData', 'No data available')}</p>
+          <p className="text-gray-500">{t('empty.noData', 'No revenue data available')}</p>
         </div>
       </div>
     );
@@ -251,12 +254,18 @@ export default function BusinessOverviewDashboardRecharts() {
 
         const data = await response.json();
         console.log('[BusinessOverviewDashboard] Data fetched:', data);
+        console.log('[BusinessOverviewDashboard] Data structure:', {
+          hasRevenue: !!data.revenue,
+          hasMetrics: !!data.metrics,
+          hasCashFlow: !!data.cashFlow,
+          hasExpenses: !!data.expenses
+        });
         setDashboardData(data);
       } catch (err) {
         console.error('[BusinessOverviewDashboard] Error:', err);
         setError(err.message);
-        // Set sample data for demo purposes
-        setDashboardData({
+        // Always set sample data to ensure charts render
+        const sampleData = {
           revenue: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
             values: [45000, 52000, 48000, 61000, 55000, 67000]
@@ -280,7 +289,9 @@ export default function BusinessOverviewDashboardRecharts() {
             profitMargin: 14.3,
             cashFlowTrend: 15.8
           }
-        });
+        };
+        console.log('[BusinessOverviewDashboard] Setting sample data:', sampleData);
+        setDashboardData(sampleData);
       } finally {
         setLoading(false);
       }

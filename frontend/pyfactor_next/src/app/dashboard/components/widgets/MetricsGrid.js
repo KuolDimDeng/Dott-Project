@@ -11,7 +11,7 @@ import {
   ArrowDownIcon
 } from '@heroicons/react/24/outline';
 
-const MetricCard = ({ title, value, change, changeType, icon: Icon, currency }) => {
+const MetricCard = ({ title, value, change, changeType, icon: Icon, currency, currencySymbol = '$' }) => {
   const isPositive = changeType === 'increase';
   const changeColor = isPositive ? 'text-green-600' : 'text-red-600';
   const changeIcon = isPositive ? ArrowUpIcon : ArrowDownIcon;
@@ -23,7 +23,7 @@ const MetricCard = ({ title, value, change, changeType, icon: Icon, currency }) 
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="mt-2 text-3xl font-semibold text-gray-900">
-            {currency && '$'}{value?.toLocaleString() || '0'}
+            {currency && currencySymbol}{value?.toLocaleString() || '0'}
           </p>
           {change !== undefined && (
             <div className={`mt-2 flex items-center text-sm ${changeColor}`}>
@@ -43,20 +43,20 @@ const MetricCard = ({ title, value, change, changeType, icon: Icon, currency }) 
   );
 };
 
-export default function MetricsGrid({ data }) {
+export default function MetricsGrid({ data, currencySymbol = '$' }) {
   const { t } = useTranslation('dashboard');
 
   const metrics = [
     {
-      title: t('widgets.revenue'),
-      value: data?.revenue || 0,
-      change: data?.revenueChange,
-      changeType: data?.revenueChange >= 0 ? 'increase' : 'decrease',
+      title: t('widgets.revenue', 'Revenue'),
+      value: data?.revenue || data?.totalRevenue || 0,
+      change: data?.revenueChange || data?.revenueGrowth,
+      changeType: (data?.revenueChange || data?.revenueGrowth) >= 0 ? 'increase' : 'decrease',
       icon: CurrencyDollarIcon,
       currency: true
     },
     {
-      title: t('widgets.sales'),
+      title: t('widgets.sales', 'Sales'),
       value: data?.sales || 0,
       change: data?.salesChange,
       changeType: data?.salesChange >= 0 ? 'increase' : 'decrease',
@@ -64,7 +64,7 @@ export default function MetricsGrid({ data }) {
       currency: false
     },
     {
-      title: t('widgets.customers'),
+      title: t('widgets.customers', 'Customers'),
       value: data?.customers || 0,
       change: data?.customersChange,
       changeType: data?.customersChange >= 0 ? 'increase' : 'decrease',
@@ -72,10 +72,10 @@ export default function MetricsGrid({ data }) {
       currency: false
     },
     {
-      title: t('widgets.profit'),
-      value: data?.profit || 0,
-      change: data?.profitChange,
-      changeType: data?.profitChange >= 0 ? 'increase' : 'decrease',
+      title: t('widgets.profit', 'Profit'),
+      value: data?.profit || data?.netProfit || 0,
+      change: data?.profitChange || data?.profitMargin,
+      changeType: (data?.profitChange || data?.profitMargin) >= 0 ? 'increase' : 'decrease',
       icon: ChartBarIcon,
       currency: true
     }
@@ -84,7 +84,7 @@ export default function MetricsGrid({ data }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {metrics.map((metric, index) => (
-        <MetricCard key={index} {...metric} />
+        <MetricCard key={index} {...metric} currencySymbol={currencySymbol} />
       ))}
     </div>
   );
