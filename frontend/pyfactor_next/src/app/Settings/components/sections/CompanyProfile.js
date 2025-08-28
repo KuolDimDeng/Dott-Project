@@ -637,7 +637,18 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
             {/* Action Buttons */}
             {logoUrl && canEdit && (
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-4 space-x-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  disabled={uploadingLogo}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
+                  Replace Logo
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
