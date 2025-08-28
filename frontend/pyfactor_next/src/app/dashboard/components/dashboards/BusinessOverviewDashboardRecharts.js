@@ -224,8 +224,55 @@ const ExpenseBreakdown = ({ data, currencySymbol = '$' }) => {
 // Main Dashboard Component
 export default function BusinessOverviewDashboardRecharts() {
   const { t } = useTranslation('dashboard');
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize with sample data structure
+  const [dashboardData, setDashboardData] = useState({
+    revenue: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      values: [45000, 52000, 48000, 61000, 55000, 67000]
+    },
+    cashFlow: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      inflow: [50000, 55000, 52000, 65000, 58000, 70000],
+      outflow: [42000, 48000, 45000, 52000, 49000, 55000]
+    },
+    expenses: {
+      categories: ['Salaries', 'Rent', 'Utilities', 'Marketing', 'Supplies', 'Other'],
+      values: [25000, 8000, 3500, 5000, 4000, 2500]
+    },
+    metrics: {
+      totalRevenue: 328000,
+      totalExpenses: 281000,
+      netProfit: 47000,
+      cashBalance: 125000,
+      revenueGrowth: 12.5,
+      expenseGrowth: 8.2,
+      profitMargin: 14.3,
+      cashFlowTrend: 15.8
+    },
+    transactions: [
+      {
+        id: '1',
+        type: 'invoice',
+        number: 'INV-2024-001',
+        customer_name: 'Acme Corp',
+        amount: 2500,
+        currency: 'SSP',
+        status: 'paid',
+        date: new Date().toISOString()
+      },
+      {
+        id: '2',
+        type: 'expense',
+        number: 'EXP-2024-042',
+        vendor_name: 'Office Supplies Co',
+        amount: 340,
+        currency: 'SSP',
+        status: 'pending',
+        date: new Date(Date.now() - 86400000).toISOString()
+      }
+    ]
+  });
+  const [loading, setLoading] = useState(false); // Start with false since we have initial data
   const [error, setError] = useState(null);
   const { currency } = useCurrency();
   const { user } = useSession();
@@ -346,7 +393,7 @@ export default function BusinessOverviewDashboardRecharts() {
         <ExpenseBreakdown data={dashboardData?.expenses} currencySymbol={currencySymbol} />
 
         {/* Recent Transactions */}
-        <RecentTransactions data={dashboardData?.transactions} currencySymbol={currencySymbol} />
+        <RecentTransactions transactions={dashboardData?.transactions} currencySymbol={currencySymbol} />
       </div>
 
       {/* Quick Actions */}
