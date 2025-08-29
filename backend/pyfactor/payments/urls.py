@@ -1,5 +1,5 @@
 # payments/urls.py
-from django.urls import path
+from django.urls import path, include
 from . import views
 from . import webhook_handlers
 from . import stripe_connect
@@ -15,6 +15,12 @@ from accounts import views_payment
 from . import pos_payment_views
 
 urlpatterns = [
+    # Mobile Money endpoints (MTN MoMo & M-Pesa)
+    path('mobile-money/', include('payments.urls_mobile_money')),
+    
+    # Legacy MTN MoMo endpoints (for backward compatibility)
+    path('momo/', include('payments.urls_momo')),
+    
     # Payment provider endpoints
     path('providers/country/<str:country_code>/', views.country_payment_providers, name='country-payment-providers'),
     path('providers/<str:provider_name>/form/', views.provider_form, name='provider-form'),
@@ -67,4 +73,5 @@ urlpatterns = [
     # POS credit card payment endpoints
     path('create-pos-intent/', pos_payment_views.create_pos_payment_intent, name='create_pos_payment_intent'),
     path('confirm-pos-payment/', pos_payment_views.confirm_pos_payment, name='confirm_pos_payment'),
+    path('apple-pay/validate/', pos_payment_views.validate_apple_pay_merchant, name='validate_apple_pay_merchant'),
 ]
