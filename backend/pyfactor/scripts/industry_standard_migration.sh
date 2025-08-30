@@ -24,6 +24,12 @@ echo ""
 echo "2. Checking and fixing transport migrations..."
 python scripts/fix_transport_migrations.py || echo "Transport migration fix not needed or already applied"
 
+# Step 2b: Generate marketplace migrations if needed
+echo ""
+echo "2b. Generating marketplace app migrations..."
+python manage.py makemigrations marketplace --noinput 2>&1 | grep -v "No changes detected" || true
+python manage.py makemigrations chat --noinput 2>&1 | grep -v "No changes detected" || true
+
 # Step 3: Show pending migrations
 echo ""
 echo "3. Checking pending migrations..."
