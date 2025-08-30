@@ -729,6 +729,93 @@ const MenuOverviewGrid = ({
           value: 'filing-history'
         }
       ]
+    },
+    transport: {
+      title: 'Transport Management',
+      description: 'Manage delivery jobs, routes, vehicles, and driver payments for truckers, delivery drivers, and transport services',
+      items: [
+        {
+          id: 'dashboard',
+          title: 'Dashboard',
+          description: 'Transport overview, active jobs, and earnings summary',
+          icon: TrendingUp,
+          color: 'bg-blue-500',
+          stats: { label: 'Active Jobs', key: 'activeJobs' },
+          value: 'dashboard'
+        },
+        {
+          id: 'my-jobs',
+          title: 'My Jobs',
+          description: 'View and manage current delivery jobs and routes',
+          icon: Truck,
+          color: 'bg-green-500',
+          stats: { label: 'Today\'s Jobs', key: 'todaysJobs' },
+          value: 'my-jobs'
+        },
+        {
+          id: 'create-job',
+          title: 'Create New Job',
+          description: 'Create delivery job with customer, route, and multiple stops',
+          icon: PlusCircle,
+          color: 'bg-purple-500',
+          stats: { label: 'Jobs This Week', key: 'weeklyJobs' },
+          value: 'create-job'
+        },
+        {
+          id: 'route-planning',
+          title: 'Route Planning',
+          description: 'Plan routes with Google Maps, optimize stops, track progress',
+          icon: Globe,
+          color: 'bg-orange-500',
+          stats: { label: 'Routes Planned', key: 'routesPlanned' },
+          value: 'route-planning'
+        },
+        {
+          id: 'payments',
+          title: 'Job Payments',
+          description: 'Accept payments via card, M-Pesa, or bank transfer',
+          icon: CreditCard,
+          color: 'bg-pink-500',
+          stats: { label: 'Pending Payments', key: 'pendingPayments' },
+          value: 'payments'
+        },
+        {
+          id: 'fuel-expenses',
+          title: 'Fuel & Expenses',
+          description: 'Track fuel costs, tolls, maintenance, and other expenses',
+          icon: DollarSign,
+          color: 'bg-indigo-500',
+          stats: { label: 'Monthly Expenses', key: 'monthlyExpenses' },
+          value: 'fuel-expenses'
+        },
+        {
+          id: 'vehicles',
+          title: 'Vehicle Management',
+          description: 'Manage vehicles, maintenance schedules, and efficiency tracking',
+          icon: Car,
+          color: 'bg-teal-500',
+          stats: { label: 'Active Vehicles', key: 'activeVehicles' },
+          value: 'vehicles'
+        },
+        {
+          id: 'customers',
+          title: 'Transport Customers',
+          description: 'Manage delivery customers and service history',
+          icon: Users,
+          color: 'bg-yellow-500',
+          stats: { label: 'Regular Customers', key: 'regularCustomers' },
+          value: 'customers'
+        },
+        {
+          id: 'reports',
+          title: 'Reports & Analytics',
+          description: 'Earnings reports, route efficiency, and tax documentation',
+          icon: BarChart3,
+          color: 'bg-gray-500',
+          stats: { label: 'Reports Available', key: 'transportReports' },
+          value: 'reports'
+        }
+      ]
     }
   };
 

@@ -728,7 +728,7 @@ export const routeRegistry = {
     description: 'Project analytics'
   },
 
-  // Transport
+  // Transport Management
   'transport': {
     component: enhancedLazy(() => import('../components/transport/TransportDashboard'), 'Transport Dashboard'),
     title: 'Transport',
@@ -736,8 +736,48 @@ export const routeRegistry = {
   },
   'transport-dashboard': {
     component: enhancedLazy(() => import('../components/transport/TransportDashboard'), 'Transport Dashboard'),
-    title: 'Transport',
+    title: 'Transport Dashboard',
     description: 'Transport overview'
+  },
+  'transport-my-jobs': {
+    component: enhancedLazy(() => import('../components/transport/MyJobs'), 'My Transport Jobs'),
+    title: 'My Jobs',
+    description: 'Current and pending delivery jobs'
+  },
+  'transport-create-job': {
+    component: enhancedLazy(() => import('../components/transport/CreateJob'), 'Create Transport Job'),
+    title: 'Create New Job',
+    description: 'Create delivery job with route planning'
+  },
+  'transport-route-planning': {
+    component: enhancedLazy(() => import('../components/transport/RoutePlanning'), 'Route Planning'),
+    title: 'Route Planning',
+    description: 'Plan routes with Google Maps optimization'
+  },
+  'transport-payments': {
+    component: enhancedLazy(() => import('../components/transport/JobPayments'), 'Transport Job Payments'),
+    title: 'Job Payments',
+    description: 'Accept payments for completed jobs'
+  },
+  'transport-fuel-expenses': {
+    component: enhancedLazy(() => import('../components/transport/FuelExpenses'), 'Fuel & Expenses'),
+    title: 'Fuel & Expenses',
+    description: 'Track operational costs and expenses'
+  },
+  'transport-vehicles': {
+    component: enhancedLazy(() => import('../components/transport/VehicleManagement'), 'Transport Vehicle Management'),
+    title: 'Vehicle Management',
+    description: 'Manage fleet vehicles and maintenance'
+  },
+  'transport-customers': {
+    component: enhancedLazy(() => import('../components/transport/TransportCustomers'), 'Transport Customers'),
+    title: 'Transport Customers',
+    description: 'Manage delivery customers and service history'
+  },
+  'transport-reports': {
+    component: enhancedLazy(() => import('../components/transport/TransportReports'), 'Transport Reports'),
+    title: 'Transport Reports',
+    description: 'Earnings and efficiency reports'
   },
 
   // Reports
