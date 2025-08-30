@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0039_add_multi_currency_fields'),  # Update this to the latest migration
+        ('users', '0028_add_show_zero_stock_pos'),
     ]
 
     operations = [

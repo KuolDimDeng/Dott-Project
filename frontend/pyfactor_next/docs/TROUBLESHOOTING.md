@@ -15,6 +15,9 @@
   - [Product Edit/Delete Returns 401 Authentication Error](#product-editdelete-returns-401-authentication-error) ⬅️ **NEW**
 - [POS System Issues](#pos-system-issues)
   - [Customers Not Loading in POS Dropdown](#customers-not-loading-in-pos-dropdown)
+- [Mobile App Issues](#mobile-app-issues)
+  - [Mobile Pages Failing to Load with 404 Error](#mobile-pages-failing-to-load-with-404-error) ⬅️ **NEW**
+  - [Mobile API Calls Failing with CORS or Empty Errors](#mobile-api-calls-failing-with-cors-or-empty-errors) ⬅️ **NEW**
 - [Performance Issues](#performance-issues)
 
 ---
@@ -3644,5 +3647,138 @@ The API routes were using JWT-based authentication (`getTokens()`) but the appli
 
 ---
 
-*Last Updated: 2025-08-18*
+# Mobile App Issues
+
+## Mobile Pages Failing to Load with 404 Error
+
+**Issue**: Mobile app tries to navigate to a page but gets "The file couldn't be opened because there is no such file" error.
+
+**Symptoms**:
+- Console shows: `WebPageProxy::didFailProvisionalLoadForFrame: domain=NSCocoaErrorDomain, code=260`
+- Error message: "The file 'customers.html' couldn't be opened"
+- Navigation fails when clicking menu items
+- Page exists but with different filename
+
+**Root Cause**:
+- Menu navigation uses incorrect filename (e.g., `customers.html` instead of `mobile-customers.html`)
+- Mobile pages follow naming convention: `mobile-[feature].html`
+
+**Solution**:
+```javascript
+// In mobile-menu.html, update menu item navigation:
+
+// ❌ WRONG
+<div class="menu-item" onclick="navigateTo('customers.html')">
+
+// ✅ CORRECT
+<div class="menu-item" onclick="navigateTo('mobile-customers.html')">
+```
+
+**Files to Check**:
+- `/ios/App/App/public/mobile-menu.html`
+- `/android/app/src/main/assets/public/mobile-menu.html`
+- `/out/mobile-menu.html`
+
+---
+
+## Mobile API Calls Failing with CORS or Empty Errors
+
+**Issue**: Mobile app API calls fail with empty error objects or CORS issues when using regular fetch().
+
+**Symptoms**:
+- Console shows: `[Customers] Error loading customers: {}`
+- Empty error objects with no details
+- API calls work in web but fail in Capacitor app
+- CORS errors when running from `capacitor://` protocol
+
+**Root Cause**:
+- Regular `fetch()` API doesn't work well with Capacitor's CORS restrictions
+- Capacitor apps run from `capacitor://` protocol which causes CORS issues
+- Missing proper authentication headers for mobile requests
+
+**Solution**:
+Use Capacitor's Http plugin instead of fetch for all API calls:
+
+```javascript
+// ❌ WRONG - Using regular fetch
+const response = await fetch(`${apiUrl}/api/crm/customers`, {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Token': sessionToken
+    },
+    credentials: 'include'
+});
+
+// ✅ CORRECT - Using Capacitor Http plugin
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+    const { Http } = Capacitor.Plugins;
+    const result = await Http.request({
+        method: 'GET',
+        url: `${apiUrl}/api/crm/customers`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`,
+            'X-Session-Token': sessionToken,
+            'X-Tenant-ID': tenantId,
+            'Cookie': `sid=${sessionToken}`
+        }
+    });
+    
+    response = {
+        ok: result.status >= 200 && result.status < 300,
+        status: result.status
+    };
+    data = result.data;
+} else {
+    // Fallback to fetch for web testing
+    // ... regular fetch code
+}
+```
+
+**Key Headers Required for Mobile**:
+- `Authorization`: Bearer token for API authentication
+- `X-Session-Token`: Session token for backend validation
+- `X-Tenant-ID`: Tenant isolation
+- `Cookie`: Session ID cookie for additional auth
+
+**Common API Patterns**:
+```javascript
+// GET Request
+const result = await Http.request({
+    method: 'GET',
+    url: `${apiUrl}/api/endpoint`,
+    headers: { /* ... */ }
+});
+
+// POST Request with Data
+const result = await Http.request({
+    method: 'POST',
+    url: `${apiUrl}/api/endpoint`,
+    headers: { /* ... */ },
+    data: formData  // Note: 'data' not 'body'
+});
+
+// Handle Response
+const response = {
+    ok: result.status >= 200 && result.status < 300,
+    status: result.status
+};
+const data = result.data;  // Already parsed JSON
+```
+
+**Files Commonly Affected**:
+- All mobile HTML files in `/ios/App/App/public/mobile-*.html`
+- All mobile HTML files in `/android/app/src/main/assets/public/mobile-*.html`
+- Mobile files in `/out/mobile-*.html`
+
+**Prevention**:
+- Always use Http plugin for Capacitor apps
+- Include all required authentication headers
+- Test API calls on actual device or emulator, not just web browser
+- Keep consistent API call patterns across all mobile pages
+
+---
+
+*Last Updated: 2025-08-30*
 *Next Review: When new patterns emerge*
