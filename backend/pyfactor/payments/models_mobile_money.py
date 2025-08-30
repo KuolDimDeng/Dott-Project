@@ -7,7 +7,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.validators import RegexValidator
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 import uuid
 from decimal import Decimal
 # from encrypted_model_fields import EncryptedCharField
