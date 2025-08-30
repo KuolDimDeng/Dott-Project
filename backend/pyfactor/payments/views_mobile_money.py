@@ -19,7 +19,7 @@ from .services.mtn_momo_service import MTNMoMoService
 from .services.mpesa_service import MPesaService
 from .models_mobile_money import (
     MobileMoneyTransaction,
-    PaymentProvider,
+    MobileMoneyProvider,
     PaymentWebhook
 )
 

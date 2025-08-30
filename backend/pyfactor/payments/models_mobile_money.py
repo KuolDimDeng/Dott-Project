@@ -10,13 +10,13 @@ from django.core.validators import RegexValidator
 from django.contrib.postgres.fields import JSONField
 import uuid
 from decimal import Decimal
-from encrypted_model_fields import EncryptedCharField
+# from encrypted_model_fields import EncryptedCharField
 
 User = get_user_model()
 
 
-class PaymentProvider(models.Model):
-    """Payment provider configuration"""
+class MobileMoneyProvider(models.Model):
+    """Mobile money provider configuration"""
     PROVIDER_CHOICES = [
         ('MTN_MOMO', 'MTN Mobile Money'),
         ('MPESA', 'M-Pesa'),
@@ -31,11 +31,11 @@ class PaymentProvider(models.Model):
     supported_countries = JSONField(default=list)
     supported_currencies = JSONField(default=list)
     
-    # Encrypted credentials
-    api_user = EncryptedCharField(max_length=255, blank=True)
-    api_key = EncryptedCharField(max_length=255, blank=True)
-    subscription_key = EncryptedCharField(max_length=255, blank=True)
-    secret_key = EncryptedCharField(max_length=255, blank=True)
+    # Credentials (TODO: Add encryption in production)
+    api_user = models.CharField(max_length=255, blank=True)
+    api_key = models.CharField(max_length=255, blank=True)
+    subscription_key = models.CharField(max_length=255, blank=True)
+    secret_key = models.CharField(max_length=255, blank=True)
     
     # Configuration
     min_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
@@ -83,7 +83,7 @@ class MobileMoneyTransaction(models.Model):
     # Relationships
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='mobile_money_transactions')
     tenant_id = models.UUIDField(db_index=True)
-    provider = models.ForeignKey(PaymentProvider, on_delete=models.PROTECT)
+    provider = models.ForeignKey(MobileMoneyProvider, on_delete=models.PROTECT)
     
     # Transaction details
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES, default='PAYMENT')
@@ -183,7 +183,7 @@ class PaymentWebhook(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    provider = models.ForeignKey(PaymentProvider, on_delete=models.CASCADE)
+    provider = models.ForeignKey(MobileMoneyProvider, on_delete=models.CASCADE)
     webhook_type = models.CharField(max_length=30, choices=WEBHOOK_TYPES)
     
     # Related transaction
@@ -227,12 +227,12 @@ class PaymentSession(models.Model):
     """Payment session for tracking user payment flow"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    provider = models.ForeignKey(PaymentProvider, on_delete=models.CASCADE)
+    provider = models.ForeignKey(MobileMoneyProvider, on_delete=models.CASCADE)
     
     # Session data
     session_token = models.CharField(max_length=255, unique=True, db_index=True)
-    access_token = EncryptedCharField(max_length=500, blank=True)
-    refresh_token = EncryptedCharField(max_length=500, blank=True)
+    access_token = models.CharField(max_length=500, blank=True)
+    refresh_token = models.CharField(max_length=500, blank=True)
     
     # Expiry
     expires_at = models.DateTimeField()
