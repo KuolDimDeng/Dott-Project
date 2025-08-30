@@ -2,11 +2,12 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 import uuid
+from django.conf import settings
 
 class Migration(migrations.Migration):
     
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('marketplace', '0001_initial'),
     ]
     
@@ -16,8 +17,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('order_number', models.CharField(max_length=20, unique=True)),
-                ('consumer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='consumer_orders', to='auth.user')),
-                ('business', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='business_orders', to='auth.user')),
+                ('consumer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='consumer_orders', to=settings.AUTH_USER_MODEL)),
+                ('business', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='business_orders', to=settings.AUTH_USER_MODEL)),
                 ('items', models.JSONField(default=dict)),
                 ('subtotal', models.DecimalField(decimal_places=2, max_digits=12)),
                 ('tax_amount', models.DecimalField(decimal_places=2, default=0, max_digits=10)),

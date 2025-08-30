@@ -2,12 +2,13 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 import uuid
+from django.conf import settings
 
 class Migration(migrations.Migration):
     initial = True
     
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
     
     operations = [
@@ -15,7 +16,7 @@ class Migration(migrations.Migration):
             name='BusinessListing',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('business', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='marketplace_listing', to='auth.user')),
+                ('business', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='marketplace_listing', to=settings.AUTH_USER_MODEL)),
                 ('primary_category', models.CharField(max_length=50)),
                 ('secondary_categories', models.JSONField(blank=True, default=list)),
                 ('delivery_scope', models.CharField(default='local', max_length=20)),
@@ -49,7 +50,7 @@ class Migration(migrations.Migration):
             name='ConsumerProfile',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='consumer_profile', to='auth.user')),
+                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='consumer_profile', to=settings.AUTH_USER_MODEL)),
                 ('default_delivery_address', models.TextField(blank=True)),
                 ('delivery_addresses', models.JSONField(blank=True, default=list)),
                 ('current_latitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True)),
@@ -78,7 +79,7 @@ class Migration(migrations.Migration):
             name='BusinessSearch',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('consumer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='searches', to='auth.user')),
+                ('consumer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='searches', to=settings.AUTH_USER_MODEL)),
                 ('search_query', models.CharField(blank=True, max_length=255)),
                 ('category_filter', models.CharField(blank=True, max_length=50)),
                 ('location_filter', models.CharField(blank=True, max_length=255)),
