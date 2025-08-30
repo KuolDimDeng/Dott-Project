@@ -114,6 +114,9 @@ class Business(models.Model):
     stripe_customer_id = models.CharField(max_length=100, blank=True, help_text="Stripe Customer ID for ACH debits")
     default_bank_token = models.CharField(max_length=100, blank=True, help_text="Payment method ID for ACH debits")
     ach_mandate_id = models.CharField(max_length=100, blank=True, help_text="ACH mandate for recurring debits")
+    
+    # Payroll bank account assignment
+    payroll_bank_account_id = models.UUIDField(null=True, blank=True, help_text="Bank account designated for payroll processing")
 
     # Helper property for backward compatibility with BusinessDetails
     @property

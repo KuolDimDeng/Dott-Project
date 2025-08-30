@@ -33,6 +33,13 @@ from .views_v2 import (
 from .api import wise_views
 from .api.wise_test_view import WiseTestView
 
+# Import Payroll bank setup views
+from .payroll_bank_setup import (
+    assign_payroll_bank_account,
+    get_payroll_bank_account,
+    remove_payroll_bank_account
+)
+
 # Create router for ViewSets
 router = DefaultRouter()
 router.register(r'rules', BankingRuleViewSet, basename='banking-rules')
@@ -87,4 +94,9 @@ urlpatterns = [
     path('payroll/set-default/', wise_views.set_default_payroll_account, name='set_default_payroll_account'),
     path('expenses/set-default/', wise_views.set_default_expense_account, name='set_default_expense_account'),
     path('vendors/set-default/', wise_views.set_default_vendor_account, name='set_default_vendor_account'),
+    
+    # Payroll bank account assignment
+    path('payroll/assign-account/', assign_payroll_bank_account, name='assign_payroll_account'),
+    path('payroll/get-account/', get_payroll_bank_account, name='get_payroll_account'),
+    path('payroll/remove-account/', remove_payroll_bank_account, name='remove_payroll_account'),
 ]

@@ -9,6 +9,12 @@ from .views import (
     GeofenceViewSet, EmployeeGeofenceViewSet, GeofenceEventViewSet, test_geofence_creation
 )
 from .api_banking import employee_banking_info
+from .employee_payment_setup import (
+    send_payment_setup_link, 
+    check_employee_payment_status,
+    setup_mobile_money,
+    setup_payment_manual
+)
 from rest_framework.routers import DefaultRouter
 
 # Add router for viewsets
@@ -42,6 +48,10 @@ urlpatterns = [
     # Employee-related URLs (permissions and setup only)
     path('employees/<uuid:pk>/permissions/', views.set_employee_permissions, name='set-employee-permissions'),
     path('employees/<uuid:employee_id>/banking/', employee_banking_info, name='employee-banking-info'),
+    path('employees/<uuid:employee_id>/send-payment-setup/', send_payment_setup_link, name='send-payment-setup'),
+    path('employees/<uuid:employee_id>/payment-status/', check_employee_payment_status, name='check-payment-status'),
+    path('employees/<uuid:employee_id>/setup-mobile-money/', setup_mobile_money, name='setup-mobile-money'),
+    path('employees/<uuid:employee_id>/setup-payment-manual/', setup_payment_manual, name='setup-payment-manual'),
     path('permissions/available/', views.get_available_permissions, name='get-available-permissions'),
     path('setup-password/', views.setup_employee_password, name='setup-employee-password'),
     
