@@ -19,19 +19,24 @@ with connection.cursor() as cursor:
     print('✅ Database connection successful')
 "
 
-# Step 2: Show pending migrations
+# Step 2: Fix transport migrations if needed
 echo ""
-echo "2. Checking pending migrations..."
+echo "2. Checking and fixing transport migrations..."
+python scripts/fix_transport_migrations.py || echo "Transport migration fix not needed or already applied"
+
+# Step 3: Show pending migrations
+echo ""
+echo "3. Checking pending migrations..."
 python manage.py showmigrations --plan | grep "\[ \]" || echo "✅ No pending migrations"
 
-# Step 3: Apply migrations (fail if error)
+# Step 4: Apply migrations (fail if error)
 echo ""
-echo "3. Applying migrations..."
+echo "4. Applying migrations..."
 python manage.py migrate --noinput --verbosity 2
 
-# Step 4: Verify critical migrations
+# Step 5: Verify critical migrations
 echo ""
-echo "4. Verifying critical migrations..."
+echo "5. Verifying critical migrations..."
 python -c "
 import django
 django.setup()
