@@ -13,6 +13,7 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 from .base_payment_service import BasePaymentService
+from ..mtn_country_config import get_country_config, is_mtn_supported, get_all_countries
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,33 @@ class MTNMoMoService(BasePaymentService):
                 'currency': getattr(settings, 'MOMO_DEFAULT_CURRENCY', 'UGX'),
                 'callback_host': getattr(settings, 'MOMO_CALLBACK_HOST', 'https://api.dottapps.com')
             }
+    
+    def validate_phone_for_country(self, phone_number: str) -> Dict[str, Any]:
+        """Validate phone number and get country-specific configuration"""
+        # Check if phone number is from supported MTN country
+        if not is_mtn_supported(phone_number):
+            country_config = get_country_config(phone_number)
+            if country_config:
+                return {
+                    'success': False,
+                    'error': f"MTN MoMo is not enabled for {country_config['country']} yet. Contact support to enable this country.",
+                    'country': country_config['country'],
+                    'currency': country_config['currency']
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': "Phone number is not from a supported MTN MoMo country",
+                    'supported_countries': [c['country'] for c in get_all_countries().values() if c['enabled']]
+                }
+        
+        country_config = get_country_config(phone_number)
+        return {
+            'success': True,
+            'country': country_config['country'],
+            'currency': country_config['currency'],
+            'config': country_config
+        }
     
     def authenticate(self) -> Dict[str, Any]:
         """Authenticate and get access token"""

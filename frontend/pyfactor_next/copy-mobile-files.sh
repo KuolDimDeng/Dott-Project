@@ -24,6 +24,7 @@ FILES=(
     "mobile-inventory.html"
     "mobile-profile.html"
     "mobile-settings.html"
+    "mobile-banking.html"
     "mobile-whatsapp.html"
     "invite.html"
     "index.html"
