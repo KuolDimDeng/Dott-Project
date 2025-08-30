@@ -10,8 +10,12 @@ from .views_mobile_money import (
     momo_webhook,
     mpesa_webhook
 )
+from .views_mobile_money_test import test_mobile_money_endpoint
 
 urlpatterns = [
+    # Test endpoint
+    path('test/', test_mobile_money_endpoint, name='mobile_money_test'),
+    
     # Payment endpoints
     path('initialize/', initialize_payment, name='mobile_money_initialize'),
     path('status/<str:reference_id>/', check_payment_status, name='mobile_money_status'),

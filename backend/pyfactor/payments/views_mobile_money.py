@@ -89,7 +89,13 @@ def detect_provider(phone_number: str) -> str:
 def initialize_payment(request):
     """Initialize payment with auto-detection of provider"""
     try:
-        phone_number = request.data.get('phone')
+        logger.info(f"[Mobile Money] Initialize payment request received")
+        logger.info(f"[Mobile Money] Headers: {dict(request.headers)}")
+        logger.info(f"[Mobile Money] User authenticated: {request.user.is_authenticated if hasattr(request, 'user') else 'No user'}")
+        logger.info(f"[Mobile Money] Request data: {request.data}")
+        
+        # Handle both 'phone' and 'phone_number' field names
+        phone_number = request.data.get('phone_number') or request.data.get('phone')
         amount = Decimal(str(request.data.get('amount', 0)))
         currency = request.data.get('currency', 'USD')
         message = request.data.get('message', '')
@@ -195,10 +201,11 @@ def initialize_payment(request):
             }, status=status.HTTP_400_BAD_REQUEST)
     
     except Exception as e:
-        logger.error(f"Payment initialization error: {str(e)}")
+        logger.error(f"[Mobile Money] Payment initialization error: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'detail': 'Check server logs for more information'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
