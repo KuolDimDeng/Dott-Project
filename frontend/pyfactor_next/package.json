@@ -23,7 +23,7 @@
     "optimize-component": "node src/scripts/optimize-component.js",
     "test:console": "node scripts/test_console_logs.mjs",
     "build": "next build",
-    "build:mobile": "next build --config next.config.mobile.js",
+    "build:mobile": "cp next.config.js next.config.js.backup && cp next.config.mobile.js next.config.js && next build && cp next.config.js.backup next.config.js",
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android",

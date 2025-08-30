@@ -33,10 +33,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'automatic',
-    preferredContentMode: 'mobile',
-    // Handle OAuth redirects
-    customURLScheme: 'capacitor',
-    hostname: 'app.dottapps.com'
+    preferredContentMode: 'mobile'
   },
   android: {
     buildOptions: {
