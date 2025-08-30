@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
                 ('receipt_sent', models.BooleanField(default=False)),
                 ('notes', models.TextField(blank=True, null=True)),
                 ('driver_bank_account', models.ForeignKey(blank=True, help_text="Driver's bank account for settlement", null=True, on_delete=django.db.models.deletion.SET_NULL, to='banking.wiseitem')),
-                ('payment_gateway', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='payments.paymentgateway')),
+                ('payment_provider', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='payments.paymentprovider')),
                 ('trip', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='transport.trip')),
             ],
             options={

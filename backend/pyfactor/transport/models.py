@@ -275,7 +275,7 @@ class TripPayment(models.Model):
     net_amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Amount after platform fees")
     
     # Integration with existing payment system
-    payment_gateway = models.ForeignKey('payments.PaymentGateway', on_delete=models.SET_NULL, null=True, blank=True)
+    payment_provider = models.ForeignKey('payments.PaymentProvider', on_delete=models.SET_NULL, null=True, blank=True)
     stripe_payment_intent_id = models.CharField(max_length=255, null=True, blank=True)
     mpesa_transaction_id = models.CharField(max_length=255, null=True, blank=True)
     wise_transfer_id = models.CharField(max_length=255, null=True, blank=True)
