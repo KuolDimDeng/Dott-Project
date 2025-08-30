@@ -17,6 +17,7 @@ import uuid
 
 from .services.mtn_momo_service import MTNMoMoService
 from .services.mpesa_service import MPesaService
+from .services.paystack_service import PaystackService
 from .models_mobile_money import (
     MobileMoneyTransaction,
     MobileMoneyProvider,
@@ -24,6 +25,63 @@ from .models_mobile_money import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def get_client_ip(request):
+    """Get client IP address from request"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+def detect_provider(phone_number: str) -> str:
+    """
+    Auto-detect payment provider based on phone number
+    
+    Returns:
+        Provider type: 'MPESA', 'MTN_MOMO', 'PAYSTACK', etc.
+    """
+    # Remove spaces and special characters
+    phone = ''.join(filter(str.isdigit, phone_number))
+    
+    # Kenya - M-Pesa (via Paystack)
+    if phone.startswith('254') or (phone.startswith('0') and len(phone) == 10 and phone[1] in '17'):
+        return 'MPESA'  # Will use Paystack
+    
+    # Uganda - MTN MoMo
+    elif phone.startswith('256'):
+        return 'MTN_MOMO'
+    
+    # Ghana - MTN/AirtelTigo/Vodafone (via Paystack or direct MTN)
+    elif phone.startswith('233'):
+        return 'PAYSTACK'  # Paystack supports Ghana
+    
+    # Nigeria - Various providers (via Paystack)
+    elif phone.startswith('234'):
+        return 'PAYSTACK'
+    
+    # South Africa (via Paystack)
+    elif phone.startswith('27'):
+        return 'PAYSTACK'
+    
+    # Rwanda - MTN MoMo
+    elif phone.startswith('250'):
+        return 'MTN_MOMO'
+    
+    # Tanzania - M-Pesa/Tigo/Airtel
+    elif phone.startswith('255'):
+        return 'PAYSTACK'
+    
+    # Sandbox numbers (467 prefix)
+    elif phone.startswith('467'):
+        return 'MTN_MOMO'
+    
+    # Default to Paystack as it has widest coverage
+    else:
+        return 'PAYSTACK'
 
 
 @api_view(['POST'])
@@ -55,7 +113,7 @@ def initialize_payment(request):
             provider_type = detect_provider(phone_number)
         
         # Get or create provider
-        provider, created = PaymentProvider.objects.get_or_create(
+        provider, created = MobileMoneyProvider.objects.get_or_create(
             name=provider_type,
             defaults={
                 'sandbox_url': 'https://sandbox.momodeveloper.mtn.com' if provider_type == 'MTN_MOMO' else 'https://sandbox.safaricom.co.ke',
@@ -92,7 +150,10 @@ def initialize_payment(request):
         if provider_type == 'MTN_MOMO':
             service = MTNMoMoService()
         elif provider_type == 'MPESA':
-            service = MPesaService()
+            # Use Paystack for M-Pesa in Kenya
+            service = PaystackService()
+        elif provider_type == 'PAYSTACK':
+            service = PaystackService()
         else:
             return Response({
                 'success': False,
