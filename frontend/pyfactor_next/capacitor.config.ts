@@ -24,6 +24,11 @@ const config: CapacitorConfig = {
       encrypt: true,
       keychainService: 'com.dottapps.mobile.keychain',
       sharedPreferencesName: 'com.dottapps.mobile.secure'
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'light',
+      resizeOnFullScreen: true
     }
   },
   ios: {
