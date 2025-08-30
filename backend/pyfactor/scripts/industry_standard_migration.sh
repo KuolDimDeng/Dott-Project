@@ -2,7 +2,8 @@
 # Industry-standard migration approach
 # This script ensures migrations are applied properly on deployment
 
-set -e  # Exit on error
+# Don't exit on error immediately - we need to handle migration conflicts
+set +e
 
 echo "=== Django Migration Process ==="
 echo "Time: $(date)"
@@ -19,16 +20,35 @@ with connection.cursor() as cursor:
     print('✅ Database connection successful')
 "
 
-# Step 2: Fix transport migrations if needed
+# Step 2: Fix transport migration conflict BEFORE makemigrations
 echo ""
-echo "2. Checking and fixing transport migrations..."
-python scripts/fix_transport_migrations.py || echo "Transport migration fix not needed or already applied"
+echo "2. Fixing transport migration conflict..."
+python -c "
+import django
+django.setup()
+from django.db import connection
 
-# Step 2b: Generate marketplace migrations if needed
+with connection.cursor() as cursor:
+    # Remove the conflicting migration
+    cursor.execute(\"\"\"
+        DELETE FROM django_migrations 
+        WHERE app = 'transport' 
+        AND name = '0003_add_transport_models'
+    \"\"\")
+    if cursor.rowcount > 0:
+        print(f'✅ Removed {cursor.rowcount} conflicting transport migration(s)')
+    else:
+        print('✅ No transport migration conflicts found')
+"
+
+# Step 2b: Generate marketplace migrations if needed (but don't fail if they error)
 echo ""
 echo "2b. Generating marketplace app migrations..."
 python manage.py makemigrations marketplace --noinput 2>&1 | grep -v "No changes detected" || true
 python manage.py makemigrations chat --noinput 2>&1 | grep -v "No changes detected" || true
+
+# Now set exit on error for the actual migrations
+set -e
 
 # Step 3: Show pending migrations
 echo ""

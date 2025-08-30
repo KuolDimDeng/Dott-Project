@@ -47,6 +47,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '    echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE" ' >> /app/start.sh && \
     echo '    echo "Testing Django configuration..." ' >> /app/start.sh && \
     echo '    python -c "import django; django.setup(); print(\"Django setup successful\")" || (echo "ERROR: Django setup failed!"; exit 1)' >> /app/start.sh && \
+    echo '    echo "Fixing migration conflicts..." ' >> /app/start.sh && \
+    echo '    python scripts/pre_migration_fix.py || true' >> /app/start.sh && \
     echo '    echo "Running database migrations (industry standard)..." ' >> /app/start.sh && \
     echo '    bash scripts/industry_standard_migration.sh' >> /app/start.sh && \
     echo '    if [ $? -ne 0 ]; then' >> /app/start.sh && \
