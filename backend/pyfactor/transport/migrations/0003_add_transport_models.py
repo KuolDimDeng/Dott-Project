@@ -9,7 +9,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transport', '0001_initial'),
+        ('transport', '0002_initial'),
         ('crm', '0001_initial'),
         ('payments', '0001_initial'),
         ('banking', '0001_initial'),

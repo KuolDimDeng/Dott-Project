@@ -204,8 +204,9 @@ def reverse_base_tables(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ('transport', '0002_add_transport_models'),
         ('crm', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
