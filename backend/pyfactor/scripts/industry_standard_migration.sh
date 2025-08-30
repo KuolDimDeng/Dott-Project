@@ -20,26 +20,10 @@ with connection.cursor() as cursor:
     print('✅ Database connection successful')
 "
 
-# Step 2: Fix transport migration conflict BEFORE makemigrations
+# Step 2: Fix transport migration conflicts comprehensively
 echo ""
-echo "2. Fixing transport migration conflict..."
-python -c "
-import django
-django.setup()
-from django.db import connection
-
-with connection.cursor() as cursor:
-    # Remove the conflicting migration
-    cursor.execute(\"\"\"
-        DELETE FROM django_migrations 
-        WHERE app = 'transport' 
-        AND name = '0003_add_transport_models'
-    \"\"\")
-    if cursor.rowcount > 0:
-        print(f'✅ Removed {cursor.rowcount} conflicting transport migration(s)')
-    else:
-        print('✅ No transport migration conflicts found')
-"
+echo "2. Fixing transport migration conflicts..."
+python scripts/pre_migration_fix.py || echo "Migration fix attempted"
 
 # Step 2b: Generate marketplace migrations if needed (but don't fail if they error)
 echo ""
