@@ -53,6 +53,9 @@ importers:
       '@capacitor/push-notifications':
         specifier: ^7.0.2
         version: 7.0.2(@capacitor/core@7.4.3)
+      '@capacitor/share':
+        specifier: ^7.0.2
+        version: 7.0.2(@capacitor/core@7.4.3)
       '@capacitor/splash-screen':
         specifier: ^7.0.2
         version: 7.0.2(@capacitor/core@7.4.3)
@@ -2791,6 +2794,14 @@ packages:
 
   /@capacitor/push-notifications@7.0.2(@capacitor/core@7.4.3):
     resolution: {integrity: sha512-naw1R61V0qlEBa4CsF7+w3ay7V1PdZ4bQ1cJum+lgZB/yz3ASb6fRHm5GPjJFgTR9ET8zN0Q9y7lfgMTBgDOiA==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+    dependencies:
+      '@capacitor/core': 7.4.3
+    dev: false
+
+  /@capacitor/share@7.0.2(@capacitor/core@7.4.3):
+    resolution: {integrity: sha512-VyNPo/9831xnL17IMDeft5yNdBjoKNb451P95sRcr69hulRDqHc+kndqOVaMXnaA6IyBdWnnFv/n1HUf4cXpGw==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
     dependencies:

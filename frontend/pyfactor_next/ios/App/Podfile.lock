@@ -20,6 +20,8 @@ PODS:
   - CapacitorSecureStoragePlugin (0.9.0):
     - Capacitor
     - SwiftKeychainWrapper
+  - CapacitorShare (7.0.2):
+    - Capacitor
   - CapacitorSplashScreen (7.0.2):
     - Capacitor
   - CapacitorStatusBar (7.0.2):
@@ -38,6 +40,7 @@ DEPENDENCIES:
   - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
   - "CapacitorPushNotifications (from `../../node_modules/@capacitor/push-notifications`)"
   - CapacitorSecureStoragePlugin (from `../../node_modules/capacitor-secure-storage-plugin`)
+  - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
 
@@ -67,6 +70,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/push-notifications"
   CapacitorSecureStoragePlugin:
     :path: "../../node_modules/capacitor-secure-storage-plugin"
+  CapacitorShare:
+    :path: "../../node_modules/@capacitor/share"
   CapacitorSplashScreen:
     :path: "../../node_modules/@capacitor/splash-screen"
   CapacitorStatusBar:
@@ -83,11 +88,12 @@ SPEC CHECKSUMS:
   CapacitorKeyboard: 056bbe3711830ccb782f1705a8ad183b27b6c51e
   CapacitorPushNotifications: 6ffcf5df95f17d71a1b02893549bc4727f80540c
   CapacitorSecureStoragePlugin: e91d7df060f2495a1acff9583641a6953e3aacba
+  CapacitorShare: 051c3ceee0ddf3bb54574851a622bbb317eed5bd
   CapacitorSplashScreen: 8d6c8cb0542a8e81585c593815db8785ed8ce454
   CapacitorStatusBar: 5526833b87fa9c96a2a90c1322bb1f663c04505f
   IONFilesystemLib: 89258b8e3e85465da93127d25d7ce37f977e8a6f
   SwiftKeychainWrapper: 807ba1d63c33a7d0613288512399cd1eda1e470c
 
-PODFILE CHECKSUM: 550faf5bbe4bafa5c0f0b877b446ba967bbd2290
+PODFILE CHECKSUM: 59749d4f8b3d6feb3e65403d09d702db72e9727e
 
 COCOAPODS: 1.15.2

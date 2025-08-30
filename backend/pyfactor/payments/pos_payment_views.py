@@ -183,6 +183,48 @@ def create_pos_payment_intent(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def validate_apple_pay_merchant(request):
+    """
+    Validate merchant session for Apple Pay
+    Required for Apple Pay to work in POS
+    """
+    try:
+        validation_url = request.data.get('validationURL')
+        domain_name = request.data.get('domainName', 'app.dottapps.com')
+        
+        if not validation_url:
+            return Response(
+                {"error": "Validation URL is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        logger.info(f"[Apple Pay] Validating merchant session for domain: {domain_name}")
+        
+        # For Stripe, we use their Apple Pay domain association
+        # This is a simplified implementation - in production you'd need proper certificates
+        return Response({
+            'success': True,
+            'merchantSession': {
+                'merchantIdentifier': 'merchant.com.dott.pos',
+                'merchantSessionIdentifier': f'merchant-session-{timezone.now().timestamp()}',
+                'nonce': f'nonce-{timezone.now().timestamp()}',
+                'epochTimestamp': int(timezone.now().timestamp() * 1000),
+                'expiresAt': int((timezone.now().timestamp() + 300) * 1000),  # 5 minutes
+                'domainName': domain_name,
+                'displayName': 'Dott POS',
+                'signature': 'mock-signature'  # In production, this would be properly signed
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"[Apple Pay] Error validating merchant: {str(e)}")
+        return Response(
+            {"error": "Failed to validate merchant session"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def confirm_pos_payment(request):
     """
     Confirm that a payment was successful and update records

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Invite Business Owners - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .header-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .content {
+            padding: 20px 16px;
+        }
+        
+        .intro-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .intro-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .intro-text {
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        
+        .share-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 16px;
+        }
+        
+        .share-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .share-button {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            text-decoration: none;
+        }
+        
+        .share-button:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+        
+        .share-button svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+        }
+        
+        .share-button-text {
+            flex: 1;
+            text-align: left;
+        }
+        
+        .share-button-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+        
+        .share-native {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        
+        .share-whatsapp {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+        }
+        
+        .share-sms {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+        
+        .share-email {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+        
+        .share-copy {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+        
+        .benefits-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        
+        .benefit-icon {
+            color: #10b981;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+        
+        .benefit-text {
+            color: #374151;
+            line-height: 1.5;
+        }
+        
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-message.show {
+            display: flex;
+        }
+        
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 8px;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .nav-item {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            border: none;
+            background: none;
+            color: #9ca3af;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .nav-item.active {
+            color: #3b82f6;
+        }
+        
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="header-title">Invite Business Owners</h1>
+    </div>
+    
+    <div id="statusMessage" class="status-message"></div>
+    
+    <div class="content">
+        <div class="intro-section">
+            <h2 class="intro-title">
+                <svg fill="none" stroke="#3b82f6" viewBox="0 0 24 24" width="24" height="24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                Share Dott with Fellow Business Owners
+            </h2>
+            <p class="intro-text">
+                Help other business owners discover how Dott can transform their operations. 
+                Share via your preferred method below.
+            </p>
+        </div>
+        
+        <div class="share-section">
+            <h3 class="section-title">Choose How to Share</h3>
+            <div class="share-buttons">
+                <button class="share-button share-native" onclick="shareNative()" id="nativeShareBtn" style="display:none;">
+                    <svg fill="white" viewBox="0 0 24 24">
+                        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+                    </svg>
+                    <div>
+                        <div class="share-button-text">Share via Any App</div>
+                        <div class="share-button-subtitle">Choose from all your apps</div>
+                    </div>
+                </button>
+                
+                <button class="share-button share-whatsapp" onclick="shareWhatsApp()">
+                    <svg fill="white" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.123-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                    <div>
+                        <div class="share-button-text">Share via WhatsApp</div>
+                        <div class="share-button-subtitle">Send to contacts or groups</div>
+                    </div>
+                </button>
+                
+                <button class="share-button share-sms" onclick="shareSMS()">
+                    <svg fill="white" viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
+                    </svg>
+                    <div>
+                        <div class="share-button-text">Share via SMS</div>
+                        <div class="share-button-subtitle">Send text message</div>
+                    </div>
+                </button>
+                
+                <button class="share-button share-email" onclick="shareEmail()">
+                    <svg fill="white" viewBox="0 0 24 24">
+                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                    <div>
+                        <div class="share-button-text">Share via Email</div>
+                        <div class="share-button-subtitle">Send email invitation</div>
+                    </div>
+                </button>
+                
+                <button class="share-button share-copy" onclick="copyMessage()">
+                    <svg fill="white" viewBox="0 0 24 24">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    <div>
+                        <div class="share-button-text">Copy Message</div>
+                        <div class="share-button-subtitle">Copy invitation to clipboard</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="benefits-section">
+            <h3 class="section-title">Why Business Owners Love Dott</h3>
+            <div class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <span class="benefit-text">Save hours weekly on administrative tasks</span>
+            </div>
+            <div class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <span class="benefit-text">All-in-one platform for complete business management</span>
+            </div>
+            <div class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <span class="benefit-text">Real-time insights and AI-powered analytics</span>
+            </div>
+            <div class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <span class="benefit-text">Free forever plan to get started</span>
+            </div>
+            <div class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <span class="benefit-text">Works globally with multi-currency support</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="navigateTo('mobile-menu.html')">
+            <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+            </svg>
+            Menu
+        </button>
+    </div>
+    
+    <script type="module">
+        import { Capacitor } from 'https://unpkg.com/@capacitor/core@latest/dist/index.js';
+        import { Share } from 'https://unpkg.com/@capacitor/share@latest/dist/index.js';
+        
+        window.Capacitor = Capacitor;
+        window.Share = Share;
+        
+        // Check if running on native platform and show native share button
+        if (Capacitor.isNativePlatform()) {
+            document.getElementById('nativeShareBtn').style.display = 'flex';
+        }
+    </script>
+    
+    <script>
+        // Get user data from storage
+        let userData = {};
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                userData = JSON.parse(storedUser);
+            }
+        } catch (e) {
+            console.error('Error loading user data:', e);
+        }
+        
+        // Generate invitation message
+        function getInviteMessage() {
+            const senderName = userData.name || 'A colleague';
+            const userName = userData.name || userData.email || 'A Dott User';
+            
+            return `🚀 ${senderName} has invited you to join Dott: Global Business Platform!
+
+Hello! I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.
+
+Dott brings together everything you need:
+• Sales and customer management  
+• Inventory tracking and control
+• Professional invoicing and payments
+• Financial reporting and analytics
+• Team collaboration tools
+• AI Business insights and analytics
+• Geofencing and location tracking
+• Real-time business intelligence
+
+Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.
+
+Get started for free forever today: https://dottapps.com
+
+Best regards,
+${userName}`;
+        }
+        
+        function showStatus(message, isSuccess = true) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message show ${isSuccess ? 'status-success' : 'status-error'}`;
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
+        }
+        
+        async function shareNative() {
+            try {
+                if (window.Share && window.Share.share) {
+                    await window.Share.share({
+                        title: 'Invitation to Join Dott Business Platform',
+                        text: getInviteMessage(),
+                        url: 'https://dottapps.com',
+                        dialogTitle: 'Share Dott with Business Owners'
+                    });
+                    showStatus('Invitation shared successfully!');
+                } else {
+                    // Fallback to copy
+                    copyMessage();
+                }
+            } catch (error) {
+                console.error('Share error:', error);
+                if (error.message !== 'Share canceled') {
+                    showStatus('Failed to share. Please try another method.', false);
+                }
+            }
+        }
+        
+        function shareWhatsApp() {
+            const message = encodeURIComponent(getInviteMessage());
+            const url = window.Capacitor && window.Capacitor.isNativePlatform() 
+                ? `whatsapp://send?text=${message}`
+                : `https://wa.me/?text=${message}`;
+            
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                window.open(url, '_system');
+            } else {
+                window.open(url, '_blank');
+            }
+            showStatus('Opening WhatsApp...');
+        }
+        
+        function shareSMS() {
+            const message = encodeURIComponent(getInviteMessage());
+            const url = `sms:?body=${message}`;
+            
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                window.open(url, '_system');
+            } else {
+                window.location.href = url;
+            }
+            showStatus('Opening Messages...');
+        }
+        
+        function shareEmail() {
+            const subject = encodeURIComponent('Invitation to Join Dott Business Platform');
+            const body = encodeURIComponent(getInviteMessage());
+            const url = `mailto:?subject=${subject}&body=${body}`;
+            
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                window.open(url, '_system');
+            } else {
+                window.location.href = url;
+            }
+            showStatus('Opening Email...');
+        }
+        
+        async function copyMessage() {
+            try {
+                await navigator.clipboard.writeText(getInviteMessage());
+                showStatus('Message copied to clipboard!');
+            } catch (error) {
+                console.error('Copy error:', error);
+                showStatus('Failed to copy message.', false);
+            }
+        }
+        
+        function goBack() {
+            window.location.href = 'mobile-menu.html';
+        }
+        
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+    </script>
+</body>
+</html>

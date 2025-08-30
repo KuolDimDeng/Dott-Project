@@ -791,7 +791,18 @@ export const routeRegistry = {
     description: 'WhatsApp integration'
   },
   'invite-friend': {
-    component: enhancedLazy(() => import('../components/invite/InviteAFriend'), 'Invite Friend'),
+    component: enhancedLazy(() => {
+      // Check if running on mobile device
+      const isMobile = typeof window !== 'undefined' && 
+        (/iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent) ||
+         window.innerWidth < 768);
+      
+      // Use mobile-optimized component for mobile devices
+      if (isMobile) {
+        return import('../components/invite/MobileInviteBusinessOwner');
+      }
+      return import('../components/invite/InviteAFriend');
+    }, 'Invite Friend'),
     title: 'Invite Business Owner',
     description: 'Invite others'
   },

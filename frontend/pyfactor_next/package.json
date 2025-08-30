@@ -89,6 +89,7 @@
     "@capacitor/ios": "^7.4.3",
     "@capacitor/keyboard": "^7.0.2",
     "@capacitor/push-notifications": "^7.0.2",
+    "@capacitor/share": "^7.0.2",
     "@capacitor/splash-screen": "^7.0.2",
     "@capacitor/status-bar": "^7.0.2",
     "@emotion/react": "^11.14.0",

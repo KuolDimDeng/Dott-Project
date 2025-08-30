@@ -820,7 +820,7 @@ const MenuOverviewGrid = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {config.items.map((item) => {
           const Icon = item.icon;
           const badge = getUsageBadge(item.id);
@@ -830,42 +830,44 @@ const MenuOverviewGrid = ({
             <button
               key={item.id}
               onClick={() => handleItemClick(item)}
-              className="relative group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 p-6 text-left border border-gray-200 hover:border-blue-500"
+              className="relative group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 p-2 sm:p-3 md:p-4 lg:p-6 text-left border border-gray-200 hover:border-blue-500 flex flex-col h-[140px] sm:h-[160px] md:h-[180px] lg:h-[220px] overflow-hidden"
             >
               {badge && (
-                <span className={`absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded-full ${badge.color}`}>
+                <span className={`absolute top-1 right-1 px-1 py-0.5 text-[8px] sm:text-[10px] md:text-xs font-medium rounded-full ${badge.color} z-10 max-w-[60px] truncate`}>
                   {badge.text}
                 </span>
               )}
 
-              <div className={`inline-flex p-3 rounded-lg ${item.color} bg-opacity-10 mb-4`}>
-                <Icon className={`w-6 h-6 ${item.color.replace('bg-', 'text-')}`} />
-              </div>
-
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {item.title}
-              </h3>
-
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {item.description}
-              </p>
-
-              {item.stats && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">
-                      {item.stats.label}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {loadingStats ? (
-                        <span className="inline-block w-12 h-4 bg-gray-200 rounded animate-pulse"></span>
-                      ) : (
-                        statValue !== undefined ? statValue : '0'
-                      )}
-                    </span>
-                  </div>
+              <div className="flex flex-col h-full">
+                <div className={`inline-flex p-1.5 sm:p-2 md:p-2.5 lg:p-3 rounded-lg ${item.color} bg-opacity-10 mb-1.5 sm:mb-2 md:mb-3 self-start flex-shrink-0`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 ${item.color.replace('bg-', 'text-')}`} />
                 </div>
-              )}
+
+                <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1 md:mb-2 line-clamp-1 flex-shrink-0">
+                  {item.title}
+                </h3>
+
+                <p className="text-[10px] sm:text-xs md:text-sm text-gray-600 mb-1 sm:mb-2 md:mb-3 line-clamp-2 flex-grow min-h-0">
+                  {item.description}
+                </p>
+
+                {item.stats && (
+                  <div className="pt-1 sm:pt-1.5 md:pt-2 lg:pt-3 border-t border-gray-200 mt-auto flex-shrink-0">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5">
+                      <span className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 line-clamp-1">
+                        {item.stats.label}
+                      </span>
+                      <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-gray-900">
+                        {loadingStats ? (
+                          <span className="inline-block w-6 sm:w-8 md:w-12 h-2 sm:h-3 md:h-4 bg-gray-200 rounded animate-pulse"></span>
+                        ) : (
+                          statValue !== undefined ? statValue : '0'
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="absolute inset-0 rounded-lg ring-2 ring-blue-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-200 pointer-events-none" />
             </button>

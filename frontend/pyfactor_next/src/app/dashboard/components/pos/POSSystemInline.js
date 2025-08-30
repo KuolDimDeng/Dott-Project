@@ -17,6 +17,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { useCurrency } from '@/context/CurrencyContext';
 import { formatCurrency } from '@/utils/currencyFormatter';
+import { 
+  needsCurrencyConversion, 
+  fetchExchangeRate, 
+  convertToUSD, 
+  UNSUPPORTED_CURRENCIES 
+} from '@/utils/paymentConversionUtils';
 
 // Custom Barcode Icon as it might not exist in Heroicons
 const BarcodeIcon = (props) => (
@@ -340,6 +346,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
   const [notes, setNotes] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isApplePayAvailable, setIsApplePayAvailable] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -548,6 +555,29 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
         clearTimeout(scannerTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Check Apple Pay availability
+  useEffect(() => {
+    const checkApplePayAvailability = () => {
+      console.log('[Apple Pay] Checking availability in web POS...');
+      
+      if (typeof window !== 'undefined' && window.ApplePaySession && ApplePaySession.canMakePayments) {
+        try {
+          const available = ApplePaySession.canMakePayments();
+          console.log('[Apple Pay] Available:', available);
+          setIsApplePayAvailable(available);
+        } catch (error) {
+          console.log('[Apple Pay] Error checking availability:', error);
+          setIsApplePayAvailable(false);
+        }
+      } else {
+        console.log('[Apple Pay] ApplePaySession not available');
+        setIsApplePayAvailable(false);
+      }
+    };
+
+    checkApplePayAvailability();
   }, []);
 
   // Load products and business info
@@ -1215,6 +1245,139 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
     };
   };
 
+  // Handle Apple Pay payment
+  const handleApplePayPayment = async (totals) => {
+    if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
+      toast.error('Apple Pay is not available on this device. Please use Safari on iOS or macOS.');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const request = {
+        countryCode: 'US',
+        currencyCode: 'USD', // Always process in USD for Stripe
+        supportedNetworks: ['visa', 'masterCard', 'amex', 'discover'],
+        merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit'],
+        total: {
+          label: 'Dott POS',
+          amount: totals.total
+        }
+      };
+
+      console.log('[Apple Pay] Creating session with request:', request);
+      const session = new window.ApplePaySession(3, request);
+
+      session.onvalidatemerchant = async (event) => {
+        console.log('[Apple Pay] Validating merchant...');
+        try {
+          const response = await fetch('/api/payments/apple-pay/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              validationURL: event.validationURL,
+              domainName: window.location.hostname
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            session.completeMerchantValidation(data.merchantSession);
+          } else {
+            console.error('[Apple Pay] Merchant validation failed');
+            session.abort();
+            toast.error('Apple Pay validation failed. Please try another payment method.');
+            setIsProcessing(false);
+          }
+        } catch (error) {
+          console.error('[Apple Pay] Merchant validation error:', error);
+          session.abort();
+          toast.error('Apple Pay error. Please try another payment method.');
+          setIsProcessing(false);
+        }
+      };
+
+      session.onpaymentauthorized = async (event) => {
+        console.log('[Apple Pay] Payment authorized');
+        try {
+          // Process the sale with Apple Pay data
+          const mappedItems = cartItems.map(item => ({
+            id: item.id,
+            type: 'product',
+            quantity: item.quantity || 1,
+            unit_price: parseFloat(item.price || 0),
+            is_backorder: item.isBackorder || false,
+            is_partial_backorder: item.isPartialBackorder || false,
+            backorder_quantity: item.backorderQuantity || 0
+          }));
+
+          let discountPercentage = 0;
+          if (discount > 0) {
+            if (discountType === 'percentage') {
+              discountPercentage = discount;
+            } else {
+              discountPercentage = totals.subtotal > 0 ? (discount / totals.subtotal) * 100 : 0;
+            }
+          }
+
+          const saleData = {
+            items: mappedItems,
+            customer_id: selectedCustomer || null,
+            payment_method: 'apple_pay',
+            amount_tendered: parseFloat(totals.total),
+            discount_percentage: discountPercentage,
+            tax_rate: taxRate,
+            notes: notes,
+            currency_code: userCurrency || currency?.code || 'USD',
+            currency_symbol: currencySymbol,
+            has_backorders: mappedItems.some(item => item.is_backorder),
+            apple_pay_data: event.payment
+          };
+
+          console.log('[POS] Processing Apple Pay sale:', saleData);
+
+          const response = await fetch('/api/pos/complete-sale', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(saleData),
+          });
+
+          const result = await response.json();
+
+          if (result.success || response.ok) {
+            session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
+            toast.success('Apple Pay payment successful!');
+            resetCart();
+          } else {
+            session.completePayment(window.ApplePaySession.STATUS_FAILURE);
+            toast.error(result.message || 'Apple Pay payment failed');
+          }
+        } catch (error) {
+          console.error('[Apple Pay] Payment processing error:', error);
+          session.completePayment(window.ApplePaySession.STATUS_FAILURE);
+          toast.error('Apple Pay payment failed. Please try again.');
+        }
+        setIsProcessing(false);
+      };
+
+      session.oncancel = () => {
+        console.log('[Apple Pay] Payment cancelled by user');
+        setIsProcessing(false);
+      };
+
+      session.begin();
+    } catch (error) {
+      console.error('[Apple Pay] Error starting session:', error);
+      toast.error('Failed to start Apple Pay. Please try another payment method.');
+      setIsProcessing(false);
+    }
+  };
+
   // Process sale
   const handleProcessSale = async () => {
     if (cartItems.length === 0) {
@@ -1222,9 +1385,69 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       return;
     }
 
-    // If credit card payment, show Stripe modal first
+    // If credit card payment, check minimum requirements first
     if (paymentMethod === 'card') {
       const totals = calculateTotals();
+      
+      // Check if currency needs conversion and validate minimum charge
+      if (needsCurrencyConversion(userCurrency || currency?.code)) {
+        try {
+          const exchangeRate = await fetchExchangeRate(userCurrency || currency?.code, 'USD');
+          const usdAmount = convertToUSD(parseFloat(totals.total), exchangeRate);
+          
+          // Check if amount meets Stripe minimum
+          if (usdAmount < 0.50) {
+            const minAmountInLocalCurrency = Math.ceil(0.50 * exchangeRate);
+            toast.error(
+              `Payment amount too small for card processing.\n\n` +
+              `Due to exchange rate (${userCurrency || currency?.code} ${exchangeRate.toFixed(2)} = $1 USD), ` +
+              `minimum card payment is ${currencySymbol}${minAmountInLocalCurrency}.\n\n` +
+              `Your total: ${currencySymbol}${totals.total}\n` +
+              `Converts to: $${usdAmount.toFixed(2)} USD\n\n` +
+              `Please add more items or use cash payment.`,
+              { duration: 8000 }
+            );
+            return;
+          }
+        } catch (error) {
+          console.error('[POS] Error checking payment minimum:', error);
+          // Continue with payment if we can't check - error will be handled later
+        }
+      }
+
+    // If Apple Pay, process through Apple Pay
+    if (paymentMethod === 'apple_pay') {
+      const totals = calculateTotals();
+      
+      // Same minimum validation as card payments
+      if (needsCurrencyConversion(userCurrency || currency?.code)) {
+        try {
+          const exchangeRate = await fetchExchangeRate(userCurrency || currency?.code, 'USD');
+          const usdAmount = convertToUSD(parseFloat(totals.total), exchangeRate);
+          
+          if (usdAmount < 0.50) {
+            const minAmountInLocalCurrency = Math.ceil(0.50 * exchangeRate);
+            toast.error(
+              `Payment amount too small for Apple Pay.\n\n` +
+              `Due to exchange rate (${userCurrency || currency?.code} ${exchangeRate.toFixed(2)} = $1 USD), ` +
+              `minimum payment is ${currencySymbol}${minAmountInLocalCurrency}.\n\n` +
+              `Your total: ${currencySymbol}${totals.total}\n` +
+              `Converts to: $${usdAmount.toFixed(2)} USD\n\n` +
+              `Please add more items or use cash payment.`,
+              { duration: 8000 }
+            );
+            return;
+          }
+        } catch (error) {
+          console.error('[POS] Error checking Apple Pay minimum:', error);
+          // Continue with payment if we can't check - error will be handled later
+        }
+      }
+
+      handleApplePayPayment(totals);
+      return;
+    }
+
       const mappedItems = cartItems.map(item => ({
         id: item.id,
         type: 'product',
@@ -1657,7 +1880,36 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
       
     } catch (error) {
       console.error('[POS] Error completing sale after payment:', error);
-      toast.error(`Sale failed: ${error.message}`);
+      
+      // Enhanced error messages for payment failures
+      let userMessage = `Sale failed: ${error.message}`;
+      
+      // Check for minimum charge error
+      if (error.message && error.message.includes('at least $0.50')) {
+        if (needsCurrencyConversion(userCurrency || currency?.code)) {
+          try {
+            const exchangeRate = await fetchExchangeRate(userCurrency || currency?.code, 'USD');
+            const minAmountInLocalCurrency = Math.ceil(0.50 * exchangeRate);
+            userMessage = `Payment amount too small.\n\n` +
+              `Due to high exchange rate (${userCurrency || currency?.code} ${exchangeRate.toFixed(2)} = $1 USD), ` +
+              `minimum card payment is ${currencySymbol}${minAmountInLocalCurrency}.\n\n` +
+              `Please add more items or use cash payment.`;
+          } catch (exchangeError) {
+            console.error('[POS] Error fetching exchange rate for error message:', exchangeError);
+            userMessage = 'Payment amount too small. Minimum card payment is $0.50 USD. Please add more items or use cash payment.';
+          }
+        }
+      } else if (error.message && (
+        error.message.includes('network') || 
+        error.message.includes('connection') ||
+        error.message.includes('host')
+      )) {
+        userMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message && error.message.includes('authentication')) {
+        userMessage = 'Authentication error. Please sign in again and retry.';
+      }
+      
+      toast.error(userMessage, { duration: 8000 });
     } finally {
       setIsProcessing(false);
       setPendingSaleData(null);
@@ -2445,6 +2697,7 @@ export default function POSSystemInline({ onBack, onSaleCompleted }) {
               >
                 <option value="cash">{t('cash')}</option>
                 <option value="card">{t('creditCard')}</option>
+                {isApplePayAvailable && <option value="apple_pay">Apple Pay</option>}
                 <option value="mobile">{t('mobileMoney')}</option>
               </select>
             </div>
