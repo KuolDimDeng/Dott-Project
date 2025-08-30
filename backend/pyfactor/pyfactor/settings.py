@@ -645,16 +645,25 @@ REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 
 # Channel layers configuration for WebSocket support
 if REDIS_URL:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [REDIS_URL],
-                "capacity": 1500,
-                "expiry": 10,
+    try:
+        import channels_redis
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {
+                    "hosts": [REDIS_URL],
+                    "capacity": 1500,
+                    "expiry": 10,
+                },
             },
-        },
-    }
+        }
+    except ImportError:
+        # Fallback to in-memory if channels_redis not installed
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels.layers.InMemoryChannelLayer',
+            },
+        }
 else:
     # Use in-memory channel layer for development without Redis
     CHANNEL_LAYERS = {
