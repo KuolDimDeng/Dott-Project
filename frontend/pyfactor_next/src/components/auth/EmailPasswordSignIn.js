@@ -674,7 +674,7 @@ export default function EmailPasswordSignIn() {
           <div className="text-center">
             <img 
               className="mx-auto h-20 w-auto" 
-              src="https://dottapps.com/static/images/PyfactorLandingpage.png" 
+              src="/logo.png" 
               alt="Dott" 
             />
             <h2 className="mt-6 text-2xl font-bold text-gray-900">Loading...</h2>
@@ -711,7 +711,7 @@ export default function EmailPasswordSignIn() {
           <div className="text-center">
             <img 
               className="mx-auto h-20 w-auto" 
-              src="https://dottapps.com/static/images/PyfactorLandingpage.png" 
+              src="/logo.png" 
               alt="Dott" 
             />
             <h2 className="mt-6 text-2xl font-bold text-gray-900">
