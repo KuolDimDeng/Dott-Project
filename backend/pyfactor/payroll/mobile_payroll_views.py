@@ -110,7 +110,7 @@ def calculate_mobile_payroll(request):
             
             employee_data = {
                 'employee_id': str(employee.id),
-                'employee_name': f\"{employee.first_name} {employee.last_name}\",
+                'employee_name': f"{employee.first_name} {employee.last_name}",
                 'employment_type': employee.employment_type,
                 'gross_pay': float(gross_pay),
                 'net_pay': float(tax_summary['net_pay']),
@@ -171,7 +171,7 @@ def calculate_mobile_payroll(request):
             'error': f'Invalid date format: {str(e)}'
         }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        logger.error(f\"Error calculating mobile payroll: {str(e)}\")
+        logger.error(f"Error calculating mobile payroll: {str(e)}")
         return Response({
             'error': 'Failed to calculate payroll',
             'details': str(e)
@@ -221,7 +221,7 @@ def create_mobile_payroll_run(request):
         }, status=status.HTTP_201_CREATED)
         
     except Exception as e:
-        logger.error(f\"Error creating mobile payroll run: {str(e)}\")
+        logger.error(f"Error creating mobile payroll run: {str(e)}")
         return Response({
             'error': 'Failed to create payroll run',
             'details': str(e)
@@ -260,7 +260,7 @@ def get_mobile_payroll_runs(request):
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        logger.error(f\"Error getting mobile payroll runs: {str(e)}\")
+        logger.error(f"Error getting mobile payroll runs: {str(e)}")
         return Response({
             'error': 'Failed to get payroll runs'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -304,7 +304,7 @@ def get_payroll_bank_accounts(request):
             'error': 'User profile not found'
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        logger.error(f\"Error getting payroll bank accounts: {str(e)}\")
+        logger.error(f"Error getting payroll bank accounts: {str(e)}")
         return Response({
             'error': 'Failed to get bank accounts'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
