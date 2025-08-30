@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
         ('crm', '0001_initial'),
         ('payments', '0001_initial'),
         ('banking', '0001_initial'),
+        ('auth', '0001_initial'),
     ]
 
     operations = [
@@ -46,6 +47,7 @@ class Migration(migrations.Migration):
                 ('notes', models.TextField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='trips_created', to='auth.user')),
                 ('customer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transport_trips', to='crm.customer')),
                 ('driver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='trips', to='transport.driver')),
                 ('vehicle', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='trips', to='transport.equipment')),
