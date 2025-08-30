@@ -13,34 +13,40 @@ from hr.models import Employee, Timesheet
 from banking.models import BankAccount
 from .models import PayrollRun, PayrollTransaction, PayStatement
 from .stripe_models import PayrollStripePayment, EmployeePayoutRecord, EmployeeStripeAccount
+from .tax_calculation_service import PayrollTaxCalculator
 
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class PayrollService:
-    def __init__(self):
+    def __init__(self, business_id=None):
         self.platform_fee_rate = Decimal('0.024')  # 2.4%
+        self.business_id = business_id
     
     def calculate_payroll(self, business, pay_period_start, pay_period_end, tenant_id):
         """
-        Step 1: Calculate how much each employee should receive
+        Step 1: Calculate how much each employee should receive using enhanced tax calculator
         """
         with db_transaction.atomic():
+            # Initialize tax calculator for this business
+            tax_calculator = PayrollTaxCalculator(tenant_id)
+            
             payroll_run = PayrollRun.objects.create(
                 tenant_id=tenant_id,
                 start_date=pay_period_start,
                 end_date=pay_period_end,
                 pay_date=pay_period_end + timedelta(days=5),  # Pay 5 days after period ends
                 status='draft',
-                country_code='US',
-                currency_code='USD',
-                currency_symbol='$'
+                country_code=business.country or 'US',
+                currency_code=business.currency or 'USD',
+                currency_symbol=business.currency_symbol or '$'
             )
             
             total_gross = Decimal('0.00')
             total_net = Decimal('0.00')
             total_deductions = Decimal('0.00')
+            total_employer_taxes = Decimal('0.00')
             
             # Calculate for each active employee
             active_employees = Employee.objects.filter(
@@ -74,16 +80,28 @@ class PayrollService:
                         # Default to 0 if no timesheet
                         gross_pay = Decimal('0.00')
                 
-                # Calculate deductions (simplified - you'd use real tax tables)
-                federal_tax = gross_pay * Decimal('0.15')  # 15% federal
-                state_tax = gross_pay * Decimal('0.05')    # 5% state
-                social_security = gross_pay * Decimal('0.062')  # 6.2% SS
-                medicare = gross_pay * Decimal('0.0145')    # 1.45% Medicare
+                # Skip if no pay due
+                if gross_pay <= 0:
+                    continue
                 
-                total_taxes = federal_tax + state_tax + social_security + medicare
+                # Get YTD gross for tax cap calculations
+                current_year = pay_period_end.year
+                ytd_payments = PayrollTransaction.objects.filter(
+                    employee=employee,
+                    tenant_id=tenant_id,
+                    payroll_run__pay_date__year=current_year,
+                    payroll_run__status__in=['completed', 'funded', 'distributing']
+                )
+                ytd_gross = sum(p.gross_pay for p in ytd_payments)
+                
+                # Calculate taxes using enhanced calculator
+                employee_taxes = tax_calculator.calculate_employee_taxes(gross_pay, ytd_gross)
+                employer_taxes = tax_calculator.calculate_employer_taxes(gross_pay, ytd_gross)
+                
+                total_taxes = employee_taxes['total_employee_taxes']
                 net_pay = gross_pay - total_taxes
                 
-                # Create payment record
+                # Create payment record with detailed tax breakdown
                 payment = PayrollTransaction.objects.create(
                     tenant_id=tenant_id,
                     employee=employee,
@@ -92,16 +110,21 @@ class PayrollService:
                     gross_pay=gross_pay,
                     net_pay=net_pay,
                     taxes=total_taxes,
-                    federal_tax=federal_tax,
-                    state_tax=state_tax,
-                    state_code='CA',  # Default, should be from employee/business settings
-                    medicare_tax=medicare,
-                    social_security_tax=social_security
+                    federal_tax=employee_taxes['federal_income_tax'],
+                    state_tax=employee_taxes['state_tax'],
+                    state_code=business.region or 'CA',  # Use business region
+                    medicare_tax=employee_taxes['medicare_tax'],
+                    social_security_tax=employee_taxes['social_security_tax'],
+                    # Additional tax fields if they exist in model
+                    unemployment_tax=employee_taxes.get('unemployment_tax', Decimal('0.00')),
+                    other_tax=employee_taxes.get('other_tax', Decimal('0.00'))
                 )
                 
+                # Track totals
                 total_gross += gross_pay
                 total_net += net_pay
                 total_deductions += total_taxes
+                total_employer_taxes += employer_taxes['total_employer_taxes']
             
             # Update payroll run totals
             payroll_run.total_amount = total_gross

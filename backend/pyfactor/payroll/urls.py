@@ -23,6 +23,15 @@ from .views_fees import (
     calculate_payroll_fees, process_payroll_with_fees,
     approve_payroll_with_payment, get_payroll_fee_breakdown
 )
+from .mobile_payroll_views import (
+    calculate_mobile_payroll, create_mobile_payroll_run,
+    get_mobile_payroll_runs, get_payroll_bank_accounts,
+    approve_mobile_payroll, get_mobile_payroll_status
+)
+from .mobile_tax_views import (
+    get_payroll_tax_summary, get_form_941_data,
+    request_tax_filing_service
+)
 
 urlpatterns = [
     path('run/', RunPayrollView.as_view(), name='run_payroll'),
@@ -75,4 +84,17 @@ urlpatterns = [
     path('process-with-fees/', process_payroll_with_fees, name='process-payroll-with-fees'),
     path('approve-with-payment/<uuid:payroll_run_id>/', approve_payroll_with_payment, name='approve-payroll-payment'),
     path('fee-breakdown/<uuid:payroll_run_id>/', get_payroll_fee_breakdown, name='payroll-fee-breakdown'),
+    
+    # Mobile payroll endpoints
+    path('mobile/calculate/', calculate_mobile_payroll, name='mobile-payroll-calculate'),
+    path('mobile/create-run/', create_mobile_payroll_run, name='mobile-payroll-create'),
+    path('mobile/runs/', get_mobile_payroll_runs, name='mobile-payroll-runs'),
+    path('mobile/bank-accounts/', get_payroll_bank_accounts, name='mobile-payroll-accounts'),
+    path('mobile/approve/', approve_mobile_payroll, name='mobile-payroll-approve'),
+    path('mobile/status/<uuid:payroll_run_id>/', get_mobile_payroll_status, name='mobile-payroll-status'),
+    
+    # Mobile tax filing endpoints
+    path('mobile/tax/summary/', get_payroll_tax_summary, name='mobile-tax-summary'),
+    path('mobile/tax/form-941/', get_form_941_data, name='mobile-form-941'),
+    path('mobile/tax/request-service/', request_tax_filing_service, name='mobile-tax-service'),
 ]
