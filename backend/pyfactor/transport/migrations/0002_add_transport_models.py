@@ -122,9 +122,4 @@ class Migration(migrations.Migration):
             model_name='tripstop',
             constraint=models.UniqueConstraint(fields=('trip', 'stop_order'), name='unique_stop_order_per_trip'),
         ),
-        migrations.AddField(
-            model_name='load',
-            name='trip',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='legacy_load', to='transport.trip'),
-        ),
     ]
