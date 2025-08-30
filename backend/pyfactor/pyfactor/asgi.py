@@ -17,7 +17,11 @@ os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
 try:
     # First, get the ASGI application reference
     from django.core.asgi import get_asgi_application
-    application = get_asgi_application()
+    from channels.routing import ProtocolTypeRouter, URLRouter
+    from channels.auth import AuthMiddlewareStack
+    from channels.security.websocket import AllowedHostsOriginValidator
+    
+    django_asgi_app = get_asgi_application()
     
     # Only initialize additional components if not in a management command
     import sys
@@ -25,7 +29,25 @@ try:
         # After application is defined, set up Django
         django.setup()
         
-        logger.info("Django ASGI application initialized successfully")
+        # Import WebSocket routing
+        from chat.routing import websocket_urlpatterns
+        
+        # Configure the ASGI application with WebSocket support
+        application = ProtocolTypeRouter({
+            "http": django_asgi_app,
+            "websocket": AllowedHostsOriginValidator(
+                AuthMiddlewareStack(
+                    URLRouter(
+                        websocket_urlpatterns
+                    )
+                )
+            ),
+        })
+        
+        logger.info("Django ASGI application with WebSocket support initialized successfully")
+    else:
+        # For management commands, use basic ASGI app
+        application = django_asgi_app
 except Exception as e:
     logger.error(f"Error initializing Django ASGI application: {e}", exc_info=True)
     # Re-raise to ensure proper error handling

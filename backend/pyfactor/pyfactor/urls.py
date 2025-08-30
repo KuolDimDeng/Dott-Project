@@ -169,6 +169,13 @@ urlpatterns += [
     # Jobs API routes
     path('api/jobs/', include('jobs.urls')),
     
+    # Marketplace API routes
+    path('api/marketplace/', include('marketplace.urls')),
+    path('api/marketplace/consumer/', include('marketplace.consumer_urls')),
+    
+    # Chat API routes
+    path('api/chat/', include('chat.urls')),
+    
     # Core monitoring and performance routes
     path('api/core/', include('core.urls')),
     

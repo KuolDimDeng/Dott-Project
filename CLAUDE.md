@@ -492,3 +492,17 @@ RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ
 - **Documentation**: `/docs/MOBILE_APP_COLOR_SCHEME.md` - Complete color reference
 - **Key Learning**: Capacitor config overrides storyboard for splash colors
 - **Files Updated**: All mobile HTML files in `/out/` directory
+
+### [58.0.0] - 2025-08-30 - CURRENT - Marketplace & E-Commerce Platform
+- **Architecture**: Dual-mode system (Business ↔ Consumer)
+- **Features**: Business listings, consumer discovery, real-time chat, order management
+- **Chat**: WebSocket-based using Django Channels
+- **Payments**: Stripe (worldwide) + M-Pesa (Kenya) with 2.5% platform fee
+- **Location**: Proximity-based discovery with delivery scope filtering
+- **Categories**: 20+ business categories (Food, Shopping, Transport, Health, etc.)
+- **Order Flow**: Browse → Chat/Order → Pay → Track → Review
+- **Key Models**: BusinessListing, ConsumerOrder, ChatConversation
+- **WebSocket**: ws://api.dottapps.com/ws/chat/{conversation_id}/
+- **Documentation**: `/docs/MARKETPLACE_FEATURE_DOCUMENTATION.md`
+- **Migration**: Run in Render shell: `python manage.py migrate marketplace chat`
+- **Revenue Model**: 2.5% platform fee on all transactions

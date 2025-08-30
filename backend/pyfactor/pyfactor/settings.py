@@ -642,6 +642,26 @@ else:
 # Redis database numbers for different uses (only used when Redis is available)
 REDIS_SESSION_DB = int(os.environ.get('REDIS_SESSION_DB', 1))  # Session storage
 REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
+
+# Channel layers configuration for WebSocket support
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [REDIS_URL],
+                "capacity": 1500,
+                "expiry": 10,
+            },
+        },
+    }
+else:
+    # Use in-memory channel layer for development without Redis
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 REDIS_ONBOARDING_DB = 3  # Use a separate Redis database for onboarding sessions
 
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
@@ -1014,6 +1034,7 @@ SHARED_APPS = (
     'rest_framework.authtoken',
     'dj_rest_auth',
     'dj_rest_auth.registration',
+    'channels',
     # 'allauth',  # Commented out - using custom Auth0 authentication
     # 'allauth.account',  # Commented out - using custom Auth0 authentication
     'leads.apps.LeadsConfig',  # Lead management system
@@ -1049,6 +1070,8 @@ TENANT_APPS = (
     'crm.apps.CrmConfig',
     'transport.apps.TransportConfig',
     'events.apps.EventsConfig',
+    'marketplace.apps.MarketplaceConfig',
+    'chat.apps.ChatConfig',
     'notifications',
     'whatsapp_business.apps.WhatsappBusinessConfig',
     'data_export',
