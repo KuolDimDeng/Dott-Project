@@ -730,6 +730,57 @@ const MenuOverviewGrid = ({
         }
       ]
     },
+    marketplace: {
+      title: 'Marketplace',
+      description: 'Connect with customers, manage orders, and grow your business',
+      items: [
+        {
+          id: 'marketplace',
+          title: 'Marketplace Dashboard',
+          description: 'Overview of your marketplace activity',
+          icon: Globe,
+          color: 'bg-purple-500',
+          stats: { label: 'New Orders', key: 'newOrders' },
+          value: 'marketplace'
+        },
+        {
+          id: 'marketplace-search',
+          title: 'Find Businesses',
+          description: 'Search and discover businesses near you',
+          icon: Search,
+          color: 'bg-indigo-500',
+          stats: { label: 'Businesses', key: 'totalBusinesses' },
+          value: 'marketplace-search'
+        },
+        {
+          id: 'marketplace-orders',
+          title: 'My Orders',
+          description: 'View and track your marketplace orders',
+          icon: ShoppingBag,
+          color: 'bg-green-500',
+          stats: { label: 'Active Orders', key: 'activeOrders' },
+          value: 'marketplace-orders'
+        },
+        {
+          id: 'marketplace-listing',
+          title: 'My Business Listing',
+          description: 'Manage your marketplace presence and visibility',
+          icon: Building,
+          color: 'bg-yellow-500',
+          stats: { label: 'Views Today', key: 'listingViews' },
+          value: 'marketplace-listing'
+        },
+        {
+          id: 'chat',
+          title: 'Messages',
+          description: 'Chat with customers and businesses',
+          icon: Send,
+          color: 'bg-blue-500',
+          stats: { label: 'Unread', key: 'unreadMessages' },
+          value: 'chat'
+        }
+      ]
+    },
     transport: {
       title: 'Transport Management',
       description: 'Manage delivery jobs, routes, vehicles, and driver payments for truckers, delivery drivers, and transport services',

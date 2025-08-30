@@ -28,7 +28,8 @@
     "analytics": "Analytics",
     "smartInsights": "Smart Insights",
     "dottStatus": "Dott Status",
-    "jobs": "Jobs"
+    "jobs": "Jobs",
+    "marketplace": "Marketplace"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -99,7 +100,11 @@
     "jobProfitability": "Profitability Analysis",
     "billOfMaterials": "Bill of Materials",
     "services": "Services",
-    "jobs": "Jobs"
+    "jobs": "Jobs",
+    "findBusinesses": "Find Businesses",
+    "myOrders": "My Orders",
+    "myListing": "My Business Listing",
+    "messages": "Messages"
   },
   "actions": {
     "viewAll": "View All",
