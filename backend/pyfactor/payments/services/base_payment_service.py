@@ -26,9 +26,9 @@ class BasePaymentService(ABC):
     
     def __init__(self, provider_name: str):
         self.provider_name = provider_name
-        self.session = self._create_session()
         self.timeout = 30  # seconds
         self.max_retries = 3
+        self.session = self._create_session()
         
     def _create_session(self) -> requests.Session:
         """Create a requests session with retry logic"""
