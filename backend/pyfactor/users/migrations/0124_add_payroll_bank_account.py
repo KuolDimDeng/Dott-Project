@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0028_add_show_zero_stock_pos'),
+        ('users', '0123_add_cached_tax_rate_fields'),
     ]
 
     operations = [
