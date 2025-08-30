@@ -26,7 +26,8 @@ export default function MobileCart({
   onPaymentMethodChange,
   onCheckout,
   isProcessing,
-  currencySymbol
+  currencySymbol,
+  taxInfo
 }) {
   const paymentMethods = [
     { id: 'cash', name: 'Cash', icon: BanknotesIcon, color: 'bg-green-100 text-green-700' },
@@ -166,7 +167,7 @@ export default function MobileCart({
                             <p>{currencySymbol || '$'}{subtotal.toFixed(2)}</p>
                           </div>
                           <div className="flex justify-between text-base text-gray-900">
-                            <p>Tax</p>
+                            <p>Tax{taxInfo?.percentage > 0 ? ` (${taxInfo.percentage.toFixed(1)}% - ${taxInfo.jurisdiction})` : ''}</p>
                             <p>{currencySymbol || '$'}{tax.toFixed(2)}</p>
                           </div>
                           <div className="flex justify-between text-lg font-medium text-gray-900 pt-2 border-t">

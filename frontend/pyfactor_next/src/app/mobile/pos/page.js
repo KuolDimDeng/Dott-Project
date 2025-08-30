@@ -43,6 +43,7 @@ export default function MobilePOSPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [taxRate, setTaxRate] = useState(0);
+  const [taxInfo, setTaxInfo] = useState({ percentage: 0, jurisdiction: 'Unknown' });
   const [showCardScanner, setShowCardScanner] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
@@ -198,19 +199,27 @@ export default function MobilePOSPage() {
 
   const fetchTaxRate = async () => {
     try {
+      console.log('[Mobile POS] Fetching tax rate...');
       const response = await fetch('/api/pos/tax-rate-optimized', {
         credentials: 'include'
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Mobile POS] Tax rate response:', data);
+        
         if (data.success && data.settings) {
           setTaxRate(data.settings.sales_tax_rate || 0);
+          setTaxInfo({
+            percentage: data.settings.rate_percentage || 0,
+            jurisdiction: data.settings.country_name || data.settings.country || 'Unknown'
+          });
         }
       }
     } catch (error) {
       console.error('Error fetching tax rate:', error);
       setTaxRate(0);
+      setTaxInfo({ percentage: 0, jurisdiction: 'Error' });
     }
   };
 
@@ -652,6 +661,7 @@ export default function MobilePOSPage() {
         }}
         isProcessing={isProcessing}
         currencySymbol={currencySymbol}
+        taxInfo={taxInfo}
       />
 
       {/* Card Scanner Modal */}
