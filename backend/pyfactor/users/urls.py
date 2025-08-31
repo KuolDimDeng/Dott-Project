@@ -29,6 +29,7 @@ from .api.currency_views_v3 import currency_preferences_v3 as get_currency_prefe
 # Keep hotfix import for reference but don't use it
 # from .api.currency_views_hotfix import currency_preferences_hotfix
 from .api.business_settings_views import business_settings, accounting_standards_info
+from .views_business_registration import create_business_account, check_business_status
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create a router for the menu privileges API
@@ -44,6 +45,9 @@ urlpatterns = [
     path('business/details/update', update_business_details, name='update_business_details'),
     path('business/details/create', create_business_details, name='create_business_details'),
     path('business/create', create_business, name='create_business'),
+    # Consumer to Business Registration
+    path('business/register', create_business_account, name='create_business_account'),
+    path('business/check-status', check_business_status, name='check_business_status'),
     path('subscription/update', update_subscription_plan, name='update_subscription_plan'),
     path('checkout-session', create_checkout_session, name='checkout-session'),
     path('stripe-webhook', stripe_webhook, name='stripe-webhook'),
