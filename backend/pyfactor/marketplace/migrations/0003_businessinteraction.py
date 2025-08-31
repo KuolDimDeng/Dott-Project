@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('marketplace', '0002_consumerorder_orderreview'),
         ('users', '0127_business_interaction_config'),
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ('custom_auth', '0001_initial'),
     ]
 
     operations = [
@@ -113,10 +113,10 @@ class Migration(migrations.Migration):
                 )),
                 ('platform_fee', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
                 ('business', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='business_interactions', to='users.business')),
-                ('cancelled_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='cancelled_interactions', to='auth.user')),
-                ('consumer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='consumer_interactions', to='auth.user')),
+                ('cancelled_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='cancelled_interactions', to='custom_auth.user')),
+                ('consumer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='consumer_interactions', to='custom_auth.user')),
                 ('parent_interaction', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='child_interactions', to='marketplace.businessinteraction')),
-                ('staff_member', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='staff_interactions', to='auth.user')),
+                ('staff_member', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='staff_interactions', to='custom_auth.user')),
             ],
             options={
                 'db_table': 'marketplace_business_interactions',
@@ -131,7 +131,7 @@ class Migration(migrations.Migration):
                 ('to_status', models.CharField(max_length=30)),
                 ('changed_at', models.DateTimeField(default=timezone.now)),
                 ('notes', models.TextField(blank=True)),
-                ('changed_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auth.user')),
+                ('changed_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='custom_auth.user')),
                 ('interaction', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='status_history', to='marketplace.businessinteraction')),
             ],
             options={
@@ -160,7 +160,7 @@ class Migration(migrations.Migration):
                 ('file_size', models.IntegerField()),
                 ('uploaded_at', models.DateTimeField(default=timezone.now)),
                 ('interaction', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documents', to='marketplace.businessinteraction')),
-                ('uploaded_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auth.user')),
+                ('uploaded_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='custom_auth.user')),
             ],
             options={
                 'db_table': 'marketplace_interaction_documents',

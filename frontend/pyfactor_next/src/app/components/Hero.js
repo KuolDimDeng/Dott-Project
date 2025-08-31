@@ -12,6 +12,7 @@ const FALLBACK_LOGO = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ
 
 export default function Hero() {
   const { t } = useTranslation();
+  const [audienceView, setAudienceView] = React.useState('business');
   
   return (
     <div id="hero" className="relative overflow-hidden">
@@ -25,6 +26,30 @@ export default function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto pt-20 pb-16 px-4 sm:pt-28 sm:pb-24 sm:px-6 lg:px-8">
         <div className="text-center">
           
+          {/* Audience Toggle */}
+          <div className="mb-8 inline-flex items-center p-1 bg-gray-100 rounded-full">
+            <button
+              onClick={() => setAudienceView('business')}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                audienceView === 'business' 
+                  ? 'bg-white text-blue-600 shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {t('hero.forBusiness', 'For Businesses')}
+            </button>
+            <button
+              onClick={() => setAudienceView('consumer')}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                audienceView === 'consumer' 
+                  ? 'bg-white text-green-600 shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {t('hero.forConsumers', 'For Shoppers')}
+            </button>
+          </div>
+          
           <div className="text-sm sm:text-base text-gray-600 font-medium tracking-wider mb-8">
             <span className="inline-flex items-center">
               <span className="inline-flex items-center mr-3">
@@ -34,149 +59,236 @@ export default function Hero() {
                   </svg>
                 ))}
               </span>
-              <span>{t('hero.tagline', 'SMART BUSINESS MANAGEMENT SOLUTIONS')}</span>
+              <span>{audienceView === 'business' 
+                ? t('hero.tagline', 'SMART BUSINESS & MARKETPLACE PLATFORM')
+                : t('hero.taglineConsumer', 'SHOP LOCAL • CONNECT • SAVE')
+              }</span>
             </span>
           </div>
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-            <span className="relative inline-block mr-2">
-              <span className="font-normal text-primary-main" style={{ fontFamily: "'Caveat', cursive", fontSize: '1.2em', fontWeight: 400 }}>{t('hero.your', 'Your')}</span>
-              <svg 
-                className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
-                viewBox="0 0 100 12" 
-                fill="none"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M 5,8 Q 25,6 50,7 T 95,8"
-                  stroke="#FF6B6B"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity="0.8"
-                  strokeDasharray="0"
-                >
-                  <animate
-                    attributeName="strokeDasharray"
-                    from="0 100"
-                    to="100 0"
-                    dur="0.8s"
-                    begin="0.5s"
-                    fill="freeze"
-                  />
-                </path>
-              </svg>
-            </span>
-            {' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">{t('hero.title', 'Global Business Platform')}</span>
+            {audienceView === 'business' ? (
+              <>
+                <span className="relative inline-block mr-2">
+                  <span className="font-normal text-primary-main" style={{ fontFamily: "'Caveat', cursive", fontSize: '1.2em', fontWeight: 400 }}>{t('hero.grow', 'Grow')}</span>
+                  <svg 
+                    className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
+                    viewBox="0 0 100 12" 
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M 5,8 Q 25,6 50,7 T 95,8"
+                      stroke="#FF6B6B"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity="0.8"
+                      strokeDasharray="0"
+                    >
+                      <animate
+                        attributeName="strokeDasharray"
+                        from="0 100"
+                        to="100 0"
+                        dur="0.8s"
+                        begin="0.5s"
+                        fill="freeze"
+                      />
+                    </path>
+                  </svg>
+                </span>
+                {' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">{t('hero.titleBusiness', 'Your Business Online')}</span>
+              </>
+            ) : (
+              <>
+                <span className="relative inline-block mr-2">
+                  <span className="font-normal text-green-600" style={{ fontFamily: "'Caveat', cursive", fontSize: '1.2em', fontWeight: 400 }}>{t('hero.discover', 'Discover')}</span>
+                  <svg 
+                    className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
+                    viewBox="0 0 100 12" 
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M 5,8 Q 25,6 50,7 T 95,8"
+                      stroke="#10B981"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity="0.8"
+                      strokeDasharray="0"
+                    >
+                      <animate
+                        attributeName="strokeDasharray"
+                        from="0 100"
+                        to="100 0"
+                        dur="0.8s"
+                        begin="0.5s"
+                        fill="freeze"
+                      />
+                    </path>
+                  </svg>
+                </span>
+                {' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-green-400">{t('hero.titleConsumer', 'Local Businesses')}</span>
+              </>
+            )}
           </h1>
           
           {/* Key Benefits */}
           <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-600 max-w-4xl mx-auto">
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.free')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.invoicing')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.pos')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.inventory')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.jobManagement', 'Job management & costing')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.payroll')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.tax')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.insights')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.mobileMoney')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.cardPayments')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.languages')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.mobilePhone', 'Mobile phone app included')}
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              {t('hero.benefit.accounting', 'IFRS & US GAAP support')}
-            </div>
+            {audienceView === 'business' ? (
+              <>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.marketplace', 'Online marketplace presence')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.free')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.customerChat', 'Direct customer messaging')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.pos')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.inventory')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.delivery', 'Delivery management')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.invoicing')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.mobileMoney')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.insights')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.mobilePhone', 'Mobile app included')}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.browseLocal', 'Browse local businesses')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.chatSellers', 'Chat directly with sellers')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.securePayments', 'Secure payments')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.orderTracking', 'Real-time order tracking')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.multiplePayments', 'Cash, card & mobile money')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.supportLocal', 'Support local economy')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.reviews', 'Verified reviews')}
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {t('hero.benefit.freeForShoppers', 'Always free to use')}
+                </div>
+              </>
+            )}
           </div>
           
           <div className="mt-10">
