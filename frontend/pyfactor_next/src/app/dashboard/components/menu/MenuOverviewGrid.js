@@ -742,16 +742,16 @@ const MenuOverviewGrid = ({
       ]
     },
     marketplace: {
-      title: 'Marketplace',
-      description: 'Connect with customers, manage orders, and grow your business',
+      title: 'Discover',
+      description: 'Find businesses, book services, order products, and more',
       items: [
         {
           id: 'marketplace',
-          title: 'Marketplace Dashboard',
-          description: 'Overview of your marketplace activity',
+          title: 'Discover Dashboard',
+          description: 'Overview of your discovery and booking activity',
           icon: Globe,
           color: 'bg-purple-500',
-          stats: { label: 'New Orders', key: 'newOrders' },
+          stats: { label: 'New Activity', key: 'newOrders' },
           value: 'marketplace'
         },
         {
@@ -766,7 +766,7 @@ const MenuOverviewGrid = ({
         {
           id: 'marketplace-orders',
           title: `My ${getInteractionButtonText(businessType)}`,
-          description: `View and track your marketplace ${getInteractionButtonText(businessType).toLowerCase()}`,
+          description: `View and track your ${getInteractionButtonText(businessType).toLowerCase()}`,
           icon: ShoppingBag,
           color: 'bg-green-500',
           stats: { label: getInteractionStatsLabel(businessType), key: 'activeOrders' },
@@ -775,7 +775,7 @@ const MenuOverviewGrid = ({
         {
           id: 'marketplace-listing',
           title: 'My Business Listing',
-          description: 'Manage your marketplace presence and visibility',
+          description: 'Manage your business presence and visibility',
           icon: Building,
           color: 'bg-yellow-500',
           stats: { label: 'Views Today', key: 'listingViews' },

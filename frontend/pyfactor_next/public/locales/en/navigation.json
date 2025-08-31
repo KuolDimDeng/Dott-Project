@@ -29,7 +29,8 @@
     "smartInsights": "Smart Insights",
     "dottStatus": "Dott Status",
     "jobs": "Jobs",
-    "marketplace": "Marketplace"
+    "marketplace": "Marketplace",
+    "discover": "Discover"
   },
   "subMenu": {
     "dashboard": "Dashboard",

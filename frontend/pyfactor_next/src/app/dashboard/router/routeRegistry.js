@@ -178,11 +178,11 @@ export const routeRegistry = {
     description: 'Sales terminal and checkout'
   },
   
-  // Marketplace Routes
+  // Discover Routes
   'marketplace': {
-    component: enhancedLazy(() => import('../components/marketplace/MarketplaceDashboard'), 'Marketplace'),
-    title: 'Marketplace',
-    description: 'Business Marketplace'
+    component: enhancedLazy(() => import('../components/marketplace/MarketplaceDashboard'), 'Discover'),
+    title: 'Discover',
+    description: 'Discover Businesses'
   },
   'marketplace-search': {
     component: enhancedLazy(() => import('../components/marketplace/BusinessSearch'), 'Business Search'),
@@ -192,12 +192,12 @@ export const routeRegistry = {
   'marketplace-orders': {
     component: enhancedLazy(() => import('../components/marketplace/ConsumerOrders'), 'My Orders'),
     title: 'My Orders',
-    description: 'View your marketplace orders'
+    description: 'View your orders from discovered businesses'
   },
   'marketplace-listing': {
     component: enhancedLazy(() => import('../components/marketplace/MyBusinessListing'), 'My Listing'),
     title: 'My Business Listing',
-    description: 'Manage your marketplace listing'
+    description: 'Manage your business listing'
   },
   
   // Chat Routes
