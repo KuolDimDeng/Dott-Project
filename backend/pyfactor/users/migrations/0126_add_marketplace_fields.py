@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0023_userprofile_is_consumer_only'),
+        ('users', '0125_add_user_mode_fields'),
     ]
 
     operations = [
