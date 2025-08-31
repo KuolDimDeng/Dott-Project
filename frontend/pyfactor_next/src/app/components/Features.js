@@ -80,6 +80,7 @@ const CurrencyIcon = () => (
 export default function Features() {
   const { t, i18n } = useTranslation('common');
   const [renderKey, setRenderKey] = useState(0);
+  const [viewType, setViewType] = useState('business'); // 'business' or 'consumer'
   
   useEffect(() => {
     const handleLanguageChange = () => {
@@ -98,11 +99,17 @@ export default function Features() {
     console.log('Features component - Sample translation test:', t('feature.inventory'));
   }, [i18n.language, t]);
   
-  const featureCategories = [
+  const businessFeatures = [
     {
-      title: t('features.operations.title', 'Operations Management'),
-      description: t('features.operations.description', 'Streamline your daily business operations'),
+      title: t('features.marketplace.title', 'Marketplace & Sales'),
+      description: t('features.marketplace.description', 'Reach more customers and grow your revenue'),
       features: [
+        {
+          title: t('feature.marketplace', 'Online Marketplace Presence'),
+          description: t('feature.marketplace.description', 'Get discovered by thousands of local customers'),
+          icon: <GlobalIcon />,
+          highlights: [t('highlights.visibility', 'Increased visibility'), t('highlights.customerChat', 'Direct customer chat'), t('highlights.reviews', 'Customer reviews')]
+        },
         {
           title: t('feature.inventory', 'Advanced Inventory Management'),
           description: t('feature.inventory.description', 'Real-time stock tracking with barcode scanning and multi-location support'),
@@ -190,6 +197,71 @@ export default function Features() {
       ]
     }
   ];
+
+  const consumerFeatures = [
+    {
+      title: t('features.consumer.shopping.title', 'Smart Shopping Experience'),
+      description: t('features.consumer.shopping.description', 'Find what you need from trusted local businesses'),
+      features: [
+        {
+          title: t('feature.consumer.browse', 'Browse Local Businesses'),
+          description: t('feature.consumer.browse.description', 'Discover shops, restaurants, and services in your area'),
+          icon: <GlobalIcon />,
+          highlights: [t('highlights.consumer.categories', 'Browse by category'), t('highlights.consumer.nearYou', 'Near you feature'), t('highlights.consumer.search', 'Smart search')]
+        },
+        {
+          title: t('feature.consumer.chat', 'Direct Seller Communication'),
+          description: t('feature.consumer.chat.description', 'Chat with business owners before and after purchase'),
+          icon: <SupportIcon />,
+          highlights: [t('highlights.consumer.instantChat', 'Instant messaging'), t('highlights.consumer.photos', 'Share photos'), t('highlights.consumer.negotiate', 'Negotiate prices')]
+        },
+        {
+          title: t('feature.consumer.payments', 'Flexible Payment Options'),
+          description: t('feature.consumer.payments.description', 'Pay how you want - cash, card, or mobile money'),
+          icon: <PaymentIcon />,
+          highlights: [t('highlights.consumer.secure', 'Secure payments'), t('highlights.consumer.multipleOptions', 'Multiple options'), t('highlights.consumer.cashOnDelivery', 'Cash on delivery')]
+        },
+        {
+          title: t('feature.consumer.tracking', 'Order Management'),
+          description: t('feature.consumer.tracking.description', 'Track your orders from purchase to delivery'),
+          icon: <JobManagementIcon />,
+          highlights: [t('highlights.consumer.realTime', 'Real-time updates'), t('highlights.consumer.history', 'Order history'), t('highlights.consumer.receipts', 'Digital receipts')]
+        }
+      ]
+    },
+    {
+      title: t('features.consumer.convenience.title', 'Convenience Features'),
+      description: t('features.consumer.convenience.description', 'Making your shopping experience seamless'),
+      features: [
+        {
+          title: t('feature.consumer.favorites', 'Save Favorites'),
+          description: t('feature.consumer.favorites.description', 'Save your favorite stores and products for quick access'),
+          icon: <InvoiceIcon />,
+          highlights: [t('highlights.consumer.wishlist', 'Wishlist'), t('highlights.consumer.reorder', 'Quick reorder'), t('highlights.consumer.notifications', 'Sale notifications')]
+        },
+        {
+          title: t('feature.consumer.reviews', 'Reviews & Ratings'),
+          description: t('feature.consumer.reviews.description', 'Read and write reviews to help the community'),
+          icon: <ReportingIcon />,
+          highlights: [t('highlights.consumer.verified', 'Verified reviews'), t('highlights.consumer.photos', 'Photo reviews'), t('highlights.consumer.helpful', 'Mark as helpful')]
+        },
+        {
+          title: t('feature.consumer.delivery', 'Delivery Options'),
+          description: t('feature.consumer.delivery.description', 'Choose delivery, pickup, or dine-in/visit options'),
+          icon: <InventoryIcon />,
+          highlights: [t('highlights.consumer.schedule', 'Schedule delivery'), t('highlights.consumer.express', 'Express delivery'), t('highlights.consumer.pickup', 'Self pickup')]
+        },
+        {
+          title: t('feature.consumer.support', 'Customer Support'),
+          description: t('feature.consumer.support.description', '24/7 support for any issues with your orders'),
+          icon: <SecurityIcon />,
+          highlights: [t('highlights.consumer.dispute', 'Dispute resolution'), t('highlights.consumer.refunds', 'Easy refunds'), t('highlights.consumer.help', 'Help center')]
+        }
+      ]
+    }
+  ];
+
+  const featureCategories = viewType === 'business' ? businessFeatures : consumerFeatures;
 
   return (
     <section id="features" className="py-16 sm:py-24 bg-gradient-to-b from-white to-gray-50">

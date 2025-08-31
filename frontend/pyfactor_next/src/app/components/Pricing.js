@@ -47,7 +47,7 @@ export default function Pricing() {
       features: [
         { name: t('pricing.features.users', 'Users'), basic: t('pricing.features.users.basic', '1 user'), professional: t('pricing.features.users.professional', 'Up to 5 users'), enterprise: t('pricing.features.users.enterprise', 'Unlimited users') },
         { name: t('pricing.features.listings', 'Marketplace Listings'), basic: t('pricing.features.listings.basic', '1 listing'), professional: t('pricing.features.listings.professional', 'Unlimited'), enterprise: t('pricing.features.listings.enterprise', 'Unlimited') },
-        { name: t('pricing.features.storage', 'Storage'), basic: t('pricing.features.storage.basic', '3GB'), professional: t('pricing.features.storage.professional', 'Unlimited'), enterprise: t('pricing.features.storage.enterprise', 'Unlimited') },
+        { name: t('pricing.features.storage', 'Storage'), basic: t('pricing.features.storage.basic', 'Unlimited'), professional: t('pricing.features.storage.professional', 'Unlimited'), enterprise: t('pricing.features.storage.enterprise', 'Unlimited') },
         { name: t('pricing.features.support', 'Support'), basic: t('pricing.features.support.basic', 'Community support'), professional: t('pricing.features.support.professional', 'Priority support'), enterprise: t('pricing.features.support.enterprise', 'Dedicated support') },
         { name: t('pricing.features.customerChat', 'Customer Chat'), basic: true, professional: true, enterprise: true }
       ]
@@ -216,7 +216,7 @@ export default function Pricing() {
       features: [
         t('pricing.plans.basic.features.0', '1 user only'),
         t('pricing.plans.basic.features.1', '1 marketplace listing'),
-        t('pricing.plans.basic.features.2', '3GB storage'),
+        t('pricing.plans.basic.features.2', 'Unlimited storage'),
         t('pricing.plans.basic.features.3', 'Basic POS & invoicing'),
         t('pricing.plans.basic.features.4', 'Community support'),
         t('pricing.plans.basic.features.5', 'Mobile app access')

@@ -164,7 +164,7 @@ BUSINESS_TYPE_CONFIG: Dict[str, Dict[str, Any]] = {
     BusinessCategory.RESTAURANT.value: {
         "display_name": "Restaurant",
         "primary_interaction": InteractionType.ORDER,
-        "supported_interactions": [InteractionType.ORDER, InteractionType.BOOKING, InteractionType.CATERING],
+        "supported_interactions": [InteractionType.ORDER, InteractionType.BOOKING, InteractionType.QUOTE],
         "features": {
             "menu_management": True,
             "table_reservations": True,
