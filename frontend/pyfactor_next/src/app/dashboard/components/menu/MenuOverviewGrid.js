@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { 
+  getInteractionButtonText, 
+  getInteractionDescription, 
+  getInteractionStatsLabel 
+} from '@/utils/businessInteractionHelpers';
 import {
   ShoppingCart,
   Receipt,
@@ -69,6 +74,12 @@ const MenuOverviewGrid = ({
   const [itemStats, setItemStats] = useState({});
   const [usageFrequency, setUsageFrequency] = useState({});
   const [loadingStats, setLoadingStats] = useState(true);
+  
+  // Get business type from userData or localStorage
+  const businessType = userData?.businessType || 
+                       userData?.business_type || 
+                       localStorage.getItem('businessType') || 
+                       'other';
 
   const menuConfigurations = {
     sales: {
@@ -140,11 +151,11 @@ const MenuOverviewGrid = ({
         },
         {
           id: 'orders',
-          title: 'Orders',
-          description: 'Track and fulfill customer orders from placement to delivery',
+          title: getInteractionButtonText(businessType),
+          description: getInteractionDescription(businessType),
           icon: Truck,
           color: 'bg-teal-500',
-          stats: { label: 'Pending Orders', key: 'pendingOrders' },
+          stats: { label: getInteractionStatsLabel(businessType), key: 'pendingOrders' },
           value: 'orders'
         },
         {
@@ -754,11 +765,11 @@ const MenuOverviewGrid = ({
         },
         {
           id: 'marketplace-orders',
-          title: 'My Orders',
-          description: 'View and track your marketplace orders',
+          title: `My ${getInteractionButtonText(businessType)}`,
+          description: `View and track your marketplace ${getInteractionButtonText(businessType).toLowerCase()}`,
           icon: ShoppingBag,
           color: 'bg-green-500',
-          stats: { label: 'Active Orders', key: 'activeOrders' },
+          stats: { label: getInteractionStatsLabel(businessType), key: 'activeOrders' },
           value: 'marketplace-orders'
         },
         {
