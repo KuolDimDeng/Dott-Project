@@ -74,6 +74,46 @@ class BusinessInfoEnhancedSerializer(serializers.ModelSerializer):
                 }
             )
             
+            # Configure marketplace interactions based on business type
+            from marketplace.business_types import get_business_config
+            business_type = validated_data['business_type']
+            
+            # Set the business category for marketplace
+            business.business_category = business_type
+            
+            # Get configuration for this business type
+            try:
+                config = get_business_config(business_type)
+                
+                # Set primary interaction type
+                business.primary_interaction_type = config.get('primary_interaction').value
+                
+                # Set supported interactions
+                supported = config.get('supported_interactions', [])
+                business.supported_interactions = [i.value for i in supported]
+                
+                # Set interaction settings
+                interaction_settings = {
+                    'features': config.get('features', {}),
+                    'ui_config': config.get('ui_config', {}),
+                    'status_flow': config.get('status_flow', {}),
+                }
+                business.interaction_settings = interaction_settings
+                
+                # Mark as auto-configured
+                business.auto_configured = True
+                business.save()
+                
+                logger.info(f"Configured marketplace for {business.name} as {business_type} with {len(supported)} interaction types")
+            except Exception as e:
+                logger.warning(f"Could not auto-configure marketplace for business type {business_type}: {e}")
+                # Set defaults if configuration fails
+                business.business_category = business_type
+                business.primary_interaction_type = 'order'
+                business.supported_interactions = ['order', 'service']
+                business.auto_configured = False
+                business.save()
+            
             # Create/update BusinessDetails with the detail fields (including currency)
             BusinessDetails.objects.update_or_create(
                 business=business,
