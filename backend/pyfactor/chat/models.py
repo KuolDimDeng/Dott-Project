@@ -51,6 +51,8 @@ class ChatMessage(models.Model):
         ('text', 'Text Message'),
         ('image', 'Image'),
         ('voice', 'Voice Note'),
+        ('voice_call', 'Voice Call'),
+        ('video_call', 'Video Call'),
         ('order_request', 'Order Request'),
         ('order_confirmation', 'Order Confirmation'),
         ('system', 'System Message'),
@@ -80,6 +82,45 @@ class ChatMessage(models.Model):
     
     # Order creation from chat
     order_data = models.JSONField(null=True, blank=True)  # Stores parsed order info
+    
+    # Call-related fields
+    call_duration = models.IntegerField(
+        null=True, 
+        blank=True,
+        help_text="Call duration in seconds"
+    )
+    call_status = models.CharField(
+        max_length=15,
+        choices=[
+            ('initiated', 'Call Initiated'),
+            ('ringing', 'Ringing'),
+            ('answered', 'Answered'),
+            ('completed', 'Completed'),
+            ('missed', 'Missed'),
+            ('declined', 'Declined'),
+            ('failed', 'Failed'),
+            ('busy', 'Busy'),
+        ],
+        null=True,
+        blank=True,
+        help_text="Status of the call"
+    )
+    call_session_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="WebRTC session identifier"
+    )
+    call_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the call was started"
+    )
+    call_ended_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the call ended"
+    )
     
     # Read receipts
     is_read = models.BooleanField(default=False)
@@ -173,3 +214,125 @@ class ChatNotificationSettings(models.Model):
     
     def __str__(self):
         return f"Chat settings for {self.user.email}"
+
+
+class CallSession(models.Model):
+    """
+    Active WebRTC call sessions for mobile voice/video calls
+    """
+    SESSION_STATUS_CHOICES = [
+        ('initiating', 'Initiating'),
+        ('ringing', 'Ringing'),
+        ('connecting', 'Connecting'),
+        ('active', 'Active'),
+        ('ended', 'Ended'),
+        ('failed', 'Failed'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session_id = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Unique WebRTC session identifier"
+    )
+    conversation = models.ForeignKey(
+        ChatConversation,
+        on_delete=models.CASCADE,
+        related_name='call_sessions',
+        help_text="Associated chat conversation"
+    )
+    call_message = models.OneToOneField(
+        ChatMessage,
+        on_delete=models.CASCADE,
+        related_name='call_session',
+        null=True,
+        blank=True,
+        help_text="Associated call message in chat"
+    )
+    
+    # Call participants
+    caller = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='initiated_calls',
+        help_text="User who initiated the call"
+    )
+    callee = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='received_calls',
+        help_text="User receiving the call"
+    )
+    
+    # Call details
+    call_type = models.CharField(
+        max_length=10,
+        choices=[('voice', 'Voice Call'), ('video', 'Video Call')],
+        help_text="Type of call"
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=SESSION_STATUS_CHOICES,
+        default='initiating',
+        help_text="Current session status"
+    )
+    
+    # WebRTC data
+    ice_servers = models.JSONField(
+        default=list,
+        help_text="ICE servers configuration for WebRTC"
+    )
+    offer_sdp = models.TextField(
+        null=True,
+        blank=True,
+        help_text="WebRTC offer SDP from caller"
+    )
+    answer_sdp = models.TextField(
+        null=True,
+        blank=True,
+        help_text="WebRTC answer SDP from callee"
+    )
+    ice_candidates = models.JSONField(
+        default=list,
+        help_text="ICE candidates exchange"
+    )
+    
+    # Timing
+    created_at = models.DateTimeField(default=timezone.now)
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'call_sessions'
+        indexes = [
+            models.Index(fields=['session_id']),
+            models.Index(fields=['caller', 'created_at']),
+            models.Index(fields=['callee', 'created_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['conversation']),
+        ]
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.call_type.title()} call: {self.caller.email} -> {self.callee.email} ({self.status})"
+    
+    @property
+    def duration(self):
+        """Calculate call duration in seconds"""
+        if self.started_at and self.ended_at:
+            return int((self.ended_at - self.started_at).total_seconds())
+        return 0
+    
+    def end_session(self):
+        """End the call session and update related message"""
+        self.status = 'ended'
+        self.ended_at = timezone.now()
+        self.save()
+        
+        # Update associated call message
+        if self.call_message:
+            self.call_message.call_status = 'completed'
+            self.call_message.call_duration = self.duration
+            self.call_message.call_ended_at = self.ended_at
+            self.call_message.save()

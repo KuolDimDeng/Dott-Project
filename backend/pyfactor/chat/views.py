@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, F, Count, Max
 from django.utils import timezone
-from .models import ChatConversation, ChatMessage, ChatTemplate
+from .models import ChatConversation, ChatMessage, ChatTemplate, CallSession
 from .serializers import (
     ChatConversationSerializer, ChatMessageSerializer, 
     ChatTemplateSerializer, SendMessageSerializer
@@ -127,6 +127,335 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
         conversation.save()
         
         return Response({'status': 'Messages marked as read'})
+    
+    @action(detail=True, methods=['post'])
+    def initiate_call(self, request, pk=None):
+        """
+        Initiate a voice or video call
+        """
+        conversation = self.get_object()
+        user = request.user
+        call_type = request.data.get('call_type', 'voice')  # 'voice' or 'video'
+        
+        # Validate call type
+        if call_type not in ['voice', 'video']:
+            return Response(
+                {'error': 'Invalid call type. Must be "voice" or "video"'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Determine participants
+        if user == conversation.consumer:
+            caller = conversation.consumer
+            callee = conversation.business
+        else:
+            caller = conversation.business
+            callee = conversation.consumer
+        
+        # Generate unique session ID
+        import uuid
+        session_id = str(uuid.uuid4())
+        
+        # Create call message in chat
+        call_message = ChatMessage.objects.create(
+            conversation=conversation,
+            sender=caller,
+            sender_type='consumer' if caller == conversation.consumer else 'business',
+            message_type='voice_call' if call_type == 'voice' else 'video_call',
+            text_content=f'{call_type.title()} call initiated',
+            call_status='initiated',
+            call_session_id=session_id,
+            call_started_at=timezone.now(),
+            is_delivered=True,
+            delivered_at=timezone.now()
+        )
+        
+        # Create call session
+        call_session = CallSession.objects.create(
+            session_id=session_id,
+            conversation=conversation,
+            call_message=call_message,
+            caller=caller,
+            callee=callee,
+            call_type=call_type,
+            status='initiating'
+        )
+        
+        # Update conversation last message time
+        conversation.last_message_at = timezone.now()
+        conversation.save()
+        
+        # Send call notification to callee
+        self.send_call_notification(callee, call_session)
+        
+        return Response({
+            'success': True,
+            'session_id': session_id,
+            'call_type': call_type,
+            'message': f'{call_type.title()} call initiated successfully'
+        }, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'])
+    def accept_call(self, request, pk=None):
+        """
+        Accept an incoming call
+        """
+        conversation = self.get_object()
+        session_id = request.data.get('session_id')
+        
+        if not session_id:
+            return Response(
+                {'error': 'Session ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Find the call session
+        try:
+            call_session = CallSession.objects.get(
+                session_id=session_id,
+                conversation=conversation,
+                callee=request.user,
+                status__in=['initiating', 'ringing']
+            )
+        except CallSession.DoesNotExist:
+            return Response(
+                {'error': 'Call session not found or already handled'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Update call session status
+        call_session.status = 'connecting'
+        call_session.started_at = timezone.now()
+        call_session.save()
+        
+        # Update associated message
+        if call_session.call_message:
+            call_session.call_message.call_status = 'answered'
+            call_session.call_message.save()
+        
+        return Response({
+            'success': True,
+            'session_id': session_id,
+            'message': 'Call accepted successfully'
+        })
+    
+    @action(detail=True, methods=['post'])
+    def decline_call(self, request, pk=None):
+        """
+        Decline an incoming call
+        """
+        conversation = self.get_object()
+        session_id = request.data.get('session_id')
+        
+        if not session_id:
+            return Response(
+                {'error': 'Session ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Find the call session
+        try:
+            call_session = CallSession.objects.get(
+                session_id=session_id,
+                conversation=conversation,
+                callee=request.user,
+                status__in=['initiating', 'ringing']
+            )
+        except CallSession.DoesNotExist:
+            return Response(
+                {'error': 'Call session not found or already handled'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Update call session status
+        call_session.status = 'ended'
+        call_session.ended_at = timezone.now()
+        call_session.save()
+        
+        # Update associated message
+        if call_session.call_message:
+            call_session.call_message.call_status = 'declined'
+            call_session.call_message.call_ended_at = timezone.now()
+            call_session.call_message.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Call declined successfully'
+        })
+    
+    @action(detail=True, methods=['post'])
+    def end_call(self, request, pk=None):
+        """
+        End an active call
+        """
+        conversation = self.get_object()
+        session_id = request.data.get('session_id')
+        
+        if not session_id:
+            return Response(
+                {'error': 'Session ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Find the call session
+        try:
+            call_session = CallSession.objects.get(
+                session_id=session_id,
+                conversation=conversation,
+                status__in=['connecting', 'active']
+            )
+            
+            # Verify user is part of this call
+            if request.user not in [call_session.caller, call_session.callee]:
+                return Response(
+                    {'error': 'Not authorized to end this call'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+        except CallSession.DoesNotExist:
+            return Response(
+                {'error': 'Active call session not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # End the call session
+        call_session.end_session()
+        
+        return Response({
+            'success': True,
+            'duration': call_session.duration,
+            'message': 'Call ended successfully'
+        })
+    
+    @action(detail=True, methods=['post'])
+    def update_webrtc_data(self, request, pk=None):
+        """
+        Update WebRTC offer/answer/ICE candidates for call session
+        """
+        conversation = self.get_object()
+        session_id = request.data.get('session_id')
+        data_type = request.data.get('type')  # 'offer', 'answer', 'ice_candidate'
+        data = request.data.get('data')
+        
+        if not all([session_id, data_type, data]):
+            return Response(
+                {'error': 'session_id, type, and data are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Find the call session
+        try:
+            call_session = CallSession.objects.get(
+                session_id=session_id,
+                conversation=conversation,
+                status__in=['initiating', 'ringing', 'connecting', 'active']
+            )
+            
+            # Verify user is part of this call
+            if request.user not in [call_session.caller, call_session.callee]:
+                return Response(
+                    {'error': 'Not authorized to update this call'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+        except CallSession.DoesNotExist:
+            return Response(
+                {'error': 'Call session not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Update WebRTC data based on type
+        if data_type == 'offer':
+            call_session.offer_sdp = data
+        elif data_type == 'answer':
+            call_session.answer_sdp = data
+            call_session.status = 'active'  # Call becomes active when answer is set
+        elif data_type == 'ice_candidate':
+            candidates = call_session.ice_candidates or []
+            candidates.append(data)
+            call_session.ice_candidates = candidates
+        
+        call_session.save()
+        
+        # Notify the other participant about the WebRTC data update
+        other_user = call_session.callee if request.user == call_session.caller else call_session.caller
+        self.send_webrtc_update_notification(other_user, session_id, data_type, data)
+        
+        return Response({
+            'success': True,
+            'message': f'WebRTC {data_type} updated successfully'
+        })
+    
+    @action(detail=False, methods=['get'])
+    def call_history(self, request):
+        """
+        Get call history for the current user
+        """
+        user = request.user
+        
+        # Get all call messages for conversations involving this user
+        call_messages = ChatMessage.objects.filter(
+            Q(conversation__consumer=user) | Q(conversation__business=user),
+            message_type__in=['voice_call', 'video_call'],
+            call_status__in=['completed', 'missed', 'declined']
+        ).select_related('conversation', 'sender').order_by('-created_at')
+        
+        call_history = []
+        for message in call_messages:
+            # Determine call direction
+            direction = 'outgoing' if message.sender == user else 'incoming'
+            
+            # Get other participant
+            other_participant = (
+                message.conversation.business 
+                if user == message.conversation.consumer 
+                else message.conversation.consumer
+            )
+            
+            call_history.append({
+                'id': message.id,
+                'call_type': message.message_type.replace('_call', ''),
+                'direction': direction,
+                'status': message.call_status,
+                'duration': message.call_duration or 0,
+                'contact': {
+                    'name': getattr(other_participant, 'business_name', '') or 
+                            f"{getattr(other_participant, 'first_name', '')} {getattr(other_participant, 'last_name', '')}".strip() or 
+                            other_participant.email,
+                    'email': other_participant.email
+                },
+                'timestamp': message.created_at.isoformat(),
+                'formatted_duration': self.format_call_duration(message.call_duration or 0)
+            })
+        
+        return Response({
+            'success': True,
+            'call_history': call_history
+        })
+    
+    def format_call_duration(self, seconds):
+        """Format call duration in MM:SS format"""
+        if seconds == 0:
+            return "00:00"
+        minutes = seconds // 60
+        seconds = seconds % 60
+        return f"{minutes:02d}:{seconds:02d}"
+    
+    def send_call_notification(self, user, call_session):
+        """
+        Send call notification to user via WebSocket/Push
+        """
+        # TODO: Implement WebSocket/Push notification for incoming calls
+        print(f"[Call] Sending call notification to {user.email} for session {call_session.session_id}")
+        pass
+    
+    def send_webrtc_update_notification(self, user, session_id, data_type, data):
+        """
+        Send WebRTC data update notification
+        """
+        # TODO: Implement WebSocket notification for WebRTC signaling
+        print(f"[WebRTC] Sending {data_type} update to {user.email} for session {session_id}")
+        pass
     
     def send_websocket_notification(self, user, message):
         """
