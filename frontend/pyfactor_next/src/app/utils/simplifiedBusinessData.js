@@ -1,5 +1,32 @@
 // Simplified Business Categories for Onboarding
 // This file defines the simplified business types for new users (after 2025-07-26)
+// Updated to match marketplace consumer search categories
+
+export const MARKETPLACE_CATEGORIES = [
+  { value: 'RESTAURANT', label: 'Restaurant' },
+  { value: 'CAFE', label: 'Cafe' },
+  { value: 'GROCERY', label: 'Grocery' },
+  { value: 'PHARMACY', label: 'Pharmacy' },
+  { value: 'RETAIL', label: 'Retail Store' },
+  { value: 'FASHION', label: 'Fashion & Clothing' },
+  { value: 'ELECTRONICS', label: 'Electronics' },
+  { value: 'HOME_GARDEN', label: 'Home & Garden' },
+  { value: 'BEAUTY', label: 'Beauty & Salon' },
+  { value: 'HEALTH', label: 'Health & Medical' },
+  { value: 'FITNESS', label: 'Fitness & Sports' },
+  { value: 'AUTOMOTIVE', label: 'Automotive' },
+  { value: 'SERVICES', label: 'Professional Services' },
+  { value: 'EDUCATION', label: 'Education & Training' },
+  { value: 'ENTERTAINMENT', label: 'Entertainment' },
+  { value: 'OTHER', label: 'Other' }
+];
+
+export const DELIVERY_SCOPE_OPTIONS = [
+  { value: 'local', label: 'Local Delivery Only (within city/town)' },
+  { value: 'national', label: 'Nationwide Delivery' },
+  { value: 'international', label: 'International Shipping' },
+  { value: 'digital', label: 'Digital/Online Service (no physical delivery)' }
+];
 
 export const BUSINESS_CATEGORIES = {
   SERVICE: {

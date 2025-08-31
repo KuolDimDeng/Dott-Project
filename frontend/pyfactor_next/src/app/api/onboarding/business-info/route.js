@@ -307,6 +307,8 @@ export async function POST(request) {
       businessName: data.business_name || data.businessName || '',
       businessType: data.business_type || data.businessType || '',
       businessSubtypeSelections: data.business_subtype_selections || data.businessSubtypeSelections || [],
+      marketplaceCategory: data.marketplace_category || data.marketplaceCategory || '',
+      deliveryScope: data.delivery_scope || data.deliveryScope || 'local',
       country: data.country || '',
       businessState: data.business_state || data.businessState || '',
       legalStructure: data.legal_structure || data.legalStructure || '',

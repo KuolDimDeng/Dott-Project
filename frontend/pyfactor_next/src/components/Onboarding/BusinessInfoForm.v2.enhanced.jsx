@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { countries } from 'countries-list';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
-import { ALL_BUSINESS_TYPES } from '@/app/utils/simplifiedBusinessData';
+import { MARKETPLACE_CATEGORIES, DELIVERY_SCOPE_OPTIONS } from '@/app/utils/simplifiedBusinessData';
 import { logger } from '@/utils/logger';
 import { getCurrencyForCountry } from '@/utils/simpleCurrencyUtils';
 import { CURRENCIES } from '@/utils/currencies'; // Import currency list
@@ -24,6 +24,8 @@ export default function BusinessInfoFormV2Enhanced({ initialData = {}, onSubmit,
   const [formData, setFormData] = useState({
     businessName: initialData.businessName || '',
     businessType: initialData.businessType || '',
+    marketplaceCategory: initialData.marketplaceCategory || '',
+    deliveryScope: initialData.deliveryScope || 'local',
     legalStructure: initialData.legalStructure || '',
     country: initialData.country || 'US',
     currency: initialCurrency, // Add currency field
@@ -52,11 +54,19 @@ export default function BusinessInfoFormV2Enhanced({ initialData = {}, onSubmit,
     }));
   }, []);
   
-  // Format businessTypes for dropdown - use simplified list
-  const businessTypeOptions = useMemo(() => {
-    return ALL_BUSINESS_TYPES.map(type => ({
-      value: type.value,
-      label: type.label
+  // Format marketplace categories for dropdown
+  const marketplaceCategoryOptions = useMemo(() => {
+    return MARKETPLACE_CATEGORIES.map(category => ({
+      value: category.value,
+      label: category.label
+    }));
+  }, []);
+  
+  // Format delivery scope options for dropdown
+  const deliveryScopeOptions = useMemo(() => {
+    return DELIVERY_SCOPE_OPTIONS.map(scope => ({
+      value: scope.value,
+      label: scope.label
     }));
   }, []);
   
@@ -134,9 +144,14 @@ export default function BusinessInfoFormV2Enhanced({ initialData = {}, onSubmit,
           newErrors.businessName = t('businessInfo.errors.businessNameTooShort', { defaultValue: 'Business name must be at least 2 characters' });
         }
         break;
-      case 'businessType':
-        if (!formData.businessType) {
-          newErrors.businessType = t('businessInfo.errors.businessTypeRequired');
+      case 'marketplaceCategory':
+        if (!formData.marketplaceCategory) {
+          newErrors.marketplaceCategory = 'Please select a marketplace category';
+        }
+        break;
+      case 'deliveryScope':
+        if (!formData.deliveryScope) {
+          newErrors.deliveryScope = 'Please select a delivery scope';
         }
         break;
       case 'legalStructure':
@@ -167,8 +182,11 @@ export default function BusinessInfoFormV2Enhanced({ initialData = {}, onSubmit,
     if (!formData.businessName.trim()) {
       newErrors.businessName = t('businessInfo.errors.businessNameRequired');
     }
-    if (!formData.businessType) {
-      newErrors.businessType = t('businessInfo.errors.businessTypeRequired');
+    if (!formData.marketplaceCategory) {
+      newErrors.marketplaceCategory = 'Please select a marketplace category';
+    }
+    if (!formData.deliveryScope) {
+      newErrors.deliveryScope = 'Please select a delivery scope';
     }
     if (!formData.legalStructure) {
       newErrors.legalStructure = t('businessInfo.errors.legalStructureRequired');
@@ -183,7 +201,8 @@ export default function BusinessInfoFormV2Enhanced({ initialData = {}, onSubmit,
     setErrors(newErrors);
     setTouched({
       businessName: true,
-      businessType: true,
+      marketplaceCategory: true,
+      deliveryScope: true,
       legalStructure: true,
       country: true,
       currency: true
@@ -238,30 +257,58 @@ export default function BusinessInfoFormV2Enhanced({ initialData = {}, onSubmit,
           )}
         </div>
 
-        {/* Business Type */}
+        {/* Marketplace Category */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('businessInfo.businessTypeLabel')} *
+            Marketplace Category *
           </label>
           <select
-            value={formData.businessType}
-            onChange={(e) => handleInputChange('businessType', e.target.value)}
-            onBlur={() => handleBlur('businessType')}
+            value={formData.marketplaceCategory}
+            onChange={(e) => handleInputChange('marketplaceCategory', e.target.value)}
+            onBlur={() => handleBlur('marketplaceCategory')}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.businessType && touched.businessType ? 'border-red-500' : 'border-gray-300'
+              errors.marketplaceCategory && touched.marketplaceCategory ? 'border-red-500' : 'border-gray-300'
             }`}
             disabled={submitting}
           >
-            <option value="">{t('businessInfo.businessTypePlaceholder')}</option>
-            {businessTypeOptions.map(option => (
+            <option value="">Select a category</option>
+            {marketplaceCategoryOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-          {errors.businessType && touched.businessType && (
-            <p className="mt-1 text-sm text-red-600">{errors.businessType}</p>
+          {errors.marketplaceCategory && touched.marketplaceCategory && (
+            <p className="mt-1 text-sm text-red-600">{errors.marketplaceCategory}</p>
           )}
+        </div>
+
+        {/* Delivery Scope */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Delivery Scope *
+          </label>
+          <select
+            value={formData.deliveryScope}
+            onChange={(e) => handleInputChange('deliveryScope', e.target.value)}
+            onBlur={() => handleBlur('deliveryScope')}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.deliveryScope && touched.deliveryScope ? 'border-red-500' : 'border-gray-300'
+            }`}
+            disabled={submitting}
+          >
+            {deliveryScopeOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {errors.deliveryScope && touched.deliveryScope && (
+            <p className="mt-1 text-sm text-red-600">{errors.deliveryScope}</p>
+          )}
+          <p className="mt-1 text-sm text-gray-600">
+            Choose how far you can deliver your products or services
+          </p>
         </div>
 
         {/* Legal Structure */}

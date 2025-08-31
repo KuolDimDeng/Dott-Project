@@ -86,6 +86,25 @@ class Business(models.Model):
         default='IFRS'
     )
     
+    # Marketplace fields
+    marketplace_category = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text='Category for marketplace search visibility'
+    )
+    delivery_scope = models.CharField(
+        max_length=20,
+        choices=[
+            ('local', 'Local Delivery Only'),
+            ('national', 'Nationwide Delivery'),
+            ('international', 'International Shipping'),
+            ('digital', 'Digital/Online Service'),
+        ],
+        default='local',
+        help_text='How far the business can deliver'
+    )
+    
     # Logo (base64 stored in DB for simplicity)
     logo_data = models.TextField(
         null=True,
