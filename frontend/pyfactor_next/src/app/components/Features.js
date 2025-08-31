@@ -267,14 +267,47 @@ export default function Features() {
     <section id="features" className="py-16 sm:py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
+          {/* View Toggle */}
+          <div className="mb-8 inline-flex items-center p-1 bg-gray-100 rounded-full">
+            <button
+              onClick={() => setViewType('business')}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                viewType === 'business' 
+                  ? 'bg-white text-blue-600 shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {t('features.forBusinesses', 'Business Features')}
+            </button>
+            <button
+              onClick={() => setViewType('consumer')}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                viewType === 'consumer' 
+                  ? 'bg-white text-green-600 shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {t('features.forConsumers', 'Shopper Features')}
+            </button>
+          </div>
+          
           <h2 className="text-base font-semibold text-indigo-600 tracking-wide uppercase">
-            {t('features.eyebrow', 'Complete Business Solution')}
+            {viewType === 'business' 
+              ? t('features.eyebrow', 'Complete Business Solution')
+              : t('features.eyebrowConsumer', 'Everything for Smart Shopping')
+            }
           </h2>
           <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            {t('features.heading', 'Everything You Need to Grow Globally')}
+            {viewType === 'business'
+              ? t('features.heading', 'Everything You Need to Grow Your Business')
+              : t('features.headingConsumer', 'Shop Smarter, Support Local')
+            }
           </p>
           <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
-            {t('features.subheading', 'Powerful tools designed for modern businesses operating across borders')}
+            {viewType === 'business'
+              ? t('features.subheading', 'Powerful tools to manage and grow your business online')
+              : t('features.subheadingConsumer', 'Connect with local businesses and enjoy seamless shopping')
+            }
           </p>
         </div>
         
