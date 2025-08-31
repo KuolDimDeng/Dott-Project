@@ -296,11 +296,39 @@ export default function Hero() {
           </div>
           
           <p className="mt-12 text-xl text-blue-600 max-w-3xl mx-auto leading-relaxed">
-            {t('hero.description', 'Dott lets business owners like you create invoices, accept payments online, manage your accounting, and inventory, with barcode scanning—all in one intuitive platform.')}
+            {audienceView === 'business' 
+              ? t('hero.descriptionBusiness', 'Join our marketplace to reach new customers, manage your business operations, accept payments, and grow your revenue—all in one powerful platform.')
+              : t('hero.descriptionConsumer', 'Discover and shop from trusted local businesses, chat directly with sellers, track your orders, and support your community—all from one convenient app.')
+            }
           </p>
           
-          <div className="mt-10">
-            <AuthButton theme="orange" />
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            {audienceView === 'business' ? (
+              <>
+                <AuthButton theme="orange" text={t('hero.ctaBusiness', 'Start Selling Today')} />
+                <button 
+                  onClick={() => setAudienceView('consumer')}
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-full hover:border-gray-400 transition-colors"
+                >
+                  {t('hero.ctaShopNow', 'Browse as Shopper')}
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  className="px-8 py-4 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition-colors text-lg"
+                  onClick={() => window.location.href = '/marketplace'}
+                >
+                  {t('hero.ctaExplore', 'Explore Marketplace')}
+                </button>
+                <button 
+                  onClick={() => setAudienceView('business')}
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-full hover:border-gray-400 transition-colors"
+                >
+                  {t('hero.ctaBusinessOwner', 'I\'m a Business Owner')}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

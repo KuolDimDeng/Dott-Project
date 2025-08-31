@@ -38,6 +38,7 @@ export default function Pricing() {
   const [hasDiscount, setHasDiscount] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(null);
+  const [audienceType, setAudienceType] = useState('business'); // 'business' or 'consumer'
   
   // Feature comparison data with translations
   const featureComparison = [
@@ -45,9 +46,10 @@ export default function Pricing() {
       category: t('pricing.features.categories.core', 'Core Features'),
       features: [
         { name: t('pricing.features.users', 'Users'), basic: t('pricing.features.users.basic', '1 user'), professional: t('pricing.features.users.professional', 'Up to 5 users'), enterprise: t('pricing.features.users.enterprise', 'Unlimited users') },
+        { name: t('pricing.features.listings', 'Marketplace Listings'), basic: t('pricing.features.listings.basic', '1 listing'), professional: t('pricing.features.listings.professional', 'Unlimited'), enterprise: t('pricing.features.listings.enterprise', 'Unlimited') },
         { name: t('pricing.features.storage', 'Storage'), basic: t('pricing.features.storage.basic', '3GB'), professional: t('pricing.features.storage.professional', 'Unlimited'), enterprise: t('pricing.features.storage.enterprise', 'Unlimited') },
         { name: t('pricing.features.support', 'Support'), basic: t('pricing.features.support.basic', 'Community support'), professional: t('pricing.features.support.professional', 'Priority support'), enterprise: t('pricing.features.support.enterprise', 'Dedicated support') },
-        { name: t('pricing.features.onboarding', 'Onboarding'), basic: t('pricing.features.onboarding.basic', 'Self-service'), professional: t('pricing.features.onboarding.professional', 'Email assistance'), enterprise: t('pricing.features.onboarding.enterprise', 'Premium onboarding') }
+        { name: t('pricing.features.customerChat', 'Customer Chat'), basic: true, professional: true, enterprise: true }
       ]
     },
     {
@@ -212,12 +214,12 @@ export default function Pricing() {
         annual: '$0'
       },
       features: [
-        t('pricing.plans.basic.features.0', '1 user'),
-        t('pricing.plans.basic.features.1', '3GB storage'),
-        t('pricing.plans.basic.features.2', 'Basic features'),
-        t('pricing.plans.basic.features.3', 'Community support'),
-        t('pricing.plans.basic.features.4', 'Mobile app access'),
-        t('pricing.plans.basic.features.5', 'Invoice & POS')
+        t('pricing.plans.basic.features.0', '1 user only'),
+        t('pricing.plans.basic.features.1', '1 marketplace listing'),
+        t('pricing.plans.basic.features.2', '3GB storage'),
+        t('pricing.plans.basic.features.3', 'Basic POS & invoicing'),
+        t('pricing.plans.basic.features.4', 'Community support'),
+        t('pricing.plans.basic.features.5', 'Mobile app access')
       ],
       cta: t('pricing.plans.basic.cta', 'Start Free'),
       highlight: false,
@@ -225,47 +227,47 @@ export default function Pricing() {
     },
     {
       name: t('pricing.plans.professional.name', 'Professional'),
-      description: t('pricing.plans.professional.description', 'For growing businesses that need more'),
+      description: t('pricing.plans.professional.description', 'For growing businesses'),
       price: { 
-        monthly: hasDiscount ? '$17.50' : '$35',
-        '6month': hasDiscount ? '$87.50' : '$175',
-        annual: hasDiscount ? '$168' : '$336'
+        monthly: hasDiscount ? '$7.50' : '$15',
+        '6month': hasDiscount ? '$37.50' : '$75',
+        annual: hasDiscount ? '$72' : '$144'
       },
       savings: {
-        '6month': hasDiscount ? '$17.50' : '$35',
-        annual: hasDiscount ? '$42' : '$84'
+        '6month': hasDiscount ? '$7.50' : '$15',
+        annual: hasDiscount ? '$18' : '$36'
       },
       features: [
         t('pricing.plans.professional.features.0', 'Up to 5 users'),
-        t('pricing.plans.professional.features.1', 'Unlimited storage'),
-        t('pricing.plans.professional.features.2', 'All features included'),
+        t('pricing.plans.professional.features.1', 'Unlimited marketplace listings'),
+        t('pricing.plans.professional.features.2', 'Unlimited storage'),
         t('pricing.plans.professional.features.3', 'Priority support'),
-        t('pricing.plans.professional.features.4', 'Geofencing & location'),
+        t('pricing.plans.professional.features.4', 'Customer chat & messaging'),
         t('pricing.plans.professional.features.5', 'Advanced analytics')
       ],
       cta: t('pricing.plans.professional.cta', 'Get Professional'),
       highlight: false,
-      popular: billingPeriod === '6month',
+      popular: billingPeriod === 'monthly',
     },
     {
       name: t('pricing.plans.enterprise.name', 'Enterprise'),
-      description: t('pricing.plans.enterprise.description', 'Unlimited scale for large organizations'),
+      description: t('pricing.plans.enterprise.description', 'Unlimited everything'),
       price: { 
-        monthly: hasDiscount ? '$47.50' : '$95',
-        '6month': hasDiscount ? '$237.50' : '$475',
-        annual: hasDiscount ? '$456' : '$912'
+        monthly: hasDiscount ? '$22.50' : '$45',
+        '6month': hasDiscount ? '$112.50' : '$225',
+        annual: hasDiscount ? '$216' : '$432'
       },
       savings: {
-        '6month': hasDiscount ? '$47.50' : '$95',
-        annual: hasDiscount ? '$114' : '$228'
+        '6month': hasDiscount ? '$22.50' : '$45',
+        annual: hasDiscount ? '$54' : '$108'
       },
       features: [
         t('pricing.plans.enterprise.features.0', 'Unlimited users'),
-        t('pricing.plans.enterprise.features.1', 'Unlimited everything'),
-        t('pricing.plans.enterprise.features.2', 'All features included'),
+        t('pricing.plans.enterprise.features.1', 'Unlimited listings'),
+        t('pricing.plans.enterprise.features.2', 'Unlimited everything'),
         t('pricing.plans.enterprise.features.3', 'Dedicated support'),
-        t('pricing.plans.enterprise.features.4', 'AI-powered insights'),
-        t('pricing.plans.enterprise.features.5', 'API access')
+        t('pricing.plans.enterprise.features.4', 'API access'),
+        t('pricing.plans.enterprise.features.5', 'Custom integrations')
       ],
       cta: t('pricing.plans.enterprise.cta', 'Get Enterprise'),
       highlight: billingPeriod === 'annual',
@@ -286,6 +288,18 @@ export default function Pricing() {
           <p className="mt-4 max-w-2xl text-xl text-gray-600 mx-auto">
             {t('pricing.subheading', 'No hidden fees. No credit card required for Basic plan. Cancel anytime.')}
           </p>
+          
+          {/* Consumer Notice */}
+          <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg max-w-2xl mx-auto">
+            <div className="flex items-center justify-center">
+              <svg className="h-6 w-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-green-800 font-medium">
+                {t('pricing.consumerNotice', '🛍️ Shopping on our marketplace? It\'s always FREE for customers!')}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Developing Country Discount Banner */}

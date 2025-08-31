@@ -281,6 +281,12 @@ export default function AppBar() {
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex md:items-center md:space-x-6">
+            <button 
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
+              onClick={() => router.push('/marketplace')}
+            >
+              {t('navMarketplace', 'Marketplace')}
+            </button>
             <a 
               href="#features"
               className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
@@ -288,17 +294,17 @@ export default function AppBar() {
               {t('navFeatures', 'Features')}
             </a>
             <a 
+              href="#howitworks"
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
+            >
+              {t('navHowItWorks', 'How It Works')}
+            </a>
+            <a 
               href="#pricing"
               className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
             >
               {t('navPricing', 'Pricing')}
             </a>
-            <button 
-              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
-              onClick={() => router.push('/about')}
-            >
-              {t('navAbout', 'About')}
-            </button>
             <button 
               className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
               onClick={() => router.push('/blog')}
@@ -318,12 +324,6 @@ export default function AppBar() {
             >
               {t('navContact', 'Contact')}
             </a>
-            <button 
-              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
-              onClick={() => router.push('/status')}
-            >
-              {t('navStatus', 'Status')}
-            </button>
           </div>
 
           {/* Right Side Controls */}

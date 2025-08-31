@@ -10,6 +10,7 @@ import Hero from '@/app/components/Hero';
 import Features from '@/app/components/Features';
 import Highlights from '@/app/components/Highlights';
 import BuiltForYou from '@/app/components/BuiltForYou';
+import HowItWorks from '@/app/components/HowItWorks';
 import Integrations from '@/app/components/Integrations';
 import Pricing from '@/app/components/Pricing';
 import FAQ from '@/app/components/FAQ';
@@ -113,6 +114,11 @@ export default function Home() {
       {/* Hero Section - Light blue gradient background */}
       <div className="bg-gradient-to-b from-blue-50 to-white">
         <Hero />
+      </div>
+      
+      {/* How It Works Section - White background */}
+      <div className="bg-white">
+        <HowItWorks />
       </div>
       
       {/* Features Section - Light neutral background */}
