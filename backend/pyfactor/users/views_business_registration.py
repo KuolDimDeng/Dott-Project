@@ -14,7 +14,7 @@ from django_countries import countries
 
 from users.models import Business, UserProfile
 from custom_auth.models import User
-from users.choices import SIMPLIFIED_BUSINESS_TYPES
+from users.business_categories import SIMPLIFIED_BUSINESS_TYPES
 
 logger = logging.getLogger(__name__)
 
