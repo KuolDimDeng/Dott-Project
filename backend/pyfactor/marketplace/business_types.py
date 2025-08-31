@@ -17,6 +17,9 @@ class InteractionType(Enum):
     APPLICATION = "application"    # Jobs, memberships
     REGISTRATION = "registration"  # Events, classes
     CONSULTATION = "consultation"  # Professional advice
+    VIEWING = "viewing"       # Property viewings, showrooms
+    LISTING = "listing"       # Property/item listings for sale/rent
+    INQUIRY = "inquiry"       # General inquiries, interest expressions
 
 class BusinessCategory(Enum):
     """Main business categories"""
@@ -37,6 +40,9 @@ class BusinessCategory(Enum):
     PHARMACY = "pharmacy"
     JEWELRY = "jewelry"
     SPORTING_GOODS = "sporting_goods"
+    SHOWROOM = "showroom"
+    ART_GALLERY = "art_gallery"
+    DEALERSHIP = "dealership"
     
     # Accommodation
     HOTEL = "hotel"
@@ -44,6 +50,7 @@ class BusinessCategory(Enum):
     HOSTEL = "hostel"
     VACATION_RENTAL = "vacation_rental"
     BED_BREAKFAST = "bed_breakfast"
+    PROPERTY_MANAGEMENT = "property_management"
     
     # Health & Wellness
     CLINIC = "clinic"
@@ -273,20 +280,55 @@ BUSINESS_TYPE_CONFIG: Dict[str, Dict[str, Any]] = {
     BusinessCategory.VACATION_RENTAL.value: {
         "display_name": "Vacation Rental",
         "primary_interaction": InteractionType.RENTAL,
-        "supported_interactions": [InteractionType.RENTAL],
+        "supported_interactions": [InteractionType.RENTAL, InteractionType.VIEWING],
         "features": {
             "property_management": True,
             "calendar_booking": True,
             "cleaning_fee": True,
             "security_deposit": True,
+            "virtual_tours": True,
         },
         "ui_config": {
             "primary_action": "Book Property",
+            "secondary_action": "Virtual Tour",
             "catalog_type": "properties",
             "requires_dates": True,
             "minimum_nights": True,
+            "gallery_view": True,
         },
         "status_flow": ["requested", "approved", "paid", "check_in", "active", "check_out", "completed"],
+    },
+    
+    BusinessCategory.PROPERTY_MANAGEMENT.value: {
+        "display_name": "Property Management",
+        "primary_interaction": InteractionType.LISTING,
+        "supported_interactions": [
+            InteractionType.LISTING,      # Managed properties
+            InteractionType.VIEWING,      # Property tours
+            InteractionType.APPLICATION,  # Tenant applications
+            InteractionType.SERVICE,      # Maintenance requests
+            InteractionType.RENTAL        # Lease management
+        ],
+        "features": {
+            "tenant_portal": True,
+            "maintenance_requests": True,
+            "rent_collection": True,
+            "lease_management": True,
+            "property_inspections": True,
+            "tenant_screening": True,
+            "financial_reporting": True,
+        },
+        "ui_config": {
+            "primary_action": "View Available Properties",
+            "secondary_action": "Apply Now",
+            "catalog_type": "properties",
+            "tenant_login": True,
+            "owner_portal": True,
+        },
+        "status_flow": {
+            "rental": ["available", "application_pending", "leased", "move_in", "occupied", "notice_given", "move_out"],
+            "maintenance": ["reported", "assigned", "in_progress", "completed", "invoiced"],
+        },
     },
     
     # ============ HEALTH & WELLNESS ============
@@ -407,6 +449,52 @@ BUSINESS_TYPE_CONFIG: Dict[str, Dict[str, Any]] = {
             "location_flexible": True,
         },
         "status_flow": ["scheduled", "confirmed", "in_session", "completed"],
+    },
+    
+    # ============ REAL ESTATE & PROPERTY ============
+    BusinessCategory.REAL_ESTATE.value: {
+        "display_name": "Real Estate Agency",
+        "primary_interaction": InteractionType.LISTING,
+        "supported_interactions": [
+            InteractionType.LISTING,     # Property listings
+            InteractionType.VIEWING,     # Schedule viewings
+            InteractionType.INQUIRY,     # Property inquiries
+            InteractionType.APPLICATION, # Rental applications
+            InteractionType.CONSULTATION # Buying/selling consultation
+        ],
+        "features": {
+            "property_listings": True,
+            "virtual_tours": True,
+            "viewing_scheduler": True,
+            "open_house": True,
+            "price_negotiation": True,
+            "document_management": True,
+            "mortgage_calculator": True,
+            "neighborhood_info": True,
+            "commission_tracking": True,
+            "mls_integration": True,
+        },
+        "ui_config": {
+            "primary_action": "View Properties",
+            "secondary_action": "Schedule Viewing",
+            "catalog_type": "properties",
+            "map_view": True,
+            "filters": ["price", "bedrooms", "bathrooms", "location", "property_type", "sqft"],
+            "gallery_view": True,
+            "detail_view": "comprehensive",
+            "comparison_tool": True,
+        },
+        "property_types": [
+            "house", "apartment", "condo", "townhouse", "land", 
+            "commercial", "industrial", "office", "retail"
+        ],
+        "listing_types": ["sale", "rent", "lease", "auction"],
+        "status_flow": {
+            "listing": ["draft", "active", "under_contract", "pending", "sold", "rented", "expired"],
+            "viewing": ["requested", "scheduled", "confirmed", "completed", "cancelled", "no_show"],
+            "inquiry": ["new", "contacted", "qualified", "showing", "offer", "closed", "lost"],
+            "application": ["received", "screening", "approved", "rejected", "withdrawn"],
+        },
     },
     
     # ============ PROFESSIONAL SERVICES ============
@@ -719,6 +807,180 @@ BUSINESS_TYPE_CONFIG: Dict[str, Dict[str, Any]] = {
             "cover_letter": True,
         },
         "status_flow": ["applied", "screening", "interview", "assessment", "offer", "hired", "rejected"],
+    },
+    
+    # ============ SHOWROOMS & GALLERIES ============
+    BusinessCategory.FURNITURE.value: {
+        "display_name": "Furniture Store",
+        "primary_interaction": InteractionType.ORDER,
+        "supported_interactions": [
+            InteractionType.ORDER,
+            InteractionType.VIEWING,  # Showroom viewing
+            InteractionType.QUOTE,    # Custom furniture quotes
+            InteractionType.RENTAL,    # Furniture rental
+        ],
+        "features": {
+            "showroom_display": True,
+            "catalog_management": True,
+            "custom_orders": True,
+            "delivery_service": True,
+            "assembly_service": True,
+            "financing_options": True,
+            "3d_visualization": True,
+            "room_planner": True,
+        },
+        "ui_config": {
+            "primary_action": "Shop Now",
+            "secondary_action": "Visit Showroom",
+            "catalog_type": "furniture",
+            "filters": ["category", "material", "color", "price", "dimensions"],
+            "ar_preview": True,  # Augmented reality preview
+            "room_view": True,
+        },
+        "status_flow": {
+            "order": ["cart", "ordered", "processing", "shipped", "delivered", "assembled"],
+            "viewing": ["scheduled", "confirmed", "visited", "follow_up"],
+        },
+    },
+    
+    BusinessCategory.SHOWROOM.value: {
+        "display_name": "Showroom",
+        "primary_interaction": InteractionType.VIEWING,
+        "supported_interactions": [
+            InteractionType.VIEWING,
+            InteractionType.ORDER,
+            InteractionType.QUOTE,
+            InteractionType.INQUIRY,
+        ],
+        "features": {
+            "appointment_booking": True,
+            "private_viewing": True,
+            "vip_access": True,
+            "catalog_management": True,
+            "price_on_request": True,
+            "trade_pricing": True,
+        },
+        "ui_config": {
+            "primary_action": "Schedule Viewing",
+            "secondary_action": "Browse Collection",
+            "catalog_type": "showcase",
+            "exclusive_items": True,
+            "appointment_required": True,
+        },
+        "status_flow": {
+            "viewing": ["requested", "scheduled", "confirmed", "completed", "follow_up"],
+            "order": ["inquiry", "negotiation", "agreed", "processing", "delivered"],
+        },
+    },
+    
+    BusinessCategory.ART_GALLERY.value: {
+        "display_name": "Art Gallery",
+        "primary_interaction": InteractionType.VIEWING,
+        "supported_interactions": [
+            InteractionType.VIEWING,    # Gallery visits
+            InteractionType.ORDER,      # Art purchases
+            InteractionType.INQUIRY,    # Art inquiries
+            InteractionType.RENTAL,     # Art rental/leasing
+            InteractionType.CONSULTATION, # Art advisory
+        ],
+        "features": {
+            "exhibition_management": True,
+            "artist_profiles": True,
+            "artwork_catalog": True,
+            "private_viewing": True,
+            "auction_system": True,
+            "certificate_authenticity": True,
+            "shipping_insurance": True,
+            "art_advisory": True,
+            "virtual_gallery": True,
+        },
+        "ui_config": {
+            "primary_action": "View Gallery",
+            "secondary_action": "Schedule Visit",
+            "catalog_type": "artwork",
+            "filters": ["artist", "medium", "style", "period", "price", "size"],
+            "high_res_images": True,
+            "360_view": True,
+            "provenance": True,
+        },
+        "status_flow": {
+            "viewing": ["scheduled", "visited", "interested", "considering"],
+            "order": ["inquiry", "reserved", "sold", "shipped", "delivered", "installed"],
+        },
+    },
+    
+    BusinessCategory.DEALERSHIP.value: {
+        "display_name": "Vehicle Dealership",
+        "primary_interaction": InteractionType.VIEWING,
+        "supported_interactions": [
+            InteractionType.VIEWING,    # Test drives
+            InteractionType.ORDER,      # Vehicle purchase
+            InteractionType.QUOTE,      # Price quotes
+            InteractionType.SERVICE,    # Maintenance service
+            InteractionType.RENTAL,     # Loaner vehicles
+            InteractionType.APPLICATION, # Financing applications
+        ],
+        "features": {
+            "inventory_management": True,
+            "test_drive_scheduling": True,
+            "financing_calculator": True,
+            "trade_in_valuation": True,
+            "service_scheduling": True,
+            "vehicle_history": True,
+            "comparison_tool": True,
+            "insurance_quotes": True,
+            "extended_warranty": True,
+        },
+        "ui_config": {
+            "primary_action": "View Inventory",
+            "secondary_action": "Schedule Test Drive",
+            "catalog_type": "vehicles",
+            "filters": ["make", "model", "year", "price", "mileage", "color", "fuel_type"],
+            "360_exterior": True,
+            "interior_tour": True,
+            "spec_sheet": True,
+        },
+        "status_flow": {
+            "viewing": ["scheduled", "test_drive", "negotiating", "decided"],
+            "order": ["reserved", "financing", "approved", "processing", "ready", "delivered"],
+            "service": ["scheduled", "checked_in", "servicing", "completed", "picked_up"],
+        },
+    },
+    
+    BusinessCategory.PROPERTY_MANAGEMENT.value: {
+        "display_name": "Property Management",
+        "primary_interaction": InteractionType.APPLICATION,
+        "supported_interactions": [
+            InteractionType.APPLICATION, # Rental applications
+            InteractionType.VIEWING,     # Property tours
+            InteractionType.SERVICE,     # Maintenance requests
+            InteractionType.SUBSCRIPTION, # Rent payments
+            InteractionType.INQUIRY,     # General inquiries
+        ],
+        "features": {
+            "tenant_portal": True,
+            "maintenance_requests": True,
+            "rent_collection": True,
+            "lease_management": True,
+            "property_listings": True,
+            "inspection_scheduling": True,
+            "document_storage": True,
+            "payment_history": True,
+            "utility_management": True,
+        },
+        "ui_config": {
+            "primary_action": "View Properties",
+            "secondary_action": "Apply Now",
+            "catalog_type": "rentals",
+            "filters": ["price", "bedrooms", "location", "amenities", "pet_friendly"],
+            "tenant_portal": True,
+            "online_applications": True,
+        },
+        "status_flow": {
+            "application": ["submitted", "screening", "approved", "lease_signed", "move_in"],
+            "viewing": ["scheduled", "toured", "interested", "applied"],
+            "service": ["submitted", "assigned", "in_progress", "resolved"],
+        },
     },
     
     # ============ OTHER ============

@@ -13,7 +13,10 @@ export const InteractionType = {
   SUBSCRIPTION: 'subscription',
   APPLICATION: 'application',
   REGISTRATION: 'registration',
-  CONSULTATION: 'consultation'
+  CONSULTATION: 'consultation',
+  VIEWING: 'viewing',
+  LISTING: 'listing',
+  INQUIRY: 'inquiry'
 };
 
 export const BusinessCategory = {
@@ -138,6 +141,12 @@ export const BusinessCategory = {
   RECRUITMENT: 'recruitment',
   TEMP_AGENCY: 'temp_agency',
   
+  // Real Estate & Property
+  PROPERTY_MANAGEMENT: 'property_management',
+  SHOWROOM: 'showroom',
+  ART_GALLERY: 'art_gallery',
+  DEALERSHIP: 'dealership',
+  
   // Government & Public
   GOVERNMENT: 'government',
   NONPROFIT: 'nonprofit',
@@ -206,6 +215,15 @@ class InteractionManager {
     }
     if (context.urgencyLevel || context.serviceLocation) {
       return InteractionType.SERVICE;
+    }
+    if (context.propertyId || context.viewingDate || context.tourType) {
+      return InteractionType.VIEWING;
+    }
+    if (context.listingId || context.propertyType || context.listingStatus) {
+      return InteractionType.LISTING;
+    }
+    if (context.inquirySubject || context.inquiryType) {
+      return InteractionType.INQUIRY;
     }
 
     // Default to primary interaction
@@ -329,6 +347,45 @@ class InteractionManager {
         showDeliveryOptions: false,
         consultationType: true,
         fields: ['topic', 'preferredDate', 'consultationType', 'description']
+      },
+      
+      [InteractionType.VIEWING]: {
+        component: 'ViewingInterface',
+        primaryAction: 'Schedule Viewing',
+        secondaryAction: 'Virtual Tour',
+        requiresDate: true,
+        requiresTimeSlot: true,
+        showQuantity: false,
+        showDeliveryOptions: false,
+        viewingType: true,
+        mapView: true,
+        fields: ['preferredDate', 'viewingType', 'attendees', 'notes']
+      },
+      
+      [InteractionType.LISTING]: {
+        component: 'ListingInterface',
+        primaryAction: 'View Details',
+        secondaryAction: 'Contact Agent',
+        requiresDate: false,
+        requiresTimeSlot: false,
+        showQuantity: false,
+        showDeliveryOptions: false,
+        galleryView: true,
+        mapView: true,
+        comparisonTool: true,
+        fields: ['propertyType', 'price', 'location', 'features']
+      },
+      
+      [InteractionType.INQUIRY]: {
+        component: 'InquiryInterface',
+        primaryAction: 'Send Inquiry',
+        secondaryAction: 'Request Callback',
+        requiresDate: false,
+        requiresTimeSlot: false,
+        showQuantity: false,
+        showDeliveryOptions: false,
+        contactForm: true,
+        fields: ['subject', 'message', 'preferredContact', 'urgency']
       }
     };
 
@@ -366,6 +423,15 @@ class InteractionManager {
       ],
       [InteractionType.CONSULTATION]: [
         'requested', 'scheduled', 'confirmed', 'in_progress', 'completed'
+      ],
+      [InteractionType.VIEWING]: [
+        'requested', 'scheduled', 'confirmed', 'completed', 'no_show', 'cancelled'
+      ],
+      [InteractionType.LISTING]: [
+        'draft', 'active', 'under_contract', 'pending', 'sold', 'expired'
+      ],
+      [InteractionType.INQUIRY]: [
+        'new', 'contacted', 'qualified', 'in_discussion', 'converted', 'closed'
       ]
     };
 
