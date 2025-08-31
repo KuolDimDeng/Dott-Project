@@ -3780,5 +3780,81 @@ const data = result.data;  // Already parsed JSON
 
 ---
 
-*Last Updated: 2025-08-30*
+## Consumer Mode Not Showing Updated Interface
+
+**Issue**: After implementing consumer mode with new header icons and marketplace view, the changes don't appear when switching to consumer mode. The app stays on the menu page instead of redirecting to the consumer interface.
+
+**Symptoms**:
+- Clicking "Consumer" button changes the mode but stays on menu page
+- New header with icons (Messages, Bell, Settings, Profile, Call) not visible
+- Marketplace content not showing as main view
+- Console shows mode switch but no page navigation
+
+**Root Cause**:
+- `switchToConsumerMode()` function only updates menu visibility instead of redirecting
+- `initMarketplaceMode()` redirect not triggered on manual mode switch
+- Consumer mode page exists but isn't being navigated to
+
+**Solution**:
+
+1. **Fix the mode switch function to redirect** (`/out/mobile-menu.html`):
+```javascript
+// ❌ WRONG - Only updates menu visibility
+function switchToConsumerMode() {
+    currentMarketplaceMode = 'consumer';
+    localStorage.setItem('marketplaceMode', 'consumer');
+    
+    // ... button styling code ...
+    
+    console.log('[Marketplace] Switched to Consumer Mode');
+    updateMenuVisibility('consumer');  // Just hides menu items
+}
+
+// ✅ CORRECT - Redirects to consumer interface
+function switchToConsumerMode() {
+    currentMarketplaceMode = 'consumer';
+    localStorage.setItem('marketplaceMode', 'consumer');
+    
+    console.log('[Marketplace] Switched to Consumer Mode, redirecting...');
+    
+    // Immediately redirect to consumer marketplace view
+    window.location.href = '/mobile-marketplace-consumer.html?v=' + Date.now();
+}
+```
+
+2. **Ensure consumer page exists** (`/out/mobile-marketplace-consumer.html`):
+- Must have green header (#10b981) with icons
+- Messages, Notifications, Settings, Profile, Call icons
+- Marketplace content as main view
+- Messages overlay functionality
+
+3. **Clear all caches after making changes**:
+```bash
+# Use the full update script
+./update-ios.sh
+npx cap run ios
+
+# Or quick update for minor changes
+./quick-ios.sh
+npx cap run ios
+```
+
+**Files Affected**:
+- `/out/mobile-menu.html` - Mode switching logic
+- `/out/mobile-marketplace-consumer.html` - Consumer interface
+- `/ios/App/App/public/mobile-marketplace-consumer.html` - iOS copy
+
+**Prevention**:
+- Always redirect when switching modes, don't just hide/show elements
+- Test mode switching in actual simulator, not just console logs
+- Ensure all new HTML files are copied to iOS/Android directories
+- Use cache-busting query parameters on redirects
+
+**Related Issues**:
+- Mobile Pages Failing to Load with 404 Error
+- iOS Simulator Not Showing Updated Files (see update scripts)
+
+---
+
+*Last Updated: 2025-08-31*
 *Next Review: When new patterns emerge*
