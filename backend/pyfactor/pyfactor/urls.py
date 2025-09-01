@@ -123,6 +123,9 @@ urlpatterns = [
     # Direct user profile routes for frontend compatibility
     path('api/user/', include('users.api.urls')),
     
+    # Business SMS API routes
+    path('api/business/', include('business.urls')),
+    
     # Currency API routes (direct access)
     path('api/currency/', include('users.api.currency_urls')),
 ]

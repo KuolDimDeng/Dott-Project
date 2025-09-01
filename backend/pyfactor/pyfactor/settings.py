@@ -1056,6 +1056,7 @@ SHARED_APPS = (
     'session_manager.apps.SessionManagerConfig',  # New session management app with signals
     'audit.apps.AuditConfig',  # Audit trail system
     'smart_insights',  # Smart Insights with Claude API integration
+    'business.apps.BusinessConfig',  # Business SMS and placeholder management
 )
 
 TENANT_APPS = (
