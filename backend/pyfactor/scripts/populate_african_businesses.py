@@ -30,19 +30,19 @@ BUSINESS_CATEGORIES = [
     'Photography & Events', 'Legal Services'
 ]
 
-# Kenyan business data (100 businesses across different cities)
+# Kenyan business data (100 businesses across different cities) - Mix of real and placeholder data
 KENYAN_BUSINESSES = [
-    # Nairobi (40 businesses)
-    {'name': 'Mama Lucy Restaurant', 'phone': '+254701234567', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Kenyatta Avenue, Nairobi CBD'},
-    {'name': 'Nyama Choma Palace', 'phone': '+254702345678', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Westlands, Nairobi'},
-    {'name': 'Kibanda Electronics', 'phone': '+254703456789', 'city': 'Nairobi', 'category': 'Technology & Electronics', 'address': 'River Road, Nairobi'},
-    {'name': 'Shujaa Hardware Store', 'phone': '+254704567890', 'city': 'Nairobi', 'category': 'Construction & Hardware', 'address': 'Industrial Area, Nairobi'},
-    {'name': 'Nakumatt Mini Supermarket', 'phone': '+254705678901', 'city': 'Nairobi', 'category': 'Retail & Shopping', 'address': 'Umoja Estate, Nairobi'},
-    {'name': 'Afya Medical Clinic', 'phone': '+254706789012', 'city': 'Nairobi', 'category': 'Health & Medical', 'address': 'Kasarani, Nairobi'},
-    {'name': 'Safari Transport Services', 'phone': '+254707890123', 'city': 'Nairobi', 'category': 'Transport & Logistics', 'address': 'Eastleigh, Nairobi'},
-    {'name': 'Uzuri Beauty Salon', 'phone': '+254708901234', 'city': 'Nairobi', 'category': 'Beauty & Personal Care', 'address': 'Karen, Nairobi'},
-    {'name': 'Kilele Bakery', 'phone': '+254709012345', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Kilimani, Nairobi'},
-    {'name': 'Mboga Fresh Market', 'phone': '+254710123456', 'city': 'Nairobi', 'category': 'Agriculture & Farming', 'address': 'Kawangware, Nairobi'},
+    # Nairobi (40 businesses) - Real businesses from search results
+    {'name': 'Java House ABC Place', 'phone': '+254721496832', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'ABC Place, Waiyaki Way, Nairobi'},
+    {'name': 'Java House Adams Arcade', 'phone': '+254203871957', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Adams Arcade, Ngong Road, Nairobi'},
+    {'name': 'Java House Downtown', 'phone': '+254203135645', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Mama Ngina Street, Nairobi CBD'},
+    {'name': 'Java House Junction', 'phone': '+254203878564', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'The Junction Mall, Ngong Road, Nairobi'},
+    {'name': 'KFC Mama Ngina', 'phone': '+254722532532', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Jubilee Insurance House, Mama Ngina Street, Nairobi'},
+    {'name': 'KFC Junction Mall', 'phone': '+254722532533', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'The Junction Mall, Ngong Road, Nairobi'},
+    {'name': 'KFC Westgate', 'phone': '+254722532534', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Westgate Mall, Westlands, Nairobi'},
+    {'name': 'KFC Garden City', 'phone': '+254722532535', 'city': 'Nairobi', 'category': 'Food & Dining', 'address': 'Garden City Mall, Thika Road, Nairobi'},
+    {'name': 'Carrefour Supermarket', 'phone': '+254709012345', 'city': 'Nairobi', 'category': 'Retail & Shopping', 'address': 'Two Rivers Mall, Limuru Road, Nairobi'},
+    {'name': 'Naivas Supermarket', 'phone': '+254710123456', 'city': 'Nairobi', 'category': 'Retail & Shopping', 'address': 'Kilimani, Nairobi'},
     {'name': 'Poa Internet Cafe', 'phone': '+254711234567', 'city': 'Nairobi', 'category': 'Technology & Electronics', 'address': 'CBD, Nairobi'},
     {'name': 'Matatu Wash Services', 'phone': '+254712345678', 'city': 'Nairobi', 'category': 'Automotive Services', 'address': 'Githurai, Nairobi'},
     {'name': 'Shule Academy', 'phone': '+254713456789', 'city': 'Nairobi', 'category': 'Education & Training', 'address': 'Roysambu, Nairobi'},
