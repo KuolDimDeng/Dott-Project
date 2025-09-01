@@ -3,6 +3,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Marketplace API
+    path('marketplace-businesses', views.get_marketplace_businesses, name='get_marketplace_businesses'),
+    
     # SMS Contact API
     path('send-contact-sms', views.send_contact_sms, name='send_contact_sms'),
     

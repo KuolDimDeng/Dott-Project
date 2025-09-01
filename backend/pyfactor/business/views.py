@@ -12,8 +12,82 @@ from datetime import datetime, timedelta
 from .sms_service import sms_service
 from .models import PlaceholderBusiness, BusinessContactLog, SMSOptOut, BusinessLead
 from django.contrib.auth.models import User
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
+def get_marketplace_businesses(request):
+    """
+    Get all placeholder businesses for marketplace display
+    
+    GET /api/business/marketplace-businesses
+    """
+    try:
+        # Get query parameters
+        country = request.GET.get('country', None)
+        city = request.GET.get('city', None)
+        category = request.GET.get('category', None)
+        search = request.GET.get('search', None)
+        
+        # Start with all businesses
+        businesses = PlaceholderBusiness.objects.all()
+        
+        # Apply filters
+        if country:
+            businesses = businesses.filter(country=country)
+        if city:
+            businesses = businesses.filter(city__icontains=city)
+        if category:
+            businesses = businesses.filter(category=category)
+        if search:
+            businesses = businesses.filter(name__icontains=search)
+        
+        # Order by city, then name
+        businesses = businesses.order_by('city', 'name')
+        
+        # Build response data
+        business_list = []
+        for business in businesses:
+            # Check if business has reached contact limit for this user
+            uncontactable = business.contact_limit_reached
+            
+            business_data = {
+                'id': f'ph{business.id}',
+                'name': business.name,
+                'phone': business.phone,
+                'address': business.address,
+                'category': business.category,
+                'city': business.city,
+                'country': business.country,
+                'latitude': float(business.latitude) if business.latitude else None,
+                'longitude': float(business.longitude) if business.longitude else None,
+                'placeholder': True,
+                'verified': business.converted_to_real_business,
+                'uncontactable': uncontactable,
+                'contactsRemaining': business.get_remaining_contacts(),
+                'image': f'https://ui-avatars.com/api/?name={business.name.replace(" ", "+")}&background=random'
+            }
+            business_list.append(business_data)
+        
+        return Response({
+            'success': True,
+            'businesses': business_list,
+            'total': len(business_list),
+            'countries': {
+                'KE': businesses.filter(country='KE').count(),
+                'SS': businesses.filter(country='SS').count()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching marketplace businesses: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to fetch businesses',
+            'businesses': []
+        }, status=500)
 
 @require_http_methods(["POST"])
 @login_required
