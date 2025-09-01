@@ -39,10 +39,14 @@ class EnhancedTenantMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.security_log = []
+        
+        # Add custom paths from settings
+        from django.conf import settings
+        self.public_paths = self.PUBLIC_PATHS + getattr(settings, 'TENANT_EXEMPT_PATHS', [])
     
     def __call__(self, request):
         # Check if path is public
-        is_public = any(request.path.startswith(p) for p in self.PUBLIC_PATHS)
+        is_public = any(request.path.startswith(p) for p in self.public_paths)
         
         # Initialize tenant context
         tenant_id = None
