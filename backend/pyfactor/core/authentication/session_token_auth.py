@@ -55,6 +55,13 @@ class SessionTokenAuthentication(BaseAuthentication):
                         logger.info(f"[SessionTokenAuth] JWT token detected in Bearer header, skipping")
                         return None
         
+        # Try to get from x-session-token header (mobile apps use this)
+        if not token:
+            x_session_token = request.META.get('HTTP_X_SESSION_TOKEN', '')
+            if x_session_token:
+                token = x_session_token
+                logger.info(f"[SessionTokenAuth] Token found in x-session-token header: {token[:8]}...")
+        
         # If no token in header, try cookies
         if not token:
             cookie_sid = request.COOKIES.get('sid')

@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content: https://ssl.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://localhost:* wss://localhost:*;">
+    <title>Dott Business Marketplace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/dist/index.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f7;
+            color: #1a1a1a;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 15px 20px;
+            padding-top: calc(15px + env(safe-area-inset-top));
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .mode-badge {
+            background: #2563eb;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Stats Cards */
+        .stats-section {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card:nth-child(1) .stat-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stat-card:nth-child(2) .stat-icon {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .stat-card:nth-child(3) .stat-icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .stat-card:nth-child(4) .stat-icon {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .stat-change {
+            font-size: 11px;
+            color: #10b981;
+            margin-top: 4px;
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        /* Action Buttons Section */
+        .actions-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .action-btn.success {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .action-btn.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .action-btn.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        /* Active Listings */
+        .listings-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 8px;
+        }
+
+        .listing-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .listing-item:active {
+            background: #f9fafb;
+            transform: scale(0.99);
+        }
+
+        .listing-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .listing-info {
+            flex: 1;
+        }
+
+        .listing-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .listing-meta {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .listing-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .listing-action {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .listing-status {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .listing-status.active {
+            background: #10b981;
+        }
+
+        .listing-status.pending {
+            background: #f59e0b;
+        }
+
+        .listing-price {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        /* Ad Creation Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .image-upload {
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload:hover {
+            border-color: #2563eb;
+            background: #f9fafb;
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:active {
+            transform: scale(0.98);
+        }
+
+        .modal-btn.secondary {
+            background: #f3f4f6;
+            color: #666;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Consumer Toggle */
+        #consumerToggle {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        #consumerToggle:active {
+            transform: scale(0.95);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 8px 0;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active .nav-icon {
+            color: #2563eb;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active .nav-label {
+            color: #2563eb;
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1 class="header-title">Business Dashboard</h1>
+            <span class="mode-badge">BUSINESS MODE</span>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="ph ph-eye"></i>
+            </div>
+            <div class="stat-value">1,234</div>
+            <div class="stat-label">Views Today</div>
+            <div class="stat-change">+12% from yesterday</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="ph ph-chat-circle"></i>
+            </div>
+            <div class="stat-value">56</div>
+            <div class="stat-label">Messages</div>
+            <div class="stat-change">8 unread</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="ph ph-shopping-cart"></i>
+            </div>
+            <div class="stat-value" id="dynamicOrderValue">28</div>
+            <div class="stat-label" id="dynamicOrderLabel">Orders</div>
+            <div class="stat-change">3 pending</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="ph ph-star"></i>
+            </div>
+            <div class="stat-value">4.8</div>
+            <div class="stat-label">Rating</div>
+            <div class="stat-change">234 reviews</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-section">
+        <div class="section-title">Quick Actions</div>
+        <div class="action-buttons">
+            <button class="action-btn primary" onclick="openAdvertise()">
+                <i class="ph ph-megaphone"></i>
+                Advertise
+            </button>
+            <button class="action-btn success" id="dynamicOrderButton" onclick="openOrders()">
+                <i class="ph ph-shopping-cart"></i>
+                <span id="dynamicOrderButtonText">Orders</span>
+            </button>
+            <button class="action-btn warning" onclick="openAnalytics()">
+                <i class="ph ph-chart-line"></i>
+                Analytics
+            </button>
+            <button class="action-btn info" onclick="openSettings()">
+                <i class="ph ph-gear"></i>
+                Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Listings -->
+    <div class="listings-section">
+        <div class="section-title">Your Active Listings</div>
+        <div id="listingsContainer">
+            <!-- Listings will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Ad Creation Modal -->
+    <div id="adModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Advertisement</h2>
+                <button class="modal-close" onclick="closeAdModal()">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Ad Title</label>
+                    <input type="text" class="form-input" id="adTitle" placeholder="e.g., 50% Off All Items">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="adDescription" placeholder="Describe your offer..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Discount/Offer</label>
+                    <input type="text" class="form-input" id="adOffer" placeholder="e.g., 50% OFF, Buy 1 Get 1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Valid Until</label>
+                    <input type="date" class="form-input" id="adValidDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Upload Image</label>
+                    <div class="image-upload" onclick="selectImage()">
+                        <i class="ph ph-camera upload-icon"></i>
+                        <div class="upload-text">Click to upload image</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="previewAd()">
+                    <i class="ph ph-eye"></i> Preview
+                </button>
+                <button class="modal-btn primary" onclick="submitAd()">
+                    <i class="ph ph-paper-plane-tilt"></i> Submit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consumer Mode Toggle -->
+    <button id="consumerToggle" onclick="switchToConsumerMode()">
+        <i class="ph ph-users"></i>
+    </button>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-container">
+            <div class="nav-item active">
+                <i class="ph ph-house nav-icon"></i>
+                <span class="nav-label">Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="openListings()">
+                <i class="ph ph-tag nav-icon"></i>
+                <span class="nav-label">Listings</span>
+            </div>
+            <div class="nav-item" onclick="openMessages()">
+                <i class="ph ph-chat-circle nav-icon"></i>
+                <span class="nav-label">Messages</span>
+            </div>
+            <div class="nav-item" onclick="openInsights()">
+                <i class="ph ph-chart-bar nav-icon"></i>
+                <span class="nav-label">Insights</span>
+            </div>
+            <div class="nav-item" onclick="backToMain()">
+                <i class="ph ph-squares-four nav-icon"></i>
+                <span class="nav-label">Main Menu</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('[Business Mode] Initialized');
+
+        // Dynamic button based on business type
+        async function setupDynamicButtons() {
+            try {
+                const storedSession = localStorage.getItem('dottSession');
+                if (storedSession) {
+                    const session = JSON.parse(storedSession);
+                    const businessType = session.user?.business_type || session.user?.simplified_business_type;
+                    
+                    console.log('[Business Mode] Business type:', businessType);
+                    
+                    const orderButton = document.getElementById('dynamicOrderButton');
+                    const orderButtonText = document.getElementById('dynamicOrderButtonText');
+                    const orderValue = document.getElementById('dynamicOrderValue');
+                    const orderLabel = document.getElementById('dynamicOrderLabel');
+                    
+                    // Set button text and icon based on business type
+                    switch(businessType) {
+                        case 'SERVICE':
+                            orderButtonText.textContent = 'Bookings';
+                            orderLabel.textContent = 'Bookings';
+                            orderButton.innerHTML = '<i class="ph ph-calendar-check"></i> Bookings';
+                            break;
+                        case 'RETAIL':
+                            orderButtonText.textContent = 'Orders';
+                            orderLabel.textContent = 'Orders';
+                            orderButton.innerHTML = '<i class="ph ph-shopping-cart"></i> Orders';
+                            break;
+                        case 'MIXED':
+                        case 'OTHER':
+                            orderButtonText.textContent = 'Orders/Bookings';
+                            orderLabel.textContent = 'Orders/Bookings';
+                            orderButton.innerHTML = '<i class="ph ph-clipboard-text"></i> Orders/Bookings';
+                            break;
+                        default:
+                            orderButtonText.textContent = 'Orders';
+                            orderLabel.textContent = 'Orders';
+                            orderButton.innerHTML = '<i class="ph ph-shopping-cart"></i> Orders';
+                    }
+                }
+            } catch (error) {
+                console.error('[Business Mode] Error setting up dynamic buttons:', error);
+            }
+        }
+
+        // Load active listings
+        async function loadListings() {
+            const container = document.getElementById('listingsContainer');
+            
+            // Sample listings (in real app, fetch from API)
+            const listings = [
+                {
+                    id: 1,
+                    title: '50% Off Weekend Special',
+                    category: 'Promotion',
+                    views: 234,
+                    clicks: 45,
+                    status: 'active',
+                    price: '$10'
+                },
+                {
+                    id: 2,
+                    title: 'New Product Launch',
+                    category: 'Product',
+                    views: 567,
+                    clicks: 89,
+                    status: 'active',
+                    price: '$25'
+                },
+                {
+                    id: 3,
+                    title: 'Holiday Sale',
+                    category: 'Seasonal',
+                    views: 123,
+                    clicks: 12,
+                    status: 'pending',
+                    price: 'Various'
+                }
+            ];
+
+            container.innerHTML = listings.map(listing => `
+                <div class="listing-item" onclick="editListing(${listing.id})">
+                    <div class="listing-image"></div>
+                    <div class="listing-info">
+                        <div class="listing-title">${listing.title}</div>
+                        <div class="listing-meta">${listing.category}</div>
+                        <div class="listing-stats">
+                            <span><i class="ph ph-eye"></i> ${listing.views} views</span>
+                            <span><i class="ph ph-cursor-click"></i> ${listing.clicks} clicks</span>
+                        </div>
+                    </div>
+                    <div class="listing-action">
+                        <span class="listing-status ${listing.status}">${listing.status.toUpperCase()}</span>
+                        <span class="listing-price">${listing.price}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Modal functions
+        function openAdvertise() {
+            console.log('[Business Mode] Opening advertise modal...');
+            document.getElementById('adModal').classList.add('active');
+        }
+
+        function closeAdModal() {
+            document.getElementById('adModal').classList.remove('active');
+        }
+
+        function selectImage() {
+            console.log('[Business Mode] Selecting image...');
+            // Implement image selection
+        }
+
+        function previewAd() {
+            const title = document.getElementById('adTitle').value;
+            const description = document.getElementById('adDescription').value;
+            const offer = document.getElementById('adOffer').value;
+            
+            if (!title || !description) {
+                alert('Please fill in title and description');
+                return;
+            }
+            
+            console.log('[Business Mode] Preview ad:', { title, description, offer });
+            alert(`Preview:\n\nTitle: ${title}\nOffer: ${offer}\nDescription: ${description}\n\nThis is how your ad will appear to customers.`);
+        }
+
+        function submitAd() {
+            const title = document.getElementById('adTitle').value;
+            const description = document.getElementById('adDescription').value;
+            const offer = document.getElementById('adOffer').value;
+            const validDate = document.getElementById('adValidDate').value;
+            
+            if (!title || !description || !offer) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            console.log('[Business Mode] Submitting ad:', { title, description, offer, validDate });
+            
+            // In real app, submit to API
+            alert('Advertisement submitted successfully! It will be reviewed and published shortly.');
+            closeAdModal();
+            
+            // Reload listings
+            loadListings();
+        }
+
+        // Navigation functions
+        function switchToConsumerMode() {
+            console.log('[Business Mode] Switching to consumer mode...');
+            window.location.href = 'mobile-marketplace-consumer.html';
+        }
+
+        function openOrders() {
+            console.log('[Business Mode] Opening orders/bookings...');
+            // Navigate to orders/bookings page
+        }
+
+        function openAnalytics() {
+            console.log('[Business Mode] Opening analytics...');
+            // Navigate to analytics page
+        }
+
+        function openSettings() {
+            console.log('[Business Mode] Opening settings...');
+            // Navigate to settings page
+        }
+
+        function openListings() {
+            console.log('[Business Mode] Opening listings...');
+            // Navigate to listings page
+        }
+
+        function openMessages() {
+            console.log('[Business Mode] Opening messages...');
+            window.location.href = 'mobile-messages.html';
+        }
+
+        function openInsights() {
+            console.log('[Business Mode] Opening insights...');
+            // Navigate to insights page
+        }
+
+        function backToMain() {
+            console.log('[Business Mode] Going back to main menu...');
+            window.location.href = 'mobile-menu.html';
+        }
+
+        function editListing(id) {
+            console.log('[Business Mode] Editing listing:', id);
+            // Open edit modal for listing
+        }
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            console.log('[Business Mode] Page loaded, initializing...');
+            
+            // Check session
+            const storedSession = localStorage.getItem('dottSession');
+            if (!storedSession) {
+                console.log('[Business Mode] No session found, redirecting to auth...');
+                window.location.href = 'mobile-auth.html';
+                return;
+            }
+            
+            // Setup dynamic buttons based on business type
+            await setupDynamicButtons();
+            
+            // Load listings
+            loadListings();
+        });
+    </script>
+</body>
+</html>

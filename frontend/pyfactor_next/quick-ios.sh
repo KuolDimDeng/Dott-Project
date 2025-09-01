@@ -9,11 +9,22 @@ echo "========================================"
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Step 1: Copy changed files
-echo -e "${YELLOW}Copying files...${NC}"
+# Step 0: Copy to main /out/ directory first (if files exist in current out/)
+echo -e "${BLUE}Syncing to main /out/ directory...${NC}"
+MAIN_OUT_DIR="/Users/kuoldeng/projectx/out"
 SOURCE_DIR="./out"
+
+# Copy all mobile files to main /out/ if they exist in current out/
+if ls $SOURCE_DIR/mobile-*.html 1> /dev/null 2>&1; then
+    cp -r $SOURCE_DIR/mobile-*.html $MAIN_OUT_DIR/ 2>/dev/null
+    echo -e "${GREEN}✓ Mobile files synced to main /out/${NC}"
+fi
+
+# Step 1: Copy changed files to iOS
+echo -e "${YELLOW}Copying files to iOS...${NC}"
 IOS_DIR="./ios/App/App/public"
 
 # Copy all mobile files

@@ -31,6 +31,10 @@ class SessionTokenAuthenticationFixed(BaseAuthentication):
                 elif auth_header.startswith('Session '):
                     session_id = auth_header[8:]
             
+            # Check x-session-token header (mobile apps use this)
+            if not session_id:
+                session_id = request.META.get('HTTP_X_SESSION_TOKEN', '')
+            
             if not session_id:
                 logger.debug("[SessionAuth Fixed] No session ID found")
                 return None

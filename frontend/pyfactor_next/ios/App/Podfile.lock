@@ -5,6 +5,8 @@ PODS:
     - Capacitor
   - CapacitorCamera (7.0.2):
     - Capacitor
+  - CapacitorCommunityContacts (7.0.0):
+    - Capacitor
   - CapacitorCommunityHttp (1.4.1):
     - Capacitor
   - CapacitorCordova (7.4.3)
@@ -27,12 +29,14 @@ PODS:
   - CapacitorStatusBar (7.0.2):
     - Capacitor
   - IONFilesystemLib (1.0.1)
+  - StripeTerminal (3.9.1)
   - SwiftKeychainWrapper (4.0.1)
 
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
+  - "CapacitorCommunityContacts (from `../../node_modules/@capacitor-community/contacts`)"
   - "CapacitorCommunityHttp (from `../../node_modules/@capacitor-community/http`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
@@ -43,10 +47,12 @@ DEPENDENCIES:
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
+  - StripeTerminal (~> 3.0)
 
 SPEC REPOS:
   trunk:
     - IONFilesystemLib
+    - StripeTerminal
     - SwiftKeychainWrapper
 
 EXTERNAL SOURCES:
@@ -56,6 +62,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/app"
   CapacitorCamera:
     :path: "../../node_modules/@capacitor/camera"
+  CapacitorCommunityContacts:
+    :path: "../../node_modules/@capacitor-community/contacts"
   CapacitorCommunityHttp:
     :path: "../../node_modules/@capacitor-community/http"
   CapacitorCordova:
@@ -81,6 +89,7 @@ SPEC CHECKSUMS:
   Capacitor: b4741ca7affb32c1b70debd03df92cbf522d8a80
   CapacitorApp: efc1e9748a8ea5d3e789cd82a4f451341cc7ac93
   CapacitorCamera: 6e18d54c8ab30d7dc7b8cd93d96f9b4f57e9202a
+  CapacitorCommunityContacts: d49af9c4727480c8f0e3d40bf61af9f3acbdd77c
   CapacitorCommunityHttp: 7be90668527ef14ee10d08135b0e00fac9cf8247
   CapacitorCordova: 435121e81a2df4d0034f0fb11fcefab5104cfdb5
   CapacitorFilesystem: ac0a386949ed6c295a3dffa129ecd26b881ae5be
@@ -92,8 +101,9 @@ SPEC CHECKSUMS:
   CapacitorSplashScreen: 8d6c8cb0542a8e81585c593815db8785ed8ce454
   CapacitorStatusBar: 5526833b87fa9c96a2a90c1322bb1f663c04505f
   IONFilesystemLib: 89258b8e3e85465da93127d25d7ce37f977e8a6f
+  StripeTerminal: f7f5e176979224ed76edb3724f41138fbb28053c
   SwiftKeychainWrapper: 807ba1d63c33a7d0613288512399cd1eda1e470c
 
-PODFILE CHECKSUM: 59749d4f8b3d6feb3e65403d09d702db72e9727e
+PODFILE CHECKSUM: 66bdb92cab37ac0ee33daca6e97095b381d7ec5b
 
 COCOAPODS: 1.15.2

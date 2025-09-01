@@ -32,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1756677825</string>
+	<string>1756743929</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -75,8 +75,14 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Dott uses Bluetooth to connect to payment accessories.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to the camera to scan barcodes and QR codes for inventory management.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Dott needs access to your contacts to help you connect with businesses and other users. You can call, message, and invite contacts to join Dott.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Dott uses the local network to discover payment terminals for Tap to Pay.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app needs permission to save photos to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
