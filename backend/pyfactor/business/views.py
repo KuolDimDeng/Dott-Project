@@ -95,46 +95,11 @@ def get_marketplace_businesses(request):
         logger.error(f"Error fetching marketplace businesses: {str(e)}")
         logger.error(f"Full traceback: {error_details}")
         
-        # Return sample data instead of error
-        sample_businesses = [
-            {
-                'id': 'sample1',
-                'name': 'Java House ABC Place',
-                'phone': '+254721496832',
-                'address': 'ABC Place, Waiyaki Way',
-                'category': 'Restaurant',
-                'city': 'Nairobi',
-                'country': 'KE',
-                'latitude': -1.2634,
-                'longitude': 36.8155,
-                'placeholder': True,
-                'verified': False,
-                'uncontactable': False,
-                'contactsRemaining': 3,
-                'image': 'https://ui-avatars.com/api/?name=Java+House&background=random'
-            },
-            {
-                'id': 'sample2',
-                'name': 'KFC Two Rivers',
-                'phone': '+254719034000',
-                'address': 'Two Rivers Mall',
-                'category': 'Restaurant',
-                'city': 'Nairobi',
-                'country': 'KE',
-                'latitude': -1.2297,
-                'longitude': 36.8076,
-                'placeholder': True,
-                'verified': False,
-                'uncontactable': False,
-                'contactsRemaining': 3,
-                'image': 'https://ui-avatars.com/api/?name=KFC&background=random'
-            }
-        ]
-        
+        # Return empty businesses list on error
         return Response({
             'success': True,
-            'businesses': sample_businesses,
-            'total': len(sample_businesses),
+            'businesses': [],
+            'total': 0,
             'debug_error': str(e)
         })
 
