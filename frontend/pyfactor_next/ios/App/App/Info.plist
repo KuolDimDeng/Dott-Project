@@ -32,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1756743929</string>
+	<string>2</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -83,6 +83,10 @@
 	<string>Dott needs access to your contacts to help you connect with businesses and other users. You can call, message, and invite contacts to join Dott.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Dott uses the local network to discover payment terminals for Tap to Pay.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Dott uses your location to provide personalized recommendations and show businesses near you.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Dott needs your location to show nearby businesses and services in your area.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app needs permission to save photos to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
