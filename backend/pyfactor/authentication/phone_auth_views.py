@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 
 from .phone_models import PhoneOTP, PhoneAuthSession, LinkedAccount, TrustedDevice
 from users.models import UserProfile
+from custom_auth.models import Tenant
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -182,23 +183,41 @@ def verify_otp(request):
                     primary_auth_method='phone'
                 )
                 
-                # Create user profile
+                # Create tenant FIRST (CRITICAL for RLS)
+                tenant = Tenant.objects.create(
+                    name=business_name if user_type == 'business' and business_name else f"Personal_{phone_number[-4:]}",
+                    schema_name=f"tenant_{user.id}",
+                    owner=user
+                )
+                
+                # Set tenant_id on user (REQUIRED for RLS)
+                user.tenant_id = tenant.id
+                
+                # Create user profile with tenant
                 profile = UserProfile.objects.create(
                     user=user,
                     phone_number=phone_number,
-                    country=get_country_from_phone(phone_number)
+                    country=get_country_from_phone(phone_number),
+                    tenant_id=tenant.id  # Link to tenant
                 )
                 
-                # Set user type
+                # Set user type and business info
                 if user_type == 'business' and business_name:
                     profile.business_name = business_name
+                    profile.company_name = business_name
                     profile.save()
+                    
+                    tenant.business_type = 'business'
+                    tenant.save()
                     
                     if hasattr(user, 'user_type'):
                         user.user_type = 'business'
                     if hasattr(user, 'onboarding_completed'):
                         user.onboarding_completed = False
                 else:
+                    tenant.business_type = 'consumer'
+                    tenant.save()
+                    
                     if hasattr(user, 'user_type'):
                         user.user_type = 'consumer'
                     if hasattr(user, 'onboarding_completed'):
@@ -246,6 +265,7 @@ def verify_otp(request):
                 'refresh_token': refresh_token,
                 'user': {
                     'id': str(user.id),
+                    'tenant_id': str(user.tenant_id) if user.tenant_id else None,
                     'phone_number': phone_number,
                     'email': user.email,
                     'first_name': user.first_name,
@@ -253,6 +273,7 @@ def verify_otp(request):
                     'user_type': getattr(user, 'user_type', 'consumer'),
                     'has_business': bool(getattr(profile, 'business_name', None)),
                     'business_name': getattr(profile, 'business_name', business_name if user_type == 'business' else None),
+                    'company_name': getattr(profile, 'company_name', None),
                     'onboarding_completed': getattr(user, 'onboarding_completed', True)
                 },
                 'session_id': str(session.id)
