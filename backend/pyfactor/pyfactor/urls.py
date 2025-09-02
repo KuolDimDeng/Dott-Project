@@ -74,6 +74,9 @@ urlpatterns = [
     # Phone Authentication API routes
     path('api/auth/phone/', include('authentication.phone_auth_urls')),
     
+    # Unified Authentication API routes (phone + email)
+    path('api/auth/unified/', include('authentication.unified_auth_urls')),
+    
     # Session management API routes
     path('api/sessions/', include('session_manager.urls')),
     

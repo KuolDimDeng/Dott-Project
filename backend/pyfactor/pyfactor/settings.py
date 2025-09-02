@@ -945,6 +945,7 @@ TENANT_EXEMPT_PATHS = [
     '/api/leads/',  # Leads management (admin access)
     '/api/business/marketplace-businesses',  # Public marketplace businesses
     '/api/auth/phone/',  # Phone authentication endpoints
+    '/api/auth/unified/',  # Unified authentication endpoints
 ]
 
 # Paths that require authentication but not tenant context (used during onboarding)
