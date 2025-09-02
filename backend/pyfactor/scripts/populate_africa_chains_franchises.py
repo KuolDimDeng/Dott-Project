@@ -586,7 +586,7 @@ def get_chains_and_franchises():
     for office in ethiopian_offices:
         businesses.append({
             'name': f'Ethiopian Airlines {office["city"]} Office',
-            'phone': f'+{self.get_country_code(office["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+            'phone': f'+{get_country_code(office["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
             'address': 'Airport Road',
             'category': 'Airline',
             'city': office['city'],
@@ -612,7 +612,7 @@ def get_chains_and_franchises():
     for office in kenya_airways_offices:
         businesses.append({
             'name': f'Kenya Airways {office["city"]} Office',
-            'phone': f'+{self.get_country_code(office["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+            'phone': f'+{get_country_code(office["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
             'address': 'City Centre',
             'category': 'Airline',
             'city': office['city'],
@@ -636,7 +636,7 @@ def get_chains_and_franchises():
     for office in saa_offices:
         businesses.append({
             'name': f'South African Airways {office["city"]} Office',
-            'phone': f'+{self.get_country_code(office["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+            'phone': f'+{get_country_code(office["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
             'address': 'Airport or City Centre',
             'category': 'Airline',
             'city': office['city'],
