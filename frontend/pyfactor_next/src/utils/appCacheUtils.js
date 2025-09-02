@@ -168,33 +168,39 @@ export function storeInCache(key, value, category = 'user', tenantId = null) {
     if (typeof window === 'undefined') return false;
     
     // Initialize cache if needed
-    if (!appCache.getAll()) {
-      appCache.getAll() = { auth: {}, user: {}, tenant: {}, tenants: {} };
+    const currentCache = appCache.getAll();
+    if (!currentCache) {
+      appCache.clear();
+      const initialData = { auth: {}, user: {}, tenant: {}, tenants: {} };
+      Object.keys(initialData).forEach(key => {
+        appCache.set(key, initialData[key]);
+      });
     }
     
     // Create category if it doesn't exist
-    if (!appCache.getAll()[category]) {
-      appCache.getAll()[category] = {};
+    if (!appCache.get(category)) {
+      appCache.set(category, {});
     }
     
     // Get tenant-specific key if tenant ID provided
     const cacheKey = tenantId ? `${tenantId}_${key}` : key;
     
     // Store in category
-    appCache.getAll()[category][cacheKey] = value;
+    const categoryData = appCache.get(category) || {};
+    categoryData[cacheKey] = value;
+    appCache.set(category, categoryData);
     
     // Also store in tenant-specific namespace if tenant ID provided
     if (tenantId) {
       // Initialize tenant namespace if needed
-      if (!appCache.getAll().tenants) {
-        appCache.set('tenants', {});
-      }
-      if (!appCache.getAll().tenants[tenantId]) {
-        appCache.getAll().tenants[tenantId] = {};
+      let tenants = appCache.get('tenants') || {};
+      if (!tenants[tenantId]) {
+        tenants[tenantId] = {};
       }
       
       // Store in tenant namespace
-      appCache.getAll().tenants[tenantId][key] = value;
+      tenants[tenantId][key] = value;
+      appCache.set('tenants', tenants);
     }
     
     logger.debug('[AppCacheUtils] Data cached successfully', { key: tenantId ? cacheKey : key });
