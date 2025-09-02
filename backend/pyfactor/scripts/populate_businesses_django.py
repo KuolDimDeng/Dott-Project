@@ -1,37 +1,25 @@
 #!/usr/bin/env python3
 """
-Script to populate 10,000 African businesses into both staging and production databases.
+Script to populate 10,000 African businesses using Django ORM.
 Focuses primarily on Kenya and South Sudan with some coverage of other African countries.
 Distribution: 45% Kenya, 35% South Sudan, 20% other East African countries.
 """
 
 import os
 import sys
+import django
 import random
-import psycopg2
-from psycopg2.extras import execute_batch
 from datetime import datetime
-import json
-import ssl
 
-# Database configurations from environment
-STAGING_DB_CONFIG = {
-    'host': os.environ.get('STAGING_DB_HOST', 'oregon-postgres.render.com'),
-    'port': os.environ.get('STAGING_DB_PORT', '5432'),
-    'database': os.environ.get('STAGING_DB_NAME', 'dott_staging'),
-    'user': os.environ.get('STAGING_DB_USER', 'dott_staging_user'),
-    'password': os.environ.get('STAGING_DB_PASSWORD', 'Tg5K3HvNJU8uL0d02MIXhhNZWl6xZ30f'),
-    'sslmode': 'require'
-}
+# Add the project directory to the Python path
+sys.path.insert(0, '/Users/kuoldeng/projectx/backend/pyfactor')
 
-PRODUCTION_DB_CONFIG = {
-    'host': os.environ.get('PROD_DB_HOST', 'oregon-postgres.render.com'),
-    'port': os.environ.get('PROD_DB_PORT', '5432'),
-    'database': os.environ.get('PROD_DB_NAME', 'dott'),
-    'user': os.environ.get('PROD_DB_USER', 'dott_user'),
-    'password': os.environ.get('PROD_DB_PASSWORD', '6kJYusC0oJrCTFrBXnStodSh8B0QZ5zr'),
-    'sslmode': 'require'
-}
+# Set up Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+django.setup()
+
+from django.db import connections, transaction
+from business.models import PlaceholderBusiness
 
 # Business categories with weights for realistic distribution
 BUSINESS_CATEGORIES = {
@@ -214,6 +202,11 @@ def generate_businesses(total_count=10000):
     used_phones = set()
     used_names = set()
     
+    # Get existing phone numbers to avoid duplicates
+    existing_phones = set(PlaceholderBusiness.objects.values_list('phone', flat=True))
+    used_phones.update(existing_phones)
+    print(f"Found {len(existing_phones)} existing businesses in database")
+    
     # Distribution: 45% Kenya, 35% South Sudan, 20% other African countries
     kenya_count = int(total_count * 0.45)
     south_sudan_count = int(total_count * 0.35)
@@ -226,8 +219,12 @@ def generate_businesses(total_count=10000):
         
         # Generate unique phone
         phone = generate_phone_number('KE')
-        while phone in used_phones:
+        attempts = 0
+        while phone in used_phones and attempts < 100:
             phone = generate_phone_number('KE')
+            attempts += 1
+        if attempts >= 100:
+            continue  # Skip this one if we can't generate a unique phone
         used_phones.add(phone)
         
         # Generate unique name
@@ -259,8 +256,12 @@ def generate_businesses(total_count=10000):
         
         # Generate unique phone
         phone = generate_phone_number('SS')
-        while phone in used_phones:
+        attempts = 0
+        while phone in used_phones and attempts < 100:
             phone = generate_phone_number('SS')
+            attempts += 1
+        if attempts >= 100:
+            continue
         used_phones.add(phone)
         
         # Generate unique name
@@ -293,8 +294,12 @@ def generate_businesses(total_count=10000):
         
         # Generate unique phone
         phone = generate_phone_number(country)
-        while phone in used_phones:
+        attempts = 0
+        while phone in used_phones and attempts < 100:
             phone = generate_phone_number(country)
+            attempts += 1
+        if attempts >= 100:
+            continue
         used_phones.add(phone)
         
         # Generate unique name
@@ -325,101 +330,48 @@ def generate_businesses(total_count=10000):
     
     return businesses
 
-def insert_to_database(businesses, db_config, db_name):
-    """Insert businesses into the database"""
-    print(f"\nConnecting to {db_name} database...")
+def insert_businesses(businesses):
+    """Insert businesses using Django ORM"""
+    print(f"\nInserting {len(businesses)} businesses into database...")
     
-    try:
-        conn = psycopg2.connect(**db_config)
-        cursor = conn.cursor()
-        
-        # Create table if it doesn't exist
-        print(f"Creating table if not exists...")
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS business_placeholderbusiness (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                phone VARCHAR(20) NOT NULL UNIQUE,
-                email VARCHAR(254),
-                address TEXT,
-                city VARCHAR(100),
-                country VARCHAR(2),
-                business_type VARCHAR(50),
-                description TEXT,
-                opted_out BOOLEAN DEFAULT FALSE,
-                converted_to_real_business BOOLEAN DEFAULT FALSE,
-                contact_attempts INTEGER DEFAULT 0,
-                last_contact_attempt TIMESTAMPTZ,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            );
-        """)
-        
-        # Check existing phones to avoid duplicates
-        print(f"Checking for existing businesses...")
-        cursor.execute("SELECT phone FROM business_placeholderbusiness")
-        existing_phones = set(row[0] for row in cursor.fetchall())
-        print(f"Found {len(existing_phones)} existing businesses")
-        
-        # Filter out businesses with duplicate phones
-        new_businesses = [b for b in businesses if b['phone'] not in existing_phones]
-        print(f"Will insert {len(new_businesses)} new businesses")
-        
-        if new_businesses:
-            # Prepare data for batch insert
-            insert_data = [
-                (
-                    b['name'],
-                    b['phone'],
-                    b['email'],
-                    b['address'],
-                    b['city'],
-                    b['country'],
-                    b['business_type'],
-                    b['description']
-                )
-                for b in new_businesses
-            ]
-            
-            # Batch insert for efficiency
-            print(f"Inserting businesses in batches...")
-            insert_query = """
-                INSERT INTO business_placeholderbusiness 
-                (name, phone, email, address, city, country, business_type, description)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (phone) DO NOTHING
-            """
-            
-            batch_size = 500
-            for i in range(0, len(insert_data), batch_size):
-                batch = insert_data[i:i + batch_size]
-                execute_batch(cursor, insert_query, batch, page_size=500)
-                conn.commit()
-                print(f"  Inserted batch {i // batch_size + 1} ({len(batch)} businesses)")
-            
-            print(f"Successfully inserted {len(new_businesses)} businesses into {db_name}")
-        else:
-            print(f"No new businesses to insert in {db_name}")
-        
-        # Get final count
-        cursor.execute("SELECT COUNT(*) FROM business_placeholderbusiness")
-        total_count = cursor.fetchone()[0]
-        print(f"Total businesses in {db_name}: {total_count}")
-        
-        cursor.close()
-        conn.close()
-        
-    except Exception as e:
-        print(f"Error with {db_name} database: {e}")
-        if 'conn' in locals():
-            conn.rollback()
-            conn.close()
-        raise
+    # Create PlaceholderBusiness objects
+    business_objects = []
+    for b in businesses:
+        business_objects.append(PlaceholderBusiness(
+            name=b['name'],
+            phone=b['phone'],
+            email=b['email'],
+            address=b['address'],
+            city=b['city'],
+            country=b['country'],
+            business_type=b['business_type'],
+            description=b['description'],
+            opted_out=False,
+            converted_to_real_business=False,
+            contact_attempts=0
+        ))
+    
+    # Bulk create with ignore_conflicts to handle any duplicate phones
+    batch_size = 500
+    total_created = 0
+    
+    with transaction.atomic():
+        for i in range(0, len(business_objects), batch_size):
+            batch = business_objects[i:i + batch_size]
+            created = PlaceholderBusiness.objects.bulk_create(
+                batch, 
+                ignore_conflicts=True,
+                batch_size=batch_size
+            )
+            total_created += len(created)
+            print(f"  Inserted batch {i // batch_size + 1} ({len(created)} businesses)")
+    
+    return total_created
 
 def main():
     """Main function"""
     print("=" * 60)
-    print("AFRICAN BUSINESS POPULATION SCRIPT")
+    print("AFRICAN BUSINESS POPULATION SCRIPT (Django Version)")
     print("=" * 60)
     print(f"Target: 10,000 businesses")
     print(f"Focus: Kenya (45%), South Sudan (35%), Other Africa (20%)")
@@ -439,23 +391,22 @@ def main():
     for country, count in sorted(country_counts.items(), key=lambda x: x[1], reverse=True):
         print(f"  {country}: {count}")
     
-    # Insert into staging database
+    # Insert into database
     print("\n" + "=" * 60)
-    print("INSERTING INTO STAGING DATABASE")
+    print("INSERTING INTO DATABASE")
     print("=" * 60)
-    insert_to_database(businesses, STAGING_DB_CONFIG, "STAGING")
     
-    # Insert into production database
-    print("\n" + "=" * 60)
-    print("INSERTING INTO PRODUCTION DATABASE")
-    print("=" * 60)
-    insert_to_database(businesses, PRODUCTION_DB_CONFIG, "PRODUCTION")
+    total_created = insert_businesses(businesses)
+    
+    # Get final count
+    total_count = PlaceholderBusiness.objects.count()
     
     print("\n" + "=" * 60)
     print("SCRIPT COMPLETED SUCCESSFULLY!")
     print("=" * 60)
-    print("\nBusinesses have been added to both staging and production databases.")
-    print("The mobile app should now show these businesses in the marketplace.")
+    print(f"\nInserted {total_created} new businesses")
+    print(f"Total businesses in database: {total_count}")
+    print("\nThe mobile app should now show these businesses in the marketplace.")
 
 if __name__ == "__main__":
     main()
