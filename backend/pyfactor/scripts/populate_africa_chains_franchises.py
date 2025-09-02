@@ -47,7 +47,7 @@ def get_chains_and_franchises():
             for i in range(5):  # 5 MTN offices/shops per city
                 businesses.append({
                     'name': f'MTN {city} {"Office" if i < 2 else "Service Centre"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Main Street", "Central Business District", "Mall", "Plaza", "Shopping Centre"])}',
                     'category': 'Telecommunications',
                     'city': city,
@@ -76,7 +76,7 @@ def get_chains_and_franchises():
             for i in range(4):  # 4 Airtel offices per city
                 businesses.append({
                     'name': f'Airtel {city} {"Store" if i < 2 else "Experience Centre"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Business Park", "High Street", "Mall", "City Centre"])}',
                     'category': 'Telecommunications',
                     'city': city,
@@ -117,7 +117,7 @@ def get_chains_and_franchises():
             for i in range(5):
                 businesses.append({
                     'name': f'Vodacom {city} {"Store" if i < 3 else "4U Shop"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Mall", "Shopping Centre", "Main Road", "Plaza"])}',
                     'category': 'Telecommunications',
                     'city': city,
@@ -146,7 +146,7 @@ def get_chains_and_franchises():
             for i in range(4):
                 businesses.append({
                     'name': f'Orange {city} {"Store" if i < 2 else "Service Point"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Centre Commercial", "Avenue", "Boulevard", "Place"])}',
                     'category': 'Telecommunications',
                     'city': city,
@@ -175,7 +175,7 @@ def get_chains_and_franchises():
             for i in range(3):
                 businesses.append({
                     'name': f'Standard Bank {city} {"Branch" if i == 0 else "Centre"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Main Street", "CBD", "Financial District", "Business Centre"])}',
                     'category': 'Banking',
                     'city': city,
@@ -211,7 +211,7 @@ def get_chains_and_franchises():
             for i in range(3):
                 businesses.append({
                     'name': f'Ecobank {city} Branch {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Commercial Area", "Business District", "Main Avenue", "City Centre"])}',
                     'category': 'Banking',
                     'city': city,
@@ -234,7 +234,7 @@ def get_chains_and_franchises():
             for i in range(3):
                 businesses.append({
                     'name': f'Zenith Bank {city} {"Branch" if i < 2 else "Office"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Commercial Avenue", "Business Plaza", "Banking District", "Main Street"])}',
                     'category': 'Banking',
                     'city': city,
@@ -264,7 +264,7 @@ def get_chains_and_franchises():
             for i in range(2):
                 businesses.append({
                     'name': f'GTBank {city} Branch {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Financial Centre", "Business Hub", "Commercial Street", "Plaza"])}',
                     'category': 'Banking',
                     'city': city,
@@ -290,7 +290,7 @@ def get_chains_and_franchises():
             for i in range(3):
                 businesses.append({
                     'name': f'FNB {city} {"Branch" if i < 2 else "Banking Centre"} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Main Mall", "City Centre", "Business Park", "Shopping Centre"])}',
                     'category': 'Banking',
                     'city': city,
@@ -324,7 +324,7 @@ def get_chains_and_franchises():
             for i in range(num_outlets):
                 businesses.append({
                     'name': f'KFC {city} {random.choice(["Mall", "Drive-Thru", "Express", ""])} {i+1}'.strip(),
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Shopping Mall", "Main Street", "Food Court", "Highway", "CBD"])}',
                     'category': 'Fast Food Restaurant',
                     'city': city,
@@ -355,7 +355,7 @@ def get_chains_and_franchises():
             for i in range(num_outlets):
                 businesses.append({
                     'name': f"Nando's {city} {random.choice(['', 'Mall', 'Drive-Thru'])} {i+1}".strip(),
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Shopping Centre", "Mall", "High Street", "Food Court"])}',
                     'category': 'Restaurant',
                     'city': city,
@@ -388,7 +388,7 @@ def get_chains_and_franchises():
             for i in range(num_outlets):
                 businesses.append({
                     'name': f'Debonairs Pizza {city} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Mall", "Shopping Centre", "Plaza", "High Street"])}',
                     'category': 'Pizza Restaurant',
                     'city': city,
@@ -417,7 +417,7 @@ def get_chains_and_franchises():
             for i in range(num_outlets):
                 businesses.append({
                     'name': f'Steers {city} {random.choice(["", "Drive-Thru", "Mall"])} {i+1}'.strip(),
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Shopping Mall", "Main Road", "Food Court", "Plaza"])}',
                     'category': 'Burger Restaurant',
                     'city': city,
@@ -446,7 +446,7 @@ def get_chains_and_franchises():
             for i in range(3):
                 businesses.append({
                     'name': f'Pizza Hut {city} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Mall", "Shopping Centre", "Delivery Centre", "Plaza"])}',
                     'category': 'Pizza Restaurant',
                     'city': city,
@@ -484,7 +484,7 @@ def get_chains_and_franchises():
             for i in range(num_stores):
                 businesses.append({
                     'name': f'Shoprite {city} {random.choice(["", "Hyper", "Mini"])} {i+1}'.strip(),
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Mall", "Shopping Centre", "Main Street", "Plaza"])}',
                     'category': 'Supermarket',
                     'city': city,
@@ -509,7 +509,7 @@ def get_chains_and_franchises():
             for i in range(num_stores):
                 businesses.append({
                     'name': f'Pick n Pay {city} {random.choice(["", "Hyper", "Express", "Family"])} {i+1}'.strip(),
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Shopping Centre", "Mall", "Main Road", "Plaza"])}',
                     'category': 'Supermarket',
                     'city': city,
@@ -539,7 +539,7 @@ def get_chains_and_franchises():
             for i in range(2):
                 businesses.append({
                     'name': f'Game {city} {i+1}',
-                    'phone': f'+{self.get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
+                    'phone': f'+{get_country_code(country_data["country"])} {random.randint(100,999)} {random.randint(100,999)} {random.randint(1000,9999)}',
                     'address': f'{random.choice(["Mall", "Shopping Centre", "Retail Park"])}',
                     'category': 'Department Store',
                     'city': city,
@@ -664,9 +664,6 @@ def get_country_code(country):
         'TN': '216', 'UG': '256', 'ZM': '260', 'ZW': '263'
     }
     return codes.get(country, '000')
-
-# Update function definition to use module-level function
-get_chains_and_franchises.get_country_code = get_country_code
 
 def populate_database():
     """Populate the database with chains and franchises"""
