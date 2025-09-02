@@ -135,20 +135,16 @@ const getSafeTenantId = () => {
     if (!tenantId) {
       try {
         // Use the Auth API to get the current user's attributes directly
-        // fetchUserAttributes() - removed Amplify
-          .then(attributes => {
-            const cognitoTenantId = attributes?.['custom:tenant_ID'] || attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
-            if (cognitoTenantId && !tenantId) {
-              // Store for future use
-              if (appCache.getAll() && appCache.getAll().tenant) {
-                appCache.set('tenant.id', cognitoTenantId);
-              }
-              logger.debug('[TenantUtils] Retrieved and stored tenant ID from Cognito:', cognitoTenantId);
-            }
-          })
-          .catch(e => {
-            logger.warn('[TenantUtils] Error fetching Cognito attributes:', e);
-          });
+        // fetchUserAttributes() - removed Amplify - using Auth0 instead
+        const attributes = null; // Placeholder for Auth0 user attributes
+        const cognitoTenantId = attributes?.['custom:tenant_ID'] || attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
+        if (cognitoTenantId && !tenantId) {
+          // Store for future use
+          if (appCache.getAll() && appCache.getAll().tenant) {
+            appCache.set('tenant.id', cognitoTenantId);
+          }
+          logger.debug('[TenantUtils] Retrieved and stored tenant ID from Cognito:', cognitoTenantId);
+        }
       } catch (e) {
         logger.warn('[TenantUtils] Error checking Cognito attributes:', e);
       }

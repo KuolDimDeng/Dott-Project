@@ -44,10 +44,8 @@ export function useLandingPageStatus() {
         logger.debug('[LandingStatus] Checking authentication status...');
         
         // Get current session using v6 API
-    const session = null; // Removed Amplify - using Auth0
-          logger.debug('[LandingStatus] Error fetching auth session:', error);
-          return { tokens: null };
-        });
+        const session = null; // Removed Amplify - using Auth0
+        const tokens = null; // Placeholder for Auth0 tokens
         
         if (!tokens?.idToken) {
           logger.debug('[LandingStatus] No valid tokens found, user is not authenticated');

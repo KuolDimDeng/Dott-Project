@@ -15,12 +15,11 @@ export default function ClientSideScripts() {
   useEffect(() => {
     // Initialize AppCache structure
     if (!appCache.getAll()) {
-      appCache.getAll() = { 
-        auth: { provider: 'auth0', initialized: true }, 
-        user: {}, 
-        tenant: {},
-        tenants: {}
-      };
+      appCache.init();
+      appCache.set('auth', { provider: 'auth0', initialized: true });
+      appCache.set('user', {});
+      appCache.set('tenant', {});
+      appCache.set('tenants', {});
       console.log('[ClientSideScripts] AppCache initialized with Auth0 provider');
     }
 

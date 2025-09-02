@@ -143,8 +143,8 @@ export function useSetupPolling() {
           return;
         } else {
           // Clear the 429 timestamp if enough time has passed
-          if (typeof window !== 'undefined' && appCache.getAll()
-            delete appCache.get('polling.last429ErrorTime');
+          if (typeof window !== 'undefined' && appCache.getAll()) {
+            appCache.remove('polling.last429ErrorTime');
           }
         }
       }

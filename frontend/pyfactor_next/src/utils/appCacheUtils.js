@@ -91,6 +91,27 @@ export async function removeFromAppCache(key) {
  * Direct access to synchronous cache operations for client components
  * These are not usable in server components
  */
+// Define the functions before exporting
+function getCacheValue(key, defaultValue = null) {
+  return getFromCache(key, 'user');
+}
+
+function setCacheValue(key, value, options = {}) {
+  return storeInCache(key, value, 'user');
+}
+
+function removeCacheValue(key) {
+  return removeFromCache(key, 'user');
+}
+
+function clearCache() {
+  if (typeof window !== 'undefined' && appCache) {
+    appCache.clear();
+    return true;
+  }
+  return false;
+}
+
 export { getCacheValue, setCacheValue, removeCacheValue, clearCache };
 
 /**

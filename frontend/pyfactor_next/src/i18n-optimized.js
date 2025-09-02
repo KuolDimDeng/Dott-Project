@@ -67,8 +67,8 @@ const loadLanguageResources = async (language) => {
     const promises = namespaces.map(async (ns) => {
       try {
         console.log(`🌐 [i18n-optimized] Loading ${ns} namespace for ${language}...`);
-        const module = await import(`../public/locales/${language}/${ns}.json`);
-        resources[ns] = module.default;
+        const translations = await import(`../public/locales/${language}/${ns}.json`);
+        resources[ns] = translations.default;
         console.log(`✅ [i18n-optimized] Successfully loaded ${ns} for ${language}`);
       } catch (error) {
         console.warn(`⚠️ [i18n-optimized] Failed to load ${ns} for ${language}:`, error);
