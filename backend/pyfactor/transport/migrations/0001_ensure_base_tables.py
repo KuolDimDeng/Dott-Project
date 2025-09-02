@@ -36,7 +36,7 @@ def create_base_tables_if_not_exist(apps, schema_editor):
     driver_sql = """
     CREATE TABLE IF NOT EXISTS transport_driver (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID,
+        user_id BIGINT,
         first_name VARCHAR(255) NOT NULL,
         last_name VARCHAR(255) NOT NULL,
         email VARCHAR(254),
@@ -104,7 +104,7 @@ def create_base_tables_if_not_exist(apps, schema_editor):
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         load_id UUID,
         equipment_id UUID,
-        created_by_id UUID,
+        created_by_id BIGINT,
         expense_type VARCHAR(100) NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         date DATE NOT NULL,
