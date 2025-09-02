@@ -172,14 +172,21 @@ def create_base_tables_if_not_exist(apps, schema_editor):
         cursor.execute("""
             DO $$ 
             BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.table_constraints 
-                    WHERE constraint_name = 'transport_load_trip_id_fkey'
-                    AND table_name = 'transport_load'
+                -- First check if transport_trip table exists
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_name = 'transport_trip'
                 ) THEN
-                    ALTER TABLE transport_load 
-                    ADD CONSTRAINT transport_load_trip_id_fkey 
-                    FOREIGN KEY (trip_id) REFERENCES transport_trip(id) ON DELETE SET NULL;
+                    -- Only add constraint if table exists and constraint doesn't exist
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.table_constraints 
+                        WHERE constraint_name = 'transport_load_trip_id_fkey'
+                        AND table_name = 'transport_load'
+                    ) THEN
+                        ALTER TABLE transport_load 
+                        ADD CONSTRAINT transport_load_trip_id_fkey 
+                        FOREIGN KEY (trip_id) REFERENCES transport_trip(id) ON DELETE SET NULL;
+                    END IF;
                 END IF;
             END $$;
         """)
