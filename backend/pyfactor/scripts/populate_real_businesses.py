@@ -36,8 +36,12 @@ REAL_BUSINESSES = [
         'city': 'Nairobi',
         'country': 'KE',
         'business_type': 'Food & Dining',
-        'description': 'Popular coffee house and restaurant chain in Kenya',
-        'email': 'guest.relations@javahouseafrica.com'
+        'description': 'Popular coffee house and restaurant chain in Kenya, serving coffee, breakfast, lunch and dinner',
+        'email': 'guest.relations@javahouseafrica.com',
+        'website': 'https://javahouseafrica.com',
+        'image_url': 'https://javahouseafrica.com/wp-content/uploads/2021/java-house-restaurant.jpg',
+        'opening_hours': {'mon-fri': '7:00 AM - 10:00 PM', 'sat-sun': '7:00 AM - 11:00 PM'},
+        'rating': 4.5
     },
     {
         'name': 'Java House - Yaya Centre',
@@ -58,8 +62,12 @@ REAL_BUSINESSES = [
         'city': 'Nairobi',
         'country': 'KE',
         'business_type': 'Food & Dining',
-        'description': 'Kentucky Fried Chicken fast food restaurant',
-        'email': None
+        'description': 'Kentucky Fried Chicken - World famous fried chicken, burgers and wraps',
+        'email': 'customercare@kfckenya.com',
+        'website': 'https://www.kfc.ke',
+        'image_url': 'https://www.kfc.ke/images/kfc-restaurant.jpg',
+        'opening_hours': {'daily': '10:00 AM - 10:00 PM'},
+        'rating': 4.2
     },
     {
         'name': 'KFC Junction Mall',
@@ -630,8 +638,19 @@ def main():
             city=b['city'],
             country=b['country'],
             category=b['business_type'],  # Model uses 'category' not 'business_type'
+            # New optional fields
+            email=b.get('email'),
+            description=b.get('description'),
+            website=b.get('website'),
+            image_url=b.get('image_url'),
+            logo_url=b.get('logo_url'),
+            opening_hours=b.get('opening_hours'),
+            rating=b.get('rating'),
+            social_media=b.get('social_media'),
+            # Source tracking
             source='internet_scrape',  # Required field
             source_id='',  # Can be empty
+            # Contact tracking
             opted_out=False,
             converted_to_real_business=False,
             contact_count=0  # Model uses 'contact_count' not 'contact_attempts'

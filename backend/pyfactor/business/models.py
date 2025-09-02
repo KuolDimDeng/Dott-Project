@@ -17,6 +17,16 @@ class PlaceholderBusiness(models.Model):
     address = models.TextField(blank=True)
     category = models.CharField(max_length=100, blank=True)
     
+    # Optional enhanced info (added for richer data when available)
+    email = models.EmailField(max_length=254, blank=True, null=True, help_text='Business email address if available')
+    description = models.TextField(blank=True, null=True, help_text='Business description or tagline')
+    image_url = models.URLField(max_length=500, blank=True, null=True, help_text='Main business image URL')
+    logo_url = models.URLField(max_length=500, blank=True, null=True, help_text='Business logo URL if available')
+    website = models.URLField(max_length=255, blank=True, null=True, help_text='Business website URL')
+    opening_hours = models.JSONField(blank=True, null=True, help_text='Business opening hours as JSON')
+    rating = models.DecimalField(max_digits=3, decimal_places=2, blank=True, null=True, help_text='Average rating (1.00 to 5.00)')
+    social_media = models.JSONField(blank=True, null=True, help_text='Social media links (facebook, instagram, twitter, etc.)')
+    
     # Location data
     country = models.CharField(max_length=2)  # KE, SS, etc.
     city = models.CharField(max_length=100, blank=True)
