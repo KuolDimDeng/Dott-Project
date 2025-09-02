@@ -944,6 +944,7 @@ TENANT_EXEMPT_PATHS = [
     '/api/notifications/admin/',  # Admin portal endpoints
     '/api/leads/',  # Leads management (admin access)
     '/api/business/marketplace-businesses',  # Public marketplace businesses
+    '/api/auth/phone/',  # Phone authentication endpoints
 ]
 
 # Paths that require authentication but not tenant context (used during onboarding)
@@ -1058,6 +1059,7 @@ SHARED_APPS = (
     'audit.apps.AuditConfig',  # Audit trail system
     'smart_insights',  # Smart Insights with Claude API integration
     'business.apps.BusinessConfig',  # Business SMS and placeholder management
+    'authentication',  # Phone authentication system
 )
 
 TENANT_APPS = (

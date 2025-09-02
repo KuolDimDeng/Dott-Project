@@ -71,6 +71,9 @@ urlpatterns = [
     # API routes - ALWAYS include these (don't wrap in try-catch)
     path('api/', include('custom_auth.api.urls')),
     
+    # Phone Authentication API routes
+    path('api/auth/phone/', include('authentication.phone_auth_urls')),
+    
     # Session management API routes
     path('api/sessions/', include('session_manager.urls')),
     
