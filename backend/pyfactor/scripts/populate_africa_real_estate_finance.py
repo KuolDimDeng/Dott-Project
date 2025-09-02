@@ -555,7 +555,7 @@ def populate_real_estate_insurance():
             website=business_data.get('website', ''),
             description=business_data.get('description', f"Leading {business_data['category'].lower()} company"),
             source='local_directory',
-            rating=Decimal(str(random.uniform(3.5, 5.0)))[:3],
+            rating=Decimal(str(round(random.uniform(3.5, 5.0), 2))),
             opening_hours={
                 'monday': '08:00-18:00',
                 'tuesday': '08:00-18:00',
