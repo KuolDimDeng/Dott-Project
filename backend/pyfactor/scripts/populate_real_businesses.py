@@ -626,15 +626,15 @@ def main():
         business_objects.append(PlaceholderBusiness(
             name=b['name'],
             phone=b['phone'],
-            email=b.get('email'),
             address=b['address'],
             city=b['city'],
             country=b['country'],
-            business_type=b['business_type'],
-            description=b['description'],
+            category=b['business_type'],  # Model uses 'category' not 'business_type'
+            source='internet_scrape',  # Required field
+            source_id='',  # Can be empty
             opted_out=False,
             converted_to_real_business=False,
-            contact_attempts=0
+            contact_count=0  # Model uses 'contact_count' not 'contact_attempts'
         ))
     
     # Insert into database
