@@ -207,7 +207,7 @@ class TrustedDevice(models.Model):
     Manage trusted devices for skip OTP on known devices
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trusted_devices')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auth_trusted_devices')
     device_id = models.CharField(max_length=255)
     device_name = models.CharField(max_length=255)
     device_type = models.CharField(max_length=20)
