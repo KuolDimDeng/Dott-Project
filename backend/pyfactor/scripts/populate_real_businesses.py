@@ -11,10 +11,16 @@ import random
 from datetime import datetime
 
 # Add the project directory to the Python path
-sys.path.insert(0, '/Users/kuoldeng/projectx/backend/pyfactor')
+import os
+if os.path.exists('/app'):
+    # Running on Render
+    sys.path.insert(0, '/app')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
+else:
+    # Running locally
+    sys.path.insert(0, '/Users/kuoldeng/projectx/backend/pyfactor')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 
-# Set up Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
 from django.db import transaction
