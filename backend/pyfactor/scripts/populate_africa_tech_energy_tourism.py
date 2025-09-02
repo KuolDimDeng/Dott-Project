@@ -141,9 +141,16 @@ def print_statistics():
     print(f"  Coverage percentage: {(unique_countries/54*100):.1f}%")
     
     # Find countries with no businesses
-    all_african_countries = set(get_country_name('').keys())
+    all_country_codes = {
+        'DZ', 'AO', 'BJ', 'BW', 'CM', 'CV', 'CF', 'TD', 'KM', 'CG', 'CD',
+        'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW',
+        'CI', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'YT',
+        'MA', 'MZ', 'NA', 'NE', 'NG', 'RE', 'RW', 'SH', 'ST', 'SN', 'SC',
+        'SL', 'SO', 'ZA', 'SS', 'SD', 'TZ', 'TG', 'TN', 'UG', 'EH', 'ZM',
+        'ZW', 'BI', 'BF'
+    }
     countries_with_businesses = set(PlaceholderBusiness.objects.values_list('country', flat=True).distinct())
-    missing_countries = all_african_countries - countries_with_businesses
+    missing_countries = all_country_codes - countries_with_businesses
     
     if missing_countries:
         print(f"\n  Countries without businesses ({len(missing_countries)}):")
