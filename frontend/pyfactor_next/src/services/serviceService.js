@@ -393,8 +393,7 @@ export const storeServicesOffline = (services) => {
 export const getOfflineServices = () => {
   try {
     // Get from app cache
-    if (typeof window !== 'undefined' && 
-        appCache.getAll()
+    if (typeof window !== 'undefined' && appCache.getAll()) {
       const offlineData = appCache.get('offline.services');
       
       // Check if data is stale (older than 24 hours)

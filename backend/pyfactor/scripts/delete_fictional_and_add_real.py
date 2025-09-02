@@ -95,7 +95,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'telecommunications',
             'description': 'Leading telecommunications company in Kenya providing mobile, fixed, and internet services',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -108,7 +107,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'banking',
             'description': 'Largest commercial bank in Kenya by assets',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -121,7 +119,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'banking',
             'description': 'One of the largest banks in Kenya with extensive branch network',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -134,7 +131,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'restaurant',
             'description': 'Popular coffee house and restaurant chain in East Africa',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -147,7 +143,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'retail',
             'description': 'Leading supermarket chain in Kenya with over 80 stores',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -160,7 +155,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'hospitality',
             'description': 'Premier hotel chain with properties across Kenya',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -173,7 +167,6 @@ def add_real_businesses():
             'country': 'KE',
             'category': 'healthcare',
             'description': 'Leading private hospital providing tertiary and secondary healthcare',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -190,7 +183,6 @@ def add_real_businesses():
             'country': 'NG',
             'category': 'telecommunications',
             'description': 'Largest mobile network operator in Nigeria',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -203,7 +195,6 @@ def add_real_businesses():
             'country': 'NG',
             'category': 'banking',
             'description': 'Leading Nigerian multinational financial institution',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -216,7 +207,6 @@ def add_real_businesses():
             'country': 'NG',
             'category': 'manufacturing',
             'description': 'Largest industrial conglomerate in West Africa',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -229,7 +219,6 @@ def add_real_businesses():
             'country': 'NG',
             'category': 'retail',
             'description': 'Major retail chain with stores across Nigeria',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -246,7 +235,6 @@ def add_real_businesses():
             'country': 'ZA',
             'category': 'banking',
             'description': 'Largest bank in Africa by assets',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -259,7 +247,6 @@ def add_real_businesses():
             'country': 'ZA',
             'category': 'retail',
             'description': 'Major supermarket chain operating across Africa',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -272,7 +259,6 @@ def add_real_businesses():
             'country': 'ZA',
             'category': 'telecommunications',
             'description': 'Leading mobile communications company in South Africa',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -289,7 +275,6 @@ def add_real_businesses():
             'country': 'EG',
             'category': 'banking',
             'description': 'Leading private sector bank in Egypt',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -302,7 +287,6 @@ def add_real_businesses():
             'country': 'EG',
             'category': 'telecommunications',
             'description': 'Major telecommunications operator in Egypt',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -319,7 +303,6 @@ def add_real_businesses():
             'country': 'MA',
             'category': 'banking',
             'description': 'Leading banking group in Morocco and Africa',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -332,7 +315,6 @@ def add_real_businesses():
             'country': 'MA',
             'category': 'telecommunications',
             'description': 'Major telecommunications operator in Morocco',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -349,7 +331,6 @@ def add_real_businesses():
             'country': 'GH',
             'category': 'banking',
             'description': "Ghana's leading indigenous bank offering comprehensive banking services",
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -362,7 +343,6 @@ def add_real_businesses():
             'country': 'GH',
             'category': 'banking',
             'description': 'International bank providing personal and corporate banking services',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -375,7 +355,6 @@ def add_real_businesses():
             'country': 'GH',
             'category': 'banking',
             'description': 'Leading African bank offering retail and corporate banking solutions',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -388,7 +367,6 @@ def add_real_businesses():
             'country': 'GH',
             'category': 'education',
             'description': "Ghana's premier university and oldest higher education institution",
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -405,7 +383,6 @@ def add_real_businesses():
             'country': 'ET',
             'category': 'telecommunications',
             'description': "Ethiopia's largest telecommunications service provider",
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -418,7 +395,6 @@ def add_real_businesses():
             'country': 'ET',
             'category': 'education',
             'description': "Ethiopia's oldest and most prestigious university",
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -435,7 +411,6 @@ def add_real_businesses():
             'country': 'UG',
             'category': 'telecommunications',
             'description': "Uganda's leading mobile telecommunications operator",
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -452,7 +427,6 @@ def add_real_businesses():
             'country': 'TZ',
             'category': 'telecommunications',
             'description': "Tanzania's leading mobile network operator",
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -465,7 +439,6 @@ def add_real_businesses():
             'country': 'TZ',
             'category': 'education',
             'description': 'Leading distance learning university in Tanzania',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -482,7 +455,6 @@ def add_real_businesses():
             'country': 'RW',
             'category': 'retail',
             'description': 'Leading supermarket chain in Rwanda offering quality products',
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -495,7 +467,6 @@ def add_real_businesses():
             'country': 'RW',
             'category': 'education',
             'description': "Rwanda's largest public university",
-            'is_verified': True,
             'source': 'official_website'
         },
         {
@@ -508,7 +479,6 @@ def add_real_businesses():
             'country': 'RW',
             'category': 'education',
             'description': 'Pan-African university developing ethical leaders',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -525,7 +495,6 @@ def add_real_businesses():
             'country': 'CI',
             'category': 'retail',
             'description': 'Major French retail chain with supermarkets and hypermarkets',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -542,7 +511,6 @@ def add_real_businesses():
             'country': 'SN',
             'category': 'retail',
             'description': 'International retail chain offering hypermarket services',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -559,7 +527,6 @@ def add_real_businesses():
             'country': 'ZW',
             'category': 'hospitality',
             'description': "Luxury garden hotel in Zimbabwe's capital",
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -576,7 +543,6 @@ def add_real_businesses():
             'country': 'NA',
             'category': 'hospitality',
             'description': "Premier hotel and casino in Namibia's capital",
-            'is_verified': True,
             'source': 'official_website'
         }
     ]
@@ -593,7 +559,6 @@ def add_real_businesses():
             'country': 'BW',
             'category': 'hospitality',
             'description': 'Luxury hotel on the banks of Thamalakane River',
-            'is_verified': True,
             'source': 'official_website'
         }
     ]

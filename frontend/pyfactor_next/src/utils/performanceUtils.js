@@ -52,7 +52,7 @@ export function deepMemoCompare(prevProps, nextProps) {
  * HOC to add performance monitoring to components
  */
 export function withPerformanceMonitoring(Component, componentName) {
-  return memo((props) => {
+  const MemoizedComponent = memo((props) => {
     const renderCount = useRef(0);
     const renderTimeRef = useRef(Date.now());
     
@@ -73,6 +73,11 @@ export function withPerformanceMonitoring(Component, componentName) {
     
     return <Component {...props} />;
   }, deepMemoCompare);
+  
+  // Add display name for better debugging
+  MemoizedComponent.displayName = `withPerformanceMonitoring(${componentName || Component.displayName || Component.name || 'Component'})`;
+  
+  return MemoizedComponent;
 }
 
 /**

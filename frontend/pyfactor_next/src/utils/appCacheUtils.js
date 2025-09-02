@@ -100,13 +100,21 @@ export { getCacheValue, setCacheValue, removeCacheValue, clearCache };
  */
 
 // Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined' && !appCache.getAll()) {
-  appCache.getAll() = { 
+if (typeof window !== 'undefined') {
+  // Initialize cache structure
+  const initialCache = { 
     auth: {}, 
     user: {}, 
     tenant: {},
     tenants: {}  // Tenant-specific namespaces
   };
+  // Set initial cache if empty
+  if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+    appCache.clear();
+    Object.keys(initialCache).forEach(key => {
+      appCache.set(key, initialCache[key]);
+    });
+  }
 }
 
 /**

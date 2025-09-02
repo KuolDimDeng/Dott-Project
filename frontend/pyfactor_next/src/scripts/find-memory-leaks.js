@@ -319,7 +319,7 @@ ${findings
 ${Object.entries(byFile).map(([file, fileFindings]) => `
 ### ${file}
 ${fileFindings.map(f => `- Line ${f.line}: ${f.description} (${f.risk} risk)
-  '`' + f.code.replace(/\n/g, ' ') + '`').join('\n')}
+  \`${f.code.replace(/\n/g, ' ')}\``).join('\n')}
 `).join('\n')}
 
 ## Recommendations

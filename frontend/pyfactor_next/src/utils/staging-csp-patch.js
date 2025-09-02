@@ -1,5 +1,5 @@
 // Staging-specific CSP adjustments
-export function getStaging CSPAdjustments(csp) {
+export function getStagingCSPAdjustments(csp) {
   // Remove integrity checks for Cloudflare Analytics in staging
   if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging') {
     // Allow Cloudflare Analytics without hash validation
