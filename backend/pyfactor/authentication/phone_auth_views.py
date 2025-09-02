@@ -21,7 +21,6 @@ from datetime import datetime, timedelta
 
 from .phone_models import PhoneOTP, PhoneAuthSession, LinkedAccount, TrustedDevice
 from users.models import UserProfile
-from tenants.models import Tenant
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -192,20 +191,18 @@ def verify_otp(request):
                 
                 # Set user type
                 if user_type == 'business' and business_name:
-                    # Create tenant for business
-                    tenant = Tenant.objects.create(
-                        name=business_name,
-                        schema_name=f"tenant_{user.id}",
-                        owner=user
-                    )
-                    profile.business_id = tenant.id
+                    profile.business_name = business_name
                     profile.save()
                     
-                    user.user_type = 'business'
-                    user.onboarding_completed = False
+                    if hasattr(user, 'user_type'):
+                        user.user_type = 'business'
+                    if hasattr(user, 'onboarding_completed'):
+                        user.onboarding_completed = False
                 else:
-                    user.user_type = 'consumer'
-                    user.onboarding_completed = True
+                    if hasattr(user, 'user_type'):
+                        user.user_type = 'consumer'
+                    if hasattr(user, 'onboarding_completed'):
+                        user.onboarding_completed = True
                 
                 user.save()
                 is_new_user = True
@@ -254,8 +251,8 @@ def verify_otp(request):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'user_type': getattr(user, 'user_type', 'consumer'),
-                    'has_business': bool(getattr(profile, 'business_id', None)),
-                    'business_name': business_name if user_type == 'business' else None,
+                    'has_business': bool(getattr(profile, 'business_name', None)),
+                    'business_name': getattr(profile, 'business_name', business_name if user_type == 'business' else None),
                     'onboarding_completed': getattr(user, 'onboarding_completed', True)
                 },
                 'session_id': str(session.id)
