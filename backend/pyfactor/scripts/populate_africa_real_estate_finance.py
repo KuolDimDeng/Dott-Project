@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
-from marketplace.models import PlaceholderBusiness
+from marketplace.models import BusinessListing
 
 def get_country_code(country):
     """Get country calling code from country ISO code"""
@@ -522,7 +522,7 @@ def populate_real_estate_insurance():
     all_businesses = real_estate_majors + insurance_companies + logistics_companies + manufacturing_companies
     
     # Get existing phone numbers to avoid duplicates
-    existing_phones = set(PlaceholderBusiness.objects.values_list('phone', flat=True))
+    existing_phones = set(BusinessListing.objects.values_list('phone', flat=True))
     
     for business_data in all_businesses:
         # Generate unique phone number
@@ -544,7 +544,7 @@ def populate_real_estate_insurance():
                 break
         
         # Create business object
-        business = PlaceholderBusiness(
+        business = BusinessListing(
             name=business_data['name'],
             phone=phone,
             country=business_data['country'],
@@ -578,7 +578,7 @@ def populate_real_estate_insurance():
     
     # Bulk create all businesses
     if businesses:
-        PlaceholderBusiness.objects.bulk_create(businesses, ignore_conflicts=True)
+        BusinessListing.objects.bulk_create(businesses, ignore_conflicts=True)
         print(f"Successfully added {len(businesses)} real estate, insurance, logistics and manufacturing businesses")
     
     return len(businesses)
