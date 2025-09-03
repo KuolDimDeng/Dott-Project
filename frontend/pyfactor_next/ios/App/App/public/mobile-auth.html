@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Dott - Sign In</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --navy-900: #0f172a;
+            --navy-800: #1e293b;
+            --navy-700: #334155;
+            --navy-600: #475569;
+            --navy-500: #64748b;
+            --navy-400: #94a3b8;
+            --navy-300: #cbd5e1;
+            --navy-200: #e2e8f0;
+            --navy-100: #f1f5f9;
+            --navy-50: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            display: block;
+            object-fit: contain;
+        }
+
+        h1 {
+            color: var(--navy-900);
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--navy-500);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: var(--navy-700);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--navy-200);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.2s;
+            background: white;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--navy-500);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-container input {
+            margin-right: 8px;
+        }
+
+        .checkbox-container label {
+            margin-bottom: 0;
+            font-size: 14px;
+            color: var(--navy-600);
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .divider {
+            margin: 24px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--navy-200);
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 12px;
+            position: relative;
+            color: var(--navy-500);
+            font-size: 14px;
+        }
+
+        .social-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .social-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--navy-200);
+            border-radius: 10px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            background: var(--navy-50);
+            border-color: var(--navy-300);
+        }
+
+        .social-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .apple-btn {
+            background: black;
+            color: white;
+            border-color: black;
+        }
+
+        .apple-btn:hover {
+            background: #222;
+        }
+
+        .switch-mode {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: var(--navy-600);
+        }
+
+        .switch-mode a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #16a34a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hidden elements for different screens */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Dashboard Screen */
+        .dashboard-screen {
+            min-height: 100vh;
+            background: var(--navy-50);
+        }
+
+        .dashboard-header {
+            background: var(--navy-900);
+            color: white;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+        }
+
+        .dashboard-content {
+            padding: 20px;
+        }
+
+        .welcome-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Onboarding Screen */
+        .onboarding-screen {
+            min-height: 100vh;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+
+        .onboarding-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            color: var(--navy-900);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sign In Screen -->
+    <div id="signInScreen" class="screen active">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="logo-container">
+                    <img src="/logo.png" alt="Dott" class="logo">
+                    <h1 id="authTitle">Welcome Back</h1>
+                    <p class="subtitle" id="authSubtitle">Sign in to your Dott account</p>
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+
+                <form id="authForm" onsubmit="handleAuth(event)">
+                    <!-- Name fields (hidden by default, shown for signup) -->
+                    <div id="nameFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" placeholder="John">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" placeholder="Doe">
+                        </div>
+                    </div>
+
+                    <!-- Phone Input Section -->
+                    <div id="phoneSection" class="form-group">
+                        <label for="phoneInput">Phone Number</label>
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <select id="countryCode" style="width: 110px; min-width: 110px; padding: 12px 8px; border: 1px solid var(--navy-200); border-radius: 10px; font-size: 14px; background: white;">
+                                <!-- African Countries (Priority) -->
+                                <option value="+254">🇰🇪 Kenya +254</option>
+                                <option value="+234">🇳🇬 Nigeria +234</option>
+                                <option value="+27">🇿🇦 South Africa +27</option>
+                                <option value="+256">🇺🇬 Uganda +256</option>
+                                <option value="+255">🇹🇿 Tanzania +255</option>
+                                <option value="+250">🇷🇼 Rwanda +250</option>
+                                <option value="+233">🇬🇭 Ghana +233</option>
+                                <option value="+251">🇪🇹 Ethiopia +251</option>
+                                <option value="+237">🇨🇲 Cameroon +237</option>
+                                <option value="+225">🇨🇮 Ivory Coast +225</option>
+                                <option value="+221">🇸🇳 Senegal +221</option>
+                                <option value="+226">🇧🇫 Burkina Faso +226</option>
+                                <option value="+223">🇲🇱 Mali +223</option>
+                                <option value="+227">🇳🇪 Niger +227</option>
+                                <option value="+235">🇹🇩 Chad +235</option>
+                                <option value="+236">🇨🇫 Central African Republic +236</option>
+                                <option value="+240">🇬🇶 Equatorial Guinea +240</option>
+                                <option value="+241">🇬🇦 Gabon +241</option>
+                                <option value="+242">🇨🇬 Congo +242</option>
+                                <option value="+243">🇨🇩 Democratic Republic of Congo +243</option>
+                                <option value="+244">🇦🇴 Angola +244</option>
+                                <option value="+245">🇬🇼 Guinea-Bissau +245</option>
+                                <option value="+248">🇸🇨 Seychelles +248</option>
+                                <option value="+249">🇸🇩 Sudan +249</option>
+                                <option value="+252">🇸🇴 Somalia +252</option>
+                                <option value="+253">🇩🇯 Djibouti +253</option>
+                                <option value="+257">🇧🇮 Burundi +257</option>
+                                <option value="+258">🇲🇿 Mozambique +258</option>
+                                <option value="+260">🇿🇲 Zambia +260</option>
+                                <option value="+261">🇲🇬 Madagascar +261</option>
+                                <option value="+262">🇾🇹 Mayotte +262</option>
+                                <option value="+263">🇿🇼 Zimbabwe +263</option>
+                                <option value="+264">🇳🇦 Namibia +264</option>
+                                <option value="+265">🇲🇼 Malawi +265</option>
+                                <option value="+266">🇱🇸 Lesotho +266</option>
+                                <option value="+267">🇧🇼 Botswana +267</option>
+                                <option value="+268">🇸🇿 Eswatini +268</option>
+                                <option value="+290">🇸🇭 Saint Helena +290</option>
+                                <option value="+291">🇪🇷 Eritrea +291</option>
+                                <!-- Popular International -->
+                                <option value="+1">🇺🇸 United States +1</option>
+                                <option value="+1">🇨🇦 Canada +1</option>
+                                <option value="+44">🇬🇧 United Kingdom +44</option>
+                                <option value="+33">🇫🇷 France +33</option>
+                                <option value="+49">🇩🇪 Germany +49</option>
+                                <option value="+39">🇮🇹 Italy +39</option>
+                                <option value="+34">🇪🇸 Spain +34</option>
+                                <option value="+31">🇳🇱 Netherlands +31</option>
+                                <option value="+32">🇧🇪 Belgium +32</option>
+                                <option value="+41">🇨🇭 Switzerland +41</option>
+                                <option value="+43">🇦🇹 Austria +43</option>
+                                <option value="+45">🇩🇰 Denmark +45</option>
+                                <option value="+46">🇸🇪 Sweden +46</option>
+                                <option value="+47">🇳🇴 Norway +47</option>
+                                <option value="+358">🇫🇮 Finland +358</option>
+                                <option value="+353">🇮🇪 Ireland +353</option>
+                                <option value="+351">🇵🇹 Portugal +351</option>
+                                <option value="+30">🇬🇷 Greece +30</option>
+                                <option value="+48">🇵🇱 Poland +48</option>
+                                <option value="+420">🇨🇿 Czech Republic +420</option>
+                                <option value="+421">🇸🇰 Slovakia +421</option>
+                                <option value="+36">🇭🇺 Hungary +36</option>
+                                <option value="+40">🇷🇴 Romania +40</option>
+                                <option value="+359">🇧🇬 Bulgaria +359</option>
+                                <option value="+385">🇭🇷 Croatia +385</option>
+                                <option value="+386">🇸🇮 Slovenia +386</option>
+                                <option value="+387">🇧🇦 Bosnia and Herzegovina +387</option>
+                                <option value="+381">🇷🇸 Serbia +381</option>
+                                <option value="+382">🇲🇪 Montenegro +382</option>
+                                <option value="+383">🇽🇰 Kosovo +383</option>
+                                <option value="+389">🇲🇰 North Macedonia +389</option>
+                                <option value="+355">🇦🇱 Albania +355</option>
+                                <option value="+7">🇷🇺 Russia +7</option>
+                                <option value="+7">🇰🇿 Kazakhstan +7</option>
+                                <option value="+380">🇺🇦 Ukraine +380</option>
+                                <option value="+375">🇧🇾 Belarus +375</option>
+                                <option value="+370">🇱🇹 Lithuania +370</option>
+                                <option value="+371">🇱🇻 Latvia +371</option>
+                                <option value="+372">🇪🇪 Estonia +372</option>
+                                <!-- Asia -->
+                                <option value="+91">🇮🇳 India +91</option>
+                                <option value="+86">🇨🇳 China +86</option>
+                                <option value="+81">🇯🇵 Japan +81</option>
+                                <option value="+82">🇰🇷 South Korea +82</option>
+                                <option value="+65">🇸🇬 Singapore +65</option>
+                                <option value="+60">🇲🇾 Malaysia +60</option>
+                                <option value="+66">🇹🇭 Thailand +66</option>
+                                <option value="+62">🇮🇩 Indonesia +62</option>
+                                <option value="+63">🇵🇭 Philippines +63</option>
+                                <option value="+84">🇻🇳 Vietnam +84</option>
+                                <option value="+92">🇵🇰 Pakistan +92</option>
+                                <option value="+880">🇧🇩 Bangladesh +880</option>
+                                <option value="+94">🇱🇰 Sri Lanka +94</option>
+                                <option value="+95">🇲🇲 Myanmar +95</option>
+                                <option value="+855">🇰🇭 Cambodia +855</option>
+                                <option value="+856">🇱🇦 Laos +856</option>
+                                <option value="+673">🇧🇳 Brunei +673</option>
+                                <option value="+976">🇲🇳 Mongolia +976</option>
+                                <!-- Middle East -->
+                                <option value="+971">🇦🇪 UAE +971</option>
+                                <option value="+966">🇸🇦 Saudi Arabia +966</option>
+                                <option value="+974">🇶🇦 Qatar +974</option>
+                                <option value="+965">🇰🇼 Kuwait +965</option>
+                                <option value="+973">🇧🇭 Bahrain +973</option>
+                                <option value="+968">🇴🇲 Oman +968</option>
+                                <option value="+962">🇯🇴 Jordan +962</option>
+                                <option value="+961">🇱🇧 Lebanon +961</option>
+                                <option value="+963">🇸🇾 Syria +963</option>
+                                <option value="+964">🇮🇶 Iraq +964</option>
+                                <option value="+98">🇮🇷 Iran +98</option>
+                                <option value="+90">🇹🇷 Turkey +90</option>
+                                <option value="+972">🇮🇱 Israel +972</option>
+                                <option value="+970">🇵🇸 Palestine +970</option>
+                                <option value="+993">🇹🇲 Turkmenistan +993</option>
+                                <option value="+992">🇹🇯 Tajikistan +992</option>
+                                <option value="+996">🇰🇬 Kyrgyzstan +996</option>
+                                <option value="+998">🇺🇿 Uzbekistan +998</option>
+                                <option value="+93">🇦🇫 Afghanistan +93</option>
+                                <!-- Oceania -->
+                                <option value="+61">🇦🇺 Australia +61</option>
+                                <option value="+64">🇳🇿 New Zealand +64</option>
+                                <option value="+679">🇫🇯 Fiji +679</option>
+                                <option value="+675">🇵🇬 Papua New Guinea +675</option>
+                                <!-- Americas -->
+                                <option value="+52">🇲🇽 Mexico +52</option>
+                                <option value="+55">🇧🇷 Brazil +55</option>
+                                <option value="+54">🇦🇷 Argentina +54</option>
+                                <option value="+56">🇨🇱 Chile +56</option>
+                                <option value="+57">🇨🇴 Colombia +57</option>
+                                <option value="+58">🇻🇪 Venezuela +58</option>
+                                <option value="+51">🇵🇪 Peru +51</option>
+                                <option value="+593">🇪🇨 Ecuador +593</option>
+                                <option value="+591">🇧🇴 Bolivia +591</option>
+                                <option value="+595">🇵🇾 Paraguay +595</option>
+                                <option value="+598">🇺🇾 Uruguay +598</option>
+                                <option value="+597">🇸🇷 Suriname +597</option>
+                                <option value="+594">🇬🇫 French Guiana +594</option>
+                                <option value="+592">🇬🇾 Guyana +592</option>
+                            </select>
+                            <input type="tel" id="phoneInput" placeholder="712345678" required autocomplete="tel-national" inputmode="numeric" style="flex: 1; min-width: 0; padding: 12px 16px; border: 1px solid var(--navy-200); border-radius: 10px; font-size: 16px;">
+                        </div>
+                        <small id="phoneHint" style="color: #25D366; margin-top: 4px; display: block;">We'll send a code to your phone 📱</small>
+                    </div>
+
+                    <!-- Email Input Section (Hidden by default) -->
+                    <div id="emailSection" class="form-group" style="display: none;">
+                        <label for="emailInput">Email Address</label>
+                        <input type="email" id="emailInput" placeholder="your@email.com" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" style="width: 100%; padding: 12px 16px; border: 1px solid var(--navy-200); border-radius: 10px; font-size: 16px;">
+                        <small style="color: #6b7280; margin-top: 4px; display: block;">Enter your email address</small>
+                    </div>
+
+                    <!-- Password Section (Only for Email) -->
+                    <div id="passwordSection" class="form-group" style="display: none;">
+                        <label for="password">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" style="width: 100%; padding: 12px 16px; border: 1px solid var(--navy-200); border-radius: 10px; font-size: 16px;">
+                            <button type="button" class="toggle-password" onclick="togglePassword('password')">
+                                <svg id="passwordToggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Email Options (Only for Email) -->
+                    <div id="emailOptions" class="form-footer" style="display: none;">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="rememberMe">
+                            <label for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" class="forgot-link" onclick="handleForgotPassword(event)">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <span id="submitText">Send Code</span>
+                        <span id="loadingSpinner" class="loading-spinner" style="display: none;"></span>
+                    </button>
+                </form>
+
+                <!-- Alternative Sign-in Methods (Show based on current method) -->
+                <div id="socialSection">
+                    <div class="divider">
+                        <span id="socialDividerText">or sign in with</span>
+                    </div>
+
+                    <div class="social-buttons" style="gap: 16px;">
+                        <button class="social-btn" onclick="toggleEmailPhone()" style="color: #374151; font-weight: 500; margin-bottom: 12px;">
+                            <span id="emailPhoneToggleText">✉️ Sign in with Email</span>
+                        </button>
+                        <button class="social-btn" onclick="handleGoogleAuth()" style="margin-bottom: 12px;">
+                            <svg class="social-icon" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Sign in with Google
+                        </button>
+                        <button class="social-btn apple-btn" onclick="handleAppleAuth()">
+                            <svg class="social-icon" fill="white" viewBox="0 0 24 24">
+                                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                            </svg>
+                            Sign in with Apple
+                        </button>
+                    </div>
+                </div>
+
+                <div class="switch-mode">
+                    <span id="switchText">Don't have an account?</span>
+                    <a href="#" onclick="toggleMode(event)" id="switchLink">Sign up</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 16px;"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        const AppState = {
+            isSignup: false,
+            isLoading: false,
+            currentAuthMethod: 'phone', // 'phone' or 'email'
+            apiUrl: 'https://staging.dottapps.com',  // Use staging proxy
+            // Use staging for mobile app authentication
+            webAppUrl: 'https://staging.dottapps.com',
+            user: null,
+            sessionToken: null
+        };
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[Dott Auth] ===== MOBILE AUTH INIT =====');
+            console.log('[Dott Auth] Current URL:', window.location.href);
+            console.log('[Dott Auth] Origin:', window.location.origin);
+            console.log('[Dott Auth] WebApp URL:', AppState.webAppUrl);
+            console.log('[Dott Auth] API URL:', AppState.apiUrl);
+            
+            // Initialize keyboard handling for iOS
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Keyboard) {
+                const { Keyboard } = window.Capacitor.Plugins;
+                
+                // Set keyboard options
+                Keyboard.setAccessoryBarVisible({ isVisible: true });
+                Keyboard.setScroll({ isDisabled: false });
+                Keyboard.setStyle({ style: 'light' });
+                Keyboard.setResizeMode({ mode: 'body' });
+                
+                console.log('[Dott Auth] Keyboard plugin initialized');
+            }
+            
+            // Fix for iOS keyboard issues - add touch event listeners
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('touchstart', function(e) {
+                    e.target.focus();
+                });
+                
+                input.addEventListener('focus', function(e) {
+                    // Ensure keyboard shows
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Keyboard) {
+                        window.Capacitor.Plugins.Keyboard.show();
+                    }
+                });
+            });
+            
+            // Add phone input listener for edge case handling
+            const phoneInput = document.getElementById('phoneInput');
+            const phoneHint = document.getElementById('phoneHint');
+            const passwordGroup = document.querySelector('.form-group:has(#password)');
+            
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function() {
+                    const value = this.value.replace(/\D/g, ''); // Remove non-digits
+                    const formattedValue = formatPhoneInputValue(value);
+                    
+                    // Update the input value with formatted version
+                    this.value = formattedValue;
+                    
+                    // Update hint based on validity
+                    if (formattedValue.length >= 9) {
+                        phoneHint.textContent = 'Perfect! We\'ll send a code to your phone 📱';
+                        phoneHint.style.color = '#25D366'; // WhatsApp green
+                    } else {
+                        phoneHint.textContent = 'Enter your phone number (without country code)';
+                        phoneHint.style.color = '#6b7280';
+                    }
+                });
+            }
+            
+            // Initialize auth method (phone by default)
+            AppState.currentAuthMethod = 'phone';
+            console.log('[Dott Auth] Capacitor available:', !!window.Capacitor);
+            console.log('[Dott Auth] Platform:', window.Capacitor?.getPlatform?.() || 'web');
+            
+            // Define handleAuth function before attaching it
+            async function handleAuth(event) {
+                event.preventDefault();
+                console.log('[Auth] Form submitted! Current method:', AppState.currentAuthMethod);
+                
+                if (AppState.isLoading) return;
+                
+                hideMessages();
+                
+                if (AppState.currentAuthMethod === 'phone') {
+                    // Handle phone authentication
+                    const countryCode = document.getElementById('countryCode').value;
+                    const phoneInput = document.getElementById('phoneInput').value;
+                    
+                    if (!phoneInput || phoneInput.length < 7) {
+                        showError('Please enter a valid phone number');
+                        return;
+                    }
+                    
+                    const phoneNumber = formatCompletePhoneNumber(countryCode, phoneInput);
+                    console.log('[Phone Auth] Country:', countryCode, 'Input:', phoneInput, 'Formatted:', phoneNumber);
+                    
+                    await handlePhoneAuth(phoneNumber);
+                } else {
+                    // Handle email authentication
+                    console.log('[Email Auth] Processing email authentication...');
+                    const email = document.getElementById('emailInput').value;
+                    const password = document.getElementById('password').value;
+                    
+                    console.log('[Email Auth] Email:', email ? 'provided' : 'missing');
+                    console.log('[Email Auth] Password:', password ? 'provided' : 'missing');
+                    
+                    if (!email || !email.includes('@')) {
+                        showError('Please enter a valid email address');
+                        return;
+                    }
+                    
+                    if (!password) {
+                        showError('Please enter your password');
+                        return;
+                    }
+                    
+                    if (AppState.isSignup) {
+                        const firstName = document.getElementById('firstName').value;
+                        const lastName = document.getElementById('lastName').value;
+                        
+                        if (!firstName || !lastName) {
+                            showError('Please enter your first and last name');
+                            return;
+                        }
+                        
+                        await handleSignup(email, password, firstName, lastName);
+                    } else {
+                        console.log('[Email Auth] Calling handleLogin with email and password');
+                        await handleLogin(email, password);
+                    }
+                }
+            }
+            
+            // Add form submit handler
+            const authForm = document.getElementById('authForm');
+            if (authForm) {
+                authForm.addEventListener('submit', handleAuth);
+                console.log('[Debug] Form submit handler attached');
+            }
+            
+            // Add direct click handler to submit button as fallback
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function(event) {
+                    console.log('[Debug] Submit button clicked! Button type:', this.type);
+                    console.log('[Debug] Default prevented?', event.defaultPrevented);
+                    // If form submit isn't working, trigger it manually
+                    if (event.type === 'click' && !event.defaultPrevented) {
+                        const form = document.getElementById('authForm');
+                        if (form) {
+                            console.log('[Debug] Manually triggering form submit');
+                            form.requestSubmit();
+                        }
+                    }
+                });
+            }
+            
+            // Check if we're returning from OAuth
+            const urlParams = new URLSearchParams(window.location.search);
+            const authenticated = urlParams.get('authenticated');
+            const sessionToken = urlParams.get('session_token');
+            const userId = urlParams.get('user_id');
+            
+            if (authenticated === 'true' && sessionToken) {
+                console.log('[Dott Auth] OAuth callback detected, processing...');
+                await handleOAuthReturn(sessionToken, userId);
+            } else {
+                // Check if already authenticated
+                await checkExistingSession();
+            }
+        });
+        
+        async function handleOAuthReturn(sessionToken, userId) {
+            console.log('[Dott Auth] Processing OAuth return with session token');
+            try {
+                setLoading(true);
+                
+                // Store session token securely
+                if (window.Capacitor) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    if (SecureStoragePlugin) {
+                        await SecureStoragePlugin.set({
+                            key: 'session_token',
+                            value: sessionToken
+                        });
+                        
+                        if (userId) {
+                            await SecureStoragePlugin.set({
+                                key: 'user_id',
+                                value: userId
+                            });
+                        }
+                        
+                        console.log('[Dott Auth] Session stored securely');
+                    }
+                }
+                
+                // Store in AppState
+                AppState.sessionToken = sessionToken;
+                
+                // Verify session with backend
+                const verifyResponse = await fetch(`${AppState.apiUrl}/api/auth/session-verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (verifyResponse.ok) {
+                    const sessionData = await verifyResponse.json();
+                    console.log('[Dott Auth] Session verified:', sessionData);
+                    
+                    // Check user type and redirect appropriately
+                    // First check if existing business user (has business_name or onboarding_completed)
+                    if (sessionData.user?.business_name || sessionData.user?.onboarding_completed || sessionData.user?.company_name) {
+                        // Existing business user - go directly to business menu
+                        console.log('[Dott Auth] Existing business user detected, going to business menu');
+                        window.location.href = 'mobile-business-menu.html';
+                    } else if (!sessionData.user?.user_type) {
+                        // First-time user - go to role selection
+                        window.location.href = 'mobile-role-selection.html';
+                    } else if (sessionData.user.user_type === 'consumer' && !sessionData.user.has_business) {
+                        // Consumer only - go to consumer menu
+                        window.location.href = 'mobile-consumer-menu.html';
+                    } else if (sessionData.user.user_type === 'business' && !sessionData.user.onboarding_completed) {
+                        // Business user needs onboarding
+                        window.location.href = 'mobile-onboarding.html';
+                    } else {
+                        // Default to business menu
+                        window.location.href = 'mobile-business-menu.html';
+                    }
+                } else {
+                    throw new Error('Failed to verify session');
+                }
+                
+            } catch (error) {
+                console.error('[Dott Auth] OAuth return error:', error);
+                showError('Failed to complete sign-in. Please try again.');
+                setLoading(false);
+                
+                // Clear the URL params
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        async function checkExistingSession() {
+            try {
+                // Check for existing session
+                let sessionData = null;
+                
+                // Use localStorage for both Capacitor and web
+                const stored = localStorage.getItem('user_session');
+                if (stored) {
+                    try {
+                        sessionData = JSON.parse(stored);
+                    } catch (e) {
+                        console.error('[Dott Auth] Error parsing stored session:', e);
+                    }
+                }
+                
+                if (sessionData && sessionData.token) {
+                    console.log('Found existing session, validating...');
+                    AppState.sessionToken = sessionData.token;
+                    AppState.user = sessionData.user;
+                    
+                    // Validate session with backend
+                    const isValid = await validateSession();
+                    if (isValid) {
+                        // Check onboarding status and redirect
+                        await checkOnboardingAndRedirect();
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking session:', error);
+            }
+        }
+
+        async function validateSession() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/sessions/validate/${AppState.sessionToken}/`, {
+                    headers: {
+                        'Authorization': `Session ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    AppState.user = data.user;
+                    return true;
+                }
+                
+                // Session invalid, clear it
+                await clearSession();
+                return false;
+            } catch (error) {
+                console.error('Session validation error:', error);
+                return false;
+            }
+        }
+
+        async function checkOnboardingAndRedirect() {
+            try {
+                showLoading(true);
+                
+                console.log('[Dott Auth] Checking onboarding status...');
+                console.log('[Dott Auth] Session token:', AppState.sessionToken ? AppState.sessionToken.substring(0, 20) + '...' : 'MISSING');
+                
+                // First check localStorage for user data
+                const storedSession = localStorage.getItem('user_session');
+                if (storedSession) {
+                    try {
+                        const sessionData = JSON.parse(storedSession);
+                        if (sessionData.user && (sessionData.user.onboarding_completed || sessionData.user.business_name)) {
+                            console.log('[Dott Auth] Existing business user detected from stored session');
+                            window.location.href = 'mobile-business-menu.html';
+                            return;
+                        }
+                    } catch (e) {
+                        console.log('[Dott Auth] Could not parse stored session');
+                    }
+                }
+                
+                // Try to check onboarding status from API
+                const response = await fetch(`${AppState.webAppUrl}/api/users/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                console.log('[Dott Auth] Onboarding check response:', response.status);
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    
+                    // Check user type and redirect appropriately
+                    // First check if existing business user
+                    if (userData.business_name || userData.onboarding_completed || userData.company_name) {
+                        console.log('[Dott Auth] Existing business user detected, loading business menu...');
+                        window.location.replace('/mobile-business-menu.html');
+                    } else if (!userData.user_type) {
+                        console.log('[Dott Auth] No user type set, going to role selection...');
+                        window.location.replace('/mobile-role-selection.html');
+                    } else if (userData.user_type === 'consumer' && !userData.has_business) {
+                        console.log('[Dott Auth] Consumer user, loading consumer menu...');
+                        window.location.replace('/mobile-consumer-menu.html');
+                    } else if (userData.user_type === 'business' && !userData.onboarding_completed) {
+                        console.log('[Dott Auth] Business user needs onboarding...');
+                        showLoading(false);
+                        showError('Please complete onboarding on the web app first at staging.dottapps.com');
+                        setTimeout(() => {
+                            window.location.replace('/mobile-business-menu.html');
+                        }, 3000);
+                    } else {
+                        console.log('[Dott Auth] Loading business menu...');
+                        window.location.replace('/mobile-business-menu.html');
+                    }
+                } else {
+                    // If we can't check user type, go to role selection
+                    console.log('[Dott Auth] Could not verify user type, going to role selection...');
+                    window.location.replace('/mobile-role-selection.html');
+                }
+            } catch (error) {
+                console.error('Onboarding check error:', error);
+                
+                // Fallback: Check stored user data even if API fails
+                try {
+                    const storedSession = localStorage.getItem('user_session');
+                    if (storedSession) {
+                        const sessionData = JSON.parse(storedSession);
+                        if (sessionData.user && (sessionData.user.onboarding_completed || sessionData.user.business_name)) {
+                            console.log('[Dott Auth] Using stored user data - existing business user');
+                            window.location.replace('/mobile-business-menu.html');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('[Dott Auth] Could not use fallback data');
+                }
+                
+                // On error, go to role selection
+                console.log('[Dott Auth] Error checking user type, going to role selection...');
+                window.location.replace('/mobile-role-selection.html');
+            }
+        }
+
+        function toggleMode(event) {
+            event.preventDefault();
+            AppState.isSignup = !AppState.isSignup;
+            
+            // Update UI
+            const authTitle = document.getElementById('authTitle');
+            const authSubtitle = document.getElementById('authSubtitle');
+            const submitText = document.getElementById('submitText');
+            const switchText = document.getElementById('switchText');
+            const switchLink = document.getElementById('switchLink');
+            const nameFields = document.getElementById('nameFields');
+            const confirmPasswordField = document.getElementById('confirmPasswordField');
+            const loginOptions = document.getElementById('loginOptions');
+            const socialSection = document.getElementById('socialSection');
+            
+            if (AppState.isSignup) {
+                authTitle.textContent = 'Create Account';
+                authSubtitle.textContent = 'Join Dott to manage your business';
+                submitText.textContent = 'Sign Up';
+                switchText.textContent = 'Already have an account? ';
+                switchLink.textContent = 'Sign in';
+                nameFields.style.display = 'block';
+                confirmPasswordField.style.display = 'block';
+                loginOptions.style.display = 'none';
+                socialSection.style.display = 'none';
+            } else {
+                authTitle.textContent = 'Welcome Back';
+                authSubtitle.textContent = 'Sign in to your Dott account';
+                submitText.textContent = 'Sign In';
+                switchText.textContent = "Don't have an account? ";
+                switchLink.textContent = 'Sign up';
+                nameFields.style.display = 'none';
+                confirmPasswordField.style.display = 'none';
+                loginOptions.style.display = 'flex';
+                socialSection.style.display = 'block';
+            }
+            
+            // Clear errors
+            hideMessages();
+        }
+
+        // Toggle between Phone and Email in the same form
+        function toggleEmailPhone() {
+            console.log('[Toggle] Current method:', AppState.currentAuthMethod);
+            
+            if (AppState.currentAuthMethod === 'phone') {
+                // Switch to Email
+                console.log('[Toggle] Switching to email mode');
+                AppState.currentAuthMethod = 'email';
+                
+                // Hide phone section
+                document.getElementById('phoneSection').style.display = 'none';
+                
+                // Show email sections
+                document.getElementById('emailSection').style.display = 'block';
+                document.getElementById('passwordSection').style.display = 'block';
+                document.getElementById('emailOptions').style.display = 'flex';
+                
+                // Update button text
+                document.getElementById('emailPhoneToggleText').innerHTML = '📱 Sign in with Phone';
+                document.getElementById('submitText').textContent = 'Sign In';
+                
+                // Focus email input
+                setTimeout(() => document.getElementById('emailInput').focus(), 100);
+                
+            } else {
+                // Switch to Phone
+                console.log('[Toggle] Switching to phone mode');
+                AppState.currentAuthMethod = 'phone';
+                
+                // Hide email sections
+                document.getElementById('emailSection').style.display = 'none';
+                document.getElementById('passwordSection').style.display = 'none';
+                document.getElementById('emailOptions').style.display = 'none';
+                
+                // Show phone section
+                document.getElementById('phoneSection').style.display = 'block';
+                
+                // Update button text
+                document.getElementById('emailPhoneToggleText').innerHTML = '✉️ Sign in with Email';
+                document.getElementById('submitText').textContent = 'Send Code';
+                
+                // Focus phone input
+                setTimeout(() => document.getElementById('phoneInput').focus(), 100);
+            }
+        }
+
+        // Phone number formatting for input (handles edge cases)
+        function formatPhoneInputValue(input) {
+            if (!input) return '';
+            
+            // Remove all non-digits
+            let digits = input.replace(/\D/g, '');
+            
+            // Handle edge cases for Kenya numbers
+            if (digits.startsWith('0')) {
+                // Remove leading 0 (0745 -> 745)
+                digits = digits.substring(1);
+            }
+            
+            // For Kenya, ensure we have the right length
+            if (digits.length >= 9) {
+                // Format for display (keep first 9 digits)
+                return digits.substring(0, 9);
+            }
+            
+            return digits;
+        }
+
+        // Format complete phone number for API (handles all edge cases)
+        function formatCompletePhoneNumber(countryCode, phoneInput) {
+            const digits = phoneInput.replace(/\D/g, '');
+            
+            // Get the numeric part of country code
+            const countryDigits = countryCode.replace('+', '');
+            
+            // Handle edge cases
+            if (countryCode === '+254') { // Kenya
+                if (digits.startsWith('0')) {
+                    // 0745 -> 745
+                    return `+254${digits.substring(1)}`;
+                } else if (digits.startsWith('254')) {
+                    // 254745 -> +254745
+                    return `+${digits}`;
+                } else if (digits.startsWith('7')) {
+                    // 745 -> +254745
+                    return `+254${digits}`;
+                }
+            }
+            
+            // For other countries, similar logic
+            if (digits.startsWith(countryDigits)) {
+                return `+${digits}`;
+            } else {
+                return `${countryCode}${digits}`;
+            }
+        }
+
+        // Legacy comment removed - handleAuth is now properly defined in the DOMContentLoaded event
+        
+        async function handlePhoneAuth(phoneNumber) {
+            try {
+                setLoading(true);
+                hideMessages();
+                
+                // Store phone number globally
+                AppState.phoneNumber = phoneNumber;
+                
+                // Send OTP request
+                const response = await fetch(`${AppState.apiUrl}/api/auth/phone/register/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone_number: phoneNumber,
+                        user_type: AppState.isSignup ? 'consumer' : undefined,
+                        device_id: getDeviceId(),
+                        device_name: getDeviceName(),
+                        device_type: 'ios'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    setLoading(false);
+                    showSuccess(`OTP sent via ${data.sent_via} to ${phoneNumber}`);
+                    
+                    // Show OTP input section
+                    showOTPSection(phoneNumber);
+                } else {
+                    setLoading(false);
+                    showError(data.error || 'Failed to send OTP');
+                }
+                
+            } catch (error) {
+                console.error('[Dott Auth] Phone auth error:', error);
+                showError('Failed to send OTP. Please try again.');
+                setLoading(false);
+            }
+        }
+        
+        function showOTPSection(phoneNumber) {
+            // Hide email/password section
+            document.getElementById('authForm').style.display = 'none';
+            document.getElementById('socialSection').style.display = 'none';
+            
+            // Create and show OTP section
+            const otpHTML = `
+                <div id="otpSection">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <p style="color: #6b7280; margin-bottom: 8px;">Enter the code sent to</p>
+                        <p style="font-weight: 600; color: #111827;">${phoneNumber}</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 20px;">
+                        <input type="text" id="otp1" maxlength="1" class="otp-input" style="width: 45px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="text" id="otp2" maxlength="1" class="otp-input" style="width: 45px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="text" id="otp3" maxlength="1" class="otp-input" style="width: 45px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="text" id="otp4" maxlength="1" class="otp-input" style="width: 45px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="text" id="otp5" maxlength="1" class="otp-input" style="width: 45px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="text" id="otp6" maxlength="1" class="otp-input" style="width: 45px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                    </div>
+                    
+                    <button onclick="verifyOTP()" class="btn-primary" style="width: 100%; margin-bottom: 16px;">
+                        <span id="verifyText">Verify</span>
+                        <span id="verifySpinner" class="loading-spinner" style="display: none;"></span>
+                    </button>
+                    
+                    <div style="text-align: center;">
+                        <p style="color: #6b7280; font-size: 14px;">
+                            Didn't receive the code? 
+                            <a href="#" onclick="resendOTP(event)" style="color: #2563eb; text-decoration: none;">Resend</a>
+                        </p>
+                        <p style="margin-top: 12px;">
+                            <a href="#" onclick="backToSignIn(event)" style="color: #6b7280; font-size: 14px;">← Back to sign in</a>
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Insert OTP section after form
+            const container = document.querySelector('.auth-card');
+            const otpDiv = document.createElement('div');
+            otpDiv.innerHTML = otpHTML;
+            container.appendChild(otpDiv.firstElementChild);
+            
+            // Setup OTP inputs
+            setupOTPInputs();
+            
+            // Focus first input
+            document.getElementById('otp1').focus();
+        }
+        
+        function setupOTPInputs() {
+            const inputs = document.querySelectorAll('.otp-input');
+            
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value.length === 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    
+                    // Auto-submit when all filled
+                    if (index === inputs.length - 1) {
+                        const otp = getOTPValue();
+                        if (otp.length === 6) {
+                            verifyOTP();
+                        }
+                    }
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
+            });
+        }
+        
+        function getOTPValue() {
+            let otp = '';
+            for (let i = 1; i <= 6; i++) {
+                const input = document.getElementById(`otp${i}`);
+                if (input) {
+                    otp += input.value;
+                }
+            }
+            return otp;
+        }
+        
+        async function verifyOTP() {
+            const otp = getOTPValue();
+            
+            if (otp.length !== 6) {
+                showError('Please enter the complete 6-digit code');
+                return;
+            }
+            
+            setLoading(true, 'verifySpinner', 'verifyText');
+            hideMessages();
+            
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/auth/phone/verify/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone_number: AppState.phoneNumber,
+                        otp_code: otp,
+                        device_id: getDeviceId(),
+                        device_name: getDeviceName(),
+                        device_type: 'ios',
+                        trust_device: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Save session
+                    await saveSession({
+                        token: data.access_token,
+                        user: data.user,
+                        refresh_token: data.refresh_token
+                    });
+                    
+                    AppState.sessionToken = data.access_token;
+                    AppState.user = data.user;
+                    
+                    showSuccess('Phone verified successfully!');
+                    
+                    // Check onboarding and redirect
+                    setTimeout(() => {
+                        checkOnboardingAndRedirect();
+                    }, 500);
+                } else {
+                    setLoading(false, 'verifySpinner', 'verifyText');
+                    showError(data.error || 'Invalid OTP code');
+                }
+                
+            } catch (error) {
+                console.error('[Dott Auth] OTP verification error:', error);
+                showError('Verification failed. Please try again.');
+                setLoading(false, 'verifySpinner', 'verifyText');
+            }
+        }
+        
+        async function resendOTP(event) {
+            event.preventDefault();
+            await handlePhoneAuth(AppState.phoneNumber);
+        }
+        
+        function backToSignIn(event) {
+            event.preventDefault();
+            // Remove OTP section
+            const otpSection = document.getElementById('otpSection');
+            if (otpSection) {
+                otpSection.remove();
+            }
+            // Show form again
+            document.getElementById('authForm').style.display = 'block';
+            document.getElementById('socialSection').style.display = 'block';
+        }
+        
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('device_id');
+            if (!deviceId) {
+                deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('device_id', deviceId);
+            }
+            return deviceId;
+        }
+        
+        function getDeviceName() {
+            const userAgent = navigator.userAgent;
+            if (/iPhone/.test(userAgent)) return 'iPhone';
+            if (/iPad/.test(userAgent)) return 'iPad';
+            if (/Android/.test(userAgent)) return 'Android Device';
+            return 'Mobile Device';
+        }
+
+        async function handleLogin(email, password) {
+            try {
+                setLoading(true);
+                
+                // Always use the staging server for auth in mobile app
+                const authUrl = 'https://staging.dottapps.com/api/auth/consolidated-login';
+                console.log('[Dott Auth] Starting authentication...');
+                console.log('[Dott Auth] URL:', authUrl);
+                console.log('[Dott Auth] Email:', email);
+                
+                const response = await fetch(authUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                }).catch(err => {
+                    console.error('[Dott Auth] Fetch error:', err);
+                    console.error('[Dott Auth] Error details:', {
+                        message: err.message,
+                        stack: err.stack,
+                        url: authUrl
+                    });
+                    throw new Error(`Network error: ${err.message}`);
+                });
+                
+                const data = await response.json();
+                
+                console.log('[Dott Auth] Response:', { status: response.status, success: data.success });
+                
+                if (response.ok && (data.success || data.session_token || data.sessionToken)) {
+                    // Save session
+                    const sessionData = {
+                        token: data.session_token || data.sessionToken,
+                        user: data.user,
+                        tenantId: data.tenant?.id,
+                        needsOnboarding: data.needs_onboarding,
+                        sid: data.sid  // Store sid if available
+                    };
+                    
+                    console.log('[Dott Auth] Session established:', { hasToken: !!sessionData.token, hasUser: !!sessionData.user });
+                    console.log('[Dott Auth] Full session data:', {
+                        token: sessionData.token ? sessionData.token.substring(0, 20) + '...' : 'MISSING',
+                        hasSid: !!data.sid,
+                        hasUser: !!sessionData.user
+                    });
+                    
+                    await saveSession(sessionData);
+                    
+                    AppState.sessionToken = sessionData.token;
+                    AppState.user = sessionData.user;
+                    
+                    // Also store sid cookie if available
+                    if (data.sid) {
+                        document.cookie = `sid=${data.sid}; path=/; secure; samesite=none`;
+                    }
+                    
+                    // Check onboarding and redirect
+                    await checkOnboardingAndRedirect();
+                } else {
+                    setLoading(false);
+                    console.error('[Dott Auth] Login failed:', {
+                        status: response.status,
+                        error: data.error,
+                        message: data.message,
+                        debug: data.debug
+                    });
+                    // Extract the real Auth0 error from the debug log if available
+                    let errorMsg = 'Invalid email or password';
+                    
+                    // Check for Auth0 error in debug log
+                    if (data.debug?.authError?.debugLog) {
+                        const auth0Response = data.debug.authError.debugLog.find(log => log.errorDescription);
+                        if (auth0Response?.errorDescription) {
+                            errorMsg = auth0Response.errorDescription;
+                        }
+                    } else if (data.debugLog) {
+                        const auth0Response = data.debugLog.find(log => log.errorDescription);
+                        if (auth0Response?.errorDescription) {
+                            errorMsg = auth0Response.errorDescription;
+                        }
+                    } else if (data.message) {
+                        errorMsg = data.message;
+                    } else if (data.error) {
+                        errorMsg = data.error;
+                    }
+                    
+                    showError(errorMsg);
+                }
+            } catch (error) {
+                console.error('[Dott Auth] Login exception:', error);
+                console.error('[Dott Auth] Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    webAppUrl: AppState.webAppUrl
+                });
+                setLoading(false);
+                // Show more detailed error message
+                const errorMsg = error.message || 'Connection error';
+                showError(`Failed to connect: ${errorMsg}`);
+            }
+        }
+
+        async function handleSignup(email, password, firstName, lastName) {
+            try {
+                setLoading(true);
+                
+                // Use staging server for signup
+                const response = await fetch('https://staging.dottapps.com/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        given_name: firstName,
+                        family_name: lastName,
+                        name: `${firstName} ${lastName}`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    setLoading(false);
+                    showSuccess('Account created! Please check your email to verify your account.');
+                    
+                    // Switch to login mode after 3 seconds
+                    setTimeout(() => {
+                        AppState.isSignup = false;
+                        toggleMode({ preventDefault: () => {} });
+                    }, 3000);
+                } else {
+                    setLoading(false);
+                    showError(data.error || 'Failed to create account');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                setLoading(false);
+                showError('Connection error. Please try again.');
+            }
+        }
+
+        async function handleGoogleAuth() {
+            try {
+                console.log('[Google Auth] Starting Google OAuth...');
+                setLoading(true);
+                
+                // Build OAuth URL with proper redirect
+                let oauthUrl;
+                if (window.Capacitor) {
+                    // For mobile app, use custom scheme redirect
+                    const platform = Capacitor.getPlatform();
+                    const returnUrl = encodeURIComponent('capacitor://app.dottapps.com/mobile-oauth-callback.html');
+                    oauthUrl = `${AppState.apiUrl}/api/auth/oauth/google-v2?return_url=${returnUrl}&platform=mobile&device=${platform}`;
+                } else {
+                    // For web testing
+                    const returnUrl = encodeURIComponent(window.location.origin + '/mobile-oauth-callback.html');
+                    oauthUrl = `${AppState.apiUrl}/api/auth/oauth/google-v2?return_url=${returnUrl}`;
+                }
+                
+                console.log('[Google Auth] OAuth URL:', oauthUrl);
+                
+                // For Capacitor, use InAppBrowser or Browser plugin
+                if (window.Capacitor && window.Capacitor.Plugins.Browser) {
+                    const { Browser } = Capacitor.Plugins;
+                    
+                    // Open in system browser for better OAuth support
+                    await Browser.open({ 
+                        url: oauthUrl,
+                        windowName: '_system' // Use system browser for OAuth
+                    });
+                    
+                    // Listen for app resume to check authentication
+                    window.addEventListener('resume', checkAuthenticationStatus, false);
+                } else {
+                    // Web fallback
+                    window.location.href = oauthUrl;
+                }
+            } catch (error) {
+                console.error('[Google Auth] Error:', error);
+                showError('Failed to initiate Google sign-in');
+                setLoading(false);
+            }
+        }
+
+        async function handleAppleAuth() {
+            try {
+                console.log('[Apple Auth] Starting Apple OAuth...');
+                setLoading(true);
+                
+                // Check if running on iOS with native support
+                if (window.Capacitor && Capacitor.getPlatform() === 'ios' && window.Capacitor.Plugins.SignInWithApple) {
+                    console.log('[Apple Auth] Using native Apple Sign In');
+                    const { SignInWithApple } = Capacitor.Plugins;
+                    
+                    try {
+                        const result = await SignInWithApple.authorize({
+                            clientId: 'com.dottapps.mobile',
+                            redirectUri: 'https://staging.dottapps.com/api/auth/oauth/apple-callback',
+                            scopes: 'email name',
+                            state: generateState(),
+                            nonce: generateNonce()
+                        });
+                        
+                        console.log('[Apple Auth] Native result:', result);
+                        // Send the authorization code to backend
+                        await processAppleAuthResult(result);
+                    } catch (nativeError) {
+                        console.error('[Apple Auth] Native error:', nativeError);
+                        // Fall back to web-based flow
+                        useWebAppleAuth();
+                    }
+                } else {
+                    // Use web-based Apple Sign In
+                    useWebAppleAuth();
+                }
+            } catch (error) {
+                console.error('[Apple Auth] Error:', error);
+                showError('Failed to initiate Apple sign-in');
+                setLoading(false);
+            }
+        }
+        
+        function useWebAppleAuth() {
+            console.log('[Apple Auth] Using web-based Apple Sign In');
+            let oauthUrl;
+            if (window.Capacitor) {
+                // For mobile app
+                const platform = Capacitor.getPlatform();
+                const returnUrl = encodeURIComponent('capacitor://app.dottapps.com/mobile-oauth-callback.html');
+                oauthUrl = `${AppState.apiUrl}/api/auth/oauth/apple-v2?return_url=${returnUrl}&platform=mobile&device=${platform}`;
+            } else {
+                // For web testing
+                const returnUrl = encodeURIComponent(window.location.origin + '/mobile-oauth-callback.html');
+                oauthUrl = `${AppState.apiUrl}/api/auth/oauth/apple-v2?return_url=${returnUrl}`;
+            }
+            
+            if (window.Capacitor && window.Capacitor.Plugins.Browser) {
+                const { Browser } = Capacitor.Plugins;
+                Browser.open({ 
+                    url: oauthUrl,
+                    windowName: '_system'
+                });
+                window.addEventListener('resume', checkAuthenticationStatus, false);
+            } else {
+                window.location.href = oauthUrl;
+            }
+        }
+
+        async function processAppleAuthResult(result) {
+            try {
+                setLoading(true);
+                
+                const response = await fetch(`${AppState.apiUrl}/api/auth/oauth/apple-callback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: result.authorizationCode,
+                        identityToken: result.identityToken,
+                        user: result.user
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Save session and redirect
+                    const sessionData = {
+                        token: data.session_token,
+                        user: data.user,
+                        tenantId: data.tenant?.id,
+                        needsOnboarding: data.needs_onboarding
+                    };
+                    
+                    await saveSession(sessionData);
+                    AppState.sessionToken = sessionData.token;
+                    AppState.user = sessionData.user;
+                    
+                    await checkOnboardingAndRedirect();
+                } else {
+                    setLoading(false);
+                    showError(data.error || 'Apple sign-in failed');
+                }
+            } catch (error) {
+                console.error('Apple auth processing error:', error);
+                setLoading(false);
+                showError('Failed to complete Apple sign-in');
+            }
+        }
+
+        async function handleForgotPassword(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                showError('Please enter your email address');
+                return;
+            }
+            
+            try {
+                setLoading(true);
+                
+                // Use staging server for password reset
+                const response = await fetch('https://staging.dottapps.com/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                setLoading(false);
+                
+                if (response.ok) {
+                    showSuccess('Password reset instructions sent to your email');
+                } else {
+                    showError('Failed to send reset instructions');
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                setLoading(false);
+                showError('Connection error. Please try again.');
+            }
+        }
+
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const toggle = document.getElementById(fieldId + 'Toggle');
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                toggle.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>`;
+            } else {
+                field.type = 'password';
+                toggle.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>`;
+            }
+        }
+
+        async function saveSession(sessionData) {
+            try {
+                console.log('[Dott Auth] Saving session...', sessionData);
+                
+                // Try to save to SecureStorage if available (for Capacitor)
+                let secureStorageWorked = false;
+                if (window.Capacitor && window.Capacitor.Plugins?.SecureStoragePlugin) {
+                    try {
+                        const { SecureStoragePlugin } = Capacitor.Plugins;
+                        
+                        // Save session token
+                        if (sessionData.token) {
+                            await SecureStoragePlugin.set({
+                                key: 'session_token',
+                                value: sessionData.token
+                            });
+                            console.log('[Dott Auth] Session token saved to secure storage');
+                            secureStorageWorked = true;
+                        }
+                        
+                        // Save user data
+                        if (sessionData.user) {
+                            await SecureStoragePlugin.set({
+                                key: 'user_data',
+                                value: JSON.stringify(sessionData.user)
+                            });
+                            console.log('[Dott Auth] User data saved to secure storage');
+                        }
+                        
+                        // Save tenant ID
+                        const tenantId = sessionData.user?.tenant_id || sessionData.tenant_id;
+                        if (tenantId) {
+                            await SecureStoragePlugin.set({
+                                key: 'tenant_id',
+                                value: String(tenantId)
+                            });
+                            console.log('[Dott Auth] Tenant ID saved to secure storage:', tenantId);
+                        }
+                        
+                        // Also save complete session for compatibility
+                        await SecureStoragePlugin.set({
+                            key: 'session',
+                            value: JSON.stringify(sessionData)
+                        });
+                    } catch (e) {
+                        console.warn('[Dott Auth] SecureStorage not available, using localStorage fallback:', e.message);
+                        secureStorageWorked = false;
+                    }
+                }
+                
+                // Always save to localStorage as fallback or primary storage
+                localStorage.setItem('user_session', JSON.stringify(sessionData));
+                localStorage.setItem('sid', sessionData.token);
+                localStorage.setItem('session_token', sessionData.token);
+                if (sessionData.user) {
+                    localStorage.setItem('user_data', JSON.stringify(sessionData.user));
+                }
+                
+                if (secureStorageWorked) {
+                    console.log('[Dott Auth] Session saved to secure storage and localStorage');
+                } else {
+                    console.log('[Dott Auth] Session saved to localStorage (SecureStorage not available)');
+                }
+            } catch (error) {
+                console.error('Error saving session:', error);
+            }
+        }
+
+        async function clearSession() {
+            try {
+                // Clear SecureStorage if available
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        await SecureStoragePlugin.remove({ key: 'session_token' });
+                        await SecureStoragePlugin.remove({ key: 'user_data' });
+                        await SecureStoragePlugin.remove({ key: 'tenant_id' });
+                        await SecureStoragePlugin.remove({ key: 'session' });
+                        console.log('[Dott Auth] SecureStorage cleared');
+                    } catch (e) {
+                        // Ignore errors when keys don't exist
+                    }
+                }
+                
+                // Clear localStorage
+                localStorage.removeItem('user_session');
+                localStorage.removeItem('sid');
+                localStorage.removeItem('session_token');
+                localStorage.removeItem('user_data');
+                AppState.sessionToken = null;
+                AppState.user = null;
+                console.log('[Dott Auth] Session cleared');
+            } catch (error) {
+                console.error('Error clearing session:', error);
+            }
+        }
+
+        async function saveAuthState() {
+            // Save state for OAuth callback
+            const state = {
+                timestamp: Date.now(),
+                returnUrl: window.location.href
+            };
+            
+            if (window.Capacitor) {
+                const { Preferences } = Capacitor.Plugins;
+                await Preferences.set({
+                    key: 'oauth_state',
+                    value: JSON.stringify(state)
+                });
+            } else {
+                sessionStorage.setItem('oauth_state', JSON.stringify(state));
+            }
+        }
+
+        function generateState() {
+            return Math.random().toString(36).substring(2, 15);
+        }
+
+        function generateNonce() {
+            return Math.random().toString(36).substring(2, 15);
+        }
+        
+        async function storeSession(sessionData) {
+            try {
+                console.log('[Store Session] Storing session data...');
+                
+                // Ensure we have the required data
+                const session = {
+                    token: sessionData.token || sessionData.access_token,
+                    tenantId: sessionData.tenantId || sessionData.tenant_id,
+                    user: sessionData.user || {
+                        email: sessionData.email,
+                        name: sessionData.name,
+                        id: sessionData.user_id
+                    }
+                };
+                
+                // Try secure storage first for Capacitor
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    try {
+                        await window.Capacitor.Plugins.SecureStoragePlugin.set({
+                            key: 'session',
+                            value: JSON.stringify(session)
+                        });
+                        console.log('[Store Session] Stored in secure storage');
+                    } catch (e) {
+                        console.log('[Store Session] SecureStorage failed, using localStorage');
+                        localStorage.setItem('session', JSON.stringify(session));
+                    }
+                } else {
+                    // Fallback to localStorage
+                    localStorage.setItem('session', JSON.stringify(session));
+                    console.log('[Store Session] Stored in localStorage');
+                }
+                
+                return session;
+            } catch (error) {
+                console.error('[Store Session] Error:', error);
+                throw error;
+            }
+        }
+        
+        // Check authentication status after app resumes from OAuth
+        async function checkAuthenticationStatus() {
+            console.log('[Auth Check] Checking authentication status after resume...');
+            try {
+                // Remove the event listener
+                window.removeEventListener('resume', checkAuthenticationStatus);
+                
+                // Check if we have a new session
+                const response = await fetch(`${AppState.apiUrl}/api/auth/session`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.user) {
+                        console.log('[Auth Check] Session found:', data.user.email);
+                        
+                        // Store session
+                        await storeSession({
+                            token: data.access_token || data.token,
+                            tenantId: data.tenant_id,
+                            user: data.user
+                        });
+                        
+                        // Check user type and redirect
+                        if (!data.user?.user_type) {
+                            // First-time user - go to role selection
+                            window.location.href = 'mobile-role-selection.html';
+                        } else if (data.user.user_type === 'consumer' && !data.user.has_business) {
+                            // Consumer only - go to consumer menu
+                            window.location.href = 'mobile-consumer-menu.html';
+                        } else if (data.user.user_type === 'business' && (data.needsOnboarding || !data.onboardingCompleted)) {
+                            // Business user needs onboarding
+                            window.location.href = 'mobile-onboarding.html';
+                        } else {
+                            // Business user or consumer with business - go to business menu
+                            window.location.href = 'mobile-business-menu.html';
+                        }
+                    } else {
+                        console.log('[Auth Check] No session found');
+                        setLoading(false);
+                    }
+                } else {
+                    console.log('[Auth Check] Session check failed');
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error('[Auth Check] Error:', error);
+                setLoading(false);
+            }
+        }
+
+        function setLoading(loading, spinnerId = 'loadingSpinner', textId = null) {
+            AppState.isLoading = loading;
+            
+            // Handle submit button
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = loading;
+            }
+            
+            // Handle spinner
+            const loadingSpinner = document.getElementById(spinnerId);
+            if (loadingSpinner) {
+                loadingSpinner.style.display = loading ? 'inline-block' : 'none';
+            }
+            
+            // Handle text if provided
+            if (textId) {
+                const textElement = document.getElementById(textId);
+                if (textElement) {
+                    textElement.style.display = loading ? 'none' : 'inline';
+                }
+            }
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.toggle('active', show);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.classList.add('active');
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').classList.remove('active');
+            document.getElementById('successMessage').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
