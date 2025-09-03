@@ -10,8 +10,17 @@ import requests
 import json
 from typing import Tuple, Optional, Dict, Any
 from django.conf import settings
-from twilio.rest import Client
-from twilio.base.exceptions import TwilioRestException
+
+# Conditional Twilio import - handle gracefully if not installed
+try:
+    from twilio.rest import Client
+    from twilio.base.exceptions import TwilioRestException
+    TWILIO_AVAILABLE = True
+except ImportError:
+    Client = None
+    TwilioRestException = Exception
+    TWILIO_AVAILABLE = False
+    logging.warning("Twilio package not available. SMS functionality will be limited.")
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +64,16 @@ class SMSService:
         self.at_username = getattr(settings, 'AFRICAS_TALKING_USERNAME', os.environ.get('AFRICAS_TALKING_USERNAME', 'sandbox'))
         self.at_sender_id = getattr(settings, 'SMS_SENDER_ID', os.environ.get('SMS_SENDER_ID', 'DOTT'))
         
-        # Initialize Twilio client if credentials are available
+        # Initialize Twilio client if credentials and package are available
         self.twilio_client = None
-        if self.twilio_sid and self.twilio_token:
+        if TWILIO_AVAILABLE and self.twilio_sid and self.twilio_token and Client:
             try:
                 self.twilio_client = Client(self.twilio_sid, self.twilio_token)
                 logger.info("✅ Twilio SMS service initialized")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Twilio: {str(e)}")
+        elif not TWILIO_AVAILABLE:
+            logger.warning("⚠️ Twilio package not available. Install 'twilio' package for full SMS support.")
         
         # Check Africa's Talking availability
         self.at_available = bool(self.at_api_key)
@@ -169,6 +180,10 @@ class SMSService:
     
     def _send_via_twilio(self, phone_number: str, message: str) -> Tuple[bool, str, Optional[str]]:
         """Send SMS via Twilio"""
+        if not TWILIO_AVAILABLE or not self.twilio_client:
+            logger.warning("❌ Twilio not available - cannot send SMS")
+            return False, "Twilio service not available", None
+            
         try:
             msg = self.twilio_client.messages.create(
                 body=message,
@@ -194,14 +209,14 @@ class SMSService:
         """
         message_body = f"Welcome to Dott, {user_name}! 🎉\n\nYour account has been created successfully. You can now access all Dott features."
         
-        if not self.client:
+        if not TWILIO_AVAILABLE or not self.twilio_client:
             logger.warning(f"📱 SIMULATED Welcome SMS to {phone_number}")
             return True, "Welcome SMS simulated", None
         
         try:
-            message = self.client.messages.create(
+            message = self.twilio_client.messages.create(
                 body=message_body,
-                from_=self.from_number,
+                from_=self.twilio_number,
                 to=phone_number
             )
             logger.info(f"✅ Welcome SMS sent to {phone_number}")
@@ -216,12 +231,12 @@ class SMSService:
         Verify if a phone number is valid and can receive SMS.
         Uses Twilio Lookup API.
         """
-        if not self.client:
+        if not TWILIO_AVAILABLE or not self.twilio_client:
             logger.warning(f"📱 Cannot verify {phone_number} - no Twilio client")
             return True, "Verification skipped (no credentials)"
         
         try:
-            phone_info = self.client.lookups.v1.phone_numbers(phone_number).fetch()
+            phone_info = self.twilio_client.lookups.v1.phone_numbers(phone_number).fetch()
             logger.info(f"✅ Phone number {phone_number} is valid. Country: {phone_info.country_code}")
             return True, f"Valid phone number from {phone_info.country_code}"
             
@@ -253,11 +268,11 @@ class SMSService:
         """
         Check the delivery status of a sent message.
         """
-        if not self.client or not message_sid:
+        if not TWILIO_AVAILABLE or not self.twilio_client or not message_sid:
             return "unknown"
         
         try:
-            message = self.client.messages(message_sid).fetch()
+            message = self.twilio_client.messages(message_sid).fetch()
             return message.status  # queued, sending, sent, delivered, failed, undelivered
         except Exception as e:
             logger.error(f"❌ Error checking message status: {str(e)}")
