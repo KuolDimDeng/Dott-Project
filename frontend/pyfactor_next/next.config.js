@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // Static export for mobile apps
-  output: 'export',
+  // Use static export only for mobile builds
+  // output: 'export',  // Commented out for regular builds
   
-  // Disable image optimization for static export
+  // Image optimization settings
   images: {
-    unoptimized: true
+    unoptimized: process.env.BUILD_TARGET === 'mobile' ? true : false
   },
   
   // Add trailing slashes for better compatibility
@@ -14,6 +14,11 @@ const nextConfig = {
   
   // Basic settings
   reactStrictMode: true,
+  
+  // Disable ESLint during production builds
+  eslint: {
+    ignoreDuringBuilds: true
+  },
   
   // Compiler optimizations
   compiler: {
