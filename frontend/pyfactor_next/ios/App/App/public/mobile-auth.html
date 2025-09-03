@@ -671,17 +671,34 @@
 
         // Define handleAuth function in global scope so it can access other global functions
         async function handleAuth(event) {
-            event.preventDefault();
-            console.log('[Auth] Form submitted! Current method:', AppState.currentAuthMethod);
+            console.log('[Auth] ========== HANDLE AUTH CALLED ==========');
+            console.log('[Auth] Event type:', event ? event.type : 'no event');
+            console.log('[Auth] Event target:', event ? event.target : 'no target');
             
-            if (AppState.isLoading) return;
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('[Auth] Current auth method:', AppState.currentAuthMethod);
+            console.log('[Auth] Is loading?', AppState.isLoading);
+            console.log('[Auth] Is signup?', AppState.isSignup);
+            
+            if (AppState.isLoading) {
+                console.log('[Auth] Already loading, aborting...');
+                return;
+            }
             
             hideMessages();
             
             if (AppState.currentAuthMethod === 'phone') {
+                console.log('[Auth] === PHONE AUTH MODE ===');
                 // Handle phone authentication
                 const countryCode = document.getElementById('countryCode').value;
                 const phoneInput = document.getElementById('phoneInput').value;
+                
+                console.log('[Phone Auth] Country code:', countryCode);
+                console.log('[Phone Auth] Phone input:', phoneInput);
                 
                 if (!phoneInput || phoneInput.length < 7) {
                     showError('Please enter a valid phone number');
@@ -689,29 +706,38 @@
                 }
                 
                 const phoneNumber = formatCompletePhoneNumber(countryCode, phoneInput);
-                console.log('[Phone Auth] Country:', countryCode, 'Input:', phoneInput, 'Formatted:', phoneNumber);
+                console.log('[Phone Auth] Formatted number:', phoneNumber);
                 
                 await handlePhoneAuth(phoneNumber);
             } else {
+                console.log('[Auth] === EMAIL AUTH MODE ===');
                 // Handle email authentication
-                console.log('[Email Auth] Processing email authentication...');
-                const email = document.getElementById('emailInput').value;
-                const password = document.getElementById('password').value;
+                const emailInput = document.getElementById('emailInput');
+                const passwordInput = document.getElementById('password');
                 
-                console.log('[Email Auth] Email:', email ? 'provided' : 'missing');
-                console.log('[Email Auth] Password:', password ? 'provided' : 'missing');
+                console.log('[Email Auth] Email input element:', emailInput);
+                console.log('[Email Auth] Password input element:', passwordInput);
+                
+                const email = emailInput ? emailInput.value : '';
+                const password = passwordInput ? passwordInput.value : '';
+                
+                console.log('[Email Auth] Email value:', email);
+                console.log('[Email Auth] Password length:', password ? password.length : 0);
                 
                 if (!email || !email.includes('@')) {
+                    console.log('[Email Auth] Invalid email, showing error');
                     showError('Please enter a valid email address');
                     return;
                 }
                 
                 if (!password) {
+                    console.log('[Email Auth] Missing password, showing error');
                     showError('Please enter your password');
                     return;
                 }
                 
                 if (AppState.isSignup) {
+                    console.log('[Email Auth] Signup mode detected');
                     const firstName = document.getElementById('firstName').value;
                     const lastName = document.getElementById('lastName').value;
                     
@@ -720,9 +746,12 @@
                         return;
                     }
                     
+                    console.log('[Email Auth] Calling handleSignup');
                     await handleSignup(email, password, firstName, lastName);
                 } else {
-                    console.log('[Email Auth] Calling handleLogin with email and password');
+                    console.log('[Email Auth] Login mode - calling handleLogin');
+                    console.log('[Email Auth] Email to send:', email);
+                    console.log('[Email Auth] Password to send:', password ? 'present' : 'missing');
                     await handleLogin(email, password);
                 }
             }
@@ -796,25 +825,42 @@
             // Add form submit handler
             const authForm = document.getElementById('authForm');
             if (authForm) {
-                authForm.addEventListener('submit', handleAuth);
-                console.log('[Debug] Form submit handler attached');
+                console.log('[Setup] Attaching form submit handler to authForm');
+                authForm.addEventListener('submit', function(e) {
+                    console.log('[Form] Submit event fired!');
+                    handleAuth(e);
+                });
+                
+                // Alternative submit handler using onsubmit
+                authForm.onsubmit = function(e) {
+                    console.log('[Form] onsubmit triggered!');
+                    handleAuth(e);
+                    return false;
+                };
+                
+                console.log('[Setup] Form submit handlers attached');
+            } else {
+                console.log('[Setup] ERROR: authForm not found!');
             }
             
-            // Add direct click handler to submit button as fallback
+            // Add direct click handler to submit button as primary handler
             const submitBtn = document.getElementById('submitBtn');
             if (submitBtn) {
+                console.log('[Setup] Attaching click handler to submit button');
                 submitBtn.addEventListener('click', function(event) {
-                    console.log('[Debug] Submit button clicked! Button type:', this.type);
-                    console.log('[Debug] Default prevented?', event.defaultPrevented);
-                    // If form submit isn't working, trigger it manually
-                    if (event.type === 'click' && !event.defaultPrevented) {
-                        const form = document.getElementById('authForm');
-                        if (form) {
-                            console.log('[Debug] Manually triggering form submit');
-                            form.requestSubmit();
-                        }
-                    }
+                    console.log('[Button] Submit button clicked!');
+                    console.log('[Button] Button type:', this.type);
+                    console.log('[Button] Form element:', this.form);
+                    console.log('[Button] Calling handleAuth directly');
+                    
+                    // Call handleAuth directly instead of relying on form submit
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleAuth(event);
                 });
+                console.log('[Setup] Button click handler attached');
+            } else {
+                console.log('[Setup] ERROR: submitBtn not found!');
             }
             
             // Check if we're returning from OAuth
@@ -1416,28 +1462,34 @@
         }
 
         async function handleLogin(email, password) {
+            console.log('[handleLogin] ========== HANDLE LOGIN STARTED ==========');
+            console.log('[handleLogin] Email:', email);
+            console.log('[handleLogin] Password length:', password ? password.length : 0);
+            
             try {
+                console.log('[handleLogin] Setting loading state...');
                 setLoading(true);
                 
                 // Use the Next.js consolidated-login endpoint which handles the full auth flow
                 const authUrl = 'https://staging.dottapps.com/api/auth/consolidated-login';
-                console.log('[Dott Auth] Starting email/password authentication...');
-                console.log('[Dott Auth] URL:', authUrl);
-                console.log('[Dott Auth] Email:', email);
+                console.log('[handleLogin] Auth URL:', authUrl);
+                console.log('[handleLogin] Preparing request body...');
                 
+                const requestBody = { email, password };
+                console.log('[handleLogin] Request body prepared:', { email, passwordLength: password ? password.length : 0 });
+                
+                console.log('[handleLogin] Making fetch request...');
                 const response = await fetch(authUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify(requestBody)
                 }).catch(err => {
-                    console.error('[Dott Auth] Fetch error:', err);
-                    console.error('[Dott Auth] Error details:', {
-                        message: err.message,
-                        stack: err.stack,
-                        url: authUrl
-                    });
+                    console.error('[handleLogin] Fetch error caught:', err);
+                    console.error('[handleLogin] Error type:', err.name);
+                    console.error('[handleLogin] Error message:', err.message);
+                    console.error('[handleLogin] Error stack:', err.stack);
                     throw new Error(`Network error: ${err.message}`);
                 });
                 
