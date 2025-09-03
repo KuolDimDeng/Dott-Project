@@ -972,10 +972,14 @@
                     // Update the input value with formatted version
                     this.value = formattedValue;
                     
-                    // Update hint based on validity
-                    if (formattedValue.length >= 9) {
-                        phoneHint.textContent = 'Perfect! We\'ll send a code to your phone 📱';
+                    // Update hint based on validity - be flexible for international numbers
+                    // Most phone numbers are 7-15 digits (excluding country code)
+                    if (formattedValue.length >= 7) {
+                        phoneHint.textContent = 'Ready! We\'ll send a code to your phone 📱';
                         phoneHint.style.color = '#25D366'; // WhatsApp green
+                    } else if (formattedValue.length > 0) {
+                        phoneHint.textContent = 'Keep typing your phone number...';
+                        phoneHint.style.color = '#6b7280';
                     } else {
                         phoneHint.textContent = 'Enter your phone number (without country code)';
                         phoneHint.style.color = '#6b7280';
@@ -1350,24 +1354,32 @@
             }
         }
 
-        // Phone number formatting for input (handles edge cases)
+        // Phone number formatting for input (adaptive to any country)
         function formatPhoneInputValue(input) {
             if (!input) return '';
             
             // Remove all non-digits
             let digits = input.replace(/\D/g, '');
             
-            // Handle edge cases for Kenya numbers
-            if (digits.startsWith('0')) {
-                // Remove leading 0 (0745 -> 745)
+            // Get the selected country code
+            const countryCodeSelect = document.getElementById('countryCode');
+            const selectedCountry = countryCodeSelect ? countryCodeSelect.value : '+254';
+            
+            // Special handling for countries that use leading 0
+            if (selectedCountry === '+254' && digits.startsWith('0')) {
+                // Kenya: Remove leading 0 (0745 -> 745)
+                digits = digits.substring(1);
+            } else if (selectedCountry === '+44' && digits.startsWith('0')) {
+                // UK: Remove leading 0 (07700 -> 7700)
                 digits = digits.substring(1);
             }
             
-            // For Kenya, ensure we have the right length
-            if (digits.length >= 9) {
-                // Format for display (keep first 9 digits)
-                return digits.substring(0, 9);
-            }
+            // Don't restrict length - allow any country's phone number format
+            // Most international numbers are 7-15 digits (excluding country code)
+            // We'll let the backend validate the actual format
+            
+            // Optional: Add formatting for display (spaces/dashes) based on country
+            // For now, just return the raw digits to keep it simple and universal
             
             return digits;
         }
