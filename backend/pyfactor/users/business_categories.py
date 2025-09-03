@@ -11,8 +11,11 @@ BUSINESS_CATEGORIES = {
             'CONSTRUCTION',
             'CLEANING',
             'AUTOMOTIVE_REPAIR',
-            'PROFESSIONAL_SERVICES',  # Consulting, Accounting
+            'PROFESSIONAL_SERVICES',  # Consulting, Accounting, Legal
             'CREATIVE_SERVICES',  # Design, Photography
+            'EDUCATION_TRAINING',  # Schools, Tutoring, Training Centers
+            'EVENT_PLANNING',  # Event Planning, Catering
+            'SECURITY_SERVICES',  # Security Companies
         ]
     },
     'RETAIL': {
@@ -24,6 +27,11 @@ BUSINESS_CATEGORIES = {
             'GROCERY_MARKET',
             'PHARMACY',
             'ONLINE_STORE',
+            'FASHION_CLOTHING',  # Clothing, Fashion, Accessories
+            'ELECTRONICS_TECH',  # Electronics, Computers, Phones
+            'HARDWARE_BUILDING',  # Hardware, Building Supplies
+            'BOOKSTORE_STATIONERY',  # Books, Stationery
+            'FUEL_STATION',  # Petrol/Gas Stations
         ]
     },
     'MIXED': {
@@ -37,6 +45,10 @@ BUSINESS_CATEGORIES = {
             'AUTO_PARTS_REPAIR',
             'WAREHOUSE_STORAGE',
             'MANUFACTURING',
+            'HOTEL_HOSPITALITY',  # Hotels, Lodges, Guest Houses
+            'TECH_SERVICES',  # IT Services, Internet Cafes, Phone Repair
+            'PRINT_MEDIA',  # Printing, Media, Publishing
+            'MOBILE_MONEY',  # Mobile Money, Money Transfer
         ]
     },
     'OTHER': {
@@ -44,10 +56,15 @@ BUSINESS_CATEGORIES = {
         'features': ['jobs', 'pos'],
         'types': [
             'LOGISTICS_FREIGHT',
-            'FINANCIAL_SERVICES',
+            'FINANCIAL_SERVICES',  # Banks, Insurance, Microfinance
             'REAL_ESTATE',
             'AGRICULTURE',
             'NON_PROFIT',
+            'TRANSPORT_SERVICE',  # Taxi, Bus, Matatu, Airlines
+            'MINING_ENERGY',  # Mining, Oil & Gas, Solar
+            'TOURISM_TRAVEL',  # Tour Operators, Travel Agencies
+            'IMPORT_EXPORT',  # Import/Export, Trading
+            'TELECOM',  # Telecommunications, ISPs
             'OTHER',
         ]
     }
@@ -60,8 +77,11 @@ SIMPLIFIED_BUSINESS_TYPES = [
     ('CONSTRUCTION', 'Construction & Contracting'),
     ('CLEANING', 'Cleaning & Maintenance'),
     ('AUTOMOTIVE_REPAIR', 'Automotive Repair'),
-    ('PROFESSIONAL_SERVICES', 'Professional Services (Consulting, Accounting)'),
+    ('PROFESSIONAL_SERVICES', 'Professional Services (Consulting, Accounting, Legal)'),
     ('CREATIVE_SERVICES', 'Creative Services (Design, Photography)'),
+    ('EDUCATION_TRAINING', 'Education & Training Centers'),
+    ('EVENT_PLANNING', 'Event Planning & Catering'),
+    ('SECURITY_SERVICES', 'Security Services'),
     
     # Retail Businesses (POS)
     ('RETAIL_STORE', 'Retail Store'),
@@ -69,6 +89,11 @@ SIMPLIFIED_BUSINESS_TYPES = [
     ('GROCERY_MARKET', 'Grocery/Market'),
     ('PHARMACY', 'Pharmacy'),
     ('ONLINE_STORE', 'Online Store'),
+    ('FASHION_CLOTHING', 'Fashion & Clothing'),
+    ('ELECTRONICS_TECH', 'Electronics & Technology'),
+    ('HARDWARE_BUILDING', 'Hardware & Building Supplies'),
+    ('BOOKSTORE_STATIONERY', 'Bookstore & Stationery'),
+    ('FUEL_STATION', 'Fuel/Petrol Station'),
     
     # Mixed Businesses (Both)
     ('SALON_SPA', 'Salon/Spa'),
@@ -78,13 +103,22 @@ SIMPLIFIED_BUSINESS_TYPES = [
     ('AUTO_PARTS_REPAIR', 'Auto Parts & Repair'),
     ('WAREHOUSE_STORAGE', 'Warehouse/Storage'),
     ('MANUFACTURING', 'Manufacturing'),
+    ('HOTEL_HOSPITALITY', 'Hotel & Hospitality'),
+    ('TECH_SERVICES', 'Technology Services & Repair'),
+    ('PRINT_MEDIA', 'Printing & Media Services'),
+    ('MOBILE_MONEY', 'Mobile Money & Transfers'),
     
     # Other (Both)
     ('LOGISTICS_FREIGHT', 'Logistics & Freight'),
-    ('FINANCIAL_SERVICES', 'Financial Services'),
+    ('FINANCIAL_SERVICES', 'Financial Services (Banks, Insurance)'),
     ('REAL_ESTATE', 'Real Estate'),
     ('AGRICULTURE', 'Agriculture'),
     ('NON_PROFIT', 'Non-Profit'),
+    ('TRANSPORT_SERVICE', 'Transport Services (Taxi, Bus, Airlines)'),
+    ('MINING_ENERGY', 'Mining & Energy'),
+    ('TOURISM_TRAVEL', 'Tourism & Travel Agencies'),
+    ('IMPORT_EXPORT', 'Import/Export & Trading'),
+    ('TELECOM', 'Telecommunications'),
     ('OTHER', 'Other'),
 ]
 
