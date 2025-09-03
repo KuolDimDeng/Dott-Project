@@ -1,8 +1,6 @@
 'use client';
 
-import React, { useReducer } from 'react';
-
-import React, { useState, useEffect, Fragment, useRef, useCallback } from 'react';
+import React, { useReducer, useState, useEffect, Fragment, useRef, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';

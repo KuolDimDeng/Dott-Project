@@ -187,7 +187,7 @@ export async function migrateToSingleTruthSource() {
     
     // Check if onboarding is complete
     const setupCompleted = 
-      (typeof window !== 'undefined' && appCache.getAll()
+      (typeof window !== 'undefined' && appCache.getAll()?.setupCompleted === 'true') ||
       localStorage.getItem('setupCompleted') === 'true' || 
       getCookieValue('setupCompleted') === 'true';
                           

@@ -1,5 +1,4 @@
-import React, { useReducer } from 'react';
-import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
+import React, { useReducer, useState, useEffect, Fragment, useCallback, useMemo } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
@@ -113,7 +112,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   }, []);
 
   // Memoize the fetchEstimates function with pagination
-  const fetchEstimates = useCallback(async (tenant_id) => // RLS: Using tenant_id instead of schema_name {
+  const fetchEstimates = useCallback(async (tenant_id) => { // RLS: Using tenant_id instead of schema_name
     try {
       // Validate schema_name to prevent API errors
       if (!tenant_id) {
@@ -124,7 +123,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
       // Use paginated API request
       const response = await axiosInstance.get('/api/estimates/', {
         params: { 
-          tenant_id: tenant_id // RLS: Using tenant_id instead of schema_name,
+          tenant_id: tenant_id, // RLS: Using tenant_id instead of schema_name
           page: page + 1, // API uses 1-indexed pages
           limit: pageSize
         },

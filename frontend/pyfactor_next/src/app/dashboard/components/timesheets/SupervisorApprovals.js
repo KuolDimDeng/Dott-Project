@@ -131,4 +131,4 @@ export default function SupervisorApprovals() {
       </div>
     </div>
   );
-};<truncated_message>
+}
