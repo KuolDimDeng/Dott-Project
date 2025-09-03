@@ -57,7 +57,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         # Category filter
         if category:
             businesses = businesses.filter(
-                Q(primary_category=category) |
+                Q(business_type=category) |
                 Q(secondary_categories__contains=[category])
             )
         
@@ -210,9 +210,10 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         )
         
         # Count businesses per category
+        from core.business_types import BUSINESS_TYPE_CHOICES
         category_counts = {}
-        for choice in BusinessListing.BUSINESS_CATEGORIES:
-            count = businesses.filter(primary_category=choice[0]).count()
+        for choice in BUSINESS_TYPE_CHOICES:
+            count = businesses.filter(business_type=choice[0]).count()
             if count > 0:
                 category_counts[choice[0]] = {
                     'id': choice[0],

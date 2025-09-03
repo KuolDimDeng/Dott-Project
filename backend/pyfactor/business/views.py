@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 from .sms_service import sms_service
 from .models import PlaceholderBusiness, BusinessContactLog, SMSOptOut, BusinessLead
+from core.business_types import BUSINESS_TYPE_CHOICES
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -61,12 +62,20 @@ def get_marketplace_businesses(request):
             # Check if business has reached contact limit for this user
             uncontactable = business.contact_limit_reached
             
+            # Get display name for business type
+            category_display = business.category
+            for choice in BUSINESS_TYPE_CHOICES:
+                if choice[0] == business.category:
+                    category_display = choice[1]
+                    break
+            
             business_data = {
                 'id': f'ph{business.id}',
                 'name': business.name,
                 'phone': business.phone,
                 'address': business.address,
-                'category': business.category,
+                'category': category_display,  # Use display name
+                'category_code': business.category,  # Keep original code for filtering
                 'city': business.city,
                 'country': business.country,
                 'latitude': float(business.latitude) if business.latitude else None,

@@ -12,13 +12,13 @@ class BusinessListingSerializer(serializers.ModelSerializer):
     total_products = serializers.SerializerMethodField()
     is_open_now = serializers.SerializerMethodField()
     distance_km = serializers.FloatField(read_only=True, required=False)
-    primary_category_display = serializers.CharField(source='get_primary_category_display', read_only=True)
+    business_type_display = serializers.CharField(source='get_business_type_display', read_only=True)
     
     class Meta:
         model = BusinessListing
         fields = [
             'id', 'business', 'business_name', 'business_email',
-            'primary_category', 'primary_category_display', 'secondary_categories',
+            'business_type', 'business_type_display', 'secondary_categories',
             'delivery_scope', 'delivery_radius_km', 'ships_to_countries',
             'is_digital_only', 'country', 'city', 'latitude', 'longitude',
             'is_visible_in_marketplace', 'is_verified', 'is_featured',
