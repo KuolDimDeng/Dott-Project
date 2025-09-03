@@ -17,30 +17,14 @@ class BusinessListing(models.Model):
         ('digital', 'Digital/Online Service'),
     ]
     
-    BUSINESS_CATEGORIES = [
-        ('RESTAURANT', 'Restaurant'),
-        ('CAFE', 'Cafe'),
-        ('GROCERY', 'Grocery'),
-        ('PHARMACY', 'Pharmacy'),
-        ('RETAIL', 'Retail Store'),
-        ('FASHION', 'Fashion & Clothing'),
-        ('ELECTRONICS', 'Electronics'),
-        ('HOME_GARDEN', 'Home & Garden'),
-        ('BEAUTY', 'Beauty & Salon'),
-        ('HEALTH', 'Health & Medical'),
-        ('FITNESS', 'Fitness & Sports'),
-        ('AUTOMOTIVE', 'Automotive'),
-        ('SERVICES', 'Professional Services'),
-        ('EDUCATION', 'Education & Training'),
-        ('ENTERTAINMENT', 'Entertainment'),
-        ('OTHER', 'Other'),
-    ]
+    # Import comprehensive business types from central location
+    from core.business_types import BUSINESS_TYPE_CHOICES
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business = models.OneToOneField(User, on_delete=models.CASCADE, related_name='marketplace_listing')
     
-    # Categories
-    primary_category = models.CharField(max_length=50, choices=BUSINESS_CATEGORIES)
+    # Use standardized field name and choices
+    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPE_CHOICES)
     secondary_categories = ArrayField(
         models.CharField(max_length=50),
         blank=True,
@@ -101,14 +85,14 @@ class BusinessListing(models.Model):
     class Meta:
         db_table = 'marketplace_business_listings'
         indexes = [
-            models.Index(fields=['primary_category', 'is_visible_in_marketplace']),
+            models.Index(fields=['business_type', 'is_visible_in_marketplace']),
             models.Index(fields=['country', 'city', 'delivery_scope']),
             models.Index(fields=['average_rating', '-total_orders']),
             models.Index(fields=['-last_active']),
         ]
     
     def __str__(self):
-        return f"{self.business.business_name} - {self.get_primary_category_display()}"
+        return f"{self.business.business_name} - {self.get_business_type_display()}"
     
     def can_deliver_to(self, consumer_country, consumer_city, consumer_coords=None):
         """Check if business can deliver to consumer location"""
