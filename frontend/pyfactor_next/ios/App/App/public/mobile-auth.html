@@ -1419,8 +1419,8 @@
             try {
                 setLoading(true);
                 
-                // Always use the staging server for auth in mobile app - using correct endpoint
-                const authUrl = 'https://staging.dottapps.com/api/auth/password-login/';
+                // Use the Next.js consolidated-login endpoint which handles the full auth flow
+                const authUrl = 'https://staging.dottapps.com/api/auth/consolidated-login';
                 console.log('[Dott Auth] Starting email/password authentication...');
                 console.log('[Dott Auth] URL:', authUrl);
                 console.log('[Dott Auth] Email:', email);
