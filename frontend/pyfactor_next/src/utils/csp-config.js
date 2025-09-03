@@ -21,8 +21,6 @@ function getCSPHeader(nonce) {
       'https://auth.dottapps.com',
       'https://dev-cbyy63jovi6zrcos.us.auth0.com',
       'https://js.stripe.com',
-      'https://client.crisp.chat',
-      'https://widget.crisp.chat',
       'https://cdn.plaid.com',
       'https://cdn.posthog.com',
       'https://app.posthog.com',
@@ -41,12 +39,11 @@ function getCSPHeader(nonce) {
       "'self'",
       `'nonce-${nonce}'`,
       "'unsafe-inline'", // Temporary - remove after migrating styles
-      'https://fonts.googleapis.com',
-      'https://client.crisp.chat'
+      'https://fonts.googleapis.com'
     ],
     
     // Fonts
-    'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://client.crisp.chat'],
+    'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
     
     // Images
     'img-src': [
@@ -65,8 +62,6 @@ function getCSPHeader(nonce) {
       'https://*.auth0.com',
       'https://*.stripe.com',
       'https://*.googleapis.com',
-      'wss://*.crisp.chat',
-      'https://*.crisp.chat',
       'https://api.stripe.com',
       'https://api.dottapps.com',
       'https://auth.dottapps.com',
@@ -91,7 +86,6 @@ function getCSPHeader(nonce) {
       'https://auth.dottapps.com',
       'https://dev-cbyy63jovi6zrcos.us.auth0.com',
       'https://js.stripe.com',
-      'https://client.crisp.chat',
       'https://*.plaid.com'
     ],
     
@@ -133,7 +127,6 @@ function getDevCSP(nonce) {
       'https://*.auth0.com',
       'https://*.stripe.com',
       'https://*.googleapis.com',
-      'https://*.crisp.chat',
       'https://*.plaid.com',
       'https://*.posthog.com',
       'https://*.cloudflareinsights.com'

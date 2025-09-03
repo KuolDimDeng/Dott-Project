@@ -91,27 +91,6 @@ export default function RootLayout({ children }) {
         
         {/* Plaid script is loaded statically above as recommended by Plaid documentation */}
         
-        {/* Crisp Chat Widget */}
-        {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
-          <Script
-            id="crisp-chat"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                window.$crisp=[];
-                window.CRISP_WEBSITE_ID="${process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID}";
-                (function(){
-                  d=document;
-                  s=d.createElement("script");
-                  s.src="https://client.crisp.chat/l.js";
-                  s.async=1;
-                  d.getElementsByTagName("head")[0].appendChild(s);
-                })();
-              `,
-            }}
-          />
-        )}
-        
         {/* Device Fingerprinting Script - Disabled temporarily due to import issues */}
         {/* Will be initialized within components that need it */}
       </body>
