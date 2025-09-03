@@ -669,6 +669,65 @@
             sessionToken: null
         };
 
+        // Define handleAuth function in global scope so it can access other global functions
+        async function handleAuth(event) {
+            event.preventDefault();
+            console.log('[Auth] Form submitted! Current method:', AppState.currentAuthMethod);
+            
+            if (AppState.isLoading) return;
+            
+            hideMessages();
+            
+            if (AppState.currentAuthMethod === 'phone') {
+                // Handle phone authentication
+                const countryCode = document.getElementById('countryCode').value;
+                const phoneInput = document.getElementById('phoneInput').value;
+                
+                if (!phoneInput || phoneInput.length < 7) {
+                    showError('Please enter a valid phone number');
+                    return;
+                }
+                
+                const phoneNumber = formatCompletePhoneNumber(countryCode, phoneInput);
+                console.log('[Phone Auth] Country:', countryCode, 'Input:', phoneInput, 'Formatted:', phoneNumber);
+                
+                await handlePhoneAuth(phoneNumber);
+            } else {
+                // Handle email authentication
+                console.log('[Email Auth] Processing email authentication...');
+                const email = document.getElementById('emailInput').value;
+                const password = document.getElementById('password').value;
+                
+                console.log('[Email Auth] Email:', email ? 'provided' : 'missing');
+                console.log('[Email Auth] Password:', password ? 'provided' : 'missing');
+                
+                if (!email || !email.includes('@')) {
+                    showError('Please enter a valid email address');
+                    return;
+                }
+                
+                if (!password) {
+                    showError('Please enter your password');
+                    return;
+                }
+                
+                if (AppState.isSignup) {
+                    const firstName = document.getElementById('firstName').value;
+                    const lastName = document.getElementById('lastName').value;
+                    
+                    if (!firstName || !lastName) {
+                        showError('Please enter your first and last name');
+                        return;
+                    }
+                    
+                    await handleSignup(email, password, firstName, lastName);
+                } else {
+                    console.log('[Email Auth] Calling handleLogin with email and password');
+                    await handleLogin(email, password);
+                }
+            }
+        }
+
         // Initialize on load
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('[Dott Auth] ===== MOBILE AUTH INIT =====');
@@ -733,65 +792,6 @@
             AppState.currentAuthMethod = 'phone';
             console.log('[Dott Auth] Capacitor available:', !!window.Capacitor);
             console.log('[Dott Auth] Platform:', window.Capacitor?.getPlatform?.() || 'web');
-            
-            // Define handleAuth function before attaching it
-            async function handleAuth(event) {
-                event.preventDefault();
-                console.log('[Auth] Form submitted! Current method:', AppState.currentAuthMethod);
-                
-                if (AppState.isLoading) return;
-                
-                hideMessages();
-                
-                if (AppState.currentAuthMethod === 'phone') {
-                    // Handle phone authentication
-                    const countryCode = document.getElementById('countryCode').value;
-                    const phoneInput = document.getElementById('phoneInput').value;
-                    
-                    if (!phoneInput || phoneInput.length < 7) {
-                        showError('Please enter a valid phone number');
-                        return;
-                    }
-                    
-                    const phoneNumber = formatCompletePhoneNumber(countryCode, phoneInput);
-                    console.log('[Phone Auth] Country:', countryCode, 'Input:', phoneInput, 'Formatted:', phoneNumber);
-                    
-                    await handlePhoneAuth(phoneNumber);
-                } else {
-                    // Handle email authentication
-                    console.log('[Email Auth] Processing email authentication...');
-                    const email = document.getElementById('emailInput').value;
-                    const password = document.getElementById('password').value;
-                    
-                    console.log('[Email Auth] Email:', email ? 'provided' : 'missing');
-                    console.log('[Email Auth] Password:', password ? 'provided' : 'missing');
-                    
-                    if (!email || !email.includes('@')) {
-                        showError('Please enter a valid email address');
-                        return;
-                    }
-                    
-                    if (!password) {
-                        showError('Please enter your password');
-                        return;
-                    }
-                    
-                    if (AppState.isSignup) {
-                        const firstName = document.getElementById('firstName').value;
-                        const lastName = document.getElementById('lastName').value;
-                        
-                        if (!firstName || !lastName) {
-                            showError('Please enter your first and last name');
-                            return;
-                        }
-                        
-                        await handleSignup(email, password, firstName, lastName);
-                    } else {
-                        console.log('[Email Auth] Calling handleLogin with email and password');
-                        await handleLogin(email, password);
-                    }
-                }
-            }
             
             // Add form submit handler
             const authForm = document.getElementById('authForm');
@@ -1419,9 +1419,9 @@
             try {
                 setLoading(true);
                 
-                // Always use the staging server for auth in mobile app
-                const authUrl = 'https://staging.dottapps.com/api/auth/consolidated-login';
-                console.log('[Dott Auth] Starting authentication...');
+                // Always use the staging server for auth in mobile app - using correct endpoint
+                const authUrl = 'https://staging.dottapps.com/api/auth/password-login/';
+                console.log('[Dott Auth] Starting email/password authentication...');
                 console.log('[Dott Auth] URL:', authUrl);
                 console.log('[Dott Auth] Email:', email);
                 
