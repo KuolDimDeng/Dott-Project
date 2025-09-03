@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 from business.models import PlaceholderBusiness
-from users.models import UserProfile, BusinessDetails
+from users.models import Business, BusinessDetails
 from core.business_types import BUSINESS_TYPE_CHOICES, migrate_old_category
 
 # Try to import BusinessListing - it might not be migrated yet
@@ -144,29 +144,29 @@ def update_business_listings():
     return updated
 
 def update_user_business_types():
-    """Update UserProfile and BusinessDetails business types"""
+    """Update Business and BusinessDetails business types"""
     print("\n" + "="*80)
     print("UPDATING USER BUSINESS TYPES")
     print("="*80)
     
-    # Update UserProfile
-    profiles = UserProfile.objects.exclude(business_type__isnull=True)
-    profile_total = profiles.count()
-    profile_updated = 0
+    # Update Business model
+    businesses = Business.objects.exclude(business_type__isnull=True)
+    business_total = businesses.count()
+    business_updated = 0
     
-    print(f"Total UserProfiles to check: {profile_total:,}")
+    print(f"Total Businesses to check: {business_total:,}")
     
-    for profile in profiles:
-        old_type = profile.business_type
+    for business in businesses:
+        old_type = business.business_type
         new_type = migrate_old_category(old_type)
         
         if old_type != new_type:
-            profile.business_type = new_type
-            profile.simplified_business_type = new_type  # Also update simplified
-            profile.save(update_fields=['business_type', 'simplified_business_type'])
-            profile_updated += 1
+            business.business_type = new_type
+            business.simplified_business_type = new_type  # Also update simplified
+            business.save(update_fields=['business_type', 'simplified_business_type'])
+            business_updated += 1
     
-    print(f"✅ Updated {profile_updated:,} UserProfiles")
+    print(f"✅ Updated {business_updated:,} Businesses")
     
     # Update BusinessDetails
     try:
@@ -188,9 +188,9 @@ def update_user_business_types():
         
         print(f"✅ Updated {detail_updated:,} BusinessDetails")
     except Exception as e:
-        print(f"⚠️  BusinessDetails table might not exist: {e}")
+        print(f"⚠️  BusinessDetails might not have all fields: {e}")
     
-    return profile_updated
+    return business_updated
 
 def show_statistics():
     """Show statistics of business types after update"""
@@ -270,7 +270,12 @@ def show_statistics():
             pass
     
     try:
-        print(f"Total UserProfiles with business_type: {UserProfile.objects.exclude(business_type__isnull=True).count():,}")
+        print(f"Total Businesses with business_type: {Business.objects.exclude(business_type__isnull=True).count():,}")
+    except:
+        pass
+    
+    try:
+        print(f"Total BusinessDetails with business_type: {BusinessDetails.objects.exclude(business_type__isnull=True).count():,}")
     except:
         pass
 
