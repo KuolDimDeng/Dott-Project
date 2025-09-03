@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useSession } from '@/hooks/useSession-v2';
+import { getBusinessTypeDisplay } from '@/utils/businessTypeMapping';
 import toast from 'react-hot-toast';
 
 export default function SearchResultsPage() {
@@ -352,7 +353,7 @@ export default function SearchResultsPage() {
                   </div>
                   
                   <p className="text-sm text-gray-600 mb-2">
-                    {business.primary_category_display}
+                    {business.business_type_display || getBusinessTypeDisplay(business.business_type)}
                   </p>
                   
                   <div className="flex items-center justify-between text-sm">
