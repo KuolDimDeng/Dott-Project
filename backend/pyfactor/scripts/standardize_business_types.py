@@ -26,9 +26,16 @@ except ImportError:
     pass
 
 from business.models import PlaceholderBusiness
-from marketplace.models import BusinessListing
 from users.models import UserProfile, BusinessDetails
 from core.business_types import BUSINESS_TYPE_CHOICES, migrate_old_category
+
+# Try to import BusinessListing - it might not be migrated yet
+try:
+    from marketplace.models import BusinessListing
+    HAS_BUSINESS_LISTING = True
+except ImportError:
+    HAS_BUSINESS_LISTING = False
+    print("⚠️  BusinessListing model not available - marketplace app may not be migrated yet")
 
 def update_placeholder_businesses():
     """Update all PlaceholderBusiness category fields"""
@@ -63,8 +70,24 @@ def update_business_listings():
     print("UPDATING BUSINESS LISTINGS")
     print("="*80)
     
-    # Check if the field has already been renamed
+    # First check if table exists
     from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 
+                FROM information_schema.tables 
+                WHERE table_name = 'marketplace_business_listings'
+            )
+        """)
+        table_exists = cursor.fetchone()[0]
+    
+    if not table_exists:
+        print("⚠️  marketplace_business_listings table does not exist yet")
+        print("    Run migrations first: python manage.py migrate marketplace")
+        return 0
+    
+    # Check if the field has already been renamed
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT column_name 
@@ -192,23 +215,37 @@ def show_statistics():
         print(f"  {category:25} {label:45} {count:5,}")
     
     # BusinessListing statistics
-    try:
-        print("\nBusinessListing Distribution:")
-        from django.db import connection
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT business_type, COUNT(*) as count 
-                FROM marketplace_business_listings 
-                GROUP BY business_type 
-                ORDER BY count DESC
-            """)
-            listing_stats = cursor.fetchall()
-        
-        for business_type, count in listing_stats[:20]:  # Top 20
-            label = type_labels.get(business_type, business_type)
-            print(f"  {business_type:25} {label:45} {count:5,}")
-    except Exception as e:
-        print(f"  Could not get BusinessListing stats: {e}")
+    if HAS_BUSINESS_LISTING:
+        try:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                # Check if table exists first
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 
+                        FROM information_schema.tables 
+                        WHERE table_name = 'marketplace_business_listings'
+                    )
+                """)
+                if cursor.fetchone()[0]:
+                    print("\nBusinessListing Distribution:")
+                    cursor.execute("""
+                        SELECT business_type, COUNT(*) as count 
+                        FROM marketplace_business_listings 
+                        GROUP BY business_type 
+                        ORDER BY count DESC
+                    """)
+                    listing_stats = cursor.fetchall()
+                    
+                    for business_type, count in listing_stats[:20]:  # Top 20
+                        label = type_labels.get(business_type, business_type)
+                        print(f"  {business_type:25} {label:45} {count:5,}")
+                else:
+                    print("\nBusinessListing: Table not created yet")
+        except Exception as e:
+            print(f"  Could not get BusinessListing stats: {e}")
+    else:
+        print("\nBusinessListing: Model not available")
     
     # Summary
     print("\n" + "="*80)
@@ -216,10 +253,21 @@ def show_statistics():
     print("="*80)
     print(f"Total PlaceholderBusinesses: {PlaceholderBusiness.objects.count():,}")
     
-    try:
-        print(f"Total BusinessListings: {BusinessListing.objects.count():,}")
-    except:
-        pass
+    if HAS_BUSINESS_LISTING:
+        try:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 
+                        FROM information_schema.tables 
+                        WHERE table_name = 'marketplace_business_listings'
+                    )
+                """)
+                if cursor.fetchone()[0]:
+                    print(f"Total BusinessListings: {BusinessListing.objects.count():,}")
+        except:
+            pass
     
     try:
         print(f"Total UserProfiles with business_type: {UserProfile.objects.exclude(business_type__isnull=True).count():,}")
