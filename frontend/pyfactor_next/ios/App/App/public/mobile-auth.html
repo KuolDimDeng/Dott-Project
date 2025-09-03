@@ -1245,22 +1245,43 @@
                 // Store phone number globally
                 AppState.phoneNumber = phoneNumber;
                 
-                // Send OTP request
-                const response = await fetch(`${AppState.apiUrl}/api/auth/phone/register/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        phone_number: phoneNumber,
-                        user_type: AppState.isSignup ? 'consumer' : undefined,
-                        device_id: getDeviceId(),
-                        device_name: getDeviceName(),
-                        device_type: 'ios'
-                    })
-                });
+                const requestBody = {
+                    phone_number: phoneNumber,
+                    user_type: AppState.isSignup ? 'consumer' : undefined,
+                    device_id: getDeviceId(),
+                    device_name: getDeviceName(),
+                    device_type: 'ios'
+                };
                 
-                const data = await response.json();
+                let response, data;
+                
+                // Use Capacitor HTTP plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    console.log('[PhoneAuth] Using Capacitor HTTP plugin...');
+                    const { Http } = window.Capacitor.Plugins;
+                    
+                    const httpResponse = await Http.post({
+                        url: `${AppState.apiUrl}/api/auth/phone/register/`,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        data: requestBody
+                    });
+                    
+                    data = httpResponse.data;
+                } else {
+                    console.log('[PhoneAuth] Using standard fetch...');
+                    response = await fetch(`${AppState.apiUrl}/api/auth/phone/register/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    data = await response.json();
+                }
                 
                 if (data.success) {
                     setLoading(false);
@@ -1478,20 +1499,56 @@
                 const requestBody = { email, password };
                 console.log('[handleLogin] Request body prepared:', { email, passwordLength: password ? password.length : 0 });
                 
-                console.log('[handleLogin] Making fetch request...');
-                const response = await fetch(authUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                }).catch(err => {
-                    console.error('[handleLogin] Fetch error caught:', err);
-                    console.error('[handleLogin] Error type:', err.name);
-                    console.error('[handleLogin] Error message:', err.message);
-                    console.error('[handleLogin] Error stack:', err.stack);
-                    throw new Error(`Network error: ${err.message}`);
-                });
+                // Use Capacitor HTTP plugin if available, otherwise use fetch
+                let response;
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    console.log('[handleLogin] Using Capacitor HTTP plugin for request...');
+                    const { Http } = window.Capacitor.Plugins;
+                    
+                    try {
+                        const httpResponse = await Http.post({
+                            url: authUrl,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            data: requestBody
+                        });
+                        
+                        console.log('[handleLogin] Capacitor HTTP response received:', httpResponse.status);
+                        
+                        // Convert Capacitor response to fetch-like response
+                        response = {
+                            ok: httpResponse.status >= 200 && httpResponse.status < 300,
+                            status: httpResponse.status,
+                            json: async () => httpResponse.data
+                        };
+                    } catch (httpError) {
+                        console.error('[handleLogin] Capacitor HTTP error:', httpError);
+                        console.error('[handleLogin] Error details:', {
+                            message: httpError.message,
+                            code: httpError.code,
+                            status: httpError.status
+                        });
+                        throw new Error(`Network error: ${httpError.message || 'Failed to connect to server'}`);
+                    }
+                } else {
+                    console.log('[handleLogin] Using standard fetch request...');
+                    response = await fetch(authUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    }).catch(err => {
+                        console.error('[handleLogin] Fetch error caught:', err);
+                        console.error('[handleLogin] Error type:', err.name);
+                        console.error('[handleLogin] Error message:', err.message);
+                        console.error('[handleLogin] Error stack:', err.stack);
+                        throw new Error(`Network error: ${err.message}`);
+                    });
+                }
                 
                 const data = await response.json();
                 
