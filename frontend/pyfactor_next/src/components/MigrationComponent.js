@@ -77,7 +77,7 @@ export default function MigrationComponent() {
               if (clearResult) {
                 logger.info('[MigrationComponent] Successfully cleared legacy data');
               } else {
-                logger.warn('[MigrationComponent] Some data couldn't be cleared');
+                logger.warn('[MigrationComponent] Some data could not be cleared');
               }
               
               // Mark migration as complete
@@ -167,7 +167,7 @@ export async function migrateToSingleTruthSource() {
     
     // Add onboarding status migrations
     const onboardingStatus = 
-      (typeof window !== 'undefined' && appCache.getAll()
+      (typeof window !== 'undefined' && appCache.getAll()?.onboardingStatus) ||
       localStorage.getItem('onboardingStatus') || 
       localStorage.getItem('onboardingStep') || 
       getCookieValue('onboardingStep') || 

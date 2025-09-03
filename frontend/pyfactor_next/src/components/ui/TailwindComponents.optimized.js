@@ -1,13 +1,11 @@
 'use client';
 
 import { useMemoryOptimizer } from '@/utils/memoryManager';
-import React, { useReducer, useMemo, memo } from 'react';
+import React, { useReducer, useMemo, memo, useState, useEffect, Fragment } from 'react';
+import NextLink from 'next/link';
 
 // Tailwind UI components to replace MUI components
 // Comprehensive set of components based on Tailwind CSS
-
-import React, { useState, useEffect, Fragment } from 'react';
-import NextLink from 'next/link';
 
 // Re-export Next.js Link component with some additional styling
 export const Link = ({ children, href, className = '', ...props }) => {

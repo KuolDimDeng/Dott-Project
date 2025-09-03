@@ -210,11 +210,4 @@ export const withAsyncErrorBoundary = (Component) => withErrorBoundary(Component
   message: 'A component failed to load.'
 });
 
-// Export all boundaries
-export {
-  ApiErrorBoundary,
-  FormErrorBoundary,
-  DashboardErrorBoundary,
-  RouteErrorBoundary,
-  AsyncErrorBoundary
-};
+// All boundaries are already exported as named exports above

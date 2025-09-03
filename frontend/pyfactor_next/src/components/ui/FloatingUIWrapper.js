@@ -18,12 +18,12 @@ export default function FloatingUIWrapper({ children, onLoad, fallback = null })
       try {
         setIsLoading(true);
         // Dynamically import @floating-ui/react
-        const module = await import('@floating-ui/react');
+        const floatingUIModule = await import('@floating-ui/react');
         
         if (isMounted) {
-          setFloatingUI(module);
+          setFloatingUI(floatingUIModule);
           setIsLoading(false);
-          if (onLoad) onLoad(module);
+          if (onLoad) onLoad(floatingUIModule);
         }
       } catch (err) {
         console.error('Error loading Floating UI:', err);

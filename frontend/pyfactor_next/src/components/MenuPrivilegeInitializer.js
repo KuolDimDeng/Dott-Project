@@ -17,7 +17,7 @@ export default function MenuPrivilegeInitializer() {
       try {
         // Check if we're authenticated
         const isAuthenticated = getCacheValue('auth')?.isAuthenticated || 
-                               (typeof window !== 'undefined' && appCache.getAll()
+                               (typeof window !== 'undefined' && appCache.getAll()?.auth?.isAuthenticated);
         
         if (!isAuthenticated) {
           logger.debug('[MenuPrivilegeInitializer] User not authenticated yet, waiting...');
