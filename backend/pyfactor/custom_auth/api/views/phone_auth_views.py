@@ -13,8 +13,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from custom_auth.models import Tenant
-from custom_auth.models_phone import PhoneOTP
+from authentication.phone_models import PhoneOTP
 from custom_auth.sms_service import send_otp_sms, verify_phone_format
+from custom_auth.sms_abuse_prevention import SMSAbusePrevention
 from session_manager.services import session_service
 from datetime import timedelta
 
@@ -78,18 +79,20 @@ class PhoneRegisterView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Check for recent OTP (rate limiting - 1 per minute)
-            recent_otp = PhoneOTP.objects.filter(
+            # Check comprehensive abuse prevention
+            allowed, error_msg, metadata = SMSAbusePrevention.check_rate_limits(
                 phone_number=phone_number,
-                created_at__gte=timezone.now() - timedelta(minutes=1)
-            ).first()
+                ip_address=ip_address,
+                request_type='otp'
+            )
             
-            if recent_otp and not recent_otp.is_expired:
-                logger.warning(f"⏱️ Rate limit: Recent OTP exists for {phone_number}")
+            if not allowed:
+                logger.warning(f"🚫 SMS blocked for {phone_number}: {error_msg}")
                 return Response({
                     'success': False,
-                    'error': 'Please wait 1 minute before requesting a new code',
-                    'retry_after': 60
+                    'error': error_msg,
+                    'retry_after': metadata.get('retry_after', 60),
+                    'reason': metadata.get('reason', 'rate_limit')
                 }, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
             # Check if user exists with this phone number
@@ -98,13 +101,10 @@ class PhoneRegisterView(APIView):
             
             logger.info(f"📱 User status for {phone_number}: {'New' if is_new_user else 'Existing'}")
             
-            # Create new OTP
+            # Create new OTP (using existing model structure)
             otp = PhoneOTP(
                 phone_number=phone_number,
-                device_id=device_id,
-                device_name=device_name,
-                device_type=device_type,
-                ip_address=ip_address
+                sent_via='sms'  # We'll send via SMS using Twilio
             )
             otp.save()
             
@@ -114,12 +114,6 @@ class PhoneRegisterView(APIView):
             success, message, message_sid = send_otp_sms(phone_number, otp.otp_code)
             
             if success:
-                # Update OTP with delivery info
-                otp.delivery_status = 'sent'
-                otp.provider_message_id = message_sid
-                otp.sms_provider = 'twilio'
-                otp.save()
-                
                 logger.info(f"✅ OTP sent successfully to {phone_number}")
                 
                 return Response({
@@ -131,8 +125,8 @@ class PhoneRegisterView(APIView):
                 }, status=status.HTTP_200_OK)
             else:
                 logger.error(f"❌ Failed to send OTP to {phone_number}: {message}")
-                otp.delivery_status = 'failed'
-                otp.save()
+                # Delete the OTP if we couldn't send it
+                otp.delete()
                 
                 return Response({
                     'success': False,
@@ -180,7 +174,12 @@ class PhoneVerifyView(APIView):
         
         try:
             # Get latest valid OTP
-            otp = PhoneOTP.get_latest_valid_otp(phone_number)
+            otp = PhoneOTP.objects.filter(
+                phone_number=phone_number,
+                is_verified=False,
+                expires_at__gt=timezone.now(),
+                attempts__lt=3
+            ).order_by('-created_at').first()
             
             if not otp:
                 logger.warning(f"❌ No valid OTP found for {phone_number}")
@@ -190,13 +189,15 @@ class PhoneVerifyView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Verify OTP
-            is_valid, message = otp.verify(otp_code)
+            is_valid = otp.verify(otp_code)
             
             if not is_valid:
-                logger.warning(f"❌ Invalid OTP for {phone_number}: {message}")
+                remaining_attempts = 3 - otp.attempts
+                error_msg = f"Invalid verification code. {remaining_attempts} attempts remaining." if remaining_attempts > 0 else "Too many failed attempts. Please request a new code."
+                logger.warning(f"❌ Invalid OTP for {phone_number}: {error_msg}")
                 return Response({
                     'success': False,
-                    'error': message
+                    'error': error_msg
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             logger.info(f"✅ OTP verified successfully for {phone_number}")

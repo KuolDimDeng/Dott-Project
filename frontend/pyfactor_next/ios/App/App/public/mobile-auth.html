@@ -773,9 +773,9 @@
             isSignup: false,
             isLoading: false,
             currentAuthMethod: 'phone', // 'phone' or 'email'
-            apiUrl: 'https://staging.dottapps.com',  // Use staging proxy
+            apiUrl: 'https://dott-api-staging.onrender.com',  // Use staging proxy
             // Use staging for mobile app authentication
-            webAppUrl: 'https://staging.dottapps.com',
+            webAppUrl: 'https://dott-api-staging.onrender.com',
             user: null,
             sessionToken: null
         };
@@ -1220,23 +1220,23 @@
                     // First check if existing business user
                     if (userData.business_name || userData.onboarding_completed || userData.company_name) {
                         console.log('[Dott Auth] Existing business user detected, loading business menu...');
-                        window.location.replace('/mobile-business-menu.html');
+                        window.location.replace('mobile-business-menu.html');
                     } else if (!userData.user_type) {
                         console.log('[Dott Auth] No user type set, going to role selection...');
-                        window.location.replace('/mobile-role-selection.html');
+                        window.location.replace('mobile-role-selection.html');
                     } else if (userData.user_type === 'consumer' && !userData.has_business) {
                         console.log('[Dott Auth] Consumer user, loading consumer menu...');
-                        window.location.replace('/mobile-consumer-menu.html');
+                        window.location.replace('mobile-business-menu.html');
                     } else if (userData.user_type === 'business' && !userData.onboarding_completed) {
                         console.log('[Dott Auth] Business user needs onboarding...');
                         showLoading(false);
-                        showError('Please complete onboarding on the web app first at staging.dottapps.com');
+                        showError('Please complete onboarding on the web app first at dott-api-staging.onrender.com');
                         setTimeout(() => {
-                            window.location.replace('/mobile-business-menu.html');
+                            window.location.replace('mobile-business-menu.html');
                         }, 3000);
                     } else {
                         console.log('[Dott Auth] Loading business menu...');
-                        window.location.replace('/mobile-business-menu.html');
+                        window.location.replace('mobile-business-menu.html');
                     }
                 } else {
                     // If we can't check user type, go to role selection
@@ -1253,7 +1253,7 @@
                         const sessionData = JSON.parse(storedSession);
                         if (sessionData.user && (sessionData.user.onboarding_completed || sessionData.user.business_name)) {
                             console.log('[Dott Auth] Using stored user data - existing business user');
-                            window.location.replace('/mobile-business-menu.html');
+                            window.location.replace('mobile-business-menu.html');
                             return;
                         }
                     }
@@ -1263,7 +1263,7 @@
                 
                 // On error, go to role selection
                 console.log('[Dott Auth] Error checking user type, going to role selection...');
-                window.location.replace('/mobile-role-selection.html');
+                window.location.replace('mobile-role-selection.html');
             }
         }
 
@@ -1671,7 +1671,7 @@
                 
                 // Try direct backend API to bypass Next.js proxy issues
                 const backendUrl = 'https://dott-api-staging.onrender.com/api/auth/password-login/';
-                const proxyUrl = 'https://staging.dottapps.com/api/auth/consolidated-login';
+                const proxyUrl = 'https://dott-api-staging.onrender.com/api/auth/consolidated-login';
                 
                 console.log('[handleLogin] Trying direct backend authentication...');
                 console.log('[handleLogin] Backend URL:', backendUrl);
@@ -1759,14 +1759,23 @@
                 
                 const data = await response.json();
                 
+                console.log('[Dott Auth] Full response data:', JSON.stringify(data, null, 2));
+                console.log('[Dott Auth] Response keys:', Object.keys(data));
+                console.log('[Dott Auth] Looking for access_token:', data.access_token);
+                console.log('[Dott Auth] Looking for session_id:', data.session_id);
+                console.log('[Dott Auth] Looking for session_token:', data.session_token);
                 console.log('[Dott Auth] Response:', { status: response.status, success: data.success });
                 
-                if (response.ok && (data.success || data.session_token || data.sessionToken)) {
+                // Extract session token from various possible locations (matching phone auth which uses access_token)
+                const extractedToken = data.access_token || data.session_id || data.session_token || data.sessionToken || data.token;
+                console.log('[Dott Auth] Extracted token:', extractedToken ? extractedToken.substring(0, 20) + '...' : 'NONE');
+                
+                if (response.ok && (data.success || extractedToken)) {
                     // Save session
                     const sessionData = {
-                        token: data.session_token || data.sessionToken,
+                        token: extractedToken,
                         user: data.user,
-                        tenantId: data.tenant?.id,
+                        tenantId: data.tenant?.id || data.tenant_id,
                         needsOnboarding: data.needs_onboarding,
                         sid: data.sid  // Store sid if available
                     };
@@ -1839,7 +1848,7 @@
                 setLoading(true);
                 
                 // Use staging server for signup
-                const response = await fetch('https://staging.dottapps.com/api/auth/signup', {
+                const response = await fetch('https://dott-api-staging.onrender.com/api/auth/signup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1931,7 +1940,7 @@
                     try {
                         const result = await SignInWithApple.authorize({
                             clientId: 'com.dottapps.mobile',
-                            redirectUri: 'https://staging.dottapps.com/api/auth/oauth/apple-callback',
+                            redirectUri: 'https://dott-api-staging.onrender.com/api/auth/oauth/apple-callback',
                             scopes: 'email name',
                             state: generateState(),
                             nonce: generateNonce()
@@ -2038,7 +2047,7 @@
                 setLoading(true);
                 
                 // Use staging server for password reset
-                const response = await fetch('https://staging.dottapps.com/api/auth/forgot-password', {
+                const response = await fetch('https://dott-api-staging.onrender.com/api/auth/forgot-password', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

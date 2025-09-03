@@ -1437,3 +1437,14 @@ TENANT_ISOLATION = {
 # Deployment timestamp: Sat Aug 16 13:55:01 MDT 2025
 # Deployment timestamp: Sat Aug 16 14:45:20 MDT 2025
 # Deployment timestamp: Fri Aug 16 16:04:00 MDT 2025
+
+# SMS Configuration for Phone Authentication
+# Twilio (Global coverage, fallback for Africa)
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
+
+# Africa's Talking (Primary for African markets)
+AFRICAS_TALKING_API_KEY = os.getenv('AFRICAS_TALKING_API_KEY')
+AFRICAS_TALKING_USERNAME = os.getenv('AFRICAS_TALKING_USERNAME', 'sandbox')
+SMS_SENDER_ID = os.getenv('SMS_SENDER_ID', 'DOTT')

@@ -1,11 +1,14 @@
 """
-SMS Service for sending OTP codes via Twilio
+SMS Service for sending OTP codes via Twilio or Africa's Talking
 Handles real SMS delivery for phone authentication
+Automatically selects best provider based on phone number region
 """
 
 import os
 import logging
-from typing import Tuple, Optional
+import requests
+import json
+from typing import Tuple, Optional, Dict, Any
 from django.conf import settings
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
@@ -15,30 +18,70 @@ logger = logging.getLogger(__name__)
 
 class SMSService:
     """
-    Service for sending SMS messages via Twilio.
-    Requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in settings.
+    Service for sending SMS messages via Twilio or Africa's Talking.
+    Automatically selects the best provider based on phone number region.
+    Africa's Talking is preferred for African numbers (+254, +256, +255, +234, etc.)
+    Twilio is used for all other regions.
     """
+    
+    # African country codes where Africa's Talking is preferred
+    AFRICAN_COUNTRY_CODES = [
+        '+254',  # Kenya
+        '+256',  # Uganda
+        '+255',  # Tanzania
+        '+234',  # Nigeria
+        '+233',  # Ghana
+        '+250',  # Rwanda
+        '+251',  # Ethiopia
+        '+27',   # South Africa
+        '+263',  # Zimbabwe
+        '+265',  # Malawi
+        '+260',  # Zambia
+        '+237',  # Cameroon
+        '+225',  # Côte d'Ivoire
+        '+221',  # Senegal
+        '+243',  # DRC
+        '+244',  # Angola
+    ]
     
     def __init__(self):
         # Get Twilio credentials from environment variables
-        self.account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', os.environ.get('TWILIO_ACCOUNT_SID'))
-        self.auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', os.environ.get('TWILIO_AUTH_TOKEN'))
-        self.from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', os.environ.get('TWILIO_PHONE_NUMBER'))
+        self.twilio_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', os.environ.get('TWILIO_ACCOUNT_SID'))
+        self.twilio_token = getattr(settings, 'TWILIO_AUTH_TOKEN', os.environ.get('TWILIO_AUTH_TOKEN'))
+        self.twilio_number = getattr(settings, 'TWILIO_PHONE_NUMBER', os.environ.get('TWILIO_PHONE_NUMBER'))
+        
+        # Get Africa's Talking credentials
+        self.at_api_key = getattr(settings, 'AFRICAS_TALKING_API_KEY', os.environ.get('AFRICAS_TALKING_API_KEY'))
+        self.at_username = getattr(settings, 'AFRICAS_TALKING_USERNAME', os.environ.get('AFRICAS_TALKING_USERNAME', 'sandbox'))
+        self.at_sender_id = getattr(settings, 'SMS_SENDER_ID', os.environ.get('SMS_SENDER_ID', 'DOTT'))
         
         # Initialize Twilio client if credentials are available
-        self.client = None
-        if self.account_sid and self.auth_token:
+        self.twilio_client = None
+        if self.twilio_sid and self.twilio_token:
             try:
-                self.client = Client(self.account_sid, self.auth_token)
-                logger.info("✅ Twilio SMS service initialized successfully")
+                self.twilio_client = Client(self.twilio_sid, self.twilio_token)
+                logger.info("✅ Twilio SMS service initialized")
             except Exception as e:
-                logger.error(f"❌ Failed to initialize Twilio client: {str(e)}")
-        else:
-            logger.warning("⚠️ Twilio credentials not found. SMS sending will be simulated.")
+                logger.error(f"❌ Failed to initialize Twilio: {str(e)}")
+        
+        # Check Africa's Talking availability
+        self.at_available = bool(self.at_api_key)
+        if self.at_available:
+            logger.info("✅ Africa's Talking SMS service available")
+        
+        # Log warning if neither service is available
+        if not self.twilio_client and not self.at_available:
+            logger.warning("⚠️ No SMS service configured. SMS sending will be simulated.")
+    
+    def _is_african_number(self, phone_number: str) -> bool:
+        """Check if phone number is from an African country"""
+        return any(phone_number.startswith(code) for code in self.AFRICAN_COUNTRY_CODES)
     
     def send_otp(self, phone_number: str, otp_code: str) -> Tuple[bool, str, Optional[str]]:
         """
-        Send OTP code via SMS.
+        Send OTP code via SMS using intelligent routing:
+        - African numbers: Africa's Talking (primary) -> Twilio (fallback)
+        - Other numbers: Twilio only
         
         Args:
             phone_number: Phone number in E.164 format (e.g., +1234567890)
@@ -50,30 +93,100 @@ class SMSService:
         # Format the message
         message_body = f"Your Dott verification code is: {otp_code}\n\nThis code will expire in 10 minutes."
         
-        # If no Twilio client, simulate sending (for development)
-        if not self.client:
-            logger.warning(f"📱 SIMULATED SMS to {phone_number}: {message_body}")
-            return True, "SMS simulated (no Twilio credentials)", None
+        # Check if it's an African number
+        is_african = self._is_african_number(phone_number)
+        
+        if is_african:
+            logger.info(f"📍 Detected African number {phone_number}, using Africa's Talking first")
+            
+            # Try Africa's Talking first for African numbers
+            if self.at_available:
+                success, message, message_id = self._send_via_africas_talking(phone_number, message_body)
+                if success:
+                    return success, message, message_id
+                else:
+                    logger.warning(f"Africa's Talking failed, falling back to Twilio: {message}")
+            
+            # Fallback to Twilio for African numbers
+            if self.twilio_client:
+                logger.info("Using Twilio as fallback for African number")
+                return self._send_via_twilio(phone_number, message_body)
+        else:
+            # Use Twilio for non-African numbers
+            logger.info(f"📍 Non-African number {phone_number}, using Twilio")
+            if self.twilio_client:
+                return self._send_via_twilio(phone_number, message_body)
+        
+        # If no service available, simulate
+        logger.warning(f"📱 SIMULATED SMS to {phone_number}: {message_body}")
+        return True, "SMS simulated (no credentials configured)", None
+    
+    def _send_via_africas_talking(self, phone_number: str, message: str) -> Tuple[bool, str, Optional[str]]:
+        """Send SMS via Africa's Talking API"""
+        headers = {
+            'apiKey': self.at_api_key,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        }
+        
+        data = {
+            'username': self.at_username,
+            'to': phone_number,
+            'message': message,
+            'from': self.at_sender_id
+        }
         
         try:
-            # Send real SMS via Twilio
-            message = self.client.messages.create(
-                body=message_body,
-                from_=self.from_number,
+            response = requests.post(
+                'https://api.africastalking.com/version1/messaging',
+                headers=headers,
+                data=data,
+                timeout=30
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            
+            # Parse Africa's Talking response
+            sms_messages = result.get('SMSMessageData', {}).get('Recipients', [])
+            
+            if sms_messages and len(sms_messages) > 0:
+                recipient = sms_messages[0]
+                status_code = recipient.get('statusCode')
+                
+                if status_code == 101:  # Success
+                    message_id = recipient.get('messageId')
+                    logger.info(f"✅ SMS sent via Africa's Talking to {phone_number}. ID: {message_id}")
+                    return True, "SMS sent via Africa's Talking", message_id
+                else:
+                    return False, f"Africa's Talking error code: {status_code}", None
+            else:
+                return False, "No recipients in Africa's Talking response", None
+                
+        except Exception as e:
+            logger.error(f"❌ Africa's Talking error: {str(e)}")
+            return False, f"Africa's Talking error: {str(e)}", None
+    
+    def _send_via_twilio(self, phone_number: str, message: str) -> Tuple[bool, str, Optional[str]]:
+        """Send SMS via Twilio"""
+        try:
+            msg = self.twilio_client.messages.create(
+                body=message,
+                from_=self.twilio_number,
                 to=phone_number
             )
             
-            logger.info(f"✅ SMS sent successfully to {phone_number}. SID: {message.sid}")
-            return True, f"SMS sent via Twilio", message.sid
+            logger.info(f"✅ SMS sent via Twilio to {phone_number}. SID: {msg.sid}")
+            return True, "SMS sent via Twilio", msg.sid
             
         except TwilioRestException as e:
             error_msg = self._parse_twilio_error(e)
-            logger.error(f"❌ Twilio error sending SMS to {phone_number}: {error_msg}")
+            logger.error(f"❌ Twilio error: {error_msg}")
             return False, error_msg, None
             
         except Exception as e:
-            logger.error(f"❌ Unexpected error sending SMS to {phone_number}: {str(e)}")
-            return False, f"Failed to send SMS: {str(e)}", None
+            logger.error(f"❌ Twilio unexpected error: {str(e)}")
+            return False, f"Twilio error: {str(e)}", None
     
     def send_welcome_message(self, phone_number: str, user_name: str = "there") -> Tuple[bool, str, Optional[str]]:
         """

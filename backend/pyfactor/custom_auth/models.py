@@ -111,7 +111,7 @@ class User(AbstractUser):
     email_verified = models.BooleanField(default=False, help_text='Email verification status from Auth0')
     
     # Additional fields
-    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True, unique=True, db_index=True)
     business_id = models.UUIDField(null=True, blank=True)
     
     # Role field with choices - using enum

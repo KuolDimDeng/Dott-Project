@@ -112,13 +112,20 @@ export async function POST(request) {
       // When secrets are missing, proxy through backend password login endpoint
       addDebugEntry('Auth0 secrets not available, proxying through backend');
       
+      // Determine API URL - check multiple indicators for staging environment
+      const isStaging = process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' || 
+                        process.env.NODE_ENV === 'staging' ||
+                        process.env.NEXT_PUBLIC_API_URL?.includes('staging') ||
+                        process.env.NEXT_PUBLIC_BASE_URL?.includes('staging');
+      
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 
-                      (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com');
+                      (isStaging ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com');
       const cookieStore = cookies();
       
       // DEBUG: Log backend proxy details
       console.log('🔐 [BACKEND PROXY] ===== BACKEND AUTHENTICATION =====');
       console.log('🔐 [BACKEND PROXY] Using backend authentication');
+      console.log('🔐 [BACKEND PROXY] isStaging:', isStaging);
       console.log('🔐 [BACKEND PROXY] API URL:', API_URL);
       console.log('🔐 [BACKEND PROXY] Email:', email);
       console.log('🔐 [BACKEND PROXY] Password length:', password?.length);

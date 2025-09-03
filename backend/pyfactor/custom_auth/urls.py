@@ -42,6 +42,11 @@ from custom_auth.rls_debug import rls_debug_view, fix_rls_view
 from custom_auth.views.friend_invite_views import send_friend_invitation
 from custom_auth.views.employee_creation_views import create_employee_for_user
 from custom_auth.views.password_reset_views import PasswordResetView
+from custom_auth.api.views.phone_auth_views import (
+    PhoneRegisterView, 
+    PhoneVerifyView, 
+    PhoneResendOTPView
+)
 
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -149,4 +154,9 @@ urlpatterns = [
     
     # Custom password reset endpoint for admin-created users
     path('set-password/', PasswordResetView.as_view(), name='set-password'),
+    
+    # Phone Authentication endpoints
+    path('phone/register/', PhoneRegisterView.as_view(), name='phone-register'),
+    path('phone/verify/', PhoneVerifyView.as_view(), name='phone-verify'),
+    path('phone/resend/', PhoneResendOTPView.as_view(), name='phone-resend-otp'),
 ]
