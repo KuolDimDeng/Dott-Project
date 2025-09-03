@@ -28,6 +28,9 @@ cryptography==45.0.3
 # Basic packages
 requests==2.32.3
 
+# SMS Services
+twilio==8.11.0
+
 # Additional essentials
 Pillow==10.4.0
 phonenumbers==8.13.45
