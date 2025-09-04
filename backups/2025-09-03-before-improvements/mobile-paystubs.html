@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pay Stubs - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 20px;
+        }
+
+        .back-button:active {
+            background: #d0d0d0;
+        }
+
+        .header-content {
+            margin-left: 60px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .paystub-list {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .paystub-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .paystub-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .paystub-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .pay-period {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .pay-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0d4f8a; /* Primary navy blue from web app */
+        }
+
+        .paystub-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-label {
+            color: #999;
+        }
+
+        .detail-value {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .download-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #0d4f8a; /* Primary navy blue from web app */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .download-btn:active {
+            transform: scale(0.95);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: #999;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: #0d4f8a; /* Primary navy blue from web app */
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #0d4f8a; /* Primary navy blue from web app */
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="navigateToMenu()" type="button">
+                ←
+            </button>
+            <div class="header-content">
+                <h1>💵 Pay Stubs</h1>
+                <div>View and download your pay stubs</div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <select class="filter-select" id="yearFilter">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+            </select>
+            <select class="filter-select" id="monthFilter">
+                <option value="">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+        </div>
+
+        <div class="paystub-list">
+            <div id="paystubList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px;">Loading pay stubs...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="mobile-dashboard.html" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="mobile-pos.html" class="nav-item">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label">POS</span>
+        </a>
+        <a href="mobile-paystubs.html" class="nav-item active">
+            <span class="nav-icon">💵</span>
+            <span class="nav-label">Pay Stubs</span>
+        </a>
+        <a href="mobile-timesheet.html" class="nav-item">
+            <span class="nav-icon">⏰</span>
+            <span class="nav-label">Timesheet</span>
+        </a>
+        <a href="mobile-expenses.html" class="nav-item">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Expenses</span>
+        </a>
+    </div>
+
+    <script>
+        const AppState = {
+            apiUrl: 'https://staging.dottapps.com',
+            sessionToken: null,
+            tenantId: null,
+            paystubs: []
+        };
+
+        // Navigation function
+        function navigateToMenu() {
+            console.log('[PayStubs] Navigating back to business menu...');
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Initialize
+        async function init() {
+            await loadSession();
+            if (!AppState.sessionToken) {
+                window.location.href = 'mobile-auth.html';
+                return;
+            }
+            
+            await loadPaystubs();
+            setupFilters();
+        }
+
+        // Load session from secure storage
+        async function loadSession() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const result = await window.Capacitor.Plugins.SecureStoragePlugin.get({ key: 'session' });
+                    if (result.value) {
+                        const session = JSON.parse(result.value);
+                        AppState.sessionToken = session.token;
+                        AppState.tenantId = session.tenantId;
+                    }
+                } else {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const parsed = JSON.parse(session);
+                        AppState.sessionToken = parsed.token;
+                        AppState.tenantId = parsed.tenantId;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        // Load pay stubs
+        async function loadPaystubs() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/payroll/paystubs/`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    AppState.paystubs = data.results || data || [];
+                    displayPaystubs(AppState.paystubs);
+                } else if (response.status === 401) {
+                    window.location.href = 'mobile-auth.html';
+                }
+            } catch (error) {
+                console.error('Error loading pay stubs:', error);
+                // Show mock data for demo
+                AppState.paystubs = generateMockPaystubs();
+                displayPaystubs(AppState.paystubs);
+            }
+        }
+
+        // Generate mock pay stubs
+        function generateMockPaystubs() {
+            const stubs = [];
+            const currentDate = new Date();
+            
+            for (let i = 0; i < 6; i++) {
+                const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 15);
+                stubs.push({
+                    id: i + 1,
+                    pay_period_start: new Date(date.getFullYear(), date.getMonth(), 1).toISOString(),
+                    pay_period_end: new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString(),
+                    pay_date: date.toISOString(),
+                    gross_pay: 5000 + Math.random() * 1000,
+                    net_pay: 3500 + Math.random() * 500,
+                    deductions: 1500 + Math.random() * 200,
+                    taxes: 1000 + Math.random() * 200
+                });
+            }
+            
+            return stubs;
+        }
+
+        // Display pay stubs
+        function displayPaystubs(paystubs) {
+            const container = document.getElementById('paystubList');
+            
+            if (paystubs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💵</div>
+                        <h3>No pay stubs yet</h3>
+                        <p>Your pay stubs will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = paystubs.map(stub => {
+                const startDate = new Date(stub.pay_period_start);
+                const endDate = new Date(stub.pay_period_end);
+                const payDate = new Date(stub.pay_date);
+                
+                const periodStr = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+                
+                return `
+                    <div class="paystub-item" onclick="downloadPaystub(${stub.id})">
+                        <div class="paystub-header">
+                            <div class="pay-period">${periodStr}</div>
+                            <div class="pay-amount">$${(stub.net_pay || 0).toFixed(2)}</div>
+                        </div>
+                        <div class="paystub-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Pay Date:</span>
+                                <span class="detail-value">${payDate.toLocaleDateString()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Gross Pay:</span>
+                                <span class="detail-value">$${(stub.gross_pay || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Deductions:</span>
+                                <span class="detail-value">-$${(stub.deductions || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Taxes:</span>
+                                <span class="detail-value">-$${(stub.taxes || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <button class="download-btn" onclick="event.stopPropagation(); downloadPaystub(${stub.id})">
+                            📥 Download PDF
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Download pay stub
+        async function downloadPaystub(id) {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/payroll/paystubs/${id}/download/`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `paystub_${id}.pdf`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Pay stub download will be available soon');
+                }
+            } catch (error) {
+                alert('Pay stub download will be available soon');
+            }
+        }
+
+        // Setup filters
+        function setupFilters() {
+            document.getElementById('yearFilter').addEventListener('change', filterPaystubs);
+            document.getElementById('monthFilter').addEventListener('change', filterPaystubs);
+        }
+
+        // Filter pay stubs
+        function filterPaystubs() {
+            const year = document.getElementById('yearFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            
+            let filtered = AppState.paystubs;
+            
+            if (year) {
+                filtered = filtered.filter(stub => {
+                    const date = new Date(stub.pay_date);
+                    return date.getFullYear() == year;
+                });
+            }
+            
+            if (month) {
+                filtered = filtered.filter(stub => {
+                    const date = new Date(stub.pay_date);
+                    return (date.getMonth() + 1) == month;
+                });
+            }
+            
+            displayPaystubs(filtered);
+        }
+
+        // Start the app
+        init();
+    </script>
+
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                    /* Ensure proper z-index */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('[Crisp] Chat widget loaded and positioned');
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

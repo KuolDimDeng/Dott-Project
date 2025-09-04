@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Profile - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            position: sticky;
+            top: 0;
+            padding: 12px;
+            z-index: 100;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #d1d5db;
+            color: #111827;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            width: 44px;
+            height: 44px;
+        }
+        
+        .back-button:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .back-button:active {
+            transform: scale(0.95);
+        }
+        
+        .page-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 16px 0 24px;
+        }
+        
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .profile-header {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+        
+        .profile-initials {
+            width: 80px;
+            height: 80px;
+            background: #0d4f8a;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 auto 16px;
+        }
+        
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        
+        .profile-email {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .profile-role {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .profile-role.owner {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .profile-role.admin {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+            padding: 0 12px;
+            align-items: stretch;
+        }
+        
+        .profile-item {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 110px;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        .profile-item:hover, .profile-item:active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        .profile-icon {
+            width: 36px;
+            height: 36px;
+            margin-bottom: 8px;
+            color: #0d4f8a;
+            flex-shrink: 0;
+        }
+        
+        .profile-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            line-height: 1.2;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+        
+        @media (max-width: 360px) {
+            .profile-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
+        </button>
+    </div>
+    
+    <div class="page-title">Profile</div>
+    
+    <div class="content">
+        <!-- Profile Header Card -->
+        <div class="profile-header">
+            <div class="profile-initials" id="profileInitials">KD</div>
+            <div class="profile-name" id="profileName">Loading...</div>
+            <div class="profile-email" id="profileEmail">Loading...</div>
+            <span class="profile-role" id="profileRole">USER</span>
+        </div>
+        
+        <!-- Profile Menu Grid -->
+        <div class="profile-grid">
+            <!-- My Profile -->
+            <div class="profile-item" onclick="navigateTo('mobile-my-profile.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <div class="profile-label">My Profile</div>
+            </div>
+            
+            <!-- Pay & Compensations -->
+            <div class="profile-item" onclick="navigateTo('mobile-compensations.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="2" x2="12" y2="22"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <div class="profile-label">Pay & Compensations</div>
+            </div>
+            
+            <!-- Documents -->
+            <div class="profile-item" onclick="navigateTo('mobile-documents.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <div class="profile-label">Documents</div>
+            </div>
+            
+            <!-- Timesheets -->
+            <div class="profile-item" onclick="navigateTo('mobile-timesheet.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div class="profile-label">Timesheets</div>
+            </div>
+            
+            <!-- Pay Stubs -->
+            <div class="profile-item" onclick="navigateTo('mobile-paystubs.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                    <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path>
+                </svg>
+                <div class="profile-label">Pay Stubs</div>
+            </div>
+            
+            <!-- Organization -->
+            <div class="profile-item" onclick="navigateTo('mobile-organization.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="7" width="18" height="13" rx="2" ry="2"></rect>
+                    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="12" y1="12" x2="12" y2="16"></line>
+                    <line x1="9" y1="14" x2="15" y2="14"></line>
+                </svg>
+                <div class="profile-label">Organization</div>
+            </div>
+            
+            <!-- Security -->
+            <div class="profile-item" onclick="navigateTo('mobile-security.html')">
+                <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <path d="M9 12l2 2 4-4"></path>
+                </svg>
+                <div class="profile-label">Security</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Load user session data
+        async function loadUserSession() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    
+                    // Get user data
+                    try {
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            updateProfileDisplay(userData);
+                        }
+                    } catch (e) {
+                        console.log('[Profile] No user data in secure storage');
+                    }
+                } else {
+                    // Fallback to localStorage for development
+                    const sessionData = localStorage.getItem('sessionData');
+                    if (sessionData) {
+                        const parsed = JSON.parse(sessionData);
+                        if (parsed.user) {
+                            updateProfileDisplay(parsed.user);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Profile] Error loading session:', error);
+            }
+        }
+        
+        // Update profile display
+        function updateProfileDisplay(userData) {
+            const nameEl = document.getElementById('profileName');
+            const emailEl = document.getElementById('profileEmail');
+            const initialsEl = document.getElementById('profileInitials');
+            const roleEl = document.getElementById('profileRole');
+            
+            if (nameEl && userData.name) {
+                nameEl.textContent = userData.name;
+            }
+            
+            if (emailEl && userData.email) {
+                emailEl.textContent = userData.email;
+            }
+            
+            if (initialsEl && userData.name) {
+                const parts = userData.name.trim().split(' ');
+                let initials = '';
+                if (parts.length >= 2) {
+                    initials = parts[0][0] + parts[parts.length - 1][0];
+                } else if (parts.length === 1) {
+                    initials = parts[0].substring(0, 2);
+                }
+                initialsEl.textContent = initials.toUpperCase();
+            }
+            
+            if (roleEl && userData.role) {
+                roleEl.textContent = userData.role.toUpperCase();
+                // Add role-specific styling
+                roleEl.className = 'profile-role';
+                if (userData.role.toLowerCase() === 'owner') {
+                    roleEl.classList.add('owner');
+                } else if (userData.role.toLowerCase() === 'admin') {
+                    roleEl.classList.add('admin');
+                }
+            }
+        }
+        
+        // Navigation functions
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+        
+        function navigateTo(page) {
+            console.log('[Profile] Navigating to:', page);
+            window.location.href = page;
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Profile] Initializing profile page...');
+            loadUserSession();
+        });
+    </script>
+</body>
+</html>

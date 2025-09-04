@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Timesheet - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 20px;
+        }
+
+        .back-button:active {
+            background: #d0d0d0;
+        }
+
+        .header-content {
+            margin-left: 60px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .clock-status {
+            padding: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .clock-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .current-session {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .location-status {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .location-status.in-range {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .location-status.out-range {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .clock-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .clock-button.clock-in {
+            background: #0d4f8a; /* Primary navy blue from web app */
+        }
+
+        .clock-button.clock-out {
+            background: #ef4444;
+        }
+
+        .clock-button:active {
+            transform: scale(0.95);
+        }
+
+        .clock-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .clock-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .timesheet-list {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .timesheet-list h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .timesheet-entry {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .entry-date {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .entry-times {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .entry-duration {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: #999;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: #0d4f8a; /* Primary navy blue from web app */
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #0d4f8a; /* Primary navy blue from web app */
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="navigateToMenu()" type="button">
+                ←
+            </button>
+            <div class="header-content">
+                <h1>⏰ Timesheet</h1>
+                <div id="currentDate"></div>
+            </div>
+        </div>
+
+        <div class="clock-status">
+            <div class="clock-display" id="currentTime">00:00:00</div>
+            <div class="current-session" id="sessionInfo">Not clocked in</div>
+            
+            <div class="location-status" id="locationStatus">
+                📍 Checking location...
+            </div>
+
+            <button class="clock-button clock-in" id="clockButton" disabled>
+                <span class="clock-icon">⏰</span>
+                <span id="buttonText">Clock In</span>
+            </button>
+        </div>
+
+        <div class="timesheet-list">
+            <h2>Recent Entries</h2>
+            <div id="timesheetEntries">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="mobile-dashboard.html" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="mobile-pos.html" class="nav-item">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label">POS</span>
+        </a>
+        <a href="mobile-timesheet.html" class="nav-item active">
+            <span class="nav-icon">⏰</span>
+            <span class="nav-label">Timesheet</span>
+        </a>
+        <a href="mobile-expenses.html" class="nav-item">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Expenses</span>
+        </a>
+        <a href="mobile-inventory.html" class="nav-item">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Inventory</span>
+        </a>
+    </div>
+
+    <script>
+        const AppState = {
+            apiUrl: 'https://staging.dottapps.com',
+            sessionToken: null,
+            tenantId: null,
+            currentEntry: null,
+            userLocation: null,
+            geofences: [],
+            locationWatchId: null,
+            clockedIn: false
+        };
+
+        // Navigation function
+        function navigateToMenu() {
+            console.log('[Timesheet] Navigating back to business menu...');
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Initialize
+        async function init() {
+            await loadSession();
+            if (!AppState.sessionToken) {
+                window.location.href = 'mobile-auth.html';
+                return;
+            }
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            await Promise.all([
+                loadGeofences(),
+                loadCurrentEntry(),
+                loadTimesheetEntries(),
+                startLocationTracking()
+            ]);
+        }
+
+        // Load session from secure storage
+        async function loadSession() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const result = await window.Capacitor.Plugins.SecureStoragePlugin.get({ key: 'session' });
+                    if (result.value) {
+                        const session = JSON.parse(result.value);
+                        AppState.sessionToken = session.token;
+                        AppState.tenantId = session.tenantId;
+                    }
+                } else {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const parsed = JSON.parse(session);
+                        AppState.sessionToken = parsed.token;
+                        AppState.tenantId = parsed.tenantId;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        // Update clock display
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        // Load geofences
+        async function loadGeofences() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/hr/geofences/`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    AppState.geofences = data.results || data || [];
+                    checkLocationStatus();
+                }
+            } catch (error) {
+                console.error('Error loading geofences:', error);
+            }
+        }
+
+        // Start location tracking
+        async function startLocationTracking() {
+            if (!navigator.geolocation) {
+                updateLocationStatus('Location services not available', false);
+                return;
+            }
+
+            // Get initial position
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    AppState.userLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
+                    checkLocationStatus();
+                },
+                error => {
+                    console.error('Location error:', error);
+                    updateLocationStatus('Location permission denied', false);
+                }
+            );
+
+            // Watch position
+            AppState.locationWatchId = navigator.geolocation.watchPosition(
+                position => {
+                    AppState.userLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
+                    checkLocationStatus();
+                },
+                error => {
+                    console.error('Location watch error:', error);
+                }
+            );
+        }
+
+        // Check if user is within geofence
+        function checkLocationStatus() {
+            if (!AppState.userLocation || AppState.geofences.length === 0) {
+                updateLocationStatus('No geofences configured', true);
+                return;
+            }
+
+            let inRange = false;
+            let closestDistance = Infinity;
+            let closestFence = null;
+
+            for (const fence of AppState.geofences) {
+                const distance = calculateDistance(
+                    AppState.userLocation.latitude,
+                    AppState.userLocation.longitude,
+                    fence.latitude,
+                    fence.longitude
+                );
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestFence = fence;
+                }
+
+                if (distance <= fence.radius) {
+                    inRange = true;
+                    break;
+                }
+            }
+
+            if (inRange) {
+                updateLocationStatus(`✅ Within range of ${closestFence.name}`, true);
+            } else if (closestFence) {
+                const distanceAway = Math.round(closestDistance - closestFence.radius);
+                updateLocationStatus(`📍 ${distanceAway}m from ${closestFence.name}`, false);
+            }
+        }
+
+        // Calculate distance between two points
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        // Update location status display
+        function updateLocationStatus(message, inRange) {
+            const statusEl = document.getElementById('locationStatus');
+            statusEl.textContent = message;
+            statusEl.className = `location-status ${inRange ? 'in-range' : 'out-range'}`;
+            
+            const button = document.getElementById('clockButton');
+            button.disabled = !inRange && !AppState.clockedIn;
+        }
+
+        // Load current timesheet entry
+        async function loadCurrentEntry() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/hr/timesheet/current/`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.id) {
+                        AppState.currentEntry = data;
+                        AppState.clockedIn = true;
+                        updateClockButton(true);
+                        updateSessionInfo(data);
+                    } else {
+                        AppState.clockedIn = false;
+                        updateClockButton(false);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading current entry:', error);
+            }
+        }
+
+        // Update clock button
+        function updateClockButton(clockedIn) {
+            const button = document.getElementById('clockButton');
+            const buttonText = document.getElementById('buttonText');
+            
+            if (clockedIn) {
+                button.className = 'clock-button clock-out';
+                buttonText.textContent = 'Clock Out';
+                button.disabled = false;
+            } else {
+                button.className = 'clock-button clock-in';
+                buttonText.textContent = 'Clock In';
+            }
+        }
+
+        // Update session info
+        function updateSessionInfo(entry) {
+            const sessionInfo = document.getElementById('sessionInfo');
+            if (entry) {
+                const startTime = new Date(entry.clock_in);
+                const duration = calculateDuration(startTime, new Date());
+                sessionInfo.textContent = `Clocked in at ${startTime.toLocaleTimeString()} (${duration})`;
+            } else {
+                sessionInfo.textContent = 'Not clocked in';
+            }
+        }
+
+        // Calculate duration
+        function calculateDuration(start, end) {
+            const diff = end - start;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Handle clock button click
+        document.getElementById('clockButton').addEventListener('click', async () => {
+            const button = document.getElementById('clockButton');
+            button.disabled = true;
+
+            try {
+                if (AppState.clockedIn) {
+                    // Clock out
+                    const response = await fetch(`${AppState.apiUrl}/api/hr/timesheet/${AppState.currentEntry.id}/clock-out/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${AppState.sessionToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            latitude: AppState.userLocation?.latitude,
+                            longitude: AppState.userLocation?.longitude
+                        })
+                    });
+
+                    if (response.ok) {
+                        AppState.clockedIn = false;
+                        AppState.currentEntry = null;
+                        updateClockButton(false);
+                        updateSessionInfo(null);
+                        await loadTimesheetEntries();
+                    }
+                } else {
+                    // Clock in
+                    const response = await fetch(`${AppState.apiUrl}/api/hr/timesheet/clock-in/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${AppState.sessionToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            latitude: AppState.userLocation?.latitude,
+                            longitude: AppState.userLocation?.longitude
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        AppState.clockedIn = true;
+                        AppState.currentEntry = data;
+                        updateClockButton(true);
+                        updateSessionInfo(data);
+                    }
+                }
+            } catch (error) {
+                console.error('Clock error:', error);
+                alert('Failed to clock in/out. Please try again.');
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        // Load timesheet entries
+        async function loadTimesheetEntries() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/hr/timesheet/`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const entries = data.results || data || [];
+                    displayTimesheetEntries(entries.slice(0, 10)); // Show last 10 entries
+                }
+            } catch (error) {
+                console.error('Error loading timesheet:', error);
+                document.getElementById('timesheetEntries').innerHTML = 
+                    '<div class="error">Failed to load timesheet entries</div>';
+            }
+        }
+
+        // Display timesheet entries
+        function displayTimesheetEntries(entries) {
+            const container = document.getElementById('timesheetEntries');
+            
+            if (entries.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No timesheet entries yet</div>';
+                return;
+            }
+
+            container.innerHTML = entries.map(entry => {
+                const clockIn = new Date(entry.clock_in);
+                const clockOut = entry.clock_out ? new Date(entry.clock_out) : null;
+                const duration = clockOut ? calculateDuration(clockIn, clockOut) : 'In progress';
+                
+                return `
+                    <div class="timesheet-entry">
+                        <div class="entry-date">${clockIn.toLocaleDateString()}</div>
+                        <div class="entry-times">
+                            <span>In: ${clockIn.toLocaleTimeString()}</span>
+                            <span>Out: ${clockOut ? clockOut.toLocaleTimeString() : '-'}</span>
+                        </div>
+                        <div class="entry-duration">Duration: ${duration}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Start the app
+        init();
+    </script>
+
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                    /* Ensure proper z-index */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('[Crisp] Chat widget loaded and positioned');
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

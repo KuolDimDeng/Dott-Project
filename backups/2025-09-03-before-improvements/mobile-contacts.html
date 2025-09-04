@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Contacts - Dott</title>
+    <script src="capacitor-plugins.js"></script>
+    <style>
+        :root {
+            --theme-primary: #0d4f8a; /* Default business blue */
+            --theme-primary-dark: #0a3d6b;
+            --theme-primary-light: #1a5f9a;
+            --theme-shadow-color: rgba(13, 79, 138, 0.2);
+        }
+        
+        body.consumer-theme {
+            --theme-primary: #064e3b; /* Consumer dark green */
+            --theme-primary-dark: #033d2d;
+            --theme-primary-light: #0a6b50;
+            --theme-shadow-color: rgba(6, 78, 59, 0.2);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            color: #1f2937;
+        }
+
+        /* Header */
+        .header {
+            background: var(--theme-primary);
+            color: white;
+            padding: 16px 20px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            box-shadow: 0 2px 8px var(--theme-shadow-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: background 0.3s ease;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 16px;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 16px;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .header-title {
+            flex: 1;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .add-contact-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-contact-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* Search Bar */
+        .search-container {
+            padding: 0 4px;
+        }
+
+        .search-bar {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            color: white;
+            font-size: 16px;
+            placeholder-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            width: 20px;
+            height: 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            color: #6b7280;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .tab.active {
+            color: var(--theme-primary);
+            border-bottom-color: var(--theme-primary);
+        }
+
+        .tab .badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--theme-primary);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Contacts List */
+        .contacts-container {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .contact-item:hover {
+            background: #f9fafb;
+        }
+
+        .contact-item:active {
+            background: #f3f4f6;
+        }
+
+        .contact-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            margin-right: 16px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .contact-status {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 3px solid white;
+        }
+
+        .status-online { background: var(--theme-primary); }
+        .status-away { background: #f59e0b; }
+        .status-offline { background: #6b7280; }
+
+        .contact-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .contact-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .contact-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .contact-business-type {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .contact-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+
+        .action-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .voice-call-action {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .voice-call-action:hover {
+            background: #bfdbfe;
+            transform: scale(1.05);
+        }
+
+        .video-call-action {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .video-call-action:hover {
+            background: #bbf7d0;
+            transform: scale(1.05);
+        }
+
+        .message-action {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .message-action:hover {
+            background: #e5e7eb;
+            transform: scale(1.05);
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
+        }
+
+        .action-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            color: #d1d5db;
+            margin-bottom: 24px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            color: #6b7280;
+            line-height: 1.5;
+            max-width: 280px;
+        }
+
+        .empty-state button {
+            margin-top: 24px;
+            background: var(--theme-primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .empty-state button:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        /* Recent Activity */
+        .recent-activity {
+            background: #f8f9fa;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .activity-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .activity-icon.call-missed { color: #ef4444; }
+        .activity-icon.call-completed { color: #10b981; }
+        .activity-icon.message-received { color: #3b82f6; }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top-color: var(--theme-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+
+        /* Invitation Badge for Contacts */
+        .invite-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Add Contact Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .modal-button.primary {
+            background: var(--theme-primary);
+            color: white;
+        }
+
+        .modal-button.primary:hover {
+            background: #059669;
+        }
+
+        .modal-button.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-button.secondary:hover {
+            background: #e5e7eb;
+        }
+
+        /* Responsive */
+        @media (max-width: 375px) {
+            .contact-item {
+                padding: 12px 16px;
+            }
+            
+            .contact-avatar {
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+            }
+            
+            .contact-actions {
+                gap: 6px;
+            }
+            
+            .action-button {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-top">
+            <button class="back-button" onclick="goBack()" title="Back">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            
+            <h1 class="header-title">Contacts</h1>
+            
+            <button class="add-contact-button" onclick="showAddContactModal()" title="Add Contact">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="Search contacts..." 
+                    id="searchInput"
+                    oninput="filterContacts(this.value)"
+                >
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('all')" id="allTab">
+                All Contacts
+                <span class="badge" id="allBadge">12</span>
+            </button>
+            <button class="tab" onclick="switchTab('online')" id="onlineTab">
+                Online
+                <span class="badge" id="onlineBadge">4</span>
+            </button>
+            <button class="tab" onclick="switchTab('business')" id="businessTab">
+                Business
+                <span class="badge" id="businessBadge">8</span>
+            </button>
+            <button class="tab" onclick="switchTab('recent')" id="recentTab">
+                Recent
+            </button>
+        </div>
+    </div>
+
+    <!-- Recent Activity (shown in recent tab) -->
+    <div class="recent-activity" id="recentActivity" style="display: none;">
+        <div class="activity-item">
+            <svg class="activity-icon call-missed" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
+            <span>Missed call from <strong>Sarah Johnson</strong> • 2 hours ago</span>
+        </div>
+    </div>
+
+    <!-- Contacts List -->
+    <div class="contacts-container" id="contactsContainer">
+        <!-- Loading state -->
+        <div class="loading-container" id="loadingContainer">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Sample contacts will be populated here -->
+    </div>
+
+    <!-- Add Contact Modal -->
+    <div class="modal-overlay" id="addContactModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Add New Contact</h2>
+                <p class="modal-subtitle">Connect with businesses and consumers</p>
+            </div>
+            
+            <form class="modal-form" onsubmit="addContact(event)">
+                <div class="form-group">
+                    <label class="form-label">Contact Method</label>
+                    <select class="form-input" id="contactMethod" onchange="toggleContactFields()">
+                        <option value="email">Email Address</option>
+                        <option value="phone">Phone Number</option>
+                        <option value="business">Business Name</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="emailGroup">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="contactEmail" placeholder="contact@example.com">
+                </div>
+                
+                <div class="form-group" id="phoneGroup" style="display: none;">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" class="form-input" id="contactPhone" placeholder="+1 (555) 123-4567">
+                </div>
+                
+                <div class="form-group" id="businessGroup" style="display: none;">
+                    <label class="form-label">Business Name</label>
+                    <input type="text" class="form-input" id="businessName" placeholder="Search businesses...">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Display Name (Optional)</label>
+                    <input type="text" class="form-input" id="displayName" placeholder="How should this contact appear?">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="modal-button secondary" onclick="closeAddContactModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="modal-button primary">
+                        Add Contact
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Contacts state management
+        let contactsState = {
+            contacts: [],
+            filteredContacts: [],
+            currentTab: 'all',
+            searchQuery: '',
+            loading: true,
+            permissionDenied: false
+        };
+
+        // Sample contacts data (fallback)
+        const sampleContacts = [
+            {
+                id: 1,
+                name: 'Sarah Johnson',
+                avatar: 'SJ',
+                phone: '+1 (555) 123-4567',
+                email: 'sarah@example.com',
+                status: 'online',
+                businessType: 'Restaurant',
+                lastSeen: new Date(),
+                isOnline: true,
+                isBusiness: true
+            },
+            {
+                id: 2,
+                name: 'Mike Chen',
+                avatar: 'MC',
+                phone: '+1 (555) 987-6543',
+                email: 'mike@techstore.com',
+                status: 'away',
+                businessType: 'Retail',
+                lastSeen: new Date(Date.now() - 300000), // 5 min ago
+                isOnline: false,
+                isBusiness: true
+            },
+            {
+                id: 3,
+                name: 'Emma Davis',
+                avatar: 'ED',
+                phone: '+1 (555) 456-7890',
+                email: 'emma@example.com',
+                status: 'offline',
+                businessType: null,
+                lastSeen: new Date(Date.now() - 3600000), // 1 hour ago
+                isOnline: false,
+                isBusiness: false
+            },
+            {
+                id: 4,
+                name: 'Alex Rodriguez',
+                avatar: 'AR',
+                phone: '+1 (555) 321-0987',
+                email: 'alex@consulting.com',
+                status: 'online',
+                businessType: 'Services',
+                lastSeen: new Date(),
+                isOnline: true,
+                isBusiness: true
+            },
+            {
+                id: 5,
+                name: 'Lisa Park',
+                avatar: 'LP',
+                phone: '+1 (555) 654-3210',
+                email: 'lisa@healthclinic.com',
+                status: 'online',
+                businessType: 'Healthcare',
+                lastSeen: new Date(),
+                isOnline: true,
+                isBusiness: true
+            },
+            {
+                id: 6,
+                name: 'David Wilson',
+                avatar: 'DW',
+                phone: '+1 (555) 789-0123',
+                email: 'david@example.com',
+                status: 'offline',
+                businessType: null,
+                lastSeen: new Date(Date.now() - 7200000), // 2 hours ago
+                isOnline: false,
+                isBusiness: false
+            }
+        ];
+
+        // Demo contacts for TestFlight/Development
+        function getDemoContacts() {
+            console.log('[Contacts] Loading demo contacts for testing...');
+            return [
+                {
+                    id: 'demo_1',
+                    name: 'John Smith',
+                    avatar: 'JS',
+                    phone: '+1 (555) 123-4567',
+                    email: 'john.smith@example.com',
+                    status: 'offline',
+                    businessType: null,
+                    lastSeen: new Date(),
+                    isOnline: false,
+                    isBusiness: false,
+                    isPhoneContact: true,
+                    image: null
+                },
+                {
+                    id: 'demo_2',
+                    name: 'Sarah Johnson',
+                    avatar: 'SJ',
+                    phone: '+1 (555) 234-5678',
+                    email: 'sarah.j@example.com',
+                    status: 'offline',
+                    businessType: 'Real Estate Agent',
+                    lastSeen: new Date(),
+                    isOnline: false,
+                    isBusiness: true,
+                    isPhoneContact: true,
+                    image: null
+                },
+                {
+                    id: 'demo_3',
+                    name: 'Mike Chen',
+                    avatar: 'MC',
+                    phone: '+1 (555) 345-6789',
+                    email: 'mike.chen@example.com',
+                    status: 'offline',
+                    businessType: null,
+                    lastSeen: new Date(),
+                    isOnline: false,
+                    isBusiness: false,
+                    isPhoneContact: true,
+                    image: null
+                },
+                {
+                    id: 'demo_4',
+                    name: 'Emily Davis',
+                    avatar: 'ED',
+                    phone: '+1 (555) 456-7890',
+                    email: 'emily.d@example.com',
+                    status: 'offline',
+                    businessType: 'Accountant',
+                    lastSeen: new Date(),
+                    isOnline: false,
+                    isBusiness: true,
+                    isPhoneContact: true,
+                    image: null
+                },
+                {
+                    id: 'demo_5',
+                    name: 'David Wilson',
+                    avatar: 'DW',
+                    phone: '+1 (555) 567-8901',
+                    email: 'david.w@example.com',
+                    status: 'offline',
+                    businessType: null,
+                    lastSeen: new Date(),
+                    isOnline: false,
+                    isBusiness: false,
+                    isPhoneContact: true,
+                    image: null
+                }
+            ];
+        }
+
+        // Initialize contacts
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Contacts] Initializing contacts interface...');
+            
+            // Apply theme based on source
+            applyThemeFromSource();
+            
+            loadContacts();
+        });
+        
+        function applyThemeFromSource() {
+            // Check URL parameters for theme
+            const urlParams = new URLSearchParams(window.location.search);
+            const theme = urlParams.get('theme');
+            
+            // Check localStorage for marketplace mode as fallback
+            const marketplaceMode = localStorage.getItem('marketplaceMode') || 'business';
+            
+            if (theme === 'consumer' || (!theme && marketplaceMode === 'consumer')) {
+                document.body.classList.add('consumer-theme');
+                console.log('[Contacts] Applied consumer theme');
+            } else {
+                // Business theme is default, no class needed
+                console.log('[Contacts] Applied business theme');
+            }
+        }
+
+        async function loadPhoneContacts() {
+            console.log('[Contacts] Attempting to load phone contacts...');
+            
+            // Use the helper function from capacitor-plugins.js
+            if (window.getPhoneContacts) {
+                const contacts = await window.getPhoneContacts();
+                
+                if (!contacts) {
+                    console.log('[Contacts] Permission denied or error - using demo contacts');
+                    contactsState.permissionDenied = true;
+                    return getDemoContacts();
+                }
+                
+                if (contacts.length === 0) {
+                    console.log('[Contacts] User has no contacts on device');
+                    return [];
+                }
+                
+                console.log('[Contacts] Raw contacts data:', JSON.stringify(contacts.slice(0, 2)));
+                
+                // Transform phone contacts to our format
+                const phoneContacts = contacts.map((contact, index) => {
+                    const name = contact.name?.display || 
+                                (contact.name?.given ? `${contact.name.given} ${contact.name.family || ''}`.trim() : null) ||
+                                'Unknown Contact';
+                    const phone = contact.phones?.[0]?.number || '';
+                    const email = contact.emails?.[0]?.address || '';
+                    const initials = name.split(' ').filter(n => n).map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                    
+                    return {
+                        id: `phone_${index}`,
+                        name: name,
+                        avatar: initials || '??',
+                        phone: phone,
+                        email: email,
+                        status: 'offline',
+                        businessType: contact.organization?.name || null,
+                        lastSeen: new Date(),
+                        isOnline: false,
+                        isBusiness: !!contact.organization?.name,
+                        isPhoneContact: true,
+                        image: null
+                    };
+                }).filter(c => c.name !== 'Unknown Contact' && (c.phone || c.email));
+                
+                console.log('[Contacts] Processed', phoneContacts.length, 'phone contacts');
+                return phoneContacts;
+            } else {
+                console.log('[Contacts] getPhoneContacts helper not available');
+                return null;
+            }
+        }
+
+        async function loadContacts() {
+            console.log('[Contacts] Loading contacts...');
+            
+            // Try to load phone contacts first
+            const phoneContacts = await loadPhoneContacts();
+            
+            if (phoneContacts !== null) {
+                // We got real phone contacts (could be empty array if user has no contacts)
+                if (phoneContacts.length > 0) {
+                    // Combine phone contacts with sample Dott business contacts
+                    contactsState.contacts = [...phoneContacts, ...sampleContacts];
+                    console.log('[Contacts] Using', phoneContacts.length, 'phone contacts + Dott contacts');
+                } else if (phoneContacts.length === 0 && !contactsState.permissionDenied) {
+                    // User granted permission but has no contacts
+                    contactsState.contacts = sampleContacts;
+                    console.log('[Contacts] User has no phone contacts, showing Dott contacts only');
+                } else {
+                    // Permission denied, using demo contacts
+                    contactsState.contacts = [...phoneContacts, ...sampleContacts];
+                    console.log('[Contacts] Using demo contacts + Dott contacts');
+                }
+            } else {
+                // Permission was denied or error occurred
+                contactsState.contacts = sampleContacts;
+                console.log('[Contacts] Permission denied, using sample contacts only');
+                
+                // Show permission message if denied
+                if (contactsState.permissionDenied) {
+                    showPermissionMessage();
+                }
+            }
+            
+            contactsState.loading = false;
+            
+            document.getElementById('loadingContainer').style.display = 'none';
+            renderContacts();
+            updateTabBadges();
+        }
+
+        function showPermissionMessage() {
+            const container = document.getElementById('contactsContainer');
+            const isTestFlight = window.location.hostname.includes('capacitor://') || 
+                               !window.location.hostname.includes('dottapps.com');
+            
+            const message = isTestFlight ? 
+                'TestFlight apps have limited contact access. Demo contacts are shown for testing.' :
+                'To sync your phone contacts, please grant contact permission in Settings';
+            
+            const permissionHtml = `
+                <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin: 16px; text-align: center;">
+                    <svg style="width: 24px; height: 24px; color: #f59e0b; margin: 0 auto 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <p style="color: #92400e; font-size: 14px; margin: 0;">
+                        ${message}
+                    </p>
+                    ${!isTestFlight ? `
+                    <button onclick="openAppSettings()" style="margin-top: 12px; background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px;">
+                        Open Settings
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', permissionHtml);
+        }
+
+        async function openAppSettings() {
+            if (typeof Capacitor !== 'undefined' && Capacitor.Plugins && Capacitor.Plugins.App) {
+                try {
+                    await Capacitor.Plugins.App.openSettings();
+                } catch (error) {
+                    console.error('[Contacts] Error opening settings:', error);
+                    alert('Please go to Settings > Dott > Contacts to enable permission');
+                }
+            }
+        }
+
+        function renderContacts() {
+            const container = document.getElementById('contactsContainer');
+            const contacts = getFilteredContacts();
+            
+            if (contacts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <h3>No contacts found</h3>
+                        <p>Add contacts to start calling and messaging with businesses and consumers</p>
+                        <button onclick="showAddContactModal()">Add Your First Contact</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = contacts.map(contact => {
+                const isPhoneContact = contact.isPhoneContact || false;
+                const needsInvite = isPhoneContact || (!contact.isBusiness && contact.status === 'offline');
+                
+                return `
+                <div class="contact-item" onclick="openContactChat('${contact.id}')">
+                    <div class="contact-avatar" style="position: relative;">
+                        ${contact.avatar}
+                        ${needsInvite ? '<div class="invite-badge">Invite</div>' : `<div class="contact-status status-${contact.status}"></div>`}
+                    </div>
+                    
+                    <div class="contact-info">
+                        <div class="contact-name">${contact.name}</div>
+                        <div class="contact-subtitle">
+                            <span>${needsInvite ? 'Not on Dott yet' : getContactSubtitle(contact)}</span>
+                            ${contact.businessType ? `<span class="contact-business-type">${contact.businessType}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="contact-actions">
+                        <button class="action-button voice-call-action" onclick="initiateVoiceCall('${contact.id}', event)" title="${needsInvite ? 'Invite to Call' : 'Voice Call'}">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="action-button video-call-action" onclick="initiateVideoCall('${contact.id}', event)" title="${needsInvite ? 'Invite to Video' : 'Video Call'}">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="action-button message-action" onclick="openContactChat('${contact.id}', event)" title="${needsInvite ? 'Invite to Chat' : 'Message'}">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function getContactSubtitle(contact) {
+            if (contact.isOnline) {
+                return 'Online now';
+            }
+            
+            const timeDiff = new Date() - contact.lastSeen;
+            const minutes = Math.floor(timeDiff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${days}d ago`;
+        }
+
+        function getFilteredContacts() {
+            let filtered = contactsState.contacts;
+            
+            // Filter by tab
+            if (contactsState.currentTab === 'online') {
+                filtered = filtered.filter(contact => contact.isOnline);
+            } else if (contactsState.currentTab === 'business') {
+                filtered = filtered.filter(contact => contact.isBusiness);
+            } else if (contactsState.currentTab === 'recent') {
+                // Sort by recent activity and take top 10
+                filtered = filtered
+                    .sort((a, b) => b.lastSeen - a.lastSeen)
+                    .slice(0, 10);
+            }
+            
+            // Filter by search query
+            if (contactsState.searchQuery) {
+                const query = contactsState.searchQuery.toLowerCase();
+                filtered = filtered.filter(contact =>
+                    contact.name.toLowerCase().includes(query) ||
+                    contact.phone.includes(query) ||
+                    contact.email.toLowerCase().includes(query) ||
+                    (contact.businessType && contact.businessType.toLowerCase().includes(query))
+                );
+            }
+            
+            return filtered;
+        }
+
+        function filterContacts(query) {
+            contactsState.searchQuery = query;
+            renderContacts();
+        }
+
+        function switchTab(tab) {
+            contactsState.currentTab = tab;
+            
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Show/hide recent activity
+            const recentActivity = document.getElementById('recentActivity');
+            recentActivity.style.display = tab === 'recent' ? 'block' : 'none';
+            
+            renderContacts();
+        }
+
+        function updateTabBadges() {
+            const all = contactsState.contacts.length;
+            const online = contactsState.contacts.filter(c => c.isOnline).length;
+            const business = contactsState.contacts.filter(c => c.isBusiness).length;
+            
+            document.getElementById('allBadge').textContent = all;
+            document.getElementById('onlineBadge').textContent = online;
+            document.getElementById('businessBadge').textContent = business;
+        }
+
+        // Contact Actions
+        async function openContactChat(contactId, event) {
+            if (event) event.stopPropagation();
+            
+            const contact = contactsState.contacts.find(c => c.id === contactId);
+            console.log('[Contacts] Opening chat with:', contact.name);
+            
+            // Check if user has Dott installed
+            const hasDott = await checkIfUserHasDott(contact);
+            
+            if (!hasDott) {
+                // User doesn't have Dott - show invitation prompt
+                showInvitationPrompt(contact, 'message');
+            } else {
+                // Navigate to chat screen
+                window.location.href = `mobile-chat.html?contact=${contactId}&name=${encodeURIComponent(contact.name)}`;
+            }
+        }
+
+        async function checkIfUserHasDott(contact) {
+            // Check if this is a phone contact (not a Dott user)
+            if (contact.isPhoneContact) {
+                // Phone contacts don't have Dott by default
+                return false;
+            }
+            
+            // Check if contact has Dott installed (for Dott contacts, they already have it)
+            if (contact.isBusiness || contact.status === 'online' || contact.status === 'away') {
+                return true;
+            }
+            
+            // In production, this would check against your user database
+            // For now, assume contacts without business type don't have Dott
+            return false;
+        }
+
+        async function sendDottInvitation(contact) {
+            console.log('[Contacts] Sending Dott invitation to:', contact.name);
+            
+            // Create invitation modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Invite ${contact.name} to Dott</h2>
+                        <p class="modal-subtitle">${contact.name} doesn't have Dott yet. Send them an invitation!</p>
+                    </div>
+                    
+                    <div class="modal-form">
+                        <div class="form-group">
+                            <label class="form-label">Invitation Method</label>
+                            <select class="form-input" id="inviteMethod">
+                                ${contact.phone ? '<option value="sms">SMS Message</option>' : ''}
+                                ${contact.phone ? '<option value="whatsapp">WhatsApp</option>' : ''}
+                                ${contact.email ? '<option value="email">Email</option>' : ''}
+                                <option value="share">Share Link</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Personal Message (Optional)</label>
+                            <textarea class="form-input" id="personalMessage" rows="3" placeholder="Add a personal note..."></textarea>
+                        </div>
+                        
+                        <div style="background: #f0f9ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 12px; margin: 16px 0;">
+                            <p style="font-size: 13px; color: #1e40af; margin: 0;">
+                                <strong>Preview:</strong><br>
+                                "Hey ${contact.name.split(' ')[0]}! I'm using Dott for business payments and communication. Join me on Dott to connect directly! Download: https://dottapps.com/invite/${generateInviteCode()}"
+                            </p>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="modal-button secondary" onclick="this.closest('.modal-overlay').remove()">
+                                Cancel
+                            </button>
+                            <button type="button" class="modal-button primary" onclick="sendInvite('${contact.id}', this.closest('.modal-overlay'))">
+                                Send Invitation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function generateInviteCode() {
+            // Generate a unique invite code for tracking
+            return Math.random().toString(36).substring(2, 9).toUpperCase();
+        }
+
+        async function sendInvite(contactId, modalElement) {
+            const contact = contactsState.contacts.find(c => c.id === contactId);
+            const method = modalElement.querySelector('#inviteMethod').value;
+            const personalMessage = modalElement.querySelector('#personalMessage').value;
+            
+            console.log('[Contacts] Sending invitation via:', method);
+            
+            const inviteCode = generateInviteCode();
+            const inviteLink = `https://dottapps.com/invite/${inviteCode}`;
+            const defaultMessage = `Hey ${contact.name.split(' ')[0]}! I'm using Dott for business payments and communication. ${personalMessage ? personalMessage + ' ' : ''}Join me on Dott! Download: ${inviteLink}`;
+            
+            try {
+                if (method === 'sms') {
+                    // Use Capacitor SMS plugin
+                    if (window.Capacitor && window.Capacitor.Plugins.SMS) {
+                        await Capacitor.Plugins.SMS.send({
+                            numbers: [contact.phone],
+                            text: defaultMessage
+                        });
+                    } else {
+                        // Fallback to native SMS URL scheme
+                        window.location.href = `sms:${contact.phone}?body=${encodeURIComponent(defaultMessage)}`;
+                    }
+                } else if (method === 'whatsapp') {
+                    // Open WhatsApp with pre-filled message
+                    const whatsappUrl = `https://wa.me/${contact.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(defaultMessage)}`;
+                    window.open(whatsappUrl, '_blank');
+                } else if (method === 'email') {
+                    // Open email client with pre-filled message
+                    const subject = 'Join me on Dott!';
+                    window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(defaultMessage)}`;
+                } else if (method === 'share') {
+                    // Use Web Share API or Capacitor Share
+                    if (navigator.share) {
+                        await navigator.share({
+                            title: 'Join Dott',
+                            text: defaultMessage,
+                            url: inviteLink
+                        });
+                    } else if (window.Capacitor && window.Capacitor.Plugins.Share) {
+                        await Capacitor.Plugins.Share.share({
+                            title: 'Join Dott',
+                            text: defaultMessage,
+                            url: inviteLink,
+                            dialogTitle: 'Share Dott Invitation'
+                        });
+                    } else {
+                        // Fallback: Copy to clipboard
+                        navigator.clipboard.writeText(defaultMessage);
+                        alert('Invitation link copied to clipboard!');
+                    }
+                }
+                
+                // Track invitation sent (in production, send to backend)
+                console.log('[Contacts] Invitation sent:', {
+                    contactId: contact.id,
+                    method: method,
+                    inviteCode: inviteCode
+                });
+                
+                // Show success message
+                modalElement.remove();
+                showSuccessToast(`Invitation sent to ${contact.name}!`);
+                
+            } catch (error) {
+                console.error('[Contacts] Error sending invitation:', error);
+                alert('Failed to send invitation. Please try again.');
+            }
+        }
+
+        function showSuccessToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--theme-primary);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 10000;
+                animation: slideUp 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function initiateVoiceCall(contactId, event) {
+            event.stopPropagation();
+            
+            const contact = contactsState.contacts.find(c => c.id === contactId);
+            console.log('[Contacts] Initiating voice call with:', contact.name);
+            
+            // Check if user has Dott installed
+            const hasDott = await checkIfUserHasDott(contact);
+            
+            if (!hasDott) {
+                // User doesn't have Dott - show invitation prompt
+                showInvitationPrompt(contact, 'voice call');
+            } else {
+                // Navigate to call screen
+                window.location.href = `mobile-call-screen.html?type=voice&contact=${encodeURIComponent(contact.name)}&contactId=${contactId}`;
+            }
+        }
+
+        async function initiateVideoCall(contactId, event) {
+            event.stopPropagation();
+            
+            const contact = contactsState.contacts.find(c => c.id === contactId);
+            console.log('[Contacts] Initiating video call with:', contact.name);
+            
+            // Check if user has Dott installed
+            const hasDott = await checkIfUserHasDott(contact);
+            
+            if (!hasDott) {
+                // User doesn't have Dott - show invitation prompt
+                showInvitationPrompt(contact, 'video call');
+            } else {
+                // Navigate to call screen
+                window.location.href = `mobile-call-screen.html?type=video&contact=${encodeURIComponent(contact.name)}&contactId=${contactId}`;
+            }
+        }
+
+        function showInvitationPrompt(contact, action) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header" style="text-align: center;">
+                        <div style="width: 64px; height: 64px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                            <svg width="32" height="32" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h2 class="modal-title">${contact.name} is not on Dott yet</h2>
+                        <p class="modal-subtitle">To ${action} with ${contact.name}, they need to install Dott first.</p>
+                    </div>
+                    
+                    <div style="background: #f0f9ff; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                        <p style="font-size: 14px; color: #1e40af; margin: 0;">
+                            <strong>Invite them to Dott</strong><br>
+                            Send an invitation and they'll be able to receive your calls and messages through Dott.
+                        </p>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="modal-button secondary" onclick="this.closest('.modal-overlay').remove()">
+                            Cancel
+                        </button>
+                        <button type="button" class="modal-button primary" onclick="this.closest('.modal-overlay').remove(); sendDottInvitation(${JSON.stringify(contact).replace(/"/g, '&quot;')})">
+                            Send Invitation
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Add Contact Modal
+        function showAddContactModal() {
+            document.getElementById('addContactModal').style.display = 'flex';
+        }
+
+        function closeAddContactModal() {
+            document.getElementById('addContactModal').style.display = 'none';
+            document.getElementById('addContactModal').querySelector('form').reset();
+        }
+
+        function toggleContactFields() {
+            const method = document.getElementById('contactMethod').value;
+            
+            document.getElementById('emailGroup').style.display = method === 'email' ? 'block' : 'none';
+            document.getElementById('phoneGroup').style.display = method === 'phone' ? 'block' : 'none';
+            document.getElementById('businessGroup').style.display = method === 'business' ? 'block' : 'none';
+        }
+
+        function addContact(event) {
+            event.preventDefault();
+            
+            const method = document.getElementById('contactMethod').value;
+            const displayName = document.getElementById('displayName').value;
+            
+            let contactData = {
+                displayName: displayName
+            };
+            
+            if (method === 'email') {
+                contactData.email = document.getElementById('contactEmail').value;
+            } else if (method === 'phone') {
+                contactData.phone = document.getElementById('contactPhone').value;
+            } else if (method === 'business') {
+                contactData.businessName = document.getElementById('businessName').value;
+            }
+            
+            console.log('[Contacts] Adding contact:', contactData);
+            
+            // TODO: Send contact request to backend
+            // Simulate success
+            alert('Contact request sent successfully!');
+            
+            closeAddContactModal();
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        // Handle modal click outside to close
+        document.getElementById('addContactModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeAddContactModal();
+            }
+        });
+    </script>
+</body>
+</html>

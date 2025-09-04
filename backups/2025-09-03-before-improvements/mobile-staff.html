@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Staff - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-button svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .add-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .add-button:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .add-button svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* Filter Chips */
+        .filter-section {
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-chip {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-chip.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        /* Employee List */
+        .employee-list {
+            padding: 16px;
+        }
+
+        .employee-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .employee-card:active {
+            transform: scale(0.98);
+        }
+
+        .employee-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .employee-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            color: #111827;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .employee-position {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .employee-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .employee-status.active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .employee-status.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .employee-status.onLeave {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .employee-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .detail-item svg {
+            width: 16px;
+            height: 16px;
+            stroke: #9ca3af;
+        }
+
+        /* Actions */
+        .employee-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-button:active {
+            background: #f3f4f6;
+        }
+
+        .action-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .action-button.primary {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .action-button.primary:active {
+            background: #1d4ed8;
+        }
+
+        .action-button.danger {
+            color: #dc2626;
+            border-color: #dc2626;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            stroke: #d1d5db;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .empty-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .retry-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .retry-button:active {
+            background: #1d4ed8;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .close-button:hover {
+            background: #f3f4f6;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #d1d5db;
+            background: white;
+        }
+
+        .modal-button.primary {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .modal-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5M5 12l7 7M5 12l7-7"/>
+            </svg>
+        </button>
+        <div class="header-title">Staff</div>
+        <button class="add-button" onclick="showAddEmployee()">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEmployees">0</div>
+                <div class="stat-label">Total Staff</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeEmployees">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="inactiveEmployees">0</div>
+                <div class="stat-label">Inactive</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by name, email, or position...">
+            <button class="search-button" onclick="searchEmployees()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                Search
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-chip active" onclick="setStatusFilter('all', this)">All</div>
+        <div class="filter-chip" onclick="setStatusFilter('active', this)">Active</div>
+        <div class="filter-chip" onclick="setStatusFilter('inactive', this)">Inactive</div>
+        <div class="filter-chip" onclick="setStatusFilter('onLeave', this)">On Leave</div>
+    </div>
+
+    <!-- Employee List -->
+    <div class="employee-list" id="employeeList">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>Loading staff...</div>
+        </div>
+    </div>
+
+    <!-- Edit/View Modal -->
+    <div class="modal" id="employeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Employee Details</div>
+                <button class="close-button" onclick="closeModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <div class="form-group">
+                        <label class="form-label">First Name *</label>
+                        <input type="text" class="form-input" id="firstName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Last Name *</label>
+                        <input type="text" class="form-input" id="lastName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-input" id="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-input" id="phone">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Position *</label>
+                        <input type="text" class="form-input" id="position" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" id="department">
+                            <option value="">Select Department</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="HR">HR</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Customer Service">Customer Service</option>
+                            <option value="IT">IT</option>
+                            <option value="Legal">Legal</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Employment Type</label>
+                        <select class="form-select" id="employmentType">
+                            <option value="FT">Full-Time</option>
+                            <option value="PT">Part-Time</option>
+                            <option value="CONTRACT">Contract</option>
+                            <option value="INTERN">Intern</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="onLeave">On Leave</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Salary</label>
+                        <input type="number" class="form-input" id="salary" placeholder="Annual salary">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Hire Date</label>
+                        <input type="date" class="form-input" id="hireDate">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button" onclick="closeModal()">Cancel</button>
+                <button class="modal-button primary" onclick="saveEmployee()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let employees = [];
+        let currentEmployee = null;
+        let statusFilter = 'all';
+        let searchTerm = '';
+        let isEditMode = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[Staff] Initializing...');
+            await loadEmployees();
+        });
+
+        // Load employees
+        async function loadEmployees() {
+            try {
+                const listEl = document.getElementById('employeeList');
+                listEl.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Loading staff...</div>
+                    </div>
+                `;
+
+                // Get session from storage
+                let sessionToken = null;
+                let tenantId = null;
+                
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                        sessionToken = tokenResult.value;
+                        console.log('[Staff] Found session token in secure storage');
+                        
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            tenantId = userData.tenant_id || userData.tenantId;
+                            console.log('[Staff] Found user data in secure storage');
+                        }
+                        
+                        // Also try to get tenant ID directly if not found in user data
+                        if (!tenantId) {
+                            const tenantResult = await SecureStoragePlugin.get({ key: 'tenant_id' });
+                            if (tenantResult.value) {
+                                tenantId = tenantResult.value;
+                                console.log('[Staff] Found tenant ID in secure storage');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[Staff] SecureStorage error:', e);
+                        console.log('[Staff] ERROR MESSAGE:', JSON.stringify(e));
+                        // Try fallback session key
+                        try {
+                            const sessionResult = await SecureStoragePlugin.get({ key: 'session' });
+                            if (sessionResult.value) {
+                                const sessionData = JSON.parse(sessionResult.value);
+                                sessionToken = sessionData.token;
+                                tenantId = sessionData.tenant_id || sessionData.user?.tenant_id;
+                                console.log('[Staff] Found session data from fallback key');
+                            }
+                        } catch (fallbackError) {
+                            console.log('[Staff] SecureStorage fallback also failed, using localStorage');
+                        }
+                    }
+                }
+                
+                // Fallback to localStorage
+                if (!sessionToken) {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const sessionData = JSON.parse(session);
+                        sessionToken = sessionData.token;
+                        tenantId = sessionData.tenantId;
+                    }
+                }
+
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+
+                let response, data;
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    
+                    // Build headers object, filtering out null/undefined values
+                    const headers = {};
+                    headers['Content-Type'] = 'application/json';
+                    headers['Accept'] = 'application/json';
+                    
+                    console.log('[Staff] Session token available:', !!sessionToken);
+                    console.log('[Staff] Tenant ID available:', !!tenantId);
+                    
+                    if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+                        headers['Authorization'] = `Bearer ${sessionToken}`;
+                        headers['X-Session-Token'] = sessionToken;
+                        headers['Cookie'] = `sid=${sessionToken}`;
+                        console.log('[Staff] Added session token to headers');
+                    } else {
+                        console.warn('[Staff] No valid session token found for API request');
+                    }
+                    if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+                        headers['X-Tenant-ID'] = tenantId;
+                        console.log('[Staff] Added tenant ID to headers');
+                    }
+                    
+                    console.log('[Staff] Making request with headers:', Object.keys(headers));
+                    
+                    try {
+                        const result = await Http.request({
+                            method: 'GET',
+                            url: `${apiUrl}/api/hr/v2/employees`,
+                            headers: headers
+                        });
+                        
+                        console.log('[Staff] Response status:', result.status);
+                        
+                        response = {
+                            ok: result.status >= 200 && result.status < 300,
+                            status: result.status
+                        };
+                        
+                        // Handle the response data
+                        if (typeof result.data === 'string') {
+                            try {
+                                data = JSON.parse(result.data);
+                            } catch (e) {
+                                console.error('[Staff] Failed to parse response data');
+                                data = result.data;
+                            }
+                        } else {
+                            data = result.data;
+                        }
+                    } catch (httpError) {
+                        console.error('[Staff] Http request error:', httpError);
+                        throw httpError;
+                    }
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(`${apiUrl}/api/hr/v2/employees`, {
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch employees');
+                    }
+                    
+                    data = await response.json();
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch employees');
+                }
+                
+                // Handle various response formats
+                if (data) {
+                    if (data.success && Array.isArray(data.data)) {
+                        employees = data.data;
+                    } else if (Array.isArray(data)) {
+                        employees = data;
+                    } else if (data.results && Array.isArray(data.results)) {
+                        employees = data.results;
+                    } else if (data.employees && Array.isArray(data.employees)) {
+                        employees = data.employees;
+                    } else {
+                        console.log('[Staff] Unexpected data format:', data);
+                        employees = [];
+                    }
+                } else {
+                    console.log('[Staff] No data received');
+                    employees = [];
+                }
+                
+                console.log('[Staff] Loaded employees:', employees.length);
+                
+                // Calculate stats
+                updateStats();
+                
+                // Render employees
+                renderEmployees();
+            } catch (error) {
+                console.error('[Staff] Error loading employees:', error);
+                console.error('[Staff] Error details:', JSON.stringify(error));
+                
+                // Better error messaging
+                let errorMessage = 'Please check your connection and try again';
+                if (error.message && error.message !== 'not implemented') {
+                    errorMessage = error.message;
+                } else if (error.errorMessage && error.errorMessage !== 'not implemented') {
+                    errorMessage = error.errorMessage;
+                }
+                
+                document.getElementById('employeeList').innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="empty-title">Failed to load staff</div>
+                        <div class="empty-description">${errorMessage}</div>
+                        <button class="retry-button" onclick="loadEmployees()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = employees.length;
+            const active = employees.filter(e => e.status === 'active' || e.active === true).length;
+            const inactive = employees.filter(e => e.status === 'inactive' || e.active === false).length;
+            
+            document.getElementById('totalEmployees').textContent = total;
+            document.getElementById('activeEmployees').textContent = active;
+            document.getElementById('inactiveEmployees').textContent = inactive;
+        }
+
+        // Render employees
+        function renderEmployees() {
+            const listEl = document.getElementById('employeeList');
+            
+            // Filter employees
+            let filteredEmployees = employees;
+            
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filteredEmployees = filteredEmployees.filter(emp => {
+                    if (statusFilter === 'active') return emp.status === 'active' || emp.active === true;
+                    if (statusFilter === 'inactive') return emp.status === 'inactive' || emp.active === false;
+                    if (statusFilter === 'onLeave') return emp.status === 'onLeave';
+                    return true;
+                });
+            }
+            
+            // Apply search filter
+            if (searchTerm) {
+                const search = searchTerm.toLowerCase();
+                filteredEmployees = filteredEmployees.filter(emp => {
+                    const fullName = `${emp.first_name || emp.firstName || ''} ${emp.last_name || emp.lastName || ''}`.toLowerCase();
+                    const email = (emp.email || '').toLowerCase();
+                    const position = (emp.position || emp.job_title || '').toLowerCase();
+                    
+                    return fullName.includes(search) || email.includes(search) || position.includes(search);
+                });
+            }
+            
+            if (filteredEmployees.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <line x1="20" y1="8" x2="20" y2="14"></line>
+                            <line x1="23" y1="11" x2="17" y2="11"></line>
+                        </svg>
+                        <div class="empty-title">No staff members found</div>
+                        <div class="empty-description">Add your first staff member to get started</div>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = filteredEmployees.map(employee => {
+                const firstName = employee.first_name || employee.firstName || '';
+                const lastName = employee.last_name || employee.lastName || '';
+                const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+                const fullName = `${firstName} ${lastName}`.trim();
+                const position = employee.position || employee.job_title || 'No Position';
+                const department = employee.department || 'No Department';
+                const email = employee.email || '';
+                const phone = employee.phone || employee.phone_number || '';
+                const status = employee.status || (employee.active ? 'active' : 'inactive');
+                const hireDate = employee.hire_date || employee.hireDate || '';
+                
+                let statusClass = 'active';
+                let statusText = 'Active';
+                
+                if (status === 'inactive' || employee.active === false) {
+                    statusClass = 'inactive';
+                    statusText = 'Inactive';
+                } else if (status === 'onLeave') {
+                    statusClass = 'onLeave';
+                    statusText = 'On Leave';
+                }
+
+                return `
+                    <div class="employee-card" onclick="viewEmployee('${employee.id}')">
+                        <div class="employee-header">
+                            <div class="employee-avatar">${initials || '??'}</div>
+                            <div class="employee-info">
+                                <div class="employee-name">${fullName || 'Unknown'}</div>
+                                <div class="employee-position">${position}</div>
+                            </div>
+                            <div class="employee-status ${statusClass}">${statusText}</div>
+                        </div>
+                        
+                        <div class="employee-details">
+                            ${email ? `
+                                <div class="detail-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    ${email}
+                                </div>
+                            ` : ''}
+                            
+                            ${phone ? `
+                                <div class="detail-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                    </svg>
+                                    ${phone}
+                                </div>
+                            ` : ''}
+                            
+                            ${department !== 'No Department' ? `
+                                <div class="detail-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    ${department}
+                                </div>
+                            ` : ''}
+                            
+                            ${hireDate ? `
+                                <div class="detail-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    Hired: ${new Date(hireDate).toLocaleDateString()}
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="employee-actions">
+                            <button class="action-button" onclick="event.stopPropagation(); editEmployee('${employee.id}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Edit
+                            </button>
+                            <button class="action-button ${status === 'active' ? 'danger' : 'primary'}" onclick="event.stopPropagation(); toggleEmployeeStatus('${employee.id}', '${status}')">
+                                ${status === 'active' ? `
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    Deactivate
+                                ` : `
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Activate
+                                `}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View employee
+        async function viewEmployee(employeeId) {
+            const employee = employees.find(e => e.id === employeeId);
+            if (!employee) return;
+            
+            currentEmployee = employee;
+            isEditMode = false;
+            
+            // Populate form
+            document.getElementById('modalTitle').textContent = 'Employee Details';
+            document.getElementById('firstName').value = employee.first_name || employee.firstName || '';
+            document.getElementById('lastName').value = employee.last_name || employee.lastName || '';
+            document.getElementById('email').value = employee.email || '';
+            document.getElementById('phone').value = employee.phone || employee.phone_number || '';
+            document.getElementById('position').value = employee.position || employee.job_title || '';
+            document.getElementById('department').value = employee.department || '';
+            document.getElementById('employmentType').value = employee.employment_type || employee.employmentType || 'FT';
+            document.getElementById('status').value = employee.status || (employee.active ? 'active' : 'inactive');
+            document.getElementById('salary').value = employee.salary || '';
+            document.getElementById('hireDate').value = employee.hire_date || employee.hireDate || '';
+            
+            // Disable all fields for view mode
+            document.querySelectorAll('#employeeForm input, #employeeForm select').forEach(field => {
+                field.disabled = true;
+            });
+            
+            // Show modal
+            document.getElementById('employeeModal').classList.add('active');
+        }
+
+        // Edit employee
+        function editEmployee(employeeId) {
+            const employee = employees.find(e => e.id === employeeId);
+            if (!employee) return;
+            
+            currentEmployee = employee;
+            isEditMode = true;
+            
+            // Populate form
+            document.getElementById('modalTitle').textContent = 'Edit Employee';
+            document.getElementById('firstName').value = employee.first_name || employee.firstName || '';
+            document.getElementById('lastName').value = employee.last_name || employee.lastName || '';
+            document.getElementById('email').value = employee.email || '';
+            document.getElementById('phone').value = employee.phone || employee.phone_number || '';
+            document.getElementById('position').value = employee.position || employee.job_title || '';
+            document.getElementById('department').value = employee.department || '';
+            document.getElementById('employmentType').value = employee.employment_type || employee.employmentType || 'FT';
+            document.getElementById('status').value = employee.status || (employee.active ? 'active' : 'inactive');
+            document.getElementById('salary').value = employee.salary || '';
+            document.getElementById('hireDate').value = employee.hire_date || employee.hireDate || '';
+            
+            // Enable all fields for edit mode
+            document.querySelectorAll('#employeeForm input, #employeeForm select').forEach(field => {
+                field.disabled = false;
+            });
+            
+            // Show modal
+            document.getElementById('employeeModal').classList.add('active');
+        }
+
+        // Show add employee modal
+        function showAddEmployee() {
+            currentEmployee = null;
+            isEditMode = true;
+            
+            // Clear form
+            document.getElementById('modalTitle').textContent = 'Add New Employee';
+            document.getElementById('employeeForm').reset();
+            
+            // Enable all fields
+            document.querySelectorAll('#employeeForm input, #employeeForm select').forEach(field => {
+                field.disabled = false;
+            });
+            
+            // Show modal
+            document.getElementById('employeeModal').classList.add('active');
+        }
+
+        // Save employee
+        async function saveEmployee() {
+            if (!isEditMode) {
+                closeModal();
+                return;
+            }
+            
+            const formData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone_number: document.getElementById('phone').value,
+                job_title: document.getElementById('position').value,
+                department: document.getElementById('department').value,
+                employment_type: document.getElementById('employmentType').value,
+                status: document.getElementById('status').value,
+                active: document.getElementById('status').value === 'active',
+                salary: document.getElementById('salary').value || null,
+                hire_date: document.getElementById('hireDate').value || null
+            };
+            
+            try {
+                // Get session from storage
+                let sessionToken = null;
+                let tenantId = null;
+                
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                        sessionToken = tokenResult.value;
+                        console.log('[Staff] Found session token in secure storage');
+                        
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            tenantId = userData.tenant_id || userData.tenantId;
+                            console.log('[Staff] Found user data in secure storage');
+                        }
+                        
+                        // Also try to get tenant ID directly if not found in user data
+                        if (!tenantId) {
+                            const tenantResult = await SecureStoragePlugin.get({ key: 'tenant_id' });
+                            if (tenantResult.value) {
+                                tenantId = tenantResult.value;
+                                console.log('[Staff] Found tenant ID in secure storage');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[Staff] SecureStorage error:', e);
+                        console.log('[Staff] ERROR MESSAGE:', JSON.stringify(e));
+                        // Try fallback session key
+                        try {
+                            const sessionResult = await SecureStoragePlugin.get({ key: 'session' });
+                            if (sessionResult.value) {
+                                const sessionData = JSON.parse(sessionResult.value);
+                                sessionToken = sessionData.token;
+                                tenantId = sessionData.tenant_id || sessionData.user?.tenant_id;
+                                console.log('[Staff] Found session data from fallback key');
+                            }
+                        } catch (fallbackError) {
+                            console.log('[Staff] SecureStorage fallback also failed, using localStorage');
+                        }
+                    }
+                }
+                
+                // Fallback to localStorage
+                if (!sessionToken) {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const sessionData = JSON.parse(session);
+                        sessionToken = sessionData.token;
+                        tenantId = sessionData.tenantId;
+                    }
+                }
+
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+
+                let response;
+                const url = currentEmployee 
+                    ? `${apiUrl}/api/hr/v2/employees/${currentEmployee.id}`
+                    : `${apiUrl}/api/hr/v2/employees`;
+                const method = currentEmployee ? 'PUT' : 'POST';
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    
+                    // Build headers object, filtering out null/undefined values
+                    const headers = {};
+                    headers['Content-Type'] = 'application/json';
+                    headers['Accept'] = 'application/json';
+                    
+                    console.log('[Staff Save] Session token available:', !!sessionToken);
+                    console.log('[Staff Save] Tenant ID available:', !!tenantId);
+                    
+                    if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+                        headers['Authorization'] = `Bearer ${sessionToken}`;
+                        headers['X-Session-Token'] = sessionToken;
+                        headers['Cookie'] = `sid=${sessionToken}`;
+                        console.log('[Staff Save] Added session token to headers');
+                    }
+                    if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+                        headers['X-Tenant-ID'] = tenantId;
+                        console.log('[Staff Save] Added tenant ID to headers');
+                    }
+                    
+                    const result = await Http.request({
+                        method: method,
+                        url: url,
+                        headers: headers,
+                        data: formData
+                    });
+                    
+                    response = {
+                        ok: result.status >= 200 && result.status < 300,
+                        status: result.status
+                    };
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(url, {
+                        method: method,
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                }
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save employee');
+                }
+                
+                // Reload employees and close modal
+                await loadEmployees();
+                closeModal();
+                
+                alert(currentEmployee ? 'Employee updated successfully' : 'Employee added successfully');
+            } catch (error) {
+                console.error('[Staff] Error saving employee:', error);
+                alert('Failed to save employee. Please try again.');
+            }
+        }
+
+        // Toggle employee status
+        async function toggleEmployeeStatus(employeeId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            const confirmMessage = currentStatus === 'active' 
+                ? 'Are you sure you want to deactivate this employee?' 
+                : 'Are you sure you want to activate this employee?';
+            
+            if (!confirm(confirmMessage)) return;
+            
+            try {
+                // Get session from storage
+                let sessionToken = null;
+                let tenantId = null;
+                
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                        sessionToken = tokenResult.value;
+                        
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            tenantId = userData.tenant_id || userData.tenantId;
+                        }
+                    } catch (e) {
+                        console.log('[Staff] SecureStorage not available for toggle, using localStorage');
+                    }
+                }
+                
+                // Fallback to localStorage
+                if (!sessionToken) {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const sessionData = JSON.parse(session);
+                        sessionToken = sessionData.token;
+                        tenantId = sessionData.tenantId;
+                    }
+                }
+                
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+                    
+                const updateData = {
+                    status: newStatus,
+                    active: newStatus === 'active'
+                };
+                
+                let response;
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    
+                    // Build headers object
+                    const headers = {};
+                    headers['Content-Type'] = 'application/json';
+                    headers['Accept'] = 'application/json';
+                    
+                    if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+                        headers['Authorization'] = `Bearer ${sessionToken}`;
+                        headers['X-Session-Token'] = sessionToken;
+                        headers['Cookie'] = `sid=${sessionToken}`;
+                    }
+                    if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+                        headers['X-Tenant-ID'] = tenantId;
+                    }
+                    
+                    const result = await Http.request({
+                        method: 'PUT',
+                        url: `${apiUrl}/api/hr/v2/employees/${employeeId}`,
+                        headers: headers,
+                        data: updateData
+                    });
+                    
+                    response = {
+                        ok: result.status >= 200 && result.status < 300,
+                        status: result.status
+                    };
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(`${apiUrl}/api/hr/v2/employees/${employeeId}`, {
+                        method: 'PUT',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                }
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update employee status');
+                }
+                
+                // Reload employees
+                await loadEmployees();
+                
+                alert(`Employee ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
+            } catch (error) {
+                console.error('[Staff] Error updating employee status:', error);
+                console.error('[Staff] Error details:', JSON.stringify(error));
+                alert('Failed to update employee status. Please try again.');
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('employeeModal').classList.remove('active');
+            currentEmployee = null;
+            isEditMode = false;
+        }
+
+        // Search functionality
+        function searchEmployees() {
+            searchTerm = document.getElementById('searchInput').value;
+            renderEmployees();
+        }
+
+        // Filter by status
+        function setStatusFilter(filter, element) {
+            statusFilter = filter;
+            
+            // Update UI
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Re-render
+            renderEmployees();
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+    </script>
+
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                    /* Ensure proper z-index */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('[Crisp] Chat widget loaded and positioned');
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

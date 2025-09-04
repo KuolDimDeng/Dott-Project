@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Payroll Review & Approval - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Content */
+        .content {
+            padding: 16px;
+            padding-bottom: 120px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .summary-item {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .summary-main {
+            background: #2563eb;
+            color: white;
+        }
+
+        .summary-main .summary-value {
+            color: white;
+        }
+
+        .summary-main .summary-label {
+            color: #bfdbfe;
+        }
+
+        /* Employee List */
+        .employee-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: white;
+        }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .employee-type {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .employee-amounts {
+            text-align: right;
+        }
+
+        .gross-pay {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .net-pay {
+            font-size: 12px;
+            color: #059669;
+            margin-top: 2px;
+        }
+
+        .taxes-amount {
+            font-size: 11px;
+            color: #dc2626;
+            margin-top: 2px;
+        }
+
+        /* Tax Breakdown */
+        .tax-breakdown {
+            background: #fef2f2;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 8px;
+        }
+
+        .tax-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .tax-item:last-child {
+            margin-bottom: 0;
+            border-top: 1px solid #fecaca;
+            padding-top: 8px;
+            font-weight: 600;
+        }
+
+        /* Bank Account Selection */
+        .bank-account-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bank-account-card.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .bank-account-card:active {
+            transform: scale(0.98);
+        }
+
+        .bank-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .bank-name {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .bank-type {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .bank-balance {
+            background: #f9fafb;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .balance-sufficient {
+            color: #059669;
+        }
+
+        .balance-insufficient {
+            color: #dc2626;
+        }
+
+        /* Approval Section */
+        .approval-card {
+            background: #fef9e7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .approval-warning {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #fbbf24;
+            border-radius: 8px;
+            color: #92400e;
+        }
+
+        .signature-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        .signature-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+        }
+
+        .checkbox-text {
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.4;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:active {
+            background: #e5e7eb;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: #1d4ed8;
+        }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-success:active {
+            background: #047857;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading States */
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Expandable sections */
+        .expandable-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .expand-icon {
+            transition: transform 0.2s;
+        }
+
+        .expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .expanded .expandable-content {
+            max-height: 500px;
+        }
+
+        /* Alert messages */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <div class="header-title">Payroll Review</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" style="text-align: center; padding: 40px;">
+            <div class="loading-spinner" style="width: 40px; height: 40px; border-width: 3px;"></div>
+            <div style="margin-top: 16px; color: #6b7280;">Loading payroll data...</div>
+        </div>
+
+        <!-- Main content (initially hidden) -->
+        <div id="mainContent" style="display: none;">
+            
+            <!-- Payroll Summary -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="3" width="15" height="13"/>
+                        <path d="m16 8 2 2-2 2"/>
+                        <path d="M11 12H3"/>
+                    </svg>
+                    Payroll Summary
+                </div>
+                
+                <div class="summary-grid">
+                    <div class="summary-item summary-main">
+                        <div class="summary-value" id="totalFunding">$0.00</div>
+                        <div class="summary-label">Total Funding</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="employeeCount">0</div>
+                        <div class="summary-label">Employees</div>
+                    </div>
+                </div>
+                
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalGross">$0.00</div>
+                        <div class="summary-label">Gross Pay</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalNet">$0.00</div>
+                        <div class="summary-label">Net Pay</div>
+                    </div>
+                </div>
+
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalTaxes">$0.00</div>
+                        <div class="summary-label">Employee Taxes</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="platformFee">$0.00</div>
+                        <div class="summary-label">Platform Fee</div>
+                    </div>
+                </div>
+
+                <!-- Pay Period Info -->
+                <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span style="color: #6b7280;">Pay Period:</span>
+                        <span id="payPeriod" style="font-weight: 500;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Details -->
+            <div class="card">
+                <div class="expandable-header" onclick="toggleSection('employeeSection')">
+                    <div class="card-title" style="margin-bottom: 0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Employee Breakdown
+                    </div>
+                    <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </div>
+                
+                <div class="expandable-content" id="employeeSection">
+                    <div id="employeeList">
+                        <!-- Employee items will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Account Selection -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="5" width="22" height="14" rx="2"/>
+                        <path d="M1 10h22"/>
+                    </svg>
+                    Funding Account
+                </div>
+                
+                <div id="bankAccountList">
+                    <!-- Bank accounts will be populated here -->
+                </div>
+            </div>
+
+            <!-- Final Approval -->
+            <div class="approval-card">
+                <div class="card-title" style="color: #92400e; margin-bottom: 16px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4"/>
+                        <path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1"/>
+                    </svg>
+                    Final Approval
+                </div>
+
+                <div class="approval-warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m21 16-4 4-4-4"/>
+                        <path d="M17 20V4"/>
+                        <path d="m3 8 4-4 4 4"/>
+                        <path d="M7 4v16"/>
+                    </svg>
+                    <div>
+                        This action will immediately charge your account and begin employee payments. 
+                        Please review all details carefully.
+                    </div>
+                </div>
+
+                <input type="text" 
+                       class="signature-input" 
+                       id="signatureName" 
+                       placeholder="Enter your full name as digital signature"
+                       autocomplete="name">
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="approvalConfirm" onchange="validateApproval()">
+                    <label for="approvalConfirm" class="checkbox-text">
+                        I authorize this payroll run and confirm that all employee information, 
+                        amounts, and bank details are correct. I understand that this will 
+                        initiate payment processing immediately.
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="goBack()">
+            Cancel
+        </button>
+        <button class="btn btn-success" id="approveBtn" disabled onclick="approvePayroll()">
+            <span id="approveText">Approve & Process</span>
+            <div id="approveSpinner" class="loading-spinner" style="display: none;"></div>
+        </button>
+    </div>
+
+    <script>
+        let payrollData = null;
+        let selectedBankAccount = null;
+
+        // Load payroll data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPayrollData();
+            loadBankAccounts();
+        });
+
+        async function loadPayrollData() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const payPeriodStart = urlParams.get('start');
+                const payPeriodEnd = urlParams.get('end');
+
+                if (!payPeriodStart || !payPeriodEnd) {
+                    showError('Missing pay period information');
+                    return;
+                }
+
+                const response = await fetch('/api/payroll/mobile/calculate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({
+                        pay_period_start: payPeriodStart,
+                        pay_period_end: payPeriodEnd
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load payroll data');
+                }
+
+                const data = await response.json();
+                payrollData = data.payroll_preview;
+                
+                displayPayrollData();
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading payroll data:', error);
+                showError('Failed to load payroll data. Please try again.');
+            }
+        }
+
+        function displayPayrollData() {
+            if (!payrollData) return;
+
+            // Update summary
+            document.getElementById('totalFunding').textContent = 
+                `$${payrollData.total_funding_needed.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('employeeCount').textContent = payrollData.employee_count;
+            document.getElementById('totalGross').textContent = 
+                `$${payrollData.total_gross_pay.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('totalNet').textContent = 
+                `$${payrollData.total_net_pay.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('totalTaxes').textContent = 
+                `$${payrollData.total_employee_taxes.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('platformFee').textContent = 
+                `$${payrollData.platform_fee.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('payPeriod').textContent = 
+                `${payrollData.pay_period_start} to ${payrollData.pay_period_end}`;
+
+            // Display employee list
+            const employeeList = document.getElementById('employeeList');
+            employeeList.innerHTML = '';
+
+            payrollData.employees.forEach(employee => {
+                const employeeItem = document.createElement('div');
+                employeeItem.className = 'employee-item';
+                
+                employeeItem.innerHTML = `
+                    <div class="employee-info">
+                        <div class="employee-name">${employee.employee_name}</div>
+                        <div class="employee-type">${employee.employment_type === 'salary' ? 'Salary' : 'Hourly'}</div>
+                        ${employee.timesheet_info ? `
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">
+                                ${employee.timesheet_info.regular_hours}h regular, ${employee.timesheet_info.overtime_hours}h overtime
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="employee-amounts">
+                        <div class="gross-pay">$${employee.gross_pay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                        <div class="net-pay">Net: $${employee.net_pay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                        <div class="taxes-amount">Taxes: $${employee.total_taxes.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                `;
+
+                // Add expandable tax breakdown
+                const taxBreakdown = document.createElement('div');
+                taxBreakdown.className = 'tax-breakdown';
+                taxBreakdown.style.display = 'none';
+                taxBreakdown.innerHTML = `
+                    <div class="tax-item">
+                        <span>Federal Income Tax:</span>
+                        <span>$${employee.tax_breakdown.federal_income_tax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="tax-item">
+                        <span>State Tax:</span>
+                        <span>$${employee.tax_breakdown.state_tax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="tax-item">
+                        <span>Social Security:</span>
+                        <span>$${employee.tax_breakdown.social_security_tax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="tax-item">
+                        <span>Medicare:</span>
+                        <span>$${employee.tax_breakdown.medicare_tax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="tax-item">
+                        <span>Total Employee Taxes:</span>
+                        <span>$${employee.total_taxes.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                `;
+
+                employeeItem.appendChild(taxBreakdown);
+                employeeItem.style.cursor = 'pointer';
+                employeeItem.onclick = () => {
+                    const isVisible = taxBreakdown.style.display !== 'none';
+                    taxBreakdown.style.display = isVisible ? 'none' : 'block';
+                };
+
+                employeeList.appendChild(employeeItem);
+            });
+        }
+
+        async function loadBankAccounts() {
+            try {
+                const response = await fetch('/api/payroll/mobile/bank-accounts/', {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load bank accounts');
+                }
+
+                const data = await response.json();
+                displayBankAccounts(data.bank_accounts);
+
+            } catch (error) {
+                console.error('Error loading bank accounts:', error);
+                showError('Failed to load bank accounts');
+            }
+        }
+
+        function displayBankAccounts(accounts) {
+            const container = document.getElementById('bankAccountList');
+            container.innerHTML = '';
+
+            if (accounts.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        No bank accounts found. Please add a bank account in Settings.
+                    </div>
+                `;
+                return;
+            }
+
+            accounts.forEach(account => {
+                const accountCard = document.createElement('div');
+                accountCard.className = 'bank-account-card';
+                accountCard.onclick = () => selectBankAccount(account);
+
+                const sufficientFunds = payrollData && account.available_balance >= payrollData.total_funding_needed;
+                
+                accountCard.innerHTML = `
+                    <div class="bank-info">
+                        <div>
+                            <div class="bank-name">${account.name}</div>
+                            <div class="bank-type">${account.institution} • *${account.last_four}</div>
+                        </div>
+                        ${account.is_payroll_account ? '<div style="color: #2563eb; font-size: 12px; font-weight: 600;">PAYROLL ACCOUNT</div>' : ''}
+                    </div>
+                    
+                    ${account.available_balance !== null ? `
+                        <div class="bank-balance">
+                            <span style="color: #6b7280;">Available Balance:</span>
+                            <span class="${sufficientFunds ? 'balance-sufficient' : 'balance-insufficient'}">
+                                $${account.available_balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                        ${!sufficientFunds && payrollData ? `
+                            <div style="color: #dc2626; font-size: 12px; margin-top: 4px;">
+                                Insufficient funds (need $${payrollData.total_funding_needed.toLocaleString('en-US', { minimumFractionDigits: 2 })})
+                            </div>
+                        ` : ''}
+                    ` : ''}
+                `;
+
+                container.appendChild(accountCard);
+
+                // Auto-select payroll account or first account
+                if (account.is_payroll_account || (!selectedBankAccount && sufficientFunds)) {
+                    selectBankAccount(account);
+                }
+            });
+        }
+
+        function selectBankAccount(account) {
+            // Remove previous selection
+            document.querySelectorAll('.bank-account-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Select new account
+            event.target.closest('.bank-account-card').classList.add('selected');
+            selectedBankAccount = account;
+            validateApproval();
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const header = section.previousElementSibling;
+            
+            if (section.classList.contains('expanded')) {
+                section.classList.remove('expanded');
+                header.classList.remove('expanded');
+            } else {
+                section.classList.add('expanded');
+                header.classList.add('expanded');
+            }
+        }
+
+        function validateApproval() {
+            const signatureName = document.getElementById('signatureName').value.trim();
+            const approvalConfirm = document.getElementById('approvalConfirm').checked;
+            const approveBtn = document.getElementById('approveBtn');
+            
+            const isValid = signatureName.length >= 2 && approvalConfirm && selectedBankAccount;
+            approveBtn.disabled = !isValid;
+        }
+
+        async function approvePayroll() {
+            const approveBtn = document.getElementById('approveBtn');
+            const approveText = document.getElementById('approveText');
+            const approveSpinner = document.getElementById('approveSpinner');
+
+            try {
+                // Show loading state
+                approveBtn.disabled = true;
+                approveText.style.display = 'none';
+                approveSpinner.style.display = 'inline-block';
+
+                // Create payroll run
+                const createResponse = await fetch('/api/payroll/mobile/create-run/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({
+                        pay_period_start: payrollData.pay_period_start,
+                        pay_period_end: payrollData.pay_period_end
+                    })
+                });
+
+                if (!createResponse.ok) {
+                    throw new Error('Failed to create payroll run');
+                }
+
+                const payrollRun = await createResponse.json();
+
+                // Show success and redirect
+                showSuccess('Payroll approved and processing started!');
+                
+                setTimeout(() => {
+                    window.location.href = 'mobile-payroll-history.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error approving payroll:', error);
+                showError('Failed to approve payroll. Please try again.');
+                
+                // Reset button state
+                approveBtn.disabled = false;
+                approveText.style.display = 'inline';
+                approveSpinner.style.display = 'none';
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function getAuthToken() {
+            // In a real implementation, get this from your auth system
+            return sessionStorage.getItem('authToken') || '';
+        }
+
+        function showError(message) {
+            const content = document.querySelector('.content');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-error';
+            alert.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                ${message}
+            `;
+            content.insertBefore(alert, content.firstChild);
+
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            const content = document.querySelector('.content');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success';
+            alert.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12l2 2 4-4"/>
+                    <path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1"/>
+                </svg>
+                ${message}
+            `;
+            content.insertBefore(alert, content.firstChild);
+
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Add input validation
+        document.getElementById('signatureName').addEventListener('input', validateApproval);
+        document.getElementById('approvalConfirm').addEventListener('change', validateApproval);
+    </script>
+</body>
+</html>

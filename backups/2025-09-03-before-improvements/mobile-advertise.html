@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Create Advertisement - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+            text-align: center;
+            margin: 0 16px;
+        }
+
+        .publish-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .publish-button:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+        }
+
+        .publish-button:not(:disabled):active {
+            transform: scale(0.95);
+        }
+
+        /* Progress Steps */
+        .progress-container {
+            background: white;
+            padding: 16px;
+            margin-top: 1px;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .progress-line {
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: #e5e7eb;
+            z-index: 0;
+        }
+
+        .progress-line-active {
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            height: 2px;
+            background: #2563eb;
+            z-index: 0;
+            transition: width 0.3s;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #9ca3af;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-circle {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: white;
+        }
+
+        .step.completed .step-circle {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: white;
+        }
+
+        .step-label {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .step.active .step-label {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* Content Container */
+        .content-container {
+            padding: 16px;
+            margin-bottom: 80px;
+        }
+
+        /* Step 1: Media Upload */
+        .media-upload-section {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .required-badge {
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .media-item {
+            aspect-ratio: 1;
+            background: #f3f4f6;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .media-item:hover {
+            transform: scale(0.98);
+        }
+
+        .media-add {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #d1d5db;
+            background: #fafafa;
+        }
+
+        .media-add svg {
+            width: 32px;
+            height: 32px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+
+        .media-add-text {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .media-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .media-type-badge {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .media-tips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tip {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .tip svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Step 2: Ad Details */
+        .form-section {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .char-counter.warning {
+            color: #f59e0b;
+        }
+
+        .char-counter.error {
+            color: #ef4444;
+        }
+
+        /* Tags Input */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            min-height: 44px;
+        }
+
+        .tag {
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tag-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 100px;
+            font-size: 14px;
+        }
+
+        /* Category Selection */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .category-item {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .category-item:hover {
+            background: #f9fafb;
+        }
+
+        .category-item.selected {
+            background: #eff6ff;
+            border-color: #2563eb;
+            color: #2563eb;
+            font-weight: 500;
+        }
+
+        /* Step 3: Preview */
+        .preview-section {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .preview-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+        }
+
+        .preview-content {
+            padding: 16px;
+        }
+
+        .preview-business {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .preview-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .preview-business-info {
+            flex: 1;
+        }
+
+        .preview-business-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .preview-category {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .preview-media-container {
+            margin: 12px -16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-media-scroll {
+            display: flex;
+            gap: 2px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+        }
+
+        .preview-media-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .preview-media-item {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+        }
+
+        .preview-media-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .preview-indicators {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+        }
+
+        .preview-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            transition: all 0.3s;
+        }
+
+        .preview-indicator.active {
+            background: white;
+            width: 20px;
+            border-radius: 3px;
+        }
+
+        .preview-description {
+            padding: 0 16px;
+            margin-top: 12px;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .preview-text {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+
+        .preview-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 0 16px;
+        }
+
+        .preview-tag {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 16px;
+            padding: 12px 16px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .preview-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .preview-action svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #e5e7eb;
+        }
+
+        .nav-button-secondary {
+            background: white;
+            color: #6b7280;
+        }
+
+        .nav-button-primary {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .nav-button:not(:disabled):active {
+            transform: scale(0.98);
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Success Modal */
+        .success-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .success-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .success-icon svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        .success-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .success-message {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .success-button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Hide sections based on step */
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <button class="back-button" onclick="goBack()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M5 12l7 7M5 12l7-7"/>
+                </svg>
+            </button>
+            <h1 class="header-title">Create Advertisement</h1>
+            <button class="publish-button" id="publishBtn" onclick="publishAd()" disabled>
+                Publish
+            </button>
+        </div>
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="progress-container">
+        <div class="progress-steps">
+            <div class="progress-line"></div>
+            <div class="progress-line-active" id="progressActive" style="width: 0%"></div>
+            
+            <div class="step active" id="step1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Media</div>
+            </div>
+            
+            <div class="step" id="step2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Details</div>
+            </div>
+            
+            <div class="step" id="step3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Preview</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Container -->
+    <div class="content-container">
+        <!-- Step 1: Media Upload -->
+        <div class="step-content active" id="stepContent1">
+            <div class="media-upload-section">
+                <h2 class="section-title">
+                    Upload Photos
+                    <span class="required-badge">Required</span>
+                </h2>
+                
+                <div class="media-grid" id="mediaGrid">
+                    <div class="media-item media-add" onclick="selectMedia()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <span class="media-add-text">Add Media</span>
+                    </div>
+                </div>
+                
+                <div class="media-tips">
+                    <div class="tip">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"/>
+                        </svg>
+                        <span>Up to 9 photos</span>
+                    </div>
+                    <div class="tip">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                        </svg>
+                        <span>Square format recommended</span>
+                    </div>
+                    <div class="tip">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <span>Max 5MB per image</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Ad Details -->
+        <div class="step-content" id="stepContent2">
+            <div class="form-section">
+                <h2 class="section-title">Advertisement Details</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-input" id="adTitle" placeholder="E.g., Special Weekend Offer" maxlength="60">
+                    <div class="char-counter">
+                        <span id="titleCount">0</span>/60
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="adDescription" placeholder="Describe your product or service..." maxlength="500"></textarea>
+                    <div class="char-counter">
+                        <span id="descCount">0</span>/500
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tags (Press Enter to add)</label>
+                    <div class="tags-container" id="tagsContainer">
+                        <input type="text" class="tag-input" id="tagInput" placeholder="Add tags...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h2 class="section-title">Category</h2>
+                <div class="category-grid" id="categoryGrid">
+                    <div class="category-item" data-category="food">Food & Dining</div>
+                    <div class="category-item" data-category="shopping">Shopping</div>
+                    <div class="category-item" data-category="services">Services</div>
+                    <div class="category-item" data-category="health">Health & Beauty</div>
+                    <div class="category-item" data-category="transport">Transport</div>
+                    <div class="category-item" data-category="entertainment">Entertainment</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Preview -->
+        <div class="step-content" id="stepContent3">
+            <div class="preview-section">
+                <div class="preview-header">Preview how your ad will appear</div>
+                
+                <div class="preview-content">
+                    <div class="preview-business">
+                        <div class="preview-avatar" id="previewAvatar">DA</div>
+                        <div class="preview-business-info">
+                            <div class="preview-business-name" id="previewBusinessName">Your Business</div>
+                            <div class="preview-category" id="previewCategory">Category</div>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-media-container">
+                        <div class="preview-media-scroll" id="previewMediaScroll">
+                            <!-- Media items will be added here -->
+                        </div>
+                        <div class="preview-indicators" id="previewIndicators">
+                            <!-- Indicators will be added here -->
+                        </div>
+                    </div>
+                    
+                    <div class="preview-description">
+                        <div class="preview-title" id="previewTitle">Your Title</div>
+                        <div class="preview-text" id="previewText">Your description will appear here...</div>
+                    </div>
+                    
+                    <div class="preview-tags" id="previewTags">
+                        <!-- Tags will be added here -->
+                    </div>
+                    
+                    <div class="preview-actions">
+                        <div class="preview-action">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            <span>Like</span>
+                        </div>
+                        <div class="preview-action">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            <span>Message</span>
+                        </div>
+                        <div class="preview-action">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326"/>
+                            </svg>
+                            <span>Share</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-button nav-button-secondary" id="prevBtn" onclick="previousStep()" style="display: none">
+            Previous
+        </button>
+        <button class="nav-button nav-button-primary" id="nextBtn" onclick="nextStep()">
+            Next
+        </button>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="mediaInput" accept="image/*" multiple style="display: none" onchange="handleMediaSelect(event)">
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="success-modal" id="successModal">
+        <div class="success-content">
+            <div class="success-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="success-title">Ad Published!</h3>
+            <p class="success-message">Your advertisement is now live in the marketplace. You'll receive notifications when customers interact with your ad.</p>
+            <button class="success-button" onclick="closeSuccess()">Done</button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const adState = {
+            currentStep: 1,
+            media: [],
+            title: '',
+            description: '',
+            tags: [],
+            category: '',
+            businessInfo: null
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Advertise] Initializing ad creation interface...');
+            loadBusinessInfo();
+            setupEventListeners();
+        });
+
+        function loadBusinessInfo() {
+            // Get business info from session or API
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                adState.businessInfo = {
+                    name: user.business_name || 'My Business',
+                    category: user.business_type || 'General',
+                    initials: (user.business_name || 'MB').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+                };
+                
+                document.getElementById('previewBusinessName').textContent = adState.businessInfo.name;
+                document.getElementById('previewAvatar').textContent = adState.businessInfo.initials;
+            }
+        }
+
+        function setupEventListeners() {
+            // Title input
+            document.getElementById('adTitle').addEventListener('input', function(e) {
+                adState.title = e.target.value;
+                document.getElementById('titleCount').textContent = e.target.value.length;
+                updatePreview();
+                validateStep();
+            });
+
+            // Description input
+            document.getElementById('adDescription').addEventListener('input', function(e) {
+                adState.description = e.target.value;
+                document.getElementById('descCount').textContent = e.target.value.length;
+                updatePreview();
+                validateStep();
+            });
+
+            // Tags input
+            document.getElementById('tagInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTag(e.target.value);
+                }
+            });
+
+            // Category selection
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.category-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    adState.category = this.dataset.category;
+                    document.getElementById('previewCategory').textContent = this.textContent;
+                    validateStep();
+                });
+            });
+        }
+
+        function selectMedia() {
+            document.getElementById('mediaInput').click();
+        }
+
+        function handleMediaSelect(event) {
+            const files = Array.from(event.target.files);
+            
+            // Validate file count
+            if (adState.media.length + files.length > 9) {
+                alert('You can upload a maximum of 9 images');
+                return;
+            }
+
+            // Validate file types (images only)
+            const invalidFiles = files.filter(f => !f.type.startsWith('image/'));
+            if (invalidFiles.length > 0) {
+                alert('Please select only image files (JPG, PNG, etc.)');
+                return;
+            }
+
+            // Validate file sizes (max 5MB per image)
+            const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+            const oversizedFiles = files.filter(f => f.size > MAX_SIZE);
+            if (oversizedFiles.length > 0) {
+                alert('Images must be less than 5MB each. Please compress or resize large images.');
+                return;
+            }
+
+            // Process files
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const mediaItem = {
+                        type: file.type,
+                        url: e.target.result,
+                        name: file.name
+                    };
+                    adState.media.push(mediaItem);
+                    renderMedia();
+                    updatePreview();
+                    validateStep();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderMedia() {
+            const grid = document.getElementById('mediaGrid');
+            grid.innerHTML = '';
+
+            // Add uploaded media
+            adState.media.forEach((media, index) => {
+                const item = document.createElement('div');
+                item.className = 'media-item';
+                item.innerHTML = `
+                    <img class="media-preview" src="${media.url}" alt="Upload ${index + 1}">
+                    <button class="media-remove" onclick="removeMedia(${index})">×</button>
+                `;
+                grid.appendChild(item);
+            });
+
+            // Add the "add more" button if under limit
+            if (adState.media.length < 9) {
+                const addButton = document.createElement('div');
+                addButton.className = 'media-item media-add';
+                addButton.onclick = selectMedia;
+                addButton.innerHTML = `
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="media-add-text">Add More</span>
+                `;
+                grid.appendChild(addButton);
+            }
+        }
+
+        function removeMedia(index) {
+            adState.media.splice(index, 1);
+            renderMedia();
+            updatePreview();
+            validateStep();
+        }
+
+        function addTag(value) {
+            const tag = value.trim().toLowerCase();
+            if (tag && !adState.tags.includes(tag) && adState.tags.length < 5) {
+                adState.tags.push(tag);
+                renderTags();
+                updatePreview();
+                document.getElementById('tagInput').value = '';
+            }
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tagsContainer');
+            container.innerHTML = '';
+
+            adState.tags.forEach((tag, index) => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'tag';
+                tagEl.innerHTML = `
+                    ${tag}
+                    <span class="tag-remove" onclick="removeTag(${index})">×</span>
+                `;
+                container.appendChild(tagEl);
+            });
+
+            // Re-add the input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'tag-input';
+            input.id = 'tagInput';
+            input.placeholder = adState.tags.length === 0 ? 'Add tags...' : '';
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTag(e.target.value);
+                }
+            });
+            container.appendChild(input);
+        }
+
+        function removeTag(index) {
+            adState.tags.splice(index, 1);
+            renderTags();
+            updatePreview();
+        }
+
+        function updatePreview() {
+            // Update title and description
+            document.getElementById('previewTitle').textContent = adState.title || 'Your Title';
+            document.getElementById('previewText').textContent = adState.description || 'Your description will appear here...';
+
+            // Update media
+            const mediaScroll = document.getElementById('previewMediaScroll');
+            const indicators = document.getElementById('previewIndicators');
+            
+            mediaScroll.innerHTML = '';
+            indicators.innerHTML = '';
+
+            if (adState.media.length > 0) {
+                adState.media.forEach((media, index) => {
+                    const mediaItem = document.createElement('div');
+                    mediaItem.className = 'preview-media-item';
+                    mediaItem.innerHTML = `<img src="${media.url}" alt="Preview ${index + 1}">`;
+                    mediaScroll.appendChild(mediaItem);
+
+                    // Add indicator
+                    const indicator = document.createElement('div');
+                    indicator.className = 'preview-indicator';
+                    if (index === 0) indicator.classList.add('active');
+                    indicators.appendChild(indicator);
+                });
+            } else {
+                // Show placeholder
+                mediaScroll.innerHTML = `
+                    <div class="preview-media-item" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; aspect-ratio: 1;">
+                        <span style="color: #9ca3af;">No media uploaded</span>
+                    </div>
+                `;
+            }
+
+            // Update tags
+            const tagsContainer = document.getElementById('previewTags');
+            tagsContainer.innerHTML = '';
+            adState.tags.forEach(tag => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'preview-tag';
+                tagEl.textContent = `#${tag}`;
+                tagsContainer.appendChild(tagEl);
+            });
+
+            // Handle media scroll indicators
+            if (adState.media.length > 1) {
+                mediaScroll.addEventListener('scroll', function() {
+                    const scrollLeft = mediaScroll.scrollLeft;
+                    const itemWidth = mediaScroll.offsetWidth;
+                    const activeIndex = Math.round(scrollLeft / itemWidth);
+                    
+                    document.querySelectorAll('.preview-indicator').forEach((ind, i) => {
+                        ind.classList.toggle('active', i === activeIndex);
+                    });
+                });
+            }
+        }
+
+        function validateStep() {
+            let isValid = false;
+
+            switch (adState.currentStep) {
+                case 1:
+                    isValid = adState.media.length > 0;
+                    break;
+                case 2:
+                    isValid = adState.title.length > 0 && 
+                             adState.description.length > 0 && 
+                             adState.category !== '';
+                    break;
+                case 3:
+                    isValid = true; // Preview is always valid if we got here
+                    break;
+            }
+
+            document.getElementById('nextBtn').disabled = !isValid;
+            
+            // Enable publish button on final step
+            if (adState.currentStep === 3) {
+                document.getElementById('publishBtn').disabled = false;
+            } else {
+                document.getElementById('publishBtn').disabled = true;
+            }
+        }
+
+        function nextStep() {
+            if (adState.currentStep < 3) {
+                // Mark current step as completed
+                document.getElementById(`step${adState.currentStep}`).classList.add('completed');
+                document.getElementById(`step${adState.currentStep}`).classList.remove('active');
+                document.getElementById(`stepContent${adState.currentStep}`).classList.remove('active');
+                
+                // Move to next step
+                adState.currentStep++;
+                
+                // Activate next step
+                document.getElementById(`step${adState.currentStep}`).classList.add('active');
+                document.getElementById(`stepContent${adState.currentStep}`).classList.add('active');
+                
+                // Update progress bar
+                const progress = ((adState.currentStep - 1) / 2) * 80; // 80% is the width between first and last step
+                document.getElementById('progressActive').style.width = `${progress}%`;
+                
+                // Update navigation buttons
+                updateNavButtons();
+                
+                // If moving to preview, update it
+                if (adState.currentStep === 3) {
+                    updatePreview();
+                }
+                
+                validateStep();
+            }
+        }
+
+        function previousStep() {
+            if (adState.currentStep > 1) {
+                // Remove active from current step
+                document.getElementById(`step${adState.currentStep}`).classList.remove('active');
+                document.getElementById(`stepContent${adState.currentStep}`).classList.remove('active');
+                
+                // Move to previous step
+                adState.currentStep--;
+                
+                // Activate previous step
+                document.getElementById(`step${adState.currentStep}`).classList.add('active');
+                document.getElementById(`step${adState.currentStep}`).classList.remove('completed');
+                document.getElementById(`stepContent${adState.currentStep}`).classList.add('active');
+                
+                // Update progress bar
+                const progress = ((adState.currentStep - 1) / 2) * 80;
+                document.getElementById('progressActive').style.width = `${progress}%`;
+                
+                // Update navigation buttons
+                updateNavButtons();
+                
+                validateStep();
+            }
+        }
+
+        function updateNavButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // Show/hide previous button
+            prevBtn.style.display = adState.currentStep > 1 ? 'block' : 'none';
+            
+            // Update next button text
+            if (adState.currentStep === 3) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = 'block';
+                nextBtn.textContent = 'Next';
+            }
+        }
+
+        async function publishAd() {
+            console.log('[Advertise] Publishing ad...', adState);
+            
+            // Show loading
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            try {
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('title', adState.title);
+                formData.append('description', adState.description);
+                formData.append('category', adState.category);
+                formData.append('tags', JSON.stringify(adState.tags));
+                
+                // Add media files
+                for (let i = 0; i < adState.media.length; i++) {
+                    const media = adState.media[i];
+                    // Convert base64 to blob
+                    const response = await fetch(media.url);
+                    const blob = await response.blob();
+                    formData.append(`media_${i}`, blob, media.name);
+                }
+                
+                // Submit to API
+                const response = await fetch('/api/marketplace/advertisements/', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    // Hide loading
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    
+                    // Show success modal
+                    document.getElementById('successModal').style.display = 'flex';
+                } else {
+                    throw new Error('Failed to publish ad');
+                }
+            } catch (error) {
+                console.error('[Advertise] Error publishing ad:', error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert('Failed to publish advertisement. Please try again.');
+            }
+        }
+
+        function closeSuccess() {
+            document.getElementById('successModal').style.display = 'none';
+            // Navigate back to business menu
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        function goBack() {
+            if (adState.currentStep > 1) {
+                previousStep();
+            } else {
+                // Confirm before leaving
+                if (adState.media.length > 0 || adState.title || adState.description) {
+                    if (confirm('Are you sure you want to leave? Your progress will be lost.')) {
+                        window.location.href = 'mobile-business-menu.html';
+                    }
+                } else {
+                    window.location.href = 'mobile-business-menu.html';
+                }
+            }
+        }
+
+        // Haptic feedback
+        function triggerHaptic() {
+            if (window.HapticsPlugin && window.isMobileDevice && window.isMobileDevice()) {
+                HapticsPlugin.impact({ style: 'light' });
+            }
+        }
+    </script>
+</body>
+</html>

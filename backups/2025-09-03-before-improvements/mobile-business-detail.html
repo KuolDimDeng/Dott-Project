@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Business Details - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: calc(140px + env(safe-area-inset-bottom));
+        }
+
+        /* Header with Hero Image */
+        .header-hero {
+            position: relative;
+            height: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .header-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-button {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+        }
+
+        /* Business Info Card */
+        .business-info-card {
+            background: white;
+            margin: -40px 16px 16px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .business-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .business-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .business-details {
+            flex: 1;
+        }
+
+        .business-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .business-category {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .business-meta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .rating {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .status-open {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .status-closed {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .business-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .primary-action {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-call {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-message {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-share {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            background: white;
+            padding: 0 16px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 24px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            padding: 16px 0;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            padding: 16px;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Advertisement Banner */
+        .ad-banner {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .ad-carousel {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .ad-images {
+            display: flex;
+            height: 100%;
+            transition: transform 0.3s;
+        }
+
+        .ad-image {
+            flex: 0 0 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ad-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+        }
+
+        .ad-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            transition: all 0.3s;
+        }
+
+        .ad-dot.active {
+            background: white;
+            width: 20px;
+            border-radius: 3px;
+        }
+
+        .ad-content {
+            padding: 16px;
+        }
+
+        .ad-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .ad-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .ad-price {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        /* Products/Services Grid */
+        .items-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 12px;
+        }
+
+        .item-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .item-description {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-price {
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        .item-unit {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .add-to-cart {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qty-button {
+            background: #f3f4f6;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .qty-display {
+            font-weight: 600;
+            color: #1f2937;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Reviews Section */
+        .reviews-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .reviews-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .write-review {
+            color: #2563eb;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .reviewer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .reviewer-info {
+            flex: 1;
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .review-rating {
+            color: #fbbf24;
+            font-size: 14px;
+        }
+
+        .review-text {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Bottom Action Bar */
+        .bottom-action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .cart-summary {
+            flex: 1;
+        }
+
+        .cart-items-count {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .cart-total {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .checkout-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Floating Cart Button */
+        .floating-cart {
+            position: fixed;
+            bottom: calc(80px + env(safe-area-inset-bottom));
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            background: #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 200;
+            color: white;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Loading State */
+        .skeleton {
+            background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Hero Image -->
+    <div class="header-hero">
+        <img class="hero-image" id="heroImage" src="https://via.placeholder.com/400x250" alt="Business">
+        <div class="header-overlay">
+            <button class="back-button" onclick="goBack()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M5 12l7 7M5 12l7-7"/>
+                </svg>
+            </button>
+            <div class="header-actions">
+                <button class="action-button" onclick="shareBusiness()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326"/>
+                    </svg>
+                </button>
+                <button class="action-button" onclick="toggleFavorite()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Info Card -->
+    <div class="business-info-card">
+        <div class="business-header">
+            <div class="business-avatar" id="businessAvatar">FG</div>
+            <div class="business-details">
+                <h1 class="business-name" id="businessName">Fresh Grocers</h1>
+                <div class="business-category" id="businessCategory">Shopping & Retail</div>
+                <div class="business-meta">
+                    <div class="meta-item">
+                        <span class="rating">⭐ 4.5</span>
+                        <span>(234 reviews)</span>
+                    </div>
+                    <div class="meta-item">
+                        <span id="businessStatus" class="status-open">Open now</span>
+                    </div>
+                    <div class="meta-item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        <span id="businessDistance">0.5 km away</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="business-actions">
+            <button class="primary-action btn-call" onclick="callBusiness()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+                Call
+            </button>
+            <button class="primary-action btn-message" onclick="messageBusiness()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                Message
+            </button>
+            <button class="primary-action btn-share" onclick="shareBusiness()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326"/>
+                </svg>
+                Share
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <div class="tabs">
+            <div class="tab active" data-tab="featured" onclick="switchTab('featured')">Featured</div>
+            <div class="tab" data-tab="products" onclick="switchTab('products')">Products</div>
+            <div class="tab" data-tab="services" onclick="switchTab('services')">Services</div>
+            <div class="tab" data-tab="reviews" onclick="switchTab('reviews')">Reviews</div>
+            <div class="tab" data-tab="about" onclick="switchTab('about')">About</div>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    
+    <!-- Featured Tab (Shows Advertisements) -->
+    <div class="content-section active" id="featured">
+        <div class="ad-banner">
+            <div class="ad-carousel">
+                <div class="ad-images" id="adImages">
+                    <img class="ad-image" src="https://via.placeholder.com/400x200" alt="Ad 1">
+                    <img class="ad-image" src="https://via.placeholder.com/400x200" alt="Ad 2">
+                    <img class="ad-image" src="https://via.placeholder.com/400x200" alt="Ad 3">
+                </div>
+                <div class="ad-dots">
+                    <span class="ad-dot active"></span>
+                    <span class="ad-dot"></span>
+                    <span class="ad-dot"></span>
+                </div>
+            </div>
+            <div class="ad-content">
+                <h3 class="ad-title">Weekend Special - 20% Off All Fresh Produce</h3>
+                <p class="ad-description">Get the freshest fruits and vegetables at unbeatable prices this weekend only! Stock up on your favorites while supplies last.</p>
+                <div class="ad-price">From KSh 50</div>
+            </div>
+        </div>
+
+        <!-- Quick Add Items -->
+        <h3 style="font-size: 16px; font-weight: 600; margin: 16px 0 12px;">Quick Add to Cart</h3>
+        <div class="items-grid" id="quickAddItems">
+            <!-- Items will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Products Tab -->
+    <div class="content-section" id="products">
+        <div class="items-grid" id="productsList">
+            <!-- Products will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Services Tab -->
+    <div class="content-section" id="services">
+        <div class="items-grid" id="servicesList">
+            <!-- Services will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Reviews Tab -->
+    <div class="content-section" id="reviews">
+        <div class="reviews-header">
+            <h2 class="reviews-title">Customer Reviews</h2>
+            <a href="#" class="write-review">Write Review</a>
+        </div>
+        
+        <div id="reviewsList">
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="reviewer-avatar">JD</div>
+                    <div class="reviewer-info">
+                        <div class="reviewer-name">John Doe</div>
+                        <div class="review-date">2 days ago</div>
+                    </div>
+                    <div class="review-rating">⭐⭐⭐⭐⭐</div>
+                </div>
+                <div class="review-text">
+                    Excellent service and fresh products! The delivery was quick and the quality exceeded my expectations. Will definitely order again.
+                </div>
+            </div>
+            
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="reviewer-avatar">SM</div>
+                    <div class="reviewer-info">
+                        <div class="reviewer-name">Sarah M.</div>
+                        <div class="review-date">1 week ago</div>
+                    </div>
+                    <div class="review-rating">⭐⭐⭐⭐</div>
+                </div>
+                <div class="review-text">
+                    Good variety of products and reasonable prices. The app makes ordering very convenient.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Tab -->
+    <div class="content-section" id="about">
+        <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Business Hours</h3>
+            <div style="color: #6b7280; font-size: 14px; line-height: 1.8;">
+                Monday - Friday: 8:00 AM - 9:00 PM<br>
+                Saturday: 8:00 AM - 10:00 PM<br>
+                Sunday: 9:00 AM - 8:00 PM
+            </div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Contact Information</h3>
+            <div style="color: #6b7280; font-size: 14px; line-height: 1.8;">
+                Phone: +254 712 345 678<br>
+                Email: info@freshgrocers.co.ke<br>
+                WhatsApp: +254 712 345 678
+            </div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Payment Methods</h3>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <span style="background: #f3f4f6; padding: 6px 12px; border-radius: 6px; font-size: 14px;">💳 Card</span>
+                <span style="background: #f3f4f6; padding: 6px 12px; border-radius: 6px; font-size: 14px;">📱 M-Pesa</span>
+                <span style="background: #f3f4f6; padding: 6px 12px; border-radius: 6px; font-size: 14px;">💵 Cash</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="bottom-action-bar" id="bottomBar" style="display: none;">
+        <div class="cart-summary">
+            <div class="cart-items-count" id="cartCount">3 items in cart</div>
+            <div class="cart-total" id="cartTotal">KSh 1,250</div>
+        </div>
+        <button class="checkout-button" onclick="proceedToCheckout()">Checkout</button>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <div class="floating-cart" onclick="viewCart()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v8m0-8L17 21m0 0a2 2 0 100 4 2 2 0 000-4zm-10 0a2 2 0 100 4 2 2 0 000-4"/>
+        </svg>
+        <span class="cart-badge" id="floatingCartBadge" style="display: none;">0</span>
+    </div>
+
+    <script>
+        // State management
+        const businessState = {
+            businessId: null,
+            business: null,
+            cart: [],
+            activeTab: 'featured',
+            currentAdIndex: 0
+        };
+
+        // Sample data for the business
+        const sampleBusiness = {
+            id: 'b1',
+            name: 'Fresh Grocers',
+            category: 'Shopping & Retail',
+            avatar: '🛒',
+            rating: 4.5,
+            reviewCount: 234,
+            distance: '0.5 km',
+            isOpen: true,
+            phone: '+254712345678',
+            ads: [
+                {
+                    id: 'ad1',
+                    title: 'Weekend Special - 20% Off All Fresh Produce',
+                    description: 'Get the freshest fruits and vegetables at unbeatable prices this weekend only!',
+                    images: ['https://via.placeholder.com/400x200'],
+                    price: 'From KSh 50'
+                }
+            ],
+            products: [
+                { id: 'p1', name: 'Fresh Tomatoes', description: 'Locally grown, organic', price: 80, unit: 'per kg', emoji: '🍅' },
+                { id: 'p2', name: 'Onions', description: 'Red onions, fresh daily', price: 60, unit: 'per kg', emoji: '🧅' },
+                { id: 'p3', name: 'Potatoes', description: 'Perfect for chips', price: 50, unit: 'per kg', emoji: '🥔' },
+                { id: 'p4', name: 'Carrots', description: 'Sweet and crunchy', price: 70, unit: 'per kg', emoji: '🥕' },
+                { id: 'p5', name: 'Spinach', description: 'Fresh leafy greens', price: 30, unit: 'per bunch', emoji: '🥬' },
+                { id: 'p6', name: 'Bananas', description: 'Ripe and sweet', price: 100, unit: 'per dozen', emoji: '🍌' }
+            ],
+            services: []
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[BusinessDetail] Initializing...');
+            
+            // Get business ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            businessState.businessId = urlParams.get('id');
+            
+            loadBusinessDetails();
+            loadCart();
+            setupAdCarousel();
+        });
+
+        function loadBusinessDetails() {
+            // In production, fetch from API
+            businessState.business = sampleBusiness;
+            
+            // Update UI
+            document.getElementById('businessName').textContent = sampleBusiness.name;
+            document.getElementById('businessCategory').textContent = sampleBusiness.category;
+            document.getElementById('businessAvatar').textContent = sampleBusiness.avatar;
+            document.getElementById('businessDistance').textContent = sampleBusiness.distance + ' away';
+            document.getElementById('businessStatus').textContent = sampleBusiness.isOpen ? 'Open now' : 'Closed';
+            document.getElementById('businessStatus').className = sampleBusiness.isOpen ? 'status-open' : 'status-closed';
+            
+            // Load products
+            loadProducts();
+            loadQuickAddItems();
+        }
+
+        function loadProducts() {
+            const container = document.getElementById('productsList');
+            container.innerHTML = '';
+            
+            sampleBusiness.products.forEach(product => {
+                container.appendChild(createProductCard(product));
+            });
+        }
+
+        function loadQuickAddItems() {
+            const container = document.getElementById('quickAddItems');
+            container.innerHTML = '';
+            
+            // Show first 4 products as quick add
+            sampleBusiness.products.slice(0, 4).forEach(product => {
+                container.appendChild(createProductCard(product));
+            });
+        }
+
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            
+            const inCart = businessState.cart.find(item => item.id === product.id);
+            const quantity = inCart ? inCart.quantity : 0;
+            
+            card.innerHTML = `
+                <div class="item-image">${product.emoji}</div>
+                <div class="item-details">
+                    <div class="item-name">${product.name}</div>
+                    <div class="item-description">${product.description}</div>
+                    <div class="item-footer">
+                        <div>
+                            <div class="item-price">KSh ${product.price}</div>
+                            <div class="item-unit">${product.unit}</div>
+                        </div>
+                        ${quantity > 0 ? `
+                            <div class="quantity-control">
+                                <button class="qty-button" onclick="updateQuantity('${product.id}', ${quantity - 1})">−</button>
+                                <span class="qty-display">${quantity}</span>
+                                <button class="qty-button" onclick="updateQuantity('${product.id}', ${quantity + 1})">+</button>
+                            </div>
+                        ` : `
+                            <button class="add-to-cart" onclick="addToCart('${product.id}')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Add
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function addToCart(productId) {
+            const product = sampleBusiness.products.find(p => p.id === productId);
+            if (product) {
+                const cartItem = {
+                    ...product,
+                    quantity: 1,
+                    businessId: businessState.businessId,
+                    businessName: sampleBusiness.name
+                };
+                businessState.cart.push(cartItem);
+                saveCart();
+                updateCartUI();
+                loadProducts();
+                loadQuickAddItems();
+                
+                // Haptic feedback
+                triggerHaptic();
+            }
+        }
+
+        function updateQuantity(productId, newQuantity) {
+            if (newQuantity <= 0) {
+                businessState.cart = businessState.cart.filter(item => item.id !== productId);
+            } else {
+                const item = businessState.cart.find(item => item.id === productId);
+                if (item) {
+                    item.quantity = newQuantity;
+                }
+            }
+            
+            saveCart();
+            updateCartUI();
+            loadProducts();
+            loadQuickAddItems();
+            triggerHaptic();
+        }
+
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(businessState.cart));
+        }
+
+        function loadCart() {
+            const saved = localStorage.getItem('cart');
+            if (saved) {
+                businessState.cart = JSON.parse(saved);
+                updateCartUI();
+            }
+        }
+
+        function updateCartUI() {
+            const totalItems = businessState.cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = businessState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            // Update floating cart badge
+            const badge = document.getElementById('floatingCartBadge');
+            if (totalItems > 0) {
+                badge.textContent = totalItems;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+            
+            // Update bottom bar
+            const bottomBar = document.getElementById('bottomBar');
+            if (totalItems > 0) {
+                document.getElementById('cartCount').textContent = `${totalItems} items in cart`;
+                document.getElementById('cartTotal').textContent = `KSh ${totalPrice.toLocaleString()}`;
+                bottomBar.style.display = 'flex';
+            } else {
+                bottomBar.style.display = 'none';
+            }
+        }
+
+        function switchTab(tabName) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Update active content
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            businessState.activeTab = tabName;
+        }
+
+        function setupAdCarousel() {
+            // Auto-scroll ads every 5 seconds
+            setInterval(() => {
+                if (businessState.activeTab === 'featured') {
+                    businessState.currentAdIndex = (businessState.currentAdIndex + 1) % 3;
+                    const adImages = document.getElementById('adImages');
+                    adImages.style.transform = `translateX(-${businessState.currentAdIndex * 100}%)`;
+                    
+                    // Update dots
+                    document.querySelectorAll('.ad-dot').forEach((dot, index) => {
+                        dot.classList.toggle('active', index === businessState.currentAdIndex);
+                    });
+                }
+            }, 5000);
+        }
+
+        function callBusiness() {
+            console.log('[BusinessDetail] Calling business...');
+            window.location.href = `tel:${sampleBusiness.phone}`;
+        }
+
+        function messageBusiness() {
+            console.log('[BusinessDetail] Opening message...');
+            window.location.href = `mobile-chat.html?businessId=${businessState.businessId}`;
+        }
+
+        function shareBusiness() {
+            console.log('[BusinessDetail] Sharing business...');
+            if (navigator.share) {
+                navigator.share({
+                    title: sampleBusiness.name,
+                    text: `Check out ${sampleBusiness.name} on Dott!`,
+                    url: window.location.href
+                });
+            }
+        }
+
+        function toggleFavorite() {
+            console.log('[BusinessDetail] Toggling favorite...');
+            // Toggle favorite status
+            triggerHaptic();
+        }
+
+        function viewCart() {
+            console.log('[BusinessDetail] Viewing cart...');
+            window.location.href = 'mobile-cart.html';
+        }
+
+        function proceedToCheckout() {
+            console.log('[BusinessDetail] Proceeding to checkout...');
+            window.location.href = 'mobile-checkout.html';
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function triggerHaptic() {
+            if (window.HapticsPlugin && window.isMobileDevice && window.isMobileDevice()) {
+                HapticsPlugin.impact({ style: 'light' });
+            }
+        }
+    </script>
+</body>
+</html>

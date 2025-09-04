@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Filing Taxes - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0d4f8a 0%, #1a5f9e 100%);
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-button svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+            stroke-width: 2;
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+        
+        .header-action {
+            width: 36px;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .tax-category {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tax-category:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        
+        .category-icon svg {
+            width: 24px;
+            height: 24px;
+            color: #0d4f8a;
+        }
+        
+        .category-info {
+            flex: 1;
+        }
+        
+        .category-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .category-description {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .category-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-due {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-filed {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+        
+        .status-upcoming {
+            background: #f3e5f5;
+            color: #9c27b0;
+        }
+        
+        .info-section {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #1976d2;
+            border-radius: 50%;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        
+        .tax-forms {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .forms-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .form-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .form-item:last-child {
+            border-bottom: none;
+        }
+        
+        .form-icon {
+            width: 32px;
+            height: 32px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        
+        .form-icon svg {
+            width: 18px;
+            height: 18px;
+            color: #666;
+        }
+        
+        .form-name {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .form-action {
+            color: #0d4f8a;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .coming-soon {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .coming-soon-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            color: #ccc;
+        }
+        
+        .coming-soon-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .coming-soon-text {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="back-button" onclick="goBack()">
+                <svg fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </div>
+            <div class="header-title">Filing Taxes</div>
+            <div class="header-action"></div>
+        </div>
+        
+        <div class="content">
+            <div class="info-section">
+                <span class="info-icon">i</span>
+                <span>Manage and file your business taxes efficiently with AI assistance</span>
+            </div>
+            
+            <div class="tax-category" onclick="navigateToTax('sales')">
+                <div class="category-header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="category-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+                            </svg>
+                        </div>
+                        <div class="category-info">
+                            <div class="category-title">Sales Tax</div>
+                            <div class="category-description">Monthly/Quarterly filing</div>
+                        </div>
+                    </div>
+                    <span class="category-status status-due">Due Soon</span>
+                </div>
+            </div>
+            
+            <div class="tax-category" onclick="navigateToTax('payroll')">
+                <div class="category-header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="category-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.81.45 1.61 1.67 1.61 1.16 0 1.6-.64 1.6-1.46 0-.84-.68-1.22-1.88-1.54-2.28-.61-3.21-1.48-3.21-3.15 0-1.69 1.16-2.87 3.04-3.21V5h2.67v1.92c1.65.54 2.38 1.91 2.44 3.11h-1.96c-.07-.58-.34-1.34-1.31-1.34-1.05 0-1.42.61-1.42 1.22 0 .64.43.95 1.88 1.34 2.17.56 3.21 1.36 3.21 3.26-.01 1.78-1.2 2.94-3.25 3.28z"/>
+                            </svg>
+                        </div>
+                        <div class="category-info">
+                            <div class="category-title">Payroll Tax</div>
+                            <div class="category-description">941, 940, State filings</div>
+                        </div>
+                    </div>
+                    <span class="category-status status-filed">Filed</span>
+                </div>
+            </div>
+            
+            <div class="tax-category" onclick="navigateToTax('income')">
+                <div class="category-header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="category-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                            </svg>
+                        </div>
+                        <div class="category-info">
+                            <div class="category-title">Income Tax</div>
+                            <div class="category-description">Annual business tax return</div>
+                        </div>
+                    </div>
+                    <span class="category-status status-upcoming">Upcoming</span>
+                </div>
+            </div>
+            
+            <div class="tax-forms">
+                <div class="forms-title">Tax Forms & Documents</div>
+                
+                <div class="form-item" onclick="navigateToForm('w2')">
+                    <div class="form-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        </svg>
+                    </div>
+                    <span class="form-name">W-2 Forms</span>
+                    <span class="form-action">Prepare</span>
+                </div>
+                
+                <div class="form-item" onclick="navigateToForm('1099')">
+                    <div class="form-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        </svg>
+                    </div>
+                    <span class="form-name">1099 Forms</span>
+                    <span class="form-action">Prepare</span>
+                </div>
+                
+                <div class="form-item" onclick="navigateToForm('quarterly')">
+                    <div class="form-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                        </svg>
+                    </div>
+                    <span class="form-name">Quarterly Reports</span>
+                    <span class="form-action">View</span>
+                </div>
+            </div>
+            
+            <div class="coming-soon">
+                <svg class="coming-soon-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                </svg>
+                <div class="coming-soon-title">Tax Filing Module</div>
+                <div class="coming-soon-text">
+                    Automated tax filing with AI assistance will be available soon. Prepare and file all your business taxes in one place.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+        
+        function navigateToTax(type) {
+            console.log('Navigating to tax type:', type);
+            
+            switch(type) {
+                case 'payroll':
+                    window.location.href = 'mobile-payroll-tax.html';
+                    break;
+                case 'sales':
+                    alert('Sales tax filing coming soon!');
+                    break;
+                case 'income':
+                    alert('Income tax filing coming soon!');
+                    break;
+                default:
+                    alert(`${type.charAt(0).toUpperCase() + type.slice(1)} tax filing coming soon!`);
+            }
+        }
+        
+        function navigateToForm(form) {
+            console.log('Navigating to form:', form);
+            // Placeholder for form navigation
+            alert(`${form.toUpperCase()} form preparation coming soon!`);
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Tax filing page loaded');
+        });
+    </script>
+</body>
+</html>

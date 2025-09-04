@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inventory - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 20px;
+        }
+
+        .back-button:active {
+            background: #d0d0d0;
+        }
+
+        .header-content {
+            margin-left: 60px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .add-product-btn {
+            width: 100%;
+            padding: 15px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .add-product-btn:active {
+            transform: scale(0.98);
+        }
+
+        .product-list {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .product-sku {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .product-category {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .product-stock {
+            text-align: right;
+        }
+
+        .stock-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stock-value.in-stock {
+            color: #28a745;
+        }
+
+        .stock-value.low-stock {
+            color: #ffc107;
+        }
+
+        .stock-value.out-stock {
+            color: #dc3545;
+        }
+
+        .stock-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .product-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: #999;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #1e293b;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="navigateToMenu()" type="button">
+                ←
+            </button>
+            <div class="header-content">
+                <h1>📦 Inventory</h1>
+                <div>Manage your products and stock levels</div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Total Products</div>
+                <div class="stat-value" id="totalProducts">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Value</div>
+                <div class="stat-value" id="totalValue">$0</div>
+            </div>
+        </div>
+
+        <input type="text" class="search-bar" placeholder="Search products..." id="searchInput">
+        
+        <button class="add-product-btn" onclick="alert('Add product feature coming soon!')">
+            + Add New Product
+        </button>
+
+        <div class="product-list">
+            <div id="productList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px;">Loading inventory...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="mobile-dashboard.html" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="mobile-pos.html" class="nav-item">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label">POS</span>
+        </a>
+        <a href="mobile-timesheet.html" class="nav-item">
+            <span class="nav-icon">⏰</span>
+            <span class="nav-label">Timesheet</span>
+        </a>
+        <a href="mobile-expenses.html" class="nav-item">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Expenses</span>
+        </a>
+        <a href="mobile-inventory.html" class="nav-item active">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Inventory</span>
+        </a>
+    </div>
+
+    <script>
+        const AppState = {
+            apiUrl: 'https://staging.dottapps.com',
+            sessionToken: null,
+            tenantId: null,
+            products: []
+        };
+
+        // Navigation function
+        function navigateToMenu() {
+            console.log('[Inventory] Navigating back to business menu...');
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Initialize
+        async function init() {
+            await loadSession();
+            if (!AppState.sessionToken) {
+                window.location.href = 'mobile-auth.html';
+                return;
+            }
+            
+            await loadInventory();
+            setupSearch();
+        }
+
+        // Load session from secure storage
+        async function loadSession() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const result = await window.Capacitor.Plugins.SecureStoragePlugin.get({ key: 'session' });
+                    if (result.value) {
+                        const session = JSON.parse(result.value);
+                        AppState.sessionToken = session.token;
+                        AppState.tenantId = session.tenantId;
+                    }
+                } else {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const parsed = JSON.parse(session);
+                        AppState.sessionToken = parsed.token;
+                        AppState.tenantId = parsed.tenantId;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        // Load inventory
+        async function loadInventory() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/products`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    AppState.products = data.results || data || [];
+                    displayProducts(AppState.products);
+                    updateStats();
+                } else if (response.status === 401) {
+                    window.location.href = 'mobile-auth.html';
+                }
+            } catch (error) {
+                console.error('Error loading inventory:', error);
+                document.getElementById('productList').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Failed to load inventory</p></div>';
+            }
+        }
+
+        // Display products
+        function displayProducts(products) {
+            const container = document.getElementById('productList');
+            
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <h3>No products yet</h3>
+                        <p>Add your first product to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = products.map(product => {
+                const stock = product.stock_quantity || 0;
+                let stockClass = 'in-stock';
+                let stockStatus = 'In Stock';
+                
+                if (stock === 0) {
+                    stockClass = 'out-stock';
+                    stockStatus = 'Out of Stock';
+                } else if (stock < 10) {
+                    stockClass = 'low-stock';
+                    stockStatus = 'Low Stock';
+                }
+
+                return `
+                    <div class="product-item">
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-sku">SKU: ${product.sku || 'N/A'}</div>
+                            <span class="product-category">${product.category || 'Uncategorized'}</span>
+                        </div>
+                        <div class="product-stock">
+                            <div class="stock-value ${stockClass}">${stock}</div>
+                            <div class="stock-label">${stockStatus}</div>
+                            <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update stats
+        function updateStats() {
+            const totalProducts = AppState.products.length;
+            const totalValue = AppState.products.reduce((sum, p) => 
+                sum + ((p.price || 0) * (p.stock_quantity || 0)), 0
+            );
+            
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('totalValue').textContent = `$${totalValue.toFixed(2)}`;
+        }
+
+        // Setup search
+        function setupSearch() {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = AppState.products.filter(p => 
+                    p.name.toLowerCase().includes(query) || 
+                    (p.sku && p.sku.toLowerCase().includes(query)) ||
+                    (p.category && p.category.toLowerCase().includes(query))
+                );
+                displayProducts(filtered);
+            });
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>

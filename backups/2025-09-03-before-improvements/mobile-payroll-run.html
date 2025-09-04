@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Run Payroll - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-button svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        /* Content */
+        .content {
+            padding: 16px;
+        }
+
+        /* Payroll Summary Card */
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .summary-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+            padding-top: 12px;
+            margin-top: 4px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .summary-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .summary-value.large {
+            font-size: 18px;
+            color: #2563eb;
+        }
+
+        /* Period Selector */
+        .period-selector {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .period-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .date-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .date-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .date-input {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        /* Employee List */
+        .employee-section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .employee-count {
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .employee-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .employee-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+
+        .employee-details {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-weight: 500;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .employee-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .employee-amount {
+            text-align: right;
+        }
+
+        .gross-amount {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .net-amount {
+            font-size: 12px;
+            color: #059669;
+            margin-top: 2px;
+        }
+
+        /* Bank Account Selection */
+        .bank-selection {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .bank-dropdown {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .bank-balance {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .balance-amount {
+            font-weight: 600;
+            color: #059669;
+            font-size: 12px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .action-button.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .action-button.primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+        }
+
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: start;
+            gap: 8px;
+        }
+
+        .alert.info {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .alert.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .alert.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .alert.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .alert-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #d1d5db;
+            background: white;
+        }
+
+        .modal-button.primary {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        /* Processing indicator */
+        .processing-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 20000;
+        }
+
+        .processing-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .processing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .processing-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .processing-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .processing-message {
+            font-size: 14px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5M5 12l7 7M5 12l7-7"/>
+            </svg>
+        </button>
+        <div class="header-title">Run Payroll</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content" style="padding-bottom: 100px;">
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+
+        <!-- Period Selector -->
+        <div class="period-selector">
+            <div class="period-title">Pay Period</div>
+            <div class="date-inputs">
+                <div class="date-group">
+                    <label class="date-label">Start Date</label>
+                    <input type="date" class="date-input" id="startDate">
+                </div>
+                <div class="date-group">
+                    <label class="date-label">End Date</label>
+                    <input type="date" class="date-input" id="endDate">
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Account Selection -->
+        <div class="bank-selection">
+            <div class="section-title">Payroll Bank Account</div>
+            <select class="bank-dropdown" id="bankAccount">
+                <option value="">Select bank account for payroll...</option>
+            </select>
+            <div class="bank-balance" id="bankBalance" style="display: none;">
+                <span class="balance-label">Available Balance:</span>
+                <span class="balance-amount" id="balanceAmount">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Employee Selection -->
+        <div class="employee-section">
+            <div class="section-header">
+                <div class="section-title">Employees to Pay</div>
+                <div class="employee-count" id="employeeCount">0 selected</div>
+            </div>
+            <div id="employeeList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Loading employees...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payroll Summary -->
+        <div class="summary-card">
+            <div class="summary-title">Payroll Summary</div>
+            <div class="summary-row">
+                <span class="summary-label">Total Gross Pay</span>
+                <span class="summary-value" id="totalGross">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Total Taxes</span>
+                <span class="summary-value" id="totalTaxes">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Total Deductions</span>
+                <span class="summary-value" id="totalDeductions">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Total Net Pay</span>
+                <span class="summary-value" id="totalNet">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Platform Fee (2.4%)</span>
+                <span class="summary-value" id="platformFee">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Total Amount Due</span>
+                <span class="summary-value large" id="totalAmount">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="action-button secondary" onclick="calculatePayroll()">
+            Calculate
+        </button>
+        <button class="action-button primary" onclick="reviewPayroll()" id="reviewButton" disabled>
+            Review & Approve
+        </button>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal" id="reviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Review Payroll</div>
+            </div>
+            <div class="modal-body" id="reviewContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button" onclick="closeReviewModal()">Cancel</button>
+                <button class="modal-button primary" onclick="approvePayroll()">Approve & Process</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-card">
+            <div class="processing-spinner"></div>
+            <div class="processing-title">Processing Payroll</div>
+            <div class="processing-message">Please wait while we process payments...</div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        const AppState = {
+            sessionToken: null,
+            apiUrl: 'https://app.dottapps.com',
+            user: null,
+            tenantId: null
+        };
+
+        // Payroll State
+        let payrollData = {
+            employees: [],
+            selectedEmployees: [],
+            bankAccounts: [],
+            selectedBankAccount: null,
+            calculations: null,
+            payPeriod: {
+                startDate: null,
+                endDate: null
+            }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[Payroll] Initializing...');
+            await loadSession();
+            await loadBankAccounts();
+            await loadEmployees();
+            initializeDatePickers();
+        });
+
+        // Load session from native app or storage
+        async function loadSession() {
+            try {
+                // Try to get session from native app
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    try {
+                        const { SecureStoragePlugin } = window.Capacitor.Plugins;
+                        
+                        let sessionToken = null;
+                        try {
+                            const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                            sessionToken = tokenResult.value;
+                        } catch (e) {
+                            const sidResult = await SecureStoragePlugin.get({ key: 'sid' });
+                            sessionToken = sidResult.value;
+                        }
+                        
+                        let tenantId = null;
+                        try {
+                            const tenantResult = await SecureStoragePlugin.get({ key: 'tenant_id' });
+                            tenantId = tenantResult.value;
+                        } catch (e) {
+                            console.log('[Payroll] No tenant ID in secure storage');
+                        }
+                        
+                        let user = null;
+                        try {
+                            const userResult = await SecureStoragePlugin.get({ key: 'user' });
+                            if (userResult.value) {
+                                user = JSON.parse(userResult.value);
+                            }
+                        } catch (e) {
+                            console.log('[Payroll] No user in secure storage');
+                        }
+                        
+                        if (sessionToken) {
+                            AppState.sessionToken = sessionToken;
+                            AppState.tenantId = tenantId;
+                            AppState.user = user;
+                            console.log('[Payroll] Session loaded - Token:', !!sessionToken, 'Tenant:', tenantId);
+                        }
+                    } catch (error) {
+                        console.error('[Payroll] Error loading from SecureStorage:', error);
+                    }
+                } else {
+                    // Fallback to localStorage for browser testing
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        try {
+                            const parsed = JSON.parse(session);
+                            AppState.sessionToken = parsed.token || parsed.sid;
+                            AppState.tenantId = parsed.tenantId || parsed.tenant_id;
+                            AppState.user = parsed.user;
+                            console.log('[Payroll] Session loaded from localStorage');
+                        } catch (e) {
+                            console.error('[Payroll] Error parsing localStorage session:', e);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Payroll] Error loading session:', error);
+            }
+        }
+
+        // Initialize date pickers
+        function initializeDatePickers() {
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            // If we're in the second half of month, set to second half period
+            if (today.getDate() > 15) {
+                document.getElementById('startDate').value = new Date(today.getFullYear(), today.getMonth(), 16)
+                    .toISOString().split('T')[0];
+                document.getElementById('endDate').value = endOfMonth.toISOString().split('T')[0];
+            } else {
+                // First half of month
+                document.getElementById('startDate').value = startOfMonth.toISOString().split('T')[0];
+                document.getElementById('endDate').value = new Date(today.getFullYear(), today.getMonth(), 15)
+                    .toISOString().split('T')[0];
+            }
+        }
+
+        // Load bank accounts
+        async function loadBankAccounts() {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+
+                if (AppState.sessionToken) {
+                    headers['Authorization'] = `Bearer ${AppState.sessionToken}`;
+                    headers['Cookie'] = `sid=${AppState.sessionToken}`;
+                }
+
+                if (AppState.tenantId) {
+                    headers['X-Tenant-ID'] = AppState.tenantId;
+                }
+
+                const response = await fetch(`${AppState.apiUrl}/api/banking/accounts/`, {
+                    credentials: 'include',
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch bank accounts');
+                }
+
+                const data = await response.json();
+                payrollData.bankAccounts = Array.isArray(data) ? data : (data.results || data.data || []);
+                
+                // Populate dropdown
+                const dropdown = document.getElementById('bankAccount');
+                dropdown.innerHTML = '<option value="">Select bank account for payroll...</option>';
+                
+                payrollData.bankAccounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.id;
+                    option.textContent = `${account.name} - ${account.institution_name} (...${account.account_id?.slice(-4) || 'XXXX'})`;
+                    dropdown.appendChild(option);
+                });
+
+                // Check for default payroll account
+                await checkDefaultPayrollAccount();
+                
+            } catch (error) {
+                console.error('[Payroll] Error loading bank accounts:', error);
+                showAlert('error', 'Failed to load bank accounts. Please refresh and try again.');
+            }
+        }
+
+        // Check for default payroll account
+        async function checkDefaultPayrollAccount() {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+
+                if (AppState.sessionToken) {
+                    headers['Authorization'] = `Bearer ${AppState.sessionToken}`;
+                    headers['Cookie'] = `sid=${AppState.sessionToken}`;
+                }
+
+                const response = await fetch(`${AppState.apiUrl}/api/banking/payroll/get-account/`, {
+                    credentials: 'include',
+                    headers: headers
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.has_payroll_account && data.bank_account) {
+                        document.getElementById('bankAccount').value = data.bank_account.id;
+                        updateBankBalance(data.bank_account.id);
+                    }
+                }
+            } catch (error) {
+                console.error('[Payroll] Error checking default payroll account:', error);
+            }
+        }
+
+        // Update bank balance display
+        function updateBankBalance(accountId) {
+            const account = payrollData.bankAccounts.find(a => a.id === accountId);
+            if (account) {
+                document.getElementById('bankBalance').style.display = 'flex';
+                document.getElementById('balanceAmount').textContent = 
+                    `$${(account.available_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                payrollData.selectedBankAccount = account;
+            } else {
+                document.getElementById('bankBalance').style.display = 'none';
+                payrollData.selectedBankAccount = null;
+            }
+        }
+
+        // Bank account change handler
+        document.getElementById('bankAccount').addEventListener('change', function(e) {
+            updateBankBalance(e.target.value);
+        });
+
+        // Load employees
+        async function loadEmployees() {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+
+                if (AppState.sessionToken) {
+                    headers['Authorization'] = `Bearer ${AppState.sessionToken}`;
+                    headers['Cookie'] = `sid=${AppState.sessionToken}`;
+                }
+
+                if (AppState.tenantId) {
+                    headers['X-Tenant-ID'] = AppState.tenantId;
+                }
+
+                const response = await fetch(`${AppState.apiUrl}/api/hr/employees`, {
+                    credentials: 'include',
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch employees');
+                }
+
+                const data = await response.json();
+                payrollData.employees = Array.isArray(data) ? data : (data.results || data.data || []);
+                
+                // Filter active employees with compensation info
+                payrollData.employees = payrollData.employees.filter(emp => 
+                    (emp.active || emp.status === 'active') && 
+                    (emp.salary > 0 || emp.wage_per_hour > 0 || emp.hourly_rate > 0)
+                );
+                
+                renderEmployeeList();
+                
+            } catch (error) {
+                console.error('[Payroll] Error loading employees:', error);
+                showAlert('error', 'Failed to load employees. Please refresh and try again.');
+            }
+        }
+
+        // Render employee list
+        function renderEmployeeList() {
+            const listEl = document.getElementById('employeeList');
+            
+            if (payrollData.employees.length === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #6b7280;">
+                        No active employees with compensation information found.
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = payrollData.employees.map(emp => {
+                const fullName = `${emp.first_name || emp.firstName || ''} ${emp.last_name || emp.lastName || ''}`.trim();
+                const position = emp.job_title || emp.position || 'No Position';
+                const compensationType = emp.compensation_type || (emp.salary > 0 ? 'SALARY' : 'WAGE');
+                const rate = compensationType === 'SALARY' ? 
+                    `$${(emp.salary || 0).toLocaleString()}/year` : 
+                    `$${(emp.wage_per_hour || emp.hourly_rate || 0).toFixed(2)}/hour`;
+                
+                return `
+                    <div class="employee-item">
+                        <input type="checkbox" class="employee-checkbox" 
+                               value="${emp.id}" 
+                               onchange="toggleEmployee('${emp.id}')" 
+                               checked>
+                        <div class="employee-details">
+                            <div class="employee-name">${fullName}</div>
+                            <div class="employee-info">${position} • ${rate}</div>
+                        </div>
+                        <div class="employee-amount">
+                            <div class="gross-amount" id="gross-${emp.id}">$0.00</div>
+                            <div class="net-amount" id="net-${emp.id}">Net: $0.00</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Select all employees by default
+            payrollData.selectedEmployees = payrollData.employees.map(emp => emp.id);
+            updateEmployeeCount();
+        }
+
+        // Toggle employee selection
+        function toggleEmployee(employeeId) {
+            const index = payrollData.selectedEmployees.indexOf(employeeId);
+            if (index > -1) {
+                payrollData.selectedEmployees.splice(index, 1);
+            } else {
+                payrollData.selectedEmployees.push(employeeId);
+            }
+            updateEmployeeCount();
+        }
+
+        // Update employee count
+        function updateEmployeeCount() {
+            document.getElementById('employeeCount').textContent = 
+                `${payrollData.selectedEmployees.length} selected`;
+        }
+
+        // Calculate payroll
+        async function calculatePayroll() {
+            try {
+                // Validate inputs
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                const bankAccountId = document.getElementById('bankAccount').value;
+                
+                if (!startDate || !endDate) {
+                    showAlert('warning', 'Please select pay period dates.');
+                    return;
+                }
+                
+                if (!bankAccountId) {
+                    showAlert('warning', 'Please select a bank account for payroll.');
+                    return;
+                }
+                
+                if (payrollData.selectedEmployees.length === 0) {
+                    showAlert('warning', 'Please select at least one employee.');
+                    return;
+                }
+                
+                showAlert('info', 'Calculating payroll...');
+                
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+
+                if (AppState.sessionToken) {
+                    headers['Authorization'] = `Bearer ${AppState.sessionToken}`;
+                    headers['Cookie'] = `sid=${AppState.sessionToken}`;
+                }
+
+                const response = await fetch(`${AppState.apiUrl}/api/payroll/calculate/`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: headers,
+                    body: JSON.stringify({
+                        start_date: startDate,
+                        end_date: endDate,
+                        employee_ids: payrollData.selectedEmployees,
+                        bank_account_id: bankAccountId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to calculate payroll');
+                }
+
+                const data = await response.json();
+                payrollData.calculations = data;
+                
+                // Update UI with calculations
+                updatePayrollSummary(data);
+                updateEmployeeAmounts(data.employee_details || []);
+                
+                // Enable review button
+                document.getElementById('reviewButton').disabled = false;
+                
+                showAlert('success', 'Payroll calculated successfully!');
+                
+            } catch (error) {
+                console.error('[Payroll] Error calculating payroll:', error);
+                showAlert('error', 'Failed to calculate payroll. Please try again.');
+            }
+        }
+
+        // Update payroll summary
+        function updatePayrollSummary(calculations) {
+            document.getElementById('totalGross').textContent = 
+                `$${(calculations.total_gross || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('totalTaxes').textContent = 
+                `$${(calculations.total_taxes || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('totalDeductions').textContent = 
+                `$${(calculations.total_deductions || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('totalNet').textContent = 
+                `$${(calculations.total_net || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('platformFee').textContent = 
+                `$${(calculations.platform_fee || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('totalAmount').textContent = 
+                `$${(calculations.total_amount_due || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        }
+
+        // Update employee amounts
+        function updateEmployeeAmounts(employeeDetails) {
+            employeeDetails.forEach(detail => {
+                const grossEl = document.getElementById(`gross-${detail.employee_id}`);
+                const netEl = document.getElementById(`net-${detail.employee_id}`);
+                
+                if (grossEl) {
+                    grossEl.textContent = `$${(detail.gross_pay || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                }
+                if (netEl) {
+                    netEl.textContent = `Net: $${(detail.net_pay || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                }
+            });
+        }
+
+        // Review payroll
+        function reviewPayroll() {
+            if (!payrollData.calculations) {
+                showAlert('warning', 'Please calculate payroll first.');
+                return;
+            }
+            
+            const modal = document.getElementById('reviewModal');
+            const content = document.getElementById('reviewContent');
+            
+            content.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Payroll Details</h3>
+                    <div style="background: #f9fafb; padding: 12px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Pay Period:</span>
+                            <span style="font-weight: 500;">${document.getElementById('startDate').value} to ${document.getElementById('endDate').value}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Employees:</span>
+                            <span style="font-weight: 500;">${payrollData.selectedEmployees.length}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #6b7280;">Bank Account:</span>
+                            <span style="font-weight: 500;">${payrollData.selectedBankAccount?.name || 'Not selected'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Amount Summary</h3>
+                    <div style="background: #f9fafb; padding: 12px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Total Net Pay:</span>
+                            <span style="font-weight: 500;">$${(payrollData.calculations.total_net || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Platform Fee:</span>
+                            <span style="font-weight: 500;">$${(payrollData.calculations.platform_fee || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+                            <span style="font-weight: 600;">Total Amount:</span>
+                            <span style="font-weight: 600; color: #2563eb;">$${(payrollData.calculations.total_amount_due || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="display: flex; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">Important</div>
+                            <div style="font-size: 14px; color: #92400e;">
+                                By approving, you authorize the deduction of $${(payrollData.calculations.total_amount_due || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} 
+                                from your selected bank account. This action cannot be undone.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Close review modal
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+        }
+
+        // Approve and process payroll
+        async function approvePayroll() {
+            try {
+                // Show processing overlay
+                document.getElementById('processingOverlay').classList.add('active');
+                closeReviewModal();
+                
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+
+                if (AppState.sessionToken) {
+                    headers['Authorization'] = `Bearer ${AppState.sessionToken}`;
+                    headers['Cookie'] = `sid=${AppState.sessionToken}`;
+                }
+
+                const response = await fetch(`${AppState.apiUrl}/api/payroll/process/`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: headers,
+                    body: JSON.stringify({
+                        payroll_run_id: payrollData.calculations.payroll_run_id,
+                        signature: AppState.user?.name || 'Authorized',
+                        approval_date: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to process payroll');
+                }
+
+                const data = await response.json();
+                
+                // Hide processing overlay
+                document.getElementById('processingOverlay').classList.remove('active');
+                
+                showAlert('success', 'Payroll processed successfully! Payments are being distributed to employees.');
+                
+                // Redirect to payroll history after 3 seconds
+                setTimeout(() => {
+                    window.location.href = 'mobile-payroll-history.html';
+                }, 3000);
+                
+            } catch (error) {
+                console.error('[Payroll] Error processing payroll:', error);
+                document.getElementById('processingOverlay').classList.remove('active');
+                showAlert('error', 'Failed to process payroll. Please try again or contact support.');
+            }
+        }
+
+        // Show alert message
+        function showAlert(type, message) {
+            const container = document.getElementById('alertContainer');
+            const alertId = `alert-${Date.now()}`;
+            
+            const iconMap = {
+                info: '<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                warning: '<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>',
+                error: '<path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                success: '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+            };
+            
+            const alert = document.createElement('div');
+            alert.id = alertId;
+            alert.className = `alert ${type}`;
+            alert.innerHTML = `
+                <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    ${iconMap[type]}
+                </svg>
+                <div class="alert-content">${message}</div>
+            `;
+            
+            container.appendChild(alert);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                const el = document.getElementById(alertId);
+                if (el) {
+                    el.remove();
+                }
+            }, 5000);
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+    </script>
+</body>
+</html>

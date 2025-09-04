@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Customers - Dott</title>
+    <style>
+        :root {
+            --primary: #0d4f8a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --navy-900: #0f172a;
+            --navy-800: #1e293b;
+            --navy-700: #334155;
+            --navy-600: #475569;
+            --navy-500: #64748b;
+            --navy-400: #94a3b8;
+            --navy-300: #cbd5e1;
+            --navy-200: #e2e8f0;
+            --navy-100: #f1f5f9;
+            --navy-50: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--navy-50);
+            color: var(--navy-900);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--navy-200);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-button {
+            background: var(--navy-100);
+            border: none;
+            border-radius: 8px;
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .back-button:active {
+            transform: scale(0.95);
+            background: var(--navy-200);
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--navy-900);
+        }
+        
+        .add-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .add-button:active {
+            transform: scale(0.95);
+        }
+        
+        /* Search Bar */
+        .search-container {
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid var(--navy-200);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--navy-200);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+        
+        /* Customer List */
+        .customer-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 20px;
+        }
+        
+        .customer-item {
+            background: white;
+            margin: 8px 16px;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .customer-item:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+        
+        .customer-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--navy-900);
+            margin-bottom: 4px;
+        }
+        
+        .customer-company {
+            font-size: 13px;
+            color: var(--navy-600);
+        }
+        
+        .customer-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .customer-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .customer-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--navy-600);
+        }
+        
+        .customer-detail svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.6;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
+            text-align: center;
+        }
+        
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            color: var(--navy-400);
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--navy-900);
+            margin-bottom: 8px;
+        }
+        
+        .empty-text {
+            font-size: 14px;
+            color: var(--navy-600);
+            margin-bottom: 24px;
+        }
+        
+        /* Loading Spinner */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 48px;
+        }
+        
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--navy-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--navy-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--navy-900);
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            color: var(--navy-500);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--navy-700);
+            margin-bottom: 6px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--navy-200);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary);
+        }
+        
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-checkbox input {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--navy-200);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--navy-100);
+            color: var(--navy-700);
+        }
+        
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Customer Actions */
+        .customer-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--navy-100);
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--navy-200);
+            border-radius: 6px;
+            background: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .action-btn.edit {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .action-btn.toggle {
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .action-btn.delete {
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--navy-900);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <button class="back-button" onclick="goBack()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M5 12L12 19M5 12L12 5"/>
+                </svg>
+            </button>
+            <h1 class="header-title">Customers</h1>
+        </div>
+        <button class="add-button" onclick="openCreateModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14m-7-7h14"/>
+            </svg>
+            Add
+        </button>
+    </div>
+
+    <!-- Search -->
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search customers..." oninput="searchCustomers()">
+    </div>
+
+    <!-- Customer List -->
+    <div class="customer-list" id="customerList">
+        <div class="loading">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div class="modal" id="customerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add Customer</h2>
+                <button class="close-button" onclick="closeModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="customerForm">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-input" id="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-input" id="lastName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Business Name</label>
+                        <input type="text" class="form-input" id="businessName">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-input" id="phone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-input" id="address">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">City</label>
+                        <input type="text" class="form-input" id="city">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">State/Province</label>
+                        <input type="text" class="form-input" id="state">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ZIP/Postal Code</label>
+                        <input type="text" class="form-input" id="zipCode">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Country</label>
+                        <select class="form-select" id="country">
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="isTaxExempt">
+                            <span>Tax Exempt</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-input" id="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="saveButton" onclick="saveCustomer()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // State management
+        let customers = [];
+        let filteredCustomers = [];
+        let editingCustomer = null;
+        let sessionToken = null;
+        let tenantId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadSession();
+            await loadCountries();
+            await loadCustomers();
+        });
+
+        // Load session from storage
+        async function loadSession() {
+            try {
+                // Try Capacitor storage first
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                        sessionToken = tokenResult.value;
+                        
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            tenantId = userData.tenant_id || userData.tenantId;
+                        }
+                    } catch (e) {
+                        console.log('[Customers] No session in Capacitor storage');
+                    }
+                }
+
+                // Fallback to localStorage
+                if (!sessionToken) {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const sessionData = JSON.parse(session);
+                        sessionToken = sessionData.token;
+                        tenantId = sessionData.tenantId;
+                    }
+                }
+
+                console.log('[Customers] Session loaded:', !!sessionToken);
+            } catch (error) {
+                console.error('[Customers] Error loading session:', error);
+            }
+        }
+
+        // Load customers from API
+        async function loadCustomers() {
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+
+                let response, data;
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    const result = await Http.request({
+                        method: 'GET',
+                        url: `${apiUrl}/api/crm/customers`,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${sessionToken}`,
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId,
+                            'Cookie': `sid=${sessionToken}`
+                        }
+                    });
+                    
+                    response = {
+                        ok: result.status >= 200 && result.status < 300,
+                        status: result.status
+                    };
+                    data = result.data;
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(`${apiUrl}/api/crm/customers`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to load customers: ${response.status}`);
+                    }
+                    
+                    data = await response.json();
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load customers: ${response.status}`);
+                }
+                
+                // Handle both paginated and non-paginated responses
+                if (data.results && Array.isArray(data.results)) {
+                    customers = data.results;
+                } else if (Array.isArray(data)) {
+                    customers = data;
+                } else {
+                    customers = [];
+                }
+
+                console.log('[Customers] Loaded customers:', customers.length);
+                filteredCustomers = customers;
+                renderCustomers();
+            } catch (error) {
+                console.error('[Customers] Error loading customers:', error);
+                showToast('Failed to load customers', 'error');
+                renderEmptyState();
+            }
+        }
+
+        // Render customers list
+        function renderCustomers() {
+            const container = document.getElementById('customerList');
+            
+            if (filteredCustomers.length === 0) {
+                renderEmptyState();
+                return;
+            }
+
+            let html = '';
+            filteredCustomers.forEach(customer => {
+                const name = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unnamed';
+                const isActive = customer.is_active !== false;
+                
+                html += `
+                    <div class="customer-item" onclick="viewCustomer(${customer.id})">
+                        <div class="customer-header">
+                            <div>
+                                <div class="customer-name">${escapeHtml(name)}</div>
+                                ${customer.business_name ? `<div class="customer-company">${escapeHtml(customer.business_name)}</div>` : ''}
+                            </div>
+                            <span class="customer-status ${isActive ? 'status-active' : 'status-inactive'}">
+                                ${isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <div class="customer-details">
+                            ${customer.email ? `
+                                <div class="customer-detail">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    ${escapeHtml(customer.email)}
+                                </div>
+                            ` : ''}
+                            ${customer.phone ? `
+                                <div class="customer-detail">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                    </svg>
+                                    ${escapeHtml(customer.phone)}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="customer-actions" onclick="event.stopPropagation()">
+                            <button class="action-btn edit" onclick="editCustomer(${customer.id})">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Edit
+                            </button>
+                            <button class="action-btn toggle" onclick="toggleCustomerStatus(${customer.id})">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                ${isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Render empty state
+        function renderEmptyState() {
+            const container = document.getElementById('customerList');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <h3 class="empty-title">No Customers Yet</h3>
+                    <p class="empty-text">Add your first customer to get started</p>
+                    <button class="btn btn-primary" onclick="openCreateModal()">Add Customer</button>
+                </div>
+            `;
+        }
+
+        // Search customers
+        function searchCustomers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredCustomers = customers;
+            } else {
+                filteredCustomers = customers.filter(customer => {
+                    const name = `${customer.first_name || ''} ${customer.last_name || ''}`.toLowerCase();
+                    const business = (customer.business_name || '').toLowerCase();
+                    const email = (customer.email || '').toLowerCase();
+                    const phone = (customer.phone || '').toLowerCase();
+                    
+                    return name.includes(searchTerm) || 
+                           business.includes(searchTerm) || 
+                           email.includes(searchTerm) || 
+                           phone.includes(searchTerm);
+                });
+            }
+            
+            renderCustomers();
+        }
+
+        // Open create modal
+        function openCreateModal() {
+            editingCustomer = null;
+            document.getElementById('modalTitle').textContent = 'Add Customer';
+            document.getElementById('customerForm').reset();
+            document.getElementById('customerModal').classList.add('active');
+        }
+
+        // Edit customer
+        function editCustomer(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            editingCustomer = customer;
+            document.getElementById('modalTitle').textContent = 'Edit Customer';
+            
+            // Populate form
+            document.getElementById('firstName').value = customer.first_name || '';
+            document.getElementById('lastName').value = customer.last_name || '';
+            document.getElementById('businessName').value = customer.business_name || '';
+            document.getElementById('email').value = customer.email || '';
+            document.getElementById('phone').value = customer.phone || '';
+            document.getElementById('address').value = customer.address || '';
+            document.getElementById('city').value = customer.city || '';
+            document.getElementById('state').value = customer.state || '';
+            document.getElementById('zipCode').value = customer.zip_code || '';
+            document.getElementById('country').value = customer.country || '';
+            document.getElementById('isTaxExempt').checked = customer.is_tax_exempt || false;
+            document.getElementById('notes').value = customer.notes || '';
+            
+            document.getElementById('customerModal').classList.add('active');
+        }
+
+        // View customer details
+        function viewCustomer(customerId) {
+            // For now, just edit. Could expand to show read-only view
+            editCustomer(customerId);
+        }
+
+        // Save customer
+        async function saveCustomer() {
+            const saveButton = document.getElementById('saveButton');
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+
+            try {
+                const formData = {
+                    first_name: document.getElementById('firstName').value,
+                    last_name: document.getElementById('lastName').value,
+                    business_name: document.getElementById('businessName').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    state: document.getElementById('state').value,
+                    zip_code: document.getElementById('zipCode').value,
+                    country: document.getElementById('country').value,
+                    is_tax_exempt: document.getElementById('isTaxExempt').checked,
+                    notes: document.getElementById('notes').value
+                };
+
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+
+                const url = editingCustomer 
+                    ? `${apiUrl}/api/crm/customers/${editingCustomer.id}`
+                    : `${apiUrl}/api/crm/customers`;
+
+                let response;
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    const result = await Http.request({
+                        method: editingCustomer ? 'PUT' : 'POST',
+                        url: url,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${sessionToken}`,
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId,
+                            'Cookie': `sid=${sessionToken}`
+                        },
+                        data: formData
+                    });
+                    
+                    response = {
+                        ok: result.status >= 200 && result.status < 300,
+                        status: result.status
+                    };
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(url, {
+                        method: editingCustomer ? 'PUT' : 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(formData)
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to save customer');
+                }
+
+                showToast(editingCustomer ? 'Customer updated successfully' : 'Customer created successfully', 'success');
+                closeModal();
+                await loadCustomers();
+            } catch (error) {
+                console.error('[Customers] Error saving customer:', error);
+                showToast('Failed to save customer', 'error');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save';
+            }
+        }
+
+        // Toggle customer status
+        async function toggleCustomerStatus(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            const newStatus = !(customer.is_active !== false);
+            
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+
+                const response = await fetch(`${apiUrl}/api/crm/customers/${customerId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-Token': sessionToken,
+                        'X-Tenant-ID': tenantId
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update customer status');
+                }
+
+                showToast(`Customer ${newStatus ? 'activated' : 'deactivated'} successfully`, 'success');
+                await loadCustomers();
+            } catch (error) {
+                console.error('[Customers] Error updating customer status:', error);
+                showToast('Failed to update customer status', 'error');
+            }
+        }
+
+        // Load countries
+        async function loadCountries() {
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+
+                let response, data;
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    const result = await Http.request({
+                        method: 'GET',
+                        url: `${apiUrl}/api/taxes/location/countries/`,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${sessionToken}`,
+                            'X-Session-Token': sessionToken,
+                            'Cookie': `sid=${sessionToken}`
+                        }
+                    });
+                    
+                    response = {
+                        ok: result.status >= 200 && result.status < 300,
+                        status: result.status
+                    };
+                    data = result.data;
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(`${apiUrl}/api/taxes/location/countries/`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-Token': sessionToken
+                        },
+                        credentials: 'include'
+                    });
+                    data = await response.json();
+                }
+
+                if (response.ok) {
+                    const countries = data.countries || [];
+                    const select = document.getElementById('country');
+                    
+                    countries.forEach(country => {
+                        const option = document.createElement('option');
+                        option.value = country.code;
+                        option.textContent = country.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('[Customers] Error loading countries:', error);
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('customerModal').classList.remove('active');
+            editingCustomer = null;
+        }
+
+        // Show toast
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

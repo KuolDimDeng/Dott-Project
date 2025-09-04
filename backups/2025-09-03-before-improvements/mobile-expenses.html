@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Expenses - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .quick-capture-menu {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .quick-capture-menu.active {
+            display: block;
+        }
+
+        .capture-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .capture-btn {
+            padding: 15px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .capture-btn:active {
+            transform: scale(0.98);
+            background: #f9fafb;
+        }
+
+        .capture-btn.primary {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .capture-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #2563eb;
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .capture-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .capture-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            text-align: center;
+        }
+
+        .add-expense-btn {
+            width: 100%;
+            padding: 15px;
+            background: #0d4f8a; /* Primary navy blue from web app */
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .add-expense-btn:active {
+            transform: scale(0.98);
+        }
+
+        .expense-form {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .expense-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #f8f9fa;
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .receipt-upload {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        .receipt-upload:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .receipt-upload.has-image {
+            border-style: solid;
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .receipt-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .receipt-preview.active {
+            display: block;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .form-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .form-button.primary {
+            background: #0d4f8a; /* Primary navy blue from web app */
+            color: white;
+        }
+
+        .form-button.secondary {
+            background: #e9ecef;
+            color: #666;
+        }
+
+        .form-button:active {
+            transform: scale(0.98);
+        }
+
+        .expense-list {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .expense-list h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .expense-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expense-info {
+            flex: 1;
+        }
+
+        .expense-merchant {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .expense-category {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .expense-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .expense-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .expense-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+
+        .expense-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .expense-status.approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .expense-status.rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #d1d5db;
+            color: #1e293b;
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            width: 44px;
+            height: 44px;
+        }
+
+        .back-button:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .back-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .back-button svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="position: relative;">
+            <button class="back-button" onclick="navigateBack()" title="Back to Main Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            <h1 style="text-align: center;">Expenses</h1>
+            <div id="currentMonth" style="text-align: center;"></div>
+        </div>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="summary-label">This Month</div>
+                <div class="summary-value" id="monthTotal">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Pending</div>
+                <div class="summary-value" id="pendingTotal">0</div>
+            </div>
+        </div>
+
+        <button class="add-expense-btn" onclick="toggleQuickCapture()">
+            + Quick Expense
+        </button>
+
+        <!-- Quick Capture Menu -->
+        <div class="quick-capture-menu" id="quickCaptureMenu">
+            <h3 style="margin-bottom: 15px; color: #333;">Quick Capture</h3>
+            <div class="capture-grid">
+                <div class="capture-btn primary" onclick="openReceiptCapture()">
+                    <div class="capture-icon">
+                        <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="8" r="1"/></svg>
+                    </div>
+                    <span class="capture-label">Receipt Photo</span>
+                </div>
+                <div class="capture-btn" onclick="openVoiceEntry()">
+                    <div class="capture-icon">
+                        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v2a7 7 0 0014 0v-2M12 19v4"/></svg>
+                    </div>
+                    <span class="capture-label">Voice Entry</span>
+                </div>
+                <div class="capture-btn" onclick="openRecurringExpense()">
+                    <div class="capture-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 2v6l4-4M12 2L8 6"/><path d="M12 22v-6l-4 4M12 22l4-4"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <span class="capture-label">Recurring</span>
+                </div>
+                <div class="capture-btn" onclick="openMileageTracking()">
+                    <div class="capture-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><path d="M12 7v5l3 3"/></svg>
+                    </div>
+                    <span class="capture-label">Mileage</span>
+                </div>
+                <div class="capture-btn" onclick="openCashEntry()">
+                    <div class="capture-icon">
+                        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 6v2M18 16v2"/></svg>
+                    </div>
+                    <span class="capture-label">Cash Purchase</span>
+                </div>
+                <div class="capture-btn" onclick="openBulkEntry()">
+                    <div class="capture-icon">
+                        <svg viewBox="0 0 24 24"><rect x="8" y="2" width="13" height="5" rx="1"/><rect x="8" y="9" width="13" height="5" rx="1"/><rect x="8" y="16" width="13" height="5" rx="1"/><path d="M3 5h2M3 12h2M3 19h2"/></svg>
+                    </div>
+                    <span class="capture-label">Bulk Entry</span>
+                </div>
+            </div>
+            <button class="form-button secondary" style="width: 100%;" onclick="openTraditionalForm()">Traditional Form</button>
+        </div>
+
+        <div class="expense-form" id="expenseForm">
+            <h2 style="margin-bottom: 20px;">New Expense</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Merchant/Vendor</label>
+                <input type="text" class="form-input" id="merchant" placeholder="e.g., Office Depot">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Amount</label>
+                <input type="number" class="form-input" id="amount" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="category">
+                    <option value="">Select Category</option>
+                    <option value="travel">Travel</option>
+                    <option value="meals">Meals & Entertainment</option>
+                    <option value="office">Office Supplies</option>
+                    <option value="equipment">Equipment</option>
+                    <option value="software">Software & Subscriptions</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input" id="expenseDate">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="description" placeholder="Add notes about this expense..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Receipt</label>
+                <div class="receipt-upload" id="receiptUpload" onclick="selectReceipt()">
+                    <div id="uploadText">
+                        📷 Tap to capture or upload receipt
+                    </div>
+                    <img id="receiptPreview" class="receipt-preview" />
+                </div>
+                <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleReceiptSelect(event)">
+            </div>
+
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="cancelExpense()">Cancel</button>
+                <button class="form-button primary" onclick="submitExpense()">Submit Expense</button>
+            </div>
+        </div>
+
+        <!-- Receipt Capture Form -->
+        <div class="expense-form" id="receiptCaptureForm">
+            <h2 style="margin-bottom: 20px;">Receipt Capture</h2>
+            
+            <div class="form-group">
+                <div class="receipt-upload" onclick="captureReceipt()">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                        <rect x="6" y="2" width="12" height="20" rx="2"/>
+                        <circle cx="12" cy="14" r="3"/>
+                        <circle cx="12" cy="8" r="1"/>
+                    </svg>
+                    <p style="margin-top: 10px; color: #666;">Tap to capture receipt</p>
+                    <img id="capturedReceipt" class="receipt-preview" alt="Receipt">
+                </div>
+                <input type="file" id="receiptCaptureInput" accept="image/*" capture="environment" style="display: none;" onchange="handleReceiptCapture(event)">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Amount</label>
+                <input type="number" class="form-input" id="receiptAmount" placeholder="0.00" step="0.01">
+            </div>
+            
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="closeReceiptCapture()">Cancel</button>
+                <button class="form-button primary" onclick="submitReceiptCapture()">Save</button>
+            </div>
+        </div>
+
+        <!-- Voice Entry Form -->
+        <div class="expense-form" id="voiceEntryForm">
+            <h2 style="margin-bottom: 20px;">Voice Entry</h2>
+            
+            <div class="form-group" style="text-align: center;">
+                <button id="voiceButton" class="capture-btn primary" style="width: 120px; height: 120px; margin: 0 auto;" onclick="toggleVoiceRecording()">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <rect x="9" y="2" width="6" height="11" rx="3"/>
+                        <path d="M5 10v2a7 7 0 0014 0v-2M12 19v4"/>
+                    </svg>
+                </button>
+                <p id="voiceStatus" style="margin-top: 15px; color: #666;">Tap to start recording</p>
+                <p id="voiceTranscript" style="margin-top: 10px; font-style: italic; color: #333;"></p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Parsed Amount</label>
+                <input type="number" class="form-input" id="voiceAmount" placeholder="0.00" step="0.01">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-input" id="voiceDescription" placeholder="e.g., Transport 500 shillings">
+            </div>
+            
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="closeVoiceEntry()">Cancel</button>
+                <button class="form-button primary" onclick="submitVoiceEntry()">Save</button>
+            </div>
+        </div>
+
+        <!-- Recurring Expense Form -->
+        <div class="expense-form" id="recurringExpenseForm">
+            <h2 style="margin-bottom: 20px;">Recurring Expense</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Template</label>
+                <select class="form-select" id="recurringTemplate" onchange="loadTemplate()">
+                    <option value="">Select template...</option>
+                    <option value="rent">Monthly Rent</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="internet">Internet/Phone</option>
+                    <option value="salary">Salary Payment</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-input" id="recurringDescription" placeholder="e.g., Office Rent">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Amount</label>
+                <input type="number" class="form-input" id="recurringAmount" placeholder="0.00" step="0.01">
+            </div>
+            
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="closeRecurringExpense()">Cancel</button>
+                <button class="form-button primary" onclick="submitRecurringExpense()">Log Expense</button>
+            </div>
+        </div>
+
+        <!-- Mileage Tracking Form -->
+        <div class="expense-form" id="mileageTrackingForm">
+            <h2 style="margin-bottom: 20px;">Mileage Tracking</h2>
+            
+            <div class="form-group" style="text-align: center;">
+                <button id="trackingButton" class="capture-btn primary" style="width: 150px; padding: 20px; margin: 0 auto;" onclick="toggleTracking()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span id="trackingLabel" style="display: block; margin-top: 10px;">Start Tracking</span>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Distance (km)</label>
+                <input type="number" class="form-input" id="mileageDistance" placeholder="0.0" step="0.1" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Purpose</label>
+                <input type="text" class="form-input" id="mileagePurpose" placeholder="e.g., Client meeting">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Rate per km</label>
+                <input type="number" class="form-input" id="mileageRate" placeholder="0.50" step="0.01" value="0.50">
+            </div>
+            
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="closeMileageTracking()">Cancel</button>
+                <button class="form-button primary" onclick="submitMileageTracking()">Save Trip</button>
+            </div>
+        </div>
+
+        <!-- Cash Purchase Form -->
+        <div class="expense-form" id="cashPurchaseForm">
+            <h2 style="margin-bottom: 20px;">Cash Purchase</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Amount</label>
+                <input type="number" class="form-input" id="cashAmount" placeholder="0.00" step="0.01" autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="cashCategory">
+                    <option value="">Select...</option>
+                    <option value="food">Food/Meals</option>
+                    <option value="transport">Transport</option>
+                    <option value="supplies">Supplies</option>
+                    <option value="tips">Tips/Gratuity</option>
+                    <option value="market">Market Purchase</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Quick Note (Optional)</label>
+                <input type="text" class="form-input" id="cashNote" placeholder="e.g., Street vendor">
+            </div>
+            
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="closeCashPurchase()">Cancel</button>
+                <button class="form-button primary" onclick="submitCashPurchase()">Save</button>
+            </div>
+        </div>
+
+        <!-- Bulk Entry Form -->
+        <div class="expense-form" id="bulkEntryForm">
+            <h2 style="margin-bottom: 20px;">Bulk Entry</h2>
+            
+            <div id="bulkItems">
+                <div class="bulk-item" style="padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                    <div class="form-group">
+                        <input type="text" class="form-input" placeholder="Item description" data-field="description">
+                    </div>
+                    <div class="form-group">
+                        <input type="number" class="form-input" placeholder="Amount" step="0.01" data-field="amount">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="form-button secondary" style="width: 100%; margin-bottom: 10px;" onclick="addBulkItem()">+ Add Another Item</button>
+            
+            <div class="form-group">
+                <label class="form-label">Total Amount</label>
+                <input type="number" class="form-input" id="bulkTotal" placeholder="0.00" readonly>
+            </div>
+            
+            <div class="form-buttons">
+                <button class="form-button secondary" onclick="closeBulkEntry()">Cancel</button>
+                <button class="form-button primary" onclick="submitBulkEntry()">Save All</button>
+            </div>
+        </div>
+
+        <div class="expense-list">
+            <h2>Recent Expenses</h2>
+            <div id="expensesList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const AppState = {
+            apiUrl: 'https://staging.dottapps.com',
+            sessionToken: null,
+            tenantId: null,
+            expenses: [],
+            receiptBase64: null,
+            currency: 'USD', // Default currency
+            currencySymbol: '$' // Default symbol
+        };
+
+        // Navigate back function
+        function navigateBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Currency display helper
+        function getCurrencyDisplay() {
+            // Map common currencies to symbols
+            const currencySymbols = {
+                'USD': '$',
+                'EUR': '€',
+                'GBP': '£',
+                'JPY': '¥',
+                'CNY': '¥',
+                'INR': '₹',
+                'KRW': '₩',
+                'NGN': '₦',
+                'ZAR': 'R',
+                'KES': 'KSh',
+                'UGX': 'USh',
+                'TZS': 'TSh',
+                'GHS': 'GH₵',
+                'SSP': 'SSP ',
+                'ETB': 'Br'
+            };
+
+            const symbol = currencySymbols[AppState.currency] || AppState.currency + ' ';
+            
+            return function(amount) {
+                if (typeof amount === 'number') {
+                    // For currencies that typically go after the amount
+                    if (['SSP', 'KES', 'UGX', 'TZS'].includes(AppState.currency)) {
+                        return `${amount.toFixed(2)} ${AppState.currency}`;
+                    }
+                    // For currencies with symbols
+                    return `${symbol}${amount.toFixed(2)}`;
+                }
+                return `${symbol}0`;
+            };
+        }
+
+        // Load user currency preference
+        async function loadUserCurrency() {
+            try {
+                // Check if we have user data in storage
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            
+                            // Map country to currency
+                            const countryCurrencyMap = {
+                                'SS': 'SSP', // South Sudan
+                                'US': 'USD', // United States
+                                'GB': 'GBP', // United Kingdom
+                                'KE': 'KES', // Kenya
+                                'NG': 'NGN', // Nigeria
+                                'ZA': 'ZAR', // South Africa
+                                'UG': 'UGX', // Uganda
+                                'TZ': 'TZS', // Tanzania
+                                'ET': 'ETB', // Ethiopia
+                                'GH': 'GHS', // Ghana
+                            };
+                            
+                            if (userData.country) {
+                                AppState.currency = countryCurrencyMap[userData.country] || 'USD';
+                                console.log('[Expenses] Using currency:', AppState.currency, 'for country:', userData.country);
+                            }
+                        }
+                    } catch (e) {
+                        console.log('[Expenses] No user data in secure storage');
+                    }
+                } else {
+                    // Fallback to localStorage
+                    const stored = localStorage.getItem('user_session');
+                    if (stored) {
+                        const session = JSON.parse(stored);
+                        const userData = session.user || session;
+                        
+                        // Map country to currency
+                        const countryCurrencyMap = {
+                            'SS': 'SSP',
+                            'US': 'USD',
+                            'GB': 'GBP',
+                            'KE': 'KES',
+                            'NG': 'NGN',
+                            'ZA': 'ZAR',
+                            'UG': 'UGX',
+                            'TZ': 'TZS',
+                            'ET': 'ETB',
+                            'GH': 'GHS',
+                        };
+                        
+                        if (userData.country) {
+                            AppState.currency = countryCurrencyMap[userData.country] || 'USD';
+                        }
+                    }
+                }
+                
+                // Update all currency displays after loading
+                updateSummary();
+                
+            } catch (error) {
+                console.error('[Expenses] Error loading currency:', error);
+            }
+        }
+
+        // Initialize
+        async function init() {
+            await loadSession();
+            if (!AppState.sessionToken) {
+                window.location.href = 'mobile-auth.html';
+                return;
+            }
+            
+            // Load user currency preference
+            await loadUserCurrency();
+            
+            updateCurrentMonth();
+            setDefaultDate();
+            await loadExpenses();
+        }
+
+        // Load session from secure storage
+        async function loadSession() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const result = await window.Capacitor.Plugins.SecureStoragePlugin.get({ key: 'session' });
+                    if (result.value) {
+                        const session = JSON.parse(result.value);
+                        AppState.sessionToken = session.token;
+                        AppState.tenantId = session.tenantId;
+                    }
+                } else {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const parsed = JSON.parse(session);
+                        AppState.sessionToken = parsed.token;
+                        AppState.tenantId = parsed.tenantId;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        // Update current month display
+        function updateCurrentMonth() {
+            const now = new Date();
+            document.getElementById('currentMonth').textContent = now.toLocaleDateString('en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+        }
+
+        // Set default date to today
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseDate').value = today;
+        }
+
+        // Toggle quick capture menu
+        function toggleQuickCapture() {
+            const menu = document.getElementById('quickCaptureMenu');
+            menu.classList.toggle('active');
+            // Hide the traditional form if it's open
+            document.getElementById('expenseForm').classList.remove('active');
+        }
+
+        // Open traditional form
+        function openTraditionalForm() {
+            hideAllForms();
+            document.getElementById('quickCaptureMenu').classList.remove('active');
+            const form = document.getElementById('expenseForm');
+            form.classList.add('active');
+            setDefaultDate();
+        }
+
+        // Hide all forms
+        function hideAllForms() {
+            document.querySelectorAll('.expense-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById('quickCaptureMenu').classList.remove('active');
+        }
+
+        // Receipt Capture Functions
+        function openReceiptCapture() {
+            hideAllForms();
+            document.getElementById('receiptCaptureForm').classList.add('active');
+        }
+
+        function captureReceipt() {
+            document.getElementById('receiptCaptureInput').click();
+        }
+
+        function handleReceiptCapture(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('capturedReceipt');
+                    preview.src = e.target.result;
+                    preview.classList.add('active');
+                    AppState.capturedReceiptData = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function closeReceiptCapture() {
+            document.getElementById('receiptCaptureForm').classList.remove('active');
+            document.getElementById('receiptAmount').value = '';
+            document.getElementById('capturedReceipt').src = '';
+            document.getElementById('capturedReceipt').classList.remove('active');
+        }
+
+        function submitReceiptCapture() {
+            const amount = document.getElementById('receiptAmount').value;
+            if (!amount) {
+                alert('Please enter amount');
+                return;
+            }
+            submitExpenseData({
+                amount: parseFloat(amount),
+                description: 'Receipt expense',
+                category: 'general',
+                receipt: AppState.capturedReceiptData
+            });
+            closeReceiptCapture();
+        }
+
+        // Voice Entry Functions
+        let isRecording = false;
+        let recognition = null;
+
+        function openVoiceEntry() {
+            hideAllForms();
+            document.getElementById('voiceEntryForm').classList.add('active');
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('voiceTranscript').textContent = transcript;
+                    document.getElementById('voiceDescription').value = transcript;
+                    parseVoiceAmount(transcript);
+                };
+            }
+        }
+
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                alert('Voice recognition not supported');
+                return;
+            }
+            
+            if (!isRecording) {
+                recognition.start();
+                isRecording = true;
+                document.getElementById('voiceStatus').textContent = 'Listening...';
+                document.getElementById('voiceButton').style.background = '#ef4444';
+            } else {
+                recognition.stop();
+                isRecording = false;
+                document.getElementById('voiceStatus').textContent = 'Tap to start recording';
+                document.getElementById('voiceButton').style.background = '';
+            }
+        }
+
+        function parseVoiceAmount(text) {
+            const match = text.match(/\d+(\.\d+)?/);
+            if (match) {
+                document.getElementById('voiceAmount').value = match[0];
+            }
+        }
+
+        function closeVoiceEntry() {
+            document.getElementById('voiceEntryForm').classList.remove('active');
+            document.getElementById('voiceAmount').value = '';
+            document.getElementById('voiceDescription').value = '';
+            document.getElementById('voiceTranscript').textContent = '';
+        }
+
+        function submitVoiceEntry() {
+            const amount = document.getElementById('voiceAmount').value;
+            const description = document.getElementById('voiceDescription').value;
+            if (!amount) {
+                alert('Please enter amount');
+                return;
+            }
+            submitExpenseData({
+                amount: parseFloat(amount),
+                description: description || 'Voice expense',
+                category: 'general'
+            });
+            closeVoiceEntry();
+        }
+
+        // Recurring Expense Functions
+        function openRecurringExpense() {
+            hideAllForms();
+            document.getElementById('recurringExpenseForm').classList.add('active');
+        }
+
+        function loadTemplate() {
+            const template = document.getElementById('recurringTemplate').value;
+            const templates = {
+                rent: { description: 'Monthly Rent', amount: 1000 },
+                utilities: { description: 'Utilities', amount: 150 },
+                internet: { description: 'Internet/Phone', amount: 50 },
+                salary: { description: 'Employee Salary', amount: 500 },
+                insurance: { description: 'Insurance Premium', amount: 200 }
+            };
+            
+            if (templates[template]) {
+                document.getElementById('recurringDescription').value = templates[template].description;
+                document.getElementById('recurringAmount').value = templates[template].amount;
+            }
+        }
+
+        function closeRecurringExpense() {
+            document.getElementById('recurringExpenseForm').classList.remove('active');
+            document.getElementById('recurringTemplate').value = '';
+            document.getElementById('recurringDescription').value = '';
+            document.getElementById('recurringAmount').value = '';
+        }
+
+        function submitRecurringExpense() {
+            const description = document.getElementById('recurringDescription').value;
+            const amount = document.getElementById('recurringAmount').value;
+            if (!amount || !description) {
+                alert('Please enter description and amount');
+                return;
+            }
+            submitExpenseData({
+                amount: parseFloat(amount),
+                description: description,
+                category: 'recurring'
+            });
+            closeRecurringExpense();
+        }
+
+        // Mileage Tracking Functions
+        let trackingInterval = null;
+        let startLocation = null;
+        let currentDistance = 0;
+
+        function openMileageTracking() {
+            hideAllForms();
+            document.getElementById('mileageTrackingForm').classList.add('active');
+        }
+
+        function toggleTracking() {
+            const button = document.getElementById('trackingButton');
+            const label = document.getElementById('trackingLabel');
+            
+            if (!trackingInterval) {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        startLocation = position.coords;
+                        trackingInterval = setInterval(updateDistance, 5000);
+                        button.style.background = '#ef4444';
+                        label.textContent = 'Stop Tracking';
+                    });
+                } else {
+                    alert('GPS not available');
+                }
+            } else {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+                button.style.background = '';
+                label.textContent = 'Start Tracking';
+            }
+        }
+
+        function updateDistance() {
+            navigator.geolocation.getCurrentPosition(position => {
+                if (startLocation) {
+                    const distance = calculateDistance(
+                        startLocation.latitude, 
+                        startLocation.longitude,
+                        position.coords.latitude,
+                        position.coords.longitude
+                    );
+                    currentDistance += distance;
+                    document.getElementById('mileageDistance').value = currentDistance.toFixed(1);
+                    startLocation = position.coords;
+                }
+            });
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function closeMileageTracking() {
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+            }
+            document.getElementById('mileageTrackingForm').classList.remove('active');
+            document.getElementById('mileageDistance').value = '';
+            document.getElementById('mileagePurpose').value = '';
+            currentDistance = 0;
+        }
+
+        function submitMileageTracking() {
+            const distance = document.getElementById('mileageDistance').value;
+            const purpose = document.getElementById('mileagePurpose').value;
+            const rate = document.getElementById('mileageRate').value;
+            
+            if (!distance || !purpose) {
+                alert('Please complete the trip');
+                return;
+            }
+            
+            const amount = parseFloat(distance) * parseFloat(rate);
+            submitExpenseData({
+                amount: amount,
+                description: `Mileage: ${purpose} (${distance}km @ ${rate}/km)`,
+                category: 'transport'
+            });
+            closeMileageTracking();
+        }
+
+        // Cash Purchase Functions
+        function openCashEntry() {
+            hideAllForms();
+            document.getElementById('cashPurchaseForm').classList.add('active');
+            document.getElementById('cashAmount').focus();
+        }
+
+        function closeCashPurchase() {
+            document.getElementById('cashPurchaseForm').classList.remove('active');
+            document.getElementById('cashAmount').value = '';
+            document.getElementById('cashCategory').value = '';
+            document.getElementById('cashNote').value = '';
+        }
+
+        function submitCashPurchase() {
+            const amount = document.getElementById('cashAmount').value;
+            const category = document.getElementById('cashCategory').value;
+            
+            if (!amount || !category) {
+                alert('Please enter amount and category');
+                return;
+            }
+            
+            const note = document.getElementById('cashNote').value;
+            submitExpenseData({
+                amount: parseFloat(amount),
+                description: note || `Cash purchase - ${category}`,
+                category: category
+            });
+            closeCashPurchase();
+        }
+
+        // Bulk Entry Functions
+        function openBulkEntry() {
+            hideAllForms();
+            document.getElementById('bulkEntryForm').classList.add('active');
+        }
+
+        function addBulkItem() {
+            const bulkItems = document.getElementById('bulkItems');
+            const newItem = document.createElement('div');
+            newItem.className = 'bulk-item';
+            newItem.style = 'padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;';
+            newItem.innerHTML = `
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Item description" data-field="description">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Amount" step="0.01" data-field="amount" onchange="updateBulkTotal()">
+                </div>
+            `;
+            bulkItems.appendChild(newItem);
+        }
+
+        function updateBulkTotal() {
+            let total = 0;
+            document.querySelectorAll('#bulkItems input[data-field="amount"]').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById('bulkTotal').value = total.toFixed(2);
+        }
+
+        function closeBulkEntry() {
+            document.getElementById('bulkEntryForm').classList.remove('active');
+            document.getElementById('bulkItems').innerHTML = `
+                <div class="bulk-item" style="padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                    <div class="form-group">
+                        <input type="text" class="form-input" placeholder="Item description" data-field="description">
+                    </div>
+                    <div class="form-group">
+                        <input type="number" class="form-input" placeholder="Amount" step="0.01" data-field="amount">
+                    </div>
+                </div>
+            `;
+            document.getElementById('bulkTotal').value = '';
+        }
+
+        function submitBulkEntry() {
+            const items = [];
+            document.querySelectorAll('#bulkItems .bulk-item').forEach(item => {
+                const description = item.querySelector('input[data-field="description"]').value;
+                const amount = item.querySelector('input[data-field="amount"]').value;
+                if (description && amount) {
+                    items.push({ description, amount: parseFloat(amount) });
+                }
+            });
+            
+            if (items.length === 0) {
+                alert('Please add at least one item');
+                return;
+            }
+            
+            items.forEach(item => {
+                submitExpenseData({
+                    amount: item.amount,
+                    description: item.description,
+                    category: 'general'
+                });
+            });
+            
+            closeBulkEntry();
+        }
+
+        // Generic expense submission
+        function submitExpenseData(data) {
+            const expenseData = {
+                vendor_name: data.vendor || 'Quick Entry',
+                amount: data.amount,
+                description: data.description,
+                category: data.category || 'general',
+                due_date: new Date().toISOString().split('T')[0],
+                payment_status: 'unpaid',
+                receipt: data.receipt || null
+            };
+            
+            // Send to backend
+            fetch(`${window.API_BASE_URL}/api/purchases/bills/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AppState.sessionToken}`
+                },
+                body: JSON.stringify(expenseData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    loadExpenses();
+                    alert('Expense saved!');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving expense:', error);
+                alert('Failed to save expense');
+            });
+        }
+
+        // Toggle expense form
+        function toggleExpenseForm() {
+            const form = document.getElementById('expenseForm');
+            form.classList.toggle('active');
+            if (form.classList.contains('active')) {
+                setDefaultDate();
+            }
+        }
+
+        // Cancel expense
+        function cancelExpense() {
+            document.getElementById('expenseForm').classList.remove('active');
+            clearForm();
+        }
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('merchant').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('description').value = '';
+            setDefaultDate();
+            clearReceipt();
+        }
+
+        // Select receipt
+        function selectReceipt() {
+            document.getElementById('fileInput').click();
+        }
+
+        // Handle receipt selection
+        function handleReceiptSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    AppState.receiptBase64 = e.target.result;
+                    displayReceiptPreview(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Display receipt preview
+        function displayReceiptPreview(dataUrl) {
+            const preview = document.getElementById('receiptPreview');
+            const uploadDiv = document.getElementById('receiptUpload');
+            const uploadText = document.getElementById('uploadText');
+            
+            preview.src = dataUrl;
+            preview.classList.add('active');
+            uploadDiv.classList.add('has-image');
+            uploadText.textContent = '✅ Receipt attached (tap to change)';
+        }
+
+        // Clear receipt
+        function clearReceipt() {
+            AppState.receiptBase64 = null;
+            const preview = document.getElementById('receiptPreview');
+            const uploadDiv = document.getElementById('receiptUpload');
+            const uploadText = document.getElementById('uploadText');
+            
+            preview.src = '';
+            preview.classList.remove('active');
+            uploadDiv.classList.remove('has-image');
+            uploadText.textContent = '📷 Tap to capture or upload receipt';
+            document.getElementById('fileInput').value = '';
+        }
+
+        // Submit expense
+        async function submitExpense() {
+            const merchant = document.getElementById('merchant').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const date = document.getElementById('expenseDate').value;
+            const description = document.getElementById('description').value;
+
+            if (!merchant || !amount || !category || !date) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/expenses/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        merchant,
+                        amount,
+                        category,
+                        expense_date: date,
+                        description,
+                        receipt_image: AppState.receiptBase64,
+                        status: 'pending'
+                    })
+                });
+
+                if (response.ok) {
+                    cancelExpense();
+                    await loadExpenses();
+                    alert('Expense submitted successfully!');
+                } else {
+                    const error = await response.text();
+                    alert('Failed to submit expense: ' + error);
+                }
+            } catch (error) {
+                console.error('Error submitting expense:', error);
+                alert('Failed to submit expense. Please try again.');
+            }
+        }
+
+        // Load expenses
+        async function loadExpenses() {
+            try {
+                const response = await fetch(`${AppState.apiUrl}/api/expenses/`, {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    AppState.expenses = data.results || data || [];
+                    displayExpenses(AppState.expenses);
+                    updateSummary();
+                }
+            } catch (error) {
+                console.error('Error loading expenses:', error);
+                document.getElementById('expensesList').innerHTML = 
+                    '<div style="text-align: center; padding: 20px; color: #666;">Failed to load expenses</div>';
+            }
+        }
+
+        // Display expenses
+        function displayExpenses(expenses) {
+            const container = document.getElementById('expensesList');
+            
+            if (expenses.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No expenses recorded yet</div>';
+                return;
+            }
+
+            container.innerHTML = expenses.slice(0, 20).map(expense => {
+                const date = new Date(expense.expense_date || expense.created_at);
+                const status = expense.status || 'pending';
+                
+                return `
+                    <div class="expense-item">
+                        <div class="expense-info">
+                            <div class="expense-merchant">${expense.merchant}</div>
+                            <span class="expense-category">${expense.category}</span>
+                            <div class="expense-date">${date.toLocaleDateString()}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="expense-amount">${getCurrencyDisplay()(expense.amount)}</div>
+                            <div class="expense-status ${status}">${status}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update summary
+        function updateSummary() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            let monthTotal = 0;
+            let pendingTotal = 0;
+            
+            AppState.expenses.forEach(expense => {
+                const expenseDate = new Date(expense.expense_date || expense.created_at);
+                
+                if (expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear) {
+                    monthTotal += expense.amount;
+                }
+                
+                if (expense.status === 'pending') {
+                    pendingTotal += expense.amount;
+                }
+            });
+            
+            // Use currency display helper
+            const formatCurrency = getCurrencyDisplay();
+            document.getElementById('monthTotal').textContent = formatCurrency(monthTotal);
+            document.getElementById('pendingTotal').textContent = formatCurrency(pendingTotal);
+        }
+
+        // Start the app
+        init();
+    </script>
+
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                    /* Ensure proper z-index */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('[Crisp] Chat widget loaded and positioned');
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

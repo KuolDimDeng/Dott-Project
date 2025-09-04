@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MTN MoMo - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            position: sticky;
+            top: 0;
+            padding: 12px;
+            z-index: 100;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #d1d5db;
+            color: #111827;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            width: 44px;
+            height: 44px;
+        }
+        
+        .back-button:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .momo-header {
+            background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+            padding: 24px 16px;
+            color: white;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .momo-logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 20px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        
+        .momo-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .momo-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 0 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .status-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-connected {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .status-sandbox {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-disconnected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .api-info {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        
+        .api-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .api-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .api-label {
+            color: #6b7280;
+        }
+        
+        .api-value {
+            color: #111827;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin: 24px 0 12px;
+            padding-left: 4px;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .action-button {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-icon {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 8px;
+            color: #ffcc00;
+        }
+        
+        .action-label {
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+        }
+        
+        .action-amount {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .transaction-list {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+        
+        .transaction-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .transaction-icon {
+            width: 36px;
+            height: 36px;
+            background: #fef3c7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: #ffcc00;
+        }
+        
+        .transaction-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .transaction-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #111827;
+        }
+        
+        .transaction-time {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        
+        .transaction-amount {
+            text-align: right;
+        }
+        
+        .amount-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .amount-incoming {
+            color: #16a34a;
+        }
+        
+        .amount-outgoing {
+            color: #111827;
+        }
+        
+        .transaction-status {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+        
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            opacity: 0.3;
+        }
+        
+        .setup-wizard {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .wizard-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .wizard-step:last-child {
+            margin-bottom: 0;
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: #ffcc00;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        .step-complete {
+            background: #16a34a;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        
+        .step-description {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+        
+        .step-action {
+            margin-top: 8px;
+        }
+        
+        .step-button {
+            background: #ffcc00;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .step-button:hover {
+            background: #ff9900;
+        }
+        
+        .step-button:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-label {
+            font-size: 13px;
+            color: #374151;
+            margin-bottom: 6px;
+            display: block;
+            font-weight: 500;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #ffcc00;
+            box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.1);
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+        
+        .toggle-label {
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #d1d5db;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #ffcc00;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: #ffcc00;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #ff9900;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .stat-change {
+            font-size: 11px;
+            color: #16a34a;
+            margin-top: 4px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f4f6;
+            border-radius: 50%;
+            border-top-color: #ffcc00;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
+        </button>
+    </div>
+    
+    <div class="momo-header">
+        <div class="momo-logo">MTN</div>
+        <h1 class="momo-title">MTN MoMo Integration</h1>
+        <p class="momo-subtitle">Accept mobile money payments seamlessly</p>
+    </div>
+    
+    <div class="content">
+        <!-- Connection Status -->
+        <div class="status-card">
+            <div class="status-header">
+                <span class="status-label">Connection Status</span>
+                <span class="status-badge status-sandbox" id="connectionStatus">Sandbox Mode</span>
+            </div>
+            <div class="api-info">
+                <div class="api-item">
+                    <span class="api-label">Environment:</span>
+                    <span class="api-value" id="environment">sandbox</span>
+                </div>
+                <div class="api-item">
+                    <span class="api-label">API User:</span>
+                    <span class="api-value" id="apiUser">Not configured</span>
+                </div>
+                <div class="api-item">
+                    <span class="api-label">Subscription Key:</span>
+                    <span class="api-value" id="subscriptionKey">••••••••</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Setup Wizard -->
+        <div class="section-title">Setup Progress</div>
+        <div class="setup-wizard">
+            <div class="wizard-step">
+                <div class="step-number" id="step1">1</div>
+                <div class="step-content">
+                    <div class="step-title">Create API User</div>
+                    <div class="step-description">Generate your API User ID for sandbox testing</div>
+                    <div class="step-action">
+                        <button class="step-button" onclick="createAPIUser()">Create API User</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="wizard-step">
+                <div class="step-number" id="step2">2</div>
+                <div class="step-content">
+                    <div class="step-title">Generate API Key</div>
+                    <div class="step-description">Create your secure API key for authentication</div>
+                    <div class="step-action">
+                        <button class="step-button" onclick="generateAPIKey()" disabled>Generate Key</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="wizard-step">
+                <div class="step-number" id="step3">3</div>
+                <div class="step-content">
+                    <div class="step-title">Get Access Token</div>
+                    <div class="step-description">Authenticate and receive OAuth 2.0 token</div>
+                    <div class="step-action">
+                        <button class="step-button" onclick="getAccessToken()" disabled>Get Token</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="wizard-step">
+                <div class="step-number" id="step4">4</div>
+                <div class="step-content">
+                    <div class="step-title">Test Payment</div>
+                    <div class="step-description">Make a test payment request</div>
+                    <div class="step-action">
+                        <button class="step-button" onclick="testPayment()" disabled>Test Payment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="section-title">Quick Actions</div>
+        <div class="quick-actions">
+            <div class="action-button" onclick="requestPayment()">
+                <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <div class="action-label">Request Payment</div>
+                <div class="action-amount">Request to Pay</div>
+            </div>
+            
+            <div class="action-button" onclick="checkBalance()">
+                <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+                <div class="action-label">Check Balance</div>
+                <div class="action-amount">Account Balance</div>
+            </div>
+            
+            <div class="action-button" onclick="transferMoney()">
+                <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                </svg>
+                <div class="action-label">Transfer</div>
+                <div class="action-amount">Send Money</div>
+            </div>
+            
+            <div class="action-button" onclick="validateAccount()">
+                <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                </svg>
+                <div class="action-label">Validate</div>
+                <div class="action-amount">Check Account</div>
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="section-title">Today's Statistics</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Collected</div>
+                <div class="stat-value">€0.00</div>
+                <div class="stat-change">+0% from yesterday</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Transactions</div>
+                <div class="stat-value">0</div>
+                <div class="stat-change">0 successful</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Success Rate</div>
+                <div class="stat-value">0%</div>
+                <div class="stat-change">No data</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Transaction</div>
+                <div class="stat-value">€0.00</div>
+                <div class="stat-change">No data</div>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="section-title">Recent Transactions</div>
+        <div class="transaction-list" id="transactionList">
+            <div class="empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+                </svg>
+                <p>No transactions yet</p>
+                <p style="font-size: 12px; margin-top: 8px;">Your MoMo transactions will appear here</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Request Payment Modal -->
+    <div class="modal" id="paymentModal">
+        <div class="modal-content">
+            <div class="modal-header">Request Payment</div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label class="input-label">Phone Number</label>
+                    <input type="tel" class="input-field" id="paymentPhone" placeholder="256700000000">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Amount (EUR)</label>
+                    <input type="number" class="input-field" id="paymentAmount" placeholder="0.00" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Reference</label>
+                    <input type="text" class="input-field" id="paymentReference" placeholder="Payment reference">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Note</label>
+                    <input type="text" class="input-field" id="paymentNote" placeholder="Payment for...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="processPaymentRequest()">Request Payment</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // MoMo Configuration
+        const MOMO_CONFIG = {
+            sandbox: {
+                baseUrl: window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://staging.dottapps.com',
+                environment: 'sandbox',
+                currency: 'EUR',
+                subscriptionKey: '326d22e6674c4d0e93831b138f4d6407',
+                apiUser: localStorage.getItem('momo_api_user') || '',
+                apiKey: localStorage.getItem('momo_api_key') || '',
+                accessToken: localStorage.getItem('momo_access_token') || ''
+            },
+            production: {
+                baseUrl: 'https://app.dottapps.com',
+                environment: 'production',
+                currency: 'UGX', // Or appropriate currency
+                subscriptionKey: '326d22e6674c4d0e93831b138f4d6407',
+                apiUser: '',
+                apiKey: '',
+                accessToken: ''
+            }
+        };
+        
+        let currentEnvironment = 'sandbox';
+        let config = MOMO_CONFIG[currentEnvironment];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[MoMo] Initializing MTN MoMo integration');
+            updateUI();
+            loadTransactions();
+        });
+        
+        function updateUI() {
+            // Update connection status
+            if (config.apiUser) {
+                document.getElementById('apiUser').textContent = config.apiUser.substring(0, 8) + '...';
+                document.getElementById('step1').classList.add('step-complete');
+                document.querySelector('.wizard-step:nth-child(2) .step-button').disabled = false;
+            }
+            
+            if (config.apiKey) {
+                document.getElementById('step2').classList.add('step-complete');
+                document.querySelector('.wizard-step:nth-child(3) .step-button').disabled = false;
+            }
+            
+            if (config.accessToken) {
+                document.getElementById('step3').classList.add('step-complete');
+                document.querySelector('.wizard-step:nth-child(4) .step-button').disabled = false;
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                document.getElementById('connectionStatus').className = 'status-badge status-connected';
+            }
+            
+            document.getElementById('environment').textContent = currentEnvironment;
+        }
+        
+        // Step 1: Create API User
+        async function createAPIUser() {
+            console.log('[MoMo] Creating API User');
+            
+            // Generate UUID for API User
+            const apiUserId = generateUUID();
+            
+            try {
+                // Make actual API call to sandbox
+                const response = await fetch(`${config.baseUrl}/v1_0/apiuser`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Reference-Id': apiUserId,
+                        'Ocp-Apim-Subscription-Key': config.subscriptionKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        providerCallbackHost: 'dottapps.com'
+                    })
+                });
+                
+                if (response.status === 201) {
+                    config.apiUser = apiUserId;
+                    localStorage.setItem('momo_api_user', apiUserId);
+                    localStorage.setItem('momo_subscription_key', config.subscriptionKey);
+                    
+                    showNotification('API User created successfully!', 'success');
+                    updateUI();
+                } else {
+                    const error = await response.text();
+                    showNotification('Failed to create API User: ' + error, 'error');
+                }
+            } catch (error) {
+                console.error('[MoMo] Error creating API User:', error);
+                showNotification('Error creating API User. Check console for details.', 'error');
+            }
+        }
+        
+        // Step 2: Generate API Key
+        async function generateAPIKey() {
+            console.log('[MoMo] Generating API Key');
+            
+            if (!config.apiUser) {
+                showNotification('Please create API User first', 'error');
+                return;
+            }
+            
+            try {
+                // Make actual API call to sandbox
+                const response = await fetch(`${config.baseUrl}/v1_0/apiuser/${config.apiUser}/apikey`, {
+                    method: 'POST',
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': config.subscriptionKey
+                    }
+                });
+                
+                if (response.status === 201) {
+                    const data = await response.json();
+                    config.apiKey = data.apiKey;
+                    localStorage.setItem('momo_api_key', data.apiKey);
+                    
+                    showNotification('API Key generated successfully!', 'success');
+                    updateUI();
+                } else {
+                    const error = await response.text();
+                    showNotification('Failed to generate API Key: ' + error, 'error');
+                }
+            } catch (error) {
+                console.error('[MoMo] Error generating API Key:', error);
+                showNotification('Error generating API Key. Check console for details.', 'error');
+            }
+        }
+        
+        // Step 3: Get Access Token
+        async function getAccessToken() {
+            console.log('[MoMo] Getting Access Token');
+            
+            if (!config.apiUser || !config.apiKey) {
+                showNotification('Please complete previous steps first', 'error');
+                return;
+            }
+            
+            try {
+                // Create Basic Auth header
+                const auth = btoa(`${config.apiUser}:${config.apiKey}`);
+                
+                // Make actual OAuth token request
+                const response = await fetch(`${config.baseUrl}/collection/token/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${auth}`,
+                        'Ocp-Apim-Subscription-Key': config.subscriptionKey
+                    }
+                });
+                
+                if (response.status === 200) {
+                    const data = await response.json();
+                    config.accessToken = data.access_token;
+                    localStorage.setItem('momo_access_token', data.access_token);
+                    
+                    showNotification('Access token obtained successfully!', 'success');
+                    updateUI();
+                    
+                    // Token expires in data.expires_in seconds, set a reminder
+                    if (data.expires_in) {
+                        console.log(`[MoMo] Token expires in ${data.expires_in} seconds`);
+                    }
+                } else {
+                    const error = await response.text();
+                    showNotification('Failed to get access token: ' + error, 'error');
+                }
+            } catch (error) {
+                console.error('[MoMo] Error getting access token:', error);
+                showNotification('Error getting access token. Check console for details.', 'error');
+            }
+        }
+        
+        // Step 4: Test Payment
+        async function testPayment() {
+            console.log('[MoMo] Testing payment');
+            
+            if (!config.accessToken) {
+                showNotification('Please get access token first', 'error');
+                return;
+            }
+            
+            const testPayment = {
+                amount: '10',
+                currency: config.currency,
+                externalId: generateUUID(),
+                payer: {
+                    partyIdType: 'MSISDN',
+                    partyId: '46733123450' // Sandbox test number for success
+                },
+                payerMessage: 'Test payment from Dott',
+                payeeNote: 'Test payment note'
+            };
+            
+            try {
+                const referenceId = generateUUID();
+                
+                // Make actual payment request to sandbox
+                const response = await fetch(`${config.baseUrl}/collection/v1_0/requesttopay`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${config.accessToken}`,
+                        'X-Reference-Id': referenceId,
+                        'X-Target-Environment': config.environment,
+                        'Ocp-Apim-Subscription-Key': config.subscriptionKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testPayment)
+                });
+                
+                if (response.status === 202) {
+                    showNotification('Test payment initiated successfully! Checking status...', 'success');
+                    document.getElementById('step4').classList.add('step-complete');
+                    
+                    // Add to transactions
+                    addTransaction({
+                        id: referenceId,
+                        amount: testPayment.amount,
+                        currency: testPayment.currency,
+                        phone: testPayment.payer.partyId,
+                        status: 'PENDING',
+                        timestamp: new Date().toISOString(),
+                        type: 'incoming'
+                    });
+                    
+                    // Check payment status after 5 seconds
+                    setTimeout(() => checkPaymentStatus(referenceId), 5000);
+                } else {
+                    const error = await response.text();
+                    showNotification('Failed to initiate test payment: ' + error, 'error');
+                }
+            } catch (error) {
+                console.error('[MoMo] Error testing payment:', error);
+                showNotification('Error testing payment. Check console for details.', 'error');
+            }
+        }
+        
+        // Check payment status
+        async function checkPaymentStatus(referenceId) {
+            try {
+                const response = await fetch(`${config.baseUrl}/collection/v1_0/requesttopay/${referenceId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${config.accessToken}`,
+                        'X-Target-Environment': config.environment,
+                        'Ocp-Apim-Subscription-Key': config.subscriptionKey
+                    }
+                });
+                
+                if (response.status === 200) {
+                    const data = await response.json();
+                    updateTransactionStatus(referenceId, data.status);
+                    showNotification(`Payment status: ${data.status}`, data.status === 'SUCCESSFUL' ? 'success' : 'info');
+                }
+            } catch (error) {
+                console.error('[MoMo] Error checking payment status:', error);
+            }
+        }
+        
+        // Request Payment
+        function requestPayment() {
+            document.getElementById('paymentModal').classList.add('active');
+        }
+        
+        async function processPaymentRequest() {
+            const phone = document.getElementById('paymentPhone').value;
+            const amount = document.getElementById('paymentAmount').value;
+            const reference = document.getElementById('paymentReference').value;
+            const note = document.getElementById('paymentNote').value;
+            
+            if (!phone || !amount) {
+                showNotification('Please fill in required fields', 'error');
+                return;
+            }
+            
+            console.log('[MoMo] Processing payment request:', { phone, amount, reference, note });
+            
+            const payment = {
+                amount: amount,
+                currency: config.currency,
+                externalId: reference || generateUUID(),
+                payer: {
+                    partyIdType: 'MSISDN',
+                    partyId: phone
+                },
+                payerMessage: note || 'Payment request',
+                payeeNote: reference || 'Payment to Dott'
+            };
+            
+            try {
+                const referenceId = generateUUID();
+                
+                // In production, make actual API call
+                // For now, simulate the request
+                showNotification('Payment request sent!', 'success');
+                
+                // Add to transactions
+                addTransaction({
+                    id: referenceId,
+                    amount: payment.amount,
+                    currency: payment.currency,
+                    phone: payment.payer.partyId,
+                    status: 'PENDING',
+                    timestamp: new Date().toISOString(),
+                    type: 'incoming',
+                    note: note
+                });
+                
+                closeModal('paymentModal');
+                
+                // Simulate status update after 3 seconds
+                setTimeout(() => {
+                    updateTransactionStatus(referenceId, 'SUCCESSFUL');
+                }, 3000);
+                
+            } catch (error) {
+                console.error('[MoMo] Error processing payment:', error);
+                showNotification('Payment request failed', 'error');
+            }
+        }
+        
+        // Check Balance
+        async function checkBalance() {
+            console.log('[MoMo] Checking balance');
+            
+            if (!config.accessToken) {
+                showNotification('Please complete setup first', 'error');
+                return;
+            }
+            
+            try {
+                // Simulate balance check
+                const balance = {
+                    availableBalance: '1000.00',
+                    currency: config.currency
+                };
+                
+                showNotification(`Balance: ${balance.currency} ${balance.availableBalance}`, 'info');
+            } catch (error) {
+                console.error('[MoMo] Error checking balance:', error);
+                showNotification('Failed to check balance', 'error');
+            }
+        }
+        
+        // Transfer Money
+        async function transferMoney() {
+            console.log('[MoMo] Transfer money');
+            showNotification('Transfer feature coming soon', 'info');
+        }
+        
+        // Validate Account
+        async function validateAccount() {
+            console.log('[MoMo] Validate account');
+            
+            const phone = prompt('Enter phone number to validate:');
+            if (!phone) return;
+            
+            try {
+                // Simulate account validation
+                showNotification(`Account ${phone} is active`, 'success');
+            } catch (error) {
+                console.error('[MoMo] Error validating account:', error);
+                showNotification('Account validation failed', 'error');
+            }
+        }
+        
+        // Transaction Management
+        let transactions = JSON.parse(localStorage.getItem('momo_transactions') || '[]');
+        
+        function addTransaction(transaction) {
+            transactions.unshift(transaction);
+            localStorage.setItem('momo_transactions', JSON.stringify(transactions));
+            loadTransactions();
+            updateStatistics();
+        }
+        
+        function updateTransactionStatus(id, status) {
+            const transaction = transactions.find(t => t.id === id);
+            if (transaction) {
+                transaction.status = status;
+                localStorage.setItem('momo_transactions', JSON.stringify(transactions));
+                loadTransactions();
+                updateStatistics();
+            }
+        }
+        
+        function loadTransactions() {
+            const container = document.getElementById('transactionList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+                        </svg>
+                        <p>No transactions yet</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Your MoMo transactions will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = transactions.slice(0, 5).map(t => `
+                <div class="transaction-item">
+                    <div class="transaction-left">
+                        <div class="transaction-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                ${t.type === 'incoming' 
+                                    ? '<path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>'
+                                    : '<path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/>'}
+                            </svg>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-name">${t.phone}</div>
+                            <div class="transaction-time">${formatTime(t.timestamp)}</div>
+                        </div>
+                    </div>
+                    <div class="transaction-amount">
+                        <div class="amount-value ${t.type === 'incoming' ? 'amount-incoming' : 'amount-outgoing'}">
+                            ${t.type === 'incoming' ? '+' : '-'}${t.currency} ${t.amount}
+                        </div>
+                        <div class="transaction-status">${t.status}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateStatistics() {
+            const today = transactions.filter(t => {
+                const date = new Date(t.timestamp);
+                const today = new Date();
+                return date.toDateString() === today.toDateString();
+            });
+            
+            const successful = today.filter(t => t.status === 'SUCCESSFUL');
+            const totalAmount = successful.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            
+            // Update stats
+            document.querySelector('.stats-grid .stat-card:nth-child(1) .stat-value').textContent = 
+                `€${totalAmount.toFixed(2)}`;
+            document.querySelector('.stats-grid .stat-card:nth-child(2) .stat-value').textContent = 
+                today.length.toString();
+            document.querySelector('.stats-grid .stat-card:nth-child(3) .stat-value').textContent = 
+                today.length > 0 ? `${Math.round(successful.length / today.length * 100)}%` : '0%';
+            document.querySelector('.stats-grid .stat-card:nth-child(4) .stat-value').textContent = 
+                successful.length > 0 ? `€${(totalAmount / successful.length).toFixed(2)}` : '€0.00';
+        }
+        
+        // Utility Functions
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        function generateTestAPIKey() {
+            return Array.from({length: 32}, () => 
+                '0123456789abcdef'[Math.floor(Math.random() * 16)]
+            ).join('');
+        }
+        
+        function generateTestToken() {
+            return 'test_token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
+            
+            return date.toLocaleDateString();
+        }
+        
+        function showNotification(message, type = 'info') {
+            console.log(`[MoMo] ${type}: ${message}`);
+            // In production, show a proper notification
+            alert(message);
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+    </script>
+</body>
+</html>

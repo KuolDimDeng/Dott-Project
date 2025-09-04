@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Transactions - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-button svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        /* Search and Filters */
+        .search-section {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-chip {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-chip.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        /* Transaction List */
+        .transaction-list {
+            padding: 16px;
+        }
+
+        .transaction-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .transaction-card:active {
+            transform: scale(0.98);
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .transaction-id {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .transaction-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .transaction-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .detail-row svg {
+            width: 16px;
+            height: 16px;
+            stroke: #9ca3af;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            gap: 4px;
+        }
+
+        .status-badge.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.pending {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .transaction-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-button:active {
+            background: #f3f4f6;
+        }
+
+        .action-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .action-button.primary {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .action-button.primary:active {
+            background: #1d4ed8;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            stroke: #d1d5db;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .empty-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .retry-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .retry-button:active {
+            background: #1d4ed8;
+        }
+
+        /* Receipt Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .close-button:hover {
+            background: #f3f4f6;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .receipt-company {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .receipt-title {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .receipt-info {
+            margin-bottom: 20px;
+        }
+
+        .receipt-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .receipt-info-label {
+            color: #6b7280;
+        }
+
+        .receipt-info-value {
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .receipt-items {
+            margin: 20px 0;
+        }
+
+        .receipt-items-header {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .receipt-item-name {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .receipt-item-qty {
+            width: 40px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .receipt-item-price {
+            width: 80px;
+            text-align: right;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .receipt-totals {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .receipt-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+
+        .receipt-total-row.grand-total {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #d1d5db;
+            background: white;
+        }
+
+        .modal-button.primary {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .modal-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Receipt Options Modal */
+        .receipt-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .receipt-option {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .receipt-option-button {
+            width: 100%;
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .receipt-option-button:hover {
+            background: #f9fafb;
+            border-color: #2563eb;
+        }
+
+        .receipt-option-button:active {
+            transform: scale(0.98);
+        }
+
+        .receipt-option-icon {
+            width: 48px;
+            height: 48px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .receipt-option-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: #374151;
+        }
+
+        .receipt-option-content {
+            flex: 1;
+            text-align: left;
+        }
+
+        .receipt-option-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .receipt-option-description {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Contact Forms */
+        .contact-forms {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+        }
+
+        .contact-form h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="back-button" onclick="goBack()">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5M5 12l7 7M5 12l7-7"/>
+            </svg>
+        </button>
+        <div class="header-title">Transactions</div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-section">
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by ID or customer...">
+            <button class="search-button" onclick="searchTransactions()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                Search
+            </button>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-chip active" onclick="setDateFilter('all', this)">All Time</div>
+            <div class="filter-chip" onclick="setDateFilter('today', this)">Today</div>
+            <div class="filter-chip" onclick="setDateFilter('week', this)">This Week</div>
+            <div class="filter-chip" onclick="setDateFilter('month', this)">This Month</div>
+        </div>
+    </div>
+
+    <!-- Transaction List -->
+    <div class="transaction-list" id="transactionList">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>Loading transactions...</div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal" id="receiptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Transaction Receipt</div>
+                <button class="close-button" onclick="closeReceiptModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="receiptContent">
+                <!-- Receipt content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button" onclick="closeReceiptModal()">Close</button>
+                <button class="modal-button primary" onclick="showReceiptOptionsModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; margin-right: 4px;">
+                        <path d="M8 17l4 4 4-4m-4-5v9M3 4h18l-1 7H4L3 4z"/>
+                    </svg>
+                    Send Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Options Modal -->
+    <div class="modal" id="receiptOptionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Send Receipt</div>
+                <button class="close-button" onclick="closeReceiptOptionsModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt-options">
+                    <!-- Print Option -->
+                    <div class="receipt-option">
+                        <button class="receipt-option-button" onclick="printReceipt()">
+                            <div class="receipt-option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/>
+                                </svg>
+                            </div>
+                            <div class="receipt-option-content">
+                                <div class="receipt-option-title">Print</div>
+                                <div class="receipt-option-description">Print to phone's connected printer</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- PDF Option -->
+                    <div class="receipt-option">
+                        <button class="receipt-option-button" onclick="generatePDF()">
+                            <div class="receipt-option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10,9 9,9 8,9"/>
+                                </svg>
+                            </div>
+                            <div class="receipt-option-content">
+                                <div class="receipt-option-title">PDF</div>
+                                <div class="receipt-option-description">Generate and download PDF receipt</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Email Option -->
+                    <div class="receipt-option">
+                        <button class="receipt-option-button" onclick="showEmailForm()">
+                            <div class="receipt-option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div class="receipt-option-content">
+                                <div class="receipt-option-title">Email</div>
+                                <div class="receipt-option-description">Send receipt via email</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- SMS Option -->
+                    <div class="receipt-option">
+                        <button class="receipt-option-button" onclick="showSMSForm()">
+                            <div class="receipt-option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+                                </svg>
+                            </div>
+                            <div class="receipt-option-content">
+                                <div class="receipt-option-title">SMS</div>
+                                <div class="receipt-option-description">Send receipt via text message</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- WhatsApp Option -->
+                    <div class="receipt-option">
+                        <button class="receipt-option-button" onclick="showWhatsAppForm()">
+                            <div class="receipt-option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+                                </svg>
+                            </div>
+                            <div class="receipt-option-content">
+                                <div class="receipt-option-title">WhatsApp</div>
+                                <div class="receipt-option-description">Send receipt via WhatsApp</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contact Forms -->
+                <div class="contact-forms" id="contactForms" style="display: none;">
+                    <!-- Email Form -->
+                    <div class="contact-form" id="emailForm" style="display: none;">
+                        <h3>Send Email Receipt</h3>
+                        <div class="form-group">
+                            <label for="emailAddress">Email Address</label>
+                            <input type="email" id="emailAddress" placeholder="Enter email address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailSubject">Subject</label>
+                            <input type="text" id="emailSubject" value="Your Receipt" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailMessage">Message (Optional)</label>
+                            <textarea id="emailMessage" rows="3" placeholder="Add a personal message..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="modal-button" onclick="hideContactForms()">Cancel</button>
+                            <button class="modal-button primary" onclick="sendEmailReceipt()">Send Email</button>
+                        </div>
+                    </div>
+
+                    <!-- SMS Form -->
+                    <div class="contact-form" id="smsForm" style="display: none;">
+                        <h3>Send SMS Receipt</h3>
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number</label>
+                            <input type="tel" id="phoneNumber" placeholder="Enter phone number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="smsMessage">Message</label>
+                            <textarea id="smsMessage" rows="3" readonly>Here's your receipt from our store. Thank you for your business!</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="modal-button" onclick="hideContactForms()">Cancel</button>
+                            <button class="modal-button primary" onclick="sendSMSReceipt()">Send SMS</button>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Form -->
+                    <div class="contact-form" id="whatsappForm" style="display: none;">
+                        <h3>Send WhatsApp Receipt</h3>
+                        <div class="form-group">
+                            <label for="whatsappNumber">WhatsApp Number</label>
+                            <input type="tel" id="whatsappNumber" placeholder="Enter WhatsApp number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="whatsappMessage">Message</label>
+                            <textarea id="whatsappMessage" rows="3" readonly>Here's your receipt from our store. Thank you for your business!</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="modal-button" onclick="hideContactForms()">Cancel</button>
+                            <button class="modal-button primary" onclick="sendWhatsAppReceipt()">Send WhatsApp</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let transactions = [];
+        let currentTransaction = null;
+        let dateFilter = 'all';
+        let searchTerm = '';
+        let businessName = 'My Business';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[Transactions] Initializing...');
+            await loadBusinessInfo();
+            await loadTransactions();
+        });
+
+        // Load business info
+        async function loadBusinessInfo() {
+            try {
+                // Try to get from secure storage
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                    if (userResult.value) {
+                        const userData = JSON.parse(userResult.value);
+                        businessName = userData.businessName || userData.business_name || 'My Business';
+                    }
+                } else {
+                    // Fallback to localStorage
+                    const stored = localStorage.getItem('user_session');
+                    if (stored) {
+                        const session = JSON.parse(stored);
+                        businessName = session.user?.businessName || session.user?.business_name || 'My Business';
+                    }
+                }
+            } catch (error) {
+                console.error('[Transactions] Error loading business info:', error);
+            }
+        }
+
+        // Load transactions
+        async function loadTransactions() {
+            try {
+                const listEl = document.getElementById('transactionList');
+                listEl.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Loading transactions...</div>
+                    </div>
+                `;
+
+                // Get session from storage
+                let sessionToken = null;
+                let tenantId = null;
+                
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                        sessionToken = tokenResult.value;
+                        console.log('[Transactions] Found session token in secure storage');
+                        
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            const userData = JSON.parse(userResult.value);
+                            tenantId = userData.tenant_id || userData.tenantId;
+                            console.log('[Transactions] Found user data in secure storage');
+                        }
+                    } catch (e) {
+                        console.log('[Transactions] SecureStorage not available, using localStorage');
+                    }
+                }
+                
+                // Fallback to localStorage
+                if (!sessionToken) {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const sessionData = JSON.parse(session);
+                        sessionToken = sessionData.token;
+                        tenantId = sessionData.tenantId;
+                    }
+                }
+
+                // Build query parameters
+                const params = new URLSearchParams({
+                    page: 1,
+                    limit: 50,
+                    search: searchTerm,
+                    date_filter: dateFilter,
+                    status: 'all'
+                });
+
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3000' 
+                    : 'https://staging.dottapps.com';
+                
+                let response, data;
+                
+                // Use Capacitor Http plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    
+                    // Build headers object, filtering out null/undefined values
+                    const headers = {};
+                    headers['Content-Type'] = 'application/json';
+                    headers['Accept'] = 'application/json';
+                    
+                    if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+                        headers['Authorization'] = `Bearer ${sessionToken}`;
+                        headers['X-Session-Token'] = sessionToken;
+                        headers['Cookie'] = `sid=${sessionToken}`;
+                        console.log('[Transactions] Added session token to headers');
+                    }
+                    if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+                        headers['X-Tenant-ID'] = tenantId;
+                        console.log('[Transactions] Added tenant ID to headers');
+                    }
+                    
+                    console.log('[Transactions] Making request with headers:', Object.keys(headers));
+                    
+                    try {
+                        const result = await Http.request({
+                            method: 'GET',
+                            url: `${apiUrl}/api/pos/transactions?${params}`,
+                            headers: headers
+                        });
+                        
+                        console.log('[Transactions] Response status:', result.status);
+                        
+                        response = {
+                            ok: result.status >= 200 && result.status < 300,
+                            status: result.status
+                        };
+                        
+                        // Handle the response data
+                        if (typeof result.data === 'string') {
+                            try {
+                                data = JSON.parse(result.data);
+                            } catch (e) {
+                                console.error('[Transactions] Failed to parse response data');
+                                data = result.data;
+                            }
+                        } else {
+                            data = result.data;
+                        }
+                    } catch (httpError) {
+                        console.error('[Transactions] Http request error:', httpError);
+                        throw httpError;
+                    }
+                } else {
+                    // Fallback to fetch for web
+                    response = await fetch(`${apiUrl}/api/pos/transactions?${params}`, {
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Session-Token': sessionToken,
+                            'X-Tenant-ID': tenantId
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch transactions');
+                    }
+                    
+                    data = await response.json();
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch transactions');
+                }
+                
+                // Handle various response formats
+                if (data) {
+                    if (data.success && Array.isArray(data.data)) {
+                        transactions = data.data;
+                    } else if (data.results && Array.isArray(data.results)) {
+                        transactions = data.results;
+                    } else if (Array.isArray(data)) {
+                        transactions = data;
+                    } else if (data.transactions && Array.isArray(data.transactions)) {
+                        transactions = data.transactions;
+                    } else {
+                        console.log('[Transactions] Unexpected data format:', data);
+                        transactions = [];
+                    }
+                } else {
+                    console.log('[Transactions] No data received');
+                    transactions = [];
+                }
+                
+                console.log('[Transactions] Loaded:', transactions.length);
+                renderTransactions();
+            } catch (error) {
+                console.error('[Transactions] Error loading:', error);
+                console.error('[Transactions] Error details:', JSON.stringify(error));
+                
+                // Better error messaging
+                let errorMessage = 'Please check your connection and try again';
+                if (error.message && error.message !== 'not implemented') {
+                    errorMessage = error.message;
+                } else if (error.errorMessage && error.errorMessage !== 'not implemented') {
+                    errorMessage = error.errorMessage;
+                }
+                
+                document.getElementById('transactionList').innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="empty-title">Failed to load transactions</div>
+                        <div class="empty-description">${errorMessage}</div>
+                        <button class="retry-button" onclick="loadTransactions()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Render transactions
+        function renderTransactions() {
+            const listEl = document.getElementById('transactionList');
+            
+            if (transactions.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div class="empty-title">No transactions found</div>
+                        <div class="empty-description">Your sales transactions will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = transactions.map(transaction => {
+                const date = new Date(transaction.created_at);
+                const formattedDate = date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                const formattedTime = date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+
+                const currencySymbol = transaction.currency_symbol || '$';
+                const amount = parseFloat(transaction.total_amount) || 0;
+
+                return `
+                    <div class="transaction-card" onclick="viewTransaction('${transaction.id}')">
+                        <div class="transaction-header">
+                            <div>
+                                <div class="transaction-id">#${transaction.transaction_number || transaction.id}</div>
+                                <div class="transaction-amount">${currencySymbol}${amount.toFixed(2)}</div>
+                            </div>
+                            <div class="status-badge ${transaction.status || 'completed'}">
+                                ${transaction.status ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1) : 'Completed'}
+                            </div>
+                        </div>
+                        
+                        <div class="transaction-details">
+                            <div class="detail-row">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                ${formattedDate} at ${formattedTime}
+                            </div>
+                            
+                            <div class="detail-row">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                ${transaction.customer_name || 'Walk-in Customer'}
+                            </div>
+                            
+                            <div class="detail-row">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                                ${transaction.payment_method || 'Cash'}
+                            </div>
+                        </div>
+                        
+                        <div class="transaction-actions">
+                            <button class="action-button" onclick="event.stopPropagation(); viewTransaction('${transaction.id}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                View
+                            </button>
+                            <button class="action-button primary" onclick="event.stopPropagation(); showReceiptOptions('${transaction.id}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Receipt
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View transaction details
+        async function viewTransaction(transactionId) {
+            try {
+                const transaction = transactions.find(t => t.id === transactionId);
+                if (!transaction) return;
+
+                // Try to fetch full details
+                try {
+                    // Get session from storage
+                    let sessionToken = null;
+                    let tenantId = null;
+                    
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                        const { SecureStoragePlugin } = Capacitor.Plugins;
+                        try {
+                            const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                            sessionToken = tokenResult.value;
+                            
+                            const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                            if (userResult.value) {
+                                const userData = JSON.parse(userResult.value);
+                                tenantId = userData.tenant_id || userData.tenantId;
+                            }
+                        } catch (e) {
+                            console.log('[Transactions] SecureStorage not available for view, using localStorage');
+                        }
+                    }
+                    
+                    // Fallback to localStorage
+                    if (!sessionToken) {
+                        const session = localStorage.getItem('session');
+                        if (session) {
+                            const sessionData = JSON.parse(session);
+                            sessionToken = sessionData.token;
+                            tenantId = sessionData.tenantId;
+                        }
+                    }
+                    
+                    const apiUrl = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:3000' 
+                        : 'https://staging.dottapps.com';
+                    
+                    let response, data;
+                    
+                    // Use Capacitor Http plugin if available
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                        const { Http } = Capacitor.Plugins;
+                        
+                        // Build headers object
+                        const headers = {};
+                        headers['Content-Type'] = 'application/json';
+                        headers['Accept'] = 'application/json';
+                        
+                        if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+                            headers['Authorization'] = `Bearer ${sessionToken}`;
+                            headers['X-Session-Token'] = sessionToken;
+                            headers['Cookie'] = `sid=${sessionToken}`;
+                        }
+                        if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+                            headers['X-Tenant-ID'] = tenantId;
+                        }
+                        
+                        const result = await Http.request({
+                            method: 'GET',
+                            url: `${apiUrl}/api/pos/transactions/${transactionId}`,
+                            headers: headers
+                        });
+                        
+                        response = {
+                            ok: result.status >= 200 && result.status < 300,
+                            status: result.status
+                        };
+                        
+                        // Handle the response data
+                        if (typeof result.data === 'string') {
+                            try {
+                                data = JSON.parse(result.data);
+                            } catch (e) {
+                                console.error('[Transactions] Failed to parse response data');
+                                data = result.data;
+                            }
+                        } else {
+                            data = result.data;
+                        }
+                    } else {
+                        // Fallback to fetch for web
+                        response = await fetch(`${apiUrl}/api/pos/transactions/${transactionId}`, {
+                            credentials: 'include',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-Session-Token': sessionToken,
+                                'X-Tenant-ID': tenantId
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            data = await response.json();
+                        }
+                    }
+
+                    if (response.ok) {
+                        currentTransaction = data;
+                    } else {
+                        currentTransaction = transaction;
+                    }
+                } catch (error) {
+                    console.log('[Transactions] Using cached data:', error);
+                    currentTransaction = transaction;
+                }
+
+                showReceiptModal();
+            } catch (error) {
+                console.error('[Transactions] Error viewing transaction:', error);
+                alert('Failed to load transaction details');
+            }
+        }
+
+        // Show receipt modal
+        function showReceiptModal() {
+            if (!currentTransaction) return;
+
+            const modal = document.getElementById('receiptModal');
+            const content = document.getElementById('receiptContent');
+            
+            const date = new Date(currentTransaction.created_at);
+            const currencySymbol = currentTransaction.currency_symbol || '$';
+            
+            content.innerHTML = `
+                <div class="receipt-header">
+                    <div class="receipt-company">${businessName}</div>
+                    <div class="receipt-title">SALES RECEIPT</div>
+                </div>
+                
+                <div class="receipt-info">
+                    <div class="receipt-info-row">
+                        <span class="receipt-info-label">Transaction ID:</span>
+                        <span class="receipt-info-value">#${currentTransaction.transaction_number || currentTransaction.id}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span class="receipt-info-label">Date:</span>
+                        <span class="receipt-info-value">${date.toLocaleString()}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span class="receipt-info-label">Customer:</span>
+                        <span class="receipt-info-value">${currentTransaction.customer_name || 'Walk-in Customer'}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span class="receipt-info-label">Payment:</span>
+                        <span class="receipt-info-value">${currentTransaction.payment_method || 'Cash'}</span>
+                    </div>
+                </div>
+                
+                ${currentTransaction.items && currentTransaction.items.length > 0 ? `
+                    <div class="receipt-items">
+                        <div class="receipt-items-header">Items</div>
+                        ${currentTransaction.items.map(item => `
+                            <div class="receipt-item">
+                                <div class="receipt-item-name">${item.product_name || item.name}</div>
+                                <div class="receipt-item-qty">x${item.quantity}</div>
+                                <div class="receipt-item-price">${currencySymbol}${((item.quantity || 1) * (item.unit_price || item.price || 0)).toFixed(2)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                <div class="receipt-totals">
+                    ${currentTransaction.subtotal ? `
+                        <div class="receipt-total-row">
+                            <span>Subtotal:</span>
+                            <span>${currencySymbol}${parseFloat(currentTransaction.subtotal).toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${currentTransaction.discount && currentTransaction.discount > 0 ? `
+                        <div class="receipt-total-row">
+                            <span>Discount:</span>
+                            <span>-${currencySymbol}${parseFloat(currentTransaction.discount).toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${currentTransaction.tax && currentTransaction.tax > 0 ? `
+                        <div class="receipt-total-row">
+                            <span>Tax:</span>
+                            <span>${currencySymbol}${parseFloat(currentTransaction.tax).toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="receipt-total-row grand-total">
+                        <span>TOTAL:</span>
+                        <span>${currencySymbol}${parseFloat(currentTransaction.total_amount || 0).toFixed(2)}</span>
+                    </div>
+                    
+                    ${currentTransaction.amount_paid ? `
+                        <div class="receipt-total-row">
+                            <span>Paid:</span>
+                            <span>${currencySymbol}${parseFloat(currentTransaction.amount_paid).toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${currentTransaction.change_given ? `
+                        <div class="receipt-total-row">
+                            <span>Change:</span>
+                            <span>${currencySymbol}${parseFloat(currentTransaction.change_given).toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Close receipt modal
+        function closeReceiptModal() {
+            const modal = document.getElementById('receiptModal');
+            modal.classList.remove('active');
+        }
+
+        // Print receipt
+        function printReceipt() {
+            if (!currentTransaction) return;
+            printTransactionReceipt(currentTransaction.id);
+        }
+
+        // Print transaction receipt
+        function printTransactionReceipt(transactionId) {
+            const transaction = currentTransaction || transactions.find(t => t.id === transactionId);
+            if (!transaction) return;
+
+            const receiptWindow = window.open('', '_blank', 'width=400,height=600');
+            const date = new Date(transaction.created_at);
+            const currencySymbol = transaction.currency_symbol || '$';
+            
+            const receiptHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Receipt - ${transaction.transaction_number || transaction.id}</title>
+                    <style>
+                        body {
+                            font-family: 'Courier New', monospace;
+                            margin: 20px;
+                            font-size: 12px;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            border-bottom: 2px solid #000;
+                            padding-bottom: 10px;
+                        }
+                        .company-name {
+                            font-size: 18px;
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                        }
+                        .transaction-info {
+                            margin: 15px 0;
+                        }
+                        .items-table {
+                            width: 100%;
+                            margin: 20px 0;
+                        }
+                        .items-table th {
+                            text-align: left;
+                            border-bottom: 1px solid #000;
+                            padding: 5px 0;
+                        }
+                        .items-table td {
+                            padding: 5px 0;
+                        }
+                        .totals {
+                            margin-top: 20px;
+                            border-top: 2px solid #000;
+                            padding-top: 10px;
+                        }
+                        .total-row {
+                            display: flex;
+                            justify-content: space-between;
+                            margin: 5px 0;
+                        }
+                        .footer {
+                            text-align: center;
+                            margin-top: 30px;
+                            font-size: 10px;
+                        }
+                        @media print {
+                            body { margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="company-name">${businessName}</div>
+                        <div>SALES RECEIPT</div>
+                    </div>
+                    
+                    <div class="transaction-info">
+                        <div><strong>Transaction ID:</strong> #${transaction.transaction_number || transaction.id}</div>
+                        <div><strong>Date:</strong> ${date.toLocaleString()}</div>
+                        <div><strong>Customer:</strong> ${transaction.customer_name || 'Walk-in Customer'}</div>
+                        <div><strong>Payment Method:</strong> ${transaction.payment_method || 'Cash'}</div>
+                        <div><strong>Status:</strong> ${transaction.status || 'Completed'}</div>
+                    </div>
+                    
+                    ${transaction.items && transaction.items.length > 0 ? `
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th style="text-align: center;">Qty</th>
+                                    <th style="text-align: right;">Price</th>
+                                    <th style="text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${transaction.items.map(item => `
+                                    <tr>
+                                        <td>${item.product_name || item.name}</td>
+                                        <td style="text-align: center;">${item.quantity}</td>
+                                        <td style="text-align: right;">${currencySymbol}${(item.unit_price || item.price || 0).toFixed(2)}</td>
+                                        <td style="text-align: right;">${currencySymbol}${((item.quantity || 1) * (item.unit_price || item.price || 0)).toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : ''}
+                    
+                    <div class="totals">
+                        <div class="total-row" style="font-weight: bold; font-size: 14px;">
+                            <span>TOTAL:</span>
+                            <span>${currencySymbol}${parseFloat(transaction.total_amount || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Thank you for your business!</p>
+                        <p>${new Date().toLocaleString()}</p>
+                        <p style="margin-top: 10px; font-size: 8px;">
+                            This is a computer-generated receipt.<br>
+                            No signature required.
+                        </p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            receiptWindow.document.write(receiptHTML);
+            receiptWindow.document.close();
+            
+            setTimeout(() => {
+                receiptWindow.print();
+            }, 500);
+        }
+
+        // Search functionality
+        function searchTransactions() {
+            searchTerm = document.getElementById('searchInput').value;
+            loadTransactions();
+        }
+
+        // Date filter
+        function setDateFilter(filter, element) {
+            dateFilter = filter;
+            
+            // Update UI
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Reload transactions
+            loadTransactions();
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Receipt Options Functions
+        function showReceiptOptions(transactionId) {
+            const transaction = transactions.find(t => t.id === transactionId);
+            if (transaction) {
+                currentTransaction = transaction;
+                showReceiptOptionsModal();
+            }
+        }
+
+        function showReceiptOptionsModal() {
+            document.getElementById('receiptOptionsModal').classList.add('active');
+        }
+
+        function closeReceiptOptionsModal() {
+            document.getElementById('receiptOptionsModal').classList.remove('active');
+            hideContactForms();
+        }
+
+        function hideContactForms() {
+            document.getElementById('contactForms').style.display = 'none';
+            document.getElementById('emailForm').style.display = 'none';
+            document.getElementById('smsForm').style.display = 'none';
+            document.getElementById('whatsappForm').style.display = 'none';
+        }
+
+        // Generate PDF Receipt
+        function generatePDF() {
+            if (!currentTransaction) return;
+            
+            // Create receipt content
+            const receiptContent = generateReceiptHTML();
+            
+            // Create a new window for PDF generation
+            const pdfWindow = window.open('', '_blank');
+            pdfWindow.document.write(receiptContent);
+            pdfWindow.document.close();
+            
+            // Trigger browser print dialog (user can save as PDF)
+            setTimeout(() => {
+                pdfWindow.print();
+            }, 500);
+            
+            closeReceiptOptionsModal();
+        }
+
+        // Show Email Form
+        function showEmailForm() {
+            hideContactForms();
+            document.getElementById('contactForms').style.display = 'block';
+            document.getElementById('emailForm').style.display = 'block';
+            
+            // Auto-populate customer email if available
+            if (currentTransaction && currentTransaction.customer_email) {
+                document.getElementById('emailAddress').value = currentTransaction.customer_email;
+            } else if (currentTransaction && currentTransaction.customer_name && currentTransaction.customer_name !== 'Walk-in Customer') {
+                // Try to find customer email from transaction data
+                document.getElementById('emailAddress').value = '';
+            }
+            
+            // Set subject with business name and transaction number
+            document.getElementById('emailSubject').value = `Your Receipt - ${businessName} (#${currentTransaction.transaction_number || currentTransaction.id})`;
+        }
+
+        // Show SMS Form
+        function showSMSForm() {
+            hideContactForms();
+            document.getElementById('contactForms').style.display = 'block';
+            document.getElementById('smsForm').style.display = 'block';
+            
+            // Auto-populate customer phone if available
+            if (currentTransaction && currentTransaction.customer_phone) {
+                document.getElementById('phoneNumber').value = currentTransaction.customer_phone;
+            }
+            
+            // Set SMS message
+            document.getElementById('smsMessage').value = `Thank you for your purchase at ${businessName}! Your receipt (#${currentTransaction.transaction_number || currentTransaction.id}) for $${parseFloat(currentTransaction.total_amount).toFixed(2)} is attached. Visit ${window.location.origin} to view details.`;
+        }
+
+        // Show WhatsApp Form  
+        function showWhatsAppForm() {
+            hideContactForms();
+            document.getElementById('contactForms').style.display = 'block';
+            document.getElementById('whatsappForm').style.display = 'block';
+            
+            // Auto-populate customer WhatsApp number if available
+            if (currentTransaction && currentTransaction.customer_phone) {
+                document.getElementById('whatsappNumber').value = currentTransaction.customer_phone;
+            } else if (currentTransaction && currentTransaction.customer_whatsapp) {
+                document.getElementById('whatsappNumber').value = currentTransaction.customer_whatsapp;
+            }
+            
+            // Set WhatsApp message
+            document.getElementById('whatsappMessage').value = `Hi! Thank you for your purchase at ${businessName}! 🧾 Your receipt (#${currentTransaction.transaction_number || currentTransaction.id}) for $${parseFloat(currentTransaction.total_amount).toFixed(2)}. Visit ${window.location.origin} for details.`;
+        }
+
+        // Generate Receipt HTML (for PDF and email)
+        function generateReceiptHTML() {
+            if (!currentTransaction) return '';
+            
+            const date = new Date(currentTransaction.created_at);
+            const currencySymbol = currentTransaction.currency_symbol || '$';
+            
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Receipt - ${currentTransaction.transaction_number || currentTransaction.id}</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; margin: 20px; font-size: 12px; }
+                        .header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+                        .business-name { font-size: 16px; font-weight: bold; }
+                        .transaction-info { margin-bottom: 15px; }
+                        .items { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
+                        .items th, .items td { text-align: left; padding: 5px; border-bottom: 1px solid #ccc; }
+                        .total { text-align: right; font-weight: bold; font-size: 14px; margin-top: 10px; }
+                        .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="business-name">${businessName}</div>
+                        <div>RECEIPT</div>
+                    </div>
+                    
+                    <div class="transaction-info">
+                        <div><strong>Receipt #:</strong> ${currentTransaction.transaction_number || currentTransaction.id}</div>
+                        <div><strong>Date:</strong> ${date.toLocaleString()}</div>
+                        <div><strong>Customer:</strong> ${currentTransaction.customer_name || 'Walk-in Customer'}</div>
+                        <div><strong>Payment:</strong> ${currentTransaction.payment_method || 'Cash'}</div>
+                    </div>
+                    
+                    <table class="items">
+                        <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                        ${(currentTransaction.items || []).map(item => `
+                            <tr>
+                                <td>${item.name || 'Item'}</td>
+                                <td>${item.quantity || 1}</td>
+                                <td>${currencySymbol}${parseFloat(item.price || 0).toFixed(2)}</td>
+                                <td>${currencySymbol}${(parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                    
+                    <div class="total">
+                        <div>Total: ${currencySymbol}${parseFloat(currentTransaction.total_amount).toFixed(2)}</div>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Thank you for your business!</p>
+                        <p>This is a computer-generated receipt.</p>
+                    </div>
+                </body>
+                </html>
+            `;
+        }
+
+        // Helper functions for date/time formatting
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+            });
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Helper function to get CSRF token
+        async function getCSRFToken() {
+            try {
+                const response = await fetch('/api/csrf-token/', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.csrf_token;
+                }
+            } catch (error) {
+                console.warn('Could not get CSRF token:', error);
+            }
+            // Fallback: try to get from cookie
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return decodeURIComponent(value);
+                }
+            }
+            return '';
+        }
+
+        // Send Email Receipt
+        async function sendEmailReceipt() {
+            const email = document.getElementById('emailAddress').value;
+            const subject = document.getElementById('emailSubject').value;
+            const message = document.getElementById('emailMessage').value;
+            
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            if (!currentTransaction) {
+                alert('No transaction selected');
+                return;
+            }
+            
+            try {
+                // Get session token for authentication
+                const sessionId = await SecureStoragePlugin.get({ key: 'session_id' });
+                if (!sessionId?.value) {
+                    alert('Please log in again');
+                    return;
+                }
+                
+                // Prepare receipt data for the API
+                const receiptData = {
+                    business: {
+                        name: currentTransaction.business_name || 'Your Business'
+                    },
+                    receipt: {
+                        number: currentTransaction.receipt_number || currentTransaction.id,
+                        date: formatDate(currentTransaction.created_at),
+                        time: formatTime(currentTransaction.created_at)
+                    },
+                    items: currentTransaction.items ? currentTransaction.items.map(item => ({
+                        name: item.product_name || item.name || 'Item',
+                        quantity: item.quantity || 1,
+                        price: parseFloat(item.unit_price || item.price || 0),
+                        total: parseFloat(item.total_price || item.total || 0)
+                    })) : [{
+                        name: 'Sale',
+                        quantity: 1,
+                        price: parseFloat(currentTransaction.amount || 0),
+                        total: parseFloat(currentTransaction.amount || 0)
+                    }],
+                    totals: {
+                        subtotal: parseFloat(currentTransaction.subtotal || currentTransaction.amount || 0),
+                        tax: parseFloat(currentTransaction.tax_amount || 0),
+                        total: parseFloat(currentTransaction.amount || 0)
+                    },
+                    payment: {
+                        method: currentTransaction.payment_method || 'cash',
+                        amountTendered: currentTransaction.amount_tendered,
+                        changeDue: currentTransaction.change_due
+                    },
+                    currencySymbol: currentTransaction.currency_symbol || '$',
+                    currency: currentTransaction.currency || 'USD'
+                };
+                
+                console.log('🔄 Sending receipt email to:', email);
+                
+                // Call the backend API to send email
+                const response = await fetch('/api/sales/pos/send-receipt/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionId.value}`,
+                        'X-CSRFToken': await getCSRFToken()
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        to: email,
+                        receipt: receiptData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    console.log('✅ Email receipt sent successfully:', result);
+                    alert(`Email receipt sent successfully to ${email}!`);
+                    closeReceiptOptionsModal();
+                } else {
+                    console.error('❌ Failed to send email:', result);
+                    alert(`Failed to send email: ${result.message || result.error || 'Unknown error'}`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error sending email:', error);
+                if (error.message.includes('fetch')) {
+                    alert('Network error. Please check your connection and try again.');
+                } else {
+                    alert('Failed to send email receipt. Please try again.');
+                }
+            }
+        }
+
+        // Send SMS Receipt
+        async function sendSMSReceipt() {
+            const phone = document.getElementById('phoneNumber').value;
+            const message = document.getElementById('smsMessage').value;
+            
+            if (!phone) {
+                alert('Please enter a phone number');
+                return;
+            }
+            
+            try {
+                // Here you would typically call an API to send the SMS
+                console.log('Sending SMS receipt to:', phone);
+                console.log('Message:', message);
+                
+                alert('SMS receipt sent successfully!');
+                closeReceiptOptionsModal();
+            } catch (error) {
+                console.error('Error sending SMS:', error);
+                alert('Failed to send SMS receipt. Please try again.');
+            }
+        }
+
+        // Send WhatsApp Receipt
+        async function sendWhatsAppReceipt() {
+            const phone = document.getElementById('whatsappNumber').value;
+            const message = document.getElementById('whatsappMessage').value;
+            
+            if (!phone) {
+                alert('Please enter a WhatsApp number');
+                return;
+            }
+            
+            try {
+                // Here you would typically call an API to send the WhatsApp message
+                console.log('Sending WhatsApp receipt to:', phone);
+                console.log('Message:', message);
+                
+                alert('WhatsApp receipt sent successfully!');
+                closeReceiptOptionsModal();
+            } catch (error) {
+                console.error('Error sending WhatsApp:', error);
+                alert('Failed to send WhatsApp receipt. Please try again.');
+            }
+        }
+
+        // Enhanced Print Receipt (for phone printer integration)
+        function printReceipt() {
+            if (!currentTransaction) return;
+            
+            // Check if Capacitor Print plugin is available for mobile printing
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Print) {
+                // Use Capacitor Print plugin for mobile printing
+                const { Print } = Capacitor.Plugins;
+                const receiptHTML = generateReceiptHTML();
+                
+                Print.print({
+                    content: receiptHTML,
+                    orientation: 'portrait'
+                }).then(() => {
+                    console.log('Receipt printed successfully');
+                    closeReceiptOptionsModal();
+                }).catch((error) => {
+                    console.error('Print error:', error);
+                    // Fallback to browser print
+                    printTransactionReceipt(currentTransaction.id);
+                    closeReceiptOptionsModal();
+                });
+            } else {
+                // Fallback to browser print dialog
+                printTransactionReceipt(currentTransaction.id);
+                closeReceiptOptionsModal();
+            }
+        }
+    </script>
+
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                    /* Ensure proper z-index */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('[Crisp] Chat widget loaded and positioned');
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

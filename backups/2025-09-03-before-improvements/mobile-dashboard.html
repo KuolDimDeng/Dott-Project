@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard - Dott</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: 20px;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #d1d5db;
+            color: #1e293b;
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            width: 44px;
+            height: 44px;
+        }
+
+        .back-button:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .back-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            margin-left: 54px; /* Space for back button */
+        }
+
+        .period-selector {
+            display: flex;
+            gap: 8px;
+            background: #f0f2f5;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .period-btn {
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: #666;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .period-btn.active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Metric Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-card.full-width {
+            grid-column: span 2;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-change {
+            font-size: 12px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .metric-change.positive {
+            color: #10b981;
+        }
+
+        .metric-change.negative {
+            color: #ef4444;
+        }
+
+        .metric-icon {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* Charts */
+        .chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 15px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+
+        /* Lists */
+        .list-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 15px;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .list-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .view-all {
+            font-size: 13px;
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item-left {
+            flex: 1;
+        }
+
+        .list-item-name {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .list-item-detail {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .list-item-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .list-item-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #2563eb;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: #999;
+            text-decoration: none;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        .refresh-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <button class="back-button" onclick="navigateBack()" title="Back to Main Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            <h1>Dashboard</h1>
+            <button class="refresh-btn" onclick="refreshDashboard()">Refresh</button>
+        </div>
+        <div class="period-selector">
+            <button class="period-btn active" onclick="setPeriod('today')">Today</button>
+            <button class="period-btn" onclick="setPeriod('week')">Week</button>
+            <button class="period-btn" onclick="setPeriod('month')">Month</button>
+            <button class="period-btn" onclick="setPeriod('year')">Year</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Key Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">
+                    <svg class="metric-icon" viewBox="0 0 24 24">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    Revenue
+                </div>
+                <div class="metric-value" id="revenueValue">$0</div>
+                <div class="metric-change positive" id="revenueChange">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 14l5-5 5 5"/>
+                    </svg>
+                    <span>0%</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">
+                    <svg class="metric-icon" viewBox="0 0 24 24">
+                        <path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V12M12 2v10"/>
+                        <path d="M12 12l4-4M12 12l-4-4"/>
+                    </svg>
+                    Expenses
+                </div>
+                <div class="metric-value" id="expensesValue">$0</div>
+                <div class="metric-change negative" id="expensesChange">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 10l5 5 5-5"/>
+                    </svg>
+                    <span>0%</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">
+                    <svg class="metric-icon" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                    </svg>
+                    Net Profit
+                </div>
+                <div class="metric-value" id="profitValue">$0</div>
+                <div class="metric-change positive" id="profitChange">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 14l5-5 5 5"/>
+                    </svg>
+                    <span>0%</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">
+                    <svg class="metric-icon" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M9 9h6M9 15h6"/>
+                    </svg>
+                    Invoices
+                </div>
+                <div class="metric-value" id="invoicesValue">0</div>
+                <div class="metric-change" id="invoicesChange">
+                    <span style="color: #999; font-size: 11px;">Pending: </span>
+                    <span id="pendingInvoices">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cash Flow Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">Cash Flow</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="cashFlowChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Sales Trend Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">Sales Trend</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="list-card">
+            <div class="list-header">
+                <h3 class="list-title">Top Products</h3>
+                <a href="#" class="view-all" onclick="navigateTo('inventory.html')">View All</a>
+            </div>
+            <div id="topProductsList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Breakdown -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">Expense Categories</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="list-card">
+            <div class="list-header">
+                <h3 class="list-title">Recent Transactions</h3>
+                <a href="#" class="view-all" onclick="navigateTo('mobile-expenses.html')">View All</a>
+            </div>
+            <div id="recentTransactionsList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // App state
+        const AppState = {
+            sessionToken: null,
+            tenantId: null,
+            currentPeriod: 'today',
+            charts: {},
+            currency: 'SSP'
+        };
+
+        // Initialize on load
+        window.onload = async function() {
+            console.log('[Dashboard] Initializing...');
+            await loadSession();
+            await loadDashboardData();
+            initializeCharts();
+        };
+
+        // Load session from storage
+        async function loadSession() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const token = await window.Capacitor.Plugins.SecureStoragePlugin.get({ key: 'sessionToken' });
+                    const tenantId = await window.Capacitor.Plugins.SecureStoragePlugin.get({ key: 'tenantId' });
+                    
+                    AppState.sessionToken = token.value;
+                    AppState.tenantId = tenantId.value;
+                    console.log('[Dashboard] Session loaded from secure storage');
+                } else {
+                    const session = localStorage.getItem('session');
+                    if (session) {
+                        const parsed = JSON.parse(session);
+                        AppState.sessionToken = parsed.token;
+                        AppState.tenantId = parsed.tenantId;
+                        console.log('[Dashboard] Session loaded from localStorage');
+                    }
+                }
+            } catch (error) {
+                console.error('[Dashboard] Error loading session:', error);
+            }
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Cash Flow Chart
+            const cashFlowCtx = document.getElementById('cashFlowChart').getContext('2d');
+            AppState.charts.cashFlow = new Chart(cashFlowCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Income',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Expenses',
+                        data: [],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8,
+                                font: { size: 11 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Sales Chart
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            AppState.charts.sales = new Chart(salesCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Sales',
+                        data: [],
+                        backgroundColor: '#2563eb'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Expense Categories Chart
+            const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+            AppState.charts.expense = new Chart(expenseCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#2563eb',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6',
+                            '#ec4899'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            console.log('[Dashboard] Loading data...');
+            
+            // Show loading state
+            document.getElementById('revenueValue').textContent = 'Loading...';
+            document.getElementById('expensesValue').textContent = 'Loading...';
+            document.getElementById('profitValue').textContent = 'Loading...';
+            
+            try {
+                // Fetch all data in parallel
+                const [metricsData, salesData, expensesData, productsData, invoicesData] = await Promise.all([
+                    fetchMetrics(),
+                    fetchSales(),
+                    fetchExpenses(),
+                    fetchTopProducts(),
+                    fetchInvoices()
+                ]);
+                
+                // Update UI with fetched data
+                updateMetrics(metricsData);
+                updateCharts(salesData, expensesData);
+                updateTopProducts(productsData);
+                updateRecentTransactions([...salesData.recent, ...expensesData.recent]);
+                
+            } catch (error) {
+                console.error('[Dashboard] Error loading data:', error);
+                // Show sample data if API fails
+                showSampleData();
+            }
+        }
+
+        // Fetch functions
+        async function fetchMetrics() {
+            // For now, return sample data
+            // In production, this would call the actual API
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            return {
+                revenue: 125430,
+                expenses: 45320,
+                profit: 80110,
+                invoices: { total: 23, pending: 5 },
+                revenueChange: 12.5,
+                expensesChange: 8.3,
+                profitChange: 15.2
+            };
+        }
+
+        async function fetchSales() {
+            // Sample sales data
+            const labels = getLast7Days();
+            return {
+                labels: labels,
+                data: [12000, 15000, 18000, 14000, 22000, 19000, 25000],
+                recent: [
+                    { name: 'Invoice #1234', amount: 2500, date: 'Today', type: 'income' },
+                    { name: 'Invoice #1233', amount: 1800, date: 'Yesterday', type: 'income' }
+                ]
+            };
+        }
+
+        async function fetchExpenses() {
+            // Sample expense data
+            return {
+                categories: {
+                    'Rent': 5000,
+                    'Salaries': 15000,
+                    'Utilities': 2000,
+                    'Supplies': 3000,
+                    'Transport': 1500,
+                    'Other': 2000
+                },
+                recent: [
+                    { name: 'Office Rent', amount: 5000, date: 'Today', type: 'expense' },
+                    { name: 'Internet Bill', amount: 150, date: 'Yesterday', type: 'expense' }
+                ]
+            };
+        }
+
+        async function fetchTopProducts() {
+            // Sample product data
+            return [
+                { name: 'Product A', sold: 145, revenue: 14500 },
+                { name: 'Product B', sold: 98, revenue: 9800 },
+                { name: 'Product C', sold: 76, revenue: 7600 },
+                { name: 'Product D', sold: 54, revenue: 5400 }
+            ];
+        }
+
+        async function fetchInvoices() {
+            // Would fetch from /api/sales/invoices/
+            return { total: 23, pending: 5 };
+        }
+
+        // Update functions
+        function updateMetrics(data) {
+            document.getElementById('revenueValue').textContent = formatCurrency(data.revenue);
+            document.getElementById('expensesValue').textContent = formatCurrency(data.expenses);
+            document.getElementById('profitValue').textContent = formatCurrency(data.profit);
+            document.getElementById('invoicesValue').textContent = data.invoices.total;
+            document.getElementById('pendingInvoices').textContent = data.invoices.pending;
+            
+            // Update change indicators
+            updateChangeIndicator('revenueChange', data.revenueChange, true);
+            updateChangeIndicator('expensesChange', data.expensesChange, false);
+            updateChangeIndicator('profitChange', data.profitChange, true);
+        }
+
+        function updateChangeIndicator(elementId, value, isPositiveGood) {
+            const element = document.getElementById(elementId);
+            const isPositive = value > 0;
+            element.className = 'metric-change ' + (isPositive === isPositiveGood ? 'positive' : 'negative');
+            element.querySelector('span').textContent = Math.abs(value) + '%';
+        }
+
+        function updateCharts(salesData, expensesData) {
+            // Update Cash Flow Chart
+            const cashFlowLabels = getLast7Days();
+            AppState.charts.cashFlow.data.labels = cashFlowLabels;
+            AppState.charts.cashFlow.data.datasets[0].data = salesData.data;
+            AppState.charts.cashFlow.data.datasets[1].data = [4500, 5200, 4800, 5500, 6200, 5800, 6500];
+            AppState.charts.cashFlow.update();
+            
+            // Update Sales Chart
+            AppState.charts.sales.data.labels = salesData.labels;
+            AppState.charts.sales.data.datasets[0].data = salesData.data;
+            AppState.charts.sales.update();
+            
+            // Update Expense Chart
+            const categories = Object.keys(expensesData.categories);
+            const values = Object.values(expensesData.categories);
+            AppState.charts.expense.data.labels = categories;
+            AppState.charts.expense.data.datasets[0].data = values;
+            AppState.charts.expense.update();
+        }
+
+        function updateTopProducts(products) {
+            const container = document.getElementById('topProductsList');
+            container.innerHTML = products.map(product => `
+                <div class="list-item">
+                    <div class="list-item-left">
+                        <div class="list-item-name">${product.name}</div>
+                        <div class="list-item-detail">Sold: ${product.sold} units</div>
+                    </div>
+                    <div class="list-item-value">${formatCurrency(product.revenue)}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateRecentTransactions(transactions) {
+            const container = document.getElementById('recentTransactionsList');
+            container.innerHTML = transactions.slice(0, 5).map(trans => `
+                <div class="list-item">
+                    <div class="list-item-left">
+                        <div class="list-item-name">${trans.name}</div>
+                        <div class="list-item-detail">${trans.date}</div>
+                    </div>
+                    <div>
+                        <span class="list-item-value ${trans.type === 'income' ? 'positive' : 'negative'}">
+                            ${trans.type === 'income' ? '+' : '-'}${formatCurrency(trans.amount)}
+                        </span>
+                        <span class="list-item-badge ${trans.type === 'income' ? 'badge-success' : 'badge-warning'}">
+                            ${trans.type}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Helper functions
+        function formatCurrency(amount) {
+            return AppState.currency + ' ' + amount.toLocaleString();
+        }
+
+        function getLast7Days() {
+            const days = [];
+            const today = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                days.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+            }
+            return days;
+        }
+
+        function setPeriod(period) {
+            AppState.currentPeriod = period;
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            loadDashboardData();
+        }
+
+        function refreshDashboard() {
+            loadDashboardData();
+        }
+
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+
+        function navigateBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+
+        // Show sample data if API fails
+        function showSampleData() {
+            const sampleMetrics = {
+                revenue: 125430,
+                expenses: 45320,
+                profit: 80110,
+                invoices: { total: 23, pending: 5 },
+                revenueChange: 12.5,
+                expensesChange: 8.3,
+                profitChange: 15.2
+            };
+            
+            updateMetrics(sampleMetrics);
+            
+            const sampleSales = {
+                labels: getLast7Days(),
+                data: [12000, 15000, 18000, 14000, 22000, 19000, 25000],
+                recent: []
+            };
+            
+            const sampleExpenses = {
+                categories: {
+                    'Rent': 5000,
+                    'Salaries': 15000,
+                    'Utilities': 2000,
+                    'Supplies': 3000,
+                    'Transport': 1500
+                },
+                recent: []
+            };
+            
+            updateCharts(sampleSales, sampleExpenses);
+            updateTopProducts([
+                { name: 'Sample Product A', sold: 145, revenue: 14500 },
+                { name: 'Sample Product B', sold: 98, revenue: 9800 }
+            ]);
+        }
+    </script>
+
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                    /* Ensure proper z-index */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('[Crisp] Chat widget loaded and positioned');
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dott POS - Connected</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --navy-900: #0f172a;
+            --navy-800: #1e293b;
+            --navy-700: #334155;
+            --navy-600: #475569;
+            --navy-500: #64748b;
+            --navy-400: #94a3b8;
+            --navy-300: #cbd5e1;
+            --navy-200: #e2e8f0;
+            --navy-100: #f1f5f9;
+            --navy-50: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--navy-50);
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .pos-header {
+            background: var(--navy-900);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+        }
+
+        .status-dot.offline {
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .user-info {
+            font-size: 11px;
+            color: var(--navy-300);
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            background: white;
+            display: flex;
+            border-bottom: 1px solid var(--navy-200);
+            position: sticky;
+            top: 50px;
+            z-index: 90;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: var(--navy-600);
+            font-size: 14px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: var(--navy-900);
+            font-weight: 600;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+        }
+
+        /* POS Container */
+        .pos-container {
+            padding: 16px;
+            display: none;
+        }
+
+        .pos-container.active {
+            display: block;
+        }
+
+        /* Search Bar */
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--navy-200);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .scan-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .product-card:active {
+            transform: scale(0.95);
+        }
+
+        .product-icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+
+        .product-name {
+            font-size: 12px;
+            color: var(--navy-700);
+            margin-bottom: 4px;
+        }
+
+        .product-price {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Cart Section */
+        .cart-section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--navy-200);
+        }
+
+        .cart-title {
+            font-weight: 600;
+            color: var(--navy-900);
+        }
+
+        .cart-clear {
+            color: var(--error);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #cartItems {
+            min-height: 60px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--navy-100);
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-size: 14px;
+            color: var(--navy-900);
+        }
+
+        .cart-item-price {
+            font-size: 12px;
+            color: var(--navy-500);
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--navy-300);
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cart-item-qty {
+            min-width: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Payment Section */
+        .payment-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .payment-btn {
+            background: white;
+            border: 2px solid var(--navy-200);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .payment-btn:hover {
+            border-color: var(--primary);
+            background: var(--navy-50);
+        }
+
+        .payment-icon {
+            font-size: 24px;
+        }
+
+        .payment-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Processing Overlay */
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .processing-overlay.active {
+            display: flex;
+        }
+
+        .processing-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--navy-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Loading State */
+        .loading-products {
+            text-align: center;
+            padding: 40px;
+            color: var(--navy-500);
+        }
+
+        /* Paystubs Tab */
+        .paystub-container {
+            display: none;
+            padding: 16px;
+        }
+
+        .paystub-container.active {
+            display: block;
+        }
+
+        .paystub-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="pos-header">
+        <div class="header-title">Dott POS</div>
+        <div class="header-actions">
+            <div class="user-info" id="userInfo">Loading...</div>
+            <div class="status-indicator">
+                <div class="status-dot online" id="statusDot"></div>
+                <span id="statusText">Online</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('pos')">POS</button>
+        <button class="tab-btn" onclick="switchTab('paystub')">Pay Stubs</button>
+    </div>
+
+    <!-- POS Tab -->
+    <div class="pos-container active" id="posTab">
+        <div class="search-section">
+            <input type="text" class="search-input" placeholder="Search products..." id="searchInput" onkeyup="searchProducts()">
+            <button class="scan-btn" onclick="openScanner()">
+                <span>📷</span>
+                <span>Scan</span>
+            </button>
+        </div>
+
+        <div id="productsGrid" class="products-grid">
+            <div class="loading-products">Loading products...</div>
+        </div>
+
+        <div class="cart-section">
+            <div class="cart-header">
+                <span class="cart-title">Current Order</span>
+                <span class="cart-clear" onclick="clearCart()">Clear All</span>
+            </div>
+            <div id="cartItems"></div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--navy-200);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Subtotal</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Tax</span>
+                    <span id="tax">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 600;">
+                    <span>Total</span>
+                    <span id="total" style="color: var(--primary);">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-section">
+            <button class="payment-btn" onclick="processPayment('cash')">
+                <span class="payment-icon">💵</span>
+                <span class="payment-label">Cash</span>
+            </button>
+            <button class="payment-btn" onclick="processPayment('card')">
+                <span class="payment-icon">💳</span>
+                <span class="payment-label">Card</span>
+            </button>
+            <button class="payment-btn" onclick="processApplePay()">
+                <span class="payment-icon">🍎</span>
+                <span class="payment-label">Apple Pay</span>
+            </button>
+            <button class="payment-btn" onclick="processPayment('mpesa')">
+                <span class="payment-icon">📱</span>
+                <span class="payment-label">M-Pesa</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Paystubs Tab -->
+    <div class="paystub-container" id="paystubTab">
+        <div class="search-section">
+            <input type="text" class="search-input" placeholder="Search paystubs..." onkeyup="searchPaystubs()">
+        </div>
+        <div id="paystubsList">
+            <div class="loading-products">Loading paystubs...</div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-content">
+            <div class="spinner"></div>
+            <p>Processing payment...</p>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        const AppState = {
+            isOnline: navigator.onLine,
+            cart: [],
+            products: [],
+            paystubs: [],
+            user: null,
+            sessionToken: null,
+            taxRate: 0.08,
+            apiUrl: 'https://api.dottapps.com'
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Initializing POS system...');
+            
+            // Check if running in Capacitor
+            if (window.Capacitor) {
+                console.log('Running in Capacitor environment');
+                await initializeCapacitor();
+            }
+            
+            // Initialize offline support
+            await initializeOfflineSupport();
+            
+            // Load user session
+            await loadUserSession();
+            
+            // Update UI
+            updateConnectionStatus();
+            updateUserInfo();
+            
+            // Load data from backend
+            if (AppState.sessionToken || AppState.user) {
+                await Promise.all([
+                    fetchProducts(),
+                    fetchPaystubs(),
+                    fetchTaxSettings()
+                ]);
+            } else {
+                // Load demo data if not logged in
+                loadDemoData();
+            }
+            
+            updateCart();
+        });
+
+        async function initializeCapacitor() {
+            try {
+                const { Network } = Capacitor.Plugins;
+                const status = await Network.getStatus();
+                AppState.isOnline = status.connected;
+                
+                Network.addListener('networkStatusChange', (status) => {
+                    AppState.isOnline = status.connected;
+                    updateConnectionStatus();
+                    if (status.connected) {
+                        syncOfflineData();
+                    }
+                });
+            } catch (error) {
+                console.error('Capacitor initialization error:', error);
+            }
+        }
+
+        async function initializeOfflineSupport() {
+            window.addEventListener('online', () => {
+                AppState.isOnline = true;
+                updateConnectionStatus();
+                syncOfflineData();
+            });
+            
+            window.addEventListener('offline', () => {
+                AppState.isOnline = false;
+                updateConnectionStatus();
+            });
+        }
+
+        async function loadUserSession() {
+            try {
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    const { value } = await Preferences.get({ key: 'user_session' });
+                    if (value) {
+                        const session = JSON.parse(value);
+                        AppState.user = session.user || session;
+                        AppState.sessionToken = session.token || session.sid || session.session_token;
+                        console.log('Session loaded from Capacitor:', AppState.user?.email);
+                    }
+                } else {
+                    // Try multiple storage keys for compatibility
+                    const keys = ['user_session', 'sid', 'session_token'];
+                    for (const key of keys) {
+                        const value = localStorage.getItem(key);
+                        if (value) {
+                            try {
+                                const parsed = JSON.parse(value);
+                                AppState.user = parsed.user || parsed;
+                                AppState.sessionToken = parsed.token || parsed.sid || value;
+                                console.log('Session loaded from localStorage:', AppState.user?.email);
+                                break;
+                            } catch {
+                                // If not JSON, might be raw token
+                                if (key === 'sid' || key === 'session_token') {
+                                    AppState.sessionToken = value;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        async function fetchProducts() {
+            try {
+                const cachedProducts = await loadFromCache('products');
+                
+                if (!AppState.isOnline && cachedProducts) {
+                    AppState.products = cachedProducts;
+                    renderProducts();
+                    return;
+                }
+
+                const headers = {};
+                if (AppState.sessionToken) {
+                    headers['Authorization'] = `Session ${AppState.sessionToken}`;
+                }
+                headers['Content-Type'] = 'application/json';
+
+                const response = await fetch(`${AppState.apiUrl}/api/inventory/products/`, {
+                    headers: headers,
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const products = data.results || data || [];
+                    
+                    AppState.products = products.map(p => ({
+                        id: p.id,
+                        name: p.name || p.product_name || 'Unknown Product',
+                        price: parseFloat(p.selling_price || p.price || 0),
+                        category: p.category || 'General',
+                        sku: p.sku || '',
+                        barcode: p.barcode || '',
+                        quantity: p.quantity_on_hand || 0,
+                        icon: getCategoryIcon(p.category)
+                    }));
+                    
+                    await saveToCache('products', AppState.products);
+                    renderProducts();
+                } else {
+                    console.error('Failed to fetch products:', response.status);
+                    loadDemoData();
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                const cached = await loadFromCache('products');
+                if (cached) {
+                    AppState.products = cached;
+                } else {
+                    loadDemoData();
+                }
+                renderProducts();
+            }
+        }
+
+        async function fetchPaystubs() {
+            try {
+                if (!AppState.sessionToken) return;
+
+                const cachedPaystubs = await loadFromCache('paystubs');
+                
+                if (!AppState.isOnline && cachedPaystubs) {
+                    AppState.paystubs = cachedPaystubs;
+                    renderPaystubs();
+                    return;
+                }
+
+                const response = await fetch(`${AppState.apiUrl}/api/hr/payroll/pay-stubs/`, {
+                    headers: {
+                        'Authorization': `Session ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    AppState.paystubs = data.results || data || [];
+                    await saveToCache('paystubs', AppState.paystubs);
+                    renderPaystubs();
+                }
+            } catch (error) {
+                console.error('Error fetching paystubs:', error);
+            }
+        }
+
+        async function fetchTaxSettings() {
+            try {
+                if (!AppState.sessionToken) return;
+
+                const response = await fetch(`${AppState.apiUrl}/api/accounting/tax-settings/`, {
+                    headers: {
+                        'Authorization': `Session ${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const firstTax = data.results?.[0] || data[0];
+                    if (firstTax?.rate) {
+                        AppState.taxRate = parseFloat(firstTax.rate) / 100;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching tax settings:', error);
+            }
+        }
+
+        function loadDemoData() {
+            AppState.products = [
+                { id: 1, name: 'Coffee', price: 4.99, category: 'Beverages', icon: '☕' },
+                { id: 2, name: 'Sandwich', price: 8.99, category: 'Food', icon: '🥪' },
+                { id: 3, name: 'Salad', price: 12.99, category: 'Food', icon: '🥗' },
+                { id: 4, name: 'Tea', price: 3.99, category: 'Beverages', icon: '🍵' },
+                { id: 5, name: 'Juice', price: 5.99, category: 'Beverages', icon: '🧃' },
+                { id: 6, name: 'Burger', price: 14.99, category: 'Food', icon: '🍔' }
+            ];
+            renderProducts();
+        }
+
+        function getCategoryIcon(category) {
+            const icons = {
+                'Beverages': '🥤',
+                'Food': '🍽️',
+                'Electronics': '📱',
+                'Clothing': '👕',
+                'Books': '📚',
+                'Toys': '🧸',
+                'General': '📦'
+            };
+            return icons[category] || '📦';
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            
+            if (AppState.products.length === 0) {
+                grid.innerHTML = '<div class="loading-products">No products available</div>';
+                return;
+            }
+            
+            grid.innerHTML = AppState.products.map(product => `
+                <div class="product-card" onclick="addToCart(${product.id})">
+                    <div class="product-icon">${product.icon || '📦'}</div>
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-price">$${product.price.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderPaystubs() {
+            const list = document.getElementById('paystubsList');
+            
+            if (AppState.paystubs.length === 0) {
+                list.innerHTML = '<div class="loading-products">No paystubs available</div>';
+                return;
+            }
+            
+            list.innerHTML = AppState.paystubs.map(paystub => `
+                <div class="paystub-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600;">${new Date(paystub.pay_date).toLocaleDateString()}</span>
+                        <span style="color: var(--primary); font-weight: 600;">$${paystub.net_pay || '0.00'}</span>
+                    </div>
+                    <div style="color: var(--navy-500); font-size: 14px;">
+                        ${paystub.employee_name || 'Employee'} • Period: ${paystub.pay_period || 'N/A'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateUserInfo() {
+            const userInfo = document.getElementById('userInfo');
+            if (AppState.user) {
+                userInfo.textContent = AppState.user.email || AppState.user.name || 'User';
+            } else {
+                userInfo.textContent = 'Demo Mode';
+            }
+        }
+
+        function updateConnectionStatus() {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            
+            if (AppState.isOnline) {
+                dot.className = 'status-dot online';
+                text.textContent = 'Online';
+            } else {
+                dot.className = 'status-dot offline';
+                text.textContent = 'Offline';
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('[id$="Tab"]').forEach(container => container.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        function addToCart(productId) {
+            const product = AppState.products.find(p => p.id === productId);
+            if (!product) return;
+            
+            const existingItem = AppState.cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                AppState.cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: 1
+                });
+            }
+            
+            updateCart();
+            
+            // Haptic feedback if available
+            if (window.Capacitor && Capacitor.Plugins.Haptics) {
+                Capacitor.Plugins.Haptics.impact({ style: 'light' });
+            }
+        }
+
+        function updateCart() {
+            const cartContainer = document.getElementById('cartItems');
+            
+            if (AppState.cart.length === 0) {
+                cartContainer.innerHTML = '<p style="text-align: center; color: var(--navy-400); padding: 20px;">Cart is empty</p>';
+                document.getElementById('subtotal').textContent = '$0.00';
+                document.getElementById('tax').textContent = '$0.00';
+                document.getElementById('total').textContent = '$0.00';
+                return;
+            }
+            
+            let subtotal = 0;
+            
+            cartContainer.innerHTML = AppState.cart.map((item, index) => {
+                subtotal += item.price * item.quantity;
+                return `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${item.name}</div>
+                            <div class="cart-item-price">$${item.price.toFixed(2)} each</div>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button class="qty-btn" onclick="updateQuantity(${index}, -1)">−</button>
+                            <span class="cart-item-qty">${item.quantity}</span>
+                            <button class="qty-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const tax = subtotal * AppState.taxRate;
+            const total = subtotal + tax;
+            
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function updateQuantity(index, change) {
+            AppState.cart[index].quantity += change;
+            if (AppState.cart[index].quantity <= 0) {
+                AppState.cart.splice(index, 1);
+            }
+            updateCart();
+        }
+
+        function clearCart() {
+            AppState.cart = [];
+            updateCart();
+        }
+
+        async function processPayment(method) {
+            const overlay = document.getElementById('processingOverlay');
+            overlay.classList.add('active');
+            
+            const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * AppState.taxRate;
+            const total = subtotal + tax;
+            
+            const transaction = {
+                items: AppState.cart.map(item => ({
+                    product_id: item.id,
+                    product_name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    total: item.price * item.quantity
+                })),
+                subtotal: subtotal,
+                tax: tax,
+                total: total,
+                payment_method: method,
+                timestamp: new Date().toISOString(),
+                status: 'completed'
+            };
+            
+            try {
+                if (AppState.isOnline && AppState.sessionToken) {
+                    const response = await fetch(`${AppState.apiUrl}/api/sales/transactions/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Session ${AppState.sessionToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(transaction)
+                    });
+                    
+                    if (response.ok) {
+                        console.log('Transaction saved successfully');
+                    } else {
+                        throw new Error('Failed to save transaction');
+                    }
+                } else {
+                    await queueTransaction(transaction);
+                }
+                
+                // Clear cart after successful payment
+                setTimeout(() => {
+                    AppState.cart = [];
+                    updateCart();
+                    overlay.classList.remove('active');
+                    alert('Payment successful!');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Payment error:', error);
+                await queueTransaction(transaction);
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                    alert('Payment saved offline. Will sync when connected.');
+                }, 2000);
+            }
+        }
+
+        async function processApplePay() {
+            if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
+                alert('Apple Pay is not available on this device');
+                return;
+            }
+            
+            const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * AppState.taxRate;
+            const total = subtotal + tax;
+            
+            const request = {
+                countryCode: 'US',
+                currencyCode: 'USD',
+                supportedNetworks: ['visa', 'masterCard', 'amex'],
+                merchantCapabilities: ['supports3DS'],
+                total: {
+                    label: 'Dott POS',
+                    amount: total.toFixed(2)
+                }
+            };
+            
+            const session = new ApplePaySession(3, request);
+            
+            session.onvalidatemerchant = async (event) => {
+                // Validate with backend
+                try {
+                    const response = await fetch(`${AppState.apiUrl}/api/payments/apple-pay/validate`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Session ${AppState.sessionToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ validationURL: event.validationURL })
+                    });
+                    
+                    if (response.ok) {
+                        const merchantSession = await response.json();
+                        session.completeMerchantValidation(merchantSession);
+                    }
+                } catch (error) {
+                    console.error('Merchant validation error:', error);
+                    session.abort();
+                }
+            };
+            
+            session.onpaymentauthorized = (event) => {
+                processPayment('apple_pay');
+                session.completePayment(ApplePaySession.STATUS_SUCCESS);
+            };
+            
+            session.begin();
+        }
+
+        async function queueTransaction(transaction) {
+            try {
+                const queueKey = 'offline_queue';
+                const queue = await loadFromCache(queueKey) || [];
+                queue.push({
+                    id: Date.now(),
+                    type: 'sales/transactions',
+                    data: transaction
+                });
+                await saveToCache(queueKey, queue);
+            } catch (error) {
+                console.error('Error queuing transaction:', error);
+            }
+        }
+
+        async function syncOfflineData() {
+            if (!AppState.isOnline || !AppState.sessionToken) return;
+            
+            try {
+                const queue = await loadFromCache('offline_queue') || [];
+                if (queue.length === 0) return;
+                
+                console.log(`Syncing ${queue.length} offline transactions...`);
+                const synced = [];
+                
+                for (const item of queue) {
+                    try {
+                        const response = await fetch(`${AppState.apiUrl}/api/${item.type}/`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Session ${AppState.sessionToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify(item.data)
+                        });
+                        
+                        if (response.ok) {
+                            synced.push(item.id);
+                        }
+                    } catch (error) {
+                        console.error(`Failed to sync transaction ${item.id}:`, error);
+                    }
+                }
+                
+                const remaining = queue.filter(item => !synced.includes(item.id));
+                await saveToCache('offline_queue', remaining);
+                
+                if (synced.length > 0) {
+                    console.log(`Successfully synced ${synced.length} transactions`);
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+            }
+        }
+
+        async function saveToCache(key, data) {
+            try {
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    await Preferences.set({
+                        key: `cache_${key}`,
+                        value: JSON.stringify(data)
+                    });
+                } else {
+                    localStorage.setItem(`cache_${key}`, JSON.stringify(data));
+                }
+            } catch (error) {
+                console.error('Cache save error:', error);
+            }
+        }
+
+        async function loadFromCache(key) {
+            try {
+                if (window.Capacitor) {
+                    const { Preferences } = Capacitor.Plugins;
+                    const { value } = await Preferences.get({ key: `cache_${key}` });
+                    return value ? JSON.parse(value) : null;
+                } else {
+                    const data = localStorage.getItem(`cache_${key}`);
+                    return data ? JSON.parse(data) : null;
+                }
+            } catch (error) {
+                console.error('Cache load error:', error);
+                return null;
+            }
+        }
+
+        function searchProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = AppState.products.filter(p => 
+                p.name.toLowerCase().includes(searchTerm) ||
+                p.sku?.toLowerCase().includes(searchTerm) ||
+                p.barcode?.includes(searchTerm)
+            );
+            
+            const grid = document.getElementById('productsGrid');
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="loading-products">No products found</div>';
+                return;
+            }
+            
+            grid.innerHTML = filtered.map(product => `
+                <div class="product-card" onclick="addToCart(${product.id})">
+                    <div class="product-icon">${product.icon || '📦'}</div>
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-price">$${product.price.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function searchPaystubs() {
+            // Implement paystub search
+        }
+
+        function openScanner() {
+            alert('Camera scanner will be available on device. Use search for now.');
+        }
+    </script>
+</body>
+</html>

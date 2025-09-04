@@ -70,6 +70,8 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         self.audience = getattr(settings, 'AUTH0_AUDIENCE', None)
         self.client_id = getattr(settings, 'AUTH0_CLIENT_ID', None)
         self.client_secret = getattr(settings, 'AUTH0_CLIENT_SECRET', None)
+        # Support multiple Auth0 client IDs for web and mobile apps
+        self.allowed_clients = getattr(settings, 'AUTH0_ALLOWED_CLIENTS', [self.client_id]) if self.client_id else []
         
         logger.info(f"🔧 Auth0JWTAuthentication initializing with config:")
         logger.info(f"   🔹 AUTH0_DOMAIN: {self.domain}")
@@ -77,6 +79,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         logger.info(f"   🔹 AUTH0_CUSTOM_DOMAIN: {self.custom_domain}")
         logger.info(f"   🔹 AUTH0_AUDIENCE: {self.audience}")
         logger.info(f"   🔹 AUTH0_CLIENT_ID: {self.client_id}")
+        logger.info(f"   🔹 AUTH0_ALLOWED_CLIENTS: {self.allowed_clients}")
         logger.info(f"   🔹 AUTH0_CLIENT_SECRET: {'✅ Set' if self.client_secret else '❌ Missing'}")
         logger.info(f"   🔹 JWE_AVAILABLE: {JWE_AVAILABLE}")
         
@@ -1004,6 +1007,16 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             
             logger.info(f"✅ JWT validation successful!")
             logger.debug(f"✅ Validated payload: {json.dumps(payload, indent=2)}")
+            
+            # Check if the authorized party (azp) claim is from an allowed client
+            azp = payload.get('azp')
+            if azp:
+                if azp not in self.allowed_clients:
+                    logger.error(f"❌ Token from unauthorized client: {azp}")
+                    logger.error(f"❌ Allowed clients: {self.allowed_clients}")
+                    raise exceptions.AuthenticationFailed(f'Token from unauthorized client: {azp}')
+                logger.info(f"✅ Token from authorized client: {azp}")
+            
             return payload
             
         except jwt.ExpiredSignatureError as e:

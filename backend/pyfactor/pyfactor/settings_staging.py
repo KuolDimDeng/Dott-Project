@@ -67,6 +67,12 @@ AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com
 AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID', '')
 AUTH0_CLIENT_SECRET = os.environ.get('AUTH0_CLIENT_SECRET', '')
 
+# Allow tokens from multiple Auth0 applications (Web and Mobile)
+AUTH0_ALLOWED_CLIENTS = [
+    '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF',  # Web App Client ID
+    'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG',  # Native Mobile App Client ID
+]
+
 # Logging - more verbose for staging
 LOGGING = {
     'version': 1,

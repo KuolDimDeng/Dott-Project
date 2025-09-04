@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HR Management - Dott</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .header {
+            background: #0d4f8a;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-button svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+            stroke-width: 2;
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+        
+        .header-action {
+            width: 36px;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .info-section {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #1976d2;
+            border-radius: 50%;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        
+        .hr-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 0 12px;
+        }
+        
+        .hr-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .hr-card:hover, .hr-card:active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .hr-icon {
+            width: 36px;
+            height: 36px;
+            margin-bottom: 8px;
+            color: #2a5298;
+            flex-shrink: 0;
+        }
+        
+        .hr-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .hr-description {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.3;
+        }
+        
+        .stats-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .stats-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #0d4f8a;
+            font-size: 16px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="back-button" onclick="goBack()">
+                <svg fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </div>
+            <div class="header-title">HR Management</div>
+            <div class="header-action"></div>
+        </div>
+        
+        <div class="content">
+            <div class="info-section">
+                <span class="info-icon">i</span>
+                <span>Manage your workforce, timesheets, and payroll efficiently</span>
+            </div>
+            
+            <div class="stats-section">
+                <div class="stats-title">Quick Stats</div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Employees</span>
+                    <span class="stat-value" id="totalEmployees">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Active Today</span>
+                    <span class="stat-value" id="activeToday">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Pending Timesheets</span>
+                    <span class="stat-value" id="pendingTimesheets">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Next Pay Date</span>
+                    <span class="stat-value" id="nextPayDate">--</span>
+                </div>
+            </div>
+            
+            <div class="hr-grid">
+                <!-- Dashboard -->
+                <div class="hr-card" onclick="navigateToHR('dashboard')">
+                    <svg class="hr-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                    </svg>
+                    <div class="hr-title">Dashboard</div>
+                    <div class="hr-description">HR analytics</div>
+                </div>
+                
+                <!-- Staff -->
+                <div class="hr-card" onclick="navigateToHR('staff')">
+                    <svg class="hr-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <div class="hr-title">Staff</div>
+                    <div class="hr-description">Manage employees</div>
+                </div>
+                
+                <!-- Staff Timesheets -->
+                <div class="hr-card" onclick="navigateToHR('timesheets')">
+                    <svg class="hr-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                    </svg>
+                    <div class="hr-title">Staff Timesheets</div>
+                    <div class="hr-description">Track work hours</div>
+                </div>
+                
+                <!-- Manage Pay -->
+                <div class="hr-card" onclick="navigateToHR('pay')">
+                    <svg class="hr-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                    </svg>
+                    <div class="hr-title">Manage Pay</div>
+                    <div class="hr-description">Payroll & comp</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Load some sample data
+        async function loadHRData() {
+            // This would normally fetch from API
+            document.getElementById('totalEmployees').textContent = '0';
+            document.getElementById('activeToday').textContent = '0';
+            document.getElementById('pendingTimesheets').textContent = '0';
+            
+            // Calculate next pay date (example: last day of month)
+            const today = new Date();
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            const options = { month: 'short', day: 'numeric' };
+            document.getElementById('nextPayDate').textContent = lastDay.toLocaleDateString('en-US', options);
+        }
+        
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+        
+        function navigateToHR(section) {
+            console.log('Navigating to HR section:', section);
+            
+            switch(section) {
+                case 'dashboard':
+                    // HR Dashboard - coming soon
+                    alert('HR Dashboard coming soon!');
+                    break;
+                case 'staff':
+                    // Navigate to existing staff management
+                    window.location.href = 'mobile-staff.html';
+                    break;
+                case 'timesheets':
+                    // Staff Timesheets - coming soon
+                    alert('Staff Timesheets coming soon!');
+                    break;
+                case 'pay':
+                    // Manage Pay - coming soon
+                    alert('Manage Pay coming soon!');
+                    break;
+                default:
+                    console.log('Unknown section:', section);
+            }
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHRData();
+        });
+    </script>
+</body>
+</html>

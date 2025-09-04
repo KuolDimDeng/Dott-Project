@@ -29,6 +29,12 @@ const config: CapacitorConfig = {
       resize: 'body',
       style: 'light',
       resizeOnFullScreen: true
+    },
+    CapacitorHttp: {
+      enabled: true
+    },
+    CapacitorCookies: {
+      enabled: true
     }
   },
   ios: {

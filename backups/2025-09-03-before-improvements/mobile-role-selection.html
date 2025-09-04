@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Welcome to Dott - Choose Your Path</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .welcome-header {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo img {
+            width: 60px;
+            height: 60px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+            color: #1a1a1a;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .role-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .role-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .role-card.selected {
+            border-color: #0d4f8a;
+            background: #f8f9ff;
+        }
+        
+        .role-card.selected#consumerCard {
+            border-color: #064e3b;
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #0d4f8a;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .role-card.selected::before {
+            transform: scaleX(1);
+        }
+        
+        #consumerCard.selected::before {
+            background: #064e3b;
+        }
+
+        .role-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .role-icon {
+            width: 60px;
+            height: 60px;
+            background: #0d4f8a;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        #consumerCard .role-icon {
+            background: #064e3b;
+        }
+
+        .role-icon svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        .role-info {
+            flex: 1;
+        }
+
+        .role-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 6px;
+        }
+
+        .role-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        .role-features {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        .feature-item svg {
+            width: 16px;
+            height: 16px;
+            color: #10b981;
+            flex-shrink: 0;
+        }
+
+        .continue-button {
+            width: 100%;
+            background: #e5e7eb;
+            color: #9ca3af;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform: scale(0.98);
+        }
+
+        .continue-button.active {
+            transform: scale(1);
+            animation: pulse 2s infinite;
+        }
+        
+        .continue-button.active.business {
+            background: #0d4f8a;
+            color: white;
+        }
+        
+        .continue-button.active.consumer {
+            background: #064e3b;
+            color: white;
+        }
+
+        .continue-button.active:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .continue-button.active:active {
+            transform: scale(0.98);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 16px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #0d4f8a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #4b5563;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="welcome-header">
+            <div class="logo">
+                <img src="/logomobile.png" alt="Dott" onerror="this.style.display='none'">
+            </div>
+            <h1>Welcome to Dott</h1>
+            <p class="subtitle">How would you like to use Dott?</p>
+        </div>
+
+        <div class="role-selection">
+            <!-- Business Owner Card -->
+            <div class="role-card" id="businessCard" onclick="selectRole('business')">
+                <div class="role-content">
+                    <div class="role-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
+                    </div>
+                    <div class="role-info">
+                        <h3 class="role-title">Business Owner</h3>
+                        <p class="role-description">Manage your business operations</p>
+                    </div>
+                </div>
+                <div class="role-features">
+                    <div class="feature-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                        </svg>
+                        <span>Point of Sale & Inventory</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                        </svg>
+                        <span>Customer Management</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                        </svg>
+                        <span>Financial Reports & Analytics</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consumer Card -->
+            <div class="role-card" id="consumerCard" onclick="selectRole('consumer')">
+                <div class="role-content">
+                    <div class="role-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <div class="role-info">
+                        <h3 class="role-title">Consumer</h3>
+                        <p class="role-description">Discover and shop from businesses</p>
+                    </div>
+                </div>
+                <div class="role-features">
+                    <div class="feature-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                        </svg>
+                        <span>Browse local businesses</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                        </svg>
+                        <span>Order products & services</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                        </svg>
+                        <span>Create a business later</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="continue-button" id="continueBtn" onclick="proceedWithSelection()">
+                Select an Option to Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="loading-text" id="loadingText">Setting up your account...</p>
+        </div>
+    </div>
+
+    <script>
+        console.log('[Role Selection] Page initialized');
+        
+        let selectedRole = null;
+        const apiUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : 'https://staging.dottapps.com';
+
+        // Check if user already has a role
+        async function checkExistingRole() {
+            try {
+                const storedSession = localStorage.getItem('user_session');
+                if (storedSession) {
+                    const session = JSON.parse(storedSession);
+                    if (session.user && session.user.user_type) {
+                        console.log('[Role Selection] User already has role:', session.user.user_type);
+                        // Redirect based on existing role
+                        if (session.user.user_type === 'consumer' && !session.user.has_business) {
+                            window.location.href = 'mobile-consumer-menu.html';
+                        } else {
+                            window.location.href = 'mobile-business-menu.html';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Role Selection] Error checking existing role:', error);
+            }
+        }
+
+        // Select role
+        function selectRole(role) {
+            console.log('[Role Selection] Role selected:', role);
+            selectedRole = role;
+            
+            // Update UI
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            if (role === 'business') {
+                document.getElementById('businessCard').classList.add('selected');
+            } else {
+                document.getElementById('consumerCard').classList.add('selected');
+            }
+            
+            // Enable continue button
+            const continueBtn = document.getElementById('continueBtn');
+            continueBtn.classList.remove('business', 'consumer');
+            continueBtn.classList.add('active', role);
+            continueBtn.textContent = role === 'business' 
+                ? 'Continue as Business Owner' 
+                : 'Continue as Consumer';
+        }
+
+        // Proceed with selection
+        async function proceedWithSelection() {
+            if (!selectedRole) {
+                alert('Please select how you want to use Dott');
+                return;
+            }
+            
+            console.log('[Role Selection] Proceeding with role:', selectedRole);
+            
+            // Show loading
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            overlay.classList.add('active');
+            
+            if (selectedRole === 'business') {
+                loadingText.textContent = 'Setting up your business account...';
+            } else {
+                loadingText.textContent = 'Setting up your consumer account...';
+            }
+            
+            try {
+                // Update user type in backend
+                const response = await fetch(`${apiUrl}/api/auth/set-user-type/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        user_type: selectedRole
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('[Role Selection] User type set successfully:', data);
+                    
+                    // Update local session
+                    const storedSession = localStorage.getItem('user_session');
+                    if (storedSession) {
+                        const session = JSON.parse(storedSession);
+                        session.user.user_type = selectedRole;
+                        session.user.has_business = selectedRole === 'business';
+                        localStorage.setItem('user_session', JSON.stringify(session));
+                        
+                        // Also update secure storage if using Capacitor
+                        if (window.Capacitor && window.Capacitor.Plugins.SecureStoragePlugin) {
+                            await window.Capacitor.Plugins.SecureStoragePlugin.set({
+                                key: 'user_data',
+                                value: JSON.stringify(session.user)
+                            });
+                        }
+                    }
+                    
+                    // Navigate based on selection
+                    setTimeout(() => {
+                        if (selectedRole === 'business') {
+                            // Business owners go through onboarding
+                            if (data.needs_onboarding) {
+                                window.location.href = '/onboarding';
+                            } else {
+                                window.location.href = 'mobile-business-menu.html';
+                            }
+                        } else {
+                            // Consumers go directly to consumer menu
+                            window.location.href = 'mobile-consumer-menu.html';
+                        }
+                    }, 1000);
+                    
+                } else {
+                    throw new Error('Failed to set user type');
+                }
+                
+            } catch (error) {
+                console.error('[Role Selection] Error setting user type:', error);
+                
+                // For now, proceed anyway (for testing)
+                setTimeout(() => {
+                    if (selectedRole === 'business') {
+                        window.location.href = 'mobile-business-menu.html';
+                    } else {
+                        window.location.href = 'mobile-consumer-menu.html';
+                    }
+                }, 1000);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkExistingRole();
+        });
+    </script>
+</body>
+</html>

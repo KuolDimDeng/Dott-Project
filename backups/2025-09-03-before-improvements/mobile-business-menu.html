@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dott - Main Menu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: scroll; /* Force scrollbar to always show */
+        }
+
+        /* Header */
+        .header {
+            background: #0d4f8a; /* Primary navy blue - matches web app primary-main */
+            color: white;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .header-logo {
+            height: 28px;
+            /* Logo image likely has built-in whitespace/border */
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .icon-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .icon-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .icon-button:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .notification-badge {
+            position: relative;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 10px;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .user-initials {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-initials:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .greeting {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .business-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .business-name {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .subscription-plan {
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .subscription-plan.professional {
+            /* Plain text, no styling */
+        }
+        
+        .subscription-plan.enterprise {
+            /* Plain text, no styling */
+        }
+        
+        .upgrade-button {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .upgrade-button:active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .user-email {
+            font-size: 13px;
+            opacity: 0.75;
+            font-weight: 300;
+            margin-top: 4px;
+        }
+
+        .user-preferences {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            opacity: 0.85;
+            margin-top: 8px;
+        }
+
+        .preferences-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-phone-button {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header-phone-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .header-phone-button svg {
+            width: 16px;
+            height: 16px;
+            color: white;
+        }
+
+        .country-display, .currency-display {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .language-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .language-display {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .language-display:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            min-width: 180px;
+            display: none;
+        }
+
+        .language-dropdown.active {
+            display: block;
+        }
+
+        .language-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #333;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .language-option:hover {
+            background: #f0f4f8;
+        }
+
+        .language-option.selected {
+            background: #e3f2fd;
+            font-weight: 600;
+        }
+
+        .language-code {
+            font-size: 12px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            padding-bottom: 80px; /* Extra padding for scrolling */
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            justify-content: center;
+            align-items: stretch;
+            width: 100%;
+            padding: 0 12px;
+            margin-bottom: 20px; /* Add bottom margin for better scrolling */
+        }
+
+        .menu-item {
+            background: white;
+            border-radius: 16px;
+            padding: 12px 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 95px;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .menu-item:hover, .menu-item:active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-icon {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 6px;
+            color: #2a5298;
+            flex-shrink: 0;
+        }
+
+        .menu-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #2c3e50;
+            line-height: 1.2;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .menu-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .menu-icon {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .menu-label {
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 320px) {
+            .greeting {
+                font-size: 24px;
+            }
+            .business-name {
+                font-size: 16px;
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="business-info" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;">
+            <div style="flex: 1;">
+                <div class="business-name" id="businessName">Loading...</div>
+                <div class="subscription-plan" id="subscriptionPlan"></div>
+            </div>
+            <button class="header-phone-button" onclick="openContacts()" style="margin-left: 16px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Marketplace Mode Toggle -->
+    <div class="marketplace-toggle-container" id="marketplaceToggle" style="display: none; padding: 16px; background: white; margin: 16px 16px 8px 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px; font-weight: 500;">Marketplace Mode</div>
+        <div class="mode-toggle" style="display: flex; gap: 8px;">
+            <button class="mode-button" id="businessModeBtn" onclick="switchToBusinessMode()" style="flex: 1; padding: 10px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s; font-size: 14px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
+                    <path d="M12 2v5"></path>
+                </svg>
+                <span>Business</span>
+            </button>
+            <button class="mode-button" id="consumerModeBtn" onclick="switchToConsumerMode()" style="flex: 1; padding: 10px; border: 2px solid #e5e7eb; background: white; color: #6b7280; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s; font-size: 14px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                <span>Consumer</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="menu-grid">
+            <!-- POS -->
+            <div class="menu-item" onclick="navigateTo('mobile-pos.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+                    <line x1="8" y1="10" x2="8" y2="14"></line>
+                    <line x1="16" y1="10" x2="16" y2="14"></line>
+                    <line x1="12" y1="10" x2="12" y2="14"></line>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.pos">POS</div>
+            </div>
+
+            <!-- Inventory -->
+            <div class="menu-item" onclick="navigateTo('/inventory.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.inventory">Inventory</div>
+            </div>
+
+            <!-- Expense -->
+            <div class="menu-item" onclick="navigateTo('mobile-expenses.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="2" x2="12" y2="22"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.purchases">Expense</div>
+            </div>
+
+            <!-- Jobs -->
+            <div class="menu-item" onclick="navigateTo('jobs.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.jobs">Jobs</div>
+            </div>
+            
+            <!-- Marketplace -->
+            <div class="menu-item" onclick="showMarketplaceOptions()" id="marketplaceMenuItem" style="display: none;">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.marketplace">Marketplace</div>
+            </div>
+
+            <!-- Advertise Button -->
+            <div class="menu-item" onclick="openAdvertiseForm()" id="advertiseMenuItem">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                </svg>
+                <div class="menu-label">Advertise</div>
+            </div>
+
+            <!-- Dynamic Orders/Bookings Button -->
+            <div class="menu-item" onclick="openOrdersBookings()" id="ordersBookingsMenuItem">
+                <div class="notification-badge">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2h-4M9 11V9a2 2 0 112 0v2M9 11h6"></path>
+                    </svg>
+                    <span class="notification-count" id="ordersBookingsCount" style="display: none;">0</span>
+                </div>
+                <div class="menu-label" id="ordersBookingsLabel">Orders</div>
+            </div>
+
+            <!-- Dashboard -->
+            <div class="menu-item" onclick="navigateTo('mobile-dashboard.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.dashboard">Dashboard</div>
+            </div>
+
+            <!-- Messages/Chat -->
+            <div class="menu-item" onclick="navigateTo('mobile-contacts.html?theme=business')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    <path d="M8 10h8"></path>
+                    <path d="M8 14h6"></path>
+                </svg>
+                <div class="menu-label">Messages</div>
+            </div>
+            <!-- WhatsApp -->
+            <div class="menu-item" onclick="navigateTo('mobile-whatsapp.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.whatsappBusiness">WhatsApp</div>
+            </div>
+
+            <!-- Invite -->
+            <div class="menu-item" onclick="navigateTo('invite.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.mainMenu.inviteBusinessOwner">Invite</div>
+            </div>
+            
+            <!-- Transactions -->
+            <div class="menu-item" onclick="navigateTo('mobile-transactions.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.subMenu.transactions">Transactions</div>
+            </div>
+            
+            <!-- Customers -->
+            <div class="menu-item" onclick="navigateTo('mobile-customers.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <div class="menu-label" data-i18n="navigation.subMenu.customers">Customers</div>
+            </div>
+
+            <!-- HR Management -->
+            <div class="menu-item" onclick="navigateTo('mobile-hr.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                    <path d="M12 14v7"></path>
+                </svg>
+                <div class="menu-label">HR</div>
+            </div>
+
+            <!-- Services -->
+            <div class="menu-item" onclick="navigateTo('mobile-services.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="7" width="18" height="10" rx="2" ry="2"></rect>
+                    <rect x="8" y="3" width="8" height="4" rx="1" ry="1"></rect>
+                    <line x1="12" y1="11" x2="12" y2="13"></line>
+                </svg>
+                <div class="menu-label">Services</div>
+            </div>
+
+            <!-- Smart Insights -->
+            <div class="menu-item" onclick="navigateTo('mobile-smart-insights.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                <div class="menu-label">Smart Insights</div>
+            </div>
+
+            <!-- Payroll -->
+            <div class="menu-item" onclick="navigateTo('mobile-payroll-run.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <div class="menu-label">Payroll</div>
+            </div>
+
+            <!-- Filing Taxes -->
+            <div class="menu-item" onclick="navigateTo('mobile-taxes.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
+                    <line x1="9" y1="9" x2="15" y2="9"></line>
+                    <line x1="9" y1="13" x2="15" y2="13"></line>
+                    <line x1="9" y1="17" x2="12" y2="17"></line>
+                </svg>
+                <div class="menu-label">Filing Taxes</div>
+            </div>
+
+            <!-- Transport Management -->
+            <div class="menu-item" onclick="navigateTo('mobile-transport.html')">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18l-3-7H6l-3 7z"></path>
+                    <path d="M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                    <path d="M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                    <path d="M5 12V7a1 1 0 0 1 1-1h4l2 2h6a1 1 0 0 1 1 1v3"></path>
+                </svg>
+                <div class="menu-label">Transport</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        const AppState = {
+            user: null,
+            userData: {},
+            sessionToken: null,
+            tenantId: null,
+            businessName: null,
+            notifications: []
+        };
+
+        // Mobile i18n Implementation
+        class MobileI18n {
+            constructor() {
+                this.currentLang = 'en';
+                this.translations = {};
+                this.fallbackLang = 'en';
+            }
+            
+            async loadLanguage(lang) {
+                try {
+                    console.log(`[i18n] Loading language: ${lang}`);
+                    
+                    // Check if already loaded
+                    if (this.translations[lang]) {
+                        this.currentLang = lang;
+                        this.updateUI();
+                        return;
+                    }
+                    
+                    // Load translation files
+                    const baseUrl = window.location.origin;
+                    const [common, navigation] = await Promise.all([
+                        fetch(`${baseUrl}/locales/${lang}/common.json`).then(r => r.json()).catch(() => null),
+                        fetch(`${baseUrl}/locales/${lang}/navigation.json`).then(r => r.json()).catch(() => null)
+                    ]);
+                    
+                    if (!common || !navigation) {
+                        throw new Error(`Failed to load translations for ${lang}`);
+                    }
+                    
+                    this.translations[lang] = { common, navigation };
+                    this.currentLang = lang;
+                    
+                    // Save preference
+                    localStorage.setItem('i18nextLng', lang);
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                        const { SecureStoragePlugin } = Capacitor.Plugins;
+                        await SecureStoragePlugin.set({ key: 'user_language', value: lang });
+                    }
+                    
+                    console.log(`[i18n] Language loaded: ${lang}`);
+                    this.updateUI();
+                    this.updateGreeting(); // Update greeting with translation
+                    
+                } catch (error) {
+                    console.error('[i18n] Failed to load language:', error);
+                    // Fallback to English
+                    if (lang !== 'en' && !this.translations['en']) {
+                        await this.loadLanguage('en');
+                    }
+                }
+            }
+            
+            t(key, fallback) {
+                // Get translation by key (e.g., "navigation.mainMenu.dashboard")
+                const keys = key.split('.');
+                let value = this.translations[this.currentLang];
+                
+                for (const k of keys) {
+                    value = value?.[k];
+                }
+                
+                return value || fallback || key;
+            }
+            
+            updateUI() {
+                // Update all elements with data-i18n attribute
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    const translation = this.t(key, el.textContent);
+                    el.textContent = translation;
+                });
+                
+                // Update placeholders
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    el.placeholder = this.t(key, el.placeholder);
+                });
+                
+                // Handle RTL languages
+                const rtlLanguages = ['ar', 'he', 'ur', 'fa'];
+                document.body.dir = rtlLanguages.includes(this.currentLang) ? 'rtl' : 'ltr';
+            }
+            
+            updateGreeting() {
+                const greetingEl = document.getElementById('greeting');
+                if (!greetingEl || !AppState.userData) return;
+                
+                const hour = new Date().getHours();
+                let greetingKey = hour < 12 ? 'common.greeting.morning' : 
+                                 hour < 17 ? 'common.greeting.afternoon' : 
+                                 'common.greeting.evening';
+                
+                // Try to get translation, fallback to English pattern
+                let greeting = this.t(greetingKey);
+                if (!greeting || greeting === greetingKey) {
+                    // Fallback to English
+                    greeting = hour < 12 ? 'Good morning' : 
+                              hour < 17 ? 'Good afternoon' : 
+                              'Good evening';
+                }
+                
+                const firstName = AppState.userData.firstName || AppState.userData.name?.split(' ')[0] || '';
+                greetingEl.textContent = firstName ? `${greeting}, ${firstName}!` : `${greeting}!`;
+                
+                // Update user initials whenever greeting updates
+                updateUserInitials();
+            }
+        }
+        
+        // Initialize i18n
+        const i18n = new MobileI18n();
+
+        // Update user initials
+        function updateUserInitials() {
+            const initialsEl = document.getElementById('userInitials');
+            if (initialsEl && AppState.userData) {
+                const name = AppState.userData.name || AppState.userData.firstName || '';
+                if (name) {
+                    const parts = name.trim().split(' ');
+                    let initials = '';
+                    if (parts.length >= 2) {
+                        // First and last name initials
+                        initials = parts[0][0] + parts[parts.length - 1][0];
+                    } else if (parts.length === 1) {
+                        // Single name - use first two letters
+                        initials = parts[0].substring(0, 2);
+                    }
+                    initialsEl.textContent = initials.toUpperCase();
+                }
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[Menu] Initializing main menu...');
+            await loadUserSession();
+            
+            // Initialize marketplace mode
+            initMarketplaceMode();
+
+            // Initialize business features and dynamic menu items
+            await fetchBusinessFeatures();
+            
+            // Initialize notification counts
+            setTimeout(() => {
+                updateOrdersBookingsCount();
+                // Poll for updates every 30 seconds
+                setInterval(updateOrdersBookingsCount, 30000);
+            }, 2000);
+            
+            // Debug: Count menu items immediately and after delay
+            console.log('[Menu Debug] === STARTING MENU DEBUG ===');
+            
+            // Immediate check
+            const immediateCheck = () => {
+                const menuItems = document.querySelectorAll('.menu-item');
+                console.log('[Menu Debug] Total menu items found:', menuItems.length);
+                
+                if (menuItems.length === 0) {
+                    console.log('[Menu Debug] No menu items found yet, will check again...');
+                    return;
+                }
+                
+                menuItems.forEach((item, index) => {
+                    const label = item.querySelector('.menu-label')?.textContent;
+                    console.log(`[Menu Debug] Item ${index + 1}: ${label}`);
+                });
+                
+                // Check if Payroll and Filing Taxes are visible
+                const payrollItem = Array.from(menuItems).find(item => 
+                    item.querySelector('.menu-label')?.textContent === 'Payroll'
+                );
+                const taxesItem = Array.from(menuItems).find(item => 
+                    item.querySelector('.menu-label')?.textContent === 'Filing Taxes'
+                );
+                
+                if (payrollItem) {
+                    console.log('[Menu Debug] ✓ Payroll button FOUND!');
+                    const rect = payrollItem.getBoundingClientRect();
+                    console.log('[Menu Debug] Payroll position:', rect.top, rect.bottom);
+                } else {
+                    console.log('[Menu Debug] ✗ Payroll button NOT found!');
+                }
+                
+                if (taxesItem) {
+                    console.log('[Menu Debug] ✓ Filing Taxes button FOUND!');
+                    const rect = taxesItem.getBoundingClientRect();
+                    console.log('[Menu Debug] Filing Taxes position:', rect.top, rect.bottom);
+                } else {
+                    console.log('[Menu Debug] ✗ Filing Taxes button NOT found!');
+                }
+                
+                // Check scrolling
+                const body = document.body;
+                const scrollHeight = body.scrollHeight;
+                const clientHeight = body.clientHeight;
+                const windowHeight = window.innerHeight;
+                console.log(`[Menu Debug] Body: scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`);
+                console.log(`[Menu Debug] Window height=${windowHeight}`);
+                console.log(`[Menu Debug] Scrollable: ${scrollHeight > clientHeight ? 'YES' : 'NO'}`);
+            };
+            
+            // Run immediately
+            immediateCheck();
+            
+            // Run again after delay to ensure DOM is fully loaded
+            setTimeout(immediateCheck, 2000);
+            await initializeI18n(); // Initialize translations
+            checkNotifications();
+        });
+        
+        // Listen for currency updates
+        window.addEventListener('currency-updated', (event) => {
+            const currency = event.detail;
+            console.log('[Menu] Currency updated:', currency);
+            // Currency display moved to account page
+            if (currencyEl && currency) {
+                currencyEl.textContent = currency.code || 'USD';
+            }
+        });
+        
+        // Initialize i18n with user's preferred language
+        async function initializeI18n() {
+            try {
+                // Get saved language preference
+                let savedLang = localStorage.getItem('i18nextLng');
+                
+                // Try to get from secure storage if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    try {
+                        const result = await SecureStoragePlugin.get({ key: 'user_language' });
+                        if (result.value) {
+                            savedLang = result.value;
+                        }
+                    } catch (e) {
+                        console.log('[i18n] No saved language in secure storage');
+                    }
+                }
+                
+                // Use saved language or user's preference or default to English
+                const language = savedLang || AppState.userData?.language || 'en';
+                await i18n.loadLanguage(language);
+                
+                // Update language selector
+                const selectedLanguageEl = document.getElementById('selectedLanguage');
+                if (selectedLanguageEl) {
+                    const langObj = languages.find(l => l.code === language) || languages[0];
+                    selectedLanguageEl.textContent = langObj.name;
+                }
+            } catch (error) {
+                console.error('[i18n] Failed to initialize:', error);
+            }
+        }
+
+        // Load user session
+        async function loadUserSession() {
+            try {
+                // Try to get session from secure storage (Capacitor) or localStorage
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SecureStoragePlugin) {
+                    const { SecureStoragePlugin } = Capacitor.Plugins;
+                    
+                    // Get session token
+                    try {
+                        const tokenResult = await SecureStoragePlugin.get({ key: 'session_token' });
+                        if (tokenResult.value) {
+                            AppState.sessionToken = tokenResult.value;
+                            console.log('[Menu] Found session token in secure storage');
+                        }
+                    } catch (e) {
+                        console.log('[Menu] No session token in secure storage');
+                    }
+                    
+                    // Get user data
+                    try {
+                        const userResult = await SecureStoragePlugin.get({ key: 'user_data' });
+                        if (userResult.value) {
+                            AppState.userData = JSON.parse(userResult.value);
+                            AppState.user = AppState.userData;
+                            console.log('[Menu] Found user data in secure storage');
+                        }
+                    } catch (e) {
+                        console.log('[Menu] No user data in secure storage');
+                    }
+                    
+                    // Get tenant ID
+                    try {
+                        const tenantResult = await SecureStoragePlugin.get({ key: 'tenant_id' });
+                        if (tenantResult.value) {
+                            AppState.tenantId = tenantResult.value;
+                            console.log('[Menu] Found tenant ID in secure storage');
+                        }
+                    } catch (e) {
+                        console.log('[Menu] No tenant ID in secure storage');
+                    }
+                } else {
+                    // Fallback to localStorage
+                    const stored = localStorage.getItem('user_session');
+                    if (stored) {
+                        const session = JSON.parse(stored);
+                        AppState.userData = session.user || session;
+                        AppState.user = AppState.userData;
+                        AppState.sessionToken = session.token || session.sid || localStorage.getItem('sid');
+                        AppState.tenantId = session.tenant_id || session.tenantId || session.tenant?.id || session.user?.tenantId || session.user?.tenant_id;
+                        
+                        // Extract business name from tenant if available
+                        if (session.tenant && session.tenant.name) {
+                            AppState.userData.businessName = session.tenant.name;
+                            AppState.businessName = session.tenant.name;
+                            console.log('[Menu] Found business name from tenant:', session.tenant.name);
+                        }
+                        
+                        console.log('[Menu] Found session in localStorage');
+                    }
+                }
+
+                // Try to get fresh user data from API
+                if (AppState.sessionToken) {
+                    await fetchUserData();
+                } else {
+                    console.log('[Menu] No session token found');
+                    // Set default values
+                    updateGreeting();
+                    updateBusinessName();
+                    updateUserEmail();
+                }
+            } catch (error) {
+                console.error('[Menu] Error loading session:', error);
+                // Set default values on error
+                updateGreeting();
+                updateBusinessName();
+                updateUserEmail();
+            }
+        }
+
+        // Fetch business info specifically
+        async function fetchBusinessInfo() {
+            console.log('[Menu] Fetching business info...');
+            // Use staging API URL to match where the user logged in
+            const apiUrl = 'https://dott-api-staging.onrender.com';
+            
+            try {
+                // Try multiple endpoints for business info
+                // Prioritize endpoints that should have business_name
+                const endpoints = [
+                    '/api/users/me/',  // This should have business_name from UserProfile
+                    '/api/auth/user-profile/',  // Alternative profile endpoint
+                    '/api/users/business-features/',
+                    '/api/tenants/current/',
+                    '/api/auth/session-v2'
+                ];
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        console.log(`[Menu] Trying endpoint: ${endpoint}`);
+                        
+                        // Use Capacitor HTTP plugin if available
+                        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                            const { Http } = Capacitor.Plugins;
+                            
+                            const response = await Http.request({
+                                method: 'GET',
+                                url: `${apiUrl}${endpoint}`,
+                                headers: {
+                                    'Authorization': `Bearer ${AppState.sessionToken}`,
+                                    'x-session-token': AppState.sessionToken,
+                                    'Cookie': `sid=${AppState.sessionToken}`,
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            
+                            if (response.status === 200 && response.data) {
+                                const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+                                const businessName = data.business_name || 
+                                                   data.businessName || 
+                                                   data.company_name || 
+                                                   data.tenant_name ||
+                                                   data.tenant?.name ||
+                                                   data.name ||
+                                                   data.user?.business_name ||
+                                                   data.user?.company_name ||
+                                                   data.user?.tenant?.name;
+                                
+                                // Also check for country name
+                                const countryName = data.country_name || 
+                                                  data.business_country_name || 
+                                                  data.profile?.country_name ||
+                                                  data.profile?.business_country_name;
+                                
+                                if (businessName || countryName) {
+                                    console.log(`[Menu] Found from ${endpoint}: business="${businessName}", country="${countryName}"`);
+                                    AppState.userData = {
+                                        ...AppState.userData,
+                                        businessName: businessName || AppState.userData.businessName,
+                                        country_name: countryName || AppState.userData.country_name
+                                    };
+                                    updateUI();
+                                    if (businessName) return; // Success if we got business name
+                                }
+                            }
+                        } else {
+                            // Fallback to fetch
+                            const response = await fetch(`${apiUrl}${endpoint}`, {
+                                method: 'GET',
+                                credentials: 'include',
+                                headers: {
+                                    'Cookie': `sid=${AppState.sessionToken}`,
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                const businessName = data.business_name || 
+                                                   data.businessName || 
+                                                   data.company_name || 
+                                                   data.tenant_name ||
+                                                   data.tenant?.name ||
+                                                   data.name ||
+                                                   data.user?.business_name ||
+                                                   data.user?.company_name ||
+                                                   data.user?.tenant?.name;
+                                
+                                // Also check for country name
+                                const countryName = data.country_name || 
+                                                  data.business_country_name || 
+                                                  data.profile?.country_name ||
+                                                  data.profile?.business_country_name;
+                                
+                                if (businessName || countryName) {
+                                    console.log(`[Menu] Found from ${endpoint}: business="${businessName}", country="${countryName}"`);
+                                    AppState.userData = {
+                                        ...AppState.userData,
+                                        businessName: businessName || AppState.userData.businessName,
+                                        country_name: countryName || AppState.userData.country_name
+                                    };
+                                    updateUI();
+                                    if (businessName) return; // Success if we got business name
+                                }
+                            }
+                        }
+                    } catch (endpointError) {
+                        console.log(`[Menu] Failed to fetch from ${endpoint}:`, endpointError.message);
+                    }
+                }
+                
+                // If all API calls fail, don't create a fake name
+                if (!AppState.userData?.businessName) {
+                    console.log('[Menu] No business name found from API, will keep trying...');
+                    AppState.fetchingBusinessInfo = false; // Reset flag to allow retry
+                }
+            } catch (error) {
+                console.log('[Menu] Error fetching business info:', error);
+            }
+        }
+        
+        // Fetch fresh user data
+        async function fetchUserData() {
+            // Use staging API URL to match where the user logged in
+            const apiUrl = 'https://dott-api-staging.onrender.com';
+            try {
+                console.log('[Menu] Fetching user data from API...');
+                console.log('[Menu] Session token:', AppState.sessionToken ? 'Present' : 'Missing');
+                
+                // First try to get data from session endpoint which doesn't require auth header
+                try {
+                    const sessionResponse = await fetch(`${apiUrl}/api/auth/session-v2`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Cookie': `sid=${AppState.sessionToken}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (sessionResponse.ok) {
+                        const sessionData = await sessionResponse.json();
+                        console.log('[Menu] Session data received:', sessionData);
+                        
+                        if (sessionData.user) {
+                            // Update user data from session
+                            AppState.userData = {
+                                ...AppState.userData,
+                                firstName: sessionData.user.first_name || sessionData.user.firstName || sessionData.user.name?.split(' ')[0] || '',
+                                lastName: sessionData.user.last_name || sessionData.user.lastName || '',
+                                businessName: sessionData.user.business_name || sessionData.user.businessName || sessionData.user.company_name || '',
+                                email: sessionData.user.email || AppState.userData?.email || '',
+                                subscriptionPlan: sessionData.user.subscription_plan || sessionData.user.selected_plan || 'free',
+                                name: sessionData.user.name || `${sessionData.user.first_name || ''} ${sessionData.user.last_name || ''}`.trim(),
+                                currency: sessionData.user.currency || sessionData.user.preferred_currency || sessionData.user.currency_code || 'USD',
+                                language: sessionData.user.language || sessionData.user.preferred_language || sessionData.user.language_code || 'en',
+                                country: sessionData.user.country || sessionData.user.business_country || AppState.userData?.country || '',
+                                country_name: sessionData.user.country_name || sessionData.user.business_country_name || AppState.userData?.country_name || ''
+                            };
+                            
+                            console.log('[Menu] User data updated from session:', AppState.userData);
+                            updateUI();
+                            
+                            // If no business name yet, try fetching from business info endpoint
+                            if (!AppState.userData?.businessName || AppState.userData.businessName === '') {
+                                fetchBusinessInfo();
+                            }
+                            return; // Success, exit
+                        }
+                    }
+                } catch (sessionError) {
+                    console.log('[Menu] Session endpoint failed, trying other methods:', sessionError.message);
+                }
+                
+                // If session endpoint fails, try user/me endpoint with auth headers
+                const response = await fetch(`${apiUrl}/api/users/me/`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'x-session-token': AppState.sessionToken,
+                        'Cookie': `sid=${AppState.sessionToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('[Menu] User data received from /api/users/me/:', data);
+                    
+                    // Update user data including subscription plan
+                    AppState.userData = {
+                        ...AppState.userData,
+                        firstName: data.first_name || data.firstName || '',
+                        lastName: data.last_name || data.lastName || '',
+                        businessName: data.business_name || data.businessName || data.company_name || data.tenant?.name || '',
+                        email: data.email || AppState.userData?.email || '',
+                        subscriptionPlan: data.subscription_plan || data.subscriptionPlan || data.selected_plan || 'free',
+                        name: data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+                        currency: data.currency || data.preferred_currency || data.currency_code || 'USD',
+                        language: data.language || data.preferred_language || data.language_code || 'en',
+                        country: data.country || data.business_country || AppState.userData?.country || '',
+                        country_name: data.country_name || data.business_country_name || AppState.userData?.country_name || ''
+                    };
+                    
+                    console.log('[Menu] User data updated:', AppState.userData);
+                    updateUI();
+                    
+                    // If no business name yet, try fetching from business info endpoint
+                    if (!AppState.userData?.businessName || AppState.userData.businessName === '') {
+                        fetchBusinessInfo();
+                    }
+                } else {
+                    console.error('[Menu] Failed to fetch user data:', response.status);
+                    // Try to use stored data as fallback
+                    if (AppState.userData && AppState.userData.email) {
+                        console.log('[Menu] Using stored user data as fallback');
+                        updateUI();
+                        // Still try to get business name
+                        fetchBusinessInfo();
+                    }
+                }
+            } catch (error) {
+                console.error('[Menu] Error fetching user data:', error);
+                // Update with fallback values from stored data
+                if (AppState.userData && AppState.userData.email) {
+                    console.log('[Menu] Using stored user data due to error');
+                    updateUI();
+                }
+            }
+        }
+        
+        // Language options - same as DashAppBar
+        const languages = [
+            { code: 'en', name: 'English' },
+            { code: 'es', name: 'Español' },
+            { code: 'fr', name: 'Français' },
+            { code: 'pt', name: 'Português' },
+            { code: 'de', name: 'Deutsch' },
+            { code: 'zh', name: '中文' },
+            { code: 'ar', name: 'العربية' },
+            { code: 'hi', name: 'हिन्दी' },
+            { code: 'ru', name: 'Русский' },
+            { code: 'ja', name: '日本語' },
+            { code: 'sw', name: 'Kiswahili' },
+            { code: 'tr', name: 'Türkçe' },
+            { code: 'id', name: 'Bahasa Indonesia' },
+            { code: 'vi', name: 'Tiếng Việt' },
+            { code: 'nl', name: 'Nederlands' },
+            { code: 'ha', name: 'Hausa' },
+            { code: 'yo', name: 'Yorùbá' },
+            { code: 'am', name: 'አማርኛ' },
+            { code: 'zu', name: 'isiZulu' },
+            { code: 'ko', name: '한국어' },
+            { code: 'it', name: 'Italiano' },
+            { code: 'pl', name: 'Polski' },
+            { code: 'th', name: 'ไทย' },
+            { code: 'bn', name: 'বাংলা' },
+            { code: 'ur', name: 'اردو' },
+            { code: 'tl', name: 'Filipino' },
+            { code: 'uk', name: 'Українська' },
+            { code: 'fa', name: 'فارسی' },
+            { code: 'sn', name: 'chiShona' },
+            { code: 'ig', name: 'Igbo' }
+        ];
+
+        // Toggle language dropdown
+        function toggleLanguageDropdown() {
+            const dropdown = document.getElementById('languageDropdown');
+            dropdown.classList.toggle('active');
+            
+            // Close dropdown when clicking outside
+            if (dropdown.classList.contains('active')) {
+                setTimeout(() => {
+                    document.addEventListener('click', closeLanguageDropdown);
+                }, 100);
+            }
+        }
+
+        function closeLanguageDropdown(e) {
+            const languageSelector = document.querySelector('.language-selector');
+            if (!languageSelector.contains(e.target)) {
+                document.getElementById('languageDropdown').classList.remove('active');
+                document.removeEventListener('click', closeLanguageDropdown);
+            }
+        }
+
+        // Select language
+        async function selectLanguage(code, name) {
+            const selectedLanguageEl = document.getElementById('selectedLanguage');
+            selectedLanguageEl.textContent = name;
+            
+            // Update all language options to show selected state
+            const options = document.querySelectorAll('.language-option');
+            options.forEach(opt => {
+                if (opt.dataset.code === code) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+            
+            // Close dropdown
+            document.getElementById('languageDropdown').classList.remove('active');
+            
+            // Load the selected language translations
+            try {
+                console.log('[Menu] Loading language:', code, name);
+                await i18n.loadLanguage(code);
+                
+                // Mark this as a manual selection
+                localStorage.setItem('userManuallySelectedLanguage', 'true');
+                
+                // Save language preference to backend
+                const sessionData = await SecureStorage.get('sessionData');
+                if (sessionData?.access_token) {
+                    const headers = {
+                        'Authorization': `Bearer ${sessionData.access_token}`,
+                        'Content-Type': 'application/json'
+                    };
+                    
+                    await fetch(`${window.location.origin}/api/users/me/`, {
+                        method: 'PATCH',
+                        headers: headers,
+                        body: JSON.stringify({ language: code })
+                    });
+                }
+                
+                console.log('[Menu] Language changed successfully to:', code);
+            } catch (error) {
+                console.error('[Menu] Error changing language:', error);
+            }
+        }
+
+        // Populate language dropdown
+        function populateLanguageDropdown() {
+            const dropdown = document.getElementById('languageDropdown');
+            const currentLang = AppState.userData?.language || 'en';
+            
+            dropdown.innerHTML = languages.map(lang => `
+                <div class="language-option ${lang.code === currentLang ? 'selected' : ''}" 
+                     data-code="${lang.code}"
+                     onclick="selectLanguage('${lang.code}', '${lang.name}')">
+                    <span>${lang.name}</span>
+                    <span class="language-code">${lang.code}</span>
+                </div>
+            `).join('');
+        }
+
+        // Fetch country name from backend
+        async function fetchCountryName(countryCode) {
+            try {
+                const apiUrl = window.location.hostname.includes('staging') 
+                    ? 'https://staging.dottapps.com' 
+                    : 'https://app.dottapps.com';
+                
+                console.log('[Menu] Fetching country name for code:', countryCode);
+                
+                // Try using Capacitor HTTP if available for better mobile compatibility
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    
+                    // Primary endpoint that returns country_name
+                    try {
+                        const response = await Http.request({
+                            method: 'GET',
+                            url: `${apiUrl}/api/auth/user-profile/`,
+                            headers: {
+                                'Authorization': `Bearer ${AppState.sessionToken}`,
+                                'x-session-token': AppState.sessionToken,
+                                'Cookie': `sid=${AppState.sessionToken}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (response.status === 200 && response.data) {
+                            const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+                            
+                            // The backend returns country_name directly
+                            const countryName = data.country_name;
+                            
+                            if (countryName) {
+                                console.log('[Menu] Found country name:', countryName);
+                                AppState.userData.country_name = countryName;
+                                // Country display moved to account page
+                                if (countryEl) {
+                                    countryEl.textContent = countryName;
+                                }
+                                return; // Success
+                            }
+                        }
+                    } catch (endpointError) {
+                        console.log('[Menu] Failed to fetch country from /api/auth/user-profile/:', endpointError.message);
+                    }
+                    
+                    // Fallback: Try other endpoints if primary fails
+                    const fallbackEndpoints = [
+                        '/api/users/profile/',
+                        '/api/users/me/',
+                        '/api/users/business-features/'
+                    ];
+                    
+                    for (const endpoint of fallbackEndpoints) {
+                        try {
+                            const response = await Http.request({
+                                method: 'GET',
+                                url: `${apiUrl}${endpoint}`,
+                                headers: {
+                                    'Authorization': `Bearer ${AppState.sessionToken}`,
+                                    'x-session-token': AppState.sessionToken,
+                                    'Cookie': `sid=${AppState.sessionToken}`,
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            
+                            if (response.status === 200 && response.data) {
+                                const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+                                
+                                // Look for country name in various fields
+                                const countryName = data.country_name || 
+                                                  data.business_country_name || 
+                                                  data.profile?.country_name ||
+                                                  data.profile?.business_country_name ||
+                                                  data.tenant?.country_name;
+                                
+                                if (countryName) {
+                                    console.log('[Menu] Found country name from fallback:', countryName);
+                                    AppState.userData.country_name = countryName;
+                                    // Country display moved to account page
+                                    if (countryEl) {
+                                        countryEl.textContent = countryName;
+                                    }
+                                    return; // Success, stop trying other endpoints
+                                }
+                            }
+                        } catch (endpointError) {
+                            console.log(`[Menu] Failed to fetch country from ${endpoint}:`, endpointError.message);
+                        }
+                    }
+                } else {
+                    // Fallback to regular fetch
+                    const endpoints = [
+                        '/api/auth/user-profile/',  // Primary endpoint that returns country_name
+                        '/api/users/profile/',
+                        '/api/users/me/',
+                        '/api/users/business-features/'
+                    ];
+                    
+                    for (const endpoint of endpoints) {
+                        try {
+                            const response = await fetch(`${apiUrl}${endpoint}`, {
+                                method: 'GET',
+                                credentials: 'include',
+                                headers: {
+                                    'Cookie': `sid=${AppState.sessionToken}`,
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                
+                                // Look for country name in various fields
+                                const countryName = data.country_name || 
+                                                  data.business_country_name || 
+                                                  data.profile?.country_name ||
+                                                  data.profile?.business_country_name ||
+                                                  data.tenant?.country_name;
+                                
+                                if (countryName) {
+                                    console.log('[Menu] Found country name:', countryName);
+                                    AppState.userData.country_name = countryName;
+                                    // Country display moved to account page
+                                    if (countryEl) {
+                                        countryEl.textContent = countryName;
+                                    }
+                                    return; // Success, stop trying other endpoints
+                                }
+                            }
+                        } catch (endpointError) {
+                            console.log(`[Menu] Failed to fetch country from ${endpoint}:`, endpointError.message);
+                        }
+                    }
+                }
+                
+                console.log('[Menu] Could not find country name in any endpoint');
+            } catch (error) {
+                console.error('[Menu] Error fetching country name:', error);
+            }
+        }
+
+        // Fetch currency preferences from backend
+        async function fetchCurrencyPreferences() {
+            try {
+                // First check localStorage for saved currency
+                const savedCurrency = localStorage.getItem('dott_currency');
+                if (savedCurrency) {
+                    try {
+                        const currency = JSON.parse(savedCurrency);
+                        if (currency && currency.code) {
+                            // Currency display moved to account page
+                            if (currencyEl) {
+                                currencyEl.textContent = currency.code;
+                                console.log('[Menu] Using saved currency from localStorage:', currency.code);
+                            }
+                            // Still fetch from backend to ensure we're in sync
+                        }
+                    } catch (e) {
+                        console.error('[Menu] Error parsing saved currency:', e);
+                    }
+                }
+                
+                // Check if we have currency in user data (SSP for South Sudan)
+                if (!savedCurrency && AppState.userData && AppState.userData.country === 'SS') {
+                    // Currency display moved to account page
+                    if (currencyEl) {
+                        currencyEl.textContent = 'SSP'; // South Sudanese Pound
+                        console.log('[Menu] Using SSP currency for South Sudan user');
+                    }
+                    return;
+                }
+                
+                // Determine API URL based on environment
+                const apiUrl = window.location.hostname.includes('staging') 
+                    ? 'https://staging.dottapps.com' 
+                    : 'https://app.dottapps.com';
+                
+                console.log('[Menu] Fetching currency preferences from:', apiUrl);
+                
+                // Try using Capacitor HTTP if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    
+                    const response = await Http.request({
+                        method: 'GET',
+                        url: `${apiUrl}/api/currency/preferences`,
+                        headers: {
+                            'Cookie': `sid=${AppState.sessionToken}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (response.status === 200 && response.data) {
+                        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+                        console.log('[Menu] Currency preferences received:', data);
+                        
+                        if (data.success && data.preferences) {
+                            const currencyCode = data.preferences.currency_code || 'USD';
+                            // Currency display moved to account page
+                            if (currencyEl) {
+                                currencyEl.textContent = currencyCode;
+                            }
+                            
+                            // Store in AppState
+                            if (AppState.userData) {
+                                AppState.userData.currency = currencyCode;
+                            }
+                            
+                            // Store in localStorage for persistence
+                            const currencyData = {
+                                code: data.preferences.currency_code || 'USD',
+                                symbol: data.preferences.currency_symbol || '$',
+                                name: data.preferences.currency_name || 'US Dollar'
+                            };
+                            localStorage.setItem('dott_currency', JSON.stringify(currencyData));
+                        }
+                    }
+                } else {
+                    // Fallback to fetch
+                    const response = await fetch(`${apiUrl}/api/currency/preferences`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Cookie': `sid=${AppState.sessionToken}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[Menu] Currency preferences received:', data);
+                        
+                        if (data.success && data.preferences) {
+                            const currencyCode = data.preferences.currency_code || 'USD';
+                            // Currency display moved to account page
+                            if (currencyEl) {
+                                currencyEl.textContent = currencyCode;
+                            }
+                            
+                            // Store in AppState
+                            if (AppState.userData) {
+                                AppState.userData.currency = currencyCode;
+                            }
+                            
+                            // Store in localStorage for persistence
+                            const currencyData = {
+                                code: data.preferences.currency_code || 'USD',
+                                symbol: data.preferences.currency_symbol || '$',
+                                name: data.preferences.currency_name || 'US Dollar'
+                            };
+                            localStorage.setItem('dott_currency', JSON.stringify(currencyData));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Menu] Error fetching currency preferences:', error);
+                
+                // Fallback: Use country-based currency
+                if (AppState.userData && AppState.userData.country) {
+                    const countryCurrencyMap = {
+                        'SS': 'SSP', // South Sudan
+                        'US': 'USD', // United States
+                        'GB': 'GBP', // United Kingdom
+                        'KE': 'KES', // Kenya
+                        'NG': 'NGN', // Nigeria
+                        'ZA': 'ZAR', // South Africa
+                        // Add more as needed
+                    };
+                    
+                    const currency = countryCurrencyMap[AppState.userData.country] || 'USD';
+                    // Currency display moved to account page
+                    if (currencyEl) {
+                        currencyEl.textContent = currency;
+                        console.log(`[Menu] Using ${currency} based on country ${AppState.userData.country}`);
+                    }
+                }
+            }
+        }
+
+        // Update UI function
+        function updateUI() {
+            const greetingEl = document.getElementById('greeting');
+            const businessNameEl = document.getElementById('businessName');
+            const userEmailEl = document.getElementById('userEmail');
+            const subscriptionPlanEl = document.getElementById('subscriptionPlan');
+            
+            if (greetingEl && AppState.userData) {
+                const firstName = AppState.userData.firstName || AppState.userData.name?.split(' ')[0] || '';
+                const hour = new Date().getHours();
+                let greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+                greetingEl.textContent = firstName ? `${greeting}, ${firstName}!` : greeting + '!';
+            }
+            
+            // Update user initials
+            updateUserInitials();
+            
+            if (businessNameEl) {
+                // Try multiple sources for business name
+                let businessName = AppState.businessName ||
+                                 AppState.userData?.businessName || 
+                                 AppState.userData?.business_name || 
+                                 AppState.userData?.company_name ||
+                                 AppState.userData?.tenant?.name ||
+                                 '';
+                
+                // If still no business name, show placeholder
+                if (!businessName || businessName === '') {
+                    // Keep showing loading until we get the real business name
+                    businessName = 'Loading...';
+                    
+                    // Trigger fetch of business info if not already fetching
+                    if (!AppState.fetchingBusinessInfo) {
+                        AppState.fetchingBusinessInfo = true;
+                        fetchBusinessInfo();
+                    }
+                } else {
+                    // We have a business name, update AppState if needed
+                    if (!AppState.businessName) {
+                        AppState.businessName = businessName;
+                    }
+                }
+                
+                businessNameEl.textContent = businessName;
+            }
+            
+            if (userEmailEl && AppState.userData) {
+                userEmailEl.textContent = AppState.userData.email || '';
+            }
+            
+            // Update language display
+            const selectedLanguageEl = document.getElementById('selectedLanguage');
+            if (selectedLanguageEl && AppState.userData) {
+                const language = AppState.userData.language || AppState.userData.preferred_language || 'en';
+                const langCode = language.split('-')[0];
+                const langObj = languages.find(l => l.code === langCode) || languages[0];
+                selectedLanguageEl.textContent = langObj.name;
+            }
+            
+            // Update country and currency displays
+            if (AppState.userData) {
+                // Update country display - using the actual country name from database
+                const countryEl = document.getElementById('countryDisplay');
+                if (countryEl) {
+                    // Use country_name if available (full name), otherwise use country code
+                    const countryDisplay = AppState.userData.country_name || 
+                                         AppState.userData.countryName || 
+                                         AppState.userData.business_country_name ||
+                                         AppState.userData.country || 
+                                         '...';
+                    countryEl.textContent = countryDisplay;
+                    console.log(`[Menu] Country display: ${countryDisplay}`);
+                    
+                    // If we only have country code, try to fetch the full country name
+                    if (!AppState.userData.country_name && AppState.userData.country && AppState.userData.country.length === 2) {
+                        // Quick fallback for common countries
+                        const countryNames = {
+                            'SS': 'South Sudan',
+                            'US': 'United States',
+                            'GB': 'United Kingdom',
+                            'KE': 'Kenya',
+                            'NG': 'Nigeria',
+                            'ZA': 'South Africa',
+                            'UG': 'Uganda',
+                            'TZ': 'Tanzania',
+                            'ET': 'Ethiopia',
+                            'GH': 'Ghana',
+                            'RW': 'Rwanda',
+                            'ZW': 'Zimbabwe',
+                            'BW': 'Botswana',
+                            'NA': 'Namibia',
+                            'MZ': 'Mozambique',
+                            'ZM': 'Zambia',
+                            'MW': 'Malawi',
+                            'AO': 'Angola',
+                            'CD': 'DR Congo',
+                            'CM': 'Cameroon'
+                        };
+                        
+                        if (countryNames[AppState.userData.country]) {
+                            countryEl.textContent = countryNames[AppState.userData.country];
+                            AppState.userData.country_name = countryNames[AppState.userData.country];
+                            console.log(`[Menu] Using fallback country name: ${countryNames[AppState.userData.country]}`);
+                        } else {
+                            fetchCountryName(AppState.userData.country);
+                        }
+                    }
+                }
+                
+                // Update currency display
+                // Currency display moved to account page
+                if (currencyEl) {
+                    // Quick country to currency mapping
+                    const quickCurrencyMap = {
+                        'SS': 'SSP', // South Sudan
+                        'US': 'USD', // United States
+                        'GB': 'GBP', // United Kingdom
+                        'KE': 'KES', // Kenya
+                        'NG': 'NGN', // Nigeria
+                        'ZA': 'ZAR', // South Africa
+                        'UG': 'UGX', // Uganda
+                        'TZ': 'TZS', // Tanzania
+                        'ET': 'ETB', // Ethiopia
+                        'GH': 'GHS', // Ghana
+                    };
+                    
+                    const currency = quickCurrencyMap[AppState.userData.country] || 'USD';
+                    currencyEl.textContent = currency;
+                    console.log(`[Menu] Quick currency update: ${currency} for country ${AppState.userData.country}`);
+                }
+            }
+            
+            // Populate language dropdown
+            populateLanguageDropdown();
+            
+            // Fetch currency preferences from backend (like DashAppBar does)
+            // This will override the quick update if different preferences are set
+            fetchCurrencyPreferences();
+            
+            if (subscriptionPlanEl && AppState.userData) {
+                const plan = AppState.userData.subscriptionPlan || 'free';
+                let planHTML = '';
+                
+                if (plan === 'free') {
+                    planHTML = '<span>Free Plan</span><span class="upgrade-button" onclick="openUpgradeModal()">Upgrade</span>';
+                } else if (plan === 'professional') {
+                    planHTML = 'Professional';
+                } else if (plan === 'enterprise') {
+                    planHTML = 'Enterprise';
+                } else {
+                    planHTML = plan;
+                }
+                
+                subscriptionPlanEl.innerHTML = planHTML;
+                subscriptionPlanEl.className = 'subscription-plan ' + plan.toLowerCase();
+            }
+        }
+
+
+        // Check for notifications
+        async function checkNotifications() {
+            try {
+                if (!AppState.sessionToken) return;
+                
+                let response;
+                
+                // Use Capacitor HTTP plugin if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Http) {
+                    const { Http } = Capacitor.Plugins;
+                    response = await Http.request({
+                        method: 'GET',
+                        url: 'https://staging.dottapps.com/api/notifications/unread-count',
+                        headers: {
+                            'Authorization': `Bearer ${AppState.sessionToken}`
+                        }
+                    });
+                    
+                    if (response.data) {
+                        const count = response.data.count || 0;
+                        updateNotificationBadge(count);
+                    }
+                } else {
+                    // Fallback to fetch
+                    response = await fetch('https://staging.dottapps.com/api/notifications/unread-count', {
+                        headers: {
+                            'Authorization': `Bearer ${AppState.sessionToken}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const count = data.count || 0;
+                        updateNotificationBadge(count);
+                    }
+                }
+            } catch (error) {
+                console.error('[Menu] Error checking notifications:', error);
+            }
+        }
+
+        // Update notification badge
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notificationCount');
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Navigation functions
+        // Marketplace mode functions
+        let currentMarketplaceMode = localStorage.getItem('marketplaceMode') || 'business';
+        
+        function initMarketplaceMode() {
+            // Check saved mode
+            if (currentMarketplaceMode === 'consumer') {
+                // In consumer mode, redirect directly to consumer menu
+                console.log('[Marketplace] Consumer mode detected, redirecting to consumer menu...');
+                window.location.replace('mobile-consumer-menu.html?v=' + Date.now());
+                return; // Stop further execution
+            }
+            
+            // Business mode - show the menu
+            const marketplaceToggle = document.getElementById('marketplaceToggle');
+            const marketplaceMenuItem = document.getElementById('marketplaceMenuItem');
+            
+            // Show marketplace for all users for now
+            if (marketplaceToggle) {
+                marketplaceToggle.style.display = 'block';
+            }
+            if (marketplaceMenuItem) {
+                marketplaceMenuItem.style.display = 'block';
+            }
+            
+            // Apply business mode
+            switchToBusinessMode();
+        }
+        
+        function switchToBusinessMode() {
+            currentMarketplaceMode = 'business';
+            localStorage.setItem('marketplaceMode', 'business');
+            
+            const businessBtn = document.getElementById('businessModeBtn');
+            const consumerBtn = document.getElementById('consumerModeBtn');
+            
+            if (businessBtn) {
+                businessBtn.style.background = '#2563eb';
+                businessBtn.style.borderColor = '#2563eb';
+                businessBtn.style.color = 'white';
+            }
+            
+            if (consumerBtn) {
+                consumerBtn.style.background = 'white';
+                consumerBtn.style.borderColor = '#e5e7eb';
+                consumerBtn.style.color = '#6b7280';
+            }
+            
+            console.log('[Marketplace] Switched to Business Mode');
+            updateMenuVisibility('business');
+        }
+        
+        function switchToConsumerMode() {
+            currentMarketplaceMode = 'consumer';
+            localStorage.setItem('marketplaceMode', 'consumer');
+            sessionStorage.setItem('marketplaceMode', 'consumer');
+            
+            console.log('[Marketplace] Switched to Consumer Mode, redirecting...');
+            
+            // Small delay to ensure state is saved, then redirect to consumer menu
+            setTimeout(() => {
+                window.location.href = 'mobile-consumer-menu.html?v=' + Date.now();
+            }, 100);
+        }
+        
+        function updateMenuVisibility(mode) {
+            // Define which menu items to show in each mode
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            menuItems.forEach(item => {
+                const onclick = item.getAttribute('onclick') || '';
+                const label = item.querySelector('.menu-label')?.textContent || '';
+                let shouldShow = true;
+                
+                if (mode === 'consumer') {
+                    // In consumer mode, show consumer-specific items and common items
+                    const consumerItems = [
+                        'mobile-dashboard.html',
+                        'mobile-contacts.html',  // Messages
+                        'mobile-whatsapp.html',
+                        'invite.html',
+                        'mobile-smart-insights.html',
+                        'mobile-customers.html',
+                        'mobile-transactions.html',
+                        'showMarketplaceOptions'  // Marketplace
+                    ];
+                    
+                    // Check if this item should be shown in consumer mode
+                    shouldShow = false;
+                    consumerItems.forEach(consumerItem => {
+                        if (onclick.includes(consumerItem)) {
+                            shouldShow = true;
+                        }
+                    });
+                    
+                    // Also show Messages by label check as fallback
+                    if (label === 'Messages' || label === 'Contacts') {
+                        shouldShow = true;
+                    }
+                } else {
+                    // In business mode, show all items
+                    shouldShow = true;
+                }
+                
+                // Apply visibility
+                item.style.display = shouldShow ? 'flex' : 'none';
+            });
+            
+            console.log(`[Marketplace] Menu updated for ${mode} mode`);
+        }
+        
+        function showMarketplaceOptions() {
+            // In consumer mode, go to consumer menu
+            // In business mode, go to listing management
+            if (currentMarketplaceMode === 'consumer') {
+                navigateTo('mobile-consumer-menu.html');
+            } else {
+                navigateTo('mobile-marketplace-listing.html');
+            }
+        }
+
+        // Business Type Detection and Dynamic Menu Setup
+        let businessFeatures = { category: 'MIXED', features: ['jobs', 'pos'] }; // Default fallback
+
+        // Fetch business features to determine menu items
+        async function fetchBusinessFeatures() {
+            try {
+                console.log('[Business Features] Fetching business type and features...');
+                
+                const apiUrl = window.location.hostname.includes('staging') 
+                    ? 'https://staging.dottapps.com' 
+                    : 'https://app.dottapps.com';
+
+                const response = await fetch(`${apiUrl}/api/users/business-features/`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Cookie': `sid=${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('[Business Features] Response:', data);
+                    businessFeatures = data;
+                    updateDynamicMenuItems();
+                } else {
+                    console.warn('[Business Features] API call failed, using defaults');
+                    updateDynamicMenuItems();
+                }
+            } catch (error) {
+                console.error('[Business Features] Error fetching business features:', error);
+                updateDynamicMenuItems();
+            }
+        }
+
+        // Update menu items based on business type
+        function updateDynamicMenuItems() {
+            console.log('[Business Features] Updating menu items for category:', businessFeatures.category);
+            
+            // Update Orders/Bookings button label based on business type
+            const ordersLabel = document.getElementById('ordersBookingsLabel');
+            if (ordersLabel) {
+                switch (businessFeatures.category) {
+                    case 'SERVICE':
+                        // Hotels, restaurants, services use "Bookings"
+                        ordersLabel.textContent = 'Bookings';
+                        break;
+                    case 'RETAIL':
+                        // Retail stores use "Orders"  
+                        ordersLabel.textContent = 'Orders';
+                        break;
+                    case 'MIXED':
+                    case 'OTHER':
+                    default:
+                        // Mixed business types default to "Orders"
+                        ordersLabel.textContent = 'Orders';
+                        break;
+                }
+            }
+
+            // Update Orders/Bookings icon based on business type
+            const ordersIcon = document.querySelector('#ordersBookingsMenuItem .menu-icon');
+            if (ordersIcon && businessFeatures.category === 'SERVICE') {
+                // Use calendar icon for SERVICE (bookings)
+                ordersIcon.innerHTML = `
+                    <path d="M19 3h-1V1a1 1 0 00-2 0v2H8V1a1 1 0 00-2 0v2H5a3 3 0 00-3 3v12a3 3 0 003 3h14a3 3 0 003-3V6a3 3 0 00-3-3zM4 18V8h16v10a1 1 0 01-1 1H5a1 1 0 01-1-1z"></path>
+                    <path d="M8 12h2v2H8zM14 12h2v2h-2z"></path>
+                `;
+            }
+        }
+
+        // Advertise Form Functions
+        function openAdvertiseForm() {
+            console.log('[Advertise] Opening advertise form for business type:', businessFeatures.category);
+            
+            // For now, use the main advertise form for all business types
+            // TODO: Create specific forms for different business types later
+            navigateTo('mobile-advertise.html');
+        }
+
+        // Orders/Bookings Functions
+        function openOrdersBookings() {
+            const label = businessFeatures.category === 'SERVICE' ? 'Bookings' : 'Orders';
+            console.log(`[${label}] Opening ${label.toLowerCase()} management`);
+            
+            // Navigate to appropriate orders/bookings management
+            if (businessFeatures.category === 'SERVICE') {
+                navigateTo('mobile-bookings.html');
+            } else {
+                navigateTo('mobile-orders.html');
+            }
+        }
+
+        // Notification Badge Update for Orders/Bookings
+        async function updateOrdersBookingsCount() {
+            try {
+                const apiUrl = window.location.hostname.includes('staging') 
+                    ? 'https://staging.dottapps.com' 
+                    : 'https://app.dottapps.com';
+
+                const endpoint = businessFeatures.category === 'SERVICE' 
+                    ? '/api/bookings/unread-count/' 
+                    : '/api/orders/unread-count/';
+
+                const response = await fetch(`${apiUrl}${endpoint}`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Cookie': `sid=${AppState.sessionToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const count = data.count || 0;
+                    updateOrdersBookingsBadge(count);
+                }
+            } catch (error) {
+                console.error('[Orders/Bookings] Error fetching count:', error);
+            }
+        }
+
+        // Update notification badge
+        function updateOrdersBookingsBadge(count) {
+            const badge = document.getElementById('ordersBookingsCount');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count.toString();
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        function navigateTo(page) {
+            // Add cache buster to force reload
+            const cacheBuster = '?v=' + Date.now();
+            const pageWithCacheBuster = page + cacheBuster;
+            
+            console.log('[Menu] Navigating to:', pageWithCacheBuster);
+            
+            // Debug information
+            console.log('[Menu] Current location:', window.location.href);
+            console.log('[Menu] Attempting to navigate to:', pageWithCacheBuster);
+            
+            // Save current state (skip if Preferences causes errors)
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) {
+                    const { Preferences } = Capacitor.Plugins;
+                    Preferences.set({
+                        key: 'last_page',
+                        value: 'mobile-menu.html'
+                    });
+                }
+            } catch (prefError) {
+                console.log('[Menu] Could not save preferences:', prefError);
+            }
+            
+            // Simple navigation - just change the location with cache buster
+            window.location.href = pageWithCacheBuster;
+        }
+
+        // Messages/Phone functions
+        function openMessages() {
+            // Navigate to Messages/Contacts page like the Messages button does
+            navigateTo('mobile-contacts.html?theme=business');
+        }
+
+        function openContacts() {
+            // Navigate to Contacts page with phone contacts access
+            navigateTo('mobile-contacts.html?theme=business');
+        }
+
+        function openNotifications() {
+            console.log('[Menu] Opening notifications...');
+            // Navigate to notifications page when ready
+            navigateTo('notifications.html');
+        }
+
+        function openProfile() {
+            console.log('[Menu] Opening profile...');
+            // Navigate to profile page
+            navigateTo('mobile-profile.html');
+        }
+
+        function openSettings() {
+            console.log('[Menu] Opening settings...');
+            // Navigate to settings page
+            navigateTo('mobile-settings.html');
+        }
+
+        function openWhatsApp() {
+            console.log('[Menu] Opening WhatsApp...');
+            // Open WhatsApp Business API or WhatsApp web
+            if (window.Capacitor) {
+                // For mobile, try to open WhatsApp app
+                window.open('whatsapp://send?text=Hello', '_system');
+            } else {
+                // For web, open WhatsApp Web
+                window.open('https://web.whatsapp.com', '_blank');
+            }
+        }
+
+        // Open upgrade modal
+        function openUpgradeModal() {
+            const modal = document.getElementById('upgradeModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        
+        // Close upgrade modal
+        function closeUpgradeModal() {
+            const modal = document.getElementById('upgradeModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // Handle plan selection
+        async function selectPlan(plan, billing) {
+            try {
+                console.log('[Menu] Selecting plan:', plan, billing);
+                
+                // Show loading on button
+                event.target.textContent = 'Loading...';
+                event.target.disabled = true;
+                
+                // Calculate the price based on plan and billing - Updated prices
+                const prices = {
+                    professional: {
+                        monthly: { price: 35, id: 'price_professional_monthly' },
+                        '6months': { price: 175, id: 'price_professional_6months' }, // ~17% off
+                        yearly: { price: 336, id: 'price_professional_yearly' } // 20% off
+                    },
+                    enterprise: {
+                        monthly: { price: 95, id: 'price_enterprise_monthly' },
+                        '6months': { price: 475, id: 'price_enterprise_6months' }, // ~17% off 
+                        yearly: { price: 912, id: 'price_enterprise_yearly' } // 20% off
+                    }
+                };
+                
+                const selectedPrice = prices[plan][billing];
+                
+                // Create Stripe checkout session
+                const response = await fetch('https://staging.dottapps.com/api/stripe/create-checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AppState.sessionToken}`,
+                        'x-tenant-id': AppState.tenantId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        priceId: selectedPrice.id,
+                        planId: plan,
+                        billingCycle: billing,
+                        successUrl: 'capacitor://app.dottapps.com/mobile-menu.html?payment=success',
+                        cancelUrl: 'capacitor://app.dottapps.com/mobile-menu.html?payment=cancelled'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.url) {
+                        // Open Stripe checkout in browser
+                        window.location.href = data.url;
+                    }
+                } else {
+                    throw new Error('Failed to create checkout session');
+                }
+                
+            } catch (error) {
+                console.error('[Menu] Error selecting plan:', error);
+                alert('Failed to process subscription. Please try again.');
+                // Reset button
+                event.target.textContent = event.target.textContent.includes('Professional') ? 'Choose Professional' : 'Choose Enterprise';
+                event.target.disabled = false;
+            }
+        }
+        
+        // Handle back button for Android
+        if (window.Capacitor) {
+            document.addEventListener('backbutton', function(e) {
+                e.preventDefault();
+                // On main menu, confirm exit
+                if (confirm('Do you want to exit the app?')) {
+                    navigator.app.exitApp();
+                }
+            }, false);
+        }
+    </script>
+    
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: #111827;">Choose Your Plan</h2>
+                <button onclick="closeUpgradeModal()" style="background: none; border: none; cursor: pointer; padding: 4px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Billing Cycle Selector -->
+            <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;">
+                <button id="monthlyBtn" onclick="setBillingCycle('monthly')" style="padding: 8px 16px; border: 2px solid #3b82f6; background: #3b82f6; color: white; border-radius: 8px; font-weight: 500; cursor: pointer;">Monthly</button>
+                <button id="6monthsBtn" onclick="setBillingCycle('6months')" style="padding: 8px 16px; border: 2px solid #e5e7eb; background: white; color: #6b7280; border-radius: 8px; font-weight: 500; cursor: pointer;">6 Months</button>
+                <button id="yearlyBtn" onclick="setBillingCycle('yearly')" style="padding: 8px 16px; border: 2px solid #e5e7eb; background: white; color: #6b7280; border-radius: 8px; font-weight: 500; cursor: pointer;">Yearly</button>
+            </div>
+            
+            <!-- Save Badge -->
+            <div id="saveBadge" style="display: none; text-align: center; margin-bottom: 16px;">
+                <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 16px; font-size: 14px; font-weight: 500;"></span>
+            </div>
+            
+            <!-- Plans -->
+            <div style="display: grid; gap: 16px;">
+                <!-- Professional Plan -->
+                <div style="border: 2px solid #3b82f6; border-radius: 16px; padding: 20px; position: relative;">
+                    <div style="position: absolute; top: -12px; left: 20px; background: white; padding: 0 8px;">
+                        <span style="color: #3b82f6; font-weight: 600; font-size: 14px;">RECOMMENDED</span>
+                    </div>
+                    <h3 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">Professional</h3>
+                    <div style="margin-bottom: 16px;">
+                        <span id="proPriceMonthly" style="font-size: 32px; font-weight: 700; color: #111827;">$35</span>
+                        <span id="proPricePeriod" style="color: #6b7280; font-size: 16px;">/month</span>
+                    </div>
+                    <ul style="margin-bottom: 20px; padding-left: 20px; color: #4b5563;">
+                        <li style="margin-bottom: 8px;">✓ Up to 10 users</li>
+                        <li style="margin-bottom: 8px;">✓ Advanced reporting</li>
+                        <li style="margin-bottom: 8px;">✓ Priority support</li>
+                        <li style="margin-bottom: 8px;">✓ API access</li>
+                        <li style="margin-bottom: 8px;">✓ 50GB storage</li>
+                    </ul>
+                    <button onclick="selectPlan('professional', currentBilling)" style="width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;">Choose Professional</button>
+                </div>
+                
+                <!-- Enterprise Plan -->
+                <div style="border: 2px solid #e5e7eb; border-radius: 16px; padding: 20px;">
+                    <h3 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">Enterprise</h3>
+                    <div style="margin-bottom: 16px;">
+                        <span id="entPriceMonthly" style="font-size: 32px; font-weight: 700; color: #111827;">$95</span>
+                        <span id="entPricePeriod" style="color: #6b7280; font-size: 16px;">/month</span>
+                    </div>
+                    <ul style="margin-bottom: 20px; padding-left: 20px; color: #4b5563;">
+                        <li style="margin-bottom: 8px;">✓ Unlimited users</li>
+                        <li style="margin-bottom: 8px;">✓ Custom reporting</li>
+                        <li style="margin-bottom: 8px;">✓ Dedicated support</li>
+                        <li style="margin-bottom: 8px;">✓ Advanced API</li>
+                        <li style="margin-bottom: 8px;">✓ 500GB storage</li>
+                        <li style="margin-bottom: 8px;">✓ White label options</li>
+                    </ul>
+                    <button onclick="selectPlan('enterprise', currentBilling)" style="width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;">Choose Enterprise</button>
+                </div>
+            </div>
+            
+            <!-- Footer Note -->
+            <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 20px;">All plans include automatic updates and security patches</p>
+        </div>
+    </div>
+    
+    <script>
+        // Billing cycle management
+        let currentBilling = 'monthly';
+        
+        function setBillingCycle(cycle) {
+            currentBilling = cycle;
+            
+            // Update button styles
+            const buttons = ['monthlyBtn', '6monthsBtn', 'yearlyBtn'];
+            buttons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (btnId === cycle + 'Btn' || (btnId === '6monthsBtn' && cycle === '6months')) {
+                        btn.style.background = '#3b82f6';
+                        btn.style.borderColor = '#3b82f6';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = 'white';
+                        btn.style.borderColor = '#e5e7eb';
+                        btn.style.color = '#6b7280';
+                    }
+                }
+            });
+            
+            // Update prices
+            const proPrice = document.getElementById('proPriceMonthly');
+            const entPrice = document.getElementById('entPriceMonthly');
+            const proPeriod = document.getElementById('proPricePeriod');
+            const entPeriod = document.getElementById('entPricePeriod');
+            const saveBadge = document.getElementById('saveBadge');
+            const saveBadgeText = saveBadge?.querySelector('span');
+            
+            if (cycle === 'monthly') {
+                if (proPrice) proPrice.textContent = '$35';
+                if (entPrice) entPrice.textContent = '$95';
+                if (proPeriod) proPeriod.textContent = '/month';
+                if (entPeriod) entPeriod.textContent = '/month';
+                if (saveBadge) saveBadge.style.display = 'none';
+            } else if (cycle === '6months') {
+                if (proPrice) proPrice.textContent = '$175';
+                if (entPrice) entPrice.textContent = '$475';
+                if (proPeriod) proPeriod.textContent = '/6 months';
+                if (entPeriod) entPeriod.textContent = '/6 months';
+                if (saveBadge) {
+                    saveBadge.style.display = 'block';
+                    if (saveBadgeText) saveBadgeText.textContent = 'Save 17% vs monthly';
+                }
+            } else if (cycle === 'yearly') {
+                if (proPrice) proPrice.textContent = '$336';
+                if (entPrice) entPrice.textContent = '$912';
+                if (proPeriod) proPeriod.textContent = '/year';
+                if (entPeriod) entPeriod.textContent = '/year';
+                if (saveBadge) {
+                    saveBadge.style.display = 'block';
+                    if (saveBadgeText) saveBadgeText.textContent = 'Save 20% vs monthly';
+                }
+            }
+        }
+    </script>
+    
+    <!-- Crisp Chat Widget -->
+    <script>
+        // Initialize Crisp Chat
+        (function() {
+            // Crisp configuration
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+            
+            // Enable safe mode for Capacitor compatibility
+            window.$crisp.push(["safe", true]);
+            
+            // Configure Crisp to display on the LEFT side
+            window.$crisp.push(["config", "position:reverse", [false]]);
+            window.$crisp.push(["config", "position:left"]);
+            
+            // Set custom CSS to ensure bottom-left positioning on mobile
+            window.$crisp.push(["on", "chat:loaded", function() {
+                // Ensure the chat widget stays in bottom left
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Crisp Chat Mobile Positioning - LEFT SIDE */
+                    .crisp-client .cc-l3zb .cc-10m9 {
+                        bottom: 20px !important;
+                        left: 20px !important;
+                        right: auto !important;
+                        position: fixed !important;
+                    }
+                    
+                    /* Ensure proper z-index and fixed positioning */
+                    .crisp-client {
+                        z-index: 9999 !important;
+                        position: fixed !important;
+                    }
+                    
+                    /* Ensure Crisp doesn't affect page layout */
+                    .crisp-client * {
+                        position: fixed !important;
+                    }
+                    
+                    /* Adjust for mobile safe areas */
+                    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                        .crisp-client .cc-l3zb .cc-10m9 {
+                            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                            left: calc(20px + env(safe-area-inset-left)) !important;
+                        }
+                    }
+                    
+                    /* Make sure chat bubble is visible */
+                    .crisp-client .cc-l3zb {
+                        display: block !important;
+                    }
+                    
+                    /* Ensure chat window opens from left side */
+                    .crisp-client .cc-kv6t {
+                        left: 20px !important;
+                        right: auto !important;
+                    }
+                    
+                `;
+                document.head.appendChild(style);
+                
+                // Set user data if available
+                if (AppState.userData && AppState.userData.email) {
+                    window.$crisp.push(["set", "user:email", [AppState.userData.email]]);
+                    
+                    // Set nickname from name or email
+                    const nickname = AppState.userData.firstName || 
+                                   AppState.userData.name || 
+                                   AppState.userData.email?.split('@')[0];
+                    if (nickname) {
+                        window.$crisp.push(["set", "user:nickname", [nickname]]);
+                    }
+                    
+                    // Set company/business name if available
+                    if (AppState.userData.businessName && AppState.userData.businessName !== 'My Business') {
+                        window.$crisp.push(["set", "user:company", [AppState.userData.businessName]]);
+                    }
+                    
+                    console.log('[Crisp] User data set successfully');
+                }
+            }]);
+            
+            // Load Crisp script
+            const d = document;
+            const s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+            
+            console.log('[Crisp] Chat widget initialized');
+        })();
+    </script>
+</body>
+</html>

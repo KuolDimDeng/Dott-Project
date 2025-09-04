@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Orders - Dott Business</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f4f6;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .back-button:active {
+            transform: scale(0.95);
+            background: #e5e7eb;
+        }
+
+        .header-title {
+            flex: 1;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .notification-badge {
+            position: relative;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .filter-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            background: #f3f4f6;
+            border: 1px solid transparent;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .filter-tab.active {
+            background: #0d4f8a;
+            color: white;
+        }
+
+        .filter-tab .count {
+            display: inline-block;
+            margin-left: 4px;
+            padding: 1px 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .filter-tab.active .count {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Order List */
+        .orders-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .order-card:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+        }
+
+        .order-card.unread {
+            border-left: 4px solid #ef4444;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .order-number {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .order-time {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .order-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .order-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .order-status.confirmed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .order-status.preparing {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .order-status.ready {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .order-status.delivered {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .order-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .customer-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .customer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .customer-details {
+            flex: 1;
+        }
+
+        .customer-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .customer-phone {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .order-items {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #4b5563;
+            margin-bottom: 4px;
+        }
+
+        .order-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .item-quantity {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-total {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .order-type {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .order-type svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .empty-icon svg {
+            width: 40px;
+            height: 40px;
+            color: #9ca3af;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #0d4f8a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* New Order Alert */
+        .new-order-alert {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            display: none;
+            z-index: 200;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .new-order-alert.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="back-button" onclick="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </div>
+        <div class="header-title">
+            <span id="pageTitle">Orders</span>
+            <div class="notification-badge">
+                <span class="notification-count" id="unreadCount" style="display: none;">0</span>
+            </div>
+        </div>
+        <div class="back-button" onclick="refreshOrders()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <div class="filter-tab active" onclick="filterOrders('all')" data-filter="all">
+            All <span class="count">0</span>
+        </div>
+        <div class="filter-tab" onclick="filterOrders('pending')" data-filter="pending">
+            Pending <span class="count">0</span>
+        </div>
+        <div class="filter-tab" onclick="filterOrders('active')" data-filter="active">
+            Active <span class="count">0</span>
+        </div>
+        <div class="filter-tab" onclick="filterOrders('completed')" data-filter="completed">
+            Completed <span class="count">0</span>
+        </div>
+        <div class="filter-tab" onclick="filterOrders('cancelled')" data-filter="cancelled">
+            Cancelled <span class="count">0</span>
+        </div>
+    </div>
+
+    <!-- Orders Container -->
+    <div class="orders-container" id="ordersContainer">
+        <div class="loading-container">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- New Order Alert -->
+    <div class="new-order-alert" id="newOrderAlert">
+        New order received!
+    </div>
+
+    <script>
+        // State management
+        let orders = [];
+        let currentFilter = 'all';
+        let lastOrderCount = 0;
+        
+        // Check business type from localStorage
+        const businessFeatures = JSON.parse(localStorage.getItem('businessFeatures') || '{}');
+        const isServiceBusiness = businessFeatures.category === 'SERVICE';
+        
+        // Update page title based on business type
+        if (isServiceBusiness) {
+            document.getElementById('pageTitle').textContent = 'Bookings';
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+            // Poll for new orders every 10 seconds
+            setInterval(loadOrders, 10000);
+        });
+
+        // Load orders from API
+        async function loadOrders() {
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000' 
+                    : 'https://staging.dottapps.com';
+                
+                const response = await fetch(`${apiUrl}/api/orders/business/`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    orders = data.results || data || [];
+                    
+                    // Check for new orders
+                    if (orders.length > lastOrderCount && lastOrderCount > 0) {
+                        showNewOrderAlert();
+                        playNotificationSound();
+                    }
+                    lastOrderCount = orders.length;
+                    
+                    updateOrderCounts();
+                    displayOrders();
+                } else {
+                    console.error('[Orders] Failed to load orders:', response.status);
+                    // Show mock data for testing
+                    loadMockOrders();
+                }
+            } catch (error) {
+                console.error('[Orders] Error loading orders:', error);
+                // Show mock data for testing
+                loadMockOrders();
+            }
+        }
+
+        // Load mock orders for testing
+        function loadMockOrders() {
+            orders = [
+                {
+                    id: '1',
+                    order_number: 'ORD12345678',
+                    customer_name: 'John Doe',
+                    customer_phone: '+1234567890',
+                    items: [
+                        { name: 'Burger', quantity: 2, price: 12.99 },
+                        { name: 'Fries', quantity: 1, price: 4.99 },
+                        { name: 'Coke', quantity: 2, price: 2.99 }
+                    ],
+                    total_amount: 36.95,
+                    order_status: 'pending',
+                    delivery_type: 'delivery',
+                    created_at: new Date(Date.now() - 5 * 60000).toISOString(),
+                    is_read: false
+                },
+                {
+                    id: '2',
+                    order_number: 'ORD87654321',
+                    customer_name: 'Jane Smith',
+                    customer_phone: '+0987654321',
+                    items: [
+                        { name: 'Pizza Margherita', quantity: 1, price: 18.99 },
+                        { name: 'Garlic Bread', quantity: 1, price: 6.99 }
+                    ],
+                    total_amount: 25.98,
+                    order_status: 'preparing',
+                    delivery_type: 'pickup',
+                    created_at: new Date(Date.now() - 30 * 60000).toISOString(),
+                    is_read: true
+                },
+                {
+                    id: '3',
+                    order_number: 'ORD11223344',
+                    customer_name: 'Mike Johnson',
+                    customer_phone: '+1122334455',
+                    items: [
+                        { name: 'Chicken Wings', quantity: 3, price: 8.99 },
+                        { name: 'Salad', quantity: 1, price: 7.99 }
+                    ],
+                    total_amount: 34.96,
+                    order_status: 'ready',
+                    delivery_type: 'delivery',
+                    created_at: new Date(Date.now() - 60 * 60000).toISOString(),
+                    is_read: true
+                }
+            ];
+            
+            updateOrderCounts();
+            displayOrders();
+        }
+
+        // Update order counts in filter tabs
+        function updateOrderCounts() {
+            const counts = {
+                all: orders.length,
+                pending: orders.filter(o => o.order_status === 'pending').length,
+                active: orders.filter(o => ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.order_status)).length,
+                completed: orders.filter(o => ['delivered', 'completed'].includes(o.order_status)).length,
+                cancelled: orders.filter(o => ['cancelled', 'refunded'].includes(o.order_status)).length
+            };
+
+            // Update unread count
+            const unreadCount = orders.filter(o => !o.is_read).length;
+            const unreadBadge = document.getElementById('unreadCount');
+            if (unreadCount > 0) {
+                unreadBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                unreadBadge.style.display = 'block';
+            } else {
+                unreadBadge.style.display = 'none';
+            }
+
+            // Update filter tab counts
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                const filter = tab.dataset.filter;
+                const countSpan = tab.querySelector('.count');
+                if (countSpan) {
+                    countSpan.textContent = counts[filter] || 0;
+                }
+            });
+        }
+
+        // Display orders based on current filter
+        function displayOrders() {
+            const container = document.getElementById('ordersContainer');
+            
+            // Filter orders
+            let filteredOrders = orders;
+            if (currentFilter === 'pending') {
+                filteredOrders = orders.filter(o => o.order_status === 'pending');
+            } else if (currentFilter === 'active') {
+                filteredOrders = orders.filter(o => ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.order_status));
+            } else if (currentFilter === 'completed') {
+                filteredOrders = orders.filter(o => ['delivered', 'completed'].includes(o.order_status));
+            } else if (currentFilter === 'cancelled') {
+                filteredOrders = orders.filter(o => ['cancelled', 'refunded'].includes(o.order_status));
+            }
+
+            // Show empty state if no orders
+            if (filteredOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2h-4M9 11V9a2 2 0 112 0v2M9 11h6"></path>
+                            </svg>
+                        </div>
+                        <div class="empty-title">No ${currentFilter === 'all' ? '' : currentFilter} orders</div>
+                        <div class="empty-text">
+                            ${currentFilter === 'pending' ? 'New orders will appear here' : 
+                              currentFilter === 'active' ? 'Active orders will appear here' :
+                              currentFilter === 'completed' ? 'Completed orders will appear here' :
+                              currentFilter === 'cancelled' ? 'Cancelled orders will appear here' :
+                              'Orders will appear here when customers place them'}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Display orders
+            container.innerHTML = filteredOrders.map(order => `
+                <div class="order-card ${!order.is_read ? 'unread' : ''}" onclick="viewOrderDetail('${order.id}')">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-number">#${order.order_number}</div>
+                            <div class="order-time">${formatTime(order.created_at)}</div>
+                        </div>
+                        <div class="order-status ${order.order_status}">${formatStatus(order.order_status)}</div>
+                    </div>
+                    
+                    <div class="customer-info">
+                        <div class="customer-avatar">${getInitials(order.customer_name)}</div>
+                        <div class="customer-details">
+                            <div class="customer-name">${order.customer_name}</div>
+                            <div class="customer-phone">${order.customer_phone}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-items">
+                        ${order.items.slice(0, 3).map(item => `
+                            <div class="order-item">
+                                <span>${item.name}</span>
+                                <span class="item-quantity">x${item.quantity}</span>
+                            </div>
+                        `).join('')}
+                        ${order.items.length > 3 ? `
+                            <div class="order-item">
+                                <span>...and ${order.items.length - 3} more items</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="order-footer">
+                        <div class="order-total">$${order.total_amount.toFixed(2)}</div>
+                        <div class="order-type">
+                            ${order.delivery_type === 'delivery' ? `
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="3" width="15" height="13"></rect>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                </svg>
+                                <span>Delivery</span>
+                            ` : `
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+                                </svg>
+                                <span>Pickup</span>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Format time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            
+            return date.toLocaleDateString();
+        }
+
+        // Format status
+        function formatStatus(status) {
+            const statusMap = {
+                'pending': 'Pending',
+                'confirmed': 'Confirmed',
+                'preparing': 'Preparing',
+                'ready': 'Ready',
+                'out_for_delivery': 'Out for Delivery',
+                'delivered': 'Delivered',
+                'completed': 'Completed',
+                'cancelled': 'Cancelled',
+                'refunded': 'Refunded'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Get initials from name
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return parts[0][0] + parts[1][0];
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Filter orders
+        function filterOrders(filter) {
+            currentFilter = filter;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                if (tab.dataset.filter === filter) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            displayOrders();
+        }
+
+        // View order detail
+        function viewOrderDetail(orderId) {
+            console.log('[Orders] Viewing order detail:', orderId);
+            
+            // Mark as read
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.is_read = true;
+                updateOrderCounts();
+            }
+            
+            // Navigate to order detail page
+            window.location.href = `mobile-order-detail.html?id=${orderId}`;
+        }
+
+        // Show new order alert
+        function showNewOrderAlert() {
+            const alert = document.getElementById('newOrderAlert');
+            alert.classList.add('show');
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 3000);
+        }
+
+        // Play notification sound
+        function playNotificationSound() {
+            // Create audio element and play sound
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCCuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+            audio.play().catch(e => console.log('[Orders] Could not play notification sound'));
+        }
+
+        // Refresh orders
+        function refreshOrders() {
+            console.log('[Orders] Refreshing orders...');
+            loadOrders();
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'mobile-business-menu.html';
+        }
+    </script>
+</body>
+</html>

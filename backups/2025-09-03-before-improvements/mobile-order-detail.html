@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Order Details - Dott Business</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f4f6;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .back-button:active {
+            transform: scale(0.95);
+            background: #e5e7eb;
+        }
+
+        .header-title {
+            flex: 1;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        /* Order Status Banner */
+        .status-banner {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.confirmed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.preparing {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .status-badge.ready {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.delivered {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Content Container */
+        .content-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        /* Section */
+        .section {
+            background: white;
+            margin-bottom: 8px;
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        /* Customer Info */
+        .customer-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+        .customer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .customer-info {
+            flex: 1;
+        }
+
+        .customer-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .customer-phone {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Communication Buttons */
+        .comm-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .comm-button {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .comm-button:active {
+            transform: scale(0.95);
+            background: #f3f4f6;
+        }
+
+        .comm-button.call {
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .comm-button.message {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .comm-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Order Items */
+        .order-items {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 12px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 2px;
+        }
+
+        .item-options {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .item-quantity {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-right: 12px;
+        }
+
+        .item-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        /* Price Breakdown */
+        .price-breakdown {
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+
+        .price-label {
+            color: #6b7280;
+        }
+
+        .price-value {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .price-row.total {
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 6px;
+        }
+
+        .price-row.total .price-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .price-row.total .price-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        /* Delivery Info */
+        .delivery-card {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+        .delivery-type {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .delivery-type svg {
+            width: 20px;
+            height: 20px;
+            color: #0d4f8a;
+        }
+
+        .delivery-address {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .delivery-notes {
+            padding: 8px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #374151;
+            font-style: italic;
+        }
+
+        /* Status Update Section */
+        .status-update {
+            padding: 12px;
+            background: #f0f9ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+        }
+
+        .status-update-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+
+        .status-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-option {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #dbeafe;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #3730a3;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .status-option:active {
+            background: #dbeafe;
+            transform: scale(0.95);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
+        }
+
+        .action-button.reject {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-button.approve {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-button.complete {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .action-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #0d4f8a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .modal-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            resize: vertical;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-button.cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-button.confirm {
+            background: #ef4444;
+            color: white;
+        }
+
+        .modal-button.confirm.approve {
+            background: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="back-button" onclick="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </div>
+        <div class="header-title">Order Details</div>
+        <div class="back-button" onclick="showMoreOptions()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="status-banner">
+        <div class="status-label">Order Status</div>
+        <span class="status-badge" id="statusBadge">Loading...</span>
+    </div>
+
+    <!-- Content Container -->
+    <div class="content-container" id="contentContainer">
+        <div class="loading-container">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons" id="actionButtons" style="display: none;">
+        <!-- Buttons will be dynamically added based on order status -->
+    </div>
+
+    <!-- Rejection Modal -->
+    <div class="modal" id="rejectModal">
+        <div class="modal-content">
+            <div class="modal-title">Reject Order</div>
+            <div class="modal-text">Please provide a reason for rejecting this order:</div>
+            <textarea class="modal-input" id="rejectReason" placeholder="Enter reason..." rows="3"></textarea>
+            <div class="modal-buttons">
+                <button class="modal-button cancel" onclick="closeRejectModal()">Cancel</button>
+                <button class="modal-button confirm" onclick="confirmReject()">Reject Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentOrder = null;
+        const orderId = new URLSearchParams(window.location.search).get('id');
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrderDetails();
+        });
+
+        // Load order details
+        async function loadOrderDetails() {
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000' 
+                    : 'https://staging.dottapps.com';
+                
+                const response = await fetch(`${apiUrl}/api/orders/business/${orderId}/`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    currentOrder = await response.json();
+                    displayOrderDetails();
+                } else {
+                    console.error('[Order Detail] Failed to load order:', response.status);
+                    // Show mock data for testing
+                    loadMockOrder();
+                }
+            } catch (error) {
+                console.error('[Order Detail] Error loading order:', error);
+                // Show mock data for testing
+                loadMockOrder();
+            }
+        }
+
+        // Load mock order for testing
+        function loadMockOrder() {
+            currentOrder = {
+                id: orderId || '1',
+                order_number: 'ORD12345678',
+                customer_name: 'John Doe',
+                customer_phone: '+1234567890',
+                customer_email: 'john.doe@example.com',
+                items: [
+                    { name: 'Burger', quantity: 2, price: 12.99, options: 'Extra cheese, no onions' },
+                    { name: 'Fries', quantity: 1, price: 4.99, options: 'Large' },
+                    { name: 'Coke', quantity: 2, price: 2.99, options: 'Regular' }
+                ],
+                subtotal: 36.95,
+                tax_amount: 3.70,
+                delivery_fee: 5.00,
+                total_amount: 45.65,
+                order_status: 'pending',
+                payment_status: 'paid',
+                payment_method: 'card',
+                delivery_type: 'delivery',
+                delivery_address: '123 Main Street, Apt 4B, New York, NY 10001',
+                delivery_notes: 'Please ring doorbell twice. Leave at door if no answer.',
+                created_at: new Date(Date.now() - 5 * 60000).toISOString(),
+                estimated_delivery_time: new Date(Date.now() + 30 * 60000).toISOString()
+            };
+            displayOrderDetails();
+        }
+
+        // Display order details
+        function displayOrderDetails() {
+            // Update status badge
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.className = `status-badge ${currentOrder.order_status}`;
+            statusBadge.textContent = formatStatus(currentOrder.order_status);
+
+            // Build content HTML
+            const container = document.getElementById('contentContainer');
+            container.innerHTML = `
+                <!-- Customer Section -->
+                <div class="section">
+                    <div class="section-title">Customer Information</div>
+                    <div class="customer-card">
+                        <div class="customer-avatar">${getInitials(currentOrder.customer_name)}</div>
+                        <div class="customer-info">
+                            <div class="customer-name">${currentOrder.customer_name}</div>
+                            <div class="customer-phone">${currentOrder.customer_phone}</div>
+                        </div>
+                    </div>
+                    <div class="comm-buttons">
+                        <button class="comm-button call" onclick="callCustomer('${currentOrder.customer_phone}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"></path>
+                            </svg>
+                            Call
+                        </button>
+                        <button class="comm-button message" onclick="messageCustomer('${currentOrder.id}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
+                            </svg>
+                            Message
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Order Items Section -->
+                <div class="section">
+                    <div class="section-title">Order Items</div>
+                    <div class="order-items">
+                        ${currentOrder.items.map(item => `
+                            <div class="order-item">
+                                <div class="item-details">
+                                    <div class="item-name">${item.name}</div>
+                                    ${item.options ? `<div class="item-options">${item.options}</div>` : ''}
+                                </div>
+                                <span class="item-quantity">x${item.quantity}</span>
+                                <span class="item-price">$${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="price-breakdown">
+                        <div class="price-row">
+                            <span class="price-label">Subtotal</span>
+                            <span class="price-value">$${currentOrder.subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="price-row">
+                            <span class="price-label">Tax</span>
+                            <span class="price-value">$${currentOrder.tax_amount.toFixed(2)}</span>
+                        </div>
+                        ${currentOrder.delivery_fee > 0 ? `
+                            <div class="price-row">
+                                <span class="price-label">Delivery Fee</span>
+                                <span class="price-value">$${currentOrder.delivery_fee.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="price-row total">
+                            <span class="price-label">Total</span>
+                            <span class="price-value">$${currentOrder.total_amount.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery Section -->
+                <div class="section">
+                    <div class="section-title">Delivery Information</div>
+                    <div class="delivery-card">
+                        <div class="delivery-type">
+                            ${currentOrder.delivery_type === 'delivery' ? `
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="3" width="15" height="13"></rect>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                </svg>
+                                <span>Delivery</span>
+                            ` : `
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+                                </svg>
+                                <span>Pickup</span>
+                            `}
+                        </div>
+                        ${currentOrder.delivery_address ? `
+                            <div class="delivery-address">${currentOrder.delivery_address}</div>
+                        ` : ''}
+                        ${currentOrder.delivery_notes ? `
+                            <div class="delivery-notes">
+                                Note: ${currentOrder.delivery_notes}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Status Update Section (for active orders) -->
+                ${['confirmed', 'preparing', 'ready'].includes(currentOrder.order_status) ? `
+                    <div class="section">
+                        <div class="section-title">Update Status</div>
+                        <div class="status-update">
+                            <div class="status-update-title">Quick Actions</div>
+                            <div class="status-options">
+                                ${currentOrder.order_status === 'confirmed' ? `
+                                    <button class="status-option" onclick="updateStatus('preparing')">Start Preparing</button>
+                                ` : ''}
+                                ${currentOrder.order_status === 'preparing' ? `
+                                    <button class="status-option" onclick="updateStatus('ready')">Mark as Ready</button>
+                                ` : ''}
+                                ${currentOrder.order_status === 'ready' && currentOrder.delivery_type === 'delivery' ? `
+                                    <button class="status-option" onclick="updateStatus('out_for_delivery')">Out for Delivery</button>
+                                ` : ''}
+                                ${currentOrder.order_status === 'ready' && currentOrder.delivery_type === 'pickup' ? `
+                                    <button class="status-option" onclick="updateStatus('completed')">Picked Up</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            // Update action buttons based on status
+            updateActionButtons();
+        }
+
+        // Update action buttons
+        function updateActionButtons() {
+            const actionButtons = document.getElementById('actionButtons');
+            
+            if (currentOrder.order_status === 'pending') {
+                actionButtons.innerHTML = `
+                    <button class="action-button reject" onclick="showRejectModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Reject
+                    </button>
+                    <button class="action-button approve" onclick="approveOrder()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Approve
+                    </button>
+                `;
+                actionButtons.style.display = 'flex';
+            } else if (['out_for_delivery'].includes(currentOrder.order_status)) {
+                actionButtons.innerHTML = `
+                    <button class="action-button complete" onclick="completeOrder()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        Mark as Delivered
+                    </button>
+                `;
+                actionButtons.style.display = 'flex';
+            } else {
+                actionButtons.style.display = 'none';
+            }
+        }
+
+        // Call customer
+        function callCustomer(phone) {
+            console.log('[Order Detail] Calling customer:', phone);
+            window.location.href = `tel:${phone}`;
+        }
+
+        // Message customer
+        function messageCustomer(orderId) {
+            console.log('[Order Detail] Opening chat with customer for order:', orderId);
+            // Navigate to chat page
+            window.location.href = `mobile-chat.html?order=${orderId}`;
+        }
+
+        // Approve order
+        async function approveOrder() {
+            console.log('[Order Detail] Approving order:', currentOrder.id);
+            
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000' 
+                    : 'https://staging.dottapps.com';
+                
+                const response = await fetch(`${apiUrl}/api/orders/${currentOrder.id}/approve/`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Order approved successfully!');
+                    currentOrder.order_status = 'confirmed';
+                    displayOrderDetails();
+                } else {
+                    alert('Failed to approve order. Please try again.');
+                }
+            } catch (error) {
+                console.error('[Order Detail] Error approving order:', error);
+                // For testing, just update locally
+                alert('Order approved! (Test mode)');
+                currentOrder.order_status = 'confirmed';
+                displayOrderDetails();
+            }
+        }
+
+        // Show reject modal
+        function showRejectModal() {
+            document.getElementById('rejectModal').classList.add('show');
+        }
+
+        // Close reject modal
+        function closeRejectModal() {
+            document.getElementById('rejectModal').classList.remove('show');
+            document.getElementById('rejectReason').value = '';
+        }
+
+        // Confirm reject
+        async function confirmReject() {
+            const reason = document.getElementById('rejectReason').value.trim();
+            if (!reason) {
+                alert('Please provide a reason for rejection');
+                return;
+            }
+
+            console.log('[Order Detail] Rejecting order:', currentOrder.id, 'Reason:', reason);
+            
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000' 
+                    : 'https://staging.dottapps.com';
+                
+                const response = await fetch(`${apiUrl}/api/orders/${currentOrder.id}/reject/`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                if (response.ok) {
+                    alert('Order rejected. Refund will be processed.');
+                    closeRejectModal();
+                    window.location.href = 'mobile-orders.html';
+                } else {
+                    alert('Failed to reject order. Please try again.');
+                }
+            } catch (error) {
+                console.error('[Order Detail] Error rejecting order:', error);
+                // For testing, just update locally
+                alert('Order rejected! (Test mode)');
+                closeRejectModal();
+                window.location.href = 'mobile-orders.html';
+            }
+        }
+
+        // Update order status
+        async function updateStatus(newStatus) {
+            console.log('[Order Detail] Updating status to:', newStatus);
+            
+            try {
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000' 
+                    : 'https://staging.dottapps.com';
+                
+                const response = await fetch(`${apiUrl}/api/orders/${currentOrder.id}/update-status/`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    currentOrder.order_status = newStatus;
+                    displayOrderDetails();
+                    
+                    // Show success message
+                    const messages = {
+                        'preparing': 'Order marked as preparing',
+                        'ready': 'Order marked as ready',
+                        'out_for_delivery': 'Order out for delivery',
+                        'completed': 'Order completed'
+                    };
+                    alert(messages[newStatus] || 'Status updated');
+                } else {
+                    alert('Failed to update status. Please try again.');
+                }
+            } catch (error) {
+                console.error('[Order Detail] Error updating status:', error);
+                // For testing, just update locally
+                currentOrder.order_status = newStatus;
+                displayOrderDetails();
+                alert(`Status updated to ${formatStatus(newStatus)}! (Test mode)`);
+            }
+        }
+
+        // Complete order
+        async function completeOrder() {
+            await updateStatus('delivered');
+            setTimeout(() => {
+                window.location.href = 'mobile-orders.html';
+            }, 1500);
+        }
+
+        // Format status
+        function formatStatus(status) {
+            const statusMap = {
+                'pending': 'Pending',
+                'confirmed': 'Confirmed',
+                'preparing': 'Preparing',
+                'ready': 'Ready',
+                'out_for_delivery': 'Out for Delivery',
+                'delivered': 'Delivered',
+                'completed': 'Completed',
+                'cancelled': 'Cancelled',
+                'refunded': 'Refunded'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Get initials
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return parts[0][0] + parts[1][0];
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Show more options
+        function showMoreOptions() {
+            console.log('[Order Detail] Showing more options');
+            // Could show a menu with print, share, etc.
+            alert('More options coming soon!');
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'mobile-orders.html';
+        }
+    </script>
+</body>
+</html>

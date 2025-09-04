@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Find Businesses - Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .header {
+            background: #10b981;
+            color: white;
+            padding: 16px 20px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .search-container {
+            padding: 16px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            overflow-x: auto;
+        }
+
+        .filter-chip {
+            background: #f3f4f6;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            border: 1px solid #e5e7eb;
+        }
+
+        .filter-chip.active {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        .content {
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+
+        .business-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .business-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .business-image {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+        }
+
+        .business-info {
+            padding: 12px;
+        }
+
+        .business-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .business-category {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .business-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+        }
+
+        .star {
+            color: #fbbf24;
+        }
+
+        .distance {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="history.back()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M19 12H5M5 12l7 7m-7-7l7-7"/>
+            </svg>
+        </button>
+        <div class="header-title">Find Businesses</div>
+    </div>
+
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Search for businesses...">
+            <button class="search-button">Search</button>
+        </div>
+        <div class="filters">
+            <div class="filter-chip active">All</div>
+            <div class="filter-chip">Restaurants</div>
+            <div class="filter-chip">Retail</div>
+            <div class="filter-chip">Services</div>
+            <div class="filter-chip">Health</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="section-title">Nearby Businesses</div>
+        <div class="business-grid">
+            <div class="business-card">
+                <div class="business-image">🍕</div>
+                <div class="business-info">
+                    <div class="business-name">Pizza Paradise</div>
+                    <div class="business-category">Restaurant</div>
+                    <div class="business-rating">
+                        <span class="star">⭐</span> 4.5 (128)
+                    </div>
+                    <div class="distance">0.5 km away</div>
+                </div>
+            </div>
+            
+            <div class="business-card">
+                <div class="business-image">☕</div>
+                <div class="business-info">
+                    <div class="business-name">Coffee Corner</div>
+                    <div class="business-category">Cafe</div>
+                    <div class="business-rating">
+                        <span class="star">⭐</span> 4.8 (256)
+                    </div>
+                    <div class="distance">0.8 km away</div>
+                </div>
+            </div>
+            
+            <div class="business-card">
+                <div class="business-image">🛒</div>
+                <div class="business-info">
+                    <div class="business-name">Super Mart</div>
+                    <div class="business-category">Grocery</div>
+                    <div class="business-rating">
+                        <span class="star">⭐</span> 4.2 (89)
+                    </div>
+                    <div class="distance">1.2 km away</div>
+                </div>
+            </div>
+            
+            <div class="business-card">
+                <div class="business-image">💈</div>
+                <div class="business-info">
+                    <div class="business-name">Style Salon</div>
+                    <div class="business-category">Beauty</div>
+                    <div class="business-rating">
+                        <span class="star">⭐</span> 4.7 (145)
+                    </div>
+                    <div class="distance">1.5 km away</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

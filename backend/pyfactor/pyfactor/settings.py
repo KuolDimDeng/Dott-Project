@@ -219,6 +219,12 @@ AUTH0_MANAGEMENT_CLIENT_SECRET = os.getenv('AUTH0_MANAGEMENT_CLIENT_SECRET', '')
 # Use environment variable for audience with sensible default (UPDATED for new Dott API)
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://api.dottapps.com')
 
+# Allow tokens from multiple Auth0 applications (Web and Mobile)
+AUTH0_ALLOWED_CLIENTS = [
+    '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF',  # Web App Client ID
+    'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG',  # Native Mobile App Client ID
+]
+
 # Build issuer URL from the issuer domain
 # Handle case where AUTH0_ISSUER_DOMAIN might already include https://
 if AUTH0_ISSUER_DOMAIN and AUTH0_ISSUER_DOMAIN.startswith('https://'):

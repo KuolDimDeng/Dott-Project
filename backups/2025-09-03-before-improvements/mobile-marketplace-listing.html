@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>My Business Listing - Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 16px 20px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .content {
+            padding: 16px;
+        }
+
+        .listing-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .listing-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .business-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+        }
+
+        .business-details {
+            flex: 1;
+        }
+
+        .business-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .business-category {
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .visibility-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #10b981;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .primary-button {
+            background: #2563eb;
+            color: white;
+        }
+
+        .secondary-button {
+            background: white;
+            color: #2563eb;
+            border: 2px solid #2563eb;
+        }
+
+        .orders-list {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .order-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .order-number {
+            font-weight: 600;
+        }
+
+        .order-status {
+            padding: 4px 8px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .order-details {
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="history.back()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M19 12H5M5 12l7 7m-7-7l7-7"/>
+            </svg>
+        </button>
+        <div class="header-title">My Business Listing</div>
+    </div>
+
+    <div class="content">
+        <div class="listing-card">
+            <div class="listing-header">
+                <div class="business-logo">🏢</div>
+                <div class="business-details">
+                    <div class="business-name">Your Business Name</div>
+                    <div class="business-category">Retail Store</div>
+                    <div class="visibility-badge">Visible in Marketplace</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">256</div>
+                    <div class="stat-label">Total Views</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">4.5</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">New Orders</div>
+                </div>
+            </div>
+
+            <button class="action-button primary-button">Edit Listing</button>
+            <button class="action-button secondary-button">View Public Profile</button>
+        </div>
+
+        <div class="orders-list">
+            <div class="section-title">Recent Orders</div>
+            
+            <div class="order-item">
+                <div class="order-header">
+                    <div class="order-number">Order #2024-001</div>
+                    <div class="order-status">Pending</div>
+                </div>
+                <div class="order-details">
+                    Customer: John Doe • 2 items • $45.00
+                </div>
+            </div>
+
+            <div class="order-item">
+                <div class="order-header">
+                    <div class="order-number">Order #2024-002</div>
+                    <div class="order-status">Processing</div>
+                </div>
+                <div class="order-details">
+                    Customer: Jane Smith • 5 items • $128.50
+                </div>
+            </div>
+
+            <div class="order-item">
+                <div class="order-header">
+                    <div class="order-number">Order #2024-003</div>
+                    <div class="order-status">Ready</div>
+                </div>
+                <div class="order-details">
+                    Customer: Mike Johnson • 1 item • $22.00
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

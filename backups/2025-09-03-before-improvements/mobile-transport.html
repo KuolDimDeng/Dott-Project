@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Transport Management - Dott</title>
+    
+    <!-- Capacitor Meta -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: wss: capacitor: https://api.dottapps.com https://dottapps.com https://staging.dottapps.com;">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <!-- Status bar color -->
+    <meta name="theme-color" content="#2563eb">
+    
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --text-dark: #1f2937;
+            --text-gray: #6b7280;
+            --border-gray: #e5e7eb;
+            --background: #f8f9fa;
+            --white: #ffffff;
+            --success-green: #10b981;
+            --warning-orange: #f59e0b;
+            --danger-red: #ef4444;
+            --purple: #8b5cf6;
+            --indigo: #6366f1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .header {
+            background: var(--white);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-gray);
+            position: sticky;
+            top: env(safe-area-inset-top);
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .container {
+            padding: 1rem;
+            max-width: 100%;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            border-radius: 1rem;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--border-gray);
+        }
+
+        .feature-card:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            width: 3rem;
+            height: 3rem;
+            margin: 0 auto 0.75rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .feature-icon svg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .feature-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+        }
+
+        .feature-description {
+            font-size: 0.75rem;
+            color: var(--text-gray);
+            line-height: 1.4;
+        }
+
+        .active-jobs-section {
+            background: var(--white);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .no-jobs {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-gray);
+        }
+
+        .no-jobs svg {
+            width: 4rem;
+            height: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .job-card {
+            background: var(--background);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border-gray);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .job-id {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .status-pending { background-color: var(--warning-orange); }
+        .status-in-progress { background-color: var(--primary-blue); }
+        .status-completed { background-color: var(--success-green); }
+
+        .job-details {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            line-height: 1.4;
+        }
+
+        .quick-stats {
+            background: var(--white);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-gray);
+            font-weight: 500;
+        }
+
+        .coming-soon-badge {
+            background: var(--warning-orange);
+            color: white;
+            font-size: 0.6rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 375px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-button" onclick="goBack()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="m15 18-6-6 6-6"/>
+                </svg>
+            </button>
+            <h1 class="header-title">Transport Management</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M3 3v5h5M21 21v-5h-5"/>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L3 8m18 8-2.64 2.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+                Today's Overview
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Active Jobs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">$0</div>
+                    <div class="stat-label">Today's Earnings</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Miles Driven</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transport Features Grid -->
+        <div class="feature-grid">
+            <!-- My Jobs -->
+            <div class="feature-card" onclick="showComingSoon('My Jobs')">
+                <div class="feature-icon" style="background-color: var(--success-green);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12h18l-3-7H6l-3 7z"/>
+                        <path d="M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                        <path d="M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                    </svg>
+                </div>
+                <div class="feature-title">My Jobs</div>
+                <div class="feature-description">View active and pending delivery jobs</div>
+            </div>
+
+            <!-- Create Job -->
+            <div class="feature-card" onclick="showComingSoon('Create New Job')">
+                <div class="feature-icon" style="background-color: var(--purple);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Create Job</div>
+                <div class="feature-description">New delivery job with route planning</div>
+            </div>
+
+            <!-- Route Planning -->
+            <div class="feature-card" onclick="showComingSoon('Route Planning')">
+                <div class="feature-icon" style="background-color: var(--warning-orange);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Route Planning</div>
+                <div class="feature-description">Optimize routes with Google Maps</div>
+            </div>
+
+            <!-- Job Payments -->
+            <div class="feature-card" onclick="showComingSoon('Job Payments')">
+                <div class="feature-icon" style="background-color: #ec4899;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Job Payments</div>
+                <div class="feature-description">Accept card, M-Pesa, bank payments</div>
+            </div>
+
+            <!-- Fuel & Expenses -->
+            <div class="feature-card" onclick="showComingSoon('Fuel & Expenses')">
+                <div class="feature-icon" style="background-color: var(--indigo);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="6" x2="12" y2="12"/>
+                        <line x1="16.24" y1="16.24" x2="12" y2="12"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Fuel & Expenses</div>
+                <div class="feature-description">Track costs and operational expenses</div>
+            </div>
+
+            <!-- Vehicle Management -->
+            <div class="feature-card" onclick="showComingSoon('Vehicle Management')">
+                <div class="feature-icon" style="background-color: #14b8a6;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12h18l-3-7H6l-3 7z"/>
+                        <path d="M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                        <path d="M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                        <path d="M5 12V7a1 1 0 0 1 1-1h4l2 2h6a1 1 0 0 1 1 1v3"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Fleet Management</div>
+                <div class="feature-description">Manage vehicles and maintenance</div>
+            </div>
+
+            <!-- Transport Customers -->
+            <div class="feature-card" onclick="showComingSoon('Transport Customers')">
+                <div class="feature-icon" style="background-color: #eab308;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Customers</div>
+                <div class="feature-description">Manage delivery customers</div>
+            </div>
+
+            <!-- Reports & Analytics -->
+            <div class="feature-card" onclick="showComingSoon('Transport Reports')">
+                <div class="feature-icon" style="background-color: #6b7280;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                    </svg>
+                </div>
+                <div class="feature-title">Reports</div>
+                <div class="feature-description">Earnings and efficiency analytics</div>
+            </div>
+        </div>
+
+        <!-- Active Jobs Section -->
+        <div class="active-jobs-section">
+            <div class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M3 12h18l-3-7H6l-3 7z"/>
+                    <path d="M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                    <path d="M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                </svg>
+                Active Jobs
+            </div>
+            
+            <div class="no-jobs">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18l-3-7H6l-3 7z"/>
+                    <path d="M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                    <path d="M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                </svg>
+                <p><strong>No Active Jobs</strong></p>
+                <p>Create a new transport job to get started with delivery management.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = 'mobile-business-menu.html';
+            }
+        }
+
+        function showComingSoon(feature) {
+            // Simple alert for now - will be replaced with actual functionality
+            const message = `🚧 ${feature} feature coming soon!\\n\\nThis will provide comprehensive ${feature.toLowerCase()} functionality for drivers and transport businesses.`;
+            
+            // Use native alert or Capacitor Dialog if available
+            if (window.Capacitor && window.Capacitor.Plugins.Dialog) {
+                window.Capacitor.Plugins.Dialog.alert({
+                    title: 'Coming Soon!',
+                    message: message
+                });
+            } else {
+                alert(message);
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚛 Transport Management Page Loaded');
+            
+            // Add haptic feedback for buttons if available
+            if (window.Capacitor && window.Capacitor.Plugins.Haptics) {
+                const buttons = document.querySelectorAll('.feature-card, .back-button');
+                buttons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        window.Capacitor.Plugins.Haptics.impact({ style: 'light' });
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
