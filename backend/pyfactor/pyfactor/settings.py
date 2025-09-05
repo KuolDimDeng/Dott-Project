@@ -1444,6 +1444,7 @@ TENANT_ISOLATION = {
 # Deployment timestamp: Sat Aug 16 13:55:01 MDT 2025
 # Deployment timestamp: Sat Aug 16 14:45:20 MDT 2025
 # Deployment timestamp: Fri Aug 16 16:04:00 MDT 2025
+# Deployment timestamp: Thu Sep 05 06:40:00 MDT 2025 - Force rebuild for role/has_business fields
 
 # SMS Configuration for Phone Authentication
 # Twilio (Global coverage, fallback for Africa)

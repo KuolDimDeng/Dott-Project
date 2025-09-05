@@ -13,10 +13,162 @@ from decimal import Decimal
 User = get_user_model()
 
 
+class CourierCompany(models.Model):
+    """
+    Courier company that can manage multiple couriers and cover multiple cities
+    This model is for future use when partnering with courier companies
+    """
+    COMPANY_STATUS = [
+        ('pending', 'Pending Approval'),
+        ('active', 'Active'),
+        ('suspended', 'Suspended'),
+        ('terminated', 'Terminated'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    legal_name = models.CharField(max_length=200)
+    registration_number = models.CharField(max_length=100, unique=True)
+    
+    # Contact Information
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    website = models.URLField(blank=True)
+    
+    # Address
+    headquarters_address = models.TextField()
+    headquarters_city = models.CharField(max_length=100)
+    headquarters_country = models.CharField(max_length=2)  # ISO country code
+    
+    # Coverage Areas - Cities and countries they operate in
+    coverage_cities = ArrayField(models.CharField(max_length=100), default=list)
+    coverage_countries = ArrayField(models.CharField(max_length=2), default=list)  # ISO codes
+    
+    # Company Details
+    fleet_size = models.IntegerField(default=0)
+    established_date = models.DateField(null=True, blank=True)
+    insurance_provider = models.CharField(max_length=100, blank=True)
+    insurance_policy_number = models.CharField(max_length=100, blank=True)
+    insurance_expiry = models.DateField(null=True, blank=True)
+    
+    # Platform Integration
+    api_key = models.CharField(max_length=255, blank=True)  # For API integration
+    webhook_url = models.URLField(blank=True)  # For status updates
+    
+    # Commission and Fees
+    platform_commission_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('15.00'),
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))]
+    )  # Platform takes this % from company
+    company_courier_commission = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('70.00'),
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))]
+    )  # Company pays this % to their couriers
+    
+    # Status
+    status = models.CharField(max_length=20, choices=COMPANY_STATUS, default='pending')
+    is_exclusive = models.BooleanField(default=False)  # If true, only this company handles deliveries in their cities
+    priority_rank = models.IntegerField(default=100)  # Lower number = higher priority when multiple companies available
+    
+    # Verification
+    verified = models.BooleanField(default=False)
+    verification_documents = models.JSONField(default=dict)  # Store document URLs/references
+    
+    # Performance Metrics
+    total_deliveries = models.IntegerField(default=0)
+    successful_deliveries = models.IntegerField(default=0)
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=Decimal('0.00'))
+    
+    # Banking Details (for payouts)
+    bank_name = models.CharField(max_length=100, blank=True)
+    bank_account_number = models.CharField(max_length=100, blank=True)
+    bank_routing_number = models.CharField(max_length=100, blank=True)
+    payment_terms = models.IntegerField(default=7)  # Days before payout
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                   related_name='approved_courier_companies')
+    
+    # Feature Flags (for future features)
+    supports_express_delivery = models.BooleanField(default=False)
+    supports_scheduled_delivery = models.BooleanField(default=True)
+    supports_cash_on_delivery = models.BooleanField(default=True)
+    supports_refrigerated = models.BooleanField(default=False)
+    supports_fragile = models.BooleanField(default=True)
+    max_package_weight_kg = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
+    max_package_dimension_cm = models.IntegerField(default=200)  # Longest dimension
+    
+    tenant = models.ForeignKey('users.Tenant', on_delete=models.CASCADE, related_name='courier_companies')
+    
+    class Meta:
+        verbose_name_plural = 'Courier Companies'
+        ordering = ['priority_rank', 'name']
+        indexes = [
+            models.Index(fields=['status', 'priority_rank']),
+            models.Index(fields=['headquarters_country', 'headquarters_city']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.headquarters_city}, {self.headquarters_country})"
+    
+    def calculate_platform_fee(self, delivery_amount):
+        """Calculate platform's fee from this delivery"""
+        return delivery_amount * (self.platform_commission_rate / 100)
+    
+    def is_available_in_city(self, city, country):
+        """Check if company operates in a specific city"""
+        return (city in self.coverage_cities or 
+                country in self.coverage_countries)
+
+
+class CourierCompanyBranch(models.Model):
+    """
+    Branch offices of courier companies in different cities
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(CourierCompany, on_delete=models.CASCADE, related_name='branches')
+    
+    branch_name = models.CharField(max_length=100)
+    branch_code = models.CharField(max_length=20)
+    
+    # Location
+    city = models.CharField(max_length=100)
+    country = models.CharField(max_length=2)  # ISO code
+    address = models.TextField()
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    
+    # Contact
+    manager_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField()
+    
+    # Capacity
+    max_daily_deliveries = models.IntegerField(default=100)
+    current_active_couriers = models.IntegerField(default=0)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    operating_hours = models.JSONField(default=dict)  # Store daily operating hours
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['company', 'branch_code']
+        ordering = ['company', 'city']
+    
+    def __str__(self):
+        return f"{self.company.name} - {self.branch_name} ({self.city})"
+
+
 class CourierProfile(models.Model):
     """
     Extended courier profile for delivery services
-    Links to transport.Driver for vehicle management (legacy compatibility)
+    Can be independent courier or work for a courier company
     """
     VEHICLE_TYPES = [
         ('bicycle', 'Bicycle'),
@@ -34,9 +186,24 @@ class CourierProfile(models.Model):
         ('break', 'On Break'),
     ]
     
+    EMPLOYMENT_TYPE = [
+        ('independent', 'Independent Courier'),
+        ('company', 'Company Employee'),
+        ('partner', 'Partner Driver'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='courier_profile')
-    business = models.OneToOneField('users.Business', on_delete=models.CASCADE, related_name='courier_business_profile')
+    business = models.OneToOneField('users.Business', on_delete=models.CASCADE, 
+                                   related_name='courier_business_profile', null=True, blank=True)
+    
+    # Company Association (null if independent)
+    courier_company = models.ForeignKey(CourierCompany, on_delete=models.SET_NULL, 
+                                       null=True, blank=True, related_name='couriers')
+    company_branch = models.ForeignKey(CourierCompanyBranch, on_delete=models.SET_NULL,
+                                      null=True, blank=True, related_name='couriers')
+    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPE, default='independent')
+    company_employee_id = models.CharField(max_length=50, blank=True)  # Company's internal ID
     
     # Link to existing transport driver if available (for legacy compatibility)
     transport_driver = models.OneToOneField('transport.Driver', on_delete=models.SET_NULL, 
