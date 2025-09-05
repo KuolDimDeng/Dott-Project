@@ -527,3 +527,30 @@ RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ
 - **Backend Endpoints**: Extended ConsumerSearchViewSet with marketplace-specific actions
 - **Documentation**: `/mobile/DottAppNative/MOBILE_APP_DOCUMENTATION.md`
 - **Development**: `npx react-native run-ios` for iOS, requires `pod install` for dependencies
+
+### [60.0.0] - 2025-01-30 - CURRENT - Courier Delivery Service Implementation
+- **Purpose**: Enable businesses to register as couriers for product/service delivery
+- **App Name**: Changed from "drivers" to "couriers" for inclusivity (bikes, boda bodas, etc.)
+- **Backend Location**: `/backend/pyfactor/couriers/` (renamed from drivers)
+- **Mobile Integration**: `/mobile/DottAppNative/src/services/courierApi.js`
+- **Registration Flow**: 4-step process with identity verification and vehicle documentation
+- **Commission Structure**: 
+  - Independent Couriers: Platform 25%, Courier 75%
+  - Future Companies: Platform 15%, Company 85% (disabled by default)
+- **Key Models**:
+  - `CourierProfile`: Courier information, vehicles, verification status
+  - `DeliveryOrder`: Delivery requests and tracking
+  - `CourierEarnings`: Payout management
+  - `CourierCompany`: Future third-party company support (disabled)
+- **Trust Levels**: 5-level system based on performance (New → Elite)
+- **Vehicle Types**: bicycle, motorcycle, car, van, truck, e-scooter
+- **Payment Methods**: M-Pesa (default), Bank Transfer, Cash Pickup
+- **API Endpoints**: `/api/couriers/` for all courier operations
+- **Feature Flag**: `ENABLE_COURIER_COMPANIES = False` (for future company partnerships)
+- **Documentation**: 
+  - `/docs/COURIER_DELIVERY_FEATURE_COMPLETE.md` - Full feature documentation
+  - `/docs/COURIER_COMPANY_FEATURE.md` - Future company integration
+- **Migration Script**: `/backend/pyfactor/scripts/migrate_courier_feature.py`
+- **Status Flow**: pending → courier_assigned → picked → in_transit → delivered
+- **Security**: ID verification, selfie with ID, license uploads, background checks
+- **Real-time Features**: GPS tracking, availability status, live location updates
