@@ -1,4 +1,2 @@
-# Import models to make them discoverable by Django
-from .order_models import ConsumerOrder
-
-__all__ = ['ConsumerOrder']
+# Marketplace app
+# Models are in order_models.py and models.py

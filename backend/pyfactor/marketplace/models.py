@@ -240,3 +240,8 @@ class BusinessSearch(models.Model):
     
     def __str__(self):
         return f"Search: {self.search_query} at {self.searched_at}"
+
+
+# Import order models at the end to make them available to Django
+# This avoids circular imports during app initialization
+from .order_models import ConsumerOrder  # noqa
