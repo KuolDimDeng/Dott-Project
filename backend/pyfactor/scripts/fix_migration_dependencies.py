@@ -7,12 +7,13 @@ Run this in Render shell: python scripts/fix_migration_dependencies.py
 import os
 import sys
 import django
-from django.db import connection
 
-# Add the project root to the Python path
-sys.path.insert(0, '/opt/render/project/src/backend/pyfactor')
+# Add the current directory to the Python path (Render's /app directory)
+sys.path.insert(0, '/app')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
+
+from django.db import connection
 
 def fix_migration_dependencies():
     """Remove conflicting migration records and run migrations."""
