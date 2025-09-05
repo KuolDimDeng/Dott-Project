@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,13 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Modal,
-  FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { countriesData } from '../../data/countries';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginOptionsScreen() {
   const navigation = useNavigation();
@@ -35,6 +34,7 @@ export default function LoginOptionsScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [showVerification, setShowVerification] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
 
   const handlePhoneLogin = async () => {
     if (!showVerification) {
@@ -80,44 +80,89 @@ export default function LoginOptionsScreen() {
     Alert.alert('Coming Soon', `${provider} login will be available soon`);
   };
 
-  const CountryPicker = () => (
-    <Modal
-      visible={showCountryPicker}
-      animationType="slide"
-      transparent={true}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
+  // Memoize filtered countries to prevent re-renders
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch) return countriesData;
+    const searchLower = countrySearch.toLowerCase();
+    return countriesData.filter(country => 
+      country.name.toLowerCase().includes(searchLower) ||
+      country.phoneCode.includes(countrySearch) ||
+      country.code.toLowerCase().includes(searchLower)
+    );
+  }, [countrySearch]);
+
+  const CountryPicker = () => {
+    if (!showCountryPicker) return null;
+    
+    return (
+      <View style={styles.fullScreenOverlay}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Country</Text>
             <TouchableOpacity
-              onPress={() => setShowCountryPicker(false)}
+              onPress={() => {
+                setShowCountryPicker(false);
+                setCountrySearch(''); // Clear search on close
+              }}
               style={styles.closeButton}
             >
               <Icon name="close" size={24} color="#1a1a1a" />
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={countriesData}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) => (
+          
+          {/* Search Input */}
+          <View style={styles.searchContainer}>
+            <Icon name="search" size={20} color="#6b7280" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search country or code..."
+              value={countrySearch}
+              onChangeText={setCountrySearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {countrySearch.length > 0 && (
               <TouchableOpacity
-                style={styles.countryItem}
-                onPress={() => {
-                  setSelectedCountry(item);
-                  setShowCountryPicker(false);
-                }}
+                onPress={() => setCountrySearch('')}
+                style={styles.clearButton}
               >
-                <Text style={styles.countryFlag}>{item.flag}</Text>
-                <Text style={styles.countryName}>{item.name}</Text>
-                <Text style={styles.countryCode}>{item.phoneCode}</Text>
+                <Icon name="close-circle" size={20} color="#6b7280" />
               </TouchableOpacity>
             )}
-          />
-        </View>
+          </View>
+          
+          <ScrollView 
+            style={styles.countriesList}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {filteredCountries.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No countries found</Text>
+              </View>
+            ) : (
+              filteredCountries.map((country) => (
+                <TouchableOpacity
+                  key={country.code}
+                  style={styles.countryItem}
+                  onPress={() => {
+                    setSelectedCountry(country);
+                    setShowCountryPicker(false);
+                    setCountrySearch(''); // Clear search on selection
+                  }}
+                >
+                  <Text style={styles.countryFlag}>{country.flag}</Text>
+                  <Text style={styles.countryName}>{country.name}</Text>
+                  <Text style={styles.countryCode}>{country.phoneCode}</Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        </SafeAreaView>
       </View>
-    </Modal>
-  );
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -460,16 +505,25 @@ const styles = StyleSheet.create({
     color: '#14532d',
     fontWeight: '600',
   },
+  fullScreenOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 999,
+  },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: '#ffffff',
+  },
+  modalInner: {
+    flex: 1,
   },
   modalContent: {
+    flex: 1,
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -499,5 +553,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginLeft: 'auto',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1a1a1a',
+    paddingVertical: 8,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6b7280',
   },
 });

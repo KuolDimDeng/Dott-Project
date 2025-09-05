@@ -93,6 +93,12 @@ class SessionV2View(APIView):
             # Get tenant info (tenant_id is the user's ID in this system)
             tenant_id = user.id
             
+            # Get user role
+            user_role = getattr(user, 'role', 'USER')
+            
+            # Check if user has a business (tenant)
+            has_business = bool(user.tenant)
+            
             # Build response
             response_data = {
                 'success': True,
@@ -108,6 +114,8 @@ class SessionV2View(APIView):
                     'last_name': user.last_name,
                     'is_active': user.is_active,
                     'date_joined': user.date_joined.isoformat(),
+                    'role': user_role,  # Include user role
+                    'has_business': has_business,  # Include business status
                 }
             }
             
@@ -186,6 +194,12 @@ class SessionV2View(APIView):
             # Get user profile
             profile = UserProfile.objects.filter(user=user).first()
             
+            # Get user role
+            user_role = getattr(user, 'role', 'USER')
+            
+            # Check if user has a business (tenant)
+            has_business = bool(user.tenant)
+            
             # Build response
             response_data = {
                 'success': True,
@@ -196,6 +210,8 @@ class SessionV2View(APIView):
                     'email': user.email,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
+                    'role': user_role,  # Include user role
+                    'has_business': has_business,  # Include business status
                     'onboarding_completed': profile.onboarding_completed if profile else False,
                 }
             }

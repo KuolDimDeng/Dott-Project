@@ -8,8 +8,18 @@ from .payment_views import (
     refund_order,
     get_payment_methods
 )
+from .placeholder_views import (
+    get_marketplace_businesses,
+    get_business_categories,
+    get_featured_businesses
+)
 
 urlpatterns = [
+    # Placeholder businesses endpoints (main marketplace)
+    path('businesses/', get_marketplace_businesses, name='marketplace-businesses'),
+    path('businesses/categories/', get_business_categories, name='business-categories'),
+    path('businesses/featured/', get_featured_businesses, name='featured-businesses'),
+    
     # Search endpoints
     path('search/', ConsumerSearchViewSet.as_view({'get': 'search', 'post': 'search'}), name='consumer-search'),
     path('categories/', ConsumerSearchViewSet.as_view({'get': 'categories'}), name='consumer-categories'),

@@ -18,7 +18,10 @@ export default function EntryScreen() {
   const fadeAnim = new Animated.Value(0);
   const slideAnim = new Animated.Value(50);
 
+  console.log('🎯 EntryScreen loaded');
+
   useEffect(() => {
+    console.log('🚀 EntryScreen animations starting');
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -48,8 +51,8 @@ export default function EntryScreen() {
           {/* Logo Section */}
           <View style={styles.logoSection}>
             <Image
-              source={require('../../assets/logo.png')}
-              style={styles.logo}
+              source={require('../../assets/loginSignUp.png')}
+              style={styles.loginSignUpImage}
               resizeMode="contain"
             />
           </View>
@@ -103,14 +106,19 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginTop: height * 0.12,
+    marginTop: height * 0.35,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 60,
+    height: 60,
+  },
+  loginSignUpImage: {
+    width: 62,
+    height: 62,
   },
   buttonSection: {
-    marginBottom: height * 0.15,
+    marginTop: 30,
+    marginBottom: 0,
   },
   loginButton: {
     backgroundColor: '#14532d',

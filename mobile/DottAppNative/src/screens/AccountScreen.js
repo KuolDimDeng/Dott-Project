@@ -14,6 +14,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AccountScreen() {
   const { user, userMode, logout } = useAuth();
+  
+  console.log('👤 AccountScreen - User data:', user);
+  console.log('👤 AccountScreen - User role:', user?.role);
+  console.log('👤 AccountScreen - Has business:', user?.has_business);
+  console.log('👤 AccountScreen - User mode:', userMode);
 
   const handleLogout = () => {
     Alert.alert(
@@ -63,12 +68,30 @@ export default function AccountScreen() {
               {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
             </Text>
           </View>
-          <Text style={styles.userName}>{user?.full_name || 'User'}</Text>
+          <Text style={styles.userName}>{user?.full_name || user?.name || 'User'}</Text>
           <Text style={styles.userEmail}>{user?.email || ''}</Text>
-          <View style={styles.modeBadge}>
-            <Text style={styles.modeText}>
-              {userMode === 'business' ? 'Business Account' : 'Consumer Account'}
-            </Text>
+          
+          {/* Role Badge */}
+          {user?.role && (
+            <View style={[styles.roleBadge, styles[`role${user.role}`]]}>
+              <Icon name="shield-checkmark" size={14} color="#ffffff" />
+              <Text style={styles.roleText}>{user.role}</Text>
+            </View>
+          )}
+          
+          {/* Mode and Business Status */}
+          <View style={styles.statusContainer}>
+            <View style={styles.modeBadge}>
+              <Text style={styles.modeText}>
+                {userMode === 'business' ? 'Business Mode' : 'Consumer Mode'}
+              </Text>
+            </View>
+            {user?.has_business && (
+              <View style={styles.businessBadge}>
+                <Icon name="business" size={12} color="#059669" />
+                <Text style={styles.businessText}>Business Owner</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -161,7 +184,34 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#6b7280',
+    marginBottom: 8,
+  },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     marginBottom: 12,
+    gap: 4,
+  },
+  roleOWNER: {
+    backgroundColor: '#dc2626',
+  },
+  roleADMIN: {
+    backgroundColor: '#ea580c',
+  },
+  roleUSER: {
+    backgroundColor: '#2563eb',
+  },
+  roleText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    gap: 8,
   },
   modeBadge: {
     backgroundColor: '#e0e7ff',
@@ -172,6 +222,20 @@ const styles = StyleSheet.create({
   modeText: {
     fontSize: 12,
     color: '#4338ca',
+    fontWeight: '500',
+  },
+  businessBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  businessText: {
+    fontSize: 12,
+    color: '#059669',
     fontWeight: '500',
   },
   menuSection: {

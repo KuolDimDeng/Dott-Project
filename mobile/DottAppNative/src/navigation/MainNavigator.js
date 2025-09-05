@@ -11,6 +11,17 @@ import MarketplaceScreen from '../screens/MarketplaceScreen';
 import BusinessMenuScreen from '../screens/BusinessMenuScreen';
 import ChatScreen from '../screens/ChatScreen';
 import AccountScreen from '../screens/AccountScreen';
+import CartScreen from '../screens/CartScreen';
+
+// Import business screens
+import POSScreen from '../screens/business/POSScreen';
+import TimesheetScreen from '../screens/business/TimesheetScreen';
+import ReportsScreen from '../screens/business/ReportsScreen';
+import EmployeesScreen from '../screens/business/EmployeesScreen';
+import InventoryScreen from '../screens/business/InventoryScreen';
+import ExpensesScreen from '../screens/business/ExpensesScreen';
+import InvoicesScreen from '../screens/business/InvoicesScreen';
+import BankingScreen from '../screens/business/BankingScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -18,6 +29,10 @@ const Stack = createStackNavigator();
 function TabNavigator() {
   const { userMode, user } = useAuth();
   const hasBusiness = user?.has_business || false;
+  
+  console.log('🎯 TabNavigator - User data:', user);
+  console.log('🎯 TabNavigator - Has business:', hasBusiness);
+  console.log('🎯 TabNavigator - User mode:', userMode);
 
   return (
     <Tab.Navigator
@@ -47,12 +62,18 @@ function TabNavigator() {
 
           return <Icon name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: '#9ca3af',
         tabBarStyle: {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
+          backgroundColor: '#14532d',
+          borderTopWidth: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
         },
         headerShown: false,
       })}
@@ -72,7 +93,17 @@ export default function MainNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Tabs" component={TabNavigator} />
-      {/* Add additional stack screens here for navigation from tabs */}
+      {/* Common screens */}
+      <Stack.Screen name="Cart" component={CartScreen} />
+      {/* Business screens for navigation */}
+      <Stack.Screen name="POS" component={POSScreen} />
+      <Stack.Screen name="Timesheet" component={TimesheetScreen} />
+      <Stack.Screen name="Reports" component={ReportsScreen} />
+      <Stack.Screen name="Employees" component={EmployeesScreen} />
+      <Stack.Screen name="Inventory" component={InventoryScreen} />
+      <Stack.Screen name="Expenses" component={ExpensesScreen} />
+      <Stack.Screen name="Invoices" component={InvoicesScreen} />
+      <Stack.Screen name="Banking" component={BankingScreen} />
     </Stack.Navigator>
   );
 }

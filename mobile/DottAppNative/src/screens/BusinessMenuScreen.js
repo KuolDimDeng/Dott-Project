@@ -10,21 +10,29 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import POSScreen from './business/POSScreen';
+import TimesheetScreen from './business/TimesheetScreen';
+import ReportsScreen from './business/ReportsScreen';
+import EmployeesScreen from './business/EmployeesScreen';
+import InventoryScreen from './business/InventoryScreen';
+import ExpensesScreen from './business/ExpensesScreen';
+import InvoicesScreen from './business/InvoicesScreen';
+import BankingScreen from './business/BankingScreen';
 
 export default function BusinessMenuScreen() {
   const { user, switchMode } = useAuth();
   const navigation = useNavigation();
 
   const menuItems = [
-    { icon: 'cash-outline', title: 'POS Terminal', color: '#10b981' },
-    { icon: 'time-outline', title: 'Timesheet', color: '#3b82f6' },
-    { icon: 'bar-chart-outline', title: 'Reports', color: '#8b5cf6' },
-    { icon: 'people-outline', title: 'Employees', color: '#f59e0b' },
-    { icon: 'cube-outline', title: 'Inventory', color: '#ec4899' },
-    { icon: 'card-outline', title: 'Expenses', color: '#ef4444' },
-    { icon: 'document-text-outline', title: 'Invoices', color: '#06b6d4' },
-    { icon: 'business-outline', title: 'Banking', color: '#84cc16' },
-    { icon: 'ellipsis-horizontal-outline', title: 'More', color: '#6b7280' },
+    { icon: 'cash-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
+    { icon: 'time-outline', title: 'Timesheet', color: '#3b82f6', screen: 'Timesheet' },
+    { icon: 'bar-chart-outline', title: 'Reports', color: '#8b5cf6', screen: 'Reports' },
+    { icon: 'people-outline', title: 'Employees', color: '#f59e0b', screen: 'Employees' },
+    { icon: 'cube-outline', title: 'Inventory', color: '#ec4899', screen: 'Inventory' },
+    { icon: 'card-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },
+    { icon: 'document-text-outline', title: 'Invoices', color: '#06b6d4', screen: 'Invoices' },
+    { icon: 'business-outline', title: 'Banking', color: '#84cc16', screen: 'Banking' },
+    { icon: 'ellipsis-horizontal-outline', title: 'More', color: '#6b7280', screen: null },
   ];
 
   return (
@@ -53,7 +61,13 @@ export default function BusinessMenuScreen() {
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
-              onPress={() => console.log(`Navigate to ${item.title}`)}
+              onPress={() => {
+                if (item.screen) {
+                  navigation.navigate(item.screen);
+                } else {
+                  console.log(`Navigate to ${item.title}`);
+                }
+              }}
             >
               <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
                 <Icon name={item.icon} size={28} color={item.color} />

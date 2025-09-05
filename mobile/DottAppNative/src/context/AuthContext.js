@@ -47,7 +47,8 @@ export const AuthProvider = ({ children }) => {
         console.log('📧 Attempting Auth0 authentication for:', email);
         
         // Step 1: Authenticate with Auth0 to get access token
-        const auth0Response = await fetch('https://dev-cbyy63jovi6zrcos.us.auth0.com/oauth/token', {
+        // Using custom domain for Auth0
+        const auth0Response = await fetch('https://auth.dottapps.com/oauth/token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -56,8 +57,8 @@ export const AuthProvider = ({ children }) => {
             grant_type: 'password',
             username: email,
             password: password,
-            client_id: '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF', // Original web app client ID that backend accepts
-            audience: 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/',
+            client_id: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG', // Native app client ID with Password grant enabled
+            audience: 'https://api.dottapps.com',
             scope: 'openid profile email offline_access'
           })
         });
@@ -101,6 +102,9 @@ export const AuthProvider = ({ children }) => {
         });
         
         console.log('Backend session response:', response.data);
+        console.log('🔍 DEBUG - User data received:', JSON.stringify(response.data.user, null, 2));
+        console.log('🔍 DEBUG - Has business field:', response.data.user?.has_business);
+        console.log('🔍 DEBUG - User role:', response.data.user?.role);
         
         // Transform response to match expected format
         if (response.data.session_token) {
@@ -140,13 +144,22 @@ export const AuthProvider = ({ children }) => {
         baseURL: error.config?.baseURL
       });
       const errorMessage = error.response?.data?.message || error.response?.data?.detail || 'Authentication failed. Please try again.';
+      
+      // Special handling for staging environment issuer errors
+      if (errorMessage.includes('Invalid issuer')) {
+        return { 
+          success: false, 
+          message: 'Server configuration is being updated. Please try again in a few minutes or contact support.' 
+        };
+      }
+      
       return { success: false, message: errorMessage };
     }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.multiRemove(['userToken', 'userData', 'userMode']);
+      await AsyncStorage.multiRemove(['userToken', 'userData', 'userMode', 'sessionId', 'sessionToken']);
       setUser(null);
       setUserMode('consumer');
     } catch (error) {
