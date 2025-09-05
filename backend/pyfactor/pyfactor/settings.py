@@ -1446,6 +1446,11 @@ TENANT_ISOLATION = {
 # Deployment timestamp: Fri Aug 16 16:04:00 MDT 2025
 # Deployment timestamp: Thu Sep 05 06:40:00 MDT 2025 - Force rebuild for role/has_business fields
 
+# Courier Company Feature Flag (Future Feature - Currently Disabled)
+# Set to True to enable courier company management and assignment
+# This allows third-party courier companies to handle deliveries
+ENABLE_COURIER_COMPANIES = False
+
 # SMS Configuration for Phone Authentication
 # Twilio (Global coverage, fallback for Africa)
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')

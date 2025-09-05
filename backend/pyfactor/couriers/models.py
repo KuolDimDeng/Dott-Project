@@ -388,6 +388,13 @@ class DeliveryOrder(models.Model):
     courier = models.ForeignKey(CourierProfile, on_delete=models.SET_NULL, null=True, blank=True,
                               related_name='deliveries')
     
+    # Courier Company Assignment (for future use)
+    assigned_company = models.ForeignKey(CourierCompany, on_delete=models.SET_NULL, 
+                                        null=True, blank=True, related_name='delivery_orders')
+    assigned_branch = models.ForeignKey(CourierCompanyBranch, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name='delivery_orders')
+    company_tracking_number = models.CharField(max_length=100, blank=True)  # Company's internal tracking
+    
     # Link to marketplace order if applicable
     # Note: ConsumerOrder is in marketplace.order_models, not marketplace.models
     marketplace_order = models.OneToOneField('marketplace.ConsumerOrder', on_delete=models.CASCADE,
@@ -506,11 +513,60 @@ class DeliveryOrder(models.Model):
         self.courier = courier
         self.status = 'courier_assigned'
         self.courier_assigned_at = timezone.now()
+        
+        # If courier belongs to a company, assign company details
+        if courier.courier_company:
+            self.assigned_company = courier.courier_company
+            self.assigned_branch = courier.company_branch
+        
         self.save()
         
         # Update courier status
         courier.availability_status = 'busy'
         courier.save()
+    
+    def assign_to_company(self, company, branch=None):
+        """Assign delivery to a courier company (for future use)"""
+        self.assigned_company = company
+        self.assigned_branch = branch
+        self.status = 'pending'  # Company will assign their courier
+        self.save()
+        
+        # TODO: Send notification to company via webhook
+        # if company.webhook_url:
+        #     send_delivery_to_company_webhook(company, self)
+    
+    @classmethod
+    def find_best_company(cls, pickup_city, pickup_country, delivery_city, delivery_country):
+        """
+        Find the best courier company for a delivery route (for future use)
+        Returns None if feature is disabled or no companies available
+        """
+        from django.conf import settings
+        
+        # Feature flag - disabled by default
+        if not getattr(settings, 'ENABLE_COURIER_COMPANIES', False):
+            return None
+        
+        # Find companies that cover both pickup and delivery locations
+        companies = CourierCompany.objects.filter(
+            status='active',
+            verified=True
+        ).filter(
+            models.Q(coverage_cities__contains=[pickup_city]) |
+            models.Q(coverage_countries__contains=[pickup_country])
+        ).filter(
+            models.Q(coverage_cities__contains=[delivery_city]) |
+            models.Q(coverage_countries__contains=[delivery_country])
+        ).order_by('priority_rank', '-average_rating')
+        
+        # Return the best available company
+        for company in companies:
+            if company.is_available_in_city(pickup_city, pickup_country):
+                if company.is_available_in_city(delivery_city, delivery_country):
+                    return company
+        
+        return None
     
     def mark_picked_up(self):
         """Mark package as picked up"""
@@ -542,6 +598,7 @@ class DeliveryOrder(models.Model):
 class CourierEarnings(models.Model):
     """
     Track courier earnings and payouts
+    Supports both independent couriers and company couriers
     """
     PAYOUT_STATUS = [
         ('pending', 'Pending'),
@@ -550,8 +607,17 @@ class CourierEarnings(models.Model):
         ('failed', 'Failed'),
     ]
     
+    EARNINGS_TYPE = [
+        ('courier', 'Direct Courier Earnings'),
+        ('company', 'Company Payout'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    courier = models.ForeignKey(CourierProfile, on_delete=models.CASCADE, related_name='earnings')
+    courier = models.ForeignKey(CourierProfile, on_delete=models.CASCADE, related_name='earnings', 
+                               null=True, blank=True)  # Null if company payout
+    company = models.ForeignKey(CourierCompany, on_delete=models.CASCADE, related_name='earnings',
+                               null=True, blank=True)  # Null if independent courier
+    earnings_type = models.CharField(max_length=20, choices=EARNINGS_TYPE, default='courier')
     
     # Earnings period
     period_start = models.DateField()
