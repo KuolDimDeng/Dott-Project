@@ -11,22 +11,27 @@ def fix_owner_relationships(apps, schema_editor):
     from django.db import connection
     
     with connection.cursor() as cursor:
-        # First, check if the businesses table exists and what columns it has
+        # First, check which table name is used
         cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'businesses' OR table_name = 'users_business'
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_name IN ('businesses', 'users_business')
+            AND table_schema = 'public'
             LIMIT 1
         """)
         
-        if not cursor.fetchone():
+        result = cursor.fetchone()
+        if not result:
             print("Business table not found, skipping migration")
             return
         
+        table_name = result[0]
+        print(f"Using table: {table_name}")
+        
         # Get businesses with the special UUID format
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id, name, owner_id 
-            FROM businesses 
+            FROM {table_name}
             WHERE owner_id::text LIKE '00000000-0000-0000-0000-%'
         """)
         
