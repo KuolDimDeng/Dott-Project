@@ -57,11 +57,16 @@ class UserProfileMeView(APIView):
             except UserProfile.DoesNotExist:
                 logger.warning(f"[UserProfileMeView] No user profile found for user {request.user.id}")
                 # Create basic response with user data only
+                user_role = getattr(request.user, 'role', 'USER')
+                has_business = bool(request.user.tenant)
+                
                 response_data = {
                     'id': request.user.id,
                     'email': request.user.email,
                     'first_name': request.user.first_name,
                     'last_name': request.user.last_name,
+                    'role': user_role,
+                    'has_business': has_business,
                     'subscription_plan': 'free',
                     'selected_plan': 'free',
                     'subscription_type': 'free',
@@ -162,6 +167,9 @@ class UserProfileMeView(APIView):
             except Exception as e:
                 logger.warning(f"[UserProfileMeView] Could not get employee data: {str(e)}")
             
+            # Check if user has a business (tenant)
+            has_business = bool(request.user.tenant)
+            
             # Build response data
             user_country = str(profile.country) if profile.country else 'US'
             logger.info(f"[UserProfileMeView] Profile country: {profile.country}, Returning: {user_country}")
@@ -172,6 +180,7 @@ class UserProfileMeView(APIView):
                 'first_name': request.user.first_name,
                 'last_name': request.user.last_name,
                 'role': user_role,
+                'has_business': has_business,  # Add has_business field for mobile app compatibility
                 'page_permissions': page_permissions,
                 'subscription_plan': subscription_plan,
                 'selected_plan': selected_plan,
