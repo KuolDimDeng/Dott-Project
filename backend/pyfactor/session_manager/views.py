@@ -178,13 +178,9 @@ class SessionCreateView(APIView):
                         'can_delete': access.can_delete
                     })
             
-            # Check if user has a business
-            has_business = False
-            try:
-                from business.models import BusinessMember
-                has_business = BusinessMember.objects.filter(user=user).exists()
-            except:
-                pass
+            # Check if user has a business (tenant)
+            # A user has a business if they have a tenant assigned
+            has_business = bool(user.tenant)
             
             # Prepare response
             response_data = {
