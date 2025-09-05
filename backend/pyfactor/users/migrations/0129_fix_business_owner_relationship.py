@@ -39,7 +39,8 @@ def reverse_fix(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0001_initial'),  # Replace with your actual last migration
+        ('users', '0128_add_progressive_registration_fields'),  # Depends on the last migration
+        ('custom_auth', '0001_initial'),  # Also needs custom_auth for User model
     ]
 
     operations = [
