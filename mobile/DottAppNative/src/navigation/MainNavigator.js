@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 // Import screens
 import CallScreen from '../screens/CallScreen';
 import MarketplaceScreen from '../screens/MarketplaceScreen';
+import PurchasesScreen from '../screens/PurchasesScreen';
 import BusinessMenuScreen from '../screens/BusinessMenuScreen';
 import ChatScreen from '../screens/ChatScreen';
 import AccountScreen from '../screens/AccountScreen';
@@ -47,6 +48,9 @@ function TabNavigator() {
             case 'Marketplace':
               iconName = focused ? 'cart' : 'cart-outline';
               break;
+            case 'Purchases':
+              iconName = focused ? 'receipt' : 'receipt-outline';
+              break;
             case 'Business':
               iconName = focused ? 'business' : 'business-outline';
               break;
@@ -80,7 +84,9 @@ function TabNavigator() {
     >
       <Tab.Screen name="Call" component={CallScreen} />
       <Tab.Screen name="Marketplace" component={MarketplaceScreen} />
-      {hasBusiness && (
+      {!hasBusiness ? (
+        <Tab.Screen name="Purchases" component={PurchasesScreen} />
+      ) : (
         <Tab.Screen name="Business" component={BusinessMenuScreen} />
       )}
       <Tab.Screen name="Chat" component={ChatScreen} />

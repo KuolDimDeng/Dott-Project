@@ -151,11 +151,15 @@ class SessionSerializer(serializers.ModelSerializer):
             obj.save(update_fields=['subscription_plan'])
             logger.info(f"[SessionSerializer] Updated session subscription_plan to: {subscription_plan}")
         
+        # Check if user has a business (for mobile app compatibility)
+        has_business = bool(obj.tenant)
+        
         user_data = {
             'id': obj.user.id,
             'email': obj.user.email,
             'name': getattr(obj.user, 'name', ''),
             'role': user_role,  # Include user role
+            'has_business': has_business,  # Include business status for mobile app
             'page_permissions': page_permissions,  # Include page permissions
             'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
