@@ -27,7 +27,7 @@ const ENV_CONFIG = {
 
 // Change this to switch environments
 // Options: 'production', 'staging', 'local'
-const CURRENT_ENV = 'production';
+const CURRENT_ENV = 'staging';
 
 export const ENV = ENV_CONFIG[CURRENT_ENV];
 export const IS_PRODUCTION = CURRENT_ENV === 'production';
@@ -40,7 +40,10 @@ export const getSessionBaseUrl = () => {
   if (IS_STAGING) {
     return 'https://dott-api-staging.onrender.com';
   }
-  return ENV.apiUrl.replace('/api', '');
+  // For production and local, use the base URL without /api
+  const baseUrl = ENV.apiUrl.replace('/api', '');
+  // Ensure the URL is properly formatted
+  return baseUrl || 'https://api.dottapps.com';
 };
 
 export default ENV;

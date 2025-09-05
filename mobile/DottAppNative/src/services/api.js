@@ -1,7 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ENV from '../config/environment';
 
-const API_URL = 'https://api.dottapps.com/api';
+const API_URL = ENV.apiUrl;
 
 const api = axios.create({
   baseURL: API_URL,

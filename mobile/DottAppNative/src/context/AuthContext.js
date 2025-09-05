@@ -2,6 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import api from '../services/api';
+import { userApi } from '../services/userApi';
+import ENV, { getSessionBaseUrl } from '../config/environment';
 
 const AuthContext = createContext({});
 
@@ -14,13 +16,74 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
+  // Fetch complete user profile from backend
+  const fetchUserProfile = async () => {
+    try {
+      console.log('🔄 Fetching complete user profile...');
+      const response = await userApi.getCurrentUser();
+      console.log('👤 Complete user profile response:', JSON.stringify(response, null, 2));
+      
+      // Handle different response formats
+      let userData = null;
+      if (response && response.success && response.data) {
+        userData = response.data;
+      } else if (response && response.id) {
+        // Direct user object response
+        userData = response;
+      } else if (response && response.user) {
+        // Wrapped user response
+        userData = response.user;
+      }
+      
+      if (userData && userData.id) {
+        console.log('🔍 User ID:', userData.id);
+        console.log('🔍 User email:', userData.email);
+        console.log('🔍 User role:', userData.role);
+        console.log('🔍 Has business:', userData.has_business);
+        
+        // Update stored user data with complete profile
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        
+        // Set mode based on business status
+        const mode = userData.has_business ? 'business' : 'consumer';
+        await AsyncStorage.setItem('userMode', mode);
+        
+        setUser(userData);
+        setUserMode(mode);
+        
+        return userData;
+      }
+      
+      console.log('⚠️ No valid user data found in response');
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching user profile:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      return null;
+    }
+  };
+
   const loadUser = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
       const mode = await AsyncStorage.getItem('userMode');
-      if (userData) {
-        setUser(JSON.parse(userData));
+      const sessionId = await AsyncStorage.getItem('sessionId');
+      
+      if (userData && sessionId) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
         setUserMode(mode || 'consumer');
+        
+        // Try to refresh user profile if session exists
+        const refreshedUser = await fetchUserProfile();
+        if (!refreshedUser) {
+          // If profile fetch fails but we have cached data, use it
+          console.log('Using cached user data');
+        }
       }
     } catch (error) {
       console.error('Load user error:', error);
@@ -47,8 +110,7 @@ export const AuthProvider = ({ children }) => {
         console.log('📧 Attempting Auth0 authentication for:', email);
         
         // Step 1: Authenticate with Auth0 to get access token
-        // Using custom domain for Auth0
-        const auth0Response = await fetch('https://auth.dottapps.com/oauth/token', {
+        const auth0Response = await fetch(`https://${ENV.auth0Domain}/oauth/token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -57,8 +119,8 @@ export const AuthProvider = ({ children }) => {
             grant_type: 'password',
             username: email,
             password: password,
-            client_id: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG', // Native app client ID with Password grant enabled
-            audience: 'https://api.dottapps.com',
+            client_id: ENV.auth0ClientId,
+            audience: ENV.auth0Audience,
             scope: 'openid profile email offline_access'
           })
         });
@@ -79,7 +141,7 @@ export const AuthProvider = ({ children }) => {
         
         // Step 2: Create session on backend using Auth0 access token
         const publicApi = axios.create({
-          baseURL: 'https://api.dottapps.com',
+          baseURL: getSessionBaseUrl(),
           timeout: 30000,
           headers: {
             'Content-Type': 'application/json',
@@ -116,22 +178,33 @@ export const AuthProvider = ({ children }) => {
       console.log('✅ Login response:', response.data);
       
       if (response.data.success) {
-        const userData = response.data.user || response.data.data?.user;
         const sessionId = response.data.session_id || response.data.sid;
         
         if (sessionId) {
           await AsyncStorage.setItem('sessionId', sessionId);
         }
-        await AsyncStorage.setItem('userData', JSON.stringify(userData));
         
-        // Set mode based on business status
-        const mode = userData.has_business ? 'business' : 'consumer';
-        await AsyncStorage.setItem('userMode', mode);
+        // Fetch complete user profile with role and has_business
+        console.log('🔄 Fetching complete user profile after login...');
+        const completeUserData = await fetchUserProfile();
         
-        setUser(userData);
-        setUserMode(mode);
-        
-        return { success: true, mode };
+        if (completeUserData) {
+          // Use complete profile data
+          const mode = completeUserData.has_business ? 'business' : 'consumer';
+          return { success: true, mode };
+        } else {
+          // Fallback to session response data
+          const userData = response.data.user || response.data.data?.user;
+          await AsyncStorage.setItem('userData', JSON.stringify(userData));
+          
+          const mode = userData.has_business ? 'business' : 'consumer';
+          await AsyncStorage.setItem('userMode', mode);
+          
+          setUser(userData);
+          setUserMode(mode);
+          
+          return { success: true, mode };
+        }
       }
       return { success: false, message: response.data.message || 'Invalid credentials' };
     } catch (error) {
@@ -180,6 +253,7 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       switchMode,
+      fetchUserProfile,
       isAuthenticated: !!user
     }}>
       {children}

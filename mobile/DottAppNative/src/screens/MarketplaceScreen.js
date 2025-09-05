@@ -17,6 +17,7 @@ import { useCart } from '../context/CartContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import marketplaceApi from '../services/marketplaceApi';
+import { getCategoryDisplayName, getCategoryIcon, getCategoryColor } from '../utils/categoryMapping';
 // import Geolocation from '@react-native-community/geolocation'; // Temporarily disabled for testing
 
 export default function MarketplaceScreen() {
@@ -113,44 +114,50 @@ export default function MarketplaceScreen() {
       
       // Load categories for the city
       console.log('📂 Loading categories...');
-      const categoriesResponse = await marketplaceApi.getCategories(currentLocation.city);
-      console.log('📂 Categories response:', categoriesResponse);
-      if (categoriesResponse.success) {
-        setCategories(categoriesResponse.categories);
-        console.log('✅ Loaded', categoriesResponse.categories?.length, 'categories');
+      try {
+        const categoriesResponse = await marketplaceApi.getCategories(currentLocation.city);
+        console.log('📂 Categories response:', categoriesResponse);
+        if (categoriesResponse.success) {
+          setCategories(categoriesResponse.categories);
+          console.log('✅ Loaded', categoriesResponse.categories?.length, 'categories');
+        }
+      } catch (catError) {
+        console.error('Category load error:', catError);
       }
 
       // Load featured businesses
       console.log('⭐ Loading featured businesses...');
-      const featuredResponse = await marketplaceApi.getFeaturedBusinesses(currentLocation.city);
-      console.log('⭐ Featured response:', featuredResponse);
-      if (featuredResponse.success) {
-        setFeaturedBusinesses(featuredResponse.businesses);
-        console.log('✅ Loaded', featuredResponse.businesses?.length, 'featured businesses');
+      try {
+        const featuredResponse = await marketplaceApi.getFeaturedBusinesses(currentLocation.city);
+        console.log('⭐ Featured response:', featuredResponse);
+        if (featuredResponse.success) {
+          setFeaturedBusinesses(featuredResponse.businesses);
+          console.log('✅ Loaded', featuredResponse.businesses?.length, 'featured businesses');
+        }
+      } catch (featError) {
+        console.error('Featured businesses load error:', featError);
       }
 
       // Load initial businesses
       console.log('🏢 Loading businesses...');
-      const businessesResponse = await marketplaceApi.getBusinesses({
-        city: currentLocation.city,
-        country: currentLocation.country,
-        page: 1,
-      });
-      console.log('🏢 Businesses response:', businessesResponse);
-      if (businessesResponse.success) {
-        setBusinesses(businessesResponse.results);
-        setHasMore(businessesResponse.results.length === 20);
-        console.log('✅ Loaded', businessesResponse.results?.length, 'businesses');
-      } else {
-        console.log('❌ Failed to load businesses:', businessesResponse);
+      try {
+        const businessesResponse = await marketplaceApi.getBusinesses({
+          city: currentLocation.city,
+          country: currentLocation.country,
+          page: 1,
+        });
+        console.log('🏢 Businesses response:', businessesResponse);
+        if (businessesResponse.success) {
+          setBusinesses(businessesResponse.results);
+          setHasMore(businessesResponse.results.length === 20);
+          console.log('✅ Loaded', businessesResponse.results?.length, 'businesses');
+        }
+      } catch (busError) {
+        console.error('Businesses load error:', busError);
       }
+      
     } catch (error) {
       console.error('❌ Error loading marketplace data:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
       Alert.alert('Error', 'Failed to load marketplace data: ' + error.message);
     } finally {
       setLoading(false);
@@ -240,7 +247,7 @@ export default function MarketplaceScreen() {
     <TouchableOpacity 
       style={[
         styles.categoryCard,
-        selectedCategory === item.original_name && styles.selectedCategory
+        selectedCategory === (item.original_name || item.name) && styles.selectedCategory
       ]}
       onPress={() => handleCategorySelect(item)}
     >
@@ -255,11 +262,11 @@ export default function MarketplaceScreen() {
   const renderBusiness = ({ item }) => (
     <TouchableOpacity 
       style={styles.businessCard}
-      onPress={() => navigation.navigate('BusinessDetail', { businessId: item.id })}
+      onPress={() => console.log('Business clicked:', item.id)}
     >
       <View style={styles.businessInfo}>
         <Text style={styles.businessName}>{item.name}</Text>
-        <Text style={styles.businessCategory}>{item.category}</Text>
+        <Text style={styles.businessCategory}>{getCategoryDisplayName(item.category)}</Text>
         {item.address && (
           <Text style={styles.businessAddress} numberOfLines={1}>
             <Icon name="location-outline" size={12} color="#6b7280" /> {item.address}
@@ -378,18 +385,18 @@ export default function MarketplaceScreen() {
                     key={category.id}
                     style={[
                       styles.categoryPill,
-                      selectedCategory === category.original_name && styles.selectedCategoryPill
+                      selectedCategory === (category.original_name || category.name) && styles.selectedCategoryPill
                     ]}
                     onPress={() => handleCategorySelect(category)}
                   >
                     <Icon 
                       name={category.icon} 
                       size={16} 
-                      color={selectedCategory === category.original_name ? '#ffffff' : category.color} 
+                      color={selectedCategory === (category.original_name || category.name) ? '#ffffff' : category.color} 
                     />
                     <Text style={[
                       styles.categoryPillText,
-                      selectedCategory === category.original_name && styles.selectedCategoryPillText
+                      selectedCategory === (category.original_name || category.name) && styles.selectedCategoryPillText
                     ]}>
                       {category.name} ({category.count})
                     </Text>
@@ -403,7 +410,11 @@ export default function MarketplaceScreen() {
           {!searchActive && featuredBusinesses.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Featured Businesses</Text>
-              {featuredBusinesses.map((business) => renderBusiness({ item: business }))}
+              {featuredBusinesses.map((business) => (
+                <View key={`featured-${business.id}`}>
+                  {renderBusiness({ item: business })}
+                </View>
+              ))}
             </View>
           )}
 
@@ -417,7 +428,11 @@ export default function MarketplaceScreen() {
                   : `All Businesses in ${currentLocation.city}`}
             </Text>
             {businesses.length > 0 ? (
-              businesses.map((business) => renderBusiness({ item: business }))
+              businesses.map((business) => (
+                <View key={`business-${business.id}`}>
+                  {renderBusiness({ item: business })}
+                </View>
+              ))
             ) : (
               <View style={styles.emptyState}>
                 <Icon name="business-outline" size={48} color="#9ca3af" />

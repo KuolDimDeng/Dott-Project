@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ENV from '../../config/environment';
 
 export default function ExpensesScreen({ navigation }) {
   const [expenses, setExpenses] = useState([]);
@@ -42,11 +43,11 @@ export default function ExpensesScreen({ navigation }) {
       const sessionId = await AsyncStorage.getItem('sessionId');
       
       // TODO: Call backend API to save expense
-      const response = await fetch('https://api.dottapps.com/api/expenses/', {
+      const response = await fetch(`${ENV.apiUrl.replace('/api', '')}/api/expenses/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionId}`,
+          'Authorization': `Session ${sessionId}`,
         },
         body: JSON.stringify({
           description: expenseForm.description,

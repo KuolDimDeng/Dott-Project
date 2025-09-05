@@ -1,7 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ENV from '../config/environment';
 
-const API_BASE_URL = 'https://api.dottapps.com/api';
+const API_BASE_URL = ENV.apiUrl;
 
 // Create axios instance with default config
 const api = axios.create({
@@ -59,10 +60,10 @@ api.interceptors.response.use(
 );
 
 export const marketplaceApi = {
-  // Get businesses for marketplace (filtered by city) - Using existing deployed endpoint
+  // Get businesses for marketplace (filtered by city) - Using correct deployed endpoint
   getBusinesses: async (params = {}) => {
     try {
-      const response = await api.get('/api/marketplace/consumer/search/marketplace_businesses/', {
+      const response = await api.get('/marketplace/consumer/businesses/', {
         params: {
           city: params.city,
           country: params.country,
@@ -79,10 +80,10 @@ export const marketplaceApi = {
     }
   },
 
-  // Get categories for user's city - Using existing deployed endpoint
+  // Get categories for user's city - Using correct deployed endpoint
   getCategories: async (city) => {
     try {
-      const response = await api.get('/api/marketplace/consumer/search/marketplace_categories/', {
+      const response = await api.get('/marketplace/consumer/categories/', {
         params: { city },
       });
       return response.data;
@@ -92,10 +93,10 @@ export const marketplaceApi = {
     }
   },
 
-  // Get featured businesses for user's city - Using existing deployed endpoint
+  // Get featured businesses for user's city - Using correct deployed endpoint
   getFeaturedBusinesses: async (city) => {
     try {
-      const response = await api.get('/api/marketplace/consumer/search/featured_businesses/', {
+      const response = await api.get('/marketplace/consumer/businesses/featured/', {
         params: { city },
       });
       return response.data;
@@ -105,10 +106,10 @@ export const marketplaceApi = {
     }
   },
 
-  // Search businesses - Using existing deployed endpoint
+  // Search businesses - Using correct deployed endpoint
   searchBusinesses: async (query, city, category = '') => {
     try {
-      const response = await api.get('/api/marketplace/consumer/search/marketplace_businesses/', {
+      const response = await api.get('/marketplace/consumer/businesses/', {
         params: {
           search: query,
           city: city,

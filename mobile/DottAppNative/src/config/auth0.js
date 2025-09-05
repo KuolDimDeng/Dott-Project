@@ -2,19 +2,21 @@
 // This uses the industry-standard Authorization Code flow with PKCE
 // which is recommended for mobile applications
 
+import ENV, { getSessionBaseUrl } from './environment';
+
 export const AUTH0_CONFIG = {
   // Your Auth0 Domain
-  domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
+  domain: ENV.auth0Domain,
   
   // Native App Client ID for mobile (backend now accepts both web and mobile clients)
-  clientId: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG',
+  clientId: ENV.auth0ClientId,
   
   // Redirect and logout URLs for mobile
-  redirectUri: 'com.dottappnative://dev-cbyy63jovi6zrcos.us.auth0.com/ios/com.dottappnative/callback',
-  logoutRedirectUri: 'com.dottappnative://dev-cbyy63jovi6zrcos.us.auth0.com/ios/com.dottappnative/logout',
+  redirectUri: `com.dottappnative://${ENV.auth0Domain}/ios/com.dottappnative/callback`,
+  logoutRedirectUri: `com.dottappnative://${ENV.auth0Domain}/ios/com.dottappnative/logout`,
   
   // API Audience for your backend
-  audience: 'https://api.dottapps.com',
+  audience: ENV.auth0Audience,
   
   // Scopes to request
   scope: 'openid profile email offline_access',
@@ -25,6 +27,6 @@ export const AUTH0_CONFIG = {
 
 // Backend API configuration
 export const API_CONFIG = {
-  baseURL: 'https://api.dottapps.com',
-  sessionEndpoint: '/api/sessions/create/',
+  baseURL: getSessionBaseUrl(),
+  sessionEndpoint: ENV.sessionEndpoint,
 };
