@@ -46,9 +46,13 @@ def diagnose_support_user():
         if not hasattr(user, 'role') or user.role != 'OWNER':
             issues.append(f"User role is not OWNER (current: {getattr(user, 'role', 'NOT SET')})")
         
-        # Check has_business flag
+        # Check has_business flag - THIS IS THE MAIN ISSUE
         if not getattr(user, 'has_business', False):
-            issues.append("User has_business flag is False")
+            issues.append("🔴 User has_business flag is False - THIS PREVENTS BUSINESS MENU FROM SHOWING")
+            
+        # Check if business_id is set
+        if not getattr(user, 'business_id', None):
+            issues.append("User business_id is not set")
             
     except User.DoesNotExist:
         print(f"✗ User not found!")
@@ -62,12 +66,8 @@ def diagnose_support_user():
         print(f"✓ UserProfile exists:")
         print(f"  - Profile ID: {profile.id}")
         print(f"  - Business ID: {profile.business_id}")
-        print(f"  - Business Name: {profile.business_name}")
-        print(f"  - Tenant ID: {profile.tenant_id}")
+        print(f"  - Tenant ID: {getattr(profile, 'tenant_id', 'NOT SET')}")
         print(f"  - Onboarding Completed: {profile.onboarding_completed}")
-        
-        if not profile.business_name or profile.business_name != "Dott support":
-            issues.append(f"Business name is not 'Dott support' (current: {profile.business_name})")
             
     except UserProfile.DoesNotExist:
         print(f"✗ UserProfile not found!")
@@ -186,7 +186,6 @@ def fix_support_user():
             defaults={
                 'business_id': str(business.id),
                 'tenant_id': str(business.id),
-                'business_name': 'Dott support',
                 'onboarding_completed': True,
                 'subscription_plan': 'enterprise',
                 'selected_plan': 'enterprise',
@@ -199,7 +198,6 @@ def fix_support_user():
             # Update existing profile
             profile.business_id = str(business.id)
             profile.tenant_id = str(business.id)
-            profile.business_name = 'Dott support'
             profile.onboarding_completed = True
             profile.subscription_plan = 'enterprise'
             profile.selected_plan = 'enterprise'
