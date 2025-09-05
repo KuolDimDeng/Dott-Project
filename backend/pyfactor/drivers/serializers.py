@@ -4,7 +4,8 @@ Driver API Serializers
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import DriverProfile, DeliveryOrder, DriverEarnings, DriverNotification, DeliveryTracking
-from marketplace.models import BusinessListing, ConsumerOrder
+from marketplace.models import BusinessListing
+from marketplace.order_models import ConsumerOrder
 from users.models import Business
 
 User = get_user_model()

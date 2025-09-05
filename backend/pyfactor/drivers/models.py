@@ -222,6 +222,7 @@ class DeliveryOrder(models.Model):
                               related_name='deliveries')
     
     # Link to marketplace order if applicable
+    # Note: ConsumerOrder is in marketplace.order_models, not marketplace.models
     marketplace_order = models.OneToOneField('marketplace.ConsumerOrder', on_delete=models.CASCADE,
                                             null=True, blank=True, related_name='delivery')
     

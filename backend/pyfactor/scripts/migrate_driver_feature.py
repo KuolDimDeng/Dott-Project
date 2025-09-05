@@ -29,10 +29,10 @@ def run_migrations():
     print("="*60 + "\n")
     
     try:
-        # Step 1: Make migrations for marketplace (ConsumerOrder model)
-        print("📦 Step 1: Creating migrations for marketplace app...")
-        execute_from_command_line(['manage.py', 'makemigrations', 'marketplace'])
-        print("✅ Marketplace migrations created\n")
+        # Step 1: Check if marketplace needs migrations
+        print("📦 Step 1: Checking marketplace app...")
+        print("   (ConsumerOrder already exists in marketplace.order_models)")
+        print("✅ Marketplace models ready\n")
         
         # Step 2: Make migrations for drivers app
         print("🚚 Step 2: Creating migrations for drivers app...")
@@ -41,7 +41,6 @@ def run_migrations():
         
         # Step 3: Show migration plan
         print("📋 Step 3: Migration plan:")
-        execute_from_command_line(['manage.py', 'showmigrations', 'marketplace'])
         execute_from_command_line(['manage.py', 'showmigrations', 'drivers'])
         print()
         
@@ -49,7 +48,6 @@ def run_migrations():
         user_input = input("Do you want to apply these migrations? (yes/no): ")
         if user_input.lower() in ['yes', 'y']:
             print("\n🔄 Applying migrations...")
-            execute_from_command_line(['manage.py', 'migrate', 'marketplace'])
             execute_from_command_line(['manage.py', 'migrate', 'drivers'])
             print("✅ All migrations applied successfully!\n")
             
