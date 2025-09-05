@@ -96,8 +96,11 @@ class SessionV2View(APIView):
             # Get user role
             user_role = getattr(user, 'role', 'USER')
             
-            # Check if user has a business (tenant)
-            has_business = bool(user.tenant)
+            # Check if user has a business - FIX: Check actual business ownership, not tenant
+            # Old logic was wrong: has_business = bool(user.tenant)
+            # This caused issues where consumers with tenants showed business menu
+            from users.models import Business
+            has_business = Business.objects.filter(owner_id=user.id).exists()
             
             # Build response
             response_data = {
@@ -197,8 +200,11 @@ class SessionV2View(APIView):
             # Get user role
             user_role = getattr(user, 'role', 'USER')
             
-            # Check if user has a business (tenant)
-            has_business = bool(user.tenant)
+            # Check if user has a business - FIX: Check actual business ownership, not tenant
+            # Old logic was wrong: has_business = bool(user.tenant)
+            # This caused issues where consumers with tenants showed business menu
+            from users.models import Business
+            has_business = Business.objects.filter(owner_id=user.id).exists()
             
             # Build response
             response_data = {
