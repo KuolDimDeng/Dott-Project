@@ -101,7 +101,7 @@ class CourierCompany(models.Model):
     max_package_weight_kg = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
     max_package_dimension_cm = models.IntegerField(default=200)  # Longest dimension
     
-    tenant = models.ForeignKey('users.Tenant', on_delete=models.CASCADE, related_name='courier_companies')
+    tenant = models.ForeignKey('custom_auth.Tenant', on_delete=models.CASCADE, related_name='courier_companies')
     
     class Meta:
         verbose_name_plural = 'Courier Companies'
