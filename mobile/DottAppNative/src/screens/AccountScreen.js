@@ -12,7 +12,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function AccountScreen() {
+export default function AccountScreen({ navigation }) {
   const { user, userMode, logout } = useAuth();
   
   console.log('👤 AccountScreen - User data:', user);
@@ -29,6 +29,10 @@ export default function AccountScreen() {
         { text: 'Logout', onPress: logout, style: 'destructive' },
       ]
     );
+  };
+
+  const handleCreateBusiness = () => {
+    navigation.navigate('BusinessRegistration');
   };
 
   const businessMenuItems = [
@@ -94,6 +98,20 @@ export default function AccountScreen() {
             )}
           </View>
         </View>
+
+        {/* Create Business Button for Consumer Mode */}
+        {userMode === 'consumer' && !user?.has_business && (
+          <TouchableOpacity style={styles.createBusinessButton} onPress={handleCreateBusiness}>
+            <View style={styles.createBusinessContent}>
+              <Icon name="business-outline" size={24} color="#2563eb" />
+              <View style={styles.createBusinessTextContainer}>
+                <Text style={styles.createBusinessTitle}>I have a business</Text>
+                <Text style={styles.createBusinessSubtitle}>Register your business & become a driver</Text>
+              </View>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#2563eb" />
+          </TouchableOpacity>
+        )}
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>
@@ -237,6 +255,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#059669',
     fontWeight: '500',
+  },
+  createBusinessButton: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#2563eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  createBusinessContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  createBusinessTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  createBusinessTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2563eb',
+    marginBottom: 2,
+  },
+  createBusinessSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
   },
   menuSection: {
     backgroundColor: 'white',
