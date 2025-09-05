@@ -4,764 +4,924 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
-  Image,
+  TextInput,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../../context/AuthContext';
-import { courierApi } from '../../services/courierApi';
-
-const BUSINESS_TYPES = [
-  { value: 'Transport/Delivery', label: 'Transport & Delivery Services' },
-  { value: 'Food & Beverages', label: 'Food & Beverages' },
-  { value: 'Shopping/Retail', label: 'Shopping & Retail' },
-  { value: 'Health Services', label: 'Health Services' },
-  { value: 'Professional Services', label: 'Professional Services' },
-  { value: 'Home Services', label: 'Home Services' },
-  { value: 'Beauty & Wellness', label: 'Beauty & Wellness' },
-  { value: 'Education', label: 'Education & Training' },
-  { value: 'Entertainment', label: 'Entertainment & Events' },
-  { value: 'Other', label: 'Other Services' },
-];
-
-const LEGAL_STRUCTURES = [
-  { value: 'SOLE_PROPRIETORSHIP', label: 'Sole Proprietor/Individual' },
-  { value: 'LIMITED_COMPANY', label: 'Limited Company (Ltd)' },
-  { value: 'PARTNERSHIP', label: 'Partnership' },
-  { value: 'NGO', label: 'NGO/Non-Profit' },
-  { value: 'CORPORATION', label: 'Corporation' },
-];
-
-const VEHICLE_TYPES = [
-  { value: 'bicycle', label: 'Bicycle' },
-  { value: 'motorcycle', label: 'Motorcycle' },
-  { value: 'car', label: 'Car' },
-  { value: 'van', label: 'Van/Pickup' },
-  { value: 'truck', label: 'Truck' },
-  { value: 'scooter', label: 'E-Scooter' },
-];
-
-const ID_TYPES = [
-  { value: 'national_id', label: 'National ID' },
-  { value: 'passport', label: 'Passport' },
-  { value: 'voter_id', label: 'Voter ID' },
-];
+import { businessApi } from '../../services/businessApi';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {
+  ENTITY_TYPES,
+  INDIVIDUAL_CATEGORIES,
+  BUSINESS_CATEGORIES,
+  REGISTRATION_STATUS,
+  VEHICLE_TYPES,
+  mapToBackendType,
+} from '../../constants/businessTypes';
 
 export default function BusinessRegistrationScreen({ navigation }) {
   const { user, refreshUser } = useAuth();
-  const [step, setStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Business Information
-  const [businessName, setBusinessName] = useState('');
-  const [businessType, setBusinessType] = useState('');
-  const [legalStructure, setLegalStructure] = useState('SOLE_PROPRIETORSHIP');
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // Form data
+  const [formData, setFormData] = useState({
+    // Step 1: Entity Type
+    entityType: '',
+    
+    // Step 2: Business Category
+    businessCategory: '',
+    businessType: '',
+    
+    // Step 3: Basic Info
+    businessName: '',
+    registrationStatus: '',
+    registrationNumber: '',
+    
+    // Step 4: Contact Info
+    businessPhone: '',
+    businessEmail: user?.email || '',
+    businessAddress: '',
+    city: '',
+    country: 'SS', // Default to South Sudan
+    
+    // Step 5: Additional Services (Courier option)
+    offersCourier: false,
+    vehicleType: '',
+    vehicleRegistration: '',
+    
+    // Documents
+    governmentId: null,
+    driversLicense: null,
+    businessLicense: null,
+  });
 
-  // Courier-specific fields (shown only for Transport/Delivery)
-  const [vehicleType, setVehicleType] = useState('motorcycle');
-  const [vehicleMake, setVehicleMake] = useState('');
-  const [vehicleModel, setVehicleModel] = useState('');
-  const [vehicleYear, setVehicleYear] = useState('');
-  const [vehicleColor, setVehicleColor] = useState('');
-  const [vehicleRegistration, setVehicleRegistration] = useState('');
-
-  // License Information
-  const [licenseNumber, setLicenseNumber] = useState('');
-  const [licenseExpiry, setLicenseExpiry] = useState('');
-  const [licenseFrontPhoto, setLicenseFrontPhoto] = useState(null);
-  const [licenseBackPhoto, setLicenseBackPhoto] = useState(null);
-
-  // ID Verification
-  const [idType, setIdType] = useState('national_id');
-  const [idNumber, setIdNumber] = useState('');
-  const [idFrontPhoto, setIdFrontPhoto] = useState(null);
-  const [idBackPhoto, setIdBackPhoto] = useState(null);
-  const [selfieWithId, setSelfieWithId] = useState(null);
-
-  // Service Configuration (for couriers)
-  const [serviceRadius, setServiceRadius] = useState('10');
-  const [acceptsCash, setAcceptsCash] = useState(true);
-  const [acceptsFood, setAcceptsFood] = useState(true);
-
-  // Banking Information
-  const [bankAccount, setBankAccount] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [mpesaNumber, setMpesaNumber] = useState('');
-  const [payoutMethod, setPayoutMethod] = useState('mpesa');
-
-  // Emergency Contact (for couriers)
-  const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
-
-  const isCourierBusiness = businessType === 'Transport/Delivery';
-
-  const selectImage = (type) => {
-    const options = {
-      mediaType: 'photo',
-      includeBase64: true,
-      maxHeight: 2000,
-      maxWidth: 2000,
-      quality: 0.8,
-    };
-
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error) {
-        return;
-      }
-
-      const base64Image = `data:${response.assets[0].type};base64,${response.assets[0].base64}`;
-      
-      switch (type) {
-        case 'licenseFront':
-          setLicenseFrontPhoto(base64Image);
-          break;
-        case 'licenseBack':
-          setLicenseBackPhoto(base64Image);
-          break;
-        case 'idFront':
-          setIdFrontPhoto(base64Image);
-          break;
-        case 'idBack':
-          setIdBackPhoto(base64Image);
-          break;
-        case 'selfie':
-          setSelfieWithId(base64Image);
-          break;
-      }
-    });
-  };
-
-  const validateStep = () => {
-    switch (step) {
-      case 1:
-        if (!businessName || !businessType || !city || !country || !phoneNumber) {
-          Alert.alert('Error', 'Please fill in all required fields');
-          return false;
-        }
-        break;
-      case 2:
-        if (!idType || !idNumber || !idFrontPhoto) {
-          Alert.alert('Error', 'Please provide ID information and upload ID photo');
-          return false;
-        }
-        if (!selfieWithId) {
-          Alert.alert('Error', 'Please take a selfie holding your ID');
-          return false;
-        }
-        break;
-      case 3:
-        if (isCourierBusiness) {
-          if (!vehicleType || !vehicleRegistration || !licenseNumber || !licenseExpiry) {
-            Alert.alert('Error', 'Please fill in all vehicle and license information');
-            return false;
-          }
-          if (!licenseFrontPhoto || !licenseBackPhoto) {
-            Alert.alert('Error', 'Please upload both sides of your license');
-            return false;
-          }
-        }
-        break;
-    }
-    return true;
-  };
+  const totalSteps = 5;
 
   const handleNext = () => {
-    if (validateStep()) {
-      if (step < (isCourierBusiness ? 4 : 3)) {
-        setStep(step + 1);
+    if (validateCurrentStep()) {
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
       } else {
         handleSubmit();
       }
     }
   };
 
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        if (!formData.entityType) {
+          Alert.alert('Required', 'Please select your business entity type');
+          return false;
+        }
+        break;
+      case 2:
+        if (!formData.businessCategory || !formData.businessType) {
+          Alert.alert('Required', 'Please select your business category and type');
+          return false;
+        }
+        break;
+      case 3:
+        // Business name is optional for individual service providers
+        const isIndividual = formData.entityType === 'INDIVIDUAL';
+        if (!isIndividual && !formData.businessName) {
+          Alert.alert('Required', 'Please enter your business name');
+          return false;
+        }
+        if (!formData.registrationStatus) {
+          Alert.alert('Required', 'Please select your registration status');
+          return false;
+        }
+        break;
+      case 4:
+        if (!formData.businessPhone || !formData.businessAddress || !formData.city) {
+          Alert.alert('Required', 'Please fill in all contact information');
+          return false;
+        }
+        break;
+      case 5:
+        if (formData.offersCourier && !formData.vehicleType) {
+          Alert.alert('Required', 'Please select your vehicle type');
+          return false;
+        }
+        break;
+    }
+    return true;
+  };
+
+  const handleImagePicker = (fieldName) => {
+    const options = {
+      mediaType: 'photo',
+      includeBase64: true,
+      maxWidth: 1000,
+      maxHeight: 1000,
+      quality: 0.7,
+    };
+
+    launchImageLibrary(options, (response) => {
+      if (!response.didCancel && !response.error) {
+        const imageData = `data:${response.assets[0].type};base64,${response.assets[0].base64}`;
+        setFormData({ ...formData, [fieldName]: imageData });
+      }
+    });
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const registrationData = {
+      // For individual service providers without a business name, use their personal name or a default
+      let businessName = formData.businessName;
+      if (formData.entityType === 'INDIVIDUAL' && !businessName) {
+        // Get the business type label for context
+        const selectedType = INDIVIDUAL_CATEGORIES[formData.businessCategory]?.types.find(
+          t => t.value === formData.businessType
+        );
+        // Use user's name + service type, or just service type
+        businessName = user?.name ? 
+          `${user.name} - ${selectedType?.label || 'Service Provider'}` : 
+          selectedType?.label || 'Individual Service Provider';
+      }
+      
+      // Prepare submission data
+      const submissionData = {
         business_name: businessName,
-        business_type: businessType,
-        legal_structure: legalStructure,
-        city,
-        country,
-        phone_number: phoneNumber,
-        id_type: idType,
-        id_number: idNumber,
-        id_front_photo: idFrontPhoto,
-        id_back_photo: idBackPhoto,
-        selfie_with_id: selfieWithId,
+        business_type: mapToBackendType(formData.businessType),
+        entity_type: formData.entityType,
+        registration_status: formData.registrationStatus,
+        registration_number: formData.registrationNumber || '',
+        phone: formData.businessPhone,
+        email: formData.businessEmail,
+        address: formData.businessAddress,
+        city: formData.city,
+        country: formData.country,
+        offers_courier_services: formData.offersCourier,
       };
 
-      if (isDriverBusiness) {
-        Object.assign(registrationData, {
-          vehicle_type: vehicleType,
-          vehicle_make: vehicleMake,
-          vehicle_model: vehicleModel,
-          vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
-          vehicle_color: vehicleColor,
-          vehicle_registration: vehicleRegistration,
-          license_number: licenseNumber,
-          license_expiry: licenseExpiry,
-          license_front_photo: licenseFrontPhoto,
-          license_back_photo: licenseBackPhoto,
-          service_radius_km: parseInt(serviceRadius),
-          accepts_cash: acceptsCash,
-          accepts_food_delivery: acceptsFood,
-          bank_account_number: bankAccount,
-          bank_name: bankName,
-          mpesa_number: mpesaNumber,
-          preferred_payout_method: payoutMethod,
-          emergency_contact_name: emergencyName,
-          emergency_contact_phone: emergencyPhone,
-        });
+      // If offering courier services, add courier-specific data
+      if (formData.offersCourier) {
+        submissionData.courier_data = {
+          vehicle_type: formData.vehicleType,
+          vehicle_registration: formData.vehicleRegistration || '',
+          government_id: formData.governmentId,
+          drivers_license: formData.driversLicense,
+        };
       }
 
-      const response = await courierApi.registerBusiness(registrationData);
-      
-      if (response.success) {
-        await refreshUser();
-        Alert.alert(
-          'Success',
-          isCourierBusiness
-            ? 'Your courier application has been submitted for verification. You will be notified once approved.'
-            : 'Your business has been registered successfully!',
-          [{ text: 'OK', onPress: () => navigation.navigate('Business') }]
-        );
-      } else {
-        Alert.alert('Error', response.message || 'Registration failed');
-      }
+      // Submit to backend
+      const response = await businessApi.registerBusiness(submissionData);
+
+      Alert.alert(
+        'Success',
+        'Your business registration has been submitted successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              refreshUser();
+              navigation.goBack();
+            },
+          },
+        ]
+      );
     } catch (error) {
-      Alert.alert('Error', 'Failed to register business. Please try again.');
-      console.error('Registration error:', error);
+      Alert.alert('Error', error.message || 'Failed to register business');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderStep1 = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Business Information</Text>
-      
-      <Text style={styles.label}>Business Name *</Text>
-      <TextInput
-        style={styles.input}
-        value={businessName}
-        onChangeText={setBusinessName}
-        placeholder="Enter your business name"
-      />
-
-      <Text style={styles.label}>Business Type *</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={businessType}
-          onValueChange={setBusinessType}
-          style={styles.picker}
-        >
-          <Picker.Item label="Select business type..." value="" />
-          {BUSINESS_TYPES.map((type) => (
-            <Picker.Item key={type.value} label={type.label} value={type.value} />
-          ))}
-        </Picker>
+  const renderProgressBar = () => {
+    return (
+      <View style={styles.progressContainer}>
+        {[...Array(totalSteps)].map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.progressStep,
+              index < currentStep && styles.progressStepCompleted,
+              index === currentStep - 1 && styles.progressStepActive,
+            ]}
+          />
+        ))}
       </View>
+    );
+  };
 
-      <Text style={styles.label}>Legal Structure *</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={legalStructure}
-          onValueChange={setLegalStructure}
-          style={styles.picker}
-        >
-          {LEGAL_STRUCTURES.map((structure) => (
-            <Picker.Item key={structure.value} label={structure.label} value={structure.value} />
-          ))}
-        </Picker>
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return renderEntityTypeStep();
+      case 2:
+        return renderBusinessCategoryStep();
+      case 3:
+        return renderBasicInfoStep();
+      case 4:
+        return renderContactInfoStep();
+      case 5:
+        return renderAdditionalServicesStep();
+      default:
+        return null;
+    }
+  };
+
+  const renderEntityTypeStep = () => {
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>What type of business entity are you?</Text>
+        <Text style={styles.stepSubtitle}>
+          This helps us customize your experience
+        </Text>
+
+        {ENTITY_TYPES.map((type) => (
+          <TouchableOpacity
+            key={type.value}
+            style={[
+              styles.entityCard,
+              formData.entityType === type.value && styles.entityCardSelected,
+            ]}
+            onPress={() => setFormData({ ...formData, entityType: type.value })}
+          >
+            <View style={styles.entityCardContent}>
+              <Text style={[
+                styles.entityCardTitle,
+                formData.entityType === type.value && styles.entityCardTitleSelected
+              ]}>
+                {type.label}
+              </Text>
+              <Text style={[
+                styles.entityCardDescription,
+                formData.entityType === type.value && styles.entityCardDescriptionSelected
+              ]}>
+                {type.description}
+              </Text>
+            </View>
+            {formData.entityType === type.value && (
+              <Icon name="checkmark-circle" size={24} color="#2563eb" />
+            )}
+          </TouchableOpacity>
+        ))}
       </View>
+    );
+  };
 
-      <Text style={styles.label}>City *</Text>
-      <TextInput
-        style={styles.input}
-        value={city}
-        onChangeText={setCity}
-        placeholder="Enter city"
-      />
+  const renderBusinessCategoryStep = () => {
+    const categories = formData.entityType === 'INDIVIDUAL' 
+      ? INDIVIDUAL_CATEGORIES 
+      : BUSINESS_CATEGORIES;
 
-      <Text style={styles.label}>Country *</Text>
-      <TextInput
-        style={styles.input}
-        value={country}
-        onChangeText={setCountry}
-        placeholder="Enter country code (e.g., US, KE)"
-        maxLength={2}
-        autoCapitalize="characters"
-      />
+    const selectedCategory = categories[formData.businessCategory];
 
-      <Text style={styles.label}>Phone Number *</Text>
-      <TextInput
-        style={styles.input}
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        placeholder="+254712345678"
-        keyboardType="phone-pad"
-      />
-    </View>
-  );
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>Select your business category</Text>
+        <Text style={styles.stepSubtitle}>
+          Choose the category that best describes your {formData.entityType === 'INDIVIDUAL' ? 'service' : 'business'}
+        </Text>
 
-  const renderStep2 = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Identity Verification</Text>
-      <Text style={styles.subtitle}>To prevent fraud and ensure safety</Text>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Category Selection */}
+          {!formData.businessCategory ? (
+            <View>
+              {Object.entries(categories).map(([key, category]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={styles.categoryCard}
+                  onPress={() => setFormData({ ...formData, businessCategory: key, businessType: '' })}
+                >
+                  <Icon name={category.icon} size={28} color="#2563eb" />
+                  <Text style={styles.categoryCardTitle}>{category.label}</Text>
+                  <Icon name="chevron-forward" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View>
+              <TouchableOpacity
+                style={styles.selectedCategoryHeader}
+                onPress={() => setFormData({ ...formData, businessCategory: '', businessType: '' })}
+              >
+                <Icon name="arrow-back" size={20} color="#2563eb" />
+                <Text style={styles.selectedCategoryTitle}>{selectedCategory.label}</Text>
+              </TouchableOpacity>
 
-      <Text style={styles.label}>ID Type *</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={idType}
-          onValueChange={setIdType}
-          style={styles.picker}
-        >
-          {ID_TYPES.map((type) => (
-            <Picker.Item key={type.value} label={type.label} value={type.value} />
-          ))}
-        </Picker>
+              {/* Type Selection within Category */}
+              {selectedCategory.types.map((type) => (
+                <TouchableOpacity
+                  key={type.value}
+                  style={[
+                    styles.typeCard,
+                    formData.businessType === type.value && styles.typeCardSelected,
+                  ]}
+                  onPress={() => setFormData({ ...formData, businessType: type.value })}
+                >
+                  <Text style={[
+                    styles.typeCardTitle,
+                    formData.businessType === type.value && styles.typeCardTitleSelected
+                  ]}>
+                    {type.label}
+                  </Text>
+                  {formData.businessType === type.value && (
+                    <Icon name="checkmark" size={20} color="#2563eb" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       </View>
+    );
+  };
 
-      <Text style={styles.label}>ID Number *</Text>
-      <TextInput
-        style={styles.input}
-        value={idNumber}
-        onChangeText={setIdNumber}
-        placeholder="Enter ID number"
-      />
+  const renderBasicInfoStep = () => {
+    const isIndividual = formData.entityType === 'INDIVIDUAL';
+    
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>
+          {isIndividual ? 'Service Provider Information' : 'Business Information'}
+        </Text>
+        <Text style={styles.stepSubtitle}>
+          {isIndividual ? 'Tell us about your services' : 'Tell us about your business'}
+        </Text>
 
-      <Text style={styles.label}>ID Front Photo *</Text>
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => selectImage('idFront')}
-      >
-        {idFrontPhoto ? (
-          <Image source={{ uri: idFrontPhoto }} style={styles.uploadedImage} />
-        ) : (
-          <Text style={styles.uploadText}>📷 Upload ID Front</Text>
+        {/* Only show business name for non-individual entities */}
+        {!isIndividual && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Business Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.businessName}
+              onChangeText={(text) => setFormData({ ...formData, businessName: text })}
+              placeholder="Enter your business name"
+            />
+          </View>
         )}
-      </TouchableOpacity>
 
-      <Text style={styles.label}>ID Back Photo</Text>
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => selectImage('idBack')}
-      >
-        {idBackPhoto ? (
-          <Image source={{ uri: idBackPhoto }} style={styles.uploadedImage} />
-        ) : (
-          <Text style={styles.uploadText}>📷 Upload ID Back</Text>
+        {/* Optional display name for individuals */}
+        {isIndividual && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Display Name (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.businessName}
+              onChangeText={(text) => setFormData({ ...formData, businessName: text })}
+              placeholder={`${user?.name || 'Your name'} - ${formData.businessType ? 
+                INDIVIDUAL_CATEGORIES[formData.businessCategory]?.types.find(t => t.value === formData.businessType)?.label : 
+                'Service Provider'}`}
+            />
+            <Text style={styles.inputHint}>
+              Leave blank to use your personal name
+            </Text>
+          </View>
         )}
-      </TouchableOpacity>
 
-      <Text style={styles.label}>Selfie with ID *</Text>
-      <Text style={styles.hint}>Take a selfie holding your ID document</Text>
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => selectImage('selfie')}
-      >
-        {selfieWithId ? (
-          <Image source={{ uri: selfieWithId }} style={styles.uploadedImage} />
-        ) : (
-          <Text style={styles.uploadText}>🤳 Take Selfie with ID</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>
+            {isIndividual ? 'Are you legally registered?' : 'Registration Status'} *
+          </Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={formData.registrationStatus}
+              onValueChange={(value) => setFormData({ ...formData, registrationStatus: value })}
+            >
+              <Picker.Item label="Select status" value="" />
+              {REGISTRATION_STATUS.map((status) => (
+                <Picker.Item key={status.value} label={status.label} value={status.value} />
+              ))}
+            </Picker>
+          </View>
+        </View>
+
+        {formData.registrationStatus === 'REGISTERED' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Registration/License Number</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.registrationNumber}
+              onChangeText={(text) => setFormData({ ...formData, registrationNumber: text })}
+              placeholder={isIndividual ? 'Enter license/permit number' : 'Enter registration number'}
+            />
+          </View>
         )}
-      </TouchableOpacity>
-    </View>
-  );
 
-  const renderStep3Courier = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Vehicle & License Information</Text>
-
-      <Text style={styles.label}>Vehicle Type *</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={vehicleType}
-          onValueChange={setVehicleType}
-          style={styles.picker}
-        >
-          {VEHICLE_TYPES.map((type) => (
-            <Picker.Item key={type.value} label={type.label} value={type.value} />
-          ))}
-        </Picker>
-      </View>
-
-      <Text style={styles.label}>Vehicle Registration *</Text>
-      <TextInput
-        style={styles.input}
-        value={vehicleRegistration}
-        onChangeText={setVehicleRegistration}
-        placeholder="e.g., KBA 123X"
-        autoCapitalize="characters"
-      />
-
-      <Text style={styles.label}>Vehicle Make</Text>
-      <TextInput
-        style={styles.input}
-        value={vehicleMake}
-        onChangeText={setVehicleMake}
-        placeholder="e.g., Toyota"
-      />
-
-      <Text style={styles.label}>Vehicle Model</Text>
-      <TextInput
-        style={styles.input}
-        value={vehicleModel}
-        onChangeText={setVehicleModel}
-        placeholder="e.g., Corolla"
-      />
-
-      <Text style={styles.label}>Vehicle Color</Text>
-      <TextInput
-        style={styles.input}
-        value={vehicleColor}
-        onChangeText={setVehicleColor}
-        placeholder="e.g., White"
-      />
-
-      <Text style={styles.label}>License Number *</Text>
-      <TextInput
-        style={styles.input}
-        value={licenseNumber}
-        onChangeText={setLicenseNumber}
-        placeholder="Enter license number"
-      />
-
-      <Text style={styles.label}>License Expiry Date *</Text>
-      <TextInput
-        style={styles.input}
-        value={licenseExpiry}
-        onChangeText={setLicenseExpiry}
-        placeholder="YYYY-MM-DD"
-      />
-
-      <Text style={styles.label}>License Front Photo *</Text>
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => selectImage('licenseFront')}
-      >
-        {licenseFrontPhoto ? (
-          <Image source={{ uri: licenseFrontPhoto }} style={styles.uploadedImage} />
-        ) : (
-          <Text style={styles.uploadText}>📷 Upload License Front</Text>
+        {formData.registrationStatus === 'REGISTERED' && (
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => handleImagePicker('businessLicense')}
+          >
+            <Icon name="document-outline" size={24} color="#2563eb" />
+            <Text style={styles.uploadButtonText}>
+              {formData.businessLicense ? 
+                (isIndividual ? 'License/Permit Uploaded ✓' : 'Business License Uploaded ✓') : 
+                (isIndividual ? 'Upload License/Permit' : 'Upload Business License')}
+            </Text>
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
-
-      <Text style={styles.label}>License Back Photo *</Text>
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => selectImage('licenseBack')}
-      >
-        {licenseBackPhoto ? (
-          <Image source={{ uri: licenseBackPhoto }} style={styles.uploadedImage} />
-        ) : (
-          <Text style={styles.uploadText}>📷 Upload License Back</Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderStep4Courier = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Service & Payment Settings</Text>
-
-      <Text style={styles.label}>Service Radius (km)</Text>
-      <TextInput
-        style={styles.input}
-        value={serviceRadius}
-        onChangeText={setServiceRadius}
-        placeholder="10"
-        keyboardType="numeric"
-      />
-
-      <View style={styles.checkboxContainer}>
-        <TouchableOpacity
-          style={[styles.checkbox, acceptsCash && styles.checkboxChecked]}
-          onPress={() => setAcceptsCash(!acceptsCash)}
-        >
-          <Text style={styles.checkboxText}>Accept Cash Payments</Text>
-        </TouchableOpacity>
       </View>
+    );
+  };
 
-      <View style={styles.checkboxContainer}>
-        <TouchableOpacity
-          style={[styles.checkbox, acceptsFood && styles.checkboxChecked]}
-          onPress={() => setAcceptsFood(!acceptsFood)}
-        >
-          <Text style={styles.checkboxText}>Accept Food Deliveries</Text>
-        </TouchableOpacity>
-      </View>
+  const renderContactInfoStep = () => {
+    const isIndividual = formData.entityType === 'INDIVIDUAL';
+    
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>Contact Information</Text>
+        <Text style={styles.stepSubtitle}>How can customers reach you?</Text>
 
-      <Text style={styles.sectionTitle}>Payment Information</Text>
-
-      <Text style={styles.label}>Preferred Payout Method</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={payoutMethod}
-          onValueChange={setPayoutMethod}
-          style={styles.picker}
-        >
-          <Picker.Item label="M-Pesa" value="mpesa" />
-          <Picker.Item label="Bank Transfer" value="bank" />
-          <Picker.Item label="Cash Pickup" value="cash" />
-        </Picker>
-      </View>
-
-      {payoutMethod === 'mpesa' && (
-        <>
-          <Text style={styles.label}>M-Pesa Number</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>
+            {isIndividual ? 'Contact Phone' : 'Business Phone'} *
+          </Text>
           <TextInput
             style={styles.input}
-            value={mpesaNumber}
-            onChangeText={setMpesaNumber}
-            placeholder="+254712345678"
+            value={formData.businessPhone}
+            onChangeText={(text) => setFormData({ ...formData, businessPhone: text })}
+            placeholder="+211 xxx xxx xxx"
             keyboardType="phone-pad"
           />
-        </>
-      )}
+        </View>
 
-      {payoutMethod === 'bank' && (
-        <>
-          <Text style={styles.label}>Bank Name</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>
+            {isIndividual ? 'Contact Email' : 'Business Email'}
+          </Text>
           <TextInput
             style={styles.input}
-            value={bankName}
-            onChangeText={setBankName}
-            placeholder="e.g., Equity Bank"
+            value={formData.businessEmail}
+            onChangeText={(text) => setFormData({ ...formData, businessEmail: text })}
+            placeholder={isIndividual ? 'your@email.com' : 'business@example.com'}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
+        </View>
 
-          <Text style={styles.label}>Account Number</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>
+            {isIndividual ? 'Service Location' : 'Business Address'} *
+          </Text>
           <TextInput
             style={styles.input}
-            value={bankAccount}
-            onChangeText={setBankAccount}
-            placeholder="Enter account number"
+            value={formData.businessAddress}
+            onChangeText={(text) => setFormData({ ...formData, businessAddress: text })}
+            placeholder="Street address"
           />
-        </>
-      )}
+        </View>
 
-      <Text style={styles.sectionTitle}>Emergency Contact</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>City *</Text>
+          <TextInput
+            style={styles.input}
+            value={formData.city}
+            onChangeText={(text) => setFormData({ ...formData, city: text })}
+            placeholder="e.g., Juba"
+          />
+        </View>
 
-      <Text style={styles.label}>Contact Name</Text>
-      <TextInput
-        style={styles.input}
-        value={emergencyName}
-        onChangeText={setEmergencyName}
-        placeholder="Emergency contact name"
-      />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Country</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={formData.country}
+              onValueChange={(value) => setFormData({ ...formData, country: value })}
+            >
+              <Picker.Item label="South Sudan" value="SS" />
+              <Picker.Item label="Kenya" value="KE" />
+              <Picker.Item label="Uganda" value="UG" />
+              <Picker.Item label="Tanzania" value="TZ" />
+              <Picker.Item label="Rwanda" value="RW" />
+              <Picker.Item label="Ethiopia" value="ET" />
+            </Picker>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
-      <Text style={styles.label}>Contact Phone</Text>
-      <TextInput
-        style={styles.input}
-        value={emergencyPhone}
-        onChangeText={setEmergencyPhone}
-        placeholder="+254712345678"
-        keyboardType="phone-pad"
-      />
-    </View>
-  );
+  const renderAdditionalServicesStep = () => {
+    const isTransportCategory = formData.businessCategory === 'TRANSPORT_DELIVERY';
+    const isCourierType = formData.businessType === 'COURIER';
 
-  const getTotalSteps = () => isCourierBusiness ? 4 : 3;
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>Additional Services</Text>
+        <Text style={styles.stepSubtitle}>Would you like to offer delivery services?</Text>
+
+        {!isTransportCategory && (
+          <View style={styles.courierOptionContainer}>
+            <TouchableOpacity
+              style={[
+                styles.courierOption,
+                formData.offersCourier === true && styles.courierOptionSelected,
+              ]}
+              onPress={() => setFormData({ ...formData, offersCourier: true })}
+            >
+              <Icon name="bicycle" size={32} color={formData.offersCourier ? '#2563eb' : '#6b7280'} />
+              <Text style={styles.courierOptionTitle}>Yes, I want to be a courier</Text>
+              <Text style={styles.courierOptionSubtitle}>Deliver products and earn extra income</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.courierOption,
+                formData.offersCourier === false && styles.courierOptionSelected,
+              ]}
+              onPress={() => setFormData({ ...formData, offersCourier: false })}
+            >
+              <Icon name="business" size={32} color={!formData.offersCourier ? '#2563eb' : '#6b7280'} />
+              <Text style={styles.courierOptionTitle}>No, just my business</Text>
+              <Text style={styles.courierOptionSubtitle}>Focus on my primary business only</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {(formData.offersCourier || isTransportCategory || isCourierType) && (
+          <View style={styles.courierDetails}>
+            <Text style={styles.sectionTitle}>Delivery Service Details</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Vehicle Type *</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.vehicleType}
+                  onValueChange={(value) => setFormData({ ...formData, vehicleType: value })}
+                >
+                  <Picker.Item label="Select vehicle" value="" />
+                  {VEHICLE_TYPES.map((vehicle) => (
+                    <Picker.Item key={vehicle.value} label={vehicle.label} value={vehicle.value} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {formData.vehicleType && formData.vehicleType !== 'bicycle' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Vehicle Registration</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.vehicleRegistration}
+                  onChangeText={(text) => setFormData({ ...formData, vehicleRegistration: text })}
+                  placeholder="Enter vehicle registration number"
+                />
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={() => handleImagePicker('governmentId')}
+            >
+              <Icon name="card-outline" size={24} color="#2563eb" />
+              <Text style={styles.uploadButtonText}>
+                {formData.governmentId ? 'Government ID Uploaded ✓' : 'Upload Government ID *'}
+              </Text>
+            </TouchableOpacity>
+
+            {formData.vehicleType && formData.vehicleType !== 'bicycle' && (
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={() => handleImagePicker('driversLicense')}
+              >
+                <Icon name="car-outline" size={24} color="#2563eb" />
+                <Text style={styles.uploadButtonText}>
+                  {formData.driversLicense ? 'Driver\'s License Uploaded ✓' : 'Upload Driver\'s License *'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>Create Your Business</Text>
-        <Text style={styles.progress}>Step {step} of {getTotalSteps()}</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="close" size={28} color="#1a1a1a" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Business Registration</Text>
+        <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {step === 1 && renderStep1()}
-        {step === 2 && renderStep2()}
-        {step === 3 && !isCourierBusiness && renderStep2()}
-        {step === 3 && isCourierBusiness && renderStep3Courier()}
-        {step === 4 && isCourierBusiness && renderStep4Courier()}
+      {renderProgressBar()}
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {renderStepContent()}
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
-        {step > 1 && (
-          <TouchableOpacity
-            style={[styles.button, styles.backButton]}
-            onPress={() => setStep(step - 1)}
-          >
+      <View style={styles.footer}>
+        {currentStep > 1 && (
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         )}
         
         <TouchableOpacity
-          style={[styles.button, styles.nextButton]}
+          style={[styles.nextButton, loading && styles.disabledButton]}
           onPress={handleNext}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.nextButtonText}>
-              {step === getTotalSteps() ? 'Submit' : 'Next'}
+              {currentStep === totalSteps ? 'Submit' : 'Next'}
             </Text>
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 16,
+    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#e5e7eb',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
   },
-  progress: {
-    fontSize: 14,
-    color: '#666',
+  progressContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    marginBottom: 2,
+  },
+  progressStep: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    marginHorizontal: 2,
+    borderRadius: 2,
+  },
+  progressStepCompleted: {
+    backgroundColor: '#10b981',
+  },
+  progressStepActive: {
+    backgroundColor: '#2563eb',
   },
   scrollView: {
     flex: 1,
   },
-  stepContainer: {
+  stepContent: {
     padding: 20,
   },
   stepTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 8,
   },
-  subtitle: {
+  stepSubtitle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
+    color: '#6b7280',
+    marginBottom: 24,
   },
-  sectionTitle: {
+  entityCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  entityCardSelected: {
+    borderColor: '#2563eb',
+    backgroundColor: '#eff6ff',
+  },
+  entityCardContent: {
+    flex: 1,
+  },
+  entityCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  entityCardTitleSelected: {
+    color: '#2563eb',
+  },
+  entityCardDescription: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  entityCardDescriptionSelected: {
+    color: '#1e40af',
+  },
+  categoryCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  categoryCardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1a1a1a',
+    marginLeft: 16,
+  },
+  selectedCategoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  selectedCategoryTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-    marginTop: 20,
-    marginBottom: 10,
+    color: '#2563eb',
+    marginLeft: 12,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-    marginTop: 15,
-    marginBottom: 5,
-  },
-  hint: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 5,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
+  typeCard: {
+    backgroundColor: 'white',
     borderRadius: 8,
     padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  typeCardSelected: {
+    borderColor: '#2563eb',
+    backgroundColor: '#eff6ff',
+  },
+  typeCardTitle: {
+    fontSize: 15,
+    color: '#1a1a1a',
+  },
+  typeCardTitleSelected: {
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
+    color: '#1a1a1a',
   },
   pickerContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#d1d5db',
     borderRadius: 8,
     overflow: 'hidden',
   },
-  picker: {
-    height: 50,
-  },
   uploadButton: {
-    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
     borderWidth: 2,
     borderColor: '#2563eb',
     borderStyle: 'dashed',
     borderRadius: 8,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 120,
+    padding: 16,
+    marginBottom: 16,
   },
-  uploadText: {
-    fontSize: 16,
+  uploadButtonText: {
+    fontSize: 15,
     color: '#2563eb',
     fontWeight: '500',
+    marginLeft: 8,
   },
-  uploadedImage: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'cover',
-    borderRadius: 8,
+  courierOptionContainer: {
+    marginBottom: 24,
   },
-  checkboxContainer: {
-    marginTop: 10,
-  },
-  checkbox: {
-    flexDirection: 'row',
+  courierOption: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
   },
-  checkboxChecked: {
-    backgroundColor: '#e6f2ff',
+  courierOptionSelected: {
     borderColor: '#2563eb',
+    backgroundColor: '#eff6ff',
   },
-  checkboxText: {
+  courierOptionTitle: {
     fontSize: 16,
-    color: '#333',
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginTop: 12,
+    marginBottom: 4,
   },
-  buttonContainer: {
+  courierOptionSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  courierDetails: {
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 16,
+  },
+  footer: {
     flexDirection: 'row',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  button: {
-    flex: 1,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 5,
+    borderTopColor: '#e5e7eb',
   },
   backButton: {
-    backgroundColor: '#f0f0f0',
+    flex: 1,
+    paddingVertical: 14,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    alignItems: 'center',
   },
   backButtonText: {
-    color: '#333',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#6b7280',
   },
   nextButton: {
+    flex: 2,
     backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
   },
   nextButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    color: 'white',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });

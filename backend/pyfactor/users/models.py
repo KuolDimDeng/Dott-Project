@@ -39,6 +39,20 @@ class Business(models.Model):
     owner_id = models.UUIDField(verbose_name='Owner ID', null=True, blank=True)
     name = models.CharField(max_length=255)  # This matches the actual column in your DB
     
+    # Entity type for progressive registration
+    entity_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('INDIVIDUAL', 'Individual Service Provider'),
+            ('SMALL_BUSINESS', 'Small Business (1-10 employees)'),
+            ('MEDIUM_BUSINESS', 'Medium Business (11-50 employees)'),
+            ('LARGE_COMPANY', 'Large Company (50+ employees)'),
+            ('NON_PROFIT', 'Non-Profit Organization'),
+        ],
+        default='INDIVIDUAL',
+        help_text='Type of business entity'
+    )
+    
     # Consolidated fields (previously in BusinessDetails)
     business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES, blank=True, null=True)
     simplified_business_type = models.CharField(
@@ -53,6 +67,25 @@ class Business(models.Model):
         choices=LEGAL_STRUCTURE_CHOICES,
         default='SOLE_PROPRIETORSHIP'
     )
+    
+    # Registration status
+    registration_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('REGISTERED', 'Yes, fully registered'),
+            ('INFORMAL', 'No, operating informally'),
+            ('IN_PROCESS', 'Registration in process'),
+        ],
+        default='INFORMAL',
+        help_text='Business registration status'
+    )
+    registration_number = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Business registration or license number'
+    )
+    
     country = CountryField(default='US')
     date_founded = models.DateField(null=True, blank=True)
     
@@ -84,6 +117,31 @@ class Business(models.Model):
             ('GAAP', 'US GAAP'),
         ],
         default='IFRS'
+    )
+    
+    # Contact information
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Primary business phone number'
+    )
+    email = models.EmailField(
+        max_length=254,
+        blank=True,
+        null=True,
+        help_text='Primary business email'
+    )
+    address = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Business street address'
+    )
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='City where business is located'
     )
     
     # Marketplace fields

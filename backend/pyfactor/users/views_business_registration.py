@@ -34,7 +34,21 @@ def create_business_account(request):
         # Extract business data
         business_name = data.get('business_name', '').strip()
         business_type = data.get('business_type', '').upper()
-        business_country = data.get('business_country', '').upper()
+        entity_type = data.get('entity_type', 'INDIVIDUAL').upper()
+        registration_status = data.get('registration_status', 'INFORMAL')
+        registration_number = data.get('registration_number', '').strip()
+        phone = data.get('phone', '').strip()
+        email = data.get('email', '').strip()
+        address = data.get('address', '').strip()
+        city = data.get('city', '').strip()
+        business_country = data.get('business_country', data.get('country', '')).upper()
+        
+        # For individuals without a business name, generate one
+        if entity_type == 'INDIVIDUAL' and not business_name:
+            user_name = f"{request.user.first_name} {request.user.last_name}".strip()
+            if not user_name or user_name == ' ':
+                user_name = request.user.username or str(request.user.id)
+            business_name = f"{user_name} - Service Provider"
         
         # Validate required fields
         if not business_name:
@@ -43,17 +57,18 @@ def create_business_account(request):
                 'error': 'Business name is required'
             }, status=400)
         
-        if not business_type or business_type not in ['SERVICE', 'RETAIL', 'MIXED', 'OTHER']:
-            return JsonResponse({
-                'success': False,
-                'error': 'Valid business type is required'
-            }, status=400)
+        # Map frontend business types to backend
+        valid_business_types = ['SERVICE', 'RETAIL', 'MIXED', 'OTHER', 
+                                'HOME_SERVICES', 'TRANSPORT_SERVICE', 'PROFESSIONAL_SERVICES',
+                                'CREATIVE_SERVICES', 'SALON_SPA', 'EDUCATION_TRAINING',
+                                'RETAIL_STORE', 'RESTAURANT_CAFE', 'MEDICAL_DENTAL']
+        
+        if business_type and business_type not in valid_business_types:
+            # Try to map to a valid type
+            business_type = 'OTHER'
         
         if not business_country or business_country not in dict(countries):
-            return JsonResponse({
-                'success': False,
-                'error': 'Valid country code is required'
-            }, status=400)
+            business_country = 'SS'  # Default to South Sudan
         
         # Get the current user
         user = request.user
@@ -71,15 +86,45 @@ def create_business_account(request):
         
         # Create the business within a transaction
         with transaction.atomic():
+            # Determine simplified business type
+            if business_type in ['HOME_SERVICES', 'TRANSPORT_SERVICE', 'PROFESSIONAL_SERVICES', 
+                                 'CREATIVE_SERVICES', 'EDUCATION_TRAINING']:
+                simplified_type = 'SERVICE'
+            elif business_type in ['RETAIL_STORE', 'RESTAURANT_CAFE', 'GROCERY_MARKET', 'PHARMACY']:
+                simplified_type = 'RETAIL'
+            elif business_type in ['SALON_SPA', 'MEDICAL_DENTAL', 'FITNESS_CENTER']:
+                simplified_type = 'MIXED'
+            else:
+                simplified_type = business_type if business_type in ['SERVICE', 'RETAIL', 'MIXED'] else 'OTHER'
+            
+            # Determine legal structure based on entity type
+            if entity_type == 'INDIVIDUAL':
+                legal_structure = 'SOLE_PROPRIETORSHIP'
+            elif entity_type == 'NON_PROFIT':
+                legal_structure = 'NON_PROFIT'
+            elif entity_type in ['SMALL_BUSINESS', 'MEDIUM_BUSINESS']:
+                legal_structure = 'LIMITED_LIABILITY_COMPANY'
+            elif entity_type == 'LARGE_COMPANY':
+                legal_structure = 'CORPORATION'
+            else:
+                legal_structure = 'SOLE_PROPRIETORSHIP'
+            
             # Create new business
             business = Business.objects.create(
                 name=business_name,
                 owner_id=uuid.UUID(int=user.id),  # Convert integer ID to UUID format
-                business_type=business_type,
-                simplified_business_type=business_type if business_type != 'OTHER' else 'MIXED',
+                entity_type=entity_type,
+                business_type=business_type or 'OTHER',
+                simplified_business_type=simplified_type,
+                legal_structure=legal_structure,
+                registration_status=registration_status,
+                registration_number=registration_number if registration_number else None,
+                phone=phone if phone else None,
+                email=email if email else None,
+                address=address if address else None,
+                city=city if city else None,
                 country=business_country,
                 date_founded=timezone.now().date(),
-                legal_structure='SOLE_PROPRIETORSHIP',  # Default for new businesses
                 preferred_currency_code=get_currency_for_country(business_country),
                 preferred_currency_name=get_currency_name_for_country(business_country),
                 preferred_currency_symbol=get_currency_symbol_for_country(business_country),
@@ -104,6 +149,30 @@ def create_business_account(request):
                 user_profile.save()
             
             logger.info(f"Business created successfully: {business.id} for user: {user.id}")
+            
+            # Handle courier service registration if requested
+            offers_courier = data.get('offers_courier_services', False)
+            if offers_courier:
+                try:
+                    # Import CourierProfile model
+                    from couriers.models import CourierProfile
+                    
+                    courier_data = data.get('courier_data', {})
+                    
+                    # Create courier profile
+                    courier_profile = CourierProfile.objects.create(
+                        user=user,
+                        business_id=business.id,
+                        vehicle_type=courier_data.get('vehicle_type', 'motorcycle'),
+                        vehicle_registration=courier_data.get('vehicle_registration', ''),
+                        is_verified=False,  # Requires admin verification
+                        availability_status='offline',  # Start offline
+                        tenant_id=business.id
+                    )
+                    logger.info(f"Courier profile created for business: {business.id}")
+                except Exception as courier_error:
+                    logger.warning(f"Failed to create courier profile: {str(courier_error)}")
+                    # Don't fail the whole registration if courier creation fails
         
         # Return success response
         return JsonResponse({
@@ -112,7 +181,9 @@ def create_business_account(request):
             'data': {
                 'business_id': str(business.id),
                 'business_name': business.name,
-                'is_business_owner': True
+                'entity_type': entity_type,
+                'is_business_owner': True,
+                'offers_courier_services': offers_courier
             }
         })
         

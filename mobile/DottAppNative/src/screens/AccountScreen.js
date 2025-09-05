@@ -106,7 +106,7 @@ export default function AccountScreen({ navigation }) {
               <Icon name="business-outline" size={24} color="#2563eb" />
               <View style={styles.createBusinessTextContainer}>
                 <Text style={styles.createBusinessTitle}>I have a business</Text>
-                <Text style={styles.createBusinessSubtitle}>Register your business & become a driver</Text>
+                <Text style={styles.createBusinessSubtitle}>Register your business</Text>
               </View>
             </View>
             <Icon name="chevron-forward" size={20} color="#2563eb" />

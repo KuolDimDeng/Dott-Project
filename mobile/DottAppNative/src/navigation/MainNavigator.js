@@ -23,6 +23,7 @@ import InventoryScreen from '../screens/business/InventoryScreen';
 import ExpensesScreen from '../screens/business/ExpensesScreen';
 import InvoicesScreen from '../screens/business/InvoicesScreen';
 import BankingScreen from '../screens/business/BankingScreen';
+import BusinessRegistrationScreen from '../screens/consumer/BusinessRegistrationScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -101,6 +102,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Common screens */}
       <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />
       {/* Business screens for navigation */}
       <Stack.Screen name="POS" component={POSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />
