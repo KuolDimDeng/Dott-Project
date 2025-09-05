@@ -14,6 +14,14 @@ DEBUG = False
 # Security - use different secret key for staging
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'staging-default-key-change-this')
 
+# Allowed hosts for staging
+ALLOWED_HOSTS = [
+    'dott-api-staging.onrender.com',
+    'api-staging.dottapps.com',
+    'localhost',
+    '127.0.0.1',
+]
+
 # Database - uses staging database from environment
 DATABASES = {
     'default': dj_database_url.config(
@@ -54,8 +62,10 @@ MEDIA_URL = '/media/'
 
 # CORS - allow staging frontend
 CORS_ALLOWED_ORIGINS = [
+    "https://staging.dottapps.com",
     "https://dott-staging.onrender.com",
     "http://localhost:3000",  # For local testing
+    "http://localhost:8081",  # React Native Metro bundler
 ]
 
 # Stripe - use test keys
@@ -66,6 +76,7 @@ STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
 AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
 AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID', '')
 AUTH0_CLIENT_SECRET = os.environ.get('AUTH0_CLIENT_SECRET', '')
+AUTH0_AUDIENCE = os.environ.get('AUTH0_AUDIENCE', 'https://api-staging.dottapps.com')
 
 # Allow tokens from multiple Auth0 applications (Web and Mobile)
 AUTH0_ALLOWED_CLIENTS = [
