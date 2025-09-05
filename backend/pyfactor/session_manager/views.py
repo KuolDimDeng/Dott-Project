@@ -178,6 +178,14 @@ class SessionCreateView(APIView):
                         'can_delete': access.can_delete
                     })
             
+            # Check if user has a business
+            has_business = False
+            try:
+                from business.models import BusinessMember
+                has_business = BusinessMember.objects.filter(user=user).exists()
+            except:
+                pass
+            
             # Prepare response
             response_data = {
                 'session_token': str(session.session_id),
@@ -187,6 +195,7 @@ class SessionCreateView(APIView):
                     'email': user.email,
                     'name': getattr(user, 'name', ''),
                     'role': user_role,  # Include user role
+                    'has_business': has_business,  # Include business status
                     'page_permissions': page_permissions,  # Include page permissions
                 },
                 'tenant': {
