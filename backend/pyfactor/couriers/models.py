@@ -1,5 +1,5 @@
 """
-Driver Delivery Service Models
+Courier Delivery Service Models
 Extends existing transport models for consumer delivery marketplace
 """
 import uuid
@@ -13,10 +13,10 @@ from decimal import Decimal
 User = get_user_model()
 
 
-class DriverProfile(models.Model):
+class CourierProfile(models.Model):
     """
-    Extended driver profile for delivery services
-    Links to transport.Driver for vehicle management
+    Extended courier profile for delivery services
+    Links to transport.Driver for vehicle management (legacy compatibility)
     """
     VEHICLE_TYPES = [
         ('bicycle', 'Bicycle'),
@@ -35,12 +35,12 @@ class DriverProfile(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver_delivery_profile')
-    business = models.OneToOneField('users.Business', on_delete=models.CASCADE, related_name='driver_profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='courier_profile')
+    business = models.OneToOneField('users.Business', on_delete=models.CASCADE, related_name='courier_business_profile')
     
-    # Link to existing transport driver if available
+    # Link to existing transport driver if available (for legacy compatibility)
     transport_driver = models.OneToOneField('transport.Driver', on_delete=models.SET_NULL, 
-                                           null=True, blank=True, related_name='delivery_profile')
+                                           null=True, blank=True, related_name='courier_profile')
     
     # Vehicle Information
     vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPES)
@@ -50,7 +50,7 @@ class DriverProfile(models.Model):
     vehicle_color = models.CharField(max_length=30, blank=True)
     vehicle_registration = models.CharField(max_length=50, unique=True)
     
-    # Driver License
+    # Driving License
     license_number = models.CharField(max_length=50, unique=True)
     license_expiry = models.DateField()
     license_front_photo = models.TextField(help_text='Base64 encoded license front')
@@ -71,7 +71,7 @@ class DriverProfile(models.Model):
     is_verified = models.BooleanField(default=False)
     verification_date = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
-                                   related_name='drivers_verified')
+                                   related_name='couriers_verified')
     verification_notes = models.TextField(blank=True)
     
     # Service Configuration
@@ -140,7 +140,7 @@ class DriverProfile(models.Model):
     suspension_reason = models.TextField(blank=True)
     
     class Meta:
-        db_table = 'driver_profiles'
+        db_table = 'courier_profiles'
         indexes = [
             models.Index(fields=['availability_status', 'current_latitude', 'current_longitude']),
             models.Index(fields=['user', 'is_verified']),
@@ -148,30 +148,30 @@ class DriverProfile(models.Model):
         ]
     
     def __str__(self):
-        return f"Driver: {self.user.email} ({self.vehicle_type})"
+        return f"Courier: {self.user.email} ({self.vehicle_type})"
     
     def update_location(self, latitude, longitude):
-        """Update driver's current location"""
+        """Update courier's current location"""
         self.current_latitude = latitude
         self.current_longitude = longitude
         self.location_updated_at = timezone.now()
         self.save(update_fields=['current_latitude', 'current_longitude', 'location_updated_at'])
     
     def go_online(self):
-        """Set driver as available for deliveries"""
+        """Set courier as available for deliveries"""
         self.availability_status = 'online'
         self.last_online = timezone.now()
         self.save(update_fields=['availability_status', 'last_online'])
     
     def go_offline(self):
-        """Set driver as unavailable"""
+        """Set courier as unavailable"""
         self.availability_status = 'offline'
         self.save(update_fields=['availability_status'])
     
     def calculate_trust_level(self):
         """Auto-calculate trust level based on performance"""
         if self.total_deliveries < 5:
-            return 1  # New driver
+            return 1  # New courier
         elif self.total_deliveries < 50 and self.average_rating >= 4.0:
             return 2  # Basic
         elif self.total_deliveries < 200 and self.average_rating >= 4.3 and self.is_verified:
@@ -185,12 +185,12 @@ class DriverProfile(models.Model):
 
 class DeliveryOrder(models.Model):
     """
-    Delivery orders connecting consumers, businesses, and drivers
+    Delivery orders connecting consumers, businesses, and couriers
     """
     ORDER_STATUS = [
         ('pending', 'Pending - Looking for Driver'),
-        ('driver_assigned', 'Driver Assigned'),
-        ('driver_heading_pickup', 'Driver Heading to Pickup'),
+        ('courier_assigned', 'Courier Assigned'),
+        ('courier_heading_pickup', 'Courier Heading to Pickup'),
         ('arrived_at_pickup', 'Driver at Pickup Location'),
         ('package_picked', 'Package Picked Up'),
         ('in_transit', 'In Transit'),
@@ -218,7 +218,7 @@ class DeliveryOrder(models.Model):
     consumer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delivery_orders_placed')
     business = models.ForeignKey('marketplace.BusinessListing', on_delete=models.CASCADE, 
                                 related_name='delivery_orders')
-    driver = models.ForeignKey(DriverProfile, on_delete=models.SET_NULL, null=True, blank=True,
+    courier = models.ForeignKey(CourierProfile, on_delete=models.SET_NULL, null=True, blank=True,
                               related_name='deliveries')
     
     # Link to marketplace order if applicable
@@ -258,7 +258,7 @@ class DeliveryOrder(models.Model):
     
     # Status
     status = models.CharField(max_length=30, choices=ORDER_STATUS, default='pending')
-    driver_assigned_at = models.DateTimeField(null=True, blank=True)
+    courier_assigned_at = models.DateTimeField(null=True, blank=True)
     
     # Distance and routing
     estimated_distance_km = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
@@ -269,7 +269,7 @@ class DeliveryOrder(models.Model):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2)
     surge_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default=1.00)
     final_delivery_fee = models.DecimalField(max_digits=10, decimal_places=2)
-    driver_earnings = models.DecimalField(max_digits=10, decimal_places=2)
+    courier_earnings = models.DecimalField(max_digits=10, decimal_places=2)
     platform_fee = models.DecimalField(max_digits=10, decimal_places=2)
     tip_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
@@ -290,11 +290,11 @@ class DeliveryOrder(models.Model):
     delivery_notes = models.TextField(blank=True)
     
     # Ratings and feedback
-    driver_rating = models.IntegerField(null=True, blank=True, 
+    courier_rating = models.IntegerField(null=True, blank=True, 
                                        validators=[MinValueValidator(1), MaxValueValidator(5)])
     consumer_rating = models.IntegerField(null=True, blank=True,
                                          validators=[MinValueValidator(1), MaxValueValidator(5)])
-    driver_feedback = models.TextField(blank=True)
+    courier_feedback = models.TextField(blank=True)
     consumer_feedback = models.TextField(blank=True)
     
     # Cancellation/failure tracking
@@ -310,7 +310,7 @@ class DeliveryOrder(models.Model):
     class Meta:
         db_table = 'delivery_orders'
         indexes = [
-            models.Index(fields=['status', 'driver', 'created_at']),
+            models.Index(fields=['status', 'courier', 'created_at']),
             models.Index(fields=['consumer', 'status']),
             models.Index(fields=['business', 'status']),
             models.Index(fields=['order_number']),
@@ -330,20 +330,20 @@ class DeliveryOrder(models.Model):
         if self.delivery_fee and not self.final_delivery_fee:
             self.final_delivery_fee = self.delivery_fee * self.surge_multiplier
             self.platform_fee = self.final_delivery_fee * Decimal('0.25')  # 25% platform fee
-            self.driver_earnings = self.final_delivery_fee * Decimal('0.75')  # 75% to driver
+            self.courier_earnings = self.final_delivery_fee * Decimal('0.75')  # 75% to courier
         
         super().save(*args, **kwargs)
     
-    def assign_driver(self, driver):
-        """Assign a driver to this delivery"""
-        self.driver = driver
-        self.status = 'driver_assigned'
-        self.driver_assigned_at = timezone.now()
+    def assign_courier(self, courier):
+        """Assign a courier to this delivery"""
+        self.courier = courier
+        self.status = 'courier_assigned'
+        self.courier_assigned_at = timezone.now()
         self.save()
         
-        # Update driver status
-        driver.availability_status = 'busy'
-        driver.save()
+        # Update courier status
+        courier.availability_status = 'busy'
+        courier.save()
     
     def mark_picked_up(self):
         """Mark package as picked up"""
@@ -363,18 +363,18 @@ class DeliveryOrder(models.Model):
             self.delivered_to_name = delivered_to
         self.save()
         
-        # Update driver metrics
-        if self.driver:
-            self.driver.total_deliveries += 1
-            self.driver.successful_deliveries += 1
-            self.driver.pending_earnings += self.driver_earnings + self.tip_amount
-            self.driver.availability_status = 'online'
-            self.driver.save()
+        # Update courier metrics
+        if self.courier:
+            self.courier.total_deliveries += 1
+            self.courier.successful_deliveries += 1
+            self.courier.pending_earnings += self.courier_earnings + self.tip_amount
+            self.courier.availability_status = 'online'
+            self.courier.save()
 
 
-class DriverEarnings(models.Model):
+class CourierEarnings(models.Model):
     """
-    Track driver earnings and payouts
+    Track courier earnings and payouts
     """
     PAYOUT_STATUS = [
         ('pending', 'Pending'),
@@ -384,7 +384,7 @@ class DriverEarnings(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='earnings')
+    courier = models.ForeignKey(CourierProfile, on_delete=models.CASCADE, related_name='earnings')
     
     # Earnings period
     period_start = models.DateField()
@@ -415,15 +415,15 @@ class DriverEarnings(models.Model):
     processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     
     class Meta:
-        db_table = 'driver_earnings'
+        db_table = 'courier_earnings'
         indexes = [
-            models.Index(fields=['driver', 'period_start']),
+            models.Index(fields=['courier', 'period_start']),
             models.Index(fields=['payout_status']),
         ]
         ordering = ['-period_end']
     
     def __str__(self):
-        return f"{self.driver.user.email}: {self.period_start} to {self.period_end}"
+        return f"{self.courier.user.email}: {self.period_start} to {self.period_end}"
     
     def calculate_net_earnings(self):
         """Calculate net earnings"""
@@ -437,9 +437,9 @@ class DriverEarnings(models.Model):
         return self.net_earnings
 
 
-class DriverNotification(models.Model):
+class CourierNotification(models.Model):
     """
-    Push notifications for drivers about new delivery requests
+    Push notifications for couriers about new delivery requests
     """
     NOTIFICATION_TYPES = [
         ('new_order', 'New Delivery Request'),
@@ -450,7 +450,7 @@ class DriverNotification(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='notifications')
+    courier = models.ForeignKey(CourierProfile, on_delete=models.CASCADE, related_name='notifications')
     
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     title = models.CharField(max_length=200)
@@ -458,7 +458,7 @@ class DriverNotification(models.Model):
     
     # Related order if applicable
     delivery_order = models.ForeignKey(DeliveryOrder, on_delete=models.CASCADE, 
-                                      null=True, blank=True, related_name='driver_notifications')
+                                      null=True, blank=True, related_name='courier_notifications')
     
     # Notification status
     is_read = models.BooleanField(default=False)
@@ -474,15 +474,15 @@ class DriverNotification(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     
     class Meta:
-        db_table = 'driver_notifications'
+        db_table = 'courier_notifications'
         indexes = [
-            models.Index(fields=['driver', 'is_read']),
+            models.Index(fields=['courier', 'is_read']),
             models.Index(fields=['created_at']),
         ]
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.driver.user.email}: {self.title}"
+        return f"{self.courier.user.email}: {self.title}"
 
 
 class DeliveryTracking(models.Model):

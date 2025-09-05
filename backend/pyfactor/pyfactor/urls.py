@@ -182,8 +182,8 @@ urlpatterns += [
     path('api/marketplace/', include('marketplace.urls')),
     path('api/marketplace/consumer/', include('marketplace.consumer_urls')),
     
-    # Driver Delivery Service API routes
-    path('api/drivers/', include('drivers.urls')),
+    # Courier Delivery Service API routes
+    path('api/couriers/', include('couriers.urls')),
     
     # Chat API routes
     path('api/chat/', include('chat.urls')),

@@ -1097,7 +1097,7 @@ TENANT_APPS = (
     'data_export',
     'jobs.apps.JobsConfig',
     'communications.apps.CommunicationsConfig',
-    'drivers.apps.DriversConfig',  # Driver delivery service
+    'couriers.apps.CouriersConfig',  # Courier delivery service
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]

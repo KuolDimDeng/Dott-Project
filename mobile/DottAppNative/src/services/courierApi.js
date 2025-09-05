@@ -17,12 +17,12 @@ const createApiInstance = async () => {
   });
 };
 
-export const driverApi = {
-  // Register business (including driver business)
+export const courierApi = {
+  // Register business (including courier business)
   registerBusiness: async (data) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post('/drivers/drivers/register/', data);
+      const response = await api.post('/couriers/couriers/register/', data);
       return response.data;
     } catch (error) {
       console.error('Business registration error:', error);
@@ -30,7 +30,7 @@ export const driverApi = {
     }
   },
 
-  // Update driver status (online/offline)
+  // Update courier status (online/offline)
   updateStatus: async (status, location = null) => {
     try {
       const api = await createApiInstance();
@@ -41,7 +41,7 @@ export const driverApi = {
         data.current_longitude = location.longitude;
       }
       
-      const response = await api.post('/drivers/drivers/update_status/', data);
+      const response = await api.post('/couriers/couriers/update_status/', data);
       return response.data;
     } catch (error) {
       console.error('Update status error:', error);
@@ -49,11 +49,11 @@ export const driverApi = {
     }
   },
 
-  // Get driver dashboard
+  // Get courier dashboard
   getDashboard: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/drivers/drivers/dashboard/');
+      const response = await api.get('/couriers/couriers/dashboard/');
       return response.data;
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -65,7 +65,7 @@ export const driverApi = {
   getAvailableDeliveries: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/drivers/deliveries/?status=pending');
+      const response = await api.get('/couriers/deliveries/?status=pending');
       return response.data;
     } catch (error) {
       console.error('Get deliveries error:', error);
@@ -77,7 +77,7 @@ export const driverApi = {
   acceptDelivery: async (deliveryId, data = {}) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post(`/drivers/deliveries/${deliveryId}/accept/`, data);
+      const response = await api.post(`/couriers/deliveries/${deliveryId}/accept/`, data);
       return response.data;
     } catch (error) {
       console.error('Accept delivery error:', error);
@@ -89,7 +89,7 @@ export const driverApi = {
   updateDeliveryStatus: async (deliveryId, status, data = {}) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post(`/drivers/deliveries/${deliveryId}/update_status/`, {
+      const response = await api.post(`/couriers/deliveries/${deliveryId}/update_status/`, {
         status,
         ...data,
       });
@@ -104,7 +104,7 @@ export const driverApi = {
   addTracking: async (deliveryId, location) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post(`/drivers/deliveries/${deliveryId}/add_tracking/`, {
+      const response = await api.post(`/couriers/deliveries/${deliveryId}/add_tracking/`, {
         latitude: location.latitude,
         longitude: location.longitude,
         accuracy: location.accuracy,
@@ -122,7 +122,7 @@ export const driverApi = {
   getTracking: async (deliveryId) => {
     try {
       const api = await createApiInstance();
-      const response = await api.get(`/drivers/deliveries/${deliveryId}/tracking/`);
+      const response = await api.get(`/couriers/deliveries/${deliveryId}/tracking/`);
       return response.data;
     } catch (error) {
       console.error('Get tracking error:', error);
@@ -134,7 +134,7 @@ export const driverApi = {
   getEarnings: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/drivers/earnings/');
+      const response = await api.get('/couriers/earnings/');
       return response.data;
     } catch (error) {
       console.error('Get earnings error:', error);
@@ -146,7 +146,7 @@ export const driverApi = {
   requestPayout: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.post('/drivers/earnings/request_payout/');
+      const response = await api.post('/couriers/earnings/request_payout/');
       return response.data;
     } catch (error) {
       console.error('Request payout error:', error);
@@ -156,19 +156,19 @@ export const driverApi = {
 
   // Mark delivery as picked up
   markPickedUp: async (deliveryId) => {
-    return driverApi.updateDeliveryStatus(deliveryId, 'package_picked');
+    return courierApi.updateDeliveryStatus(deliveryId, 'package_picked');
   },
 
   // Mark delivery as completed
   markDelivered: async (deliveryId, proof = {}) => {
-    return driverApi.updateDeliveryStatus(deliveryId, 'delivered', proof);
+    return courierApi.updateDeliveryStatus(deliveryId, 'delivered', proof);
   },
 
-  // Get driver profile
+  // Get courier profile
   getProfile: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/drivers/drivers/me/');
+      const response = await api.get('/couriers/couriers/me/');
       return response.data;
     } catch (error) {
       console.error('Get profile error:', error);
@@ -176,11 +176,11 @@ export const driverApi = {
     }
   },
 
-  // Update driver profile
+  // Update courier profile
   updateProfile: async (data) => {
     try {
       const api = await createApiInstance();
-      const response = await api.patch('/drivers/drivers/me/', data);
+      const response = await api.patch('/couriers/couriers/me/', data);
       return response.data;
     } catch (error) {
       console.error('Update profile error:', error);
@@ -192,7 +192,7 @@ export const driverApi = {
   getNotifications: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/drivers/notifications/');
+      const response = await api.get('/couriers/notifications/');
       return response.data;
     } catch (error) {
       console.error('Get notifications error:', error);
@@ -204,7 +204,7 @@ export const driverApi = {
   markNotificationRead: async (notificationId) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post(`/drivers/notifications/${notificationId}/read/`);
+      const response = await api.post(`/couriers/notifications/${notificationId}/read/`);
       return response.data;
     } catch (error) {
       console.error('Mark notification read error:', error);
@@ -212,18 +212,18 @@ export const driverApi = {
     }
   },
 
-  // Find nearby drivers (for consumers)
-  findNearbyDrivers: async (location, radius = 10) => {
+  // Find nearby couriers (for consumers)
+  findNearbyCouriers: async (location, radius = 10) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post('/drivers/nearby/find/', {
+      const response = await api.post('/couriers/nearby/find/', {
         latitude: location.latitude,
         longitude: location.longitude,
         radius_km: radius,
       });
       return response.data;
     } catch (error) {
-      console.error('Find nearby drivers error:', error);
+      console.error('Find nearby couriers error:', error);
       throw error;
     }
   },
@@ -232,7 +232,7 @@ export const driverApi = {
   requestDelivery: async (data) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post('/drivers/deliveries/', data);
+      const response = await api.post('/couriers/deliveries/', data);
       return response.data;
     } catch (error) {
       console.error('Request delivery error:', error);

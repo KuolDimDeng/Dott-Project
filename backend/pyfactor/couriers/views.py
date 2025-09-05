@@ -11,12 +11,12 @@ from django.db.models import Q, Sum, Avg, Count
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from .models import DriverProfile, DeliveryOrder, DriverEarnings, DriverNotification, DeliveryTracking
+from .models import CourierProfile, DeliveryOrder, CourierEarnings, CourierNotification, DeliveryTracking
 from .serializers import (
-    DriverRegistrationSerializer, DriverProfileSerializer, DriverStatusSerializer,
+    CourierRegistrationSerializer, CourierProfileSerializer, CourierStatusSerializer,
     DeliveryOrderSerializer, DeliveryOrderListSerializer, AcceptDeliverySerializer,
-    UpdateDeliveryStatusSerializer, DeliveryTrackingSerializer, DriverEarningsSerializer,
-    DriverNotificationSerializer, DriverDashboardSerializer, NearbyDriverSerializer
+    UpdateDeliveryStatusSerializer, DeliveryTrackingSerializer, CourierEarningsSerializer,
+    CourierNotificationSerializer, CourierDashboardSerializer, NearbyCourierSerializer
 )
 from marketplace.models import BusinessListing
 from users.models import Business, UserProfile
@@ -25,26 +25,26 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-class DriverViewSet(viewsets.ModelViewSet):
+class CourierViewSet(viewsets.ModelViewSet):
     """
     ViewSet for driver operations
     """
-    queryset = DriverProfile.objects.all()
-    serializer_class = DriverProfileSerializer
+    queryset = CourierProfile.objects.all()
+    serializer_class = CourierProfileSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         """Filter by current user if driver, otherwise show all for admin"""
         user = self.request.user
-        if hasattr(user, 'driver_delivery_profile'):
-            return DriverProfile.objects.filter(user=user)
-        return DriverProfile.objects.all()
+        if hasattr(user, 'courier_profile'):
+            return CourierProfile.objects.filter(user=user)
+        return CourierProfile.objects.all()
     
     @action(detail=False, methods=['post'])
     @transaction.atomic
     def register(self, request):
         """Register a new driver with business creation"""
-        serializer = DriverRegistrationSerializer(data=request.data)
+        serializer = CourierRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
             user = request.user
@@ -84,7 +84,7 @@ class DriverViewSet(viewsets.ModelViewSet):
             )
             
             # Create driver profile
-            driver = DriverProfile.objects.create(
+            driver = CourierProfile.objects.create(
                 user=user,
                 business=business,
                 vehicle_type=data['vehicle_type'],
@@ -132,8 +132,8 @@ class DriverViewSet(viewsets.ModelViewSet):
     def update_status(self, request):
         """Update driver availability status"""
         try:
-            driver = request.user.driver_delivery_profile
-            serializer = DriverStatusSerializer(data=request.data)
+            driver = request.user.courier_profile
+            serializer = CourierStatusSerializer(data=request.data)
             
             if serializer.is_valid():
                 driver.availability_status = serializer.validated_data['availability_status']
@@ -159,7 +159,7 @@ class DriverViewSet(viewsets.ModelViewSet):
                 'errors': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
             
-        except DriverProfile.DoesNotExist:
+        except CourierProfile.DoesNotExist:
             return Response({
                 'success': False,
                 'message': 'Driver profile not found'
@@ -169,7 +169,7 @@ class DriverViewSet(viewsets.ModelViewSet):
     def dashboard(self, request):
         """Get driver dashboard data"""
         try:
-            driver = request.user.driver_delivery_profile
+            driver = request.user.courier_profile
             today = timezone.now().date()
             
             # Today's stats
@@ -199,17 +199,17 @@ class DriverViewSet(viewsets.ModelViewSet):
                 nearby_orders = pending_orders
             
             # Recent notifications
-            notifications = DriverNotification.objects.filter(
+            notifications = CourierNotification.objects.filter(
                 driver=driver,
                 is_read=False
             ).order_by('-created_at')[:10]
             
             # Calculate acceptance rate
-            total_notifications = DriverNotification.objects.filter(
+            total_notifications = CourierNotification.objects.filter(
                 driver=driver,
                 notification_type='new_order'
             ).count()
-            accepted_notifications = DriverNotification.objects.filter(
+            accepted_notifications = CourierNotification.objects.filter(
                 driver=driver,
                 notification_type='new_order',
                 was_accepted=True
@@ -225,7 +225,7 @@ class DriverViewSet(viewsets.ModelViewSet):
                 'on_time_percentage': driver.on_time_percentage,
                 'active_order': DeliveryOrderSerializer(active_order).data if active_order else None,
                 'nearby_orders': DeliveryOrderListSerializer(nearby_orders, many=True).data,
-                'recent_notifications': DriverNotificationSerializer(notifications, many=True).data
+                'recent_notifications': CourierNotificationSerializer(notifications, many=True).data
             }
             
             return Response({
@@ -233,7 +233,7 @@ class DriverViewSet(viewsets.ModelViewSet):
                 'data': dashboard_data
             })
             
-        except DriverProfile.DoesNotExist:
+        except CourierProfile.DoesNotExist:
             return Response({
                 'success': False,
                 'message': 'Driver profile not found'
@@ -254,9 +254,9 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
         queryset = DeliveryOrder.objects.all()
         
         # Filter by user role
-        if hasattr(user, 'driver_delivery_profile'):
+        if hasattr(user, 'courier_profile'):
             # Driver sees their orders
-            queryset = queryset.filter(driver=user.driver_delivery_profile)
+            queryset = queryset.filter(driver=user.courier_profile)
         elif hasattr(user, 'marketplace_listing'):
             # Business sees their orders
             queryset = queryset.filter(business=user.marketplace_listing)
@@ -276,7 +276,7 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
         """Driver accepts a delivery order"""
         try:
             order = self.get_object()
-            driver = request.user.driver_delivery_profile
+            driver = request.user.courier_profile
             
             # Check if order is still available
             if order.status != 'pending':
@@ -306,7 +306,7 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
                 order.save()
                 
                 # Mark notification as accepted
-                notification = DriverNotification.objects.filter(
+                notification = CourierNotification.objects.filter(
                     driver=driver,
                     delivery_order=order,
                     notification_type='new_order'
@@ -327,7 +327,7 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
                 'errors': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
             
-        except DriverProfile.DoesNotExist:
+        except CourierProfile.DoesNotExist:
             return Response({
                 'success': False,
                 'message': 'Driver profile not found'
@@ -360,9 +360,9 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
                 order.save()
                 
                 # Free up driver
-                if order.driver:
-                    order.driver.availability_status = 'online'
-                    order.driver.save()
+                if order.courier:
+                    order.courier.availability_status = 'online'
+                    order.courier.save()
             else:
                 order.save()
             
@@ -386,8 +386,8 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         
         # Verify driver is assigned to this order
-        if hasattr(request.user, 'driver_delivery_profile'):
-            if order.driver != request.user.driver_delivery_profile:
+        if hasattr(request.user, 'courier_profile'):
+            if order.courier != request.user.courier_profile:
                 return Response({
                     'success': False,
                     'message': 'You are not assigned to this order'
@@ -402,8 +402,8 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
             tracking = serializer.save()
             
             # Update driver location
-            if hasattr(request.user, 'driver_delivery_profile'):
-                driver = request.user.driver_delivery_profile
+            if hasattr(request.user, 'courier_profile'):
+                driver = request.user.courier_profile
                 driver.update_location(
                     tracking.latitude,
                     tracking.longitude
@@ -429,34 +429,34 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
             'success': True,
             'order_status': order.status,
             'driver_location': {
-                'latitude': order.driver.current_latitude,
-                'longitude': order.driver.current_longitude
-            } if order.driver else None,
+                'latitude': order.courier.current_latitude,
+                'longitude': order.courier.current_longitude
+            } if order.courier else None,
             'tracking_points': DeliveryTrackingSerializer(tracking_points, many=True).data
         })
 
 
-class DriverEarningsViewSet(viewsets.ReadOnlyModelViewSet):
+class CourierEarningsViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for driver earnings
     """
-    queryset = DriverEarnings.objects.all()
-    serializer_class = DriverEarningsSerializer
+    queryset = CourierEarnings.objects.all()
+    serializer_class = CourierEarningsSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         """Filter by current driver"""
-        if hasattr(self.request.user, 'driver_delivery_profile'):
-            return DriverEarnings.objects.filter(
-                driver=self.request.user.driver_delivery_profile
+        if hasattr(self.request.user, 'courier_profile'):
+            return CourierEarnings.objects.filter(
+                driver=self.request.user.courier_profile
             )
-        return DriverEarnings.objects.none()
+        return CourierEarnings.objects.none()
     
     @action(detail=False, methods=['post'])
     def request_payout(self, request):
         """Request payout for pending earnings"""
         try:
-            driver = request.user.driver_delivery_profile
+            driver = request.user.courier_profile
             
             if driver.pending_earnings < Decimal('10.00'):
                 return Response({
@@ -465,7 +465,7 @@ class DriverEarningsViewSet(viewsets.ReadOnlyModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Create earnings record
-            earnings = DriverEarnings.objects.create(
+            earnings = CourierEarnings.objects.create(
                 driver=driver,
                 period_start=timezone.now().date() - timedelta(days=7),
                 period_end=timezone.now().date(),
@@ -489,17 +489,17 @@ class DriverEarningsViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'success': True,
                 'message': 'Payout request submitted successfully',
-                'earnings': DriverEarningsSerializer(earnings).data
+                'earnings': CourierEarningsSerializer(earnings).data
             })
             
-        except DriverProfile.DoesNotExist:
+        except CourierProfile.DoesNotExist:
             return Response({
                 'success': False,
                 'message': 'Driver profile not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
 
-class NearbyDriversViewSet(viewsets.ViewSet):
+class NearbyCouriersViewSet(viewsets.ViewSet):
     """
     ViewSet for finding nearby drivers (consumer facing)
     """
@@ -520,7 +520,7 @@ class NearbyDriversViewSet(viewsets.ViewSet):
         
         # Find online drivers
         # TODO: Implement proper geospatial query
-        drivers = DriverProfile.objects.filter(
+        drivers = CourierProfile.objects.filter(
             availability_status='online',
             is_verified=True
         )

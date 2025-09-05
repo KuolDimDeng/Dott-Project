@@ -14,7 +14,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../../context/AuthContext';
-import { driverApi } from '../../services/driverApi';
+import { courierApi } from '../../services/courierApi';
 
 const BUSINESS_TYPES = [
   { value: 'Transport/Delivery', label: 'Transport & Delivery Services' },
@@ -65,7 +65,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
   const [country, setCountry] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Driver-specific fields (shown only for Transport/Delivery)
+  // Courier-specific fields (shown only for Transport/Delivery)
   const [vehicleType, setVehicleType] = useState('motorcycle');
   const [vehicleMake, setVehicleMake] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
@@ -86,7 +86,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
   const [idBackPhoto, setIdBackPhoto] = useState(null);
   const [selfieWithId, setSelfieWithId] = useState(null);
 
-  // Service Configuration (for drivers)
+  // Service Configuration (for couriers)
   const [serviceRadius, setServiceRadius] = useState('10');
   const [acceptsCash, setAcceptsCash] = useState(true);
   const [acceptsFood, setAcceptsFood] = useState(true);
@@ -97,11 +97,11 @@ export default function BusinessRegistrationScreen({ navigation }) {
   const [mpesaNumber, setMpesaNumber] = useState('');
   const [payoutMethod, setPayoutMethod] = useState('mpesa');
 
-  // Emergency Contact (for drivers)
+  // Emergency Contact (for couriers)
   const [emergencyName, setEmergencyName] = useState('');
   const [emergencyPhone, setEmergencyPhone] = useState('');
 
-  const isDriverBusiness = businessType === 'Transport/Delivery';
+  const isCourierBusiness = businessType === 'Transport/Delivery';
 
   const selectImage = (type) => {
     const options = {
@@ -158,13 +158,13 @@ export default function BusinessRegistrationScreen({ navigation }) {
         }
         break;
       case 3:
-        if (isDriverBusiness) {
+        if (isCourierBusiness) {
           if (!vehicleType || !vehicleRegistration || !licenseNumber || !licenseExpiry) {
             Alert.alert('Error', 'Please fill in all vehicle and license information');
             return false;
           }
           if (!licenseFrontPhoto || !licenseBackPhoto) {
-            Alert.alert('Error', 'Please upload both sides of your driver\'s license');
+            Alert.alert('Error', 'Please upload both sides of your license');
             return false;
           }
         }
@@ -175,7 +175,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
 
   const handleNext = () => {
     if (validateStep()) {
-      if (step < (isDriverBusiness ? 4 : 3)) {
+      if (step < (isCourierBusiness ? 4 : 3)) {
         setStep(step + 1);
       } else {
         handleSubmit();
@@ -224,14 +224,14 @@ export default function BusinessRegistrationScreen({ navigation }) {
         });
       }
 
-      const response = await driverApi.registerBusiness(registrationData);
+      const response = await courierApi.registerBusiness(registrationData);
       
       if (response.success) {
         await refreshUser();
         Alert.alert(
           'Success',
-          isDriverBusiness
-            ? 'Your driver application has been submitted for verification. You will be notified once approved.'
+          isCourierBusiness
+            ? 'Your courier application has been submitted for verification. You will be notified once approved.'
             : 'Your business has been registered successfully!',
           [{ text: 'OK', onPress: () => navigation.navigate('Business') }]
         );
@@ -379,7 +379,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
     </View>
   );
 
-  const renderStep3Driver = () => (
+  const renderStep3Courier = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>Vehicle & License Information</Text>
 
@@ -429,7 +429,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
         placeholder="e.g., White"
       />
 
-      <Text style={styles.label}>Driver's License Number *</Text>
+      <Text style={styles.label}>License Number *</Text>
       <TextInput
         style={styles.input}
         value={licenseNumber}
@@ -471,7 +471,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
     </View>
   );
 
-  const renderStep4Driver = () => (
+  const renderStep4Courier = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>Service & Payment Settings</Text>
 
@@ -571,7 +571,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
     </View>
   );
 
-  const getTotalSteps = () => isDriverBusiness ? 4 : 3;
+  const getTotalSteps = () => isCourierBusiness ? 4 : 3;
 
   return (
     <View style={styles.container}>
@@ -583,9 +583,9 @@ export default function BusinessRegistrationScreen({ navigation }) {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
-        {step === 3 && !isDriverBusiness && renderStep2()}
-        {step === 3 && isDriverBusiness && renderStep3Driver()}
-        {step === 4 && isDriverBusiness && renderStep4Driver()}
+        {step === 3 && !isCourierBusiness && renderStep2()}
+        {step === 3 && isCourierBusiness && renderStep3Courier()}
+        {step === 4 && isCourierBusiness && renderStep4Courier()}
       </ScrollView>
 
       <View style={styles.buttonContainer}>
