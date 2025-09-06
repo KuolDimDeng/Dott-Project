@@ -136,6 +136,8 @@ export default function MarketplaceScreen() {
         page: pageNum,
       };
       
+      console.log('🔍 Loading businesses with params:', params);
+      
       // Add category filters if selected
       if (selectedMainCategory) {
         params.mainCategory = selectedMainCategory;
@@ -145,6 +147,15 @@ export default function MarketplaceScreen() {
       }
       
       const response = await marketplaceApi.getBusinesses(params);
+      
+      console.log('📦 API Response:', {
+        success: response?.success,
+        resultsCount: response?.results?.length || 0,
+        count: response?.count,
+        city: response?.city,
+        country: response?.country,
+        firstBusiness: response?.results?.[0]?.name || 'none'
+      });
       
       if (pageNum === 1) {
         setBusinesses(response.results || []);
