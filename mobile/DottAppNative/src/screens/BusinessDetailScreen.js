@@ -24,7 +24,7 @@ export default function BusinessDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { addToCart } = useCart();
-  const { businessId, businessName } = route.params || {};
+  const { businessId, businessName, isPlaceholder } = route.params || {};
   
   const [business, setBusiness] = useState(null);
   const [products, setProducts] = useState([]);
@@ -33,10 +33,57 @@ export default function BusinessDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('products');
   const [imageIndex, setImageIndex] = useState(0);
+  const [placeholderStatus, setPlaceholderStatus] = useState(null);
+  const [inquirySent, setInquirySent] = useState(false);
 
   useEffect(() => {
     loadBusinessDetails();
+    if (isPlaceholder) {
+      checkPlaceholderStatus();
+    }
   }, [businessId]);
+
+  const checkPlaceholderStatus = async () => {
+    try {
+      const status = await marketplaceApi.checkPlaceholderStatus(businessId);
+      setPlaceholderStatus(status);
+    } catch (error) {
+      console.error('Error checking placeholder status:', error);
+    }
+  };
+
+  const handlePlaceholderInquiry = async (inquiryType = 'view') => {
+    if (inquirySent) {
+      Alert.alert('Already Notified', 'The business owner has already been notified about your interest.');
+      return;
+    }
+
+    try {
+      const result = await marketplaceApi.sendPlaceholderInquiry({
+        business_id: businessId,
+        inquiry_type: inquiryType,
+        message: `Customer interested in ${businessName}`,
+      });
+
+      if (result.success) {
+        setInquirySent(true);
+        Alert.alert(
+          'Business Notified',
+          'The business owner has been notified via SMS about your interest. They will contact you soon.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Notice',
+          result.message || 'Could not notify the business owner at this time.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error sending inquiry:', error);
+      Alert.alert('Error', 'Failed to notify the business owner. Please try again.');
+    }
+  };
 
   const loadBusinessDetails = async () => {
     setLoading(true);
@@ -211,17 +258,49 @@ export default function BusinessDetailScreen() {
         <Text style={styles.description}>{business?.description}</Text>
       </View>
 
+      {/* Placeholder Business Notice */}
+      {isPlaceholder && placeholderStatus && (
+        <View style={styles.placeholderNotice}>
+          <Icon name="information-circle" size={20} color="#f59e0b" />
+          <Text style={styles.placeholderText}>
+            This business is not yet registered on Dott
+          </Text>
+        </View>
+      )}
+
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleChat}>
-          <Icon name="chatbubble" size={20} color="#fff" />
-          <Text style={styles.primaryButtonText}>Chat</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleCall}>
-          <Icon name="call" size={20} color="#10b981" />
-          <Text style={styles.secondaryButtonText}>Call</Text>
-        </TouchableOpacity>
+        {isPlaceholder ? (
+          <>
+            <TouchableOpacity 
+              style={[styles.primaryButton, inquirySent && styles.disabledButton]} 
+              onPress={() => handlePlaceholderInquiry('message')}
+              disabled={inquirySent || !placeholderStatus?.can_contact}
+            >
+              <Icon name="send" size={20} color="#fff" />
+              <Text style={styles.primaryButtonText}>
+                {inquirySent ? 'Owner Notified' : 'Notify Owner'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleCall}>
+              <Icon name="call" size={20} color="#10b981" />
+              <Text style={styles.secondaryButtonText}>Call Directly</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleChat}>
+              <Icon name="chatbubble" size={20} color="#fff" />
+              <Text style={styles.primaryButtonText}>Chat</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleCall}>
+              <Icon name="call" size={20} color="#10b981" />
+              <Text style={styles.secondaryButtonText}>Call</Text>
+            </TouchableOpacity>
+          </>
+        )}
         
         <TouchableOpacity style={styles.secondaryButton} onPress={handleShare}>
           <Icon name="share-social" size={20} color="#10b981" />
@@ -642,6 +721,26 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#10b981',
     fontWeight: '600',
+  },
+  placeholderNotice: {
+    flexDirection: 'row',
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#92400e',
+    marginLeft: 8,
+    flex: 1,
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
   },
   productsGrid: {
     flexDirection: 'row',

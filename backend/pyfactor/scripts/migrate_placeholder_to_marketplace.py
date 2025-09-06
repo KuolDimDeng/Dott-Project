@@ -17,28 +17,71 @@ django.setup()
 
 from marketplace.marketplace_categories import detect_subcategories
 
-# Mapping from placeholder business types to marketplace business types and primary categories
+# Comprehensive mapping from placeholder business types to marketplace categories
+# This ensures placeholder businesses appear in the correct categories for consumer search
 BUSINESS_TYPE_MAPPING = {
+    # Food & Dining
     'RESTAURANT_CAFE': {'business_type': 'RESTAURANT_CAFE', 'primary_category': 'food'},
+    'RESTAURANT': {'business_type': 'RESTAURANT_CAFE', 'primary_category': 'food'},
+    'CAFE': {'business_type': 'RESTAURANT_CAFE', 'primary_category': 'food'},
+    'FAST_FOOD': {'business_type': 'RESTAURANT_CAFE', 'primary_category': 'food'},
+    'BAKERY': {'business_type': 'RESTAURANT_CAFE', 'primary_category': 'food'},
+    'BAR': {'business_type': 'RESTAURANT_CAFE', 'primary_category': 'food'},
+    
+    # Shopping & Retail
     'RETAIL_SHOP': {'business_type': 'RETAIL_SHOP', 'primary_category': 'shopping'},
     'GROCERY_STORE': {'business_type': 'GROCERY_STORE', 'primary_category': 'shopping'},
-    'PHARMACY': {'business_type': 'PHARMACY', 'primary_category': 'health'},
+    'SUPERMARKET': {'business_type': 'GROCERY_STORE', 'primary_category': 'shopping'},
+    'PHARMACY': {'business_type': 'PHARMACY', 'primary_category': 'shopping'},
+    'CLOTHING_STORE': {'business_type': 'RETAIL_SHOP', 'primary_category': 'shopping'},
+    'ELECTRONICS_STORE': {'business_type': 'RETAIL_SHOP', 'primary_category': 'shopping'},
+    
+    # Beauty & Personal Care
     'BEAUTY_SALON': {'business_type': 'BEAUTY_SALON', 'primary_category': 'beauty'},
     'BARBER_SHOP': {'business_type': 'BARBER_SHOP', 'primary_category': 'beauty'},
-    'FITNESS_CENTER': {'business_type': 'FITNESS_CENTER', 'primary_category': 'health'},
+    'SPA': {'business_type': 'BEAUTY_SALON', 'primary_category': 'beauty'},
+    'NAIL_SALON': {'business_type': 'BEAUTY_SALON', 'primary_category': 'beauty'},
+    
+    # Health & Medical
     'MEDICAL_CLINIC': {'business_type': 'MEDICAL_CLINIC', 'primary_category': 'health'},
     'DENTAL_CLINIC': {'business_type': 'DENTAL_CLINIC', 'primary_category': 'health'},
+    'HOSPITAL': {'business_type': 'MEDICAL_CLINIC', 'primary_category': 'health'},
+    'VETERINARY': {'business_type': 'VETERINARY', 'primary_category': 'health'},
+    'FITNESS_CENTER': {'business_type': 'FITNESS_CENTER', 'primary_category': 'health'},
+    'GYM': {'business_type': 'FITNESS_CENTER', 'primary_category': 'health'},
+    
+    # Transport & Automotive
     'AUTO_SERVICE': {'business_type': 'AUTO_SERVICE', 'primary_category': 'transport'},
+    'FUEL_STATION': {'business_type': 'OTHER', 'primary_category': 'transport'},
+    'GAS_STATION': {'business_type': 'OTHER', 'primary_category': 'transport'},
+    'TRANSPORT': {'business_type': 'OTHER', 'primary_category': 'transport'},
+    'TAXI_SERVICE': {'business_type': 'OTHER', 'primary_category': 'transport'},
+    'CAR_RENTAL': {'business_type': 'AUTO_SERVICE', 'primary_category': 'transport'},
+    
+    # Services
     'LAUNDRY': {'business_type': 'LAUNDRY', 'primary_category': 'services'},
     'HOTEL': {'business_type': 'HOTEL', 'primary_category': 'services'},
     'EDUCATION': {'business_type': 'EDUCATION', 'primary_category': 'services'},
     'PROFESSIONAL_SERVICE': {'business_type': 'PROFESSIONAL_SERVICE', 'primary_category': 'services'},
-    'TELECOM': {'business_type': 'OTHER', 'primary_category': 'services'},
-    'FUEL_STATION': {'business_type': 'OTHER', 'primary_category': 'transport'},
-    'FINANCIAL_SERVICES': {'business_type': 'OTHER', 'primary_category': 'services'},
-    'TRANSPORT': {'business_type': 'OTHER', 'primary_category': 'transport'},
+    'FINANCIAL_SERVICES': {'business_type': 'PROFESSIONAL_SERVICE', 'primary_category': 'services'},
+    'BANK': {'business_type': 'PROFESSIONAL_SERVICE', 'primary_category': 'services'},
+    'INSURANCE': {'business_type': 'PROFESSIONAL_SERVICE', 'primary_category': 'services'},
+    'REAL_ESTATE': {'business_type': 'PROFESSIONAL_SERVICE', 'primary_category': 'services'},
+    
+    # Entertainment
     'GAMING_BETTING': {'business_type': 'OTHER', 'primary_category': 'entertainment'},
+    'CINEMA': {'business_type': 'OTHER', 'primary_category': 'entertainment'},
+    'NIGHTCLUB': {'business_type': 'OTHER', 'primary_category': 'entertainment'},
+    'ENTERTAINMENT': {'business_type': 'OTHER', 'primary_category': 'entertainment'},
+    
+    # Telecom & Tech
+    'TELECOM': {'business_type': 'OTHER', 'primary_category': 'services'},
+    'MOBILE_MONEY': {'business_type': 'OTHER', 'primary_category': 'services'},
+    'INTERNET_CAFE': {'business_type': 'OTHER', 'primary_category': 'services'},
+    
+    # Default
     'OTHER': {'business_type': 'OTHER', 'primary_category': 'other'},
+    'UNKNOWN': {'business_type': 'OTHER', 'primary_category': 'other'},
 }
 
 def migrate_placeholder_businesses():
@@ -173,9 +216,16 @@ def migrate_placeholder_businesses():
                             tags.extend(business_name.lower().split())
                         if description:
                             tags.extend(description.lower().split()[:10])  # First 10 words
+                        # Add placeholder tag to identify these businesses
+                        tags.append('placeholder')
                         columns.append('search_tags')
                         values.append("%s")
                         params.append(list(set(tags)))  # Unique tags
+                    
+                    # Mark as unverified placeholder business
+                    if 'is_verified' in existing_columns:
+                        columns.append('is_verified')
+                        values.append("false")
                     
                     # Build and execute the query
                     query = f"""

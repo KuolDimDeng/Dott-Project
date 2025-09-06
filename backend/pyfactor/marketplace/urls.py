@@ -4,6 +4,10 @@ from .views import (
     ConsumerSearchViewSet, 
     BusinessListingViewSet
 )
+from .placeholder_inquiry_views import (
+    send_placeholder_inquiry,
+    check_placeholder_status
+)
 
 # Business-side marketplace routes
 router = DefaultRouter()
@@ -18,4 +22,8 @@ urlpatterns = [
     path('business/<uuid:pk>/public/', BusinessListingViewSet.as_view({'get': 'public_view'}), name='business-public'),
     path('business/<uuid:pk>/products/', BusinessListingViewSet.as_view({'get': 'get_products'}), name='business-products'),
     path('business/<uuid:pk>/services/', BusinessListingViewSet.as_view({'get': 'get_services'}), name='business-services'),
+    
+    # Placeholder business inquiry endpoints
+    path('placeholder/inquiry/', send_placeholder_inquiry, name='placeholder-inquiry'),
+    path('placeholder/<str:business_id>/status/', check_placeholder_status, name='placeholder-status'),
 ]

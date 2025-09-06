@@ -255,9 +255,15 @@ export default function MarketplaceScreen() {
   };
 
   const handleBusinessPress = (business) => {
+    // Check if it's a placeholder business (has 'placeholder' tag or is not verified)
+    const isPlaceholder = business.search_tags?.includes('placeholder') || 
+                         business.is_verified === false ||
+                         business.is_placeholder === true;
+    
     navigation.navigate('BusinessDetail', { 
       businessId: business.id,
-      businessName: business.business_name,
+      businessName: business.business_name || business.name,
+      isPlaceholder: isPlaceholder,
     });
   };
 

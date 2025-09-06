@@ -170,6 +170,28 @@ export const marketplaceApi = {
       throw error;
     }
   },
+
+  // Check if a business is a placeholder and get its status
+  checkPlaceholderStatus: async (businessId) => {
+    try {
+      const response = await api.get(`/api/marketplace/placeholder/${businessId}/status/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking placeholder status:', error);
+      throw error;
+    }
+  },
+
+  // Send inquiry to placeholder business owner
+  sendPlaceholderInquiry: async (data) => {
+    try {
+      const response = await api.post('/api/marketplace/placeholder/inquiry/', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending placeholder inquiry:', error);
+      throw error;
+    }
+  },
 };
 
 export default marketplaceApi;
