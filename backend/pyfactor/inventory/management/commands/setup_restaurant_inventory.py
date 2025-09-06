@@ -248,16 +248,12 @@ class Command(BaseCommand):
         updated_count = 0
         for item_data in restaurant_items:
             try:
-                # Remove fields that might not exist yet
+                # Remove fields that might not exist yet or cause issues
                 cleaned_data = {k: v for k, v in item_data.items() 
-                              if k not in ['expiry_date', 'allergen_info', 'tenant', 'category']}
+                              if k not in ['expiry_date', 'allergen_info', 'tenant', 'category', 'storage_temperature']}
                 
                 # Add tenant_id instead of tenant
                 cleaned_data['tenant_id'] = user.tenant.id
-                
-                # Ensure storage_temperature has a default value (it's required)
-                if 'storage_temperature' not in cleaned_data or not cleaned_data.get('storage_temperature'):
-                    cleaned_data['storage_temperature'] = 'Room Temperature'
                 
                 product, created = Product.objects.update_or_create(
                     tenant_id=user.tenant.id,
