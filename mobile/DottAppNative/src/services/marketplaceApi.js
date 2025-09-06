@@ -68,6 +68,8 @@ export const marketplaceApi = {
           city: params.city,
           country: params.country,
           category: params.category,
+          main_category: params.mainCategory,
+          subcategory: params.subcategory,
           search: params.search,
           page: params.page || 1,
           page_size: params.pageSize || 20,
@@ -89,6 +91,19 @@ export const marketplaceApi = {
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
+      throw error;
+    }
+  },
+
+  // Get category hierarchy with subcategories
+  getCategoryHierarchy: async (city) => {
+    try {
+      const response = await api.get('/marketplace/consumer/category_hierarchy/', {
+        params: { city },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching category hierarchy:', error);
       throw error;
     }
   },

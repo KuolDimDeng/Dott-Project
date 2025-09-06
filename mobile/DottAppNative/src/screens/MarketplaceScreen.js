@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import marketplaceApi from '../services/marketplaceApi';
 import ImageCarousel from '../components/ImageCarousel';
+import SubcategoryModal from '../components/SubcategoryModal';
 import locationService from '../services/locationService';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -45,7 +46,10 @@ export default function MarketplaceScreen() {
   const [featuredBusinesses, setFeaturedBusinesses] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [categoryHierarchy, setCategoryHierarchy] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedMainCategory, setSelectedMainCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,6 +58,9 @@ export default function MarketplaceScreen() {
   const [currentLocation, setCurrentLocation] = useState('Detecting location...');
   const [locationData, setLocationData] = useState(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showSubcategoryModal, setShowSubcategoryModal] = useState(false);
+  const [modalCategory, setModalCategory] = useState(null);
+  const [modalSubcategories, setModalSubcategories] = useState([]);
 
   useEffect(() => {
     detectLocation();
@@ -61,12 +68,12 @@ export default function MarketplaceScreen() {
   }, []);
 
   useEffect(() => {
-    if (searchQuery || selectedCategory) {
+    if (searchQuery || selectedCategory || selectedMainCategory || selectedSubcategory) {
       searchBusinesses();
     } else {
       loadBusinesses();
     }
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, selectedMainCategory, selectedSubcategory]);
 
   const detectLocation = async () => {
     try {
@@ -91,6 +98,7 @@ export default function MarketplaceScreen() {
         loadBusinesses(),
         loadFeaturedBusinesses(),
         loadCategories(),
+        loadCategoryHierarchy(),
         loadFeaturedProducts(),
       ]);
     } catch (error) {
@@ -103,13 +111,23 @@ export default function MarketplaceScreen() {
   const loadBusinesses = async (pageNum = 1) => {
     try {
       const location = locationData || { city: 'Juba', country: 'South Sudan' };
-      const response = await marketplaceApi.getBusinesses({
+      const params = {
         city: location.city,
         country: location.country,
         latitude: location.latitude,
         longitude: location.longitude,
         page: pageNum,
-      });
+      };
+      
+      // Add category filters if selected
+      if (selectedMainCategory) {
+        params.mainCategory = selectedMainCategory;
+        if (selectedSubcategory) {
+          params.subcategory = selectedSubcategory;
+        }
+      }
+      
+      const response = await marketplaceApi.getBusinesses(params);
       
       if (pageNum === 1) {
         setBusinesses(response.results || []);
@@ -184,6 +202,18 @@ export default function MarketplaceScreen() {
     }
   };
 
+  const loadCategoryHierarchy = async () => {
+    try {
+      const location = locationData || { city: 'Juba', country: 'South Sudan' };
+      const response = await marketplaceApi.getCategoryHierarchy(location.city);
+      if (response && response.categories) {
+        setCategoryHierarchy(response.categories);
+      }
+    } catch (error) {
+      console.error('Error loading category hierarchy:', error);
+    }
+  };
+
   const searchBusinesses = async () => {
     try {
       const location = locationData || { city: 'Juba', country: 'South Sudan' };
@@ -197,6 +227,12 @@ export default function MarketplaceScreen() {
       
       if (searchQuery) params.search = searchQuery;
       if (selectedCategory) params.category = selectedCategory;
+      if (selectedMainCategory) {
+        params.mainCategory = selectedMainCategory;
+        if (selectedSubcategory) {
+          params.subcategory = selectedSubcategory;
+        }
+      }
       
       const response = await marketplaceApi.getBusinesses(params);
       setBusinesses(response.results || []);
@@ -236,8 +272,30 @@ export default function MarketplaceScreen() {
     if (category.id === 'more') {
       navigation.navigate('AllCategories');
     } else {
-      setSelectedCategory(category.id === selectedCategory ? null : category.id);
+      // Find category data from hierarchy
+      const categoryData = categoryHierarchy.find(cat => cat.id === category.id);
+      
+      if (categoryData && categoryData.subcategories) {
+        // Show subcategory modal
+        setModalCategory({
+          ...category,
+          count: categoryData.count
+        });
+        setModalSubcategories(categoryData.subcategories);
+        setShowSubcategoryModal(true);
+      } else {
+        // Fallback to old behavior if no hierarchy data
+        setSelectedCategory(category.id === selectedCategory ? null : category.id);
+      }
     }
+  };
+
+  const handleSubcategorySelect = (mainCategoryId, subcategoryId) => {
+    setSelectedMainCategory(mainCategoryId);
+    setSelectedSubcategory(subcategoryId);
+    setSelectedCategory(null); // Clear old category selection
+    setPage(1);
+    loadBusinesses(1);
   };
 
   const handleLocationPress = () => {
@@ -426,6 +484,15 @@ export default function MarketplaceScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Subcategory Modal */}
+      <SubcategoryModal
+        visible={showSubcategoryModal}
+        onClose={() => setShowSubcategoryModal(false)}
+        mainCategory={modalCategory}
+        subcategories={modalSubcategories}
+        onSelectSubcategory={handleSubcategorySelect}
+      />
+      
       {/* Original Header with Location, Bell, and Cart */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
@@ -475,6 +542,30 @@ export default function MarketplaceScreen() {
           </TouchableOpacity>
         ) : null}
       </View>
+
+      {/* Active Filter Display */}
+      {selectedMainCategory && (
+        <View style={styles.activeFilterContainer}>
+          <View style={styles.activeFilter}>
+            <Text style={styles.activeFilterText}>
+              {categoryHierarchy.find(c => c.id === selectedMainCategory)?.name || selectedMainCategory}
+              {selectedSubcategory && selectedSubcategory !== 'all' && 
+                ` > ${modalSubcategories.find(s => s.id === selectedSubcategory)?.name || selectedSubcategory}`
+              }
+            </Text>
+            <TouchableOpacity 
+              onPress={() => {
+                setSelectedMainCategory(null);
+                setSelectedSubcategory(null);
+                loadBusinesses(1);
+              }}
+              style={styles.clearFilterButton}
+            >
+              <Icon name="close-circle" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Main Content */}
       <FlatList
@@ -884,5 +975,28 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 8,
     textAlign: 'center',
+  },
+  activeFilterContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  activeFilter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  activeFilterText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  clearFilterButton: {
+    marginLeft: 4,
   },
 });

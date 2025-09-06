@@ -239,6 +239,8 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             city = request.query_params.get('city', '').strip()
             country = request.query_params.get('country', '').strip()
             category = request.query_params.get('category', '').strip()
+            main_category = request.query_params.get('main_category', '').strip()
+            subcategory = request.query_params.get('subcategory', '').strip()
             search_query = request.query_params.get('search', '').strip()
             page = int(request.query_params.get('page', 1))
             page_size = int(request.query_params.get('page_size', 20))
@@ -268,12 +270,58 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 businesses = businesses.filter(country__iexact=country)
                 logger.info(f"[Marketplace] Filtered by country '{country}': {businesses.count()} businesses")
             
-            # Category filter
-            if category:
+            # Category filter (legacy)
+            if category and not main_category:
                 businesses = businesses.filter(
                     Q(category__icontains=category)
                 )
                 logger.info(f"[Marketplace] Filtered by category '{category}': {businesses.count()} businesses")
+            
+            # New subcategory filtering
+            if main_category:
+                from marketplace.marketplace_categories import MARKETPLACE_CATEGORIES, get_business_types_for_subcategory
+                from core.business_types import migrate_old_category
+                
+                if subcategory and subcategory != 'all':
+                    # Filter by specific subcategory
+                    business_types = get_business_types_for_subcategory(main_category, subcategory)
+                    
+                    # Map old categories to new business types for filtering
+                    old_categories = []
+                    for bt in business_types:
+                        # Find old categories that map to this business type
+                        from core.business_types import OLD_CATEGORY_MAPPING
+                        for old_cat, mapped_type in OLD_CATEGORY_MAPPING.items():
+                            if mapped_type == bt:
+                                old_categories.append(old_cat)
+                    
+                    # Filter by business types or old categories
+                    businesses = businesses.filter(
+                        Q(category__in=business_types) |
+                        Q(category__icontains=subcategory) |
+                        Q(category__in=old_categories)
+                    )
+                    logger.info(f"[Marketplace] Filtered by subcategory '{main_category}.{subcategory}': {businesses.count()} businesses")
+                else:
+                    # Filter by main category - show all businesses in this category
+                    all_business_types = set()
+                    if main_category in MARKETPLACE_CATEGORIES:
+                        for sub_data in MARKETPLACE_CATEGORIES[main_category]['subcategories'].values():
+                            all_business_types.update(sub_data.get('business_types', []))
+                    
+                    # Map to old categories
+                    old_categories = []
+                    for bt in all_business_types:
+                        from core.business_types import OLD_CATEGORY_MAPPING
+                        for old_cat, mapped_type in OLD_CATEGORY_MAPPING.items():
+                            if mapped_type == bt:
+                                old_categories.append(old_cat)
+                    
+                    businesses = businesses.filter(
+                        Q(category__in=list(all_business_types)) |
+                        Q(category__in=old_categories)
+                    )
+                    logger.info(f"[Marketplace] Filtered by main category '{main_category}': {businesses.count()} businesses")
             
             # Search filter - search in name, category, and description
             if search_query:
@@ -338,9 +386,82 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['get'])
+    def marketplace_category_hierarchy(self, request):
+        """
+        Get the complete category hierarchy with main categories and subcategories
+        """
+        try:
+            from marketplace.marketplace_categories import get_main_categories, get_subcategories, MARKETPLACE_CATEGORIES
+            from business.models import PlaceholderBusiness
+            
+            city = request.query_params.get('city', '').strip()
+            
+            # Get main categories
+            main_categories = []
+            
+            for key, data in MARKETPLACE_CATEGORIES.items():
+                # Count businesses in this main category (optional, for showing counts)
+                business_count = 0
+                if city:
+                    # Get all business types for this main category
+                    all_business_types = set()
+                    for sub_data in data['subcategories'].values():
+                        all_business_types.update(sub_data.get('business_types', []))
+                    
+                    # Count placeholder businesses
+                    business_count = PlaceholderBusiness.objects.filter(
+                        city__iexact=city,
+                        opted_out=False
+                    ).filter(
+                        Q(category__in=list(all_business_types))
+                    ).count()
+                
+                # Get subcategories for this main category
+                subcategories = []
+                for sub_key, sub_data in data['subcategories'].items():
+                    # Count businesses in this subcategory
+                    sub_count = 0
+                    if city and sub_key != 'all':
+                        business_types = sub_data.get('business_types', [])
+                        sub_count = PlaceholderBusiness.objects.filter(
+                            city__iexact=city,
+                            opted_out=False,
+                            category__in=business_types
+                        ).count()
+                    
+                    subcategories.append({
+                        'id': sub_key,
+                        'name': sub_data['name'],
+                        'count': sub_count
+                    })
+                
+                main_categories.append({
+                    'id': key,
+                    'name': data['name'],
+                    'icon': data['icon'],
+                    'color': data['color'],
+                    'count': business_count,
+                    'subcategories': subcategories
+                })
+            
+            return Response({
+                'success': True,
+                'categories': main_categories,
+                'city': city
+            })
+            
+        except Exception as e:
+            logger.error(f"[Marketplace] Error fetching category hierarchy: {str(e)}")
+            return Response({
+                'success': False,
+                'message': 'Error fetching categories',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
     def marketplace_categories(self, request):
         """
-        Get unique categories from placeholder businesses in user's city
+        Get unique categories from placeholder businesses in user's city (legacy)
         """
         try:
             city = request.query_params.get('city', '').strip()

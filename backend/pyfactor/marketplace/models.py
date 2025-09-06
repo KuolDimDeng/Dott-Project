@@ -68,6 +68,21 @@ class BusinessListing(models.Model):
     )
     description = models.TextField(blank=True)
     
+    # Subcategory fields for marketplace categorization
+    manual_subcategories = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+        help_text="Subcategories manually selected by business owner"
+    )
+    
+    auto_subcategories = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+        help_text="Auto-detected subcategories based on business type and keywords"
+    )
+    
     # Ratings & Reviews
     average_rating = models.DecimalField(max_digits=2, decimal_places=1, default=0)
     total_reviews = models.IntegerField(default=0)
@@ -93,6 +108,30 @@ class BusinessListing(models.Model):
     
     def __str__(self):
         return f"{self.business.business_name} - {self.get_business_type_display()}"
+    
+    @property
+    def subcategories(self):
+        """Combined subcategories (manual overrides auto)"""
+        return self.manual_subcategories if self.manual_subcategories else self.auto_subcategories
+    
+    @property
+    def main_category(self):
+        """Main category derived from business type"""
+        from .marketplace_categories import MARKETPLACE_CATEGORIES
+        
+        # Check subcategories first
+        if self.subcategories:
+            # Extract main category from subcategory key (e.g., 'food.burgers' -> 'food')
+            main_cat = self.subcategories[0].split('.')[0] if '.' in self.subcategories[0] else None
+            if main_cat:
+                return main_cat
+        
+        # Fallback to mapping business_type to main category
+        for main_cat, cat_data in MARKETPLACE_CATEGORIES.items():
+            for sub_key, sub_data in cat_data['subcategories'].items():
+                if self.business_type in sub_data.get('business_types', []):
+                    return main_cat
+        return 'more'  # Default to 'more' category
     
     def can_deliver_to(self, consumer_country, consumer_city, consumer_coords=None):
         """Check if business can deliver to consumer location"""
