@@ -361,6 +361,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'latitude': float(business.latitude) if business.latitude else None,
                     'longitude': float(business.longitude) if business.longitude else None,
                     'is_verified': business.converted_to_real_business,
+                    'is_placeholder': True,  # All businesses from PlaceholderBusiness model are placeholders
                 })
             
             logger.info(f"[Marketplace] Returning {len(results)} businesses for page {page}")

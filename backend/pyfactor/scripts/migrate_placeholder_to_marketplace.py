@@ -112,9 +112,9 @@ def migrate_placeholder_businesses():
             cursor.execute("""
                 SELECT 
                     pb.id,
-                    pb.user_id,
-                    pb.business_name,
-                    pb.business_type,
+                    pb.real_business_user_id,
+                    pb.name,
+                    pb.category,
                     pb.country,
                     pb.city,
                     pb.description,
@@ -124,10 +124,8 @@ def migrate_placeholder_businesses():
                     pb.email,
                     pb.created_at
                 FROM placeholder_businesses pb
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM marketplace_business_listing ml 
-                    WHERE ml.business_id = pb.user_id
-                )
+                WHERE pb.converted_to_real_business = false
+                AND pb.opted_out = false
                 ORDER BY pb.created_at
             """)
             
@@ -150,16 +148,14 @@ def migrate_placeholder_businesses():
             errors = []
             
             for pb in placeholder_businesses:
-                pb_id, user_id, business_name, business_type_orig, country, city, description, lat, lon, phone, email, created_at = pb
+                pb_id, real_user_id, business_name, category_orig, country, city, description, lat, lon, phone, email, created_at = pb
                 
-                # Skip if user_id is None
-                if not user_id:
-                    skipped += 1
-                    continue
+                # Placeholder businesses don't have registered users, so we'll link them by placeholder ID
+                # We'll store the placeholder_id in the description or search_tags to track it
                 
-                # Map business type
-                business_type_orig = business_type_orig or 'OTHER'
-                mapping = BUSINESS_TYPE_MAPPING.get(business_type_orig, BUSINESS_TYPE_MAPPING['OTHER'])
+                # Map category to business type
+                category_upper = (category_orig or 'OTHER').upper().replace(' ', '_')
+                mapping = BUSINESS_TYPE_MAPPING.get(category_upper, BUSINESS_TYPE_MAPPING['OTHER'])
                 primary_category = mapping['primary_category']
                 business_type = mapping['business_type']
                 
