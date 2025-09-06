@@ -217,13 +217,14 @@ class Migration(migrations.Migration):
             },
         ),
         
-        # Add new fields to Product model
-        migrations.AddField(
+        # Alter existing inventory_type field to add more choices
+        migrations.AlterField(
             model_name='product',
             name='inventory_type',
             field=models.CharField(
                 choices=[
                     ('product', 'Product for Sale'),
+                    ('supply', 'Supply/Material'),  # Keep existing choice
                     ('service_supply', 'Service Supply'),
                     ('rental', 'Rental Item'),
                     ('ingredient', 'Ingredient/Component'),
@@ -231,7 +232,8 @@ class Migration(migrations.Migration):
                     ('digital', 'Digital Product'),
                 ],
                 default='product',
-                max_length=20
+                max_length=20,
+                db_index=True
             ),
         ),
         
