@@ -226,15 +226,38 @@ class Command(BaseCommand):
         # Add restaurant items
         created_count = 0
         updated_count = 0
+        
+        # First, let's check what columns actually exist in the database
+        from django.db import connection
+        import uuid
+        
+        with connection.cursor() as cursor:
+            # Get column information
+            cursor.execute("""
+                SELECT column_name, data_type, is_nullable, column_default
+                FROM information_schema.columns 
+                WHERE table_name = 'inventory_product'
+                ORDER BY ordinal_position
+            """)
+            columns = cursor.fetchall()
+            self.stdout.write("\n📊 Database schema for inventory_product:")
+            for col in columns:
+                nullable = "NULL" if col[2] == 'YES' else "NOT NULL"
+                default = f" DEFAULT {col[3]}" if col[3] else ""
+                self.stdout.write(f"   - {col[0]}: {col[1]} {nullable}{default}")
+        
+        self.stdout.write("\n")
+        
         for item_data in restaurant_items:
             try:
                 # Copy the item data and add tenant_id
                 cleaned_data = item_data.copy()
                 cleaned_data['tenant_id'] = user.tenant.id
                 
-                # TEMPORARY: Add storage_temperature to satisfy DB constraint
+                # TEMPORARY: Add fields that exist in DB but not in model
                 # This field exists in DB but not in model yet
                 cleaned_data['storage_temperature'] = 'Room Temperature'
+                cleaned_data['allergen_info'] = '[]'  # Empty JSON array for allergen_info
                 
                 # Use raw SQL to insert since the field doesn't exist in the model
                 from django.db import connection
@@ -283,14 +306,14 @@ class Command(BaseCommand):
                                 tenant_id, id, name, description, sku, 
                                 inventory_type, material_type, price, cost, 
                                 quantity, reorder_level, unit, storage_temperature,
-                                created_at, updated_at, is_active, 
+                                allergen_info, created_at, updated_at, is_active, 
                                 markup_percentage, is_billable, pricing_model,
                                 weight_unit, is_tax_exempt, tax_category
                             ) VALUES (
                                 %s, %s, %s, %s, %s,
                                 %s, %s, %s, %s,
                                 %s, %s, %s, %s,
-                                NOW(), NOW(), true,
+                                %s, NOW(), NOW(), true,
                                 0, true, 'direct',
                                 'kg', false, 'standard'
                             )
@@ -307,7 +330,8 @@ class Command(BaseCommand):
                             cleaned_data['quantity'],
                             cleaned_data['reorder_level'],
                             cleaned_data['unit'],
-                            cleaned_data['storage_temperature']
+                            cleaned_data['storage_temperature'],
+                            cleaned_data['allergen_info']
                         ])
                         created_count += 1
                         self.stdout.write(f"  ✅ Added: {item_data['name']}")
