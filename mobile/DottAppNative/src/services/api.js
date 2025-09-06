@@ -17,8 +17,8 @@ api.interceptors.request.use(
   async (config) => {
     const sessionId = await AsyncStorage.getItem('sessionId');
     if (sessionId) {
-      // Add session cookie for authentication
-      config.headers['Cookie'] = `sid=${sessionId}`;
+      // Use Authorization header for mobile app (cookies don't work in React Native)
+      config.headers['Authorization'] = `Session ${sessionId}`;
     }
     return config;
   },

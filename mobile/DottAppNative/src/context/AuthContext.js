@@ -157,9 +157,9 @@ export const AuthProvider = ({ children }) => {
           withCredentials: false // Mobile apps don't need cookies
         });
         
-        console.log('Creating session at:', publicApi.defaults.baseURL + '/api/sessions/create/');
+        console.log('Creating session at:', publicApi.defaults.baseURL + '/api/auth/session-v2');
         
-        response = await publicApi.post('/api/sessions/create/', {
+        response = await publicApi.post('/api/auth/session-v2', {
           // Send empty body - backend will create session from Auth0 token
         });
         

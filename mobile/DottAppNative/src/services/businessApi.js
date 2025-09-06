@@ -12,9 +12,9 @@ const createApiInstance = async () => {
     baseURL: API_BASE_URL,
     headers: {
       'Content-Type': 'application/json',
-      'Cookie': sessionId ? `sid=${sessionId}` : '',
+      'Authorization': sessionId ? `Session ${sessionId}` : '',
     },
-    withCredentials: true,
+    // Remove withCredentials as it's not needed for mobile apps
   });
 };
 

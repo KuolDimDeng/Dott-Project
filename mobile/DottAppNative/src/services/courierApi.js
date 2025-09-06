@@ -1,7 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ENV from '../config/environment';
 
-const API_BASE_URL = 'https://staging.dottapps.com/api';
+const API_BASE_URL = ENV.apiUrl;
 
 // Create axios instance with auth headers
 const createApiInstance = async () => {
@@ -11,9 +12,8 @@ const createApiInstance = async () => {
     baseURL: API_BASE_URL,
     headers: {
       'Content-Type': 'application/json',
-      'Cookie': sessionId ? `sid=${sessionId}` : '',
+      'Authorization': sessionId ? `Session ${sessionId}` : '',
     },
-    withCredentials: true,
   });
 };
 
