@@ -98,7 +98,7 @@ class BusinessListing(models.Model):
     last_active = models.DateTimeField(default=timezone.now)
     
     class Meta:
-        db_table = 'marketplace_business_listings'
+        db_table = 'marketplace_business_listing'
         indexes = [
             models.Index(fields=['business_type', 'is_visible_in_marketplace']),
             models.Index(fields=['country', 'city', 'delivery_scope']),
