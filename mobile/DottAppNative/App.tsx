@@ -5,9 +5,11 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import MainNavigator from './src/navigation/MainNavigator';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
+import { BusinessProvider } from './src/context/BusinessContext';
 import { StatusBar, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import EnvironmentBadge from './src/components/EnvironmentBadge';
+import CallManager from './src/components/CallManager';
 
 const Stack = createStackNavigator();
 
@@ -36,12 +38,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <CartProvider>
-          <View style={{ flex: 1 }}>
-            <AppNavigator />
-            <EnvironmentBadge />
-          </View>
-        </CartProvider>
+        <BusinessProvider>
+          <CartProvider>
+            <CallManager>
+              <View style={{ flex: 1 }}>
+                <AppNavigator />
+                <EnvironmentBadge />
+              </View>
+            </CallManager>
+          </CartProvider>
+        </BusinessProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

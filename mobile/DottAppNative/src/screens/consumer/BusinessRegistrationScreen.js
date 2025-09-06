@@ -26,7 +26,7 @@ import {
 } from '../../constants/businessTypes';
 
 export default function BusinessRegistrationScreen({ navigation }) {
-  const { user, refreshUser } = useAuth();
+  const { user, fetchUserProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -183,19 +183,26 @@ export default function BusinessRegistrationScreen({ navigation }) {
       // Submit to backend
       const response = await businessApi.registerBusiness(submissionData);
 
-      Alert.alert(
-        'Success',
-        'Your business registration has been submitted successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              refreshUser();
-              navigation.goBack();
+      // Update user context with new business info
+      if (response.success && response.data) {
+        // Update the user in auth context
+        await fetchUserProfile();
+        
+        Alert.alert(
+          'Success',
+          `Your business "${response.data.business_name}" has been registered successfully! You are now set as the OWNER and your business is listed in the marketplace.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                navigation.goBack();
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      } else {
+        throw new Error(response.message || 'Registration failed');
+      }
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to register business');
     } finally {

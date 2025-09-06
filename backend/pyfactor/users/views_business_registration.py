@@ -148,6 +148,34 @@ def create_business_account(request):
                 user_profile.role = 'OWNER'
                 user_profile.save()
             
+            # Update User model to reflect business ownership
+            user.role = 'OWNER'
+            user.save(update_fields=['role'])
+            
+            # Auto-register in marketplace
+            try:
+                from marketplace.models import BusinessListing
+                
+                # Create marketplace listing
+                marketplace_listing = BusinessListing.objects.create(
+                    business=user,
+                    business_type=business_type or 'OTHER',
+                    delivery_scope='local',  # Default to local delivery
+                    is_active=True,
+                    is_verified=False,  # Will need verification
+                    accepts_online_orders=True,
+                    accepts_cash=True,
+                    accepts_mobile_money=True,
+                    minimum_order_amount=0,
+                    average_rating=0.0,
+                    total_reviews=0,
+                    total_orders=0
+                )
+                logger.info(f"Marketplace listing created for business: {business.id}")
+            except Exception as marketplace_error:
+                logger.warning(f"Failed to create marketplace listing: {str(marketplace_error)}")
+                # Don't fail the whole registration if marketplace creation fails
+            
             logger.info(f"Business created successfully: {business.id} for user: {user.id}")
             
             # Handle courier service registration if requested
@@ -174,7 +202,10 @@ def create_business_account(request):
                     logger.warning(f"Failed to create courier profile: {str(courier_error)}")
                     # Don't fail the whole registration if courier creation fails
         
-        # Return success response
+        # Compute has_business (Business record now exists)
+        has_business = Business.objects.filter(owner_id=user.id).exists()
+        
+        # Return success response with updated user info
         return JsonResponse({
             'success': True,
             'message': 'Business created successfully',
@@ -183,7 +214,17 @@ def create_business_account(request):
                 'business_name': business.name,
                 'entity_type': entity_type,
                 'is_business_owner': True,
-                'offers_courier_services': offers_courier
+                'has_business': has_business,
+                'role': 'OWNER',
+                'offers_courier_services': offers_courier,
+                'marketplace_registered': True,
+                'tenant_id': str(business.id),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'has_business': has_business,
+                    'role': 'OWNER'
+                }
             }
         })
         
