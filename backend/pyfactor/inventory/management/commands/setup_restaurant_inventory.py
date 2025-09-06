@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
                 # Get or create business
                 business, created = Business.objects.get_or_create(
-                    tenant=user.tenant,
+                    tenant_id=user.tenant.id,
                     defaults={
                         'business_name': 'Dott Restaurant & Cafe',
                         'business_type': 'RESTAURANT_CAFE',
