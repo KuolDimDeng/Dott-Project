@@ -141,7 +141,7 @@ const BusinessDashboard = () => {
             {businessData.businessName || `${user?.firstName}'s Business`}
           </Text>
           <View style={styles.onlineToggle}>
-            <Text style={[styles.statusText, { color: isOnline ? '#10b981' : '#6b7280' }]}>
+            <Text style={[styles.statusText, { color: isOnline ? '#86efac' : '#cbd5e1' }]}>
               {isOnline ? 'Online' : 'Offline'}
             </Text>
             <Switch
@@ -276,10 +276,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1e3a8a',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#0f172a',
   },
   headerTop: {
     flexDirection: 'row',
@@ -290,11 +290,11 @@ const styles = StyleSheet.create({
   businessName: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    color: '#ffffff',
   },
   businessType: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#cbd5e1',
   },
   onlineToggle: {
     flexDirection: 'row',

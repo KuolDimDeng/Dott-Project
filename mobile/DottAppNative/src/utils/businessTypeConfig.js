@@ -432,6 +432,7 @@ export const BUSINESS_FEATURES = {
       pos: false,
       scheduling: true,
       timesheets: true, // Event staff
+      menu: true,  // Menu planning for events
     },
     navigationMode: 'multi-location', // Multiple venues per event
     menuItems: [
@@ -505,6 +506,7 @@ export const BUSINESS_FEATURES = {
       pos: true,
       scheduling: false,
       timesheets: true,
+      menu: true,  // For prepared foods section
     },
     navigationMode: 'none',
     menuItems: [
@@ -512,6 +514,7 @@ export const BUSINESS_FEATURES = {
       { id: 'inventory', label: 'Stock', icon: 'cube-outline', screen: 'InventoryScreen' },
       { id: 'orders', label: 'Online Orders', icon: 'cart-outline', screen: 'OnlineOrders' },
       { id: 'delivery', label: 'Delivery', icon: 'bicycle-outline', screen: 'DeliveryDispatch' },
+      { id: 'menu', label: 'Prepared Foods Menu', icon: 'list-outline', screen: 'MenuManagement' },
       { id: 'reports', label: 'Sales', icon: 'trending-up-outline', screen: 'SalesReports' },
     ],
   },
@@ -554,6 +557,7 @@ export const BUSINESS_FEATURES = {
       pos: true,
       scheduling: true,
       timesheets: true,
+      menu: true,  // Menu management for restaurant
     },
     navigationMode: 'none',
     menuItems: [
@@ -646,6 +650,9 @@ export const BUSINESS_FEATURES = {
 export function getBusinessConfig(businessType) {
   return BUSINESS_FEATURES[businessType] || BUSINESS_FEATURES.OTHER;
 }
+
+// Alias for backward compatibility
+export const getBusinessTypeConfig = getBusinessConfig;
 
 // Helper function to check if business needs navigation
 export function needsNavigation(businessType) {

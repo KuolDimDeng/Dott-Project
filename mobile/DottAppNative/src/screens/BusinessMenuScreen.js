@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
+import { useBusinessContext } from '../context/BusinessContext';
 import { useNavigation } from '@react-navigation/native';
 import POSScreen from './business/POSScreen';
 import TimesheetScreen from './business/TimesheetScreen';
@@ -21,7 +22,9 @@ import BankingScreen from './business/BankingScreen';
 
 export default function BusinessMenuScreen() {
   const { user, switchMode } = useAuth();
+  const { businessData } = useBusinessContext();
   const navigation = useNavigation();
+  const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
 
   const menuItems = [
     { icon: 'cash-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
@@ -39,8 +42,8 @@ export default function BusinessMenuScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.welcomeText}>Welcome back!</Text>
-          <Text style={styles.userName}>{user?.full_name || 'Business User'}</Text>
+          <Text style={styles.welcomeText}>Business Dashboard</Text>
+          <Text style={styles.userName}>{businessName}</Text>
         </View>
         <TouchableOpacity
           style={styles.switchButton}
@@ -87,7 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#1e3a8a',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 60,

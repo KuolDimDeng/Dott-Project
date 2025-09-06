@@ -28,6 +28,7 @@ import InventoryScreen from '../screens/business/InventoryScreen';
 import ExpensesScreen from '../screens/business/ExpensesScreen';
 import InvoicesScreen from '../screens/business/InvoicesScreen';
 import BankingScreen from '../screens/business/BankingScreen';
+import MenuManagementScreen from '../screens/business/MenuManagementScreen';
 import BusinessRegistrationScreen from '../screens/consumer/BusinessRegistrationScreen';
 
 const Tab = createBottomTabNavigator();
@@ -122,6 +123,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Expenses" component={ExpensesScreen} />
       <Stack.Screen name="Invoices" component={InvoicesScreen} />
       <Stack.Screen name="Banking" component={BankingScreen} />
+      <Stack.Screen name="MenuManagement" component={MenuManagementScreen} />
     </Stack.Navigator>
   );
 }

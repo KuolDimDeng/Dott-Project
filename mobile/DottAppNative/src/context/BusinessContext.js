@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBusinessTypeConfig } from '../utils/businessTypeConfig';
 import { getInventoryConfig, getInventoryMenuLabel, shouldShowInventory } from '../utils/inventoryConfig';
+import { userApi } from '../services/userApi';
+import { useAuth } from './AuthContext';
 
 const BusinessContext = createContext();
 
@@ -14,6 +16,7 @@ export const useBusinessContext = () => {
 };
 
 export const BusinessProvider = ({ children }) => {
+  const { user } = useAuth();
   const [businessData, setBusinessData] = useState({
     businessType: null,
     businessName: null,
@@ -35,11 +38,21 @@ export const BusinessProvider = ({ children }) => {
 
   const [businessConfig, setBusinessConfig] = useState(null);
   const [inventoryConfig, setInventoryConfig] = useState(null);
+  const [dynamicMenuItems, setDynamicMenuItems] = useState(null);
+  const [dynamicFeatures, setDynamicFeatures] = useState(null);
 
   // Load business data from storage on mount
   useEffect(() => {
     loadBusinessData();
+    fetchBusinessFeatures();
   }, []);
+
+  // Sync business name when user data changes
+  useEffect(() => {
+    if (user?.business_name && !businessData.businessName) {
+      updateBusinessData({ businessName: user.business_name });
+    }
+  }, [user?.business_name]);
 
   // Update config when business type changes
   useEffect(() => {
@@ -56,10 +69,58 @@ export const BusinessProvider = ({ children }) => {
       const stored = await AsyncStorage.getItem('businessData');
       if (stored) {
         const data = JSON.parse(stored);
+        // Also check if user has business_name from API
+        if (!data.businessName && user?.business_name) {
+          data.businessName = user.business_name;
+        }
         setBusinessData(prev => ({ ...prev, ...data }));
+      } else if (user?.business_name) {
+        // If no stored data but user has business_name, use it
+        setBusinessData(prev => ({ ...prev, businessName: user.business_name }));
       }
     } catch (error) {
       console.error('Error loading business data:', error);
+    }
+  };
+
+  const fetchBusinessFeatures = async () => {
+    try {
+      console.log('Fetching business features from API...');
+      const response = await userApi.getUserBusinessStatus();
+      
+      if (response) {
+        // Update business data with API response
+        if (response.business_name) {
+          updateBusinessData({ businessName: response.business_name });
+        }
+        if (response.business_type) {
+          updateBusinessData({ businessType: response.business_type });
+        }
+        
+        // Store dynamic features and menu items
+        setDynamicFeatures(response.features || []);
+        setDynamicMenuItems(response.menu_items || []);
+        
+        // Cache in AsyncStorage
+        await AsyncStorage.setItem('businessFeatures', JSON.stringify(response));
+        
+        console.log('Business features loaded:', response);
+      }
+    } catch (error) {
+      console.error('Error fetching business features:', error);
+      
+      // Try to load from cache
+      try {
+        const cached = await AsyncStorage.getItem('businessFeatures');
+        if (cached) {
+          const data = JSON.parse(cached);
+          setDynamicFeatures(data.features || []);
+          setDynamicMenuItems(data.menu_items || []);
+          console.log('Loaded business features from cache');
+        }
+      } catch (cacheError) {
+        console.error('Error loading cached features:', cacheError);
+      }
     }
   };
 
@@ -137,11 +198,27 @@ export const BusinessProvider = ({ children }) => {
   };
 
   const hasFeature = (feature) => {
+    // First check dynamic features from API
+    if (dynamicFeatures && dynamicFeatures.includes(feature)) {
+      return true;
+    }
+    
+    // Fallback to config-based features
     if (!businessConfig) return false;
     return businessConfig.features[feature] === true;
   };
 
   const getMenuItems = () => {
+    // First use dynamic menu items from API if available
+    if (dynamicMenuItems && dynamicMenuItems.length > 0) {
+      // Map API menu items to include title from label
+      return dynamicMenuItems.map(item => ({
+        ...item,
+        title: item.label || item.title
+      }));
+    }
+    
+    // Fallback to config-based menu items
     if (!businessConfig) return [];
     return businessConfig.menuItems || [];
   };
@@ -178,6 +255,8 @@ export const BusinessProvider = ({ children }) => {
     businessData,
     businessConfig,
     inventoryConfig,
+    dynamicMenuItems,
+    dynamicFeatures,
     
     // Actions
     setBusinessInfo,
@@ -187,6 +266,7 @@ export const BusinessProvider = ({ children }) => {
     removeActiveOrder,
     updateStats,
     clearBusinessData,
+    fetchBusinessFeatures,
     
     // Helpers
     hasFeature,
