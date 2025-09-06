@@ -13,7 +13,7 @@ class BusinessInventoryConfig(models.Model):
     Stores terminology, features, and UI customization per business type
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    tenant = models.ForeignKey('users.Tenant', on_delete=models.CASCADE)
+    tenant = models.ForeignKey('custom_auth.Tenant', on_delete=models.CASCADE)
     business_type = models.CharField(max_length=50)
     
     # Terminology customization

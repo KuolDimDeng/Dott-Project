@@ -177,7 +177,7 @@ class Migration(migrations.Migration):
                 ('menu_position', models.IntegerField(default=3)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.tenant')),
+                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='custom_auth.tenant')),
             ],
             options={
                 'db_table': 'inventory_business_config',
