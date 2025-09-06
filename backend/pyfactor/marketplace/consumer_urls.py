@@ -20,6 +20,10 @@ urlpatterns = [
     path('businesses/categories/', get_business_categories, name='business-categories'),
     path('businesses/featured/', get_featured_businesses, name='featured-businesses'),
     
+    # Category hierarchy endpoint (for subcategories)
+    path('category_hierarchy/', ConsumerSearchViewSet.as_view({'get': 'marketplace_category_hierarchy'}), name='category-hierarchy'),
+    path('marketplace_businesses/', ConsumerSearchViewSet.as_view({'get': 'marketplace_businesses'}), name='marketplace-businesses-alt'),
+    
     # Search endpoints
     path('search/', ConsumerSearchViewSet.as_view({'get': 'search', 'post': 'search'}), name='consumer-search'),
     path('categories/', ConsumerSearchViewSet.as_view({'get': 'categories'}), name='consumer-categories'),
