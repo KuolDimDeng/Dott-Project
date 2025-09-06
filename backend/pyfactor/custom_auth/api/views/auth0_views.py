@@ -387,11 +387,16 @@ class Auth0UserProfileView(APIView):
         try:
             user = request.user
             logger.info(f"🔥 [USER_PROFILE] === STARTING USER PROFILE LOOKUP ===")
+            logger.info(f"🔥 [USER_PROFILE] Request method: {request.method}")
+            logger.info(f"🔥 [USER_PROFILE] Authentication class used: {request.successful_authenticator.__class__.__name__ if hasattr(request, 'successful_authenticator') else 'Unknown'}")
             logger.info(f"🔥 [USER_PROFILE] Authenticated User: {user.email} (ID: {user.pk})")
+            logger.info(f"🔥 [USER_PROFILE] User type: {type(user).__name__}")
             
             # Get user's tenant
             tenant = None
-            user_role = 'owner'  # Default role
+            # Get user's role - check if it's set on the user object
+            user_role = getattr(user, 'role', 'OWNER')  # Default to OWNER
+            logger.info(f"🔥 [USER_PROFILE] User role from user object: {user_role}")
             
             try:
                 # First check if user has a direct tenant relationship
@@ -429,11 +434,14 @@ class Auth0UserProfileView(APIView):
                         user.save(update_fields=['tenant'])
                 
                 if tenant:
-                    user_role = 'owner'
+                    # If they have a tenant and no specific role set, they're likely an owner
+                    if not hasattr(user, 'role'):
+                        user_role = 'OWNER'
+                        logger.info(f"🔥 [USER_PROFILE] User has tenant, setting role to OWNER")
                 else:
                     # Check if user is a member of any tenant
                     # This would require UserTenantRole model if implemented
-                    pass
+                    logger.info(f"🔥 [USER_PROFILE] User has no tenant, keeping role as: {user_role}")
             except Exception as e:
                 logger.warning(f"🔥 [USER_PROFILE] Error getting tenant: {str(e)}")
             
@@ -551,9 +559,22 @@ class Auth0UserProfileView(APIView):
                     logger.warning(f"🔥 [USER_PROFILE] Failed to get business country: {str(e)}")
             
             # Check if user has a business - FIX: Check actual business ownership, not tenant
-            from users.models import Business
-            has_business = Business.objects.filter(owner_id=str(user.id)).exists()
-            logger.info(f"🔥 [USER_PROFILE] User has_business: {has_business}")
+            has_business = False
+            try:
+                from users.models import Business
+                has_business = Business.objects.filter(owner_id=str(user.id)).exists()
+                logger.info(f"🔥 [USER_PROFILE] User has_business: {has_business}")
+            except ImportError as e:
+                logger.error(f"🔥 [USER_PROFILE] Failed to import Business model: {str(e)}")
+                # Try alternative check
+                has_business = bool(tenant)
+                logger.info(f"🔥 [USER_PROFILE] Using tenant existence as fallback for has_business: {has_business}")
+            except Exception as e:
+                logger.error(f"🔥 [USER_PROFILE] Error checking business ownership: {str(e)}")
+                logger.error(f"🔥 [USER_PROFILE] Exception type: {type(e).__name__}")
+                # Use tenant as fallback
+                has_business = bool(tenant)
+                logger.info(f"🔥 [USER_PROFILE] Using tenant existence as fallback for has_business: {has_business}")
             
             # Get user's subscription plan
             user_subscription = 'free'
