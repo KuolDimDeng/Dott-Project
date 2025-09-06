@@ -122,25 +122,28 @@ export const BusinessProvider = ({ children }) => {
       if (profileResponse) {
         const businessUpdates = {};
         
-        // Update business location data
+        // Update business location data - try business fields first, then fall back to user profile
         if (profileResponse.business_city) {
           businessUpdates.businessCity = profileResponse.business_city;
         }
-        if (profileResponse.business_country) {
-          businessUpdates.businessCountry = profileResponse.business_country;
+        if (profileResponse.business_country || profileResponse.country) {
+          businessUpdates.businessCountry = profileResponse.business_country || profileResponse.country;
         }
-        if (profileResponse.business_country_name) {
-          businessUpdates.businessCountryName = profileResponse.business_country_name;
+        if (profileResponse.business_country_name || profileResponse.country_name) {
+          businessUpdates.businessCountryName = profileResponse.business_country_name || profileResponse.country_name;
         }
         
-        // Update currency preferences
-        if (profileResponse.preferred_currency_code || profileResponse.preferred_currency_symbol) {
-          businessUpdates.preferredCurrency = {
-            code: profileResponse.preferred_currency_code || null,
-            symbol: profileResponse.preferred_currency_symbol || null,
-            name: profileResponse.preferred_currency_name || null,
-          };
-        }
+        // Update currency preferences - try business fields first, then use defaults
+        const currencyCode = profileResponse.preferred_currency_code || 
+                           (profileResponse.country === 'SS' ? 'SSP' : 'USD');
+        const currencySymbol = profileResponse.preferred_currency_symbol || 
+                              (profileResponse.country === 'SS' ? 'SSP' : '$');
+        
+        businessUpdates.preferredCurrency = {
+          code: currencyCode,
+          symbol: currencySymbol,
+          name: profileResponse.preferred_currency_name || null,
+        };
         
         // Also sync business name if not already set
         if (profileResponse.business_name && !businessData.businessName) {
