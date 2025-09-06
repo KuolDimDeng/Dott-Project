@@ -107,8 +107,8 @@ class Command(BaseCommand):
                 'category': 'Food Items',
                 'price': 5.00,
                 'cost': 3.00,
-                'quantity_on_hand': 50,
-                'reorder_point': 20,
+                'quantity': 50,
+                'reorder_level': 20,
                 'unit': 'kg',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -121,7 +121,7 @@ class Command(BaseCommand):
                 'price': 25.00,
                 'cost': 18.00,
                 'quantity_on_hand': 30,
-                'reorder_point': 10,
+                'reorder_level': 10,
                 'unit': 'kg',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -134,7 +134,7 @@ class Command(BaseCommand):
                 'price': 12.00,
                 'cost': 8.00,
                 'quantity_on_hand': 25,
-                'reorder_point': 15,
+                'reorder_level': 15,
                 'unit': 'kg',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -147,7 +147,7 @@ class Command(BaseCommand):
                 'price': 15.00,
                 'cost': 10.00,
                 'quantity_on_hand': 20,
-                'reorder_point': 5,
+                'reorder_level': 5,
                 'unit': 'liters',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -160,7 +160,7 @@ class Command(BaseCommand):
                 'price': 2.00,
                 'cost': 1.00,
                 'quantity_on_hand': 500,
-                'reorder_point': 200,
+                'reorder_level': 200,
                 'unit': 'pack',
                 'material_type': 'consumable',
                 'inventory_type': 'product',
@@ -173,7 +173,7 @@ class Command(BaseCommand):
                 'price': 0.50,
                 'cost': 0.30,
                 'quantity_on_hand': 200,
-                'reorder_point': 100,
+                'reorder_level': 100,
                 'unit': 'piece',
                 'material_type': 'consumable',
                 'inventory_type': 'product',
@@ -186,7 +186,7 @@ class Command(BaseCommand):
                 'price': 3.00,
                 'cost': 2.00,
                 'quantity_on_hand': 100,
-                'reorder_point': 30,
+                'reorder_level': 30,
                 'unit': 'kg',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -199,7 +199,7 @@ class Command(BaseCommand):
                 'price': 4.00,
                 'cost': 2.50,
                 'quantity_on_hand': 40,
-                'reorder_point': 20,
+                'reorder_level': 20,
                 'unit': 'liters',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -212,7 +212,7 @@ class Command(BaseCommand):
                 'price': 5.00,
                 'cost': 3.00,
                 'quantity_on_hand': 20,
-                'reorder_point': 10,
+                'reorder_level': 10,
                 'unit': 'bottle',
                 'material_type': 'consumable',
                 'inventory_type': 'product',
@@ -225,7 +225,7 @@ class Command(BaseCommand):
                 'price': 3.00,
                 'cost': 1.50,
                 'quantity_on_hand': 30,
-                'reorder_point': 15,
+                'reorder_level': 15,
                 'unit': 'kg',
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
@@ -238,15 +238,15 @@ class Command(BaseCommand):
         updated_count = 0
         for item_data in restaurant_items:
             try:
-                # Add tenant to item data
-                item_data['tenant'] = user.tenant
-                
                 # Remove fields that might not exist yet
                 cleaned_data = {k: v for k, v in item_data.items() 
-                              if k not in ['expiry_date', 'storage_temperature', 'allergen_info']}
+                              if k not in ['expiry_date', 'storage_temperature', 'allergen_info', 'tenant']}
+                
+                # Add tenant_id instead of tenant
+                cleaned_data['tenant_id'] = user.tenant.id
                 
                 product, created = Product.objects.update_or_create(
-                    tenant=user.tenant,
+                    tenant_id=user.tenant.id,
                     sku=item_data['sku'],
                     defaults=cleaned_data
                 )
