@@ -120,7 +120,7 @@ class Command(BaseCommand):
                 'category': 'Beverages',
                 'price': 25.00,
                 'cost': 18.00,
-                'quantity_on_hand': 30,
+                'quantity': 30,
                 'reorder_level': 10,
                 'unit': 'kg',
                 'material_type': 'consumable',
@@ -133,7 +133,7 @@ class Command(BaseCommand):
                 'category': 'Food Items',
                 'price': 12.00,
                 'cost': 8.00,
-                'quantity_on_hand': 25,
+                'quantity': 25,
                 'reorder_level': 15,
                 'unit': 'kg',
                 'material_type': 'consumable',
@@ -146,7 +146,7 @@ class Command(BaseCommand):
                 'category': 'Food Items',
                 'price': 15.00,
                 'cost': 10.00,
-                'quantity_on_hand': 20,
+                'quantity': 20,
                 'reorder_level': 5,
                 'unit': 'liters',
                 'material_type': 'consumable',
@@ -159,7 +159,7 @@ class Command(BaseCommand):
                 'category': 'Packaging',
                 'price': 2.00,
                 'cost': 1.00,
-                'quantity_on_hand': 500,
+                'quantity': 500,
                 'reorder_level': 200,
                 'unit': 'pack',
                 'material_type': 'consumable',
@@ -172,7 +172,7 @@ class Command(BaseCommand):
                 'category': 'Packaging',
                 'price': 0.50,
                 'cost': 0.30,
-                'quantity_on_hand': 200,
+                'quantity': 200,
                 'reorder_level': 100,
                 'unit': 'piece',
                 'material_type': 'consumable',
@@ -185,7 +185,7 @@ class Command(BaseCommand):
                 'category': 'Food Items',
                 'price': 3.00,
                 'cost': 2.00,
-                'quantity_on_hand': 100,
+                'quantity': 100,
                 'reorder_level': 30,
                 'unit': 'kg',
                 'material_type': 'consumable',
@@ -198,7 +198,7 @@ class Command(BaseCommand):
                 'category': 'Beverages',
                 'price': 4.00,
                 'cost': 2.50,
-                'quantity_on_hand': 40,
+                'quantity': 40,
                 'reorder_level': 20,
                 'unit': 'liters',
                 'material_type': 'consumable',
@@ -211,7 +211,7 @@ class Command(BaseCommand):
                 'category': 'Cleaning Supplies',
                 'price': 5.00,
                 'cost': 3.00,
-                'quantity_on_hand': 20,
+                'quantity': 20,
                 'reorder_level': 10,
                 'unit': 'bottle',
                 'material_type': 'consumable',
@@ -224,7 +224,7 @@ class Command(BaseCommand):
                 'category': 'Food Items',
                 'price': 3.00,
                 'cost': 1.50,
-                'quantity_on_hand': 30,
+                'quantity': 30,
                 'reorder_level': 15,
                 'unit': 'kg',
                 'material_type': 'consumable',
@@ -240,7 +240,7 @@ class Command(BaseCommand):
             try:
                 # Remove fields that might not exist yet
                 cleaned_data = {k: v for k, v in item_data.items() 
-                              if k not in ['expiry_date', 'storage_temperature', 'allergen_info', 'tenant']}
+                              if k not in ['expiry_date', 'storage_temperature', 'allergen_info', 'tenant', 'category']}
                 
                 # Add tenant_id instead of tenant
                 cleaned_data['tenant_id'] = user.tenant.id
