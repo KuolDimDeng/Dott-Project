@@ -113,6 +113,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'Fresh ripe tomatoes for salads and cooking',
+                'storage_temperature': '4-8°C',
             },
             {
                 'name': 'Coffee Beans - Arabica',
@@ -126,6 +127,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'Premium arabica coffee beans',
+                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'Chicken Breast',
@@ -139,6 +141,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'Fresh chicken breast for main dishes',
+                'storage_temperature': '-18°C',
             },
             {
                 'name': 'Olive Oil - Extra Virgin',
@@ -152,6 +155,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'Premium extra virgin olive oil for cooking',
+                'storage_temperature': 'Cool, dark place',
             },
             {
                 'name': 'Paper Napkins',
@@ -165,6 +169,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'product',
                 'description': 'Disposable paper napkins for customers',
+                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'Take-out Containers - Large',
@@ -178,6 +183,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'product',
                 'description': 'Biodegradable take-out containers',
+                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'All-Purpose Flour',
@@ -191,6 +197,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'All-purpose flour for baking and cooking',
+                'storage_temperature': 'Cool, dry place',
             },
             {
                 'name': 'Fresh Milk',
@@ -204,6 +211,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'Fresh whole milk',
+                'storage_temperature': '2-4°C',
             },
             {
                 'name': 'Dish Soap',
@@ -217,6 +225,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'product',
                 'description': 'Commercial grade dish soap',
+                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'Fresh Lettuce',
@@ -230,6 +239,7 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'ingredient',
                 'description': 'Fresh lettuce for salads',
+                'storage_temperature': '4-8°C',
             },
         ]
 
@@ -240,10 +250,14 @@ class Command(BaseCommand):
             try:
                 # Remove fields that might not exist yet
                 cleaned_data = {k: v for k, v in item_data.items() 
-                              if k not in ['expiry_date', 'storage_temperature', 'allergen_info', 'tenant', 'category']}
+                              if k not in ['expiry_date', 'allergen_info', 'tenant', 'category']}
                 
                 # Add tenant_id instead of tenant
                 cleaned_data['tenant_id'] = user.tenant.id
+                
+                # Ensure storage_temperature has a default value (it's required)
+                if 'storage_temperature' not in cleaned_data or not cleaned_data.get('storage_temperature'):
+                    cleaned_data['storage_temperature'] = 'Room Temperature'
                 
                 product, created = Product.objects.update_or_create(
                     tenant_id=user.tenant.id,
