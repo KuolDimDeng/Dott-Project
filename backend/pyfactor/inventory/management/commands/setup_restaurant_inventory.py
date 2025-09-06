@@ -104,63 +104,54 @@ class Command(BaseCommand):
             {
                 'name': 'Fresh Tomatoes',
                 'sku': 'VEG-001',
-                'category': 'Food Items',
                 'price': 5.00,
                 'cost': 3.00,
                 'quantity': 50,
                 'reorder_level': 20,
                 'unit': 'kg',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',  # Using 'supply' as 'ingredient' doesn't exist
                 'description': 'Fresh ripe tomatoes for salads and cooking',
-                'storage_temperature': '4-8°C',
             },
             {
                 'name': 'Coffee Beans - Arabica',
                 'sku': 'BEV-001',
-                'category': 'Beverages',
                 'price': 25.00,
                 'cost': 18.00,
                 'quantity': 30,
                 'reorder_level': 10,
                 'unit': 'kg',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',
                 'description': 'Premium arabica coffee beans',
-                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'Chicken Breast',
                 'sku': 'MEAT-001',
-                'category': 'Food Items',
                 'price': 12.00,
                 'cost': 8.00,
                 'quantity': 25,
                 'reorder_level': 15,
                 'unit': 'kg',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',
                 'description': 'Fresh chicken breast for main dishes',
-                'storage_temperature': '-18°C',
             },
             {
                 'name': 'Olive Oil - Extra Virgin',
                 'sku': 'OIL-001',
-                'category': 'Food Items',
                 'price': 15.00,
                 'cost': 10.00,
                 'quantity': 20,
                 'reorder_level': 5,
                 'unit': 'liters',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',
                 'description': 'Premium extra virgin olive oil for cooking',
-                'storage_temperature': 'Cool, dark place',
             },
             {
                 'name': 'Paper Napkins',
                 'sku': 'PKG-001',
-                'category': 'Packaging',
                 'price': 2.00,
                 'cost': 1.00,
                 'quantity': 500,
@@ -169,12 +160,10 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'product',
                 'description': 'Disposable paper napkins for customers',
-                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'Take-out Containers - Large',
                 'sku': 'PKG-002',
-                'category': 'Packaging',
                 'price': 0.50,
                 'cost': 0.30,
                 'quantity': 200,
@@ -183,40 +172,34 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'product',
                 'description': 'Biodegradable take-out containers',
-                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'All-Purpose Flour',
                 'sku': 'BAKE-001',
-                'category': 'Food Items',
                 'price': 3.00,
                 'cost': 2.00,
                 'quantity': 100,
                 'reorder_level': 30,
                 'unit': 'kg',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',
                 'description': 'All-purpose flour for baking and cooking',
-                'storage_temperature': 'Cool, dry place',
             },
             {
                 'name': 'Fresh Milk',
                 'sku': 'DAIRY-001',
-                'category': 'Beverages',
                 'price': 4.00,
                 'cost': 2.50,
                 'quantity': 40,
                 'reorder_level': 20,
                 'unit': 'liters',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',
                 'description': 'Fresh whole milk',
-                'storage_temperature': '2-4°C',
             },
             {
                 'name': 'Dish Soap',
                 'sku': 'CLEAN-001',
-                'category': 'Cleaning Supplies',
                 'price': 5.00,
                 'cost': 3.00,
                 'quantity': 20,
@@ -225,21 +208,18 @@ class Command(BaseCommand):
                 'material_type': 'consumable',
                 'inventory_type': 'product',
                 'description': 'Commercial grade dish soap',
-                'storage_temperature': 'Room temperature',
             },
             {
                 'name': 'Fresh Lettuce',
                 'sku': 'VEG-002',
-                'category': 'Food Items',
                 'price': 3.00,
                 'cost': 1.50,
                 'quantity': 30,
                 'reorder_level': 15,
                 'unit': 'kg',
                 'material_type': 'consumable',
-                'inventory_type': 'ingredient',
+                'inventory_type': 'supply',
                 'description': 'Fresh lettuce for salads',
-                'storage_temperature': '4-8°C',
             },
         ]
 
@@ -248,16 +228,9 @@ class Command(BaseCommand):
         updated_count = 0
         for item_data in restaurant_items:
             try:
-                # Remove fields that might not exist yet or cause issues
-                cleaned_data = {k: v for k, v in item_data.items() 
-                              if k not in ['expiry_date', 'allergen_info', 'tenant', 'category']}
-                
-                # Add tenant_id instead of tenant
+                # Simply use the item data as-is, only adding tenant_id
+                cleaned_data = item_data.copy()
                 cleaned_data['tenant_id'] = user.tenant.id
-                
-                # Add default storage_temperature if not present (it's required in DB)
-                if 'storage_temperature' not in cleaned_data:
-                    cleaned_data['storage_temperature'] = 'Room Temperature'
                 
                 product, created = Product.objects.update_or_create(
                     tenant_id=user.tenant.id,
