@@ -75,10 +75,10 @@ class MenuItemCreateSerializer(serializers.ModelSerializer):
         ]
     
     def create(self, validated_data):
-        # Set tenant from request context
+        # Set tenant_id from request context
         request = self.context.get('request')
-        if request and hasattr(request, 'user'):
-            validated_data['tenant'] = request.user.tenant
+        if request and hasattr(request, 'user') and hasattr(request.user, 'tenant'):
+            validated_data['tenant_id'] = request.user.tenant.id
         return super().create(validated_data)
 
 

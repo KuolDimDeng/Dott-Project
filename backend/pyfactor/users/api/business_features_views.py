@@ -12,12 +12,134 @@ from rest_framework.permissions import IsAuthenticated
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from core.authentication.session_token_auth import SessionTokenAuthentication
 from users.models import UserProfile
-from users.business_categories import get_features_for_business_type, get_category_for_business_type
+from users.business_categories import get_features_for_business_type, get_category_for_business_type, should_show_menu
 
 logger = logging.getLogger(__name__)
 
 # Date when simplified business types were introduced
 SIMPLIFIED_TYPES_LAUNCH_DATE = datetime(2025, 7, 26)
+
+def get_menu_items_for_business_type(business_type, features):
+    """
+    Get menu items based on business type and enabled features
+    """
+    menu_items = []
+    
+    # Common items for all businesses
+    if 'pos' in features:
+        menu_items.append({
+            'id': 'pos',
+            'label': 'POS Terminal',
+            'icon': 'card-outline',
+            'screen': 'POSScreen',
+            'requiresFeature': 'pos'
+        })
+    
+    # Service business items
+    if business_type in ['HOME_SERVICES', 'CONSTRUCTION', 'CLEANING', 'AUTOMOTIVE_REPAIR']:
+        if 'jobs' in features:
+            menu_items.append({
+                'id': 'jobs',
+                'label': "Today's Jobs",
+                'icon': 'construct-outline',
+                'screen': 'ServiceJobs',
+                'requiresFeature': 'jobs'
+            })
+        menu_items.append({
+            'id': 'navigate',
+            'label': 'Navigate to Next',
+            'icon': 'navigate-outline',
+            'screen': 'NavigationScreen'
+        })
+    
+    # Restaurant/Food business items
+    if business_type in ['RESTAURANT_CAFE', 'GROCERY_MARKET', 'HOTEL_HOSPITALITY']:
+        menu_items.append({
+            'id': 'orders',
+            'label': 'Orders',
+            'icon': 'restaurant-outline',
+            'screen': 'OrderQueue'
+        })
+        if should_show_menu(business_type):
+            menu_items.append({
+                'id': 'menu',
+                'label': 'Menu Management',
+                'icon': 'list-outline',
+                'screen': 'MenuManagement',
+                'requiresFeature': 'menu'
+            })
+        if business_type == 'RESTAURANT_CAFE':
+            menu_items.append({
+                'id': 'tables',
+                'label': 'Tables',
+                'icon': 'grid-outline',
+                'screen': 'TableManagement'
+            })
+    
+    # Transport/Delivery business items
+    if business_type in ['TRANSPORT_SERVICE', 'LOGISTICS_FREIGHT']:
+        menu_items.append({
+            'id': 'deliveries',
+            'label': 'Active Deliveries',
+            'icon': 'cube-outline',
+            'screen': 'DeliveryList'
+        })
+        menu_items.append({
+            'id': 'navigate',
+            'label': 'Navigate',
+            'icon': 'navigate-outline',
+            'screen': 'NavigationScreen'
+        })
+    
+    # Common business management items
+    menu_items.extend([
+        {
+            'id': 'inventory',
+            'label': 'Inventory',
+            'icon': 'cube-outline',
+            'screen': 'InventoryScreen',
+            'requiresFeature': 'inventory'
+        },
+        {
+            'id': 'timesheets',
+            'label': 'Timesheets',
+            'icon': 'time-outline',
+            'screen': 'TimesheetScreen',
+            'requiresFeature': 'timesheets'
+        },
+        {
+            'id': 'employees',
+            'label': 'Employees',
+            'icon': 'people-outline',
+            'screen': 'EmployeesScreen'
+        },
+        {
+            'id': 'expenses',
+            'label': 'Expenses',
+            'icon': 'card-outline',
+            'screen': 'ExpensesScreen'
+        },
+        {
+            'id': 'invoices',
+            'label': 'Invoices',
+            'icon': 'document-text-outline',
+            'screen': 'InvoicesScreen'
+        },
+        {
+            'id': 'reports',
+            'label': 'Reports',
+            'icon': 'bar-chart-outline',
+            'screen': 'ReportsScreen'
+        },
+        {
+            'id': 'banking',
+            'label': 'Banking',
+            'icon': 'business-outline',
+            'screen': 'BankingScreen'
+        }
+    ])
+    
+    return menu_items
 
 class BusinessFeaturesView(APIView):
     """
@@ -64,9 +186,20 @@ class BusinessFeaturesView(APIView):
             
             # Legacy users always see all features
             if is_legacy_user:
+                # Get business name for legacy users
+                business_name = None
+                if profile.business:
+                    business_name = profile.business.name
+                    
+                # Legacy users get all menu items
+                all_features = ['jobs', 'pos', 'menu']
+                menu_items = get_menu_items_for_business_type('OTHER', all_features)
+                
                 return Response({
                     'business_type': None,
+                    'business_name': business_name,
                     'features': ['jobs', 'pos'],
+                    'menu_items': menu_items,
                     'category': 'OTHER',
                     'is_legacy_user': True
                 })
@@ -82,11 +215,21 @@ class BusinessFeaturesView(APIView):
             features = get_features_for_business_type(simplified_type)
             category = get_category_for_business_type(simplified_type)
             
+            # Get menu items for this business type
+            menu_items = get_menu_items_for_business_type(simplified_type, features)
+            
+            # Get business name
+            business_name = None
+            if profile.business:
+                business_name = profile.business.name
+            
             logger.info(f"[BusinessFeaturesView] User {request.user.email} - Type: {simplified_type}, Features: {features}")
             
             return Response({
                 'business_type': simplified_type,
+                'business_name': business_name,
                 'features': features,
+                'menu_items': menu_items,
                 'category': category,
                 'is_legacy_user': False
             })

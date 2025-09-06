@@ -111,6 +111,9 @@ urlpatterns = [
     # Inventory API routes
     path('api/inventory/', include('inventory.urls')),
     
+    # Menu API routes (for restaurants)
+    path('api/menu/', include('menu.urls')),
+    
     # Sales API routes (if exists)
     path('api/sales/', include('sales.urls')),
     

@@ -46,7 +46,7 @@ class MenuCategory(TenantAwareModel):
         db_table = 'menu_categories'
         ordering = ['display_order', 'name']
         verbose_name_plural = 'Menu Categories'
-        unique_together = ['tenant', 'name']
+        unique_together = ['tenant_id', 'name']
     
     def __str__(self):
         return self.name
@@ -141,9 +141,9 @@ class MenuItem(TenantAwareModel):
         db_table = 'menu_items'
         ordering = ['category', 'display_order', 'name']
         indexes = [
-            models.Index(fields=['tenant', 'is_available']),
-            models.Index(fields=['tenant', 'category']),
-            models.Index(fields=['tenant', 'is_featured']),
+            models.Index(fields=['tenant_id', 'is_available']),
+            models.Index(fields=['tenant_id', 'category']),
+            models.Index(fields=['tenant_id', 'is_featured']),
         ]
     
     def __str__(self):

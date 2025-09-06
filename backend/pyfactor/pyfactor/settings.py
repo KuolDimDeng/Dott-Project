@@ -1078,6 +1078,7 @@ TENANT_APPS = (
     'payments',
     'payroll',
     'inventory',
+    'menu.apps.MenuConfig',  # Menu management for restaurants
     'analysis',
     'timesheets',
     'chart',

@@ -7,25 +7,25 @@ from .models import MenuCategory, MenuItem, MenuItemReview, MenuSpecial
 
 @admin.register(MenuCategory)
 class MenuCategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category_type', 'display_order', 'is_active', 'tenant']
-    list_filter = ['category_type', 'is_active', 'tenant']
+    list_display = ['name', 'category_type', 'display_order', 'is_active', 'tenant_id']
+    list_filter = ['category_type', 'is_active', 'tenant_id']
     search_fields = ['name', 'description']
-    ordering = ['tenant', 'display_order', 'name']
+    ordering = ['tenant_id', 'display_order', 'name']
 
 
 @admin.register(MenuItem)
 class MenuItemAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'is_available', 'is_featured', 'rating', 'tenant']
+    list_display = ['name', 'category', 'price', 'is_available', 'is_featured', 'rating', 'tenant_id']
     list_filter = [
         'category', 'is_available', 'is_featured', 'is_vegetarian', 
-        'is_vegan', 'is_gluten_free', 'tenant'
+        'is_vegan', 'is_gluten_free', 'tenant_id'
     ]
     search_fields = ['name', 'description', 'tags']
     readonly_fields = ['rating', 'review_count', 'order_count', 'created_at', 'updated_at']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('tenant', 'name', 'description', 'category', 'business')
+            'fields': ('tenant_id', 'name', 'description', 'category', 'business')
         }),
         ('Pricing', {
             'fields': ('price', 'discounted_price', 'cost')

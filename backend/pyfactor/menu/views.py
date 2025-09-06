@@ -54,13 +54,13 @@ class MenuCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Filter by current tenant"""
         return MenuCategory.objects.filter(
-            tenant=self.request.user.tenant,
+            tenant_id=self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None,
             is_active=True
         )
     
     def perform_create(self, serializer):
         """Set tenant on creation"""
-        serializer.save(tenant=self.request.user.tenant)
+        serializer.save(tenant_id=self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None)
     
     @action(detail=False, methods=['post'])
     def reorder(self, request):
@@ -70,7 +70,7 @@ class MenuCategoryViewSet(viewsets.ModelViewSet):
             try:
                 category = MenuCategory.objects.get(
                     id=item['id'],
-                    tenant=request.user.tenant
+                    tenant_id=request.user.tenant.id if hasattr(request.user, 'tenant') else None
                 )
                 category.display_order = item['order']
                 category.save()
@@ -90,13 +90,15 @@ class MenuCategoryViewSet(viewsets.ModelViewSet):
         ]
         
         created = []
+        tenant_id = request.user.tenant.id if hasattr(request.user, 'tenant') else None
         for cat_data in default_categories:
             category, was_created = MenuCategory.objects.get_or_create(
-                tenant=request.user.tenant,
+                tenant_id=tenant_id,
                 name=cat_data['name'],
                 defaults={
                     'category_type': cat_data['category_type'],
-                    'display_order': cat_data['display_order']
+                    'display_order': cat_data['display_order'],
+                    'tenant_id': tenant_id
                 }
             )
             if was_created:
@@ -128,7 +130,8 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter by current tenant and optional filters"""
-        queryset = MenuItem.objects.filter(tenant=self.request.user.tenant)
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
+        queryset = MenuItem.objects.filter(tenant_id=tenant_id)
         
         # Filter by category
         category_id = self.request.query_params.get('category')
@@ -158,10 +161,16 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set tenant and business on creation"""
-        profile = self.request.user.userprofile
+        try:
+            profile = self.request.user.userprofile
+            business = profile.business if profile else None
+        except:
+            business = None
+        
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
         serializer.save(
-            tenant=self.request.user.tenant,
-            business=profile.business if profile else None
+            tenant_id=tenant_id,
+            business=business
         )
     
     @action(detail=True, methods=['post'])
@@ -199,9 +208,10 @@ class MenuItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        tenant_id = request.user.tenant.id if hasattr(request.user, 'tenant') else None
         items = MenuItem.objects.filter(
             id__in=item_ids,
-            tenant=request.user.tenant
+            tenant_id=tenant_id
         )
         
         updated_count = 0
@@ -256,8 +266,9 @@ class MenuItemReviewViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter by menu item if specified"""
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
         queryset = MenuItemReview.objects.filter(
-            tenant=self.request.user.tenant
+            tenant_id=tenant_id
         )
         
         menu_item_id = self.request.query_params.get('menu_item')
@@ -268,7 +279,8 @@ class MenuItemReviewViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set tenant and update menu item rating"""
-        review = serializer.save(tenant=self.request.user.tenant)
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
+        review = serializer.save(tenant_id=tenant_id)
         
         # Update menu item rating
         menu_item = review.menu_item
@@ -288,8 +300,9 @@ class MenuSpecialViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter by current tenant and active status"""
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
         queryset = MenuSpecial.objects.filter(
-            tenant=self.request.user.tenant
+            tenant_id=tenant_id
         )
         
         # Filter by active status
@@ -306,7 +319,8 @@ class MenuSpecialViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set tenant on creation"""
-        serializer.save(tenant=self.request.user.tenant)
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
+        serializer.save(tenant_id=tenant_id)
     
     @action(detail=False, methods=['get'])
     def today(self, request):
@@ -319,13 +333,13 @@ class MenuSpecialViewSet(viewsets.ModelViewSet):
         
         # Build query for today's specials
         specials = self.get_queryset().filter(
-            is_active=True,
+            Q(is_active=True),
             Q(start_date__lte=today) | Q(start_date__isnull=True),
-            Q(end_date__gte=today) | Q(end_date__isnull=True),
+            Q(end_date__gte=today) | Q(end_date__isnull=True)
         )
         
         # Filter by day of week
-        weekday_filter = {f'{weekday}': True}
+        weekday_filter = {weekday: True}
         specials = specials.filter(**weekday_filter)
         
         # Filter by time if specified
