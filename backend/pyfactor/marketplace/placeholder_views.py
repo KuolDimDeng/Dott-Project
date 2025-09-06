@@ -264,12 +264,19 @@ def get_featured_businesses(request):
                 'businesses': []
             })
         
-        # Get top-rated businesses in the city
+        # Get featured businesses in the city
+        # First try to get businesses with ratings
         businesses = PlaceholderBusiness.objects.filter(
             city__iexact=city,
             opted_out=False,
-            rating__isnull=False  # Only businesses with ratings
-        ).order_by('-rating', 'name')[:10]  # Top 10 businesses
+        ).order_by('-rating', 'name')[:6]  # Top 6 businesses
+        
+        # If we have less than 3 businesses, just get any businesses from the city
+        if businesses.count() < 3:
+            businesses = PlaceholderBusiness.objects.filter(
+                city__iexact=city,
+                opted_out=False,
+            ).order_by('?')[:6]  # Random selection for variety
         
         results = []
         for business in businesses:

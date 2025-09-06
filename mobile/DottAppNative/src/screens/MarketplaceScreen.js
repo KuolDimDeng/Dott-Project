@@ -342,12 +342,70 @@ export default function MarketplaceScreen() {
     });
   };
 
+  const renderFeaturedBusinessCards = () => {
+    return (
+      <View style={styles.featuredSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Featured Businesses</Text>
+          <TouchableOpacity onPress={() => {}}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {featuredBusinesses.map((business) => (
+            <TouchableOpacity
+              key={business.id}
+              style={styles.featuredCard}
+              onPress={() => handleBusinessPress(business)}
+            >
+              <View style={styles.featuredCardIcon}>
+                <Icon 
+                  name={
+                    business.category === 'food' ? 'restaurant' :
+                    business.category === 'shopping' ? 'cart' :
+                    business.category === 'health' ? 'medical' :
+                    business.category === 'beauty' ? 'sparkles' :
+                    business.category === 'transport' ? 'car' :
+                    business.category === 'services' ? 'construct' :
+                    'business'
+                  } 
+                  size={30} 
+                  color="#10b981" 
+                />
+              </View>
+              <Text style={styles.featuredCardName} numberOfLines={2}>
+                {business.name || business.business_name}
+              </Text>
+              <Text style={styles.featuredCardCategory}>
+                {business.category?.charAt(0).toUpperCase() + business.category?.slice(1)}
+              </Text>
+              {business.rating && (
+                <View style={styles.ratingContainer}>
+                  <Icon name="star" size={14} color="#fbbf24" />
+                  <Text style={styles.ratingText}>{business.rating}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderFeaturedCarousel = () => {
     if (featuredBusinesses.length === 0) return null;
 
+    // For businesses without images, we'll show a card with name and category
+    const hasImages = featuredBusinesses.some(b => b.logo || b.cover_image || b.image_url);
+    
+    // If no businesses have images, show a different featured section
+    if (!hasImages) {
+      return renderFeaturedBusinessCards();
+    }
+
     // Prepare images for carousel
     const carouselImages = featuredBusinesses.map(business => ({
-      url: business.logo || business.cover_image,
+      url: business.logo || business.cover_image || business.image_url,
       business: business,
     }));
 
@@ -875,6 +933,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     marginBottom: 8,
+  },
+  featuredCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 8,
+    width: 150,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  featuredCardIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ecfdf5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  featuredCardName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  featuredCardCategory: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  ratingText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 4,
   },
   addToCartButton: {
     position: 'absolute',

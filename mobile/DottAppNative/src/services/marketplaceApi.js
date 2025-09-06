@@ -109,10 +109,17 @@ export const marketplaceApi = {
   },
 
   // Get featured businesses for user's city - Using correct deployed endpoint
-  getFeaturedBusinesses: async (city) => {
+  getFeaturedBusinesses: async (location) => {
     try {
+      const params = typeof location === 'string' 
+        ? { city: location }  // Backward compatibility
+        : { 
+            city: location.city,
+            country: location.country,
+          };
+      
       const response = await api.get('/marketplace/consumer/businesses/featured/', {
-        params: { city },
+        params,
       });
       return response.data;
     } catch (error) {
