@@ -265,10 +265,34 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'count': 0
                 })
             
-            # Optional country filter (usually same as city's country)
+            # Optional country filter (handle both full names and ISO codes)
             if country:
-                businesses = businesses.filter(country__iexact=country)
-                logger.info(f"[Marketplace] Filtered by country '{country}': {businesses.count()} businesses")
+                # Map common country names to ISO codes
+                country_mapping = {
+                    'south sudan': 'SS',
+                    'kenya': 'KE',
+                    'uganda': 'UG',
+                    'tanzania': 'TZ',
+                    'nigeria': 'NG',
+                    'south africa': 'ZA',
+                    'ethiopia': 'ET',
+                    'rwanda': 'RW',
+                    'ghana': 'GH',
+                    'egypt': 'EG',
+                }
+                
+                # Check if it's a full country name and map to ISO code
+                country_code = country_mapping.get(country.lower(), country)
+                
+                # If it's already an ISO code (2 chars), use it directly
+                if len(country_code) == 2:
+                    businesses = businesses.filter(country__iexact=country_code)
+                else:
+                    # Try to match against the provided country string
+                    businesses = businesses.filter(
+                        Q(country__iexact=country_code) | Q(country__iexact=country[:2])
+                    )
+                logger.info(f"[Marketplace] Filtered by country '{country}' (mapped to '{country_code}'): {businesses.count()} businesses")
             
             # Category filter (legacy)
             if category and not main_category:
