@@ -228,16 +228,63 @@ class Command(BaseCommand):
         updated_count = 0
         for item_data in restaurant_items:
             try:
-                # Simply use the item data as-is, only adding tenant_id
+                # Copy the item data and add tenant_id
                 cleaned_data = item_data.copy()
                 cleaned_data['tenant_id'] = user.tenant.id
                 
-                product, created = Product.objects.update_or_create(
-                    tenant_id=user.tenant.id,
-                    sku=item_data['sku'],
-                    defaults=cleaned_data
-                )
-                if created:
+                # TEMPORARY: Add storage_temperature to satisfy DB constraint
+                # This field exists in DB but not in model yet
+                cleaned_data['storage_temperature'] = 'Room Temperature'
+                
+                # Use raw SQL to insert since the field doesn't exist in the model
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO inventory_product (
+                            tenant_id, id, name, description, sku, 
+                            inventory_type, material_type, price, cost, 
+                            quantity, reorder_level, unit, storage_temperature,
+                            created_at, updated_at, is_active, 
+                            markup_percentage, is_billable, pricing_model,
+                            weight_unit, is_tax_exempt, tax_category
+                        ) VALUES (
+                            %s, gen_random_uuid(), %s, %s, %s,
+                            %s, %s, %s, %s,
+                            %s, %s, %s, %s,
+                            NOW(), NOW(), true,
+                            0, true, 'direct',
+                            'kg', false, 'standard'
+                        )
+                        ON CONFLICT (tenant_id, sku) 
+                        DO UPDATE SET
+                            name = EXCLUDED.name,
+                            description = EXCLUDED.description,
+                            price = EXCLUDED.price,
+                            cost = EXCLUDED.cost,
+                            quantity = EXCLUDED.quantity,
+                            reorder_level = EXCLUDED.reorder_level,
+                            unit = EXCLUDED.unit,
+                            storage_temperature = EXCLUDED.storage_temperature,
+                            updated_at = NOW()
+                        RETURNING (CASE WHEN xmax = 0 THEN 'created' ELSE 'updated' END) as action
+                    """, [
+                        user.tenant.id,
+                        cleaned_data['name'],
+                        cleaned_data['description'],
+                        cleaned_data['sku'],
+                        cleaned_data['inventory_type'],
+                        cleaned_data['material_type'],
+                        cleaned_data['price'],
+                        cleaned_data['cost'],
+                        cleaned_data['quantity'],
+                        cleaned_data['reorder_level'],
+                        cleaned_data['unit'],
+                        cleaned_data['storage_temperature']
+                    ])
+                    result = cursor.fetchone()
+                    action = result[0] if result else 'unknown'
+                
+                if action == 'created':
                     created_count += 1
                     self.stdout.write(f"  ✅ Added: {item_data['name']}")
                 else:
