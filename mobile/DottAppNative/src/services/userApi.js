@@ -21,20 +21,32 @@ api.interceptors.request.use(
     const sessionToken = await AsyncStorage.getItem('sessionToken');
     const authToken = await AsyncStorage.getItem('authToken');
     
+    console.log('🔑 UserAPI Request Interceptor:');
+    console.log('  - URL:', config.url);
+    console.log('  - Session ID:', sessionId ? sessionId.substring(0, 20) + '...' : 'null');
+    console.log('  - Session Token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'null');
+    console.log('  - Auth Token:', authToken ? authToken.substring(0, 20) + '...' : 'null');
+    
     if (sessionId) {
       // Use session ID for backend API calls (as Authorization: Session header)
       config.headers.Authorization = `Session ${sessionId}`;
+      console.log('  - Using Session ID in Authorization header');
     } else if (sessionToken) {
       // Fallback to session token if available
       config.headers.Authorization = `Session ${sessionToken}`;
+      console.log('  - Using Session Token in Authorization header');
     } else if (authToken) {
       // Fallback to auth token if available
       config.headers.Authorization = `Bearer ${authToken}`;
+      console.log('  - Using Auth Token in Authorization header');
+    } else {
+      console.log('  - ⚠️ No authentication token available');
     }
     
     return config;
   },
   (error) => {
+    console.error('🔴 UserAPI Request Interceptor Error:', error);
     return Promise.reject(error);
   }
 );
@@ -43,10 +55,19 @@ export const userApi = {
   // Get current user profile with all fields including role and has_business
   getCurrentUser: async () => {
     try {
+      console.log('📡 Fetching user profile from /users/me/...');
       const response = await api.get('/users/me/');
+      console.log('✅ User profile response received:');
+      console.log('  - Status:', response.status);
+      console.log('  - Data keys:', response.data ? Object.keys(response.data) : 'null');
+      console.log('  - Has business field:', 'has_business' in response.data);
+      console.log('  - Has business value:', response.data?.has_business);
+      console.log('  - Role field:', 'role' in response.data);
+      console.log('  - Role value:', response.data?.role);
+      console.log('  - Full data:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
-      console.error('Error fetching current user:', error);
+      console.error('❌ Error fetching current user:', error.response?.status, error.response?.data || error.message);
       throw error;
     }
   },

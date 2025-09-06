@@ -19,9 +19,15 @@ export const AuthProvider = ({ children }) => {
   // Fetch complete user profile from backend
   const fetchUserProfile = async () => {
     try {
-      console.log('🔄 Fetching complete user profile...');
+      console.log('🔄 === FETCH USER PROFILE START ===');
+      const sessionId = await AsyncStorage.getItem('sessionId');
+      console.log('Session ID for profile fetch:', sessionId);
+      
       const response = await userApi.getCurrentUser();
-      console.log('👤 Complete user profile response:', JSON.stringify(response, null, 2));
+      console.log('👤 === USER PROFILE RESPONSE ===');
+      console.log('Full response:', JSON.stringify(response, null, 2));
+      console.log('Response type:', typeof response);
+      console.log('Response keys:', response ? Object.keys(response) : 'null response');
       
       // Handle different response formats
       let userData = null;
@@ -157,16 +163,38 @@ export const AuthProvider = ({ children }) => {
           withCredentials: false // Mobile apps don't need cookies
         });
         
+        console.log('🔵 === SESSION CREATION START ===');
         console.log('Creating session at:', publicApi.defaults.baseURL + '/api/sessions/create/');
+        console.log('Auth0 token being sent:', auth0Data.access_token.substring(0, 20) + '...');
         
-        response = await publicApi.post('/api/sessions/create/', {
-          // Send empty body - backend will create session from Auth0 token
-        });
+        try {
+          response = await publicApi.post('/api/sessions/create/', {
+            // Send empty body - backend will create session from Auth0 token
+          });
+        } catch (sessionError) {
+          console.error('🔴 Session creation failed:', sessionError.response?.data || sessionError.message);
+          console.error('Session error status:', sessionError.response?.status);
+          throw sessionError;
+        }
         
-        console.log('Backend session response:', response.data);
-        console.log('🔍 DEBUG - User data received:', JSON.stringify(response.data.user, null, 2));
-        console.log('🔍 DEBUG - Has business field:', response.data.user?.has_business);
-        console.log('🔍 DEBUG - User role:', response.data.user?.role);
+        console.log('🟢 === SESSION CREATION RESPONSE ===');
+        console.log('Full response data:', JSON.stringify(response.data, null, 2));
+        console.log('Response keys:', Object.keys(response.data));
+        console.log('Session ID:', response.data?.session_id || response.data?.session_token);
+        console.log('Has user object:', !!response.data?.user);
+        
+        if (response.data?.user) {
+          console.log('🔍 User object keys:', Object.keys(response.data.user));
+          console.log('🔍 User ID:', response.data.user.id);
+          console.log('🔍 User email:', response.data.user.email);
+          console.log('🔍 Has business field exists:', 'has_business' in response.data.user);
+          console.log('🔍 Has business value:', response.data.user.has_business);
+          console.log('🔍 Role field exists:', 'role' in response.data.user);
+          console.log('🔍 Role value:', response.data.user.role);
+        } else {
+          console.log('⚠️ No user object in response');
+        }
+        console.log('🔵 === SESSION CREATION END ===');
         
         // Transform response to match expected format
         if (response.data.session_token) {
