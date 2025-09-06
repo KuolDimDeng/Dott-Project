@@ -20,7 +20,7 @@ BUSINESS_CATEGORIES = {
     },
     'RETAIL': {
         'label': 'Retail Businesses',
-        'features': ['pos'],
+        'features': ['pos'],  # Menu feature added dynamically for restaurants
         'types': [
             'RETAIL_STORE',
             'RESTAURANT_CAFE',
@@ -127,11 +127,19 @@ def get_features_for_business_type(business_type):
     if not business_type:
         return ['jobs', 'pos']  # Default to all features
     
+    features = []
     for category, config in BUSINESS_CATEGORIES.items():
         if business_type in config['types']:
-            return config['features']
+            features = config['features'].copy()
+            break
+    else:
+        features = ['jobs', 'pos']  # Default to all features
     
-    return ['jobs', 'pos']  # Default to all features
+    # Add menu feature for restaurant-type businesses
+    if should_show_menu(business_type) and 'menu' not in features:
+        features.append('menu')
+    
+    return features
 
 def get_category_for_business_type(business_type):
     """Get category for a business type"""
@@ -149,3 +157,18 @@ def get_simplified_business_type(business_type):
     # For the simplified types, they map directly to themselves
     # This is used when saving BusinessDetails
     return business_type if business_type in [choice[0] for choice in SIMPLIFIED_BUSINESS_TYPES] else 'OTHER'
+
+def should_show_menu(business_type):
+    """
+    Determine if Menu feature should be shown for this business type
+    Returns True for food service businesses that need menu management
+    """
+    menu_enabled_types = [
+        'RESTAURANT_CAFE',      # Primary target
+        'HOTEL_HOSPITALITY',    # Hotels often have restaurants
+        'GROCERY_MARKET',       # May have deli/prepared foods
+        'EVENT_PLANNING',       # Catering services need menus
+        # Future types can be added here:
+        # 'BAKERY', 'FOOD_TRUCK', 'BAR_NIGHTCLUB', 'COFFEE_SHOP'
+    ]
+    return business_type in menu_enabled_types
