@@ -349,7 +349,9 @@ class Migration(migrations.Migration):
             ),
         ),
         
-        # Run data migrations
-        migrations.RunPython(create_default_inventory_configs, migrations.RunPython.noop),
-        migrations.RunPython(create_sample_inventory_templates, migrations.RunPython.noop),
+        # Note: Data migrations commented out to avoid dependency issues
+        # Run these manually after migration if needed:
+        # python manage.py setup_restaurant_inventory
+        # migrations.RunPython(create_default_inventory_configs, migrations.RunPython.noop),
+        # migrations.RunPython(create_sample_inventory_templates, migrations.RunPython.noop),
     ]
