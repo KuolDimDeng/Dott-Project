@@ -1,6 +1,15 @@
 """
 Analyze placeholder businesses to understand their structure and data
 """
+import os
+import sys
+import django
+
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+sys.path.insert(0, '/app')
+django.setup()
+
 from django.db import connection
 
 with connection.cursor() as cursor:
