@@ -250,10 +250,14 @@ class Command(BaseCommand):
             try:
                 # Remove fields that might not exist yet or cause issues
                 cleaned_data = {k: v for k, v in item_data.items() 
-                              if k not in ['expiry_date', 'allergen_info', 'tenant', 'category', 'storage_temperature']}
+                              if k not in ['expiry_date', 'allergen_info', 'tenant', 'category']}
                 
                 # Add tenant_id instead of tenant
                 cleaned_data['tenant_id'] = user.tenant.id
+                
+                # Add default storage_temperature if not present (it's required in DB)
+                if 'storage_temperature' not in cleaned_data:
+                    cleaned_data['storage_temperature'] = 'Room Temperature'
                 
                 product, created = Product.objects.update_or_create(
                     tenant_id=user.tenant.id,
