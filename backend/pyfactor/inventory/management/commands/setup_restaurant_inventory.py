@@ -100,7 +100,130 @@ class Command(BaseCommand):
         # Add restaurant-specific inventory items
         self.stdout.write("\n📦 Adding restaurant-specific inventory items...")
         
+        # Restaurant inventory includes both ingredients AND prepared food for sale
         restaurant_items = [
+            # === PREPARED FOOD FOR SALE (Menu Items) ===
+            {
+                'name': 'Grilled Chicken Sandwich',
+                'sku': 'MENU-001',
+                'price': 15.00,
+                'cost': 5.00,
+                'quantity': 0,  # Made to order
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',  # This is a product for sale
+                'description': 'Grilled chicken breast with lettuce, tomato on artisan bread',
+            },
+            {
+                'name': 'Caesar Salad',
+                'sku': 'MENU-002',
+                'price': 12.00,
+                'cost': 3.50,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Fresh romaine lettuce with parmesan, croutons and Caesar dressing',
+            },
+            {
+                'name': 'Margherita Pizza',
+                'sku': 'MENU-003',
+                'price': 18.00,
+                'cost': 6.00,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Fresh mozzarella, tomato sauce, basil on thin crust',
+            },
+            {
+                'name': 'Beef Burger',
+                'sku': 'MENU-004',
+                'price': 16.50,
+                'cost': 5.50,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Angus beef patty with cheese, lettuce, tomato, pickles',
+            },
+            {
+                'name': 'Fish and Chips',
+                'sku': 'MENU-005',
+                'price': 14.00,
+                'cost': 4.50,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Beer-battered cod with crispy fries and tartar sauce',
+            },
+            {
+                'name': 'Pasta Carbonara',
+                'sku': 'MENU-006',
+                'price': 13.50,
+                'cost': 4.00,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Spaghetti with bacon, egg, parmesan in creamy sauce',
+            },
+            {
+                'name': 'Vegetable Stir Fry',
+                'sku': 'MENU-007',
+                'price': 11.00,
+                'cost': 3.00,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'item',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Mixed vegetables wok-fried with garlic and ginger sauce',
+            },
+            {
+                'name': 'Chocolate Cake',
+                'sku': 'MENU-008',
+                'price': 8.00,
+                'cost': 2.50,
+                'quantity': 5,  # Pre-made desserts
+                'reorder_level': 3,
+                'unit': 'slice',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Rich chocolate cake with chocolate ganache',
+            },
+            {
+                'name': 'Cappuccino',
+                'sku': 'BEV-010',
+                'price': 4.50,
+                'cost': 1.00,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'cup',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Espresso with steamed milk and foam',
+            },
+            {
+                'name': 'Fresh Orange Juice',
+                'sku': 'BEV-011',
+                'price': 5.00,
+                'cost': 1.50,
+                'quantity': 0,
+                'reorder_level': 0,
+                'unit': 'glass',
+                'material_type': 'consumable',
+                'inventory_type': 'product',
+                'description': 'Freshly squeezed orange juice',
+            },
+            # === RAW INGREDIENTS & SUPPLIES ===
             {
                 'name': 'Fresh Tomatoes',
                 'sku': 'VEG-001',
@@ -361,4 +484,5 @@ class Command(BaseCommand):
         self.stdout.write("\n🎉 Restaurant-specific features now available in mobile app!")
         self.stdout.write("   - Menu shows 'Ingredients & Supplies' instead of 'Inventory'")
         self.stdout.write("   - Restaurant-specific categories and fields")
+        self.stdout.write("   - Includes both menu items (products) and raw ingredients (supplies)")
         self.stdout.write("\n✅ Script completed successfully!")
