@@ -16,6 +16,7 @@ from rest_framework import status
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from session_manager.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 logger = logging.getLogger(__name__)
@@ -378,7 +379,8 @@ class Auth0UserProfileView(APIView):
     Get current user profile with tenant information for Auth0 authenticated users.
     Endpoint: GET /api/users/me
     """
-    authentication_classes = [Auth0JWTAuthentication]
+    # Accept both JWT (web) and Session (mobile) authentication
+    authentication_classes = [SessionAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -548,6 +550,11 @@ class Auth0UserProfileView(APIView):
                 except Exception as e:
                     logger.warning(f"🔥 [USER_PROFILE] Failed to get business country: {str(e)}")
             
+            # Check if user has a business - FIX: Check actual business ownership, not tenant
+            from users.models import Business
+            has_business = Business.objects.filter(owner_id=str(user.id)).exists()
+            logger.info(f"🔥 [USER_PROFILE] User has_business: {has_business}")
+            
             # Get user's subscription plan
             user_subscription = 'free'
             if onboarding_progress and onboarding_progress.subscription_plan:
@@ -574,6 +581,7 @@ class Auth0UserProfileView(APIView):
                     'name': getattr(user, 'name', '') or f"{user.first_name} {user.last_name}".strip(),
                     'picture': getattr(user, 'picture', ''),
                     'role': user_role,
+                    'has_business': has_business,  # Include business ownership status
                 },
                 'tenant': {
                     'id': str(tenant.id) if tenant else None,

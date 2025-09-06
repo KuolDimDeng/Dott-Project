@@ -81,14 +81,28 @@ export const AuthProvider = ({ children }) => {
       
       if (userData && sessionId) {
         const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setUserMode(mode || 'consumer');
         
-        // Try to refresh user profile if session exists
-        const refreshedUser = await fetchUserProfile();
-        if (!refreshedUser) {
-          // If profile fetch fails but we have cached data, use it
-          console.log('Using cached user data');
+        // Check if cached data has required fields, if not, clear it
+        if (!('has_business' in parsedUser) || !('role' in parsedUser)) {
+          console.log('🔄 Cached user data is incomplete, clearing and fetching fresh data...');
+          await AsyncStorage.removeItem('userData');
+          // Try to fetch fresh profile
+          const refreshedUser = await fetchUserProfile();
+          if (!refreshedUser) {
+            // If fetch fails, logout to force fresh login
+            console.log('⚠️ Could not fetch complete user profile, forcing re-login');
+            await logout();
+          }
+        } else {
+          setUser(parsedUser);
+          setUserMode(mode || 'consumer');
+          
+          // Try to refresh user profile if session exists
+          const refreshedUser = await fetchUserProfile();
+          if (!refreshedUser) {
+            // If profile fetch fails but we have complete cached data, use it
+            console.log('Using cached user data with has_business:', parsedUser.has_business);
+          }
         }
       }
     } catch (error) {
