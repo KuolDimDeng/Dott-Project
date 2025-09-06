@@ -77,6 +77,23 @@ export default function MarketplaceScreen() {
 
   const detectLocation = async () => {
     try {
+      // FOR TESTING: Always use Juba, South Sudan
+      // Comment this out when ready for production
+      const testLocation = {
+        latitude: 4.8517,
+        longitude: 31.5825,
+        city: 'Juba',
+        state: 'Central Equatoria',
+        country: 'South Sudan',
+        displayName: 'Juba, South Sudan',
+        formattedAddress: 'Juba, Central Equatoria, South Sudan',
+        isDefault: true,
+      };
+      setLocationData(testLocation);
+      setCurrentLocation('Juba, South Sudan');
+      return;
+      
+      // Production code (currently disabled for testing)
       const location = await locationService.getCurrentLocation();
       setLocationData(location);
       setCurrentLocation(`${location.city}, ${location.country}`);

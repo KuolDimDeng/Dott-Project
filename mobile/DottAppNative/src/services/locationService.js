@@ -37,6 +37,11 @@ class LocationService {
 
   async getCurrentLocation() {
     try {
+      // FOR TESTING: Always return Juba location
+      // Comment this out for production
+      return this.getDefaultLocation();
+      
+      // Production code (currently disabled)
       // Check cache first
       const cached = await this.getCachedLocation();
       if (cached) {
