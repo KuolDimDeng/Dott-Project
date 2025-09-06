@@ -25,6 +25,31 @@ export default function BusinessMenuScreen() {
   const { businessData } = useBusinessContext();
   const navigation = useNavigation();
   const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
+  
+  // Format location text
+  const getLocationText = () => {
+    const city = businessData?.businessCity;
+    const country = businessData?.businessCountryName || businessData?.businessCountry;
+    
+    if (city && country) {
+      return `${city}, ${country}`;
+    } else if (country) {
+      return country;
+    }
+    return null;
+  };
+  
+  // Format currency text
+  const getCurrencyText = () => {
+    const currency = businessData?.preferredCurrency;
+    if (currency && (currency.symbol || currency.code)) {
+      return `${currency.symbol || ''}${currency.code || ''}`.trim();
+    }
+    return null;
+  };
+  
+  const locationText = getLocationText();
+  const currencyText = getCurrencyText();
 
   const menuItems = [
     { icon: 'cash-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
@@ -44,6 +69,19 @@ export default function BusinessMenuScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.welcomeText}>Business Dashboard</Text>
           <Text style={styles.userName}>{businessName}</Text>
+          {(locationText || currencyText) && (
+            <View style={styles.businessInfoRow}>
+              {locationText && (
+                <Text style={styles.locationText}>{locationText}</Text>
+              )}
+              {locationText && currencyText && (
+                <Text style={styles.separator}> • </Text>
+              )}
+              {currencyText && (
+                <Text style={styles.currencyText}>{currencyText}</Text>
+              )}
+            </View>
+          )}
         </View>
         <TouchableOpacity
           style={styles.switchButton}
@@ -110,6 +148,26 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     color: '#dbeafe',
+    fontWeight: '600',
+  },
+  businessInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#94a3b8',
+  },
+  separator: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: 'bold',
+  },
+  currencyText: {
+    fontSize: 14,
+    color: '#fbbf24',
+    fontWeight: '600',
   },
   switchButton: {
     backgroundColor: 'rgba(255,255,255,0.2)',

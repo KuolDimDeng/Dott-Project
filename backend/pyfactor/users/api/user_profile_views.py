@@ -206,6 +206,12 @@ class UserProfileMeView(APIView):
                     'business_name': business.name,
                     'business_type': business.business_type,
                     'legal_structure': getattr(business, 'legal_structure', ''),
+                    'business_city': business.city,
+                    'business_country': str(business.country) if business.country else None,
+                    'business_country_name': business.country.name if business.country else None,
+                    'preferred_currency_code': business.preferred_currency_code,
+                    'preferred_currency_symbol': business.preferred_currency_symbol,
+                    'preferred_currency_name': getattr(business, 'preferred_currency_name', ''),
                 })
             
             logger.info(f"[UserProfileMeView] Returning profile data with subscription_plan: {subscription_plan}")

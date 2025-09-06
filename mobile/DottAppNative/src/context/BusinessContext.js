@@ -21,6 +21,14 @@ export const BusinessProvider = ({ children }) => {
     businessType: null,
     businessName: null,
     entityType: null,
+    businessCity: null,
+    businessCountry: null,
+    businessCountryName: null,
+    preferredCurrency: {
+      code: null,
+      symbol: null,
+      name: null,
+    },
     isBusinessMode: false,
     isOnline: false,
     activeOrders: [],
@@ -106,6 +114,44 @@ export const BusinessProvider = ({ children }) => {
         
         console.log('Business features loaded:', response);
       }
+
+      // Also fetch complete user profile for location and currency data
+      console.log('Fetching complete user profile for business details...');
+      const profileResponse = await userApi.getCurrentUser();
+      
+      if (profileResponse) {
+        const businessUpdates = {};
+        
+        // Update business location data
+        if (profileResponse.business_city) {
+          businessUpdates.businessCity = profileResponse.business_city;
+        }
+        if (profileResponse.business_country) {
+          businessUpdates.businessCountry = profileResponse.business_country;
+        }
+        if (profileResponse.business_country_name) {
+          businessUpdates.businessCountryName = profileResponse.business_country_name;
+        }
+        
+        // Update currency preferences
+        if (profileResponse.preferred_currency_code || profileResponse.preferred_currency_symbol) {
+          businessUpdates.preferredCurrency = {
+            code: profileResponse.preferred_currency_code || null,
+            symbol: profileResponse.preferred_currency_symbol || null,
+            name: profileResponse.preferred_currency_name || null,
+          };
+        }
+        
+        // Also sync business name if not already set
+        if (profileResponse.business_name && !businessData.businessName) {
+          businessUpdates.businessName = profileResponse.business_name;
+        }
+        
+        if (Object.keys(businessUpdates).length > 0) {
+          updateBusinessData(businessUpdates);
+          console.log('Business profile data updated:', businessUpdates);
+        }
+      }
     } catch (error) {
       console.error('Error fetching business features:', error);
       
@@ -180,6 +226,14 @@ export const BusinessProvider = ({ children }) => {
       businessType: null,
       businessName: null,
       entityType: null,
+      businessCity: null,
+      businessCountry: null,
+      businessCountryName: null,
+      preferredCurrency: {
+        code: null,
+        symbol: null,
+        name: null,
+      },
       isBusinessMode: false,
       isOnline: false,
       activeOrders: [],
