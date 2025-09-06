@@ -255,9 +255,13 @@ class Command(BaseCommand):
                 cleaned_data['tenant_id'] = user.tenant.id
                 
                 # TEMPORARY: Add fields that exist in DB but not in model
-                # This field exists in DB but not in model yet
+                # These fields exist in DB with NOT NULL constraints but not in model yet
                 cleaned_data['storage_temperature'] = 'Room Temperature'
                 cleaned_data['allergen_info'] = '[]'  # Empty JSON array for allergen_info
+                cleaned_data['batch_number'] = ''  # Empty string for batch_number
+                cleaned_data['manufacturer'] = ''  # Empty string for manufacturer
+                cleaned_data['controlled_substance_schedule'] = ''  # Empty string for controlled_substance_schedule
+                cleaned_data['prescription_required'] = False  # Boolean default
                 
                 # Use raw SQL to insert since the field doesn't exist in the model
                 from django.db import connection
@@ -306,14 +310,18 @@ class Command(BaseCommand):
                                 tenant_id, id, name, description, sku, 
                                 inventory_type, material_type, price, cost, 
                                 quantity, reorder_level, unit, storage_temperature,
-                                allergen_info, created_at, updated_at, is_active, 
+                                allergen_info, batch_number, manufacturer,
+                                prescription_required, controlled_substance_schedule,
+                                created_at, updated_at, is_active, 
                                 markup_percentage, is_billable, pricing_model,
                                 weight_unit, is_tax_exempt, tax_category
                             ) VALUES (
                                 %s, %s, %s, %s, %s,
                                 %s, %s, %s, %s,
                                 %s, %s, %s, %s,
-                                %s, NOW(), NOW(), true,
+                                %s, %s, %s,
+                                %s, %s,
+                                NOW(), NOW(), true,
                                 0, true, 'direct',
                                 'kg', false, 'standard'
                             )
@@ -331,7 +339,11 @@ class Command(BaseCommand):
                             cleaned_data['reorder_level'],
                             cleaned_data['unit'],
                             cleaned_data['storage_temperature'],
-                            cleaned_data['allergen_info']
+                            cleaned_data['allergen_info'],
+                            cleaned_data['batch_number'],
+                            cleaned_data['manufacturer'],
+                            cleaned_data['prescription_required'],
+                            cleaned_data['controlled_substance_schedule']
                         ])
                         created_count += 1
                         self.stdout.write(f"  ✅ Added: {item_data['name']}")
