@@ -331,3 +331,7 @@ class PasswordResetToken(models.Model):
     
     def __str__(self):
         return f"Password reset token for {self.user.email}"
+
+
+# Import phone OTP models
+from .phone_otp_models import PhoneOTP, PhoneVerificationAttempt

@@ -72,10 +72,9 @@ urlpatterns = [
     path('api/', include('custom_auth.api.urls')),
     
     # Phone Authentication API routes
-    path('api/auth/phone/', include('authentication.phone_auth_urls')),
+    path('api/auth/phone/', include('custom_auth.phone_auth_urls')),
     
-    # Unified Authentication API routes (phone + email)
-    path('api/auth/unified/', include('authentication.unified_auth_urls')),
+    # Unified Authentication API routes (phone + email) - REMOVED, using phone auth only
     
     # Session management API routes
     path('api/sessions/', include('session_manager.urls')),
@@ -137,6 +136,9 @@ urlpatterns = [
     
     # Currency API routes (direct access)
     path('api/currency/', include('users.api.currency_urls')),
+    
+    # POS API routes
+    path('api/pos/', include('pos.urls')),
 ]
 
 # Add documentation URLs if available
