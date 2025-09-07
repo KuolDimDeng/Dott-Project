@@ -22,7 +22,7 @@ from rest_framework.response import Response
 from .phone_otp_models import PhoneOTP, PhoneVerificationAttempt
 from .models import User, Tenant
 from .sms_service import sms_service
-from session_manager.session_service import create_session_token
+from session_manager.services import SessionService
 
 logger = logging.getLogger(__name__)
 
@@ -372,7 +372,17 @@ def verify_otp(request):
         
         # Create session token
         try:
-            session_token = create_session_token(user)
+            session_service = SessionService()
+            session = session_service.create_session(
+                user=user,
+                access_token="phone_auth_session",  # Phone-based auth marker
+                request_meta={
+                    'ip_address': ip_address,
+                    'user_agent': user_agent,
+                    'auth_method': 'phone_otp'
+                }
+            )
+            session_token = session.session_id
             logger.info(f"✅ Session created for user {user.email}")
             
             PhoneVerificationAttempt.log_attempt(
