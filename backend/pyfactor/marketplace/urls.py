@@ -11,10 +11,16 @@ from .placeholder_inquiry_views import (
 
 # Business-side marketplace routes
 router = DefaultRouter()
-router.register(r'business', BusinessListingViewSet, basename='business-listing')
+# Note: BusinessListingViewSet is registered with explicit paths below, not via router
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Consumer endpoints (if needed)
+    path('consumer/', include([
+        path('businesses/', ConsumerSearchViewSet.as_view({'get': 'list'}), name='consumer-businesses'),
+        path('businesses/featured/', ConsumerSearchViewSet.as_view({'get': 'featured'}), name='consumer-featured'),
+        path('categories/', ConsumerSearchViewSet.as_view({'get': 'categories'}), name='consumer-categories'),
+        path('category_hierarchy/', ConsumerSearchViewSet.as_view({'get': 'category_hierarchy'}), name='consumer-category-hierarchy'),
+    ])),
     
     # Business marketplace endpoints
     path('business/my-listing/', BusinessListingViewSet.as_view({'get': 'my_listing', 'post': 'my_listing'}), name='my-listing'),
@@ -22,6 +28,11 @@ urlpatterns = [
     path('business/<uuid:pk>/public/', BusinessListingViewSet.as_view({'get': 'public_view'}), name='business-public'),
     path('business/<uuid:pk>/products/', BusinessListingViewSet.as_view({'get': 'get_products'}), name='business-products'),
     path('business/<uuid:pk>/services/', BusinessListingViewSet.as_view({'get': 'get_services'}), name='business-services'),
+    
+    # New mobile app business endpoints
+    path('business/listing/', BusinessListingViewSet.as_view({'get': 'listing', 'patch': 'listing'}), name='business-listing'),
+    path('business/operating-hours/', BusinessListingViewSet.as_view({'patch': 'operating_hours'}), name='business-operating-hours'),
+    path('business/products/', BusinessListingViewSet.as_view({'get': 'products', 'post': 'products'}), name='business-products-management'),
     
     # Placeholder business inquiry endpoints
     path('placeholder/inquiry/', send_placeholder_inquiry, name='placeholder-inquiry'),

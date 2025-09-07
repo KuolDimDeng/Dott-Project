@@ -660,8 +660,8 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         """
         Business owners see their own listing
         """
-        if self.request.user.is_business:
-            return BusinessListing.objects.filter(business=self.request.user)
+        if hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            return BusinessListing.objects.filter(tenant_id=self.request.user.tenant_id)
         return BusinessListing.objects.none()
     
     @action(detail=False, methods=['get', 'post'])
@@ -669,7 +669,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         """
         Get or update current business's marketplace listing
         """
-        if not request.user.is_business:
+        if not hasattr(request.user, 'tenant_id') or not request.user.tenant_id:
             return Response(
                 {'error': 'Only businesses can manage listings'},
                 status=status.HTTP_403_FORBIDDEN
@@ -757,3 +757,199 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         listing.save(update_fields=['last_active'])
         
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get', 'patch'])
+    def listing(self, request):
+        """
+        Get or update current business's marketplace listing
+        Endpoint: GET/PATCH /api/marketplace/business/listing/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can manage listings'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get or create the business listing
+        try:
+            listing = BusinessListing.objects.get(business=request.user)
+        except BusinessListing.DoesNotExist:
+            # Create new listing with business profile data
+            profile_data = {}
+            if hasattr(request.user, 'userprofile'):
+                profile_data.update({
+                    'country': getattr(request.user.userprofile, 'country', ''),
+                    'city': getattr(request.user.userprofile, 'city', ''),
+                    'description': getattr(request.user.userprofile, 'business_description', ''),
+                })
+            
+            listing = BusinessListing.objects.create(
+                business=request.user,
+                business_type=getattr(request.user.userprofile, 'business_type', 'service') if hasattr(request.user, 'userprofile') else 'service',
+                **profile_data
+            )
+        
+        if request.method == 'GET':
+            serializer = BusinessListingSerializer(listing, context={'request': request})
+            return Response({
+                'success': True,
+                'data': serializer.data
+            })
+        
+        elif request.method == 'PATCH':
+            # Handle the mobile app's nested profile structure
+            profile_data = request.data.get('profile', {})
+            
+            # Extract data from nested structure
+            update_data = {}
+            
+            # Basic information
+            if 'basic' in profile_data:
+                basic = profile_data['basic']
+                if 'business_type' in basic:
+                    update_data['business_type'] = basic['business_type']
+                if 'description' in basic:
+                    update_data['description'] = basic['description']
+                if 'search_tags' in basic:
+                    update_data['search_tags'] = basic['search_tags']
+            
+            # Contact information
+            if 'contact' in profile_data:
+                contact = profile_data['contact']
+                if 'city' in contact:
+                    update_data['city'] = contact['city']
+                if 'country' in contact:
+                    update_data['country'] = contact['country']
+            
+            # Operations
+            if 'operations' in profile_data:
+                operations = profile_data['operations']
+                if 'business_hours' in operations:
+                    update_data['business_hours'] = operations['business_hours']
+                if 'delivery_scope' in operations:
+                    update_data['delivery_scope'] = operations['delivery_scope']
+                if 'delivery_radius_km' in operations:
+                    update_data['delivery_radius_km'] = operations['delivery_radius_km']
+            
+            # Discovery settings
+            if 'discovery' in profile_data:
+                discovery = profile_data['discovery']
+                if 'is_visible_in_marketplace' in discovery:
+                    update_data['is_visible_in_marketplace'] = discovery['is_visible_in_marketplace']
+            
+            # Update listing with validated data
+            serializer = BusinessListingSerializer(listing, data=update_data, partial=True, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'message': 'Business listing updated successfully',
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Invalid data provided',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['patch'])
+    def operating_hours(self, request):
+        """
+        Update business operating hours
+        Endpoint: PATCH /api/marketplace/business/operating-hours/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can update operating hours'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            listing = BusinessListing.objects.get(business=request.user)
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Business listing not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        business_hours = request.data.get('business_hours', {})
+        
+        if not isinstance(business_hours, dict):
+            return Response({
+                'success': False,
+                'error': 'business_hours must be a valid object'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        listing.business_hours = business_hours
+        listing.save(update_fields=['business_hours', 'updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'Operating hours updated successfully',
+            'business_hours': listing.business_hours
+        })
+    
+    @action(detail=False, methods=['post', 'get'])
+    def products(self, request):
+        """
+        Manage business products/services for marketplace
+        Endpoint: GET/POST /api/marketplace/business/products/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can manage products'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if request.method == 'GET':
+            # Return both products and services
+            from inventory.models import Product, Service
+            from .serializers import ProductSerializer, ServiceSerializer
+            
+            products = Product.objects.filter(
+                tenant_id=request.user.tenant_id,
+                is_active=True
+            ).order_by('-created_at')[:50]  # Limit to 50 most recent
+            
+            services = Service.objects.filter(
+                tenant_id=request.user.tenant_id,
+                is_active=True
+            ).order_by('-created_at')[:50]  # Limit to 50 most recent
+            
+            products_data = ProductSerializer(products, many=True).data
+            services_data = ServiceSerializer(services, many=True).data
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'products': products_data,
+                    'services': services_data,
+                    'total_products': len(products_data),
+                    'total_services': len(services_data)
+                }
+            })
+        
+        elif request.method == 'POST':
+            # Handle updating products/services from mobile app
+            products_data = request.data.get('products', [])
+            services_data = request.data.get('services', [])
+            
+            # Update business listing to ensure it exists
+            try:
+                listing = BusinessListing.objects.get(business=request.user)
+                listing.last_active = timezone.now()
+                listing.save(update_fields=['last_active'])
+            except BusinessListing.DoesNotExist:
+                pass  # Listing will be created when needed
+            
+            # For now, just acknowledge the data was received
+            # Full product/service creation can be implemented as needed
+            return Response({
+                'success': True,
+                'message': 'Products and services information received',
+                'received': {
+                    'products_count': len(products_data) if products_data else 0,
+                    'services_count': len(services_data) if services_data else 0
+                }
+            })

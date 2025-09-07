@@ -166,6 +166,11 @@ class User(AbstractUser):
     def tenant_id(self):
         """Return tenant ID for compatibility with code expecting tenant_id"""
         return self.tenant.id if self.tenant else None
+    
+    @property
+    def is_business(self):
+        """Check if user is a business owner (has a tenant)."""
+        return bool(self.tenant_id)
 
 
 class AccountDeletionLog(models.Model):
