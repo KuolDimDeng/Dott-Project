@@ -35,12 +35,11 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 function TabNavigator() {
-  const { userMode, user } = useAuth();
+  const { user } = useAuth();
   const hasBusiness = user?.has_business || false;
   
   console.log('🎯 TabNavigator - User data:', user);
   console.log('🎯 TabNavigator - Has business:', hasBusiness);
-  console.log('🎯 TabNavigator - User mode:', userMode);
 
   return (
     <Tab.Navigator

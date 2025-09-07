@@ -21,7 +21,7 @@ import InvoicesScreen from './business/InvoicesScreen';
 import BankingScreen from './business/BankingScreen';
 
 export default function BusinessMenuScreen() {
-  const { user, switchMode } = useAuth();
+  const { user } = useAuth();
   const { businessData } = useBusinessContext();
   const navigation = useNavigation();
   const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
@@ -83,12 +83,6 @@ export default function BusinessMenuScreen() {
             </View>
           )}
         </View>
-        <TouchableOpacity
-          style={styles.switchButton}
-          onPress={() => switchMode('consumer')}
-        >
-          <Text style={styles.switchButtonText}>Switch to Consumer</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.statsCard}>
@@ -168,16 +162,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fbbf24',
     fontWeight: '600',
-  },
-  switchButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  switchButtonText: {
-    color: 'white',
-    fontSize: 12,
   },
   statsCard: {
     backgroundColor: 'white',

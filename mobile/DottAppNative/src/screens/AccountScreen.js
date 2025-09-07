@@ -13,12 +13,12 @@ import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AccountScreen({ navigation }) {
-  const { user, userMode, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const hasBusiness = user?.has_business || false;
   
   console.log('👤 AccountScreen - User data:', user);
   console.log('👤 AccountScreen - User role:', user?.role);
-  console.log('👤 AccountScreen - Has business:', user?.has_business);
-  console.log('👤 AccountScreen - User mode:', userMode);
+  console.log('👤 AccountScreen - Has business:', hasBusiness);
 
   const handleLogout = () => {
     Alert.alert(
@@ -35,29 +35,69 @@ export default function AccountScreen({ navigation }) {
     navigation.navigate('BusinessRegistration');
   };
 
-  const businessMenuItems = [
-    { icon: 'business', title: 'Business Info', subtitle: 'Manage your business details' },
-    { icon: 'people', title: 'Staff Management', subtitle: 'Manage employees and roles' },
-    { icon: 'card', title: 'Payment Methods', subtitle: 'Manage payment options' },
-    { icon: 'bar-chart', title: 'Analytics', subtitle: 'View business performance' },
-    { icon: 'document-text', title: 'Tax Settings', subtitle: 'Configure tax information' },
-  ];
+  // Unified menu sections based on business ownership
+  const getMenuSections = () => {
+    if (hasBusiness) {
+      // Business users get unified account with all features
+      return [
+        {
+          title: 'Personal',
+          items: [
+            { icon: 'person', title: 'Personal Info', subtitle: 'Your profile details' },
+            { icon: 'receipt', title: 'Order History', subtitle: 'Your marketplace purchases' },
+            { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your delivery locations' },
+            { icon: 'heart', title: 'Favorites', subtitle: 'Saved items and businesses' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
+          ]
+        },
+        {
+          title: 'Business Settings',
+          items: [
+            { icon: 'business', title: 'Business Profile', subtitle: 'Company information' },
+            { icon: 'people', title: 'Team & Permissions', subtitle: 'Staff access control' },
+            { icon: 'cash', title: 'Business Banking', subtitle: 'Business payment accounts' },
+            { icon: 'document-text', title: 'Tax & Compliance', subtitle: 'Tax settings and documents' },
+            { icon: 'bar-chart', title: 'Subscription', subtitle: 'Plan and billing' },
+          ]
+        },
+        {
+          title: 'General',
+          items: [
+            { icon: 'notifications', title: 'Notifications', subtitle: 'Alert preferences' },
+            { icon: 'shield-checkmark', title: 'Security', subtitle: 'Password and 2FA' },
+            { icon: 'globe', title: 'Language & Region', subtitle: 'App preferences' },
+            { icon: 'help-circle', title: 'Help & Support', subtitle: 'Get assistance' },
+            { icon: 'information-circle', title: 'About', subtitle: 'App version and legal' },
+          ]
+        }
+      ];
+    } else {
+      // Non-business users get consumer menu
+      return [
+        {
+          title: 'Personal',
+          items: [
+            { icon: 'person', title: 'Personal Info', subtitle: 'Your profile details' },
+            { icon: 'receipt', title: 'Order History', subtitle: 'Your purchases' },
+            { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your locations' },
+            { icon: 'heart', title: 'Favorites', subtitle: 'Saved items' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
+          ]
+        },
+        {
+          title: 'Settings',
+          items: [
+            { icon: 'notifications', title: 'Notifications', subtitle: 'Alert preferences' },
+            { icon: 'shield-checkmark', title: 'Security', subtitle: 'Password settings' },
+            { icon: 'help-circle', title: 'Help & Support', subtitle: 'Get assistance' },
+            { icon: 'information-circle', title: 'About', subtitle: 'App information' },
+          ]
+        }
+      ];
+    }
+  };
 
-  const consumerMenuItems = [
-    { icon: 'person', title: 'Personal Info', subtitle: 'Update your profile' },
-    { icon: 'card', title: 'Payment Methods', subtitle: 'Manage cards and wallets' },
-    { icon: 'receipt', title: 'Order History', subtitle: 'View past orders' },
-    { icon: 'location', title: 'Addresses', subtitle: 'Manage delivery addresses' },
-  ];
-
-  const generalMenuItems = [
-    { icon: 'notifications', title: 'Notifications', subtitle: 'Manage alerts' },
-    { icon: 'shield-checkmark', title: 'Security', subtitle: 'Password and authentication' },
-    { icon: 'help-circle', title: 'Help & Support', subtitle: 'Get assistance' },
-    { icon: 'information-circle', title: 'About', subtitle: 'App information' },
-  ];
-
-  const menuItems = userMode === 'business' ? businessMenuItems : consumerMenuItems;
+  const menuSections = getMenuSections();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,69 +123,47 @@ export default function AccountScreen({ navigation }) {
             </View>
           )}
           
-          {/* Mode and Business Status */}
-          <View style={styles.statusContainer}>
-            <View style={styles.modeBadge}>
-              <Text style={styles.modeText}>
-                {userMode === 'business' ? 'Business Mode' : 'Consumer Mode'}
-              </Text>
+          {/* Business Status Badge */}
+          {hasBusiness && (
+            <View style={styles.businessBadge}>
+              <Icon name="business" size={12} color="#059669" />
+              <Text style={styles.businessText}>Business Owner</Text>
             </View>
-            {user?.has_business && (
-              <View style={styles.businessBadge}>
-                <Icon name="business" size={12} color="#059669" />
-                <Text style={styles.businessText}>Business Owner</Text>
-              </View>
-            )}
-          </View>
+          )}
         </View>
 
-        {/* Create Business Button for Consumer Mode */}
-        {userMode === 'consumer' && !user?.has_business && (
+        {/* Create Business Button for Non-Business Users */}
+        {!hasBusiness && (
           <TouchableOpacity style={styles.createBusinessButton} onPress={handleCreateBusiness}>
             <View style={styles.createBusinessContent}>
               <Icon name="business-outline" size={24} color="#2563eb" />
               <View style={styles.createBusinessTextContainer}>
-                <Text style={styles.createBusinessTitle}>I have a business</Text>
-                <Text style={styles.createBusinessSubtitle}>Register your business</Text>
+                <Text style={styles.createBusinessTitle}>Start a Business</Text>
+                <Text style={styles.createBusinessSubtitle}>Register your business on Dott</Text>
               </View>
             </View>
             <Icon name="chevron-forward" size={20} color="#2563eb" />
           </TouchableOpacity>
         )}
 
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>
-            {userMode === 'business' ? 'Business Settings' : 'Account Settings'}
-          </Text>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.menuItem}>
-              <View style={styles.menuIcon}>
-                <Icon name={item.icon} size={24} color="#6b7280" />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>{item.title}</Text>
-                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color="#9ca3af" />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>General</Text>
-          {generalMenuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.menuItem}>
-              <View style={styles.menuIcon}>
-                <Icon name={item.icon} size={24} color="#6b7280" />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>{item.title}</Text>
-                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color="#9ca3af" />
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Menu Sections */}
+        {menuSections.map((section, sectionIndex) => (
+          <View key={sectionIndex} style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            {section.items.map((item, index) => (
+              <TouchableOpacity key={index} style={styles.menuItem}>
+                <View style={styles.menuIcon}>
+                  <Icon name={item.icon} size={24} color="#6b7280" />
+                </View>
+                <View style={styles.menuContent}>
+                  <Text style={styles.menuTitle}>{item.title}</Text>
+                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+                </View>
+                <Icon name="chevron-forward" size={20} color="#9ca3af" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Icon name="log-out-outline" size={24} color="#ef4444" />
@@ -227,21 +245,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
   },
-  statusContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  modeBadge: {
-    backgroundColor: '#e0e7ff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  modeText: {
-    fontSize: 12,
-    color: '#4338ca',
-    fontWeight: '500',
-  },
   businessBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -250,6 +253,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     gap: 4,
+    marginTop: 8,
   },
   businessText: {
     fontSize: 12,

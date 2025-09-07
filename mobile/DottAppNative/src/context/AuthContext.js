@@ -50,12 +50,7 @@ export const AuthProvider = ({ children }) => {
         // Update stored user data with complete profile
         await AsyncStorage.setItem('userData', JSON.stringify(userData));
         
-        // Set mode based on business status
-        const mode = userData.has_business ? 'business' : 'consumer';
-        await AsyncStorage.setItem('userMode', mode);
-        
         setUser(userData);
-        setUserMode(mode);
         
         return userData;
       }
