@@ -29,7 +29,7 @@ except ImportError as e:
 # 2. Check SMS service
 print("\n2️⃣ Checking SMS service:")
 try:
-    from custom_auth.sms_service import send_sms_via_twilio, send_sms
+    from custom_auth.sms_service import send_otp_sms, sms_service
     print("✅ SMS service imported")
 except ImportError as e:
     print(f"❌ SMS service import error: {e}")
@@ -88,19 +88,20 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# 5. Test the actual send_sms function
-print("\n5️⃣ Testing send_sms function:")
+# 5. Test the actual send_otp_sms function
+print("\n5️⃣ Testing send_otp_sms function:")
 try:
-    from custom_auth.sms_service import send_sms
-    result = send_sms("+13855007716", "Test from send_sms: Code 654321")
-    print(f"   Result: {result}")
-    if result.get('success'):
-        print(f"✅ send_sms function works!")
-        print(f"   Message SID: {result.get('message_sid')}")
+    from custom_auth.sms_service import send_otp_sms
+    success, message, message_sid = send_otp_sms("+13855007716", "654321")
+    print(f"   Success: {success}")
+    print(f"   Message: {message}")
+    if success:
+        print(f"✅ send_otp_sms function works!")
+        print(f"   Message SID: {message_sid}")
     else:
-        print(f"❌ send_sms failed: {result.get('error')}")
+        print(f"❌ send_otp_sms failed: {message}")
 except Exception as e:
-    print(f"❌ Error calling send_sms: {e}")
+    print(f"❌ Error calling send_otp_sms: {e}")
     import traceback
     traceback.print_exc()
 
