@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import api from '../services/api';
 import { userApi } from '../services/userApi';
+import { phoneAuthService } from '../services/phoneAuthApi';
 import ENV, { getSessionBaseUrl } from '../config/environment';
 
 const AuthContext = createContext({});
@@ -282,6 +283,85 @@ export const AuthProvider = ({ children }) => {
     setUserMode(mode);
   };
 
+  // Phone Authentication Methods
+  const sendOTP = async (phoneNumber) => {
+    try {
+      console.log('📱 Sending OTP to:', phoneNumber);
+      const result = await phoneAuthService.sendOTP(phoneNumber);
+      
+      if (result.success) {
+        console.log('✅ OTP sent successfully');
+        return { 
+          success: true, 
+          message: result.message,
+          expires_in: result.expires_in 
+        };
+      } else {
+        console.error('❌ Failed to send OTP:', result.message);
+        return { success: false, message: result.message };
+      }
+    } catch (error) {
+      console.error('❌ OTP send error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to send verification code. Please try again.' 
+      };
+    }
+  };
+
+  const verifyOTP = async (phoneNumber, otpCode) => {
+    try {
+      console.log('📱 Verifying OTP for:', phoneNumber);
+      const result = await phoneAuthService.verifyOTP(phoneNumber, otpCode);
+      
+      if (result.success && result.data) {
+        console.log('✅ OTP verified successfully');
+        
+        // Store session token
+        const sessionId = result.data.token;
+        if (sessionId) {
+          await AsyncStorage.setItem('sessionId', sessionId);
+          console.log('💾 Session token stored');
+        }
+        
+        // Store user data
+        const userData = result.data.user;
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        
+        // Set user mode based on onboarding status
+        const mode = userData.has_business ? 'business' : 'consumer';
+        await AsyncStorage.setItem('userMode', mode);
+        
+        // Update state
+        setUser(userData);
+        setUserMode(mode);
+        
+        console.log('👤 User authenticated:', {
+          email: userData.email,
+          phone: userData.phone_number,
+          mode: mode,
+          onboarding_completed: userData.onboarding_completed
+        });
+        
+        return { 
+          success: true, 
+          message: result.message,
+          user: userData,
+          requires_onboarding: result.data.requires_onboarding
+        };
+      } else {
+        console.error('❌ OTP verification failed:', result.message);
+        return { success: false, message: result.message };
+      }
+    } catch (error) {
+      console.error('❌ OTP verification error:', error);
+      return { 
+        success: false, 
+        message: 'Verification failed. Please try again.' 
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -291,6 +371,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       switchMode,
       fetchUserProfile,
+      sendOTP,
+      verifyOTP,
       isAuthenticated: !!user
     }}>
       {children}

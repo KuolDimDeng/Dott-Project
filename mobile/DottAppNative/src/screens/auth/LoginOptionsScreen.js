@@ -14,13 +14,12 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
 import { countriesData } from '../../data/countries';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginOptionsScreen() {
   const navigation = useNavigation();
-  const { login } = useAuth();
+  const { sendOTP, verifyOTP } = useAuth();
   const [loading, setLoading] = useState(false);
   
   // Phone login state
@@ -43,33 +42,52 @@ export default function LoginOptionsScreen() {
         Alert.alert('Error', 'Please enter your phone number');
         return;
       }
+      
+      const fullPhoneNumber = `${selectedCountry.phoneCode}${phoneNumber}`;
+      console.log('📱 Attempting to send OTP to:', fullPhoneNumber);
+      
       setLoading(true);
       try {
-        await api.post('/auth/send-otp', {
-          phone: `${selectedCountry.phoneCode}${phoneNumber}`,
-        });
-        setShowVerification(true);
-        Alert.alert('Success', 'Verification code sent to your phone');
+        const result = await sendOTP(fullPhoneNumber);
+        
+        if (result.success) {
+          setShowVerification(true);
+          Alert.alert('Success', result.message);
+          console.log('✅ OTP sent, expires in:', result.expires_in, 'seconds');
+        } else {
+          Alert.alert('Error', result.message);
+          console.error('❌ Failed to send OTP:', result.message);
+        }
       } catch (error) {
-        Alert.alert('Error', 'Unable to send verification code');
+        console.error('❌ OTP send error:', error);
+        Alert.alert('Error', 'Unable to send verification code. Please try again.');
       } finally {
         setLoading(false);
       }
     } else {
       // Verify OTP
+      if (!verificationCode || verificationCode.length !== 6) {
+        Alert.alert('Error', 'Please enter the 6-digit verification code');
+        return;
+      }
+      
+      const fullPhoneNumber = `${selectedCountry.phoneCode}${phoneNumber}`;
+      console.log('📱 Attempting to verify OTP for:', fullPhoneNumber);
+      
       setLoading(true);
       try {
-        const response = await api.post('/auth/verify-otp', {
-          phone: `${selectedCountry.phoneCode}${phoneNumber}`,
-          code: verificationCode,
-        });
+        const result = await verifyOTP(fullPhoneNumber, verificationCode);
         
-        if (response.data.success) {
-          // Handle successful phone login
-          await login(null, null, response.data.data.token);
+        if (result.success) {
+          console.log('✅ Phone authentication successful');
+          // Navigation will be handled by App.js auth state change
+        } else {
+          Alert.alert('Verification Failed', result.message);
+          console.error('❌ OTP verification failed:', result.message);
         }
       } catch (error) {
-        Alert.alert('Error', 'Invalid verification code');
+        console.error('❌ OTP verification error:', error);
+        Alert.alert('Error', 'Verification failed. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -226,21 +244,22 @@ export default function LoginOptionsScreen() {
               <Text style={styles.verificationText}>
                 Enter the code sent to {selectedCountry.phoneCode}{phoneNumber}
               </Text>
-              <View style={styles.codeInputContainer}>
-                {[...Array(6)].map((_, i) => (
-                  <TextInput
-                    key={i}
-                    style={styles.codeInput}
-                    maxLength={1}
-                    keyboardType="numeric"
-                    onChangeText={(text) => {
-                      const code = verificationCode.split('');
-                      code[i] = text;
-                      setVerificationCode(code.join(''));
-                    }}
-                  />
-                ))}
-              </View>
+              
+              {/* Simple text input for verification code */}
+              <TextInput
+                style={styles.verificationInput}
+                placeholder="Enter 6-digit code"
+                value={verificationCode}
+                onChangeText={(text) => {
+                  // Only allow digits and max 6 characters
+                  const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
+                  setVerificationCode(cleaned);
+                }}
+                keyboardType="numeric"
+                maxLength={6}
+                autoFocus
+                textAlign="center"
+              />
               
               <TouchableOpacity
                 style={[styles.button, loading && styles.buttonDisabled]}
@@ -422,20 +441,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  codeInputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  codeInput: {
-    width: 45,
-    height: 50,
+  verificationInput: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 8,
-    textAlign: 'center',
-    fontSize: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 18,
+    color: '#1a1a1a',
     backgroundColor: '#ffffff',
+    marginBottom: 20,
+    letterSpacing: 2,
   },
   changeNumberButton: {
     alignItems: 'center',
