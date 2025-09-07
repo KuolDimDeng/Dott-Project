@@ -29,7 +29,7 @@ cryptography==45.0.3
 requests==2.32.3
 
 # SMS Services
-twilio==8.11.0
+twilio==9.8.0
 
 # Additional essentials
 Pillow==10.4.0
