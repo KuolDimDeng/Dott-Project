@@ -25,12 +25,16 @@ const CurrencyIndicator = () => {
     );
   }
 
+  // Clean up currency code by removing duplicates (e.g., "SSP SSP" -> "SSP")
+  const cleanCurrencyCode = displayCurrency.code ? 
+    displayCurrency.code.split(' ')[0].trim().toUpperCase() : '';
+
   return (
     <div 
       className="flex items-center text-white/90 text-base hover:text-white cursor-default"
       title={`Business Currency: ${displayCurrency.name}`}
     >
-      <span className="font-medium">{displayCurrency.code}</span>
+      <span className="font-medium">{cleanCurrencyCode}</span>
     </div>
   );
 };

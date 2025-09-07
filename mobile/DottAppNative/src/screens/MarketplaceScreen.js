@@ -615,7 +615,6 @@ export default function MarketplaceScreen() {
         >
           <Icon name="location" size={16} color="rgba(255, 255, 255, 0.9)" />
           <Text style={styles.locationText}>Juba, South Sudan</Text>
-          <Icon name="chevron-down" size={14} color="rgba(255, 255, 255, 0.9)" />
         </TouchableOpacity>
       </View>
 

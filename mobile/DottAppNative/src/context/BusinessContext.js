@@ -266,18 +266,104 @@ export const BusinessProvider = ({ children }) => {
   };
 
   const getMenuItems = () => {
+    console.log('🔍 === getMenuItems CALLED (UPDATED) ===');
+    console.log('🔍 businessData.businessName:', businessData?.businessName);
+    console.log('🔍 businessData.businessType:', businessData?.businessType);
+    console.log('🔍 dynamicMenuItems length:', dynamicMenuItems?.length || 0);
+    console.log('🔍 dynamicFeatures:', dynamicFeatures);
+    console.log('🔍 businessConfig exists:', !!businessConfig);
+    
+    let menuItems = [];
+    
     // First use dynamic menu items from API if available
     if (dynamicMenuItems && dynamicMenuItems.length > 0) {
+      console.log('🔍 Using dynamic menu items from API');
       // Map API menu items to include title from label
-      return dynamicMenuItems.map(item => ({
+      menuItems = dynamicMenuItems.map(item => ({
         ...item,
         title: item.label || item.title
       }));
+    } else {
+      console.log('🔍 Using config-based menu items');
+      // Fallback to config-based menu items
+      if (businessConfig && businessConfig.menuItems) {
+        menuItems = businessConfig.menuItems;
+      }
     }
     
-    // Fallback to config-based menu items
-    if (!businessConfig) return [];
-    return businessConfig.menuItems || [];
+    // FORCE: Always use restaurant menu items for any Dott Restaurant business regardless of API response
+    const currentBusinessName = businessData.businessName || '';
+    console.log('🔍 Current Business Name:', currentBusinessName);
+    
+    if (currentBusinessName && (currentBusinessName.toLowerCase().includes('dott restaurant') || currentBusinessName.toLowerCase().includes('restaurant'))) {
+      console.log('🍽️ FORCE: Detected restaurant business - Using restaurant menu items');
+      console.log('🍽️ FORCE: Business Name:', currentBusinessName);
+      // Override with proper restaurant menu items
+      menuItems = [
+        { id: 'orders', label: 'Orders', title: 'Orders', icon: 'restaurant-outline', screen: 'Orders' },
+        { id: 'pos', label: 'POS', title: 'POS', icon: 'card-outline', screen: 'POS' },
+        { id: 'tables', label: 'Tables', title: 'Tables', icon: 'grid-outline', screen: 'Tables' },
+        { id: 'delivery', label: 'Delivery', title: 'Delivery', icon: 'bicycle-outline', screen: 'Delivery' },
+        { id: 'inventory', label: 'Inventory', title: 'Inventory', icon: 'cube-outline', screen: 'Inventory' },
+        { id: 'menu', label: 'Menu', title: 'Menu', icon: 'list-outline', screen: 'MenuManagement', subtitle: 'Manage menu items and pricing' }
+      ];
+      console.log('🍽️ FORCE: Restaurant menu items set - Orders, POS, Tables, Delivery, Inventory, Menu');
+      console.log('🍽️ FORCE: Menu item details:', menuItems.find(item => item.id === 'menu'));
+      return menuItems;
+    }
+    
+    // Always ensure restaurants have Menu option - Enhanced detection
+    const businessName = businessData.businessName?.toLowerCase() || '';
+    const businessType = businessData.businessType?.toLowerCase() || '';
+    
+    console.log('🔍 Business Name (lowercase):', businessName);
+    console.log('🔍 Business Type (lowercase):', businessType);
+    
+    const isRestaurant = businessData.businessType === 'RESTAURANT_CAFE' || 
+                        businessType.includes('restaurant') ||
+                        businessName.includes('restaurant') ||
+                        businessName.includes('cafe') ||
+                        businessName.includes('diner') ||
+                        businessName.includes('bistro') ||
+                        businessName.includes('eatery') ||
+                        businessName.includes('grill') ||
+                        businessName.includes('kitchen');
+    
+    console.log('🔍 Is Restaurant?', isRestaurant);
+    
+    if (isRestaurant) {
+      console.log('🍽️ Restaurant detected! Business Name:', businessData.businessName);
+      console.log('🍽️ Business Type:', businessData.businessType);
+      console.log('🍽️ Current menu items:', menuItems.length);
+      
+      // Check if Menu item already exists
+      const hasMenuOption = menuItems.some(item => 
+        item.id === 'menu' || 
+        item.screen === 'MenuManagement' ||
+        item.label?.toLowerCase().includes('menu')
+      );
+      
+      console.log('🍽️ Has Menu option already:', hasMenuOption);
+      
+      if (!hasMenuOption) {
+        // Add Menu option for restaurants
+        const menuOption = {
+          id: 'menu',
+          label: 'Menu',
+          title: 'Menu',
+          icon: 'list-outline',
+          screen: 'MenuManagement',
+          subtitle: 'Manage menu items and pricing'
+        };
+        menuItems.push(menuOption);
+        console.log('🍽️ Added Menu option:', menuOption);
+        console.log('🍽️ Final menu items count:', menuItems.length);
+      }
+    } else {
+      console.log('❌ Not detected as restaurant');
+    }
+    
+    return menuItems;
   };
 
   const getNavigationMode = () => {

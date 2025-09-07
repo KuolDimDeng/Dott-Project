@@ -20,7 +20,7 @@ import CartScreen from '../screens/CartScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
 // Import business screens
-import POSScreen from '../screens/business/POSScreen';
+import AdaptivePOSScreen from '../screens/business/AdaptivePOSScreen';
 import TimesheetScreen from '../screens/business/TimesheetScreen';
 import ReportsScreen from '../screens/business/ReportsScreen';
 import EmployeesScreen from '../screens/business/EmployeesScreen';
@@ -30,6 +30,26 @@ import InvoicesScreen from '../screens/business/InvoicesScreen';
 import BankingScreen from '../screens/business/BankingScreen';
 import MenuManagementScreen from '../screens/business/MenuManagementScreen';
 import BusinessRegistrationScreen from '../screens/consumer/BusinessRegistrationScreen';
+import BankingSetupScreen from '../screens/business/BankingSetupScreen';
+import CurrencyPreferenceScreen from '../screens/CurrencyPreferenceScreen';
+import JobsScreen from '../screens/business/JobsScreen';
+import DashboardScreen from '../screens/business/DashboardScreen';
+import TransactionsScreen from '../screens/business/TransactionsScreen';
+import CustomersScreen from '../screens/business/CustomersScreen';
+import OrdersScreen from '../screens/business/OrdersScreen';
+import WhatsAppScreen from '../screens/business/WhatsAppScreen';
+import MessagesScreen from '../screens/business/MessagesScreen';
+import HRScreen from '../screens/business/HRScreen';
+import PayrollScreen from '../screens/business/PayrollScreen';
+import AdvertiseScreen from '../screens/business/AdvertiseScreen';
+import ServicesScreen from '../screens/business/ServicesScreen';
+import MarketplaceBusinessScreen from '../screens/business/MarketplaceBusinessScreen';
+import InviteScreen from '../screens/business/InviteScreen';
+import SmartInsightsScreen from '../screens/business/SmartInsightsScreen';
+import TaxFilingScreen from '../screens/business/TaxFilingScreen';
+import TransportScreen from '../screens/business/TransportScreen';
+import TablesScreen from '../screens/business/TablesScreen';
+import DeliveryScreen from '../screens/business/DeliveryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -114,7 +134,7 @@ export default function MainNavigator() {
       <Stack.Screen name="GroupCreation" component={GroupCreationScreen} />
       <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />
       {/* Business screens for navigation */}
-      <Stack.Screen name="POS" component={POSScreen} />
+      <Stack.Screen name="POS" component={AdaptivePOSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />
       <Stack.Screen name="Reports" component={ReportsScreen} />
       <Stack.Screen name="Employees" component={EmployeesScreen} />
@@ -123,6 +143,26 @@ export default function MainNavigator() {
       <Stack.Screen name="Invoices" component={InvoicesScreen} />
       <Stack.Screen name="Banking" component={BankingScreen} />
       <Stack.Screen name="MenuManagement" component={MenuManagementScreen} />
+      <Stack.Screen name="BankingSetup" component={BankingSetupScreen} />
+      <Stack.Screen name="CurrencyPreference" component={CurrencyPreferenceScreen} />
+      <Stack.Screen name="Jobs" component={JobsScreen} />
+      <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="Transactions" component={TransactionsScreen} />
+      <Stack.Screen name="Customers" component={CustomersScreen} />
+      <Stack.Screen name="Orders" component={OrdersScreen} />
+      <Stack.Screen name="WhatsApp" component={WhatsAppScreen} />
+      <Stack.Screen name="Messages" component={MessagesScreen} />
+      <Stack.Screen name="HR" component={HRScreen} />
+      <Stack.Screen name="Payroll" component={PayrollScreen} />
+      <Stack.Screen name="Advertise" component={AdvertiseScreen} />
+      <Stack.Screen name="Services" component={ServicesScreen} />
+      <Stack.Screen name="MarketplaceBusiness" component={MarketplaceBusinessScreen} />
+      <Stack.Screen name="Invite" component={InviteScreen} />
+      <Stack.Screen name="SmartInsights" component={SmartInsightsScreen} />
+      <Stack.Screen name="TaxFiling" component={TaxFilingScreen} />
+      <Stack.Screen name="Transport" component={TransportScreen} />
+      <Stack.Screen name="Tables" component={TablesScreen} />
+      <Stack.Screen name="Delivery" component={DeliveryScreen} />
     </Stack.Navigator>
   );
 }

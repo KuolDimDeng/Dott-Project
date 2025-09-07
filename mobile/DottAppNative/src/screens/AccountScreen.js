@@ -48,6 +48,7 @@ export default function AccountScreen({ navigation }) {
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your delivery locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items and businesses' },
             { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
@@ -55,7 +56,7 @@ export default function AccountScreen({ navigation }) {
           items: [
             { icon: 'business', title: 'Business Profile', subtitle: 'Company information' },
             { icon: 'people', title: 'Team & Permissions', subtitle: 'Staff access control' },
-            { icon: 'cash', title: 'Business Banking', subtitle: 'Business payment accounts' },
+            { icon: 'wallet', title: 'Banking & Payouts', subtitle: 'Bank accounts & settlements', screen: 'BankingSetup' },
             { icon: 'document-text', title: 'Tax & Compliance', subtitle: 'Tax settings and documents' },
             { icon: 'bar-chart', title: 'Subscription', subtitle: 'Plan and billing' },
           ]
@@ -82,6 +83,7 @@ export default function AccountScreen({ navigation }) {
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items' },
             { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
@@ -151,7 +153,15 @@ export default function AccountScreen({ navigation }) {
           <View key={sectionIndex} style={styles.menuSection}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             {section.items.map((item, index) => (
-              <TouchableOpacity key={index} style={styles.menuItem}>
+              <TouchableOpacity 
+                key={index} 
+                style={styles.menuItem}
+                onPress={() => {
+                  if (item.screen) {
+                    navigation.navigate(item.screen);
+                  }
+                }}
+              >
                 <View style={styles.menuIcon}>
                   <Icon name={item.icon} size={24} color="#6b7280" />
                 </View>

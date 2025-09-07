@@ -8,9 +8,11 @@ import {
   SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessContext } from '../context/BusinessContext';
-import { useNavigation } from '@react-navigation/native';
+
+// Import business screens
 import POSScreen from './business/POSScreen';
 import TimesheetScreen from './business/TimesheetScreen';
 import ReportsScreen from './business/ReportsScreen';
@@ -22,7 +24,7 @@ import BankingScreen from './business/BankingScreen';
 
 export default function BusinessMenuScreen() {
   const { user } = useAuth();
-  const { businessData } = useBusinessContext();
+  const { businessData, getMenuItems: getContextMenuItems } = useBusinessContext();
   const navigation = useNavigation();
   const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
   
@@ -51,17 +53,142 @@ export default function BusinessMenuScreen() {
   const locationText = getLocationText();
   const currencyText = getCurrencyText();
 
-  const menuItems = [
-    { icon: 'cash-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
-    { icon: 'time-outline', title: 'Timesheet', color: '#3b82f6', screen: 'Timesheet' },
-    { icon: 'bar-chart-outline', title: 'Reports', color: '#8b5cf6', screen: 'Reports' },
-    { icon: 'people-outline', title: 'Employees', color: '#f59e0b', screen: 'Employees' },
+  // Complete menu items from HTML version
+  const ALL_MENU_ITEMS = [
+    // Row 1 - Core Operations
+    { icon: 'card-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
     { icon: 'cube-outline', title: 'Inventory', color: '#ec4899', screen: 'Inventory' },
-    { icon: 'card-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },
-    { icon: 'document-text-outline', title: 'Invoices', color: '#06b6d4', screen: 'Invoices' },
+    { icon: 'cash-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },
+    
+    // Row 2 - Business Management
+    { icon: 'construct-outline', title: 'Jobs', color: '#f59e0b', screen: 'Jobs' },
+    { icon: 'analytics-outline', title: 'Dashboard', color: '#8b5cf6', screen: 'Dashboard' },
+    { icon: 'swap-horizontal-outline', title: 'Transactions', color: '#06b6d4', screen: 'Transactions' },
+    
+    // Row 3 - Customer & Communication
+    { icon: 'people-circle-outline', title: 'Customers', color: '#10b981', screen: 'Customers' },
+    { icon: 'chatbubbles-outline', title: 'Messages', color: '#3b82f6', screen: 'Messages' },
+    { icon: 'logo-whatsapp', title: 'WhatsApp', color: '#25d366', screen: 'WhatsApp' },
+    
+    // Row 4 - Marketing & Growth
+    { icon: 'megaphone-outline', title: 'Advertise', color: '#f97316', screen: 'Advertise' },
+    { icon: 'share-social-outline', title: 'Invite', color: '#a855f7', screen: 'Invite' },
+    { icon: 'storefront-outline', title: 'Marketplace', color: '#0ea5e9', screen: 'Marketplace' },
+    
+    // Row 5 - Orders & HR
+    { icon: 'receipt-outline', title: 'Orders', color: '#84cc16', screen: 'Orders' },
+    { icon: 'briefcase-outline', title: 'HR', color: '#f59e0b', screen: 'HR' },
+    { icon: 'time-outline', title: 'Payroll', color: '#3b82f6', screen: 'Payroll' },
+    
+    // Row 6 - Advanced Features
+    { icon: 'bulb-outline', title: 'Smart Insights', color: '#fbbf24', screen: 'SmartInsights' },
+    { icon: 'document-text-outline', title: 'Tax Filing', color: '#dc2626', screen: 'TaxFiling' },
+    { icon: 'car-outline', title: 'Transport', color: '#7c3aed', screen: 'Transport' },
+    
+    // Row 7 - Additional Tools
+    { icon: 'cog-outline', title: 'Services', color: '#6b7280', screen: 'Services' },
+    { icon: 'document-outline', title: 'Invoices', color: '#06b6d4', screen: 'Invoices' },
     { icon: 'business-outline', title: 'Banking', color: '#84cc16', screen: 'Banking' },
-    { icon: 'ellipsis-horizontal-outline', title: 'More', color: '#6b7280', screen: null },
+    { icon: 'timer-outline', title: 'Timesheet', color: '#14b8a6', screen: 'Timesheet' },
+    { icon: 'people-outline', title: 'Employees', color: '#8b5cf6', screen: 'Employees' },
+    { icon: 'bar-chart-outline', title: 'Reports', color: '#0891b2', screen: 'Reports' },
   ];
+
+  // Business type feature configuration
+  const BUSINESS_TYPE_FEATURES = {
+    'RESTAURANT_CAFE': {
+      enabled: ['POS Terminal', 'Inventory', 'Orders', 'Customers', 'WhatsApp', 'Dashboard', 'Expenses', 'HR', 'Payroll', 'Employees', 'Reports'],
+      highlighted: ['POS Terminal', 'Orders']
+    },
+    'RETAIL': {
+      enabled: ['POS Terminal', 'Inventory', 'Customers', 'Marketplace', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
+      highlighted: ['Inventory', 'POS Terminal']
+    },
+    'SERVICE': {
+      enabled: ['Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Expenses', 'Banking', 'Reports'],
+      highlighted: ['Jobs', 'Services']
+    },
+    'TRANSPORT': {
+      enabled: ['Transport', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'HR', 'Reports'],
+      highlighted: ['Transport']
+    },
+    'OTHER': {
+      enabled: ['POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'Invoices', 'Banking', 'Reports'],
+      highlighted: []
+    }
+  };
+
+  // Get appropriate menu items based on business type
+  const getMenuItems = () => {
+    console.log('📱 BusinessMenuScreen getMenuItems called');
+    
+    // First try to get menu items from BusinessContext (includes forced restaurant logic)
+    const contextMenuItems = getContextMenuItems();
+    console.log('📱 Context menu items:', contextMenuItems);
+    
+    if (contextMenuItems && contextMenuItems.length > 0) {
+      // Map BusinessContext format to BusinessMenuScreen format
+      const mappedItems = contextMenuItems.map(contextItem => {
+        // Find matching item in ALL_MENU_ITEMS or create a default mapping
+        const matchingItem = ALL_MENU_ITEMS.find(staticItem => 
+          staticItem.title.toLowerCase() === contextItem.label.toLowerCase() ||
+          staticItem.title.toLowerCase() === contextItem.title.toLowerCase() ||
+          staticItem.screen === contextItem.screen
+        );
+        
+        if (matchingItem) {
+          return matchingItem;
+        }
+        
+        // Create mapping for items not in ALL_MENU_ITEMS
+        const screenToColorMap = {
+          'Orders': '#84cc16', // green for orders
+          'POS': '#10b981', // green for POS
+          'Tables': '#3b82f6', // blue for tables  
+          'Delivery': '#f59e0b', // orange for delivery
+          'Inventory': '#ec4899', // pink for inventory
+          'MenuManagement': '#8b5cf6', // purple for menu
+        };
+        
+        return {
+          icon: contextItem.icon || 'document-outline',
+          title: contextItem.title || contextItem.label,
+          color: screenToColorMap[contextItem.screen] || '#6b7280',
+          screen: contextItem.screen
+        };
+      });
+      
+      console.log('📱 Mapped menu items:', mappedItems);
+      return mappedItems;
+    }
+    
+    // Fallback to local business type filtering
+    console.log('📱 Using fallback local menu logic');
+    const businessType = businessData?.businessType || 'OTHER';
+    const config = BUSINESS_TYPE_FEATURES[businessType] || BUSINESS_TYPE_FEATURES.OTHER;
+    
+    return ALL_MENU_ITEMS.filter(item => 
+      config.enabled.includes(item.title)
+    );
+  };
+
+  const menuItems = getMenuItems();
+
+  // Log for debugging
+  React.useEffect(() => {
+    console.log('📱 === BusinessMenuScreen Debug ===');
+    console.log('📱 businessData.businessName:', businessData?.businessName);
+    console.log('📱 businessData.businessType:', businessData?.businessType);
+    console.log('📱 Menu items displayed count:', menuItems.length);
+    console.log('📱 Menu items titles:', menuItems.map(item => item.title));
+    
+    // Check specifically for Menu item
+    const hasMenu = menuItems.some(item => 
+      item.title.toLowerCase().includes('menu') || 
+      item.screen === 'MenuManagement'
+    );
+    console.log('📱 Has Menu option:', hasMenu);
+  }, [businessData?.businessType, businessData?.businessName, menuItems.length]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -90,24 +217,39 @@ export default function BusinessMenuScreen() {
         <Text style={styles.statsValue}>$0.00</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.grid}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
               onPress={() => {
+                console.log('📱 Menu item clicked:', item.title);
+                console.log('📱 Screen to navigate to:', item.screen);
                 if (item.screen) {
-                  navigation.navigate(item.screen);
+                  // Navigate to the screen
+                  try {
+                    console.log('📱 Attempting navigation to:', item.screen);
+                    navigation.navigate(item.screen);
+                    console.log('📱 Navigation successful to:', item.screen);
+                  } catch (error) {
+                    console.log('📱 Navigation failed:', error.message);
+                    console.log(`📱 Screen ${item.screen} not implemented yet`);
+                    // You can navigate to a placeholder screen here if needed
+                  }
                 } else {
-                  console.log(`Navigate to ${item.title}`);
+                  console.log(`📱 No screen defined for ${item.title}`);
                 }
               }}
             >
               <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
-                <Icon name={item.icon} size={28} color={item.color} />
+                <Icon name={item.icon} size={24} color={item.color} />
               </View>
-              <Text style={styles.menuItemText}>{item.title}</Text>
+              <Text style={styles.menuItemText} numberOfLines={2}>{item.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -187,22 +329,27 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
     paddingTop: 20,
+    paddingBottom: 100,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingBottom: 20,
   },
   menuItem: {
     width: '31%',
+    aspectRatio: 1,
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 10,
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -210,16 +357,17 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   menuItemText: {
-    fontSize: 12,
-    color: '#374151',
+    fontSize: 11,
+    color: '#1a1a1a',
     textAlign: 'center',
+    fontWeight: '500',
   },
 });

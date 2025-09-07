@@ -3,7 +3,7 @@ import ENV from '../config/environment';
 
 // Create separate API instance for phone auth (no auth header needed)
 const phoneAuthApi = axios.create({
-  baseURL: `${ENV.apiUrl}/api/auth/phone`,
+  baseURL: `${ENV.apiUrl}/auth/phone`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
