@@ -55,7 +55,7 @@ class PhoneOTP(models.Model):
     user_agent = models.TextField(null=True, blank=True, help_text='User agent string')
     
     class Meta:
-        db_table = 'custom_auth_phone_otp'
+        db_table = 'custom_auth_phoneotp'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['phone_number', 'created_at']),
@@ -180,7 +180,7 @@ class PhoneVerificationAttempt(models.Model):
     user_agent = models.TextField(null=True, blank=True)
     
     class Meta:
-        db_table = 'custom_auth_phone_verification_attempt'
+        db_table = 'custom_auth_phoneverificationattempt'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['phone_number', 'created_at']),

@@ -48,6 +48,17 @@ export const AuthProvider = ({ children }) => {
         console.log('🔍 User role:', userData.role);
         console.log('🔍 Has business:', userData.has_business);
         
+        // Also extract business information from the response
+        if (response.businessName || response.business_name || response.tenant?.name) {
+          userData.business_name = response.businessName || response.business_name || response.tenant?.name;
+          userData.business_type = response.businessType || response.business_type;
+          userData.business_city = response.business_city || response.city;
+          userData.business_country = response.business_country || response.country;
+          userData.business_country_name = response.business_country_name || response.country_name;
+          console.log('🏢 Business name added:', userData.business_name);
+          console.log('🏢 Business type added:', userData.business_type);
+        }
+        
         // Update stored user data with complete profile
         await AsyncStorage.setItem('userData', JSON.stringify(userData));
         
@@ -211,6 +222,15 @@ export const AuthProvider = ({ children }) => {
           response.data.session_id = response.data.session_token;
           response.data.success = true;
         }
+        
+        // Extract business information from session response
+        if (response.data.businessName || response.data.business_name || response.data.tenant?.name) {
+          console.log('🏢 Business info in session response:', {
+            businessName: response.data.businessName || response.data.business_name || response.data.tenant?.name,
+            businessType: response.data.businessType || response.data.business_type,
+            tenant: response.data.tenant
+          });
+        }
       }
       
       console.log('✅ Login response:', response.data);
@@ -233,6 +253,16 @@ export const AuthProvider = ({ children }) => {
         } else {
           // Fallback to session response data
           const userData = response.data.user || response.data.data?.user;
+          
+          // Add business information from response
+          if (response.data.businessName || response.data.business_name || response.data.tenant?.name) {
+            userData.business_name = response.data.businessName || response.data.business_name || response.data.tenant?.name;
+            userData.business_type = response.data.businessType || response.data.business_type;
+            userData.business_city = response.data.business_city || response.data.city;
+            userData.business_country = response.data.business_country || response.data.country;
+            userData.business_country_name = response.data.business_country_name || response.data.country_name;
+          }
+          
           await AsyncStorage.setItem('userData', JSON.stringify(userData));
           
           const mode = userData.has_business ? 'business' : 'consumer';
@@ -324,8 +354,13 @@ export const AuthProvider = ({ children }) => {
           console.log('💾 Session token stored');
         }
         
-        // Store user data
+        // Store user data with business information
         const userData = result.data.user;
+        // Add business information if available
+        if (result.data.businessName || result.data.business_name) {
+          userData.business_name = result.data.businessName || result.data.business_name;
+          userData.business_type = result.data.businessType || result.data.business_type;
+        }
         await AsyncStorage.setItem('userData', JSON.stringify(userData));
         
         // Set user mode based on onboarding status
