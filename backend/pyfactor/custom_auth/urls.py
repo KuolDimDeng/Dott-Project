@@ -155,8 +155,9 @@ urlpatterns = [
     # Custom password reset endpoint for admin-created users
     path('set-password/', PasswordResetView.as_view(), name='set-password'),
     
-    # Phone Authentication endpoints
-    path('phone/register/', PhoneRegisterView.as_view(), name='phone-register'),
-    path('phone/verify/', PhoneVerifyView.as_view(), name='phone-verify'),
-    path('phone/resend/', PhoneResendOTPView.as_view(), name='phone-resend-otp'),
+    # Phone Authentication endpoints - MOVED to api/auth/phone/ in main urls.py
+    # These are replaced by the new phone auth system with Twilio integration
+    # path('phone/register/', PhoneRegisterView.as_view(), name='phone-register'),
+    # path('phone/verify/', PhoneVerifyView.as_view(), name='phone-verify'),
+    # path('phone/resend/', PhoneResendOTPView.as_view(), name='phone-resend-otp'),
 ]
