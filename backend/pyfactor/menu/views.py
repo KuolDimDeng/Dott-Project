@@ -35,9 +35,9 @@ class MenuPermission(IsAuthenticated):
         
         # Check if user has a business
         try:
-            # Try to get UserProfile if it exists
-            if hasattr(request.user, 'userprofile'):
-                profile = request.user.userprofile
+            # Try to get UserProfile if it exists (related_name is 'profile')
+            if hasattr(request.user, 'profile'):
+                profile = request.user.profile
                 if not profile.business:
                     logger.info(f"User {request.user.id} has no business, denying menu access")
                     return False
@@ -104,7 +104,7 @@ class MenuPermission(IsAuthenticated):
             logger.error(f"Error checking menu permission for user {request.user.id}: {e}")
             # On error, be permissive for authenticated business users
             try:
-                if hasattr(request.user, 'userprofile') and request.user.userprofile.business:
+                if hasattr(request.user, 'profile') and request.user.profile.business:
                     logger.info(f"Menu permission error recovery for user {request.user.id}: allowing access")
                     return True
             except:
