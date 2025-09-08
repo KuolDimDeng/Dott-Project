@@ -28,14 +28,27 @@ class MenuPermission(IsAuthenticated):
         if not super().has_permission(request, view):
             return False
         
+        # Special handling for support users
+        if request.user.email == 'support@dottapps.com':
+            logger.info(f"Support user {request.user.email} granted menu access")
+            return True
+        
         # Check if user has a business
         try:
-            profile = request.user.userprofile
-            if not profile.business:
-                logger.info(f"User {request.user.id} has no business, denying menu access")
-                return False
-            
-            business = profile.business
+            # Try to get UserProfile if it exists
+            if hasattr(request.user, 'userprofile'):
+                profile = request.user.userprofile
+                if not profile.business:
+                    logger.info(f"User {request.user.id} has no business, denying menu access")
+                    return False
+                business = profile.business
+            else:
+                # If no UserProfile, try to get business directly from user
+                if hasattr(request.user, 'business'):
+                    business = request.user.business
+                else:
+                    logger.info(f"User {request.user.id} has no UserProfile or business, denying menu access")
+                    return False
             
             # First check simplified_business_type on Business model directly
             if hasattr(business, 'simplified_business_type') and business.simplified_business_type:
@@ -121,7 +134,21 @@ class MenuCategoryViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set tenant on creation"""
-        serializer.save(tenant_id=self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None)
+        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
+        
+        # For support user, ensure we have a valid tenant
+        if self.request.user.email == 'support@dottapps.com' and not tenant_id:
+            # Use a default tenant or create one
+            try:
+                from tenants.models import Tenant
+                tenant = Tenant.objects.first()
+                if tenant:
+                    tenant_id = tenant.id
+                    logger.info(f"Support user creating category, using tenant: {tenant_id}")
+            except Exception as e:
+                logger.error(f"Error finding tenant for support user: {e}")
+        
+        serializer.save(tenant_id=tenant_id)
     
     @action(detail=False, methods=['post'])
     def reorder(self, request):
@@ -222,11 +249,24 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set tenant and business on creation"""
-        try:
-            profile = self.request.user.userprofile
-            business = profile.business if profile else None
-        except:
-            business = None
+        business = None
+        
+        # Special handling for support user
+        if self.request.user.email == 'support@dottapps.com':
+            # For support user, try to find a business named "Dott Restaurant & Cafe"
+            try:
+                from users.models import Business
+                business = Business.objects.filter(name__icontains="Dott Restaurant").first()
+                logger.info(f"Support user creating menu item, using business: {business}")
+            except Exception as e:
+                logger.error(f"Error finding business for support user: {e}")
+        else:
+            # Regular user flow
+            try:
+                profile = self.request.user.userprofile
+                business = profile.business if profile else None
+            except:
+                business = None
         
         tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
         serializer.save(
