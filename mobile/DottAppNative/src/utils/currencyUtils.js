@@ -4,7 +4,7 @@
 // Complete currency list with symbols
 export const CURRENCIES = {
   // African Currencies
-  SSP: { code: 'SSP', symbol: 'SSP', name: 'South Sudan Pound' },
+  SSP: { code: 'SSP', symbol: '£', name: 'South Sudan Pound' },
   KES: { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling' },
   NGN: { code: 'NGN', symbol: '₦', name: 'Nigerian Naira' },
   ZAR: { code: 'ZAR', symbol: 'R', name: 'South African Rand' },

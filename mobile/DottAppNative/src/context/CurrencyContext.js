@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { CURRENCIES } from '../utils/currencyUtils';
 
 const CurrencyContext = createContext();
 
@@ -45,6 +46,10 @@ export const CurrencyProvider = ({ children }) => {
       const cachedCurrency = await AsyncStorage.getItem('user_currency');
       if (cachedCurrency) {
         const parsed = JSON.parse(cachedCurrency);
+        // Update symbol from CURRENCIES mapping if available
+        if (parsed.code && CURRENCIES[parsed.code]) {
+          parsed.symbol = CURRENCIES[parsed.code].symbol;
+        }
         console.log('💰 [CurrencyContext] ✅ Found cached currency:', parsed);
         setCurrency(parsed);
       } else {
@@ -65,10 +70,14 @@ export const CurrencyProvider = ({ children }) => {
       console.log('  - country_name:', response.data?.country_name);
       
       if (response.data) {
+        const currencyCode = response.data.preferred_currency_code || 'USD';
+        
+        // Use proper symbol from CURRENCIES mapping if available
+        const currencyData = CURRENCIES[currencyCode];
         const newCurrency = {
-          code: response.data.preferred_currency_code || 'USD',
-          name: response.data.preferred_currency_name || 'US Dollar',
-          symbol: response.data.preferred_currency_symbol || '$'
+          code: currencyCode,
+          name: response.data.preferred_currency_name || currencyData?.name || 'US Dollar',
+          symbol: currencyData?.symbol || response.data.preferred_currency_symbol || '$'
         };
         
         console.log('💰 [CurrencyContext] Constructed currency object:', newCurrency);
