@@ -19,6 +19,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useMenuContext } from '../../context/MenuContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import api from '../../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -26,6 +27,7 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function POSScreen() {
   const navigation = useNavigation();
   const { menuItems, categories: menuCategories, getAvailableMenuItems } = useMenuContext();
+  const { currency } = useCurrency();
   
   // Main States
   const [cart, setCart] = useState([]);
@@ -242,25 +244,32 @@ export default function POSScreen() {
 
     setProcessing(true);
     try {
+      // Convert discount to percentage if it's an amount
+      let discountPercentage = 0;
+      if (discountType === 'percentage') {
+        discountPercentage = discountValue;
+      } else if (discountType === 'amount' && subtotal > 0) {
+        discountPercentage = (discountValue / subtotal) * 100;
+      }
+
+      // Calculate tax rate from tax amount
+      const taxRate = subtotal > 0 ? (tax / (subtotal - discount)) * 100 : 0;
+
       const transactionData = {
         items: cart.map(item => ({
-          product_id: item.id,
-          name: item.name,
+          id: item.id,
+          type: 'product', // Assuming all items are products for now
           quantity: item.quantity,
-          price: item.price,
-          total: item.price * item.quantity,
+          unit_price: item.price,
         })),
-        customer_id: selectedCustomer?.id,
+        customer_id: selectedCustomer?.id || null,
         payment_method: paymentMethod,
-        subtotal,
-        discount,
-        discount_type: discountType,
-        discount_value: discountValue,
-        tax,
-        total,
-        cash_received: paymentMethod === 'cash' ? parseFloat(cashReceived) : null,
-        change: paymentMethod === 'cash' ? change : null,
-        note: customerNote,
+        amount_tendered: paymentMethod === 'cash' ? parseFloat(cashReceived) : total,
+        discount_percentage: discountPercentage,
+        tax_rate: taxRate,
+        notes: customerNote || '',
+        currency_code: currency?.code || 'USD',
+        currency_symbol: currency?.symbol || '$',
       };
 
       const response = await api.post('/pos/transactions/', transactionData);

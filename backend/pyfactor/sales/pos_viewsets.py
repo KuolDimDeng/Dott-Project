@@ -47,8 +47,17 @@ class POSTransactionViewSet(TenantIsolatedViewSet):
             return POSTransactionDetailSerializer
         elif self.action == 'complete_sale':
             return POSSaleCompletionSerializer
+        elif self.action == 'create':
+            return POSSaleCompletionSerializer
         else:
             return POSTransactionCreateSerializer
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Handle POST to /pos/transactions/ 
+        Redirects to complete_sale for backward compatibility with mobile app
+        """
+        return self.complete_sale(request)
     
     @action(detail=False, methods=['post'], url_path='complete-sale')
     def complete_sale(self, request):

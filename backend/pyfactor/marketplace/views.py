@@ -46,12 +46,18 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'results': []
                 })
             
-            # Get featured businesses
+            # Get businesses - check if is_featured field exists
             businesses = PlaceholderBusiness.objects.filter(
                 city__iexact=city,
-                opted_out=False,
-                is_featured=True
+                opted_out=False
             )
+            
+            # Try to filter by is_featured if it exists
+            if hasattr(PlaceholderBusiness, 'is_featured'):
+                businesses = businesses.filter(is_featured=True)
+            else:
+                # If no featured field, just get first 10 businesses
+                businesses = businesses[:10]
             
             if country:
                 businesses = businesses.filter(country__iexact=country[:2])
@@ -59,17 +65,24 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             # Serialize businesses
             business_list = []
             for business in businesses[:10]:  # Limit to 10 featured
-                business_list.append({
+                business_data = {
                     'id': str(business.id),
                     'business_name': business.business_name,
                     'category': business.category,
                     'city': business.city,
                     'country': business.country,
                     'phone': business.phone,
-                    'is_featured': business.is_featured,
                     'owner_phone': business.owner_phone,
                     'opted_out': business.opted_out
-                })
+                }
+                
+                # Add is_featured if it exists
+                if hasattr(business, 'is_featured'):
+                    business_data['is_featured'] = business.is_featured
+                else:
+                    business_data['is_featured'] = False
+                
+                business_list.append(business_data)
             
             return Response({
                 'success': True,
