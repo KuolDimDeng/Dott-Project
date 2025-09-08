@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useMenuContext } from '../../context/MenuContext';
 import { useNavigation } from '@react-navigation/native';
 import { useBusinessContext } from '../../context/BusinessContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import AddMenuItemModal from '../../components/AddMenuItemModal';
 import inventoryApi from '../../services/inventoryApi';
 import { getCurrencyForCountry } from '../../utils/currencyUtils';
@@ -24,6 +25,7 @@ import { getCurrencyForCountry } from '../../utils/currencyUtils';
 const MenuManagementScreen = () => {
   const navigation = useNavigation();
   const { businessData } = useBusinessContext();
+  const { currency: currencyFromContext } = useCurrency();
   const { 
     menuItems, 
     categories, 
@@ -42,9 +44,16 @@ const MenuManagementScreen = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
   
-  // Currency configuration using comprehensive utility
+  // Use currency from context instead of utility function
   const country = businessData?.businessCountry || 'SS';
-  const currency = getCurrencyForCountry(country);
+  const currencyFromUtility = getCurrencyForCountry(country);
+  const currency = currencyFromContext || currencyFromUtility;
+  
+  console.log('📱 [MenuManagementScreen] === CURRENCY DEBUG ===');
+  console.log('📱 [MenuManagementScreen] Currency from context:', currencyFromContext);
+  console.log('📱 [MenuManagementScreen] Currency from utility:', currencyFromUtility);
+  console.log('📱 [MenuManagementScreen] Final currency being used:', currency);
+  console.log('📱 [MenuManagementScreen] Business country:', country);
   
 
   useEffect(() => {

@@ -7,6 +7,7 @@ const CurrencyContext = createContext();
 export const useCurrency = () => {
   const context = useContext(CurrencyContext);
   if (!context) {
+    console.log('💰 [useCurrency] WARNING: No CurrencyContext found, returning defaults');
     return {
       currency: {
         code: 'USD',
@@ -18,6 +19,7 @@ export const useCurrency = () => {
       isLoading: false
     };
   }
+  console.log('💰 [useCurrency] Context found, currency:', context.currency);
   return context;
 };
 
@@ -34,19 +36,34 @@ export const CurrencyProvider = ({ children }) => {
   }, []);
 
   const loadCurrency = async () => {
-    console.log('💰 [CurrencyContext] Loading currency preference...');
+    console.log('💰 [CurrencyContext] === CURRENCY LOAD START ===');
+    console.log('💰 [CurrencyContext] Initial state:', { currency, isLoading });
     
     try {
       // Try to load from AsyncStorage first for offline support
+      console.log('💰 [CurrencyContext] Checking AsyncStorage for cached currency...');
       const cachedCurrency = await AsyncStorage.getItem('user_currency');
       if (cachedCurrency) {
         const parsed = JSON.parse(cachedCurrency);
+        console.log('💰 [CurrencyContext] ✅ Found cached currency:', parsed);
         setCurrency(parsed);
-        console.log('💰 [CurrencyContext] Loaded from cache:', parsed);
+      } else {
+        console.log('💰 [CurrencyContext] ⚠️ No cached currency found');
       }
 
       // Then fetch from API to get latest
-      const response = await api.get('/api/users/profile/');
+      console.log('💰 [CurrencyContext] Fetching from API: /users/me/');
+      const response = await api.get('/users/me/');
+      
+      console.log('💰 [CurrencyContext] API Response received');
+      console.log('💰 [CurrencyContext] Response data keys:', Object.keys(response.data || {}));
+      console.log('💰 [CurrencyContext] Currency fields in response:');
+      console.log('  - preferred_currency_code:', response.data?.preferred_currency_code);
+      console.log('  - preferred_currency_name:', response.data?.preferred_currency_name);
+      console.log('  - preferred_currency_symbol:', response.data?.preferred_currency_symbol);
+      console.log('  - country:', response.data?.country);
+      console.log('  - country_name:', response.data?.country_name);
+      
       if (response.data) {
         const newCurrency = {
           code: response.data.preferred_currency_code || 'USD',
@@ -54,15 +71,31 @@ export const CurrencyProvider = ({ children }) => {
           symbol: response.data.preferred_currency_symbol || '$'
         };
         
+        console.log('💰 [CurrencyContext] Constructed currency object:', newCurrency);
+        console.log('💰 [CurrencyContext] Using defaults?', {
+          code: !response.data.preferred_currency_code,
+          name: !response.data.preferred_currency_name,
+          symbol: !response.data.preferred_currency_symbol
+        });
+        
         setCurrency(newCurrency);
         await AsyncStorage.setItem('user_currency', JSON.stringify(newCurrency));
-        console.log('💰 [CurrencyContext] Updated from API:', newCurrency);
+        console.log('💰 [CurrencyContext] ✅ Currency updated and cached');
+      } else {
+        console.log('💰 [CurrencyContext] ⚠️ No data in API response');
       }
     } catch (error) {
-      console.error('💰 [CurrencyContext] Error loading currency:', error);
+      console.error('💰 [CurrencyContext] ❌ Error loading currency:', error);
+      console.error('💰 [CurrencyContext] Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       // Keep default or cached currency
     } finally {
       setIsLoading(false);
+      console.log('💰 [CurrencyContext] === CURRENCY LOAD END ===');
+      console.log('💰 [CurrencyContext] Final currency state:', currency);
     }
   };
 
@@ -71,7 +104,7 @@ export const CurrencyProvider = ({ children }) => {
       setIsLoading(true);
       
       // Update in backend
-      const response = await api.patch('/api/users/profile/', {
+      const response = await api.patch('/users/me/', {
         preferred_currency_code: newCurrency.code,
         preferred_currency_name: newCurrency.name,
         preferred_currency_symbol: newCurrency.symbol

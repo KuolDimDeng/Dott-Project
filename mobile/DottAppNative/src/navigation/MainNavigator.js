@@ -51,6 +51,8 @@ import TransportScreen from '../screens/business/TransportScreen';
 import TablesScreen from '../screens/business/TablesScreen';
 import DeliveryScreen from '../screens/business/DeliveryScreen';
 import MarketplaceProfileEditor from '../screens/business/MarketplaceProfileEditor';
+import ReceiptScreen from '../screens/business/ReceiptScreen';
+import TransactionDetailScreen from '../screens/business/TransactionDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -149,6 +151,8 @@ export default function MainNavigator() {
       <Stack.Screen name="Jobs" component={JobsScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="Transactions" component={TransactionsScreen} />
+      <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+      <Stack.Screen name="Receipt" component={ReceiptScreen} />
       <Stack.Screen name="Customers" component={CustomersScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="WhatsApp" component={WhatsAppScreen} />

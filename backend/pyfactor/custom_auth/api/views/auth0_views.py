@@ -595,6 +595,46 @@ class Auth0UserProfileView(APIView):
             except Exception as e:
                 logger.warning(f"🔥 [USER_PROFILE] Error checking Stripe: {e}")
             
+            # Get user's currency preferences
+            preferred_currency_code = 'USD'
+            preferred_currency_name = 'US Dollar'
+            preferred_currency_symbol = '$'
+            
+            logger.info(f"🔥💰 [USER_PROFILE] === CURRENCY RESOLUTION START ===")
+            logger.info(f"🔥💰 [USER_PROFILE] User ID: {user.id}, Email: {user.email}")
+            
+            try:
+                from users.models import UserProfile
+                user_profile = UserProfile.objects.filter(user=user).first()
+                
+                if user_profile:
+                    logger.info(f"🔥💰 [USER_PROFILE] UserProfile found for user {user.id}")
+                    logger.info(f"🔥💰 [USER_PROFILE] Profile fields:")
+                    logger.info(f"  - preferred_currency_code: '{user_profile.preferred_currency_code}'")
+                    logger.info(f"  - preferred_currency_name: '{user_profile.preferred_currency_name}'")
+                    logger.info(f"  - preferred_currency_symbol: '{user_profile.preferred_currency_symbol}'")
+                    logger.info(f"  - country: '{user_profile.country}'")
+                    
+                    preferred_currency_code = user_profile.preferred_currency_code or 'USD'
+                    preferred_currency_name = user_profile.preferred_currency_name or 'US Dollar'
+                    preferred_currency_symbol = user_profile.preferred_currency_symbol or '$'
+                    
+                    logger.info(f"🔥💰 [USER_PROFILE] After defaults applied:")
+                    logger.info(f"  - Using code: '{preferred_currency_code}'")
+                    logger.info(f"  - Using name: '{preferred_currency_name}'")
+                    logger.info(f"  - Using symbol: '{preferred_currency_symbol}'")
+                else:
+                    logger.warning(f"🔥💰 [USER_PROFILE] No UserProfile found for user {user.id}")
+                    logger.info(f"🔥💰 [USER_PROFILE] Using defaults: USD / US Dollar / $")
+            except Exception as e:
+                logger.error(f"🔥💰 [USER_PROFILE] Error getting currency preferences: {e}")
+                logger.error(f"🔥💰 [USER_PROFILE] Exception type: {type(e).__name__}")
+                import traceback
+                logger.error(f"🔥💰 [USER_PROFILE] Traceback: {traceback.format_exc()}")
+            
+            logger.info(f"🔥💰 [USER_PROFILE] === CURRENCY RESOLUTION END ===")
+            logger.info(f"🔥💰 [USER_PROFILE] Final currency: {preferred_currency_code} ({preferred_currency_symbol})")
+            
             response_data = {
                 'user': {
                     'id': user.pk,
@@ -615,6 +655,10 @@ class Auth0UserProfileView(APIView):
                 'country': business_country,  # Add country code
                 'state': business_state,  # Add state
                 'country_name': business_country_name,  # Add country name
+                # Add currency preferences
+                'preferred_currency_code': preferred_currency_code,
+                'preferred_currency_name': preferred_currency_name,
+                'preferred_currency_symbol': preferred_currency_symbol,
                 'onboarding_status': onboarding_progress.onboarding_status if onboarding_progress else 'business_info',
                 'setup_done': setup_done,
                 # Add these fields at top level for frontend compatibility
@@ -643,6 +687,10 @@ class Auth0UserProfileView(APIView):
                 }
             }
             
+            logger.info(f"🔥💰 [USER_PROFILE] Currency in final response:")
+            logger.info(f"  - preferred_currency_code: {response_data.get('preferred_currency_code')}")
+            logger.info(f"  - preferred_currency_name: {response_data.get('preferred_currency_name')}")
+            logger.info(f"  - preferred_currency_symbol: {response_data.get('preferred_currency_symbol')}")
             logger.info(f"🔥 [USER_PROFILE] Final response data: {response_data}")
             logger.info("🔥 [USER_PROFILE] === USER PROFILE LOOKUP COMPLETE ===")
             

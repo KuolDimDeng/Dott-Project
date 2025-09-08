@@ -32,6 +32,11 @@ const AddMenuItemModal = ({
   const { currency } = useCurrency();
   const currencySymbol = currency?.symbol || '$';
   
+  console.log('🍔 [AddMenuItemModal] === CURRENCY CHECK ===');
+  console.log('🍔 [AddMenuItemModal] Currency from context:', currency);
+  console.log('🍔 [AddMenuItemModal] Currency symbol being used:', currencySymbol);
+  console.log('🍔 [AddMenuItemModal] Is using default?', !currency?.symbol);
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',

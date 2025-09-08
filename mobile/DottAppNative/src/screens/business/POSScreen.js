@@ -20,7 +20,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useMenuContext } from '../../context/MenuContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useBusinessContext } from '../../context/BusinessContext';
+import QRScanner from '../../components/QRScanner';
 import api from '../../services/api';
+import dottPayApi from '../../services/dottPayApi';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -28,6 +31,7 @@ export default function POSScreen() {
   const navigation = useNavigation();
   const { menuItems, categories: menuCategories, getAvailableMenuItems } = useMenuContext();
   const { currency } = useCurrency();
+  const { businessData } = useBusinessContext();
   
   // Main States
   const [cart, setCart] = useState([]);
@@ -53,6 +57,8 @@ export default function POSScreen() {
   const [discountValue, setDiscountValue] = useState(0);
   const [cashReceived, setCashReceived] = useState('');
   const [customerNote, setCustomerNote] = useState('');
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [dottPayCustomer, setDottPayCustomer] = useState(null);
   
   // Calculation States
   const [subtotal, setSubtotal] = useState(0);
@@ -229,6 +235,110 @@ export default function POSScreen() {
   const handleQuickCash = (amount) => {
     setCashReceived(amount.toString());
     setShowQuickCash(false);
+  };
+
+  const handleQRScan = async (qrData) => {
+    try {
+      setShowQRScanner(false);
+      setProcessing(true);
+      
+      // First create the POS transaction to get its ID
+      let posTransactionId = null;
+      try {
+        // Convert discount to percentage if it's an amount
+        let discountPercentage = 0;
+        if (discountType === 'percentage') {
+          discountPercentage = discountValue;
+        } else if (discountType === 'amount' && subtotal > 0) {
+          discountPercentage = (discountValue / subtotal) * 100;
+        }
+
+        // Calculate tax rate from tax amount
+        const taxRate = subtotal > 0 ? (tax / (subtotal - discount)) * 100 : 0;
+
+        const posTransactionData = {
+          items: cart.map(item => ({
+            id: item.id,
+            type: 'product',
+            quantity: item.quantity,
+            unit_price: item.price,
+          })),
+          customer_id: null, // Will be updated after Dott Pay confirms
+          payment_method: 'dott_pay',
+          amount_tendered: total,
+          discount_percentage: discountPercentage,
+          tax_rate: taxRate,
+          notes: 'Dott Pay transaction - pending confirmation',
+          currency_code: currency?.code || 'USD',
+          currency_symbol: currency?.symbol || '$',
+          status: 'pending',
+        };
+
+        const posResponse = await api.post('/pos/transactions/', posTransactionData);
+        posTransactionId = posResponse.data.id;
+      } catch (posError) {
+        console.error('Error creating POS transaction:', posError);
+      }
+      
+      // Process the Dott Pay payment
+      const paymentResult = await dottPayApi.scanAndPay(
+        qrData,
+        total,
+        currency?.code || 'USD',
+        posTransactionId,
+        `Payment at ${businessData?.business_name || 'Business'}`
+      );
+      
+      if (paymentResult.success) {
+        // Update POS transaction if needed
+        if (posTransactionId && paymentResult.status === 'approved') {
+          await api.patch(`/pos/transactions/${posTransactionId}/`, {
+            status: 'completed',
+            customer_email: paymentResult.consumer?.email,
+          });
+        }
+        
+        Alert.alert(
+          'Payment Successful',
+          `Dott Pay transaction completed!\nCustomer: ${paymentResult.consumer?.email}\nAmount: ${currency?.symbol || '$'}${paymentResult.amount}`,
+          [
+            {
+              text: 'Print Receipt',
+              onPress: () => printReceipt({
+                ...paymentResult,
+                id: posTransactionId,
+              }),
+            },
+            {
+              text: 'New Sale',
+              onPress: () => resetPOS(),
+            },
+          ]
+        );
+      } else if (paymentResult.approval_required) {
+        Alert.alert(
+          'Approval Required',
+          `Transaction requires customer approval.\nCustomer: ${paymentResult.consumer?.email}\nAmount: ${currency?.symbol || '$'}${paymentResult.amount}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Could implement a polling mechanism to check status
+                resetPOS();
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Payment Failed', paymentResult.error || 'Unable to process Dott Pay transaction.');
+      }
+    } catch (error) {
+      console.error('Dott Pay error:', error);
+      Alert.alert('Payment Failed', 'Unable to process Dott Pay transaction. Please try again.');
+    } finally {
+      setProcessing(false);
+      setDottPayCustomer(null);
+    }
   };
 
   const processPayment = async () => {
@@ -548,6 +658,19 @@ export default function POSScreen() {
                     Mobile
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.methodButton, paymentMethod === 'dott_pay' && styles.methodActive]}
+                  onPress={() => {
+                    setPaymentMethod('dott_pay');
+                    setShowPaymentModal(false);
+                    setShowQRScanner(true);
+                  }}
+                >
+                  <Icon name="qr-code" size={24} color={paymentMethod === 'dott_pay' ? 'white' : '#666'} />
+                  <Text style={[styles.methodText, paymentMethod === 'dott_pay' && styles.methodTextActive]}>
+                    Dott Pay
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -799,6 +922,19 @@ export default function POSScreen() {
       {/* Modals */}
       {renderCustomerModal()}
       {renderPaymentModal()}
+      
+      {/* QR Scanner for Dott Pay */}
+      <QRScanner
+        visible={showQRScanner}
+        onClose={() => {
+          setShowQRScanner(false);
+          setPaymentMethod('cash'); // Reset to cash
+        }}
+        onScan={handleQRScan}
+        amount={total}
+        currency={currency}
+        businessName={businessData?.business_name || 'Business'}
+      />
 
       {/* Discount Modal */}
       <Modal
@@ -1335,13 +1471,14 @@ const styles = StyleSheet.create({
   },
   methodsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   methodButton: {
-    flex: 1,
+    width: '48%',
     alignItems: 'center',
     paddingVertical: 15,
-    marginHorizontal: 5,
+    marginBottom: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e1e8ed',

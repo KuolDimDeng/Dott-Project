@@ -113,66 +113,11 @@ export default function TransactionsScreen() {
       setTransactions(filteredTransactions);
     } catch (error) {
       console.error('Error loading transactions:', error);
-      // Set mock data for demonstration
-      setMockTransactions();
+      // No mock data - just show empty state
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const setMockTransactions = () => {
-    setTransactions([
-      {
-        id: 'TXN-001',
-        type: 'payment',
-        amount: 125.50,
-        status: 'completed',
-        customer: 'John Doe',
-        description: 'Payment for Invoice #INV-001',
-        date: new Date().toISOString(),
-        paymentMethod: 'card',
-      },
-      {
-        id: 'TXN-002',
-        type: 'refund',
-        amount: -45.00,
-        status: 'pending',
-        customer: 'Jane Smith',
-        description: 'Refund for Order #ORD-102',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        paymentMethod: 'card',
-      },
-      {
-        id: 'TXN-003',
-        type: 'payment',
-        amount: 289.99,
-        status: 'completed',
-        customer: 'Bob Johnson',
-        description: 'POS Sale',
-        date: new Date(Date.now() - 172800000).toISOString(),
-        paymentMethod: 'cash',
-      },
-      {
-        id: 'TXN-004',
-        type: 'payment',
-        amount: 75.25,
-        status: 'failed',
-        customer: 'Alice Brown',
-        description: 'Payment for Service',
-        date: new Date(Date.now() - 259200000).toISOString(),
-        paymentMethod: 'mobile_money',
-      },
-      {
-        id: 'TXN-005',
-        type: 'payout',
-        amount: -500.00,
-        status: 'completed',
-        customer: 'Bank Transfer',
-        description: 'Weekly Settlement',
-        date: new Date(Date.now() - 345600000).toISOString(),
-        paymentMethod: 'bank_transfer',
-      },
-    ]);
   };
 
   const onRefresh = async () => {

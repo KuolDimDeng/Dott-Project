@@ -1,303 +1,491 @@
-# Dott Mobile App (React Native) - Complete Documentation
+# DottAppNative - React Native Mobile Application
+*Version 1.0.0 - January 2025*
 
-## Overview
-DottAppNative is the official React Native mobile application for the Dott platform. It provides both consumer and business user experiences, including marketplace functionality, business management tools, and authentication.
-
-## Technical Stack
-- **Framework**: React Native 0.81.1
-- **React Version**: 19.1.0
-- **Navigation**: React Navigation 6.x (Stack + Bottom Tabs)
-- **State Management**: React Context API
-- **HTTP Client**: Axios
-- **Authentication**: Auth0 with custom OAuth implementation
-- **Storage**: AsyncStorage
-- **Icons**: React Native Vector Icons
-- **Geolocation**: @react-native-community/geolocation
-
-## Project Structure
-```
-src/
-├── assets/           # Images, icons, and static resources
-├── config/           # Configuration files (Auth0, API endpoints)
-├── context/          # React Context providers (Auth, Cart)
-├── data/             # Static data and constants
-├── navigation/       # Navigation components and routing
-├── screens/          # Screen components organized by feature
-│   ├── auth/         # Authentication screens
-│   ├── business/     # Business management screens
-│   └── consumer/     # Consumer-facing screens
-└── services/         # API services and HTTP clients
-```
-
-## Key Features
-
-### 1. Dual User Modes
-- **Consumer Mode**: Marketplace browsing, business discovery, cart functionality
-- **Business Mode**: Expense tracking, business management tools
-
-### 2. Authentication System
-- Auth0 integration with Authorization Code flow + PKCE
-- Custom session management with backend
-- Automatic token refresh and session persistence
-
-### 3. Marketplace Functionality
-- Location-based business discovery
-- City-specific filtering (currently set to Juba, South Sudan)
-- Category-based business browsing
-- Shopping cart with persistent storage
-- Real-time business data from backend API
-
-### 4. Navigation Architecture
-- Tab-based navigation for main features
-- Stack navigation for detailed flows
-- Context-aware navigation based on user mode
-
-## Environment Configuration
-
-### Current Setup (Staging)
-The app is configured to use the staging environment for development and testing:
-
-```javascript
-// API Configuration
-const API_BASE_URL = 'https://staging.dottapps.com/api';
-
-// Auth0 Configuration
-const AUTH0_CONFIG = {
-  domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
-  clientId: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG',
-  audience: 'https://staging.dottapps.com',
-};
-```
-
-### Files Updated for Staging Consistency
-- `/src/services/marketplaceApi.js` → `staging.dottapps.com/api`
-- `/src/services/api.js` → `staging.dottapps.com/api`  
-- `/src/context/AuthContext.js` → `staging.dottapps.com` (2 locations)
-- `/src/config/auth0.js` → `staging.dottapps.com` (2 locations)
-- `/src/screens/business/ExpensesScreen.js` → `staging.dottapps.com/api`
-
-### API Endpoints
-All API calls are routed through the staging environment:
-- **Base URL**: `https://staging.dottapps.com/api`
-- **Marketplace**: `/api/marketplace/consumer/search/`
-- **Authentication**: `/api/sessions/`
-- **Business APIs**: Various endpoints for business functionality
-
-## Installation & Setup
+## Quick Start Guide
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- React Native CLI
-- Xcode (for iOS development)
+- Node.js 18+ and npm/yarn
+- Xcode 14+ (for iOS development)
 - Android Studio (for Android development)
-- CocoaPods (for iOS dependencies)
+- CocoaPods (iOS: `sudo gem install cocoapods`)
 
-### Installation Steps
-1. Clone the repository
-2. Navigate to the mobile app directory:
-   ```bash
-   cd mobile/DottAppNative
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Install iOS dependencies:
-   ```bash
-   cd ios && pod install && cd ..
-   ```
-5. Run the app:
-   ```bash
-   # iOS
-   npx react-native run-ios
-   
-   # Android
-   npx react-native run-android
-   ```
+### Installation
+```bash
+# Install dependencies
+npm install
+
+# iOS specific
+cd ios && pod install && cd ..
+
+# Start Metro bundler
+npx react-native start --reset-cache
+
+# Run on iOS
+npx react-native run-ios
+
+# Run on Android
+npx react-native run-android
+```
+
+---
+
+## Core Features
+
+### 1. Business Management
+- **POS Terminal**: Complete point-of-sale system with multi-payment support
+- **Menu Management**: Add/edit/delete menu items with photos and pricing
+- **Staff Management**: Employee/staff CRUD operations with status tracking
+- **Transaction History**: View all sales, invoices, and payments
+- **Receipt System**: Generate, view, and send receipts (Email/SMS/WhatsApp)
+
+### 2. Restaurant-Specific Features
+- Custom menu for restaurant businesses
+- "Staff" terminology instead of "Employees"
+- Hidden features: Timesheets, Expenses, Invoices, Reports, Banking
+- Menu item management with categories
+- Real-time stock tracking
+
+### 3. Multi-Currency Support
+- 170+ currencies supported
+- User-preferred currency display
+- Automatic country-based currency detection
+- South Sudan (SSP), Kenya (KES), Nigeria (NGN) focus
+
+### 4. Offline Capabilities
+- Local data caching with AsyncStorage
+- Sync queue for failed operations
+- Automatic retry on reconnection
+- Conflict resolution strategies
+
+---
+
+## Architecture Overview
+
+### State Management
+```
+App.tsx
+  └── AuthProvider (Authentication)
+      └── BusinessProvider (Business data)
+          └── MenuProvider (Menu items)
+              └── CurrencyProvider (Currency settings)
+                  └── CartProvider (Shopping cart)
+```
+
+### API Integration
+- Base URL: `https://dott-api-staging.onrender.com/api`
+- Authentication: Session-based with `Session {session_id}` header
+- Timeout: 30 seconds
+- Retry logic for failed requests
+
+### Navigation Structure
+```
+MainNavigator
+  ├── TabNavigator
+  │   ├── Call
+  │   ├── Discover (Marketplace)
+  │   ├── Purchases
+  │   ├── Business (if has_business)
+  │   └── Account
+  └── StackNavigator (Business Screens)
+      ├── POS
+      ├── MenuManagement
+      ├── Employees/Staff
+      ├── Transactions
+      ├── TransactionDetail
+      ├── Receipt
+      └── ... other screens
+```
+
+---
 
 ## Key Components
 
-### Context Providers
-- **AuthContext**: Manages user authentication, session handling, and user mode
-- **CartContext**: Handles shopping cart state and persistent storage
+### BusinessMenuScreen
+- 3-column grid layout
+- Dynamic menu based on business type
+- Real-time online/offline status
+- Reduced header (10% height reduction)
+- Business type display under name
 
-### Services
-- **marketplaceApi.js**: Marketplace-specific API calls
-- **api.js**: General-purpose API client with session management
+### POSScreen
+- Product selection from menu
+- Cart management
+- Multiple payment methods (Cash, Card, Mobile Money)
+- Real-time total calculation
+- Receipt generation on completion
 
-### Navigation Structure
-- **MainNavigator**: Tab navigation with conditional rendering based on user mode
-- **AuthNavigator**: Stack navigation for authentication flows
+### TransactionsScreen
+- Combined view of all transaction types
+- Search and filter functionality
+- Transaction type filters (Payments, Refunds, Payouts)
+- Direct navigation to receipts
+- Pull-to-refresh
 
-## Authentication Flow
-1. User initiates login through Auth0
-2. Auth0 returns access token
-3. App exchanges token for backend session
-4. Session stored in AsyncStorage
-5. All API requests use session-based authentication
+### ReceiptScreen
+- Professional receipt layout
+- Business branding
+- Send via Email/SMS/WhatsApp
+- Print to PDF
+- Share functionality
 
-## Marketplace Implementation
+---
 
-### Business Discovery
-- Location-based filtering (currently: Juba, South Sudan)
-- Category-based browsing
-- Search functionality
-- Real-time data from PlaceholderBusiness model
+## Context Providers
 
-### Cart Functionality
-- Persistent cart storage across app sessions
-- Business-specific item organization
-- Quantity management
-- Cross-business cart support
-
-### Backend Integration
-The mobile app integrates with the marketplace backend through:
-- **ConsumerSearchViewSet** with new @action methods:
-  - `marketplace_businesses` - Get businesses filtered by city
-  - `marketplace_categories` - Get categories for user's city
-  - `featured_businesses` - Get featured businesses
-
-## Development Workflow
-
-### Environment Consistency
-The entire app is configured to use staging environment for consistency:
-- All API calls → `staging.dottapps.com`
-- Backend deployment → staging branch first
-- Testing → staging environment
-- Production deployment → main branch after staging verification
-
-### Testing Location
-For development and testing, the app is configured with:
-- **Test Location**: Juba, South Sudan
-- **Purpose**: Testing marketplace functionality with real business data
-- **Note**: Location can be changed in MarketplaceScreen.js
-
-## API Integration
-
-### Session Management
+### AuthContext
 ```javascript
-// Request interceptor adds session authentication
-config.headers.Authorization = `Session ${sessionId}`;
+// Available functions
+login(email, password)
+logout()
+refreshSession()
+
+// State
+user: { id, email, name, role, has_business }
+isAuthenticated: boolean
+isLoading: boolean
+sessionId: string
 ```
 
-### Error Handling
-- 401 errors trigger session cleanup and redirect to login
-- Network errors handled gracefully with user feedback
-- Comprehensive logging for debugging
+### BusinessContext
+```javascript
+// Functions
+getMenuItems() // Returns filtered menu for business type
+toggleOnlineStatus()
+fetchBusinessFeatures()
 
-## Build Configuration
+// State
+businessData: { businessName, businessType, isOnline }
+dynamicMenuItems: [] // From API
+```
 
-### Scripts Available
-```json
-{
-  "android": "react-native run-android",
-  "ios": "react-native run-ios", 
-  "start": "react-native start",
-  "setup:ios": "./setup-ios.sh"
+### MenuContext
+```javascript
+// Functions
+addMenuItem(item)
+updateMenuItem(id, updates)
+deleteMenuItem(id)
+toggleItemAvailability(id)
+retrySyncFailedItems()
+
+// State
+menuItems: []
+syncStatus: 'synced' | 'syncing' | 'error' | 'offline'
+failedSyncs: []
+```
+
+### CurrencyContext
+```javascript
+// Functions
+updateCurrency(newCurrency)
+refreshCurrency()
+formatAmount(amount)
+
+// State
+currency: { code, name, symbol }
+isLoading: boolean
+```
+
+---
+
+## API Endpoints Used
+
+### Authentication
+- `POST /auth/session-v2/` - Login
+- `DELETE /auth/session-v2/` - Logout
+- `GET /users/me/` - Get user profile with currency
+
+### Menu Management
+- `GET /menu/items/` - List menu items
+- `POST /menu/items/` - Create menu item
+- `PATCH /menu/items/{id}/` - Update item
+- `DELETE /menu/items/{id}/` - Delete item
+
+### POS & Transactions
+- `POST /pos/transactions/complete-sale/` - Complete POS sale
+- `GET /finance/transactions/` - List transactions
+- `GET /sales/invoices/` - List invoices
+- `GET /payments/transactions/` - List payments
+
+### Receipts
+- `POST /receipts/generate-pdf/` - Generate PDF receipt
+- `POST /receipts/send-email/` - Send via email
+- `POST /receipts/send-sms/` - Send via SMS
+- `POST /receipts/send-whatsapp/` - Send via WhatsApp
+
+### Business Features
+- `GET /users/business-features/` - Get feature flags
+- `GET /marketplace/business/status/` - Business status
+- `PATCH /marketplace/business/status/` - Update status
+
+---
+
+## Styling Guidelines
+
+### Color Palette
+```javascript
+const colors = {
+  primary: '#2563eb',      // Blue
+  success: '#10b981',      // Green
+  warning: '#f59e0b',      // Yellow
+  error: '#ef4444',        // Red
+  background: '#f8f9fa',   // Light gray
+  card: '#ffffff',         // White
+  text: '#1a1a1a',        // Dark gray
+  textSecondary: '#6b7280' // Medium gray
+};
+```
+
+### Component Structure
+```javascript
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+});
+```
+
+---
+
+## Error Handling
+
+### Global Error Boundary
+```javascript
+class ErrorBoundary extends React.Component {
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught:', error, errorInfo);
+    // Log to error tracking service
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return <ErrorScreen />;
+    }
+    return this.props.children;
+  }
 }
 ```
 
-### Dependencies Overview
-```json
-{
-  "@react-native-async-storage/async-storage": "^1.18.2",
-  "@react-native-community/geolocation": "^3.4.0",
-  "@react-navigation/bottom-tabs": "^6.5.11",
-  "@react-navigation/native": "^6.1.9",
-  "@react-navigation/stack": "^6.3.20",
-  "axios": "^1.6.2",
-  "react": "19.1.0",
-  "react-native": "0.81.1",
-  "react-native-auth0": "^4.6.0",
-  "react-native-vector-icons": "^10.0.0"
-}
+### API Error Handling
+```javascript
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized
+      AsyncStorage.clear();
+      navigation.navigate('Auth');
+    }
+    return Promise.reject(error);
+  }
+);
 ```
 
-### iOS Configuration
-- Custom setup script for iOS dependencies
-- CocoaPods integration for native dependencies
-- Proper signing and provisioning setup required
+---
 
-## Current Implementation Status
+## Performance Optimization
 
-### ✅ Completed Features
-- Authentication system fully implemented
-- Marketplace functionality integrated with backend
-- Cart system with persistent storage
-- Location-based business filtering
-- Consistent staging environment configuration
-- Session management with backend API
-- Bell and cart icons in marketplace header
-- City-based business filtering (Juba, South Sudan)
-- Search bar with placeholder text
-- Category-based business browsing
+### Image Optimization
+```javascript
+// Resize images before upload
+const resizedImage = await ImageResizer.createResizedImage(
+  uri,
+  800,  // maxWidth
+  800,  // maxHeight
+  'JPEG',
+  80    // quality
+);
+```
 
-### 📋 Next Steps
-1. Test marketplace functionality with staging data
-2. Implement order placement workflow
-3. Add push notifications
-4. Enhance business management features
-5. Production deployment preparation
+### List Optimization
+```javascript
+<FlatList
+  data={items}
+  keyExtractor={item => item.id}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={10}
+  windowSize={10}
+  initialNumToRender={10}
+  getItemLayout={(data, index) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+/>
+```
 
-## Key Architectural Decisions
+### Memoization
+```javascript
+const MemoizedComponent = React.memo(Component, (prevProps, nextProps) => {
+  return prevProps.id === nextProps.id;
+});
 
-### 1. Environment Consistency
-**Problem**: Mobile app was hitting production API while backend changes were on staging
-**Solution**: Updated all 6 files to consistently use `staging.dottapps.com` for development
+const memoizedValue = useMemo(() => 
+  expensiveCalculation(data), [data]
+);
+```
 
-### 2. Authentication Architecture
-**Choice**: Auth0 with custom backend session management
-**Benefits**: Industry-standard OAuth flow with custom session control
+---
 
-### 3. State Management
-**Choice**: React Context API instead of Redux
-**Rationale**: Simpler setup for the app's current complexity
+## Testing
 
-### 4. Navigation Pattern
-**Choice**: Tab navigation with conditional rendering
-**Benefits**: Different experiences for consumer vs business users
+### Manual Testing Checklist
+- [ ] Login/Logout flow
+- [ ] Business type detection
+- [ ] Menu filtering for restaurants
+- [ ] Currency display
+- [ ] POS transaction flow
+- [ ] Receipt generation
+- [ ] Offline mode
+- [ ] Sync after reconnection
+- [ ] Error states
+- [ ] Empty states
 
-## Important Notes
-- App currently configured for staging environment testing
-- Location set to Juba, South Sudan for marketplace testing
-- All backend changes must be deployed to staging first
-- Session-based authentication with 24-hour expiration
-- CORS configuration requires proper origin headers
+### Debug Tools
+```javascript
+// Enable debug logs
+if (__DEV__) {
+  console.log('Debug:', data);
+}
+
+// React DevTools
+// Shake device or Cmd+D (iOS) / Cmd+M (Android)
+
+// Network inspection
+XMLHttpRequest = GLOBAL.originalXMLHttpRequest 
+  ? GLOBAL.originalXMLHttpRequest 
+  : GLOBAL.XMLHttpRequest;
+```
+
+---
+
+## Deployment
+
+### iOS Release
+1. Update version in `ios/DottAppNative/Info.plist`
+2. Set build configuration to Release
+3. Archive in Xcode: Product > Archive
+4. Upload to App Store Connect
+
+### Android Release
+1. Update version in `android/app/build.gradle`
+2. Generate signed APK/AAB:
+   ```bash
+   cd android
+   ./gradlew bundleRelease
+   ```
+3. Upload to Google Play Console
+
+### Code Signing
+- iOS: Certificates in Xcode
+- Android: Keystore file in `android/app/`
+
+---
 
 ## Troubleshooting
 
 ### Common Issues
-1. **API 401 Errors**: Check session validity and authentication headers
-2. **404 Errors**: Ensure backend endpoints are deployed to correct environment
-3. **Build Failures**: Run `pod install` for iOS native dependencies
-4. **Location Services**: Enable location permissions for marketplace features
 
-### Development Commands
+**Metro Bundler Issues:**
 ```bash
-# Clean build
 npx react-native start --reset-cache
+```
 
-# iOS specific
-cd ios && pod install && cd ..
-npx react-native run-ios
+**iOS Build Failures:**
+```bash
+cd ios
+rm -rf Pods Podfile.lock
+pod cache clean --all
+pod install
+```
 
-# Android specific
+**Android Build Failures:**
+```bash
+cd android
+./gradlew clean
+cd ..
 npx react-native run-android
 ```
 
-## Security Considerations
-- Session tokens stored securely in AsyncStorage
-- Auth0 handles OAuth flow with PKCE
-- API requests use session-based authentication
-- Proper error handling for auth failures
+**State Not Updating:**
+- Check Context Provider wrapping
+- Verify AsyncStorage keys
+- Clear app data and restart
 
-## Performance Optimizations
-- AsyncStorage for persistent data
-- Context API for efficient state management
-- Lazy loading for navigation screens
-- Optimized image loading for business listings
+**API Calls Failing:**
+- Check network connectivity
+- Verify session token
+- Check API endpoint URLs
+- Review CORS settings
 
 ---
 
-*Last Updated: September 5, 2025*
-*Status: Active Development - Staging Environment*
+## Environment Variables
+
+### Development
+```javascript
+API_BASE_URL=http://localhost:8000/api
+```
+
+### Staging
+```javascript
+API_BASE_URL=https://dott-api-staging.onrender.com/api
+```
+
+### Production
+```javascript
+API_BASE_URL=https://api.dottapps.com/api
+```
+
+---
+
+## Contributing
+
+### Code Style
+- Use functional components with hooks
+- Implement proper error boundaries
+- Add loading states for async operations
+- Include empty states for lists
+- Comment complex logic
+- Use TypeScript for new components
+
+### Git Workflow
+```bash
+# Feature branch
+git checkout -b feature/new-feature
+git add .
+git commit -m "feat: description"
+git push origin feature/new-feature
+
+# Create PR to staging
+# After testing, merge to main
+```
+
+---
+
+## Resources
+
+- [React Native Docs](https://reactnative.dev/docs)
+- [React Navigation](https://reactnavigation.org/docs)
+- [Async Storage](https://react-native-async-storage.github.io/async-storage/docs)
+- [Vector Icons Directory](https://oblador.github.io/react-native-vector-icons/)
+
+---
+
+*For complete project documentation, see `/MOBILE_APP_BLUEPRINT.md`*

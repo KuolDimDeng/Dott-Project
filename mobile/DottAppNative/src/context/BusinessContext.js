@@ -413,6 +413,29 @@ export const BusinessProvider = ({ children }) => {
       console.log('📢 Added Advertise option for business:', advertiseOption);
     }
     
+    // Check if Transactions option exists
+    const hasTransactionsOption = menuItems.some(item => 
+      item.id === 'transactions' || 
+      item.screen === 'Transactions' ||
+      item.label?.toLowerCase().includes('transaction')
+    );
+    
+    console.log('💰 Has Transactions option already:', hasTransactionsOption);
+    
+    if (!hasTransactionsOption) {
+      // Add Transactions option for all businesses
+      const transactionsOption = {
+        id: 'transactions',
+        label: 'Transactions',
+        title: 'Transactions',
+        icon: 'receipt-outline',
+        screen: 'Transactions',
+        subtitle: 'View sales & payment history'
+      };
+      menuItems.push(transactionsOption);
+      console.log('💰 Added Transactions option for business:', transactionsOption);
+    }
+    
     console.log('🔍 Final menu items count:', menuItems.length);
     
     return menuItems;
