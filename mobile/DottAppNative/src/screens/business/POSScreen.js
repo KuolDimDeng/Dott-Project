@@ -101,21 +101,21 @@ export default function POSScreen() {
       // Load customers from API
       const customersRes = await api.get('/crm/customers/').catch(() => ({ data: { results: [] } }));
       const customersData = customersRes.data.results || customersRes.data || [];
-      setCustomers(customersData.length > 0 ? customersData : getMockCustomers());
+      setCustomers(customersData);
 
       // Use menu items from MenuContext (these include photos and costing data)
       const availableItems = getAvailableMenuItems();
-      setProducts(availableItems.length > 0 ? availableItems : getMockProducts());
+      setProducts(availableItems);
       
       // Use menu categories from MenuContext
-      setCategories(menuCategories.length > 0 ? menuCategories : getMockCategories());
+      setCategories(menuCategories);
       
     } catch (error) {
       console.error('Error loading POS data:', error);
-      // Fallback to menu items even on error
+      // Use menu items even on error
       setProducts(getAvailableMenuItems());
-      setCategories(menuCategories.length > 0 ? menuCategories : getMockCategories());
-      setCustomers(getMockCustomers());
+      setCategories(menuCategories);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }

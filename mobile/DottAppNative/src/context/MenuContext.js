@@ -17,98 +17,7 @@ export const MenuProvider = ({ children }) => {
   const [syncStatus, setSyncStatus] = useState('synced'); // 'synced', 'syncing', 'error', 'offline'
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [failedSyncs, setFailedSyncs] = useState([]);
-  const [menuItems, setMenuItems] = useState([
-    {
-      id: '1',
-      name: 'Grilled Chicken Breast',
-      description: 'Tender grilled chicken breast with rosemary herbs and garlic butter',
-      price: 24.99,
-      category: 'main_courses',
-      image: 'https://images.unsplash.com/photo-1532635241-17e820acc59f?w=400',
-      available: true,
-      vegetarian: false,
-      vegan: false,
-      glutenFree: true,
-      preparationTime: 25,
-      stock: 45,
-      sku: 'MC001',
-    },
-    {
-      id: '2',
-      name: 'Caesar Salad',
-      description: 'Fresh romaine lettuce with parmesan cheese and homemade caesar dressing',
-      price: 16.99,
-      category: 'appetizers',
-      image: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400',
-      available: true,
-      vegetarian: true,
-      vegan: false,
-      glutenFree: false,
-      preparationTime: 10,
-      stock: 30,
-      sku: 'APP001',
-    },
-    {
-      id: '3',
-      name: 'Chocolate Lava Cake',
-      description: 'Warm chocolate cake with molten center, served with vanilla ice cream',
-      price: 12.99,
-      category: 'desserts',
-      image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400',
-      available: true,
-      vegetarian: true,
-      vegan: false,
-      glutenFree: false,
-      preparationTime: 20,
-      stock: 25,
-      sku: 'DES001',
-    },
-    {
-      id: '4',
-      name: 'Americano',
-      description: 'Rich black coffee made with espresso and hot water',
-      price: 4.50,
-      category: 'coffee',
-      image: 'https://images.unsplash.com/photo-1545665225-b23b99e4d45e?w=400',
-      available: true,
-      vegetarian: true,
-      vegan: true,
-      glutenFree: true,
-      preparationTime: 5,
-      stock: 120,
-      sku: 'COF001',
-    },
-    {
-      id: '5',
-      name: 'Margherita Pizza',
-      description: 'Classic pizza with fresh mozzarella, tomato sauce, and basil',
-      price: 18.99,
-      category: 'main_courses',
-      image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400',
-      available: true,
-      vegetarian: true,
-      vegan: false,
-      glutenFree: false,
-      preparationTime: 18,
-      stock: 35,
-      sku: 'MC002',
-    },
-    {
-      id: '6',
-      name: 'Fresh Orange Juice',
-      description: 'Freshly squeezed orange juice',
-      price: 6.99,
-      category: 'beverages',
-      image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400',
-      available: true,
-      vegetarian: true,
-      vegan: true,
-      glutenFree: true,
-      preparationTime: 3,
-      stock: 80,
-      sku: 'BEV001',
-    },
-  ]);
+  const [menuItems, setMenuItems] = useState([]);
 
   const [categories, setCategories] = useState([
     { id: 'all', name: 'All Items', count: 0, icon: 'grid-outline' },
@@ -177,9 +86,9 @@ export const MenuProvider = ({ children }) => {
           setFailedSyncs(unsynced);
         }
       } else {
-        console.log('🍽️ MenuContext: Using default menu items');
+        console.log('🍽️ MenuContext: No menu items available');
         setSyncStatus('offline');
-        // Keep the default items as fallback
+        setMenuItems([]); // Start with empty menu, user needs to add items
       }
     } catch (error) {
       console.error('Error loading menu items:', error);
