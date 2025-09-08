@@ -24,7 +24,7 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from users.models import UserProfile, Business, BusinessDetails
-from tenants.models import Tenant
+from custom_auth.models import Tenant
 from django.db import transaction
 
 User = get_user_model()
@@ -179,18 +179,22 @@ def create_support_user_profile():
             else:
                 print(f"✅ UserProfile already has business: {profile.business.name}")
             
-            # Ensure user has tenant
-            if not hasattr(support_user, 'tenant') or not support_user.tenant:
-                if profile.business and profile.business.tenant:
-                    support_user.tenant = profile.business.tenant
+            # Ensure user has tenant_id
+            if not hasattr(support_user, 'tenant_id') or not support_user.tenant_id:
+                if profile.business and hasattr(profile.business, 'tenant_id'):
+                    support_user.tenant_id = profile.business.tenant_id
                     support_user.save()
-                    print(f"✅ Set tenant for support user: {support_user.tenant.name}")
+                    print(f"✅ Set tenant_id for support user: {support_user.tenant_id}")
+                elif tenant:
+                    support_user.tenant_id = tenant.id
+                    support_user.save()
+                    print(f"✅ Set tenant_id for support user: {support_user.tenant_id}")
             
             print("\n🎉 Successfully set up support user profile!")
             print(f"   User: {support_user.email}")
             print(f"   Profile: {profile.first_name} {profile.last_name}")
             print(f"   Business: {profile.business.name if profile.business else 'None'}")
-            print(f"   Tenant: {support_user.tenant.name if hasattr(support_user, 'tenant') and support_user.tenant else 'None'}")
+            print(f"   Tenant ID: {support_user.tenant_id if hasattr(support_user, 'tenant_id') else 'None'}")
             
             return True
             
