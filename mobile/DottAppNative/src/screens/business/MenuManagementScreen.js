@@ -221,7 +221,7 @@ const MenuManagementScreen = () => {
 
   const renderMenuItem = ({ item }) => (
     <TouchableOpacity 
-      style={[styles.menuItem, !item.available && styles.unavailableItem]}
+      style={[styles.menuItem, item.available === false && styles.unavailableItem]}
       onPress={() => handleEditItem(item)}
     >
       <View style={styles.itemLeft}>
@@ -233,7 +233,7 @@ const MenuManagementScreen = () => {
               <Icon name="image-outline" size={32} color="#9ca3af" />
             </View>
           )}
-          {!item.available && (
+          {item.available === false && (
             <View style={styles.unavailableOverlay}>
               <Text style={styles.unavailableText}>Unavailable</Text>
             </View>
@@ -279,17 +279,17 @@ const MenuManagementScreen = () => {
               )}
               
               <View style={styles.dietaryTags}>
-                {item.vegetarian && (
+                {item.vegetarian === true && (
                   <View style={[styles.tag, styles.vegTag]}>
                     <Text style={styles.tagText}>V</Text>
                   </View>
                 )}
-                {item.vegan && (
+                {item.vegan === true && (
                   <View style={[styles.tag, styles.veganTag]}>
                     <Text style={styles.tagText}>VG</Text>
                   </View>
                 )}
-                {item.glutenFree && (
+                {item.glutenFree === true && (
                   <View style={[styles.tag, styles.gfTag]}>
                     <Text style={styles.tagText}>GF</Text>
                   </View>
@@ -307,16 +307,16 @@ const MenuManagementScreen = () => {
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.statusButton, item.available ? styles.activeStatus : styles.inactiveStatus]}
+                style={[styles.statusButton, item.available !== false ? styles.activeStatus : styles.inactiveStatus]}
                 onPress={() => toggleItemAvailability(item.id)}
               >
                 <Icon 
-                  name={item.available ? 'checkmark-circle' : 'pause-circle'} 
+                  name={item.available !== false ? 'checkmark-circle' : 'pause-circle'} 
                   size={16} 
                   color="white" 
                 />
                 <Text style={styles.statusButtonText}>
-                  {item.available ? 'Active' : 'Inactive'}
+                  {item.available !== false ? 'Active' : 'Inactive'}
                 </Text>
               </TouchableOpacity>
               
