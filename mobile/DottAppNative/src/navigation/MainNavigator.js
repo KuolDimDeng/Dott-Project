@@ -82,6 +82,9 @@ function TabNavigator() {
             case 'Discover':
               iconName = focused ? 'compass' : 'compass-outline';
               break;
+            case 'QR':
+              iconName = focused ? 'qr-code' : 'qr-code-outline';
+              break;
             case 'Purchases':
               iconName = focused ? 'receipt' : 'receipt-outline';
               break;
@@ -118,6 +121,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Call" component={CallScreen} />
       <Tab.Screen name="Discover" component={MarketplaceScreen} />
+      <Tab.Screen name="QR" component={DualQRScreen} />
       {!hasBusiness ? (
         <Tab.Screen name="Purchases" component={PurchasesScreen} />
       ) : (

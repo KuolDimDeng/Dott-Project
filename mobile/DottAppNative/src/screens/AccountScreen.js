@@ -41,14 +41,20 @@ export default function AccountScreen({ navigation }) {
       // Business users get unified account with all features
       return [
         {
+          title: 'Payment',
+          items: [
+            { icon: 'qr-code-outline', title: 'Dott Pay QR', subtitle: 'Your payment & receive QR codes', screen: 'DualQR' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
+          ]
+        },
+        {
           title: 'Personal',
           items: [
             { icon: 'person', title: 'Personal Info', subtitle: 'Your profile details' },
             { icon: 'receipt', title: 'Order History', subtitle: 'Your marketplace purchases' },
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your delivery locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items and businesses' },
-            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
-            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
@@ -76,14 +82,20 @@ export default function AccountScreen({ navigation }) {
       // Non-business users get consumer menu
       return [
         {
+          title: 'Payment',
+          items: [
+            { icon: 'qr-code-outline', title: 'Dott Pay QR', subtitle: 'Send & receive payments', screen: 'DualQR' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
+          ]
+        },
+        {
           title: 'Personal',
           items: [
             { icon: 'person', title: 'Personal Info', subtitle: 'Your profile details' },
             { icon: 'receipt', title: 'Order History', subtitle: 'Your purchases' },
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items' },
-            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
-            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
