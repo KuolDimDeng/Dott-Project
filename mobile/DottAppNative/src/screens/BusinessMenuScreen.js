@@ -217,6 +217,7 @@ export default function BusinessMenuScreen() {
   // Complete menu items from HTML version
   const ALL_MENU_ITEMS = [
     // Row 1 - Core Operations
+    { icon: 'qr-code-outline', title: 'Dott Pay QR', color: '#2563eb', screen: 'DualQR' },
     { icon: 'card-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
     { icon: 'cube-outline', title: 'Inventory', color: '#ec4899', screen: 'Inventory' },
     { icon: 'cash-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },
@@ -258,24 +259,24 @@ export default function BusinessMenuScreen() {
   // Business type feature configuration
   const BUSINESS_TYPE_FEATURES = {
     'RESTAURANT_CAFE': {
-      enabled: ['POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise'],
-      highlighted: ['POS Terminal']
+      enabled: ['Dott Pay QR', 'POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise'],
+      highlighted: ['Dott Pay QR', 'POS Terminal']
     },
     'RETAIL': {
-      enabled: ['POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
-      highlighted: ['Inventory', 'POS Terminal']
+      enabled: ['Dott Pay QR', 'POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
+      highlighted: ['Dott Pay QR', 'Inventory', 'POS Terminal']
     },
     'SERVICE': {
-      enabled: ['Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Expenses', 'Banking', 'Reports', 'Advertise'],
-      highlighted: ['Jobs', 'Services']
+      enabled: ['Dott Pay QR', 'Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Expenses', 'Banking', 'Reports', 'Advertise'],
+      highlighted: ['Dott Pay QR', 'Jobs', 'Services']
     },
     'TRANSPORT': {
       enabled: ['Transport', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'HR', 'Reports', 'Advertise'],
       highlighted: ['Transport']
     },
     'OTHER': {
-      enabled: ['POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'Invoices', 'Banking', 'Reports', 'Advertise'],
-      highlighted: []
+      enabled: ['Dott Pay QR', 'POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'Invoices', 'Banking', 'Reports', 'Advertise'],
+      highlighted: ['Dott Pay QR']
     }
   };
 
@@ -348,6 +349,7 @@ export default function BusinessMenuScreen() {
           'MenuManagement': '#8b5cf6', // purple for menu
           'Employees': '#8b5cf6', // purple for employees
           'Timesheet': '#14b8a6', // teal for timesheet
+          'DualQR': '#2563eb', // blue for dual QR
         };
         
         return {
@@ -452,6 +454,7 @@ export default function BusinessMenuScreen() {
       'Invoices': '#F3F4F6', // light gray
       'Jobs': '#FFEDD5', // light orange
       'Payroll': '#DBEAFE', // light blue
+      'DualQR': '#DBEAFE', // light blue for dual QR
     };
     return colors[screen] || '#F3F4F6';
   };
@@ -478,6 +481,7 @@ export default function BusinessMenuScreen() {
       'Invoices': '#6B7280', // gray
       'Jobs': '#EA580C', // dark orange
       'Payroll': '#3B82F6', // blue
+      'DualQR': '#2563EB', // primary blue for dual QR
     };
     return colors[screen] || '#6B7280';
   };

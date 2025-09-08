@@ -54,6 +54,11 @@ import MarketplaceProfileEditor from '../screens/business/MarketplaceProfileEdit
 import ReceiptScreen from '../screens/business/ReceiptScreen';
 import TransactionDetailScreen from '../screens/business/TransactionDetailScreen';
 
+// Import Dual QR Payment screens
+import DualQRScreen from '../screens/DualQRScreen';
+import QRScannerScreen from '../screens/QRScannerScreen';
+import P2PPaymentScreen from '../screens/P2PPaymentScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -169,6 +174,10 @@ export default function MainNavigator() {
       <Stack.Screen name="Tables" component={TablesScreen} />
       <Stack.Screen name="Delivery" component={DeliveryScreen} />
       <Stack.Screen name="MarketplaceSettings" component={MarketplaceProfileEditor} />
+      {/* Dual QR Payment screens */}
+      <Stack.Screen name="DualQR" component={DualQRScreen} />
+      <Stack.Screen name="QRScanner" component={QRScannerScreen} />
+      <Stack.Screen name="P2PPayment" component={P2PPaymentScreen} />
     </Stack.Navigator>
   );
 }
