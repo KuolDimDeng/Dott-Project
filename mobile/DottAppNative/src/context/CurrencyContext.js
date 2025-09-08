@@ -112,8 +112,10 @@ export const CurrencyProvider = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Update in backend
-      const response = await api.patch('/users/me/', {
+      // Try updating preferences endpoint
+      console.log('💰 [CurrencyContext] Attempting to update currency to:', newCurrency);
+      
+      const response = await api.post('/users/preferences/', {
         preferred_currency_code: newCurrency.code,
         preferred_currency_name: newCurrency.name,
         preferred_currency_symbol: newCurrency.symbol
