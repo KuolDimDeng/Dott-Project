@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-import { CURRENCIES } from '../utils/currencyUtils';
+import { CURRENCIES, COUNTRY_CURRENCY_MAP } from '../utils/currencyUtils';
 
 const CurrencyContext = createContext();
 
@@ -44,6 +44,8 @@ export const CurrencyProvider = ({ children }) => {
       // Try to load from AsyncStorage first for offline support
       console.log('💰 [CurrencyContext] Checking AsyncStorage for cached currency...');
       const cachedCurrency = await AsyncStorage.getItem('user_currency');
+      const isExplicitlySet = await AsyncStorage.getItem('user_currency_explicit');
+      
       if (cachedCurrency) {
         const parsed = JSON.parse(cachedCurrency);
         // Update symbol from CURRENCIES mapping if available
@@ -51,6 +53,7 @@ export const CurrencyProvider = ({ children }) => {
           parsed.symbol = CURRENCIES[parsed.code].symbol;
         }
         console.log('💰 [CurrencyContext] ✅ Found cached currency:', parsed);
+        console.log('💰 [CurrencyContext] Explicitly set?', isExplicitlySet === 'true');
         setCurrency(parsed);
       } else {
         console.log('💰 [CurrencyContext] ⚠️ No cached currency found');
@@ -70,13 +73,46 @@ export const CurrencyProvider = ({ children }) => {
       console.log('  - country_name:', response.data?.country_name);
       
       if (response.data) {
-        const currencyCode = response.data.preferred_currency_code || 'USD';
+        const country = response.data.country;
+        const apiCurrencyCode = response.data.preferred_currency_code;
+        
+        // Check if user has explicitly set a preference locally
+        const isExplicitlySet = await AsyncStorage.getItem('user_currency_explicit');
+        
+        let currencyCode;
+        if (isExplicitlySet === 'true' && cachedCurrency) {
+          // User has explicitly set a preference, respect it
+          const parsed = JSON.parse(cachedCurrency);
+          currencyCode = parsed.code;
+          console.log('💰 [CurrencyContext] Using explicitly set currency preference:', currencyCode);
+        } else {
+          // Check if this is likely a default USD that should be overridden
+          // If the country has its own currency but API returns USD, use country currency
+          const countryDefaultCurrency = COUNTRY_CURRENCY_MAP[country];
+          const isLikelyDefault = apiCurrencyCode === 'USD' && 
+                                 countryDefaultCurrency && 
+                                 countryDefaultCurrency !== 'USD';
+          
+          if (isLikelyDefault) {
+            // API returned USD but country has its own currency, use country default
+            currencyCode = countryDefaultCurrency;
+            console.log('💰 [CurrencyContext] Overriding default USD with country currency:', currencyCode, 'for country:', country);
+          } else if (apiCurrencyCode) {
+            // Use the API-provided currency (either explicit preference or appropriate default)
+            currencyCode = apiCurrencyCode;
+            console.log('💰 [CurrencyContext] Using API currency preference:', currencyCode);
+          } else {
+            // No currency from API, use country default or USD
+            currencyCode = countryDefaultCurrency || 'USD';
+            console.log('💰 [CurrencyContext] No API currency, using country default:', currencyCode, 'for country:', country);
+          }
+        }
         
         // Use proper symbol from CURRENCIES mapping if available
         const currencyData = CURRENCIES[currencyCode];
         const newCurrency = {
           code: currencyCode,
-          name: response.data.preferred_currency_name || currencyData?.name || 'US Dollar',
+          name: currencyData?.name || response.data.preferred_currency_name || 'US Dollar',
           symbol: currencyData?.symbol || response.data.preferred_currency_symbol || '$'
         };
         
@@ -112,20 +148,27 @@ export const CurrencyProvider = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Try updating preferences endpoint
-      console.log('💰 [CurrencyContext] Attempting to update currency to:', newCurrency);
+      // Save to local storage immediately for better UX
+      setCurrency(newCurrency);
+      await AsyncStorage.setItem('user_currency', JSON.stringify(newCurrency));
+      await AsyncStorage.setItem('user_currency_explicit', 'true'); // Mark as explicitly set
       
-      const response = await api.post('/users/preferences/', {
-        preferred_currency_code: newCurrency.code,
-        preferred_currency_name: newCurrency.name,
-        preferred_currency_symbol: newCurrency.symbol
-      });
+      console.log('💰 [CurrencyContext] Currency updated locally to:', newCurrency);
       
-      if (response.data) {
-        setCurrency(newCurrency);
-        await AsyncStorage.setItem('user_currency', JSON.stringify(newCurrency));
-        console.log('💰 [CurrencyContext] Currency updated:', newCurrency);
+      // Try to update backend (might fail but local change persists)
+      try {
+        const response = await api.post('/users/preferences/', {
+          preferred_currency_code: newCurrency.code,
+          preferred_currency_name: newCurrency.name,
+          preferred_currency_symbol: newCurrency.symbol
+        });
+        console.log('💰 [CurrencyContext] Backend update successful');
+      } catch (apiError) {
+        console.log('💰 [CurrencyContext] Backend update failed, but local currency saved:', apiError.message);
+        // Don't throw - local update succeeded
       }
+      
+      return true; // Success
     } catch (error) {
       console.error('💰 [CurrencyContext] Error updating currency:', error);
       throw error;
