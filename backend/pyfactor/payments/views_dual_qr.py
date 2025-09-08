@@ -13,7 +13,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from custom_auth.tenant_isolation import TenantIsolatedViewSet
+from custom_auth.tenant_base_viewset import TenantIsolatedViewSet
 from .models_dual_qr import (
     MerchantProfile, DynamicQR, UniversalQR, 
     P2PTransaction, QRSafetyLog
