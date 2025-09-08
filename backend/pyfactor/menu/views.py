@@ -28,25 +28,76 @@ class MenuPermission(IsAuthenticated):
         if not super().has_permission(request, view):
             return False
         
-        # Check if user has a business with menu-enabled type
+        # Check if user has a business
         try:
             profile = request.user.userprofile
-            if profile.business:
-                # If business has details with simplified_business_type, check it
-                if hasattr(profile.business, 'details') and hasattr(profile.business.details, 'simplified_business_type'):
-                    business_type = profile.business.details.simplified_business_type
-                    if business_type:
-                        return should_show_menu(business_type)
+            if not profile.business:
+                logger.info(f"User {request.user.id} has no business, denying menu access")
+                return False
+            
+            business = profile.business
+            
+            # First check simplified_business_type on Business model directly
+            if hasattr(business, 'simplified_business_type') and business.simplified_business_type:
+                # If it's set on the Business model, use it
+                result = should_show_menu(business.simplified_business_type)
+                logger.info(f"Menu permission for business {business.name}: simplified_type={business.simplified_business_type}, allowed={result}")
+                if result:
+                    return True
+            
+            # Then check business_type on Business model
+            if hasattr(business, 'business_type') and business.business_type:
+                # Check if this business type should have menu
+                # RESTAURANT_CAFE and similar types should have menu access
+                menu_types = ['RESTAURANT_CAFE', 'FAST_FOOD', 'BAKERY', 'CAFE', 'FOOD_TRUCK', 
+                             'CATERING', 'BAR_NIGHTCLUB', 'HOTEL_HOSPITALITY', 'EVENT_PLANNING']
+                if business.business_type in menu_types:
+                    logger.info(f"Menu permission for business {business.name}: type={business.business_type}, allowed=True")
+                    return True
+            
+            # Check BusinessDetails if it exists
+            if hasattr(business, 'details'):
+                details = business.details
                 
-                # For legacy businesses or those without simplified_business_type, allow menu access
-                # This ensures backward compatibility for existing businesses
+                # Check simplified_business_type in details
+                if hasattr(details, 'simplified_business_type') and details.simplified_business_type:
+                    result = should_show_menu(details.simplified_business_type)
+                    logger.info(f"Menu permission for business {business.name}: details.simplified_type={details.simplified_business_type}, allowed={result}")
+                    if result:
+                        return True
+                
+                # Check business_type in details
+                if hasattr(details, 'business_type') and details.business_type:
+                    menu_types = ['RESTAURANT_CAFE', 'FAST_FOOD', 'BAKERY', 'CAFE', 'FOOD_TRUCK', 
+                                 'CATERING', 'BAR_NIGHTCLUB', 'HOTEL_HOSPITALITY', 'EVENT_PLANNING']
+                    if details.business_type in menu_types:
+                        logger.info(f"Menu permission for business {business.name}: details.type={details.business_type}, allowed=True")
+                        return True
+            
+            # For businesses with "restaurant" or "cafe" in the name, allow menu access
+            # This is a fallback for businesses that haven't set their type properly
+            business_name_lower = business.name.lower()
+            if any(keyword in business_name_lower for keyword in ['restaurant', 'cafe', 'diner', 'bistro', 'kitchen', 'food']):
+                logger.info(f"Menu permission for business {business.name}: name-based detection, allowed=True")
                 return True
+            
+            # Legacy businesses created before business type was required
+            # If they don't have a type set, we'll be permissive
+            if not hasattr(business, 'business_type') or not business.business_type:
+                logger.info(f"Menu permission for business {business.name}: legacy business without type, allowed=True")
+                return True
+                
         except Exception as e:
-            logger.warning(f"Error checking menu permission: {e}")
-            # If there's an error checking permissions, allow access for authenticated business users
-            if hasattr(request.user, 'userprofile') and request.user.userprofile.business:
-                return True
+            logger.error(f"Error checking menu permission for user {request.user.id}: {e}")
+            # On error, be permissive for authenticated business users
+            try:
+                if hasattr(request.user, 'userprofile') and request.user.userprofile.business:
+                    logger.info(f"Menu permission error recovery for user {request.user.id}: allowing access")
+                    return True
+            except:
+                pass
         
+        logger.info(f"Menu permission denied for user {request.user.id}")
         return False
 
 
@@ -55,7 +106,7 @@ class MenuCategoryViewSet(viewsets.ModelViewSet):
     ViewSet for managing menu categories
     """
     serializer_class = MenuCategorySerializer
-    permission_classes = [IsAuthenticated]  # Temporarily using basic auth check
+    permission_classes = [MenuPermission]
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['display_order', 'name']
@@ -124,7 +175,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing menu items
     """
-    permission_classes = [IsAuthenticated]  # Temporarily using basic auth check
+    permission_classes = [MenuPermission]
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description', 'tags']
