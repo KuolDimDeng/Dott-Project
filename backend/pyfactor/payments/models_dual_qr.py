@@ -13,7 +13,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from custom_auth.tenant_base_model import TenantAwareModel
-from custom_auth.models import UserProfile
+from users.models import UserProfile
 import logging
 
 logger = logging.getLogger(__name__)
