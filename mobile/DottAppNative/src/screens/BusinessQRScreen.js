@@ -35,11 +35,12 @@ export default function BusinessQRScreen({ navigation }) {
   
   const generateReceiveQR = () => {
     // Generate business receive QR data
+    const userId = String(user?.id || '00000000');
     const qrData = {
       type: 'DOTT_RECEIVE_BUSINESS',
       business_id: user?.id,
       business_name: businessName,
-      merchant_id: `BIZ${user?.id?.slice(0, 8) || '00000000'}`,
+      merchant_id: `BIZ${userId.slice(0, 8)}`,
       timestamp: Date.now(),
     };
     
@@ -114,10 +115,6 @@ export default function BusinessQRScreen({ navigation }) {
                   size={200}
                   color="#10b981"
                   backgroundColor="white"
-                  logo={require('../assets/logo.png')}
-                  logoSize={50}
-                  logoBorderRadius={25}
-                  logoBackgroundColor="white"
                 />
                 
                 {/* Animated corners */}
