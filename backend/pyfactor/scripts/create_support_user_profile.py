@@ -169,7 +169,7 @@ def create_support_user_profile():
             
             print("\n🎉 Successfully set up support user profile!")
             print(f"   User: {support_user.email}")
-            print(f"   Profile: {profile.first_name} {profile.last_name}")
+            print(f"   Profile: {profile.occupation if hasattr(profile, 'occupation') else 'Support'}")
             print(f"   Business: {profile.business.name if profile.business else 'None'}")
             print(f"   Tenant ID: {support_user.tenant_id if hasattr(support_user, 'tenant_id') else 'None'}")
             
