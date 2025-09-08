@@ -631,6 +631,18 @@ class UserProfile(models.Model):
     country = CountryField(default='US')
     phone_number = models.CharField(max_length=200, null=True, blank=True)
     
+    # Profile picture - base64 encoded image data
+    profile_picture = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Base64 encoded profile picture data URL'
+    )
+    profile_picture_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time profile picture was updated'
+    )
+    
     # WhatsApp Business preference - defaults based on country
     show_whatsapp_commerce = models.BooleanField(null=True, blank=True, help_text='Whether to show WhatsApp Commerce in menu (null = use country default)')
     

@@ -247,12 +247,17 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         
         return queryset.select_related('category')
     
-    def perform_create(self, serializer):
-        """Set tenant and business on creation"""
+    def create(self, request, *args, **kwargs):
+        """Override create to return full serializer after creation"""
+        # Use the create serializer for validation
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Perform the creation with additional fields
         business = None
         
         # Special handling for support user
-        if self.request.user.email == 'support@dottapps.com':
+        if request.user.email == 'support@dottapps.com':
             # For support user, try to find a business named "Dott Restaurant & Cafe"
             try:
                 from users.models import Business
@@ -263,12 +268,12 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         else:
             # Regular user flow
             try:
-                profile = self.request.user.profile
+                profile = request.user.profile
                 business = profile.business if profile else None
             except:
                 business = None
         
-        tenant_id = self.request.user.tenant_id if hasattr(self.request.user, 'tenant_id') else None
+        tenant_id = request.user.tenant_id if hasattr(request.user, 'tenant_id') else None
         
         # If no category provided, create or get a default one
         if 'category' not in serializer.validated_data or not serializer.validated_data.get('category'):
@@ -286,10 +291,20 @@ class MenuItemViewSet(viewsets.ModelViewSet):
                 logger.info(f"Created default category 'General' for tenant {tenant_id}")
             serializer.validated_data['category'] = default_category
         
-        serializer.save(
+        # Save the instance
+        instance = serializer.save(
             tenant_id=tenant_id,
             business=business
         )
+        
+        # Return the full serializer with all fields
+        output_serializer = MenuItemSerializer(instance)
+        headers = self.get_success_headers(output_serializer.data)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def perform_create(self, serializer):
+        """This is now handled in the create method above"""
+        pass
     
     @action(detail=True, methods=['post'])
     def toggle_availability(self, request, pk=None):

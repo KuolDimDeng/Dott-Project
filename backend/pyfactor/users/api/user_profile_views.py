@@ -196,6 +196,8 @@ class UserProfileMeView(APIView):
                 'display_legal_structure': profile.display_legal_structure,
                 'show_zero_stock_pos': profile.show_zero_stock_pos,  # POS preference for zero stock
                 'employee': employee_data,  # Add employee data
+                'profile_picture': profile.profile_picture,  # Base64 encoded profile picture
+                'profile_picture_updated_at': profile.profile_picture_updated_at.isoformat() if profile.profile_picture_updated_at else None,
                 'request_id': request_id
             }
             
@@ -305,6 +307,37 @@ class UserProfileMeView(APIView):
                 
                 updated = True
                 logger.info(f"[UserProfileMeView] Updated legal structure display preference to: {profile.display_legal_structure}")
+            
+            # Update profile picture if provided
+            if 'profile_picture' in request.data:
+                profile_picture = request.data['profile_picture']
+                
+                # Allow null to clear the profile picture
+                if profile_picture is None or profile_picture == '':
+                    profile.profile_picture = None
+                    profile.profile_picture_updated_at = None
+                    logger.info(f"[UserProfileMeView] Cleared profile picture")
+                elif isinstance(profile_picture, str):
+                    # Validate that it's a base64 data URL
+                    if profile_picture.startswith('data:image/'):
+                        profile.profile_picture = profile_picture
+                        profile.profile_picture_updated_at = timezone.now()
+                        logger.info(f"[UserProfileMeView] Updated profile picture (size: {len(profile_picture)} bytes)")
+                    else:
+                        return Response({
+                            'error': 'profile_picture must be a base64 data URL starting with "data:image/"',
+                            'request_id': request_id
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({
+                        'error': 'profile_picture must be a string or null',
+                        'request_id': request_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                updated = True
+                
+                # Clear cache when profile picture is updated
+                cache_service.delete_user_profile(request.user.id)
             
             # Save profile if any updates were made
             if updated:

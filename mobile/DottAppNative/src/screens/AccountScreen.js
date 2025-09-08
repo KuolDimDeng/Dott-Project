@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,91 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import profilePictureService from '../services/profilePictureService';
 
 export default function AccountScreen({ navigation }) {
-  const { user, logout } = useAuth();
+  const { user, logout, sessionToken, refreshUser } = useAuth();
   const hasBusiness = user?.has_business || false;
+  const [profilePicture, setProfilePicture] = useState(user?.profile_picture || null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
   
   console.log('👤 AccountScreen - User data:', user);
   console.log('👤 AccountScreen - User role:', user?.role);
   console.log('👤 AccountScreen - Has business:', hasBusiness);
+
+  // Load cached profile picture on mount
+  useEffect(() => {
+    loadCachedProfilePicture();
+  }, []);
+
+  // Update profile picture when user data changes
+  useEffect(() => {
+    if (user?.profile_picture) {
+      setProfilePicture(user.profile_picture);
+    }
+  }, [user?.profile_picture]);
+
+  const loadCachedProfilePicture = async () => {
+    try {
+      if (!profilePicture && user?.id) {
+        const cached = await profilePictureService.getCachedProfilePicture(user.id);
+        if (cached) {
+          setProfilePicture(cached);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cached profile picture:', error);
+    }
+  };
+
+  const handleProfilePictureUpdate = async () => {
+    if (uploadingPicture) return;
+    
+    try {
+      setUploadingPicture(true);
+      setSyncStatus(null);
+      
+      const result = await profilePictureService.updateProfilePicture(
+        user.id,
+        sessionToken
+      );
+      
+      if (result.success) {
+        setProfilePicture(result.data.profile_picture);
+        setSyncStatus(result.synced ? 'synced' : 'pending');
+        
+        if (!result.synced) {
+          Alert.alert(
+            'Profile Picture Saved',
+            'Your profile picture has been saved and will be uploaded when you have an internet connection.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          // Refresh user data to get updated profile
+          if (refreshUser) {
+            await refreshUser();
+          }
+        }
+      }
+    } catch (error) {
+      if (error !== 'User cancelled') {
+        Alert.alert(
+          'Error',
+          'Failed to update profile picture. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } finally {
+      setUploadingPicture(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -108,11 +181,40 @@ export default function AccountScreen({ navigation }) {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-            </Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.avatarContainer} 
+            onPress={handleProfilePictureUpdate}
+            disabled={uploadingPicture}
+          >
+            {profilePicture ? (
+              <Image 
+                source={{ uri: profilePicture }} 
+                style={styles.avatarImage}
+              />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                </Text>
+              </View>
+            )}
+            
+            {uploadingPicture ? (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator size="small" color="#ffffff" />
+              </View>
+            ) : (
+              <View style={styles.cameraIconContainer}>
+                <Icon name="camera" size={16} color="#ffffff" />
+              </View>
+            )}
+            
+            {syncStatus === 'pending' && (
+              <View style={styles.syncStatusContainer}>
+                <Icon name="cloud-upload-outline" size={12} color="#f59e0b" />
+              </View>
+            )}
+          </TouchableOpacity>
           <Text style={styles.userName}>{user?.full_name || user?.name || 'User'}</Text>
           <Text style={styles.userEmail}>{user?.email || ''}</Text>
           
@@ -223,6 +325,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginBottom: 12,
   },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -230,12 +336,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e7ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#e5e7eb',
   },
   avatarText: {
     fontSize: 28,
     fontWeight: '600',
     color: '#4338ca',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#2563eb',
+    borderRadius: 12,
+    padding: 6,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  syncStatusContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   userName: {
     fontSize: 20,

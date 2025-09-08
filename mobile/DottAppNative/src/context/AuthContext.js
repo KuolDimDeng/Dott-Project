@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userMode, setUserMode] = useState('consumer'); // 'business' or 'consumer'
+  const [sessionToken, setSessionToken] = useState(null);
 
   useEffect(() => {
     loadUser();
@@ -85,9 +86,11 @@ export const AuthProvider = ({ children }) => {
       const userData = await AsyncStorage.getItem('userData');
       const mode = await AsyncStorage.getItem('userMode');
       const sessionId = await AsyncStorage.getItem('sessionId');
+      const storedToken = await AsyncStorage.getItem('sessionToken');
       
       if (userData && sessionId) {
         const parsedUser = JSON.parse(userData);
+        setSessionToken(storedToken || sessionId);
         
         // Check if cached data has required fields, if not, clear it
         if (!('has_business' in parsedUser) || !('role' in parsedUser)) {
@@ -240,6 +243,8 @@ export const AuthProvider = ({ children }) => {
         
         if (sessionId) {
           await AsyncStorage.setItem('sessionId', sessionId);
+          await AsyncStorage.setItem('sessionToken', sessionId);
+          setSessionToken(sessionId);
         }
         
         // Fetch complete user profile with role and has_business
@@ -303,8 +308,23 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.multiRemove(['userToken', 'userData', 'userMode', 'sessionId', 'sessionToken']);
       setUser(null);
       setUserMode('consumer');
+      setSessionToken(null);
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const userData = await fetchUserProfile();
+      if (userData) {
+        setUser(userData);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+      return false;
     }
   };
 
@@ -351,6 +371,8 @@ export const AuthProvider = ({ children }) => {
         const sessionId = result.data.token;
         if (sessionId) {
           await AsyncStorage.setItem('sessionId', sessionId);
+          await AsyncStorage.setItem('sessionToken', sessionId);
+          setSessionToken(sessionId);
           console.log('💾 Session token stored');
         }
         
@@ -402,10 +424,12 @@ export const AuthProvider = ({ children }) => {
       user,
       userMode,
       isLoading,
+      sessionToken,
       login,
       logout,
       switchMode,
       fetchUserProfile,
+      refreshUser,
       sendOTP,
       verifyOTP,
       isAuthenticated: !!user

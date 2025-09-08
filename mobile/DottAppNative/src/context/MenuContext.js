@@ -125,8 +125,13 @@ export const MenuProvider = ({ children }) => {
       const backendItem = await menuApi.createMenuItem(newItem);
       console.log('🍽️ MenuContext: Item saved to backend:', backendItem.id);
       
-      // Add to local state with synced flag
-      const syncedItem = { ...backendItem, synced: true, syncTime: new Date().toISOString() };
+      // Add to local state with synced flag, ensuring price is a number
+      const syncedItem = { 
+        ...backendItem, 
+        price: typeof backendItem.price === 'number' ? backendItem.price : parseFloat(backendItem.price) || 0,
+        synced: true, 
+        syncTime: new Date().toISOString() 
+      };
       setMenuItems(prev => [...prev, syncedItem]);
       await saveMenuItems();
       setSyncStatus('synced');

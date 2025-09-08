@@ -157,7 +157,7 @@ const MenuManagementScreen = () => {
   const editItemPrice = (item) => {
     Alert.prompt(
       'Edit Price',
-      `Current price: ${currency.symbol}${item.price ? item.price.toFixed(0) : '0'}`,
+      `Current price: ${currency.symbol}${item.price ? (typeof item.price === 'number' ? item.price.toFixed(0) : parseFloat(item.price).toFixed(0)) : '0'}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -243,7 +243,7 @@ const MenuManagementScreen = () => {
         <View style={styles.itemDetails}>
           <View style={styles.itemHeader}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{currency.symbol}{item.price ? item.price.toFixed(0) : '0'}</Text>
+            <Text style={styles.itemPrice}>{currency.symbol}{item.price ? (typeof item.price === 'number' ? item.price.toFixed(0) : parseFloat(item.price).toFixed(0)) : '0'}</Text>
           </View>
           
           <Text style={styles.itemDescription} numberOfLines={2}>
