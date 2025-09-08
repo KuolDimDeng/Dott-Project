@@ -273,7 +273,7 @@ const MenuManagementScreen = () => {
                   <Text style={[styles.timeText, { 
                     color: item.stock > 10 ? '#065f46' : item.stock > 0 ? '#92400e' : '#dc2626'
                   }]}>
-                    Stock: {item.stock}
+                    Stock: {item.stock || 0}
                   </Text>
                 </View>
               )}
