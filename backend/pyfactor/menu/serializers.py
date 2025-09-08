@@ -67,6 +67,12 @@ class MenuItemListSerializer(serializers.ModelSerializer):
 
 class MenuItemCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating menu items with minimal required fields"""
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=MenuCategory.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    
     class Meta:
         model = MenuItem
         fields = [

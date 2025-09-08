@@ -263,12 +263,29 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         else:
             # Regular user flow
             try:
-                profile = self.request.user.userprofile
+                profile = self.request.user.profile
                 business = profile.business if profile else None
             except:
                 business = None
         
-        tenant_id = self.request.user.tenant.id if hasattr(self.request.user, 'tenant') else None
+        tenant_id = self.request.user.tenant_id if hasattr(self.request.user, 'tenant_id') else None
+        
+        # If no category provided, create or get a default one
+        if 'category' not in serializer.validated_data or not serializer.validated_data.get('category'):
+            default_category, created = MenuCategory.objects.get_or_create(
+                tenant_id=tenant_id,
+                name='General',
+                defaults={
+                    'description': 'General menu items',
+                    'category_type': 'CUSTOM',
+                    'display_order': 0,
+                    'is_active': True
+                }
+            )
+            if created:
+                logger.info(f"Created default category 'General' for tenant {tenant_id}")
+            serializer.validated_data['category'] = default_category
+        
         serializer.save(
             tenant_id=tenant_id,
             business=business

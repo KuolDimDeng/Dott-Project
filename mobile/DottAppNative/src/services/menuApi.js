@@ -97,13 +97,17 @@ class MenuAPI {
       // Add other fields
       formData.append('name', itemData.name);
       formData.append('description', itemData.description || '');
-      formData.append('category', itemData.category);
-      formData.append('selling_price', itemData.price.toString());
-      formData.append('estimated_cost', itemData.estimatedCost?.toString() || '0');
-      formData.append('cost_method', itemData.costMethod || 'fixed');
-      formData.append('preparation_time', itemData.preparationTime?.toString() || '0');
-      formData.append('dietary_tags', JSON.stringify(itemData.dietaryTags || []));
-      formData.append('is_active', itemData.isActive !== false ? 'true' : 'false');
+      // For now, skip category since we don't have category UUIDs yet
+      // formData.append('category', itemData.category);
+      formData.append('price', itemData.price.toString());
+      // Optional fields
+      if (itemData.estimatedCost) {
+        formData.append('cost', itemData.estimatedCost.toString());
+      }
+      if (itemData.preparationTime) {
+        formData.append('preparation_time', itemData.preparationTime.toString());
+      }
+      formData.append('is_available', itemData.isActive !== false ? 'true' : 'false');
       
       // Add ingredients if using recipe costing
       if (itemData.ingredients && itemData.ingredients.length > 0) {
