@@ -247,7 +247,7 @@ const MenuManagementScreen = () => {
           </View>
           
           <Text style={styles.itemDescription} numberOfLines={2}>
-            {item.description}
+            {item.description || ''}
           </Text>
           
           <View style={styles.itemMeta}>
