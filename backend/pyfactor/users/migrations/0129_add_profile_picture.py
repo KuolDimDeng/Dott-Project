@@ -5,7 +5,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0099_auto_20250806_0000'),  # Adjust this to your latest migration
+        ('users', '0128_add_progressive_registration_fields'),
     ]
 
     operations = [
