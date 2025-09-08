@@ -41,20 +41,14 @@ export default function AccountScreen({ navigation }) {
       // Business users get unified account with all features
       return [
         {
-          title: 'Payment',
-          items: [
-            { icon: 'qr-code-outline', title: 'Dott Pay QR', subtitle: 'Your payment & receive QR codes', screen: 'DualQR' },
-            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
-            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
-          ]
-        },
-        {
           title: 'Personal',
           items: [
             { icon: 'person', title: 'Personal Info', subtitle: 'Your profile details' },
             { icon: 'receipt', title: 'Order History', subtitle: 'Your marketplace purchases' },
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your delivery locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items and businesses' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
@@ -82,20 +76,14 @@ export default function AccountScreen({ navigation }) {
       // Non-business users get consumer menu
       return [
         {
-          title: 'Payment',
-          items: [
-            { icon: 'qr-code-outline', title: 'Dott Pay QR', subtitle: 'Send & receive payments', screen: 'DualQR' },
-            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
-            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
-          ]
-        },
-        {
           title: 'Personal',
           items: [
             { icon: 'person', title: 'Personal Info', subtitle: 'Your profile details' },
             { icon: 'receipt', title: 'Order History', subtitle: 'Your purchases' },
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
@@ -145,6 +133,23 @@ export default function AccountScreen({ navigation }) {
             </View>
           )}
         </View>
+
+        {/* QR Code Section - Hidden under caret */}
+        <TouchableOpacity 
+          style={styles.qrSection}
+          onPress={() => navigation.navigate('DualQR')}
+        >
+          <View style={styles.qrSectionContent}>
+            <View style={[styles.qrIconContainer, { backgroundColor: '#2563eb' }]}>
+              <Icon name="qr-code-outline" size={24} color="white" />
+            </View>
+            <View style={styles.qrTextContainer}>
+              <Text style={styles.qrTitle}>QR Code</Text>
+              <Text style={styles.qrSubtitle}>Your payment QR code</Text>
+            </View>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#9ca3af" />
+        </TouchableOpacity>
 
         {/* Create Business Button for Non-Business Users */}
         {!hasBusiness && (
@@ -362,5 +367,46 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     fontWeight: '500',
     marginLeft: 8,
+  },
+  qrSection: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  qrSectionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  qrIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  qrTextContainer: {
+    flex: 1,
+  },
+  qrTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  qrSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
   },
 });

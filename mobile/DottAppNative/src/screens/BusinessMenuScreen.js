@@ -217,7 +217,6 @@ export default function BusinessMenuScreen() {
   // Complete menu items from HTML version
   const ALL_MENU_ITEMS = [
     // Row 1 - Core Operations
-    { icon: 'qr-code-outline', title: 'Dott Pay QR', color: '#2563eb', screen: 'DualQR' },
     { icon: 'card-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
     { icon: 'cube-outline', title: 'Inventory', color: '#ec4899', screen: 'Inventory' },
     { icon: 'cash-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },
@@ -259,24 +258,24 @@ export default function BusinessMenuScreen() {
   // Business type feature configuration
   const BUSINESS_TYPE_FEATURES = {
     'RESTAURANT_CAFE': {
-      enabled: ['Dott Pay QR', 'POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise'],
-      highlighted: ['Dott Pay QR', 'POS Terminal']
+      enabled: ['POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise'],
+      highlighted: ['POS Terminal']
     },
     'RETAIL': {
-      enabled: ['Dott Pay QR', 'POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
-      highlighted: ['Dott Pay QR', 'Inventory', 'POS Terminal']
+      enabled: ['POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
+      highlighted: ['Inventory', 'POS Terminal']
     },
     'SERVICE': {
-      enabled: ['Dott Pay QR', 'Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Expenses', 'Banking', 'Reports', 'Advertise'],
-      highlighted: ['Dott Pay QR', 'Jobs', 'Services']
+      enabled: ['Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Expenses', 'Banking', 'Reports', 'Advertise'],
+      highlighted: ['Jobs', 'Services']
     },
     'TRANSPORT': {
       enabled: ['Transport', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'HR', 'Reports', 'Advertise'],
       highlighted: ['Transport']
     },
     'OTHER': {
-      enabled: ['Dott Pay QR', 'POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'Invoices', 'Banking', 'Reports', 'Advertise'],
-      highlighted: ['Dott Pay QR']
+      enabled: ['POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'Invoices', 'Banking', 'Reports', 'Advertise'],
+      highlighted: []
     }
   };
 
@@ -569,6 +568,23 @@ export default function BusinessMenuScreen() {
         </View>
       </LinearGradient>
 
+      {/* QR Code Section for Businesses */}
+      <TouchableOpacity 
+        style={styles.qrCodeSection}
+        onPress={() => navigation.navigate('BusinessQR')}
+      >
+        <View style={styles.qrCodeContent}>
+          <View style={[styles.qrIconContainer, { backgroundColor: '#10b981' }]}>
+            <Icon name="qr-code-outline" size={28} color="white" />
+          </View>
+          <View style={styles.qrTextContainer}>
+            <Text style={styles.qrCodeTitle}>QR Code</Text>
+            <Text style={styles.qrCodeSubtitle}>Receive payments from customers</Text>
+          </View>
+        </View>
+        <Icon name="chevron-forward" size={20} color="#9ca3af" />
+      </TouchableOpacity>
+
       {/* Active Orders Alert */}
       {activeOrdersCount > 0 && isOpen && (
         <TouchableOpacity 
@@ -811,5 +827,47 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  qrCodeSection: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginTop: -20,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  qrCodeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  qrIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  qrTextContainer: {
+    flex: 1,
+  },
+  qrCodeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  qrCodeSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
   },
 });

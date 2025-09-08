@@ -24,78 +24,40 @@ export default function DualQRScreen({ navigation }) {
   const { user } = useAuth();
   const { currency } = useCurrency();
   
-  const [activeTab, setActiveTab] = useState('payment');
+  // Phase 1: Only show Payment QR for consumers
   const [paymentQR, setPaymentQR] = useState(null);
-  const [receiveQR, setReceiveQR] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pulseAnim] = useState(new Animated.Value(1));
-  const [slideAnim] = useState(new Animated.Value(0));
   
-  const QR_COLORS = {
-    payment: {
-      primary: '#2563eb',
-      secondary: '#60a5fa',
-      gradient: ['#2563eb', '#3b82f6', '#60a5fa'],
-      icon: '💳',
-      label: 'SCAN TO PAY',
-      description: 'Show this BLUE QR when you want to pay',
-    },
-    receive: {
-      primary: '#10b981',
-      secondary: '#6ee7b7',
-      gradient: ['#10b981', '#34d399', '#6ee7b7'],
-      icon: '💰',
-      label: 'SCAN TO PAY ME',
-      description: 'Show this GREEN QR to receive payments',
-    },
+  // Phase 1: Payment QR only
+  const QR_COLOR = {
+    primary: '#2563eb',
+    secondary: '#60a5fa',
+    gradient: ['#2563eb', '#3b82f6', '#60a5fa'],
+    icon: '💳',
+    label: 'PAYMENT QR',
+    description: 'Show this BLUE QR to scan and pay businesses',
   };
   
   useEffect(() => {
-    loadQRCodes();
+    loadQRCode();
     startPulseAnimation();
   }, []);
   
-  const loadQRCodes = async () => {
+  const loadQRCode = async () => {
     try {
       setLoading(true);
-      const qrData = await dualQRApi.getMyQRCodes();
-      
+      // Generate consumer payment QR
       setPaymentQR({
         data: JSON.stringify({
-          type: 'DOTT_PAY',
+          type: 'DOTT_PAY_CONSUMER',
           user_id: user.id,
           user_name: user.name || user.email,
           timestamp: Date.now(),
         }),
-      });
-      
-      setReceiveQR({
-        data: JSON.stringify({
-          type: 'DOTT_RECEIVE_STATIC',
-          user_id: user.id,
-          user_name: user.name || user.email,
-          merchant_id: qrData?.receive_qr?.merchant_id || `USR${user.id.slice(0, 8)}`,
-          timestamp: Date.now(),
-        }),
-        merchant_id: qrData?.receive_qr?.merchant_id,
       });
     } catch (error) {
-      console.error('Error loading QR codes:', error);
-      // Use fallback QR data
-      setPaymentQR({
-        data: JSON.stringify({
-          type: 'DOTT_PAY',
-          user_id: user.id,
-          user_name: user.name || user.email,
-        }),
-      });
-      setReceiveQR({
-        data: JSON.stringify({
-          type: 'DOTT_RECEIVE_STATIC',
-          user_id: user.id,
-          user_name: user.name || user.email,
-        }),
-      });
+      console.error('Error loading QR code:', error);
     } finally {
       setLoading(false);
     }
@@ -118,29 +80,12 @@ export default function DualQRScreen({ navigation }) {
     ).start();
   };
   
-  const switchTab = (tab) => {
-    setActiveTab(tab);
-    
-    Animated.spring(slideAnim, {
-      toValue: tab === 'payment' ? 0 : 1,
-      useNativeDriver: true,
-      tension: 20,
-      friction: 7,
-    }).start();
-  };
   
   const shareQR = async () => {
-    const qrType = activeTab === 'payment' ? 'Payment' : 'Receive';
-    const color = activeTab === 'payment' ? 'BLUE' : 'GREEN';
-    
     try {
       await Share.share({
-        message: `Here's my Dott Pay ${qrType} QR (${color}). ${
-          activeTab === 'payment' 
-            ? 'Show me your GREEN QR to receive my payment' 
-            : 'Show me your BLUE QR to pay me'
-        }`,
-        title: `Dott Pay ${qrType} QR`,
+        message: `Here's my Dott Pay Payment QR (BLUE). I can scan business QR codes to make payments.`,
+        title: 'Dott Pay Payment QR',
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -148,46 +93,36 @@ export default function DualQRScreen({ navigation }) {
   };
   
   const renderQRCode = () => {
-    const isPayment = activeTab === 'payment';
-    const qrData = isPayment ? paymentQR : receiveQR;
-    const colorScheme = QR_COLORS[activeTab];
-    
-    if (!qrData) return null;
+    if (!paymentQR) return null;
     
     return (
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <LinearGradient
-          colors={colorScheme.gradient}
+          colors={QR_COLOR.gradient}
           style={styles.qrContainer}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
           <View style={styles.qrHeader}>
-            <Text style={styles.qrIcon}>{colorScheme.icon}</Text>
-            <Text style={styles.qrLabel}>{colorScheme.label}</Text>
+            <Text style={styles.qrIcon}>{QR_COLOR.icon}</Text>
+            <Text style={styles.qrLabel}>{QR_COLOR.label}</Text>
           </View>
           
-          <View style={[styles.qrWrapper, { borderColor: colorScheme.primary }]}>
+          <View style={[styles.qrWrapper, { borderColor: QR_COLOR.primary }]}>
             <QRCode
-              value={qrData.data}
+              value={paymentQR.data}
               size={200}
-              color={colorScheme.primary}
+              color={QR_COLOR.primary}
               backgroundColor="white"
             />
             
-            <View style={[styles.corner, styles.cornerTL, { borderColor: colorScheme.primary }]} />
-            <View style={[styles.corner, styles.cornerTR, { borderColor: colorScheme.primary }]} />
-            <View style={[styles.corner, styles.cornerBL, { borderColor: colorScheme.primary }]} />
-            <View style={[styles.corner, styles.cornerBR, { borderColor: colorScheme.primary }]} />
+            <View style={[styles.corner, styles.cornerTL, { borderColor: QR_COLOR.primary }]} />
+            <View style={[styles.corner, styles.cornerTR, { borderColor: QR_COLOR.primary }]} />
+            <View style={[styles.corner, styles.cornerBL, { borderColor: QR_COLOR.primary }]} />
+            <View style={[styles.corner, styles.cornerBR, { borderColor: QR_COLOR.primary }]} />
           </View>
           
-          <Text style={styles.qrDescription}>{colorScheme.description}</Text>
-          
-          {!isPayment && receiveQR?.merchant_id && (
-            <View style={styles.merchantInfo}>
-              <Text style={styles.merchantId}>ID: {receiveQR.merchant_id}</Text>
-            </View>
-          )}
+          <Text style={styles.qrDescription}>{QR_COLOR.description}</Text>
         </LinearGradient>
       </Animated.View>
     );
@@ -203,54 +138,9 @@ export default function DualQRScreen({ navigation }) {
         >
           <Icon name="arrow-back" size={24} color="#111" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dott Pay QR</Text>
+        <Text style={styles.headerTitle}>Payment QR Code</Text>
         <TouchableOpacity onPress={shareQR}>
           <Icon name="share-outline" size={24} color="#2563eb" />
-        </TouchableOpacity>
-      </View>
-      
-      {/* Tab Selector */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'payment' && styles.activeTab,
-            { backgroundColor: activeTab === 'payment' ? '#2563eb' : '#f3f4f6' }
-          ]}
-          onPress={() => switchTab('payment')}
-        >
-          <Icon 
-            name="arrow-up-circle" 
-            size={24} 
-            color={activeTab === 'payment' ? 'white' : '#666'} 
-          />
-          <Text style={[
-            styles.tabText,
-            activeTab === 'payment' && styles.activeTabText
-          ]}>
-            PAY (BLUE)
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'receive' && styles.activeTab,
-            { backgroundColor: activeTab === 'receive' ? '#10b981' : '#f3f4f6' }
-          ]}
-          onPress={() => switchTab('receive')}
-        >
-          <Icon 
-            name="arrow-down-circle" 
-            size={24} 
-            color={activeTab === 'receive' ? 'white' : '#666'} 
-          />
-          <Text style={[
-            styles.tabText,
-            activeTab === 'receive' && styles.activeTabText
-          ]}>
-            RECEIVE (GREEN)
-          </Text>
         </TouchableOpacity>
       </View>
       
@@ -269,9 +159,9 @@ export default function DualQRScreen({ navigation }) {
             
             {/* Safety Tip */}
             <View style={styles.safetyTip}>
-              <Icon name="shield-checkmark" size={20} color="#10b981" />
+              <Icon name="shield-checkmark" size={20} color="#2563eb" />
               <Text style={styles.safetyText}>
-                Remember: {activeTab === 'payment' ? '💙 Blue = Money Out' : '💚 Green = Money In'}
+                💙 BLUE QR = You can scan business QR codes to pay
               </Text>
             </View>
             
@@ -280,22 +170,12 @@ export default function DualQRScreen({ navigation }) {
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => navigation.navigate('QRScanner', { 
-                  currentQRType: activeTab === 'payment' ? 'DOTT_PAY' : 'DOTT_RECEIVE_STATIC' 
+                  currentQRType: 'DOTT_PAY_CONSUMER' 
                 })}
               >
                 <Icon name="scan-outline" size={20} color="#2563eb" />
-                <Text style={styles.actionText}>Scan QR</Text>
+                <Text style={styles.actionText}>Scan Business QR</Text>
               </TouchableOpacity>
-              
-              {activeTab === 'receive' && (
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={() => Alert.alert('Coming Soon', 'Dynamic QR with amount will be available soon')}
-                >
-                  <Icon name="qr-code-outline" size={20} color="#2563eb" />
-                  <Text style={styles.actionText}>Dynamic QR</Text>
-                </TouchableOpacity>
-              )}
               
               <TouchableOpacity 
                 style={styles.actionButton}
@@ -308,18 +188,22 @@ export default function DualQRScreen({ navigation }) {
             
             {/* Color Guide */}
             <View style={styles.colorGuide}>
-              <Text style={styles.guideTitle}>QR Color Safety Guide</Text>
+              <Text style={styles.guideTitle}>How to Pay with QR</Text>
               <View style={styles.guideRow}>
-                <View style={[styles.colorBox, { backgroundColor: '#2563eb' }]} />
-                <Text style={styles.guideText}>BLUE = You Pay (Money Out)</Text>
+                <Text style={styles.guideStep}>1.</Text>
+                <Text style={styles.guideText}>Find business with GREEN QR code</Text>
               </View>
               <View style={styles.guideRow}>
-                <View style={[styles.colorBox, { backgroundColor: '#10b981' }]} />
-                <Text style={styles.guideText}>GREEN = You Receive (Money In)</Text>
+                <Text style={styles.guideStep}>2.</Text>
+                <Text style={styles.guideText}>Tap "Scan Business QR" button</Text>
               </View>
               <View style={styles.guideRow}>
-                <Icon name="alert-circle" size={16} color="#ef4444" />
-                <Text style={styles.warningText}>Never scan same colors!</Text>
+                <Text style={styles.guideStep}>3.</Text>
+                <Text style={styles.guideText}>Point camera at business QR code</Text>
+              </View>
+              <View style={styles.guideRow}>
+                <Text style={styles.guideStep}>4.</Text>
+                <Text style={styles.guideText}>Enter amount and confirm payment</Text>
               </View>
             </View>
           </>
@@ -540,14 +424,15 @@ const styles = StyleSheet.create({
   },
   guideRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginVertical: 6,
   },
-  colorBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    marginRight: 12,
+  guideStep: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2563eb',
+    marginRight: 8,
+    width: 20,
   },
   guideText: {
     fontSize: 14,

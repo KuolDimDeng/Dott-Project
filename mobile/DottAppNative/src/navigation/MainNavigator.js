@@ -56,6 +56,7 @@ import TransactionDetailScreen from '../screens/business/TransactionDetailScreen
 
 // Import Dual QR Payment screens
 import DualQRScreen from '../screens/DualQRScreen';
+import BusinessQRScreen from '../screens/BusinessQRScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import P2PPaymentScreen from '../screens/P2PPaymentScreen';
 import P2PHistoryScreen from '../screens/P2PHistoryScreen';
@@ -82,9 +83,6 @@ function TabNavigator() {
               break;
             case 'Discover':
               iconName = focused ? 'compass' : 'compass-outline';
-              break;
-            case 'QR':
-              iconName = focused ? 'qr-code' : 'qr-code-outline';
               break;
             case 'Purchases':
               iconName = focused ? 'receipt' : 'receipt-outline';
@@ -122,7 +120,6 @@ function TabNavigator() {
     >
       <Tab.Screen name="Call" component={CallScreen} />
       <Tab.Screen name="Discover" component={MarketplaceScreen} />
-      <Tab.Screen name="QR" component={DualQRScreen} />
       {!hasBusiness ? (
         <Tab.Screen name="Purchases" component={PurchasesScreen} />
       ) : (
@@ -179,8 +176,9 @@ export default function MainNavigator() {
       <Stack.Screen name="Tables" component={TablesScreen} />
       <Stack.Screen name="Delivery" component={DeliveryScreen} />
       <Stack.Screen name="MarketplaceSettings" component={MarketplaceProfileEditor} />
-      {/* Dual QR Payment screens */}
+      {/* Dual QR Payment screens - Phase 1 */}
       <Stack.Screen name="DualQR" component={DualQRScreen} />
+      <Stack.Screen name="BusinessQR" component={BusinessQRScreen} />
       <Stack.Screen name="QRScanner" component={QRScannerScreen} />
       <Stack.Screen name="P2PPayment" component={P2PPaymentScreen} />
       <Stack.Screen name="P2PHistory" component={P2PHistoryScreen} />
