@@ -635,7 +635,7 @@ export default function POSScreen() {
                   style={[styles.methodButton, paymentMethod === 'cash' && styles.methodActive]}
                   onPress={() => setPaymentMethod('cash')}
                 >
-                  <Icon name="cash" size={24} color={paymentMethod === 'cash' ? 'white' : '#666'} />
+                  <Icon name="cash" size={20} color={paymentMethod === 'cash' ? 'white' : '#666'} />
                   <Text style={[styles.methodText, paymentMethod === 'cash' && styles.methodTextActive]}>
                     Cash
                   </Text>
@@ -644,7 +644,7 @@ export default function POSScreen() {
                   style={[styles.methodButton, paymentMethod === 'card' && styles.methodActive]}
                   onPress={() => setPaymentMethod('card')}
                 >
-                  <Icon name="card" size={24} color={paymentMethod === 'card' ? 'white' : '#666'} />
+                  <Icon name="card" size={20} color={paymentMethod === 'card' ? 'white' : '#666'} />
                   <Text style={[styles.methodText, paymentMethod === 'card' && styles.methodTextActive]}>
                     Card
                   </Text>
@@ -653,7 +653,7 @@ export default function POSScreen() {
                   style={[styles.methodButton, paymentMethod === 'mobile' && styles.methodActive]}
                   onPress={() => setPaymentMethod('mobile')}
                 >
-                  <Icon name="phone-portrait" size={24} color={paymentMethod === 'mobile' ? 'white' : '#666'} />
+                  <Icon name="phone-portrait" size={20} color={paymentMethod === 'mobile' ? 'white' : '#666'} />
                   <Text style={[styles.methodText, paymentMethod === 'mobile' && styles.methodTextActive]}>
                     Mobile
                   </Text>
@@ -666,7 +666,7 @@ export default function POSScreen() {
                     setShowQRScanner(true);
                   }}
                 >
-                  <Icon name="qr-code" size={24} color={paymentMethod === 'dott_pay' ? 'white' : '#666'} />
+                  <Icon name="qr-code" size={20} color={paymentMethod === 'dott_pay' ? 'white' : '#666'} />
                   <Text style={[styles.methodText, paymentMethod === 'dott_pay' && styles.methodTextActive]}>
                     Dott Pay
                   </Text>
@@ -1475,7 +1475,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   methodButton: {
-    width: '48%',
+    width: '23%',
     alignItems: 'center',
     paddingVertical: 15,
     marginBottom: 10,
@@ -1490,8 +1490,9 @@ const styles = StyleSheet.create({
   },
   methodText: {
     marginTop: 5,
-    fontSize: 12,
+    fontSize: 10,
     color: '#666',
+    fontWeight: '500',
   },
   methodTextActive: {
     color: 'white',
