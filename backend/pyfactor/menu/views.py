@@ -31,11 +31,21 @@ class MenuPermission(IsAuthenticated):
         # Check if user has a business with menu-enabled type
         try:
             profile = request.user.userprofile
-            if profile.business and hasattr(profile.business, 'details'):
-                business_type = profile.business.details.simplified_business_type
-                return should_show_menu(business_type)
-        except:
-            pass
+            if profile.business:
+                # If business has details with simplified_business_type, check it
+                if hasattr(profile.business, 'details') and hasattr(profile.business.details, 'simplified_business_type'):
+                    business_type = profile.business.details.simplified_business_type
+                    if business_type:
+                        return should_show_menu(business_type)
+                
+                # For legacy businesses or those without simplified_business_type, allow menu access
+                # This ensures backward compatibility for existing businesses
+                return True
+        except Exception as e:
+            logger.warning(f"Error checking menu permission: {e}")
+            # If there's an error checking permissions, allow access for authenticated business users
+            if hasattr(request.user, 'userprofile') and request.user.userprofile.business:
+                return True
         
         return False
 
