@@ -43,8 +43,9 @@ export default function P2PPaymentScreen({ navigation, route }) {
       // Parse QR data to get receiver information
       const qrInfo = JSON.parse(scannedQRData);
       setReceiverInfo({
-        name: qrInfo.user_name || 'Unknown User',
-        merchant_id: qrInfo.merchant_id,
+        name: qrInfo.user_name || qrInfo.business_name || qrInfo.merchantName || 'Unknown',
+        business_name: qrInfo.business_name || qrInfo.merchantName,
+        merchant_id: qrInfo.merchant_id || qrInfo.merchantId,
         qr_type: qrInfo.type,
         amount: qrInfo.amount, // For dynamic QRs
       });
@@ -68,41 +69,62 @@ export default function P2PPaymentScreen({ navigation, route }) {
       return;
     }
     
-    try {
-      setLoading(true);
-      
-      const response = await dualQRApi.universalScan({
-        my_qr_type: qrType,
-        scanned_qr_data: scannedQRData,
-        amount: parseFloat(amount),
-        currency: currency?.code || 'USD',
-        description: description || `P2P ${isPaying ? 'Payment' : 'Receipt'}`,
-        location: {
-          latitude: 0, // Would get from device
-          longitude: 0,
+    // Show confirmation modal
+    const recipientName = receiverInfo?.name || receiverInfo?.business_name || 'Unknown';
+    const formattedAmount = `${currency?.symbol || '$'}${amount}`;
+    
+    Alert.alert(
+      'Confirm Payment',
+      `Do you want to ${isPaying ? 'send' : 'receive'} ${formattedAmount} ${isPaying ? 'to' : 'from'} ${recipientName}?`,
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+          onPress: () => console.log('Payment cancelled'),
         },
-      });
-      
-      if (response.success) {
-        Alert.alert(
-          'Success',
-          `${isPaying ? 'Payment' : 'Receipt'} of ${currency?.symbol || '$'}${amount} ${response.message || 'completed successfully'}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('Tabs'),
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Error', response.message || 'Transaction failed');
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      Alert.alert('Error', 'Failed to process transaction');
-    } finally {
-      setLoading(false);
-    }
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              
+              const response = await dualQRApi.universalScan({
+                my_qr_type: qrType,
+                scanned_qr_data: scannedQRData,
+                amount: parseFloat(amount),
+                currency: currency?.code || 'USD',
+                description: description || `P2P ${isPaying ? 'Payment' : 'Receipt'}`,
+                location: {
+                  latitude: 0, // Would get from device
+                  longitude: 0,
+                },
+              });
+              
+              if (response.success) {
+                Alert.alert(
+                  'Success',
+                  `${isPaying ? 'Payment' : 'Receipt'} of ${formattedAmount} ${response.message || 'completed successfully'}`,
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => navigation.navigate('Tabs'),
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert('Error', response.message || 'Transaction failed');
+              }
+            } catch (error) {
+              console.error('Payment error:', error);
+              Alert.alert('Error', 'Failed to process transaction');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
   };
   
   const formatAmount = (value) => {
