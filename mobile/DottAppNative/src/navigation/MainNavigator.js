@@ -58,6 +58,7 @@ import TransactionDetailScreen from '../screens/business/TransactionDetailScreen
 import DualQRScreen from '../screens/DualQRScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import P2PPaymentScreen from '../screens/P2PPaymentScreen';
+import P2PHistoryScreen from '../screens/P2PHistoryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -182,6 +183,7 @@ export default function MainNavigator() {
       <Stack.Screen name="DualQR" component={DualQRScreen} />
       <Stack.Screen name="QRScanner" component={QRScannerScreen} />
       <Stack.Screen name="P2PPayment" component={P2PPaymentScreen} />
+      <Stack.Screen name="P2PHistory" component={P2PHistoryScreen} />
     </Stack.Navigator>
   );
 }
