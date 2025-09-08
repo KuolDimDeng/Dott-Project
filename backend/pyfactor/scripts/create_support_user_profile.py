@@ -42,43 +42,20 @@ def create_support_user_profile():
             
             print(f"✅ Found support user: {support_user.email} (ID: {support_user.id})")
             
-            # Check if UserProfile already exists
-            if hasattr(support_user, 'userprofile'):
+            # Check if UserProfile already exists (it's related_name='profile' not 'userprofile')
+            if hasattr(support_user, 'profile'):
                 print(f"⚠️ UserProfile already exists for {support_user.email}")
-                profile = support_user.userprofile
+                profile = support_user.profile
             else:
-                # Create UserProfile
+                # Create UserProfile with only fields that exist
                 profile = UserProfile.objects.create(
                     user=support_user,
-                    first_name='Support',
-                    last_name='Team',
-                    phone_number='+1234567890',
+                    phone_number='+211912345678',  # South Sudan phone
                     country='SS',  # South Sudan
-                    currency='SSP',  # South Sudanese Pound
-                    timezone='Africa/Juba',
-                    language='en',
-                    notifications_enabled=True,
-                    email_notifications=True,
-                    push_notifications=False,
-                    sms_notifications=False,
-                    marketing_emails=False,
-                    product_updates=True,
-                    security_alerts=True,
-                    is_owner=True,
-                    is_employee=False,
-                    has_completed_onboarding=True,
-                    has_seen_welcome=True,
-                    has_completed_business_setup=True,
-                    theme='light',
-                    compact_mode=False,
-                    show_tips=False,
-                    accessibility_mode=False,
-                    high_contrast=False,
-                    reduce_motion=False,
-                    screen_reader_mode=False,
-                    keyboard_navigation=False,
-                    show_whatsapp_commerce=True,
-                    show_marketplace=True
+                    city='Juba',
+                    state='Central Equatoria',
+                    occupation='Support Team',
+                    show_whatsapp_commerce=True
                 )
                 print(f"✅ Created UserProfile for {support_user.email}")
             
