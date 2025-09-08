@@ -263,12 +263,12 @@ export default function POSScreen() {
             quantity: item.quantity,
             unit_price: item.price,
           })),
-          customer_id: null, // Will be updated after Dott Pay confirms
+          customer_id: null, // Will be updated after Dott confirms
           payment_method: 'dott_pay',
           amount_tendered: total,
           discount_percentage: discountPercentage,
           tax_rate: taxRate,
-          notes: 'Dott Pay transaction - pending confirmation',
+          notes: 'Dott transaction - pending confirmation',
           currency_code: currency?.code || 'USD',
           currency_symbol: currency?.symbol || '$',
           status: 'pending',
@@ -280,7 +280,7 @@ export default function POSScreen() {
         console.error('Error creating POS transaction:', posError);
       }
       
-      // Process the Dott Pay payment
+      // Process the Dott payment
       const paymentResult = await dottPayApi.scanAndPay(
         qrData,
         total,
@@ -300,7 +300,7 @@ export default function POSScreen() {
         
         Alert.alert(
           'Payment Successful',
-          `Dott Pay transaction completed!\nCustomer: ${paymentResult.consumer?.email}\nAmount: ${currency?.symbol || '$'}${paymentResult.amount}`,
+          `Dott transaction completed!\nCustomer: ${paymentResult.consumer?.email}\nAmount: ${currency?.symbol || '$'}${paymentResult.amount}`,
           [
             {
               text: 'Print Receipt',
@@ -330,11 +330,11 @@ export default function POSScreen() {
           ]
         );
       } else {
-        Alert.alert('Payment Failed', paymentResult.error || 'Unable to process Dott Pay transaction.');
+        Alert.alert('Payment Failed', paymentResult.error || 'Unable to process Dott transaction.');
       }
     } catch (error) {
-      console.error('Dott Pay error:', error);
-      Alert.alert('Payment Failed', 'Unable to process Dott Pay transaction. Please try again.');
+      console.error('Dott error:', error);
+      Alert.alert('Payment Failed', 'Unable to process Dott transaction. Please try again.');
     } finally {
       setProcessing(false);
       setDottPayCustomer(null);
@@ -666,9 +666,15 @@ export default function POSScreen() {
                     setShowQRScanner(true);
                   }}
                 >
-                  <Icon name="qr-code" size={20} color={paymentMethod === 'dott_pay' ? 'white' : '#666'} />
+                  <Image 
+                    source={require('../../assets/logo.png')} 
+                    style={[
+                      styles.dottLogo, 
+                      paymentMethod === 'dott_pay' && styles.dottLogoActive
+                    ]} 
+                  />
                   <Text style={[styles.methodText, paymentMethod === 'dott_pay' && styles.methodTextActive]}>
-                    Dott Pay
+                    Dott
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -923,7 +929,7 @@ export default function POSScreen() {
       {renderCustomerModal()}
       {renderPaymentModal()}
       
-      {/* QR Scanner for Dott Pay */}
+      {/* QR Scanner for Dott */}
       <QRScanner
         visible={showQRScanner}
         onClose={() => {
@@ -1496,6 +1502,15 @@ const styles = StyleSheet.create({
   },
   methodTextActive: {
     color: 'white',
+  },
+  dottLogo: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    tintColor: '#666',
+  },
+  dottLogoActive: {
+    tintColor: 'white',
   },
   cashSection: {
     marginBottom: 20,
