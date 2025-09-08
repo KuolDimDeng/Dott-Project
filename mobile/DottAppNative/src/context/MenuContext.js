@@ -13,6 +13,10 @@ export const useMenuContext = () => {
 };
 
 export const MenuProvider = ({ children }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState('synced'); // 'synced', 'syncing', 'error', 'offline'
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [failedSyncs, setFailedSyncs] = useState([]);
   const [menuItems, setMenuItems] = useState([
     {
       id: '1',
@@ -129,18 +133,33 @@ export const MenuProvider = ({ children }) => {
   const loadMenuItems = async () => {
     try {
       console.log('🍽️ MenuContext: Loading menu items...');
+      setIsLoading(true);
+      setSyncStatus('syncing');
       
       // Try to load from backend first
       try {
         const response = await menuApi.getMenuItems();
-        if (response && response.results && response.results.length > 0) {
-          console.log('🍽️ MenuContext: Loaded from backend:', response.results.length);
-          setMenuItems(response.results);
-          await AsyncStorage.setItem('restaurantMenuItems', JSON.stringify(response.results));
+        const items = response?.results || response || [];
+        
+        if (items.length > 0) {
+          console.log('🍽️ MenuContext: Loaded from backend:', items.length);
+          setMenuItems(items);
+          await AsyncStorage.setItem('restaurantMenuItems', JSON.stringify(items));
+          await AsyncStorage.setItem('lastMenuSync', new Date().toISOString());
+          setLastSyncTime(new Date());
+          setSyncStatus('synced');
+          
+          // Retry any failed syncs
+          if (failedSyncs.length > 0) {
+            retrySyncFailedItems();
+          }
           return;
+        } else {
+          console.log('🍽️ MenuContext: No items from backend, checking cache');
         }
       } catch (apiError) {
-        console.log('🍽️ MenuContext: Backend load failed, trying cache:', apiError.message);
+        console.log('🍽️ MenuContext: Backend load failed:', apiError.message);
+        setSyncStatus('error');
       }
 
       // Fallback to cached data
@@ -149,12 +168,24 @@ export const MenuProvider = ({ children }) => {
         const parsedItems = JSON.parse(stored);
         console.log('🍽️ MenuContext: Loaded from cache:', parsedItems.length);
         setMenuItems(parsedItems);
+        setSyncStatus('offline');
+        
+        // Check for unsyced items
+        const unsynced = parsedItems.filter(item => item.synced === false);
+        if (unsynced.length > 0) {
+          console.log('⚠️ Found', unsynced.length, 'unsynced items');
+          setFailedSyncs(unsynced);
+        }
       } else {
         console.log('🍽️ MenuContext: Using default menu items');
+        setSyncStatus('offline');
         // Keep the default items as fallback
       }
     } catch (error) {
       console.error('Error loading menu items:', error);
+      setSyncStatus('error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -179,28 +210,43 @@ export const MenuProvider = ({ children }) => {
   const addMenuItem = async (newItem) => {
     try {
       console.log('🍽️ MenuContext: Adding menu item:', newItem.name);
+      setSyncStatus('syncing');
       
       // Try to save to backend first
       const backendItem = await menuApi.createMenuItem(newItem);
       console.log('🍽️ MenuContext: Item saved to backend:', backendItem.id);
       
-      // Add to local state
-      setMenuItems(prev => [...prev, backendItem]);
-      console.log('🍽️ MenuContext: Item added to local state');
+      // Add to local state with synced flag
+      const syncedItem = { ...backendItem, synced: true, syncTime: new Date().toISOString() };
+      setMenuItems(prev => [...prev, syncedItem]);
+      await saveMenuItems();
+      setSyncStatus('synced');
+      setLastSyncTime(new Date());
       
-      return backendItem;
+      console.log('✅ Item successfully synced to backend');
+      return syncedItem;
     } catch (error) {
-      console.error('🍽️ MenuContext: Failed to save to backend:', error);
+      console.error('🍽️ MenuContext: Failed to save to backend:', error.message);
+      setSyncStatus('error');
       
       // Fallback to local-only save
       const itemWithId = {
         ...newItem,
-        id: Date.now().toString(),
+        id: `local_${Date.now()}`,
         available: true,
-        synced: false, // Mark as needing sync
+        synced: false,
+        syncError: error.message,
+        createdAt: new Date().toISOString(),
       };
+      
       setMenuItems(prev => [...prev, itemWithId]);
-      console.log('🍽️ MenuContext: Added item locally only:', itemWithId.name);
+      setFailedSyncs(prev => [...prev, itemWithId]);
+      await saveMenuItems();
+      
+      console.log('⚠️ Item saved locally (will retry sync):', itemWithId.name);
+      
+      // Schedule retry
+      setTimeout(() => retrySyncItem(itemWithId), 5000);
       
       return itemWithId;
     }
@@ -293,6 +339,51 @@ export const MenuProvider = ({ children }) => {
     ));
   };
 
+  // Retry syncing failed items
+  const retrySyncFailedItems = async () => {
+    if (failedSyncs.length === 0) return;
+    
+    console.log('🔄 Retrying sync for', failedSyncs.length, 'items');
+    setSyncStatus('syncing');
+    
+    for (const item of failedSyncs) {
+      await retrySyncItem(item);
+    }
+  };
+  
+  const retrySyncItem = async (item) => {
+    try {
+      console.log('🔄 Retrying sync for:', item.name);
+      
+      // Remove local ID prefix if present
+      const itemData = { ...item };
+      delete itemData.id;
+      delete itemData.synced;
+      delete itemData.syncError;
+      
+      const backendItem = await menuApi.createMenuItem(itemData);
+      
+      // Update local state
+      setMenuItems(prev => prev.map(i => 
+        i.id === item.id ? { ...backendItem, synced: true, syncTime: new Date().toISOString() } : i
+      ));
+      
+      // Remove from failed syncs
+      setFailedSyncs(prev => prev.filter(i => i.id !== item.id));
+      
+      console.log('✅ Successfully synced:', item.name);
+      setSyncStatus('synced');
+      setLastSyncTime(new Date());
+      
+    } catch (error) {
+      console.error('❌ Retry failed for:', item.name, error.message);
+      // Update sync error
+      setMenuItems(prev => prev.map(i => 
+        i.id === item.id ? { ...i, syncError: error.message, lastRetry: new Date().toISOString() } : i
+      ));
+    }
+  };
+  
   const value = {
     menuItems,
     categories,
@@ -306,6 +397,13 @@ export const MenuProvider = ({ children }) => {
     decreaseStock,
     setMenuItems,
     setCategories,
+    // Sync status
+    isLoading,
+    syncStatus,
+    lastSyncTime,
+    failedSyncs,
+    retrySyncFailedItems,
+    loadMenuItems,
   };
 
   return (

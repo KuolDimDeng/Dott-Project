@@ -104,7 +104,7 @@ export default function AccountScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Account</Text>
+        <Text style={styles.headerTitle}>Me</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>

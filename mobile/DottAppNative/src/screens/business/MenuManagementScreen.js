@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useBusinessContext } from '../../context/BusinessContext';
 import AddMenuItemModal from '../../components/AddMenuItemModal';
 import inventoryApi from '../../services/inventoryApi';
+import { getCurrencyForCountry } from '../../utils/currencyUtils';
 
 const MenuManagementScreen = () => {
   const navigation = useNavigation();
@@ -40,6 +41,10 @@ const MenuManagementScreen = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
+  
+  // Currency configuration using comprehensive utility
+  const country = businessData?.businessCountry || 'SS';
+  const currency = getCurrencyForCountry(country);
   
 
   useEffect(() => {
@@ -143,7 +148,7 @@ const MenuManagementScreen = () => {
   const editItemPrice = (item) => {
     Alert.prompt(
       'Edit Price',
-      `Current price: $${item.price.toFixed(2)}`,
+      `Current price: ${currency.symbol}${item.price.toFixed(0)}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -154,7 +159,7 @@ const MenuManagementScreen = () => {
               setMenuItems(items => items.map(i => 
                 i.id === item.id ? { ...i, price } : i
               ));
-              Alert.alert('Success', `Price updated to $${price.toFixed(2)}`);
+              Alert.alert('Success', `Price updated to ${currency.symbol}${price.toFixed(0)}`);
             } else {
               Alert.alert('Error', 'Please enter a valid price');
             }
@@ -229,7 +234,7 @@ const MenuManagementScreen = () => {
         <View style={styles.itemDetails}>
           <View style={styles.itemHeader}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.itemPrice}>{currency.symbol}{item.price.toFixed(0)}</Text>
           </View>
           
           <Text style={styles.itemDescription} numberOfLines={2}>

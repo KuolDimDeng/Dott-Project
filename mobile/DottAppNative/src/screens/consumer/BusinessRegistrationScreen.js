@@ -15,7 +15,9 @@ import { Picker } from '@react-native-picker/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { businessApi } from '../../services/businessApi';
+import marketplaceApi from '../../services/marketplaceApi';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { generateBusinessProfileTemplate } from '../../models/businessProfileTemplate';
 import {
   ENTITY_TYPES,
   INDIVIDUAL_CATEGORIES,
@@ -185,6 +187,31 @@ export default function BusinessRegistrationScreen({ navigation }) {
 
       // Update user context with new business info
       if (response.success && response.data) {
+        // Auto-generate marketplace profile template
+        try {
+          const profileTemplate = generateBusinessProfileTemplate(
+            response.data.business_type || formData.businessType,
+            {
+              businessName: response.data.business_name,
+              businessId: response.data.id,
+              contactInfo: {
+                phone: response.data.phone,
+                email: response.data.email,
+                address: response.data.address,
+                city: response.data.city,
+                country: response.data.country,
+              }
+            }
+          );
+          
+          // Save the profile template
+          await marketplaceApi.saveBusinessProfile(profileTemplate);
+          console.log('✅ Profile template auto-generated successfully');
+        } catch (profileError) {
+          console.error('❌ Failed to auto-generate profile template:', profileError);
+          // Don't fail the registration if profile template fails
+        }
+        
         // Update the user in auth context
         await fetchUserProfile();
         

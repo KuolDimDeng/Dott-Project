@@ -23,6 +23,73 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
     """
     permission_classes = [IsAuthenticated]
     
+    def list(self, request):
+        """
+        List businesses for marketplace (redirects to marketplace_businesses)
+        """
+        return self.marketplace_businesses(request)
+    
+    def featured(self, request):
+        """
+        Get featured businesses
+        """
+        try:
+            from business.models import PlaceholderBusiness
+            
+            city = request.query_params.get('city', '').strip()
+            country = request.query_params.get('country', '').strip()
+            
+            if not city:
+                return Response({
+                    'success': False,
+                    'message': 'City is required',
+                    'results': []
+                })
+            
+            # Get featured businesses
+            businesses = PlaceholderBusiness.objects.filter(
+                city__iexact=city,
+                opted_out=False,
+                is_featured=True
+            )
+            
+            if country:
+                businesses = businesses.filter(country__iexact=country[:2])
+            
+            # Serialize businesses
+            business_list = []
+            for business in businesses[:10]:  # Limit to 10 featured
+                business_list.append({
+                    'id': str(business.id),
+                    'business_name': business.business_name,
+                    'category': business.category,
+                    'city': business.city,
+                    'country': business.country,
+                    'phone': business.phone,
+                    'is_featured': business.is_featured,
+                    'owner_phone': business.owner_phone,
+                    'opted_out': business.opted_out
+                })
+            
+            return Response({
+                'success': True,
+                'results': business_list,
+                'count': len(business_list)
+            })
+        except Exception as e:
+            logger.error(f"Error fetching featured businesses: {e}")
+            return Response({
+                'success': False,
+                'error': str(e),
+                'results': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def category_hierarchy(self, request):
+        """
+        Alias for marketplace_category_hierarchy (for URL compatibility)
+        """
+        return self.marketplace_category_hierarchy(request)
+    
     @action(detail=False, methods=['get', 'post'])
     def search(self, request):
         """

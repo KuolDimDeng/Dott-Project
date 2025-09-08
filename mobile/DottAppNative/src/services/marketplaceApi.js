@@ -199,6 +199,97 @@ export const marketplaceApi = {
       throw error;
     }
   },
+
+  // Business owner functions for managing marketplace listing
+  
+  // Update business status (Open/Closed)
+  updateBusinessStatus: async (statusData) => {
+    try {
+      const response = await api.patch('/marketplace/business/status/', statusData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating business status:', error);
+      // Don't throw error, just log it - status update is not critical
+      return null;
+    }
+  },
+
+  // Update business products from menu
+  updateBusinessProducts: async (menuItems) => {
+    try {
+      const response = await api.post('/marketplace/business/sync-products/', {
+        menu_items: menuItems
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error syncing products to marketplace:', error);
+      throw error;
+    }
+  },
+
+  // Update business listing details
+  updateBusinessListing: async (listingData) => {
+    try {
+      const response = await api.patch('/marketplace/business/listing/', listingData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating business listing:', error);
+      throw error;
+    }
+  },
+
+  // Get business listing for editing
+  getBusinessListing: async () => {
+    try {
+      const response = await api.get('/marketplace/business/listing/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching business listing:', error);
+      throw error;
+    }
+  },
+
+  // Update business subcategories
+  updateBusinessSubcategories: async (subcategories) => {
+    try {
+      const response = await api.patch('/marketplace/business/subcategories/', {
+        subcategories: subcategories
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating business subcategories:', error);
+      throw error;
+    }
+  },
+
+  // Update business operating hours
+  updateOperatingHours: async (operatingHours) => {
+    try {
+      const response = await api.patch('/marketplace/business/operating-hours/', {
+        operating_hours: operatingHours
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating operating hours:', error);
+      throw error;
+    }
+  },
+
+  // Get business analytics
+  getBusinessAnalytics: async () => {
+    try {
+      const response = await api.get('/marketplace/business/analytics/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching business analytics:', error);
+      return {
+        views: 0,
+        clicks: 0,
+        orders: 0,
+        revenue: 0
+      };
+    }
+  },
 };
 
 export default marketplaceApi;

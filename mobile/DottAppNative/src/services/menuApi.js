@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../config/environment';
+import ENV from '../config/environment';
 
-const MENU_API_URL = `${API_BASE_URL}/api/menu`;
+const MENU_API_URL = `${ENV.apiUrl}/menu`;
 
 class MenuAPI {
   async getHeaders() {
@@ -23,7 +23,13 @@ class MenuAPI {
   async handleResponse(response) {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      console.error('🔴 Menu API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error,
+        url: response.url
+      });
+      throw new Error(error.message || error.detail || `HTTP error! status: ${response.status}`);
     }
     return response.json();
   }
@@ -31,14 +37,21 @@ class MenuAPI {
   // Get all menu items for the business
   async getMenuItems() {
     try {
+      console.log('📡 Fetching menu items from:', `${MENU_API_URL}/items/`);
+      const headers = await this.getHeaders();
+      console.log('📡 Request headers:', headers);
+      
       const response = await fetch(`${MENU_API_URL}/items/`, {
         method: 'GET',
-        headers: await this.getHeaders(),
+        headers: headers,
       });
       
-      return this.handleResponse(response);
+      console.log('📡 Menu API Response status:', response.status);
+      const data = await this.handleResponse(response);
+      console.log('✅ Menu items fetched:', data.results?.length || data.length || 0);
+      return data;
     } catch (error) {
-      console.error('Error fetching menu items:', error);
+      console.error('❌ Error fetching menu items:', error.message);
       throw error;
     }
   }
@@ -62,6 +75,13 @@ class MenuAPI {
   async createMenuItem(itemData) {
     try {
       console.log('🍽️ MenuAPI: Creating menu item:', itemData.name);
+      console.log('📡 API URL:', `${MENU_API_URL}/items/`);
+      console.log('📡 Item data:', {
+        name: itemData.name,
+        category: itemData.category,
+        price: itemData.price,
+        hasPhoto: !!itemData.photo
+      });
       
       const formData = new FormData();
       
@@ -91,6 +111,8 @@ class MenuAPI {
       }
 
       const sessionId = await AsyncStorage.getItem('sessionId');
+      console.log('🔑 Session ID:', sessionId ? sessionId.substring(0, 20) + '...' : 'none');
+      
       const response = await fetch(`${MENU_API_URL}/items/`, {
         method: 'POST',
         headers: {

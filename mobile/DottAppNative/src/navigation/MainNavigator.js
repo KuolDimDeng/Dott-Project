@@ -20,7 +20,7 @@ import CartScreen from '../screens/CartScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
 // Import business screens
-import AdaptivePOSScreen from '../screens/business/AdaptivePOSScreen';
+import ProgressivePOSScreen from '../screens/business/ProgressivePOSScreen';
 import TimesheetScreen from '../screens/business/TimesheetScreen';
 import ReportsScreen from '../screens/business/ReportsScreen';
 import EmployeesScreen from '../screens/business/EmployeesScreen';
@@ -50,6 +50,7 @@ import TaxFilingScreen from '../screens/business/TaxFilingScreen';
 import TransportScreen from '../screens/business/TransportScreen';
 import TablesScreen from '../screens/business/TablesScreen';
 import DeliveryScreen from '../screens/business/DeliveryScreen';
+import MarketplaceProfileEditor from '../screens/business/MarketplaceProfileEditor';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -71,8 +72,8 @@ function TabNavigator() {
             case 'Call':
               iconName = focused ? 'call' : 'call-outline';
               break;
-            case 'Marketplace':
-              iconName = focused ? 'cart' : 'cart-outline';
+            case 'Discover':
+              iconName = focused ? 'compass' : 'compass-outline';
               break;
             case 'Purchases':
               iconName = focused ? 'receipt' : 'receipt-outline';
@@ -80,10 +81,10 @@ function TabNavigator() {
             case 'Business':
               iconName = focused ? 'business' : 'business-outline';
               break;
-            case 'Chat':
+            case 'Chats':
               iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
               break;
-            case 'Account':
+            case 'Me':
               iconName = focused ? 'person' : 'person-outline';
               break;
             default:
@@ -109,14 +110,14 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Call" component={CallScreen} />
-      <Tab.Screen name="Marketplace" component={MarketplaceScreen} />
+      <Tab.Screen name="Discover" component={MarketplaceScreen} />
       {!hasBusiness ? (
         <Tab.Screen name="Purchases" component={PurchasesScreen} />
       ) : (
         <Tab.Screen name="Business" component={BusinessMenuScreen} />
       )}
-      <Tab.Screen name="Chat" component={ChatScreen} />
-      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen name="Chats" component={ChatScreen} />
+      <Tab.Screen name="Me" component={AccountScreen} />
     </Tab.Navigator>
   );
 }
@@ -134,7 +135,7 @@ export default function MainNavigator() {
       <Stack.Screen name="GroupCreation" component={GroupCreationScreen} />
       <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />
       {/* Business screens for navigation */}
-      <Stack.Screen name="POS" component={AdaptivePOSScreen} />
+      <Stack.Screen name="POS" component={ProgressivePOSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />
       <Stack.Screen name="Reports" component={ReportsScreen} />
       <Stack.Screen name="Employees" component={EmployeesScreen} />
@@ -154,7 +155,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="HR" component={HRScreen} />
       <Stack.Screen name="Payroll" component={PayrollScreen} />
-      <Stack.Screen name="Advertise" component={AdvertiseScreen} />
+      <Stack.Screen name="Advertise" component={MarketplaceProfileEditor} />
       <Stack.Screen name="Services" component={ServicesScreen} />
       <Stack.Screen name="MarketplaceBusiness" component={MarketplaceBusinessScreen} />
       <Stack.Screen name="Invite" component={InviteScreen} />
@@ -163,6 +164,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Transport" component={TransportScreen} />
       <Stack.Screen name="Tables" component={TablesScreen} />
       <Stack.Screen name="Delivery" component={DeliveryScreen} />
+      <Stack.Screen name="MarketplaceSettings" component={MarketplaceProfileEditor} />
     </Stack.Navigator>
   );
 }

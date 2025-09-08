@@ -84,9 +84,9 @@ export default function CartScreen() {
       <Text style={styles.emptyText}>Add items from the marketplace to get started</Text>
       <TouchableOpacity 
         style={styles.browseButton}
-        onPress={() => navigation.navigate('Marketplace')}
+        onPress={() => navigation.navigate('Discover')}
       >
-        <Text style={styles.browseButtonText}>Browse Marketplace</Text>
+        <Text style={styles.browseButtonText}>Browse & Discover</Text>
       </TouchableOpacity>
     </View>
   );

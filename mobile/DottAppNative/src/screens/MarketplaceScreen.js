@@ -296,9 +296,10 @@ export default function MarketplaceScreen() {
   };
 
   const handleProductPress = (product) => {
-    navigation.navigate('ProductDetail', {
-      productId: product.id,
+    // Navigate to the business detail page when clicking on a product
+    navigation.navigate('BusinessDetail', {
       businessId: product.businessId,
+      businessName: product.businessName,
     });
   };
 
@@ -588,7 +589,7 @@ export default function MarketplaceScreen() {
       {/* Original Header with Location, Bell, and Cart */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Marketplace</Text>
+          <Text style={styles.headerTitle}>Discover</Text>
           
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>

@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import marketplaceApi from '../services/marketplaceApi';
+import businessDataApi from '../services/businessDataApi';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -24,7 +25,7 @@ export default function BusinessDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { addToCart } = useCart();
-  const { businessId, businessName, isPlaceholder } = route.params || {};
+  const { businessId, businessName, isPlaceholder, previewMode, previewData } = route.params || {};
   
   const [business, setBusiness] = useState(null);
   const [products, setProducts] = useState([]);
@@ -37,11 +38,60 @@ export default function BusinessDetailScreen() {
   const [inquirySent, setInquirySent] = useState(false);
 
   useEffect(() => {
-    loadBusinessDetails();
-    if (isPlaceholder) {
-      checkPlaceholderStatus();
+    if (previewMode && previewData) {
+      // Use preview data directly
+      loadPreviewData();
+    } else {
+      loadBusinessDetails();
+      if (isPlaceholder) {
+        checkPlaceholderStatus();
+      }
     }
-  }, [businessId]);
+  }, [businessId, previewMode]);
+
+  const loadPreviewData = () => {
+    // Convert preview data from profile template to business detail format
+    const profileData = previewData;
+    
+    const previewBusiness = {
+      id: 'preview',
+      business_name: profileData.basic?.businessName || 'Your Business',
+      description: profileData.basic?.description || 'Your business description will appear here',
+      category: profileData.discovery?.mainCategory || 'Business',
+      phone: profileData.contact?.phone || '+211 XXX XXX XXX',
+      email: profileData.contact?.email || 'business@example.com',
+      address: profileData.contact?.address ? 
+        `${profileData.contact.address.street}, ${profileData.contact.address.city}, ${profileData.contact.address.country}` : 
+        'Your address',
+      city: profileData.contact?.address?.city || 'City',
+      country: profileData.contact?.address?.country || 'Country',
+      average_rating: profileData.reputation?.rating || 0,
+      total_reviews: profileData.reputation?.reviewCount || 0,
+      total_orders: 0,
+      response_time: profileData.reputation?.responseTime || '< 1 hour',
+      is_verified: profileData.reputation?.verified || false,
+      is_featured: profileData.marketplace?.priority > 0,
+      business_hours: profileData.operations?.operatingHours || {},
+      images: profileData.visuals?.galleryImages || [],
+      logo: profileData.visuals?.logoImage,
+      cover_image: profileData.visuals?.bannerImage,
+    };
+    
+    setBusiness(previewBusiness);
+    
+    // Load products/services from the profile offerings
+    if (profileData.offerings?.type === 'menu') {
+      // Would load from menu context
+      setProducts(mockProducts());
+    } else if (profileData.offerings?.type === 'products') {
+      setProducts(mockProducts());
+    } else if (profileData.offerings?.type === 'services') {
+      setServices(mockServices());
+    }
+    
+    setReviews(mockReviews());
+    setLoading(false);
+  };
 
   const checkPlaceholderStatus = async () => {
     try {
@@ -177,12 +227,53 @@ export default function BusinessDetailScreen() {
 
   const handleShare = async () => {
     try {
+      const shareMessage = `Check out ${business?.business_name} on Dott!\n${business?.description || ''}\n\n📍 ${business?.city}, ${business?.country}\n📞 ${business?.phone}\n⭐ ${business?.average_rating || 0} stars (${business?.total_reviews || 0} reviews)\n\nDownload Dott: https://dottapps.com`;
+      
       await Share.share({
-        message: `Check out ${business?.business_name} on Dott! Download the app: https://dottapps.com`,
+        message: shareMessage,
         title: business?.business_name,
       });
     } catch (error) {
       console.error('Error sharing:', error);
+    }
+  };
+
+  const handleWhatsApp = () => {
+    const phoneNumber = business?.whatsapp || business?.phone;
+    if (phoneNumber) {
+      const message = `Hi, I found your business on Dott and I'm interested in your services.`;
+      const url = `whatsapp://send?phone=${phoneNumber.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(message)}`;
+      Linking.openURL(url).catch(() => {
+        Alert.alert('WhatsApp not installed', 'Please install WhatsApp to use this feature.');
+      });
+    }
+  };
+
+  const handleSocialMedia = (platform) => {
+    const socialLinks = business?.social || {};
+    const link = socialLinks[platform];
+    
+    if (link) {
+      let url = link;
+      // Add protocol if not present
+      if (!url.startsWith('http')) {
+        switch (platform) {
+          case 'facebook':
+            url = `https://facebook.com/${link}`;
+            break;
+          case 'instagram':
+            url = `https://instagram.com/${link}`;
+            break;
+          case 'twitter':
+            url = `https://twitter.com/${link}`;
+            break;
+          default:
+            url = `https://${link}`;
+        }
+      }
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Error', `Could not open ${platform} link`);
+      });
     }
   };
 
@@ -258,6 +349,16 @@ export default function BusinessDetailScreen() {
         <Text style={styles.description}>{business?.description}</Text>
       </View>
 
+      {/* Preview Mode Notice */}
+      {previewMode && (
+        <View style={styles.previewNotice}>
+          <Icon name="eye-outline" size={20} color="#2563eb" />
+          <Text style={styles.previewText}>
+            Preview Mode - This is how your profile will appear to customers
+          </Text>
+        </View>
+      )}
+
       {/* Placeholder Business Notice */}
       {isPlaceholder && placeholderStatus && (
         <View style={styles.placeholderNotice}>
@@ -295,17 +396,19 @@ export default function BusinessDetailScreen() {
               <Text style={styles.primaryButtonText}>Chat</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleCall}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
               <Icon name="call" size={20} color="#10b981" />
-              <Text style={styles.secondaryButtonText}>Call</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.actionButton} onPress={handleWhatsApp}>
+              <Icon name="logo-whatsapp" size={20} color="#25d366" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+              <Icon name="share-social" size={20} color="#10b981" />
             </TouchableOpacity>
           </>
         )}
-        
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleShare}>
-          <Icon name="share-social" size={20} color="#10b981" />
-          <Text style={styles.secondaryButtonText}>Share</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -697,6 +800,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
+  actionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    minWidth: 44,
+  },
+  socialLinks: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  socialButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
   tabs: {
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -721,6 +847,23 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#10b981',
     fontWeight: '600',
+  },
+  previewNotice: {
+    flexDirection: 'row',
+    backgroundColor: '#dbeafe',
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+  },
+  previewText: {
+    fontSize: 14,
+    color: '#1e40af',
+    marginLeft: 8,
+    flex: 1,
   },
   placeholderNotice: {
     flexDirection: 'row',

@@ -150,6 +150,12 @@ export const BusinessProvider = ({ children }) => {
           businessUpdates.businessName = profileResponse.business_name;
         }
         
+        // Set business type based on business name if not already set
+        if (profileResponse.business_name && profileResponse.business_name.toLowerCase().includes('restaurant')) {
+          businessUpdates.businessType = 'RESTAURANT_CAFE';
+          console.log('🍽️ Setting business type to RESTAURANT_CAFE based on name');
+        }
+        
         if (Object.keys(businessUpdates).length > 0) {
           updateBusinessData(businessUpdates);
           console.log('Business profile data updated:', businessUpdates);
@@ -291,26 +297,10 @@ export const BusinessProvider = ({ children }) => {
       }
     }
     
-    // FORCE: Always use restaurant menu items for any Dott Restaurant business regardless of API response
+    // Check if business type is restaurant
     const currentBusinessName = businessData.businessName || '';
     console.log('🔍 Current Business Name:', currentBusinessName);
-    
-    if (currentBusinessName && (currentBusinessName.toLowerCase().includes('dott restaurant') || currentBusinessName.toLowerCase().includes('restaurant'))) {
-      console.log('🍽️ FORCE: Detected restaurant business - Using restaurant menu items');
-      console.log('🍽️ FORCE: Business Name:', currentBusinessName);
-      // Override with proper restaurant menu items
-      menuItems = [
-        { id: 'orders', label: 'Orders', title: 'Orders', icon: 'restaurant-outline', screen: 'Orders' },
-        { id: 'pos', label: 'POS', title: 'POS', icon: 'card-outline', screen: 'POS' },
-        { id: 'tables', label: 'Tables', title: 'Tables', icon: 'grid-outline', screen: 'Tables' },
-        { id: 'delivery', label: 'Delivery', title: 'Delivery', icon: 'bicycle-outline', screen: 'Delivery' },
-        { id: 'inventory', label: 'Inventory', title: 'Inventory', icon: 'cube-outline', screen: 'Inventory' },
-        { id: 'menu', label: 'Menu', title: 'Menu', icon: 'list-outline', screen: 'MenuManagement', subtitle: 'Manage menu items and pricing' }
-      ];
-      console.log('🍽️ FORCE: Restaurant menu items set - Orders, POS, Tables, Delivery, Inventory, Menu');
-      console.log('🍽️ FORCE: Menu item details:', menuItems.find(item => item.id === 'menu'));
-      return menuItems;
-    }
+    console.log('🔍 Business Type from data:', businessData.businessType);
     
     // Always ensure restaurants have Menu option - Enhanced detection
     const businessName = businessData.businessName?.toLowerCase() || '';
@@ -334,7 +324,45 @@ export const BusinessProvider = ({ children }) => {
     if (isRestaurant) {
       console.log('🍽️ Restaurant detected! Business Name:', businessData.businessName);
       console.log('🍽️ Business Type:', businessData.businessType);
-      console.log('🍽️ Current menu items:', menuItems.length);
+      console.log('🍽️ Current menu items before filtering:', menuItems.length);
+      
+      // Filter out Timesheets and other unwanted items for restaurants
+      const restaurantExcludedItems = ['timesheet', 'timesheets', 'expenses', 'invoices', 'reports', 'banking'];
+      menuItems = menuItems.filter(item => {
+        const itemLabel = (item.label || item.title || '').toLowerCase();
+        const itemId = (item.id || '').toLowerCase();
+        const itemScreen = (item.screen || '').toLowerCase();
+        
+        const shouldExclude = restaurantExcludedItems.some(excluded => 
+          itemLabel.includes(excluded) || 
+          itemId.includes(excluded) ||
+          itemScreen.includes(excluded)
+        );
+        
+        if (shouldExclude) {
+          console.log('🚫 Filtering out item for restaurant:', item.label || item.title);
+        }
+        
+        return !shouldExclude;
+      });
+      
+      console.log('🍽️ Menu items after filtering:', menuItems.length);
+      
+      // Change "Employees" to "Staff" for restaurants
+      menuItems = menuItems.map(item => {
+        if (item.id === 'employees' || 
+            item.label?.toLowerCase() === 'employees' || 
+            item.screen === 'Employees' ||
+            item.screen === 'EmployeesScreen') {
+          return {
+            ...item,
+            label: 'Staff',
+            title: 'Staff',
+            subtitle: 'Manage your staff members'
+          };
+        }
+        return item;
+      });
       
       // Check if Menu item already exists
       const hasMenuOption = menuItems.some(item => 
@@ -357,11 +385,35 @@ export const BusinessProvider = ({ children }) => {
         };
         menuItems.push(menuOption);
         console.log('🍽️ Added Menu option:', menuOption);
-        console.log('🍽️ Final menu items count:', menuItems.length);
       }
     } else {
       console.log('❌ Not detected as restaurant');
     }
+    
+    // Add Advertise option for ALL business types
+    const hasAdvertiseOption = menuItems.some(item => 
+      item.id === 'advertise' || 
+      item.screen === 'MarketplaceSettings' ||
+      item.label?.toLowerCase().includes('advertise')
+    );
+    
+    console.log('📢 Has Advertise option already:', hasAdvertiseOption);
+    
+    if (!hasAdvertiseOption) {
+      // Add Advertise option for all businesses
+      const advertiseOption = {
+        id: 'advertise',
+        label: 'Advertise',
+        title: 'Advertise',
+        icon: 'megaphone-outline',
+        screen: 'MarketplaceSettings',
+        subtitle: 'Manage your marketplace listing'
+      };
+      menuItems.push(advertiseOption);
+      console.log('📢 Added Advertise option for business:', advertiseOption);
+    }
+    
+    console.log('🔍 Final menu items count:', menuItems.length);
     
     return menuItems;
   };

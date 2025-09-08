@@ -556,17 +556,16 @@ export const BUSINESS_FEATURES = {
       invoicing: true,
       pos: true,
       scheduling: true,
-      timesheets: true,
+      timesheets: false,  // Disabled for restaurants
       menu: true,  // Menu management for restaurant
     },
     navigationMode: 'none',
     menuItems: [
-      { id: 'orders', label: 'Orders', icon: 'restaurant-outline', screen: 'OrderQueue' },
-      { id: 'pos', label: 'POS', icon: 'card-outline', screen: 'POSScreen' },
-      { id: 'tables', label: 'Tables', icon: 'grid-outline', screen: 'TableManagement' },
-      { id: 'delivery', label: 'Delivery', icon: 'bicycle-outline', screen: 'DeliveryOrders' },
-      { id: 'inventory', label: 'Inventory', icon: 'cube-outline', screen: 'FoodInventory' },
+      { id: 'pos', label: 'POS', icon: 'card-outline', screen: 'POS' },
+      { id: 'inventory', label: 'Inventory', icon: 'cube-outline', screen: 'Inventory' },
+      { id: 'employees', label: 'Staff', icon: 'people-outline', screen: 'Employees' },
       { id: 'menu', label: 'Menu', icon: 'list-outline', screen: 'MenuManagement' },
+      { id: 'advertise', label: 'Advertise', icon: 'megaphone-outline', screen: 'MarketplaceSettings' },
     ],
   },
 
