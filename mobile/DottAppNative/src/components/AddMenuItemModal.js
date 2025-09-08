@@ -17,6 +17,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
+import { useCurrency } from '../context/CurrencyContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -28,6 +29,9 @@ const AddMenuItemModal = ({
   categories = [],
   inventoryItems = [] 
 }) => {
+  const { currency } = useCurrency();
+  const currencySymbol = currency?.symbol || '$';
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -315,7 +319,7 @@ const AddMenuItemModal = ({
 
       <View style={styles.row}>
         <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-          <Text style={styles.label}>Selling Price * ($)</Text>
+          <Text style={styles.label}>Selling Price * ({currencySymbol})</Text>
           <TextInput
             style={styles.input}
             value={formData.price}
@@ -408,7 +412,7 @@ const AddMenuItemModal = ({
 
       {formData.costMethod === 'fixed' ? (
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Estimated Cost ($)</Text>
+          <Text style={styles.label}>Estimated Cost ({currencySymbol})</Text>
           <TextInput
             style={styles.input}
             value={formData.estimatedCost}
@@ -436,7 +440,7 @@ const AddMenuItemModal = ({
               <View style={styles.ingredientInfo}>
                 <Text style={styles.ingredientName}>{ingredient.supply_name}</Text>
                 <Text style={styles.ingredientDetails}>
-                  {ingredient.quantity} {ingredient.unit} - ${ingredient.estimated_cost}
+                  {ingredient.quantity} {ingredient.unit} - {currencySymbol}{ingredient.estimated_cost}
                 </Text>
               </View>
               <TouchableOpacity
@@ -456,16 +460,16 @@ const AddMenuItemModal = ({
           <Text style={styles.profitTitle}>Profit Analysis</Text>
           <View style={styles.profitRow}>
             <Text style={styles.profitLabel}>Selling Price:</Text>
-            <Text style={styles.profitValue}>${formData.price}</Text>
+            <Text style={styles.profitValue}>{currencySymbol}{formData.price}</Text>
           </View>
           <View style={styles.profitRow}>
             <Text style={styles.profitLabel}>Cost:</Text>
-            <Text style={styles.profitValue}>${formData.estimatedCost}</Text>
+            <Text style={styles.profitValue}>{currencySymbol}{formData.estimatedCost}</Text>
           </View>
           <View style={styles.profitRow}>
             <Text style={styles.profitLabel}>Profit:</Text>
             <Text style={[styles.profitValue, { color: getProfitColor() }]}>
-              ${(parseFloat(formData.price) - parseFloat(formData.estimatedCost)).toFixed(2)}
+              {currencySymbol}{(parseFloat(formData.price) - parseFloat(formData.estimatedCost)).toFixed(2)}
             </Text>
           </View>
           <View style={styles.profitRow}>
