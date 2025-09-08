@@ -48,13 +48,13 @@ export default function AccountScreen({ navigation }) {
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your delivery locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items and businesses' },
             { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
-            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
           title: 'Business Settings',
           items: [
             { icon: 'business', title: 'Business Profile', subtitle: 'Company information' },
+            { icon: 'cash', title: 'Currency Preference', subtitle: 'Business display currency', screen: 'CurrencyPreference' },
             { icon: 'people', title: 'Team & Permissions', subtitle: 'Staff access control' },
             { icon: 'wallet', title: 'Banking & Payouts', subtitle: 'Bank accounts & settlements', screen: 'BankingSetup' },
             { icon: 'document-text', title: 'Tax & Compliance', subtitle: 'Tax settings and documents' },
@@ -83,7 +83,6 @@ export default function AccountScreen({ navigation }) {
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items' },
             { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
-            { icon: 'cash', title: 'Currency Preference', subtitle: 'Display currency', screen: 'CurrencyPreference' },
           ]
         },
         {
