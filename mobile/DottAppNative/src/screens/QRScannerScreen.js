@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   Alert,
   Vibration,
   Animated,
+  Linking,
+  Platform,
 } from 'react-native';
-import { RNCamera } from 'react-native-camera';
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import dualQRApi from '../services/dualQRApi';
@@ -16,13 +19,17 @@ import dualQRApi from '../services/dualQRApi';
 export default function QRScannerScreen({ navigation, route }) {
   const { user } = useAuth();
   const { currentQRType } = route.params || {};
+  const scannerRef = useRef(null);
   
   const [scanning, setScanning] = useState(true);
-  const [flashOn, setFlashOn] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
   const [flashAnimation] = useState(new Animated.Value(1));
   const [currentColor, setCurrentColor] = useState('#2563eb'); // Default blue
   
   useEffect(() => {
+    // Request camera permission
+    requestCameraPermission();
+    
     // Set color based on current QR type
     if (currentQRType?.includes('PAY')) {
       setCurrentColor('#2563eb'); // Blue for payment
@@ -30,6 +37,30 @@ export default function QRScannerScreen({ navigation, route }) {
       setCurrentColor('#10b981'); // Green for receive
     }
   }, [currentQRType]);
+  
+  const requestCameraPermission = async () => {
+    try {
+      const result = await request(
+        Platform.OS === 'ios' 
+          ? PERMISSIONS.IOS.CAMERA 
+          : PERMISSIONS.ANDROID.CAMERA
+      );
+      setHasPermission(result === RESULTS.GRANTED);
+      
+      if (result === RESULTS.BLOCKED) {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please enable camera access in Settings to scan QR codes',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Permission error:', error);
+    }
+  };
   
   const flashScreen = (color) => {
     Animated.sequence([
@@ -65,8 +96,9 @@ export default function QRScannerScreen({ navigation, route }) {
     );
   };
   
-  const onQRCodeRead = async ({ data }) => {
+  const onQRCodeRead = async (e) => {
     if (!scanning) return;
+    const data = e.data;
     setScanning(false);
     
     try {
@@ -97,6 +129,11 @@ export default function QRScannerScreen({ navigation, route }) {
         }
         
         showSafetyError(errorDetails);
+        // Reactivate scanner after error
+        setTimeout(() => {
+          scannerRef.current?.reactivate();
+          setScanning(true);
+        }, 2000);
         return;
       }
       
@@ -114,7 +151,10 @@ export default function QRScannerScreen({ navigation, route }) {
         [
           {
             text: 'Try Again',
-            onPress: () => setScanning(true),
+            onPress: () => {
+              scannerRef.current?.reactivate();
+              setScanning(true);
+            },
           },
         ]
       );
@@ -154,15 +194,36 @@ export default function QRScannerScreen({ navigation, route }) {
     );
   };
   
+  if (!hasPermission) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Icon name="camera-off" size={64} color="#9ca3af" />
+        <Text style={styles.permissionTitle}>Camera Access Required</Text>
+        <Text style={styles.permissionText}>
+          Please enable camera access to scan QR codes
+        </Text>
+        <TouchableOpacity 
+          style={styles.permissionButton}
+          onPress={() => Linking.openSettings()}
+        >
+          <Text style={styles.permissionButtonText}>Open Settings</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.container}>
-      <RNCamera
-        style={styles.camera}
-        type={RNCamera.Constants.Type.back}
-        flashMode={flashOn ? RNCamera.Constants.FlashMode.torch : RNCamera.Constants.FlashMode.off}
-        onBarCodeRead={onQRCodeRead}
-        captureAudio={false}
-      >
+      <QRCodeScanner
+        ref={scannerRef}
+        onRead={onQRCodeRead}
+        reactivateTimeout={5000}
+        showMarker={false}
+        cameraStyle={styles.camera}
+        topViewStyle={styles.zeroContainer}
+        bottomViewStyle={styles.zeroContainer}
+        customMarker={(
+          <View style={StyleSheet.absoluteFillObject}>
         {/* Flash overlay for error feedback */}
         <Animated.View 
           style={[
@@ -235,7 +296,9 @@ export default function QRScannerScreen({ navigation, route }) {
             <Text style={styles.actionText}>Enter Code</Text>
           </TouchableOpacity>
         </View>
-      </RNCamera>
+          </View>
+        )}
+      />
     </View>
   );
 }
@@ -246,7 +309,42 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
   camera: {
+    height: '100%',
+  },
+  zeroContainer: {
+    height: 0,
+    flex: 0,
+  },
+  permissionContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 32,
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  permissionText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  permissionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
   flashOverlay: {
     ...StyleSheet.absoluteFillObject,
