@@ -650,12 +650,25 @@ export default function POSScreen() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.methodButton, paymentMethod === 'mobile' && styles.methodActive]}
-                  onPress={() => setPaymentMethod('mobile')}
+                  style={[styles.methodButton, paymentMethod === 'mpesa' && styles.methodActive]}
+                  onPress={() => setPaymentMethod('mpesa')}
                 >
-                  <Icon name="phone-portrait" size={20} color={paymentMethod === 'mobile' ? 'white' : '#666'} />
-                  <Text style={[styles.methodText, paymentMethod === 'mobile' && styles.methodTextActive]}>
-                    Mobile
+                  <View style={[styles.mpesaLogo, paymentMethod === 'mpesa' && styles.mpesaLogoActive]}>
+                    <Text style={[styles.mpesaLogoText, paymentMethod === 'mpesa' && styles.mpesaLogoTextActive]}>M</Text>
+                  </View>
+                  <Text style={[styles.methodText, paymentMethod === 'mpesa' && styles.methodTextActive]}>
+                    M-Pesa
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.methodButton, paymentMethod === 'mtn' && styles.methodActive]}
+                  onPress={() => setPaymentMethod('mtn')}
+                >
+                  <View style={[styles.mtnLogo, paymentMethod === 'mtn' && styles.mtnLogoActive]}>
+                    <Text style={[styles.mtnLogoText, paymentMethod === 'mtn' && styles.mtnLogoTextActive]}>MTN</Text>
+                  </View>
+                  <Text style={[styles.methodText, paymentMethod === 'mtn' && styles.methodTextActive]}>
+                    MoMo
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1481,9 +1494,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   methodButton: {
-    width: '23%',
+    width: '18%',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 12,
     marginBottom: 10,
     borderRadius: 8,
     borderWidth: 1,
@@ -1496,7 +1509,7 @@ const styles = StyleSheet.create({
   },
   methodText: {
     marginTop: 5,
-    fontSize: 10,
+    fontSize: 9,
     color: '#666',
     fontWeight: '500',
   },
@@ -1511,6 +1524,44 @@ const styles = StyleSheet.create({
   },
   dottLogoActive: {
     tintColor: 'white',
+  },
+  mpesaLogo: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mpesaLogoActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  mpesaLogoText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  mpesaLogoTextActive: {
+    color: 'white',
+  },
+  mtnLogo: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: '#FFEB3B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mtnLogoActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  mtnLogoText: {
+    color: '#000',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  mtnLogoTextActive: {
+    color: 'white',
   },
   cashSection: {
     marginBottom: 20,
