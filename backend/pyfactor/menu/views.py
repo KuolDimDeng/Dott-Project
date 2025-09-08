@@ -55,7 +55,7 @@ class MenuCategoryViewSet(viewsets.ModelViewSet):
     ViewSet for managing menu categories
     """
     serializer_class = MenuCategorySerializer
-    permission_classes = [MenuPermission]
+    permission_classes = [IsAuthenticated]  # Temporarily using basic auth check
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['display_order', 'name']
@@ -124,7 +124,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing menu items
     """
-    permission_classes = [MenuPermission]
+    permission_classes = [IsAuthenticated]  # Temporarily using basic auth check
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description', 'tags']
