@@ -2,10 +2,70 @@
 from django.conf import settings
 import django.contrib.postgres.fields
 import django.core.validators
-from django.db import migrations, models
+from django.db import migrations, models, connection
 import django.db.models.deletion
 import uuid
 from decimal import Decimal
+
+
+def check_and_create_tables(apps, schema_editor):
+    """Check if tables exist and create them if they don't"""
+    with connection.cursor() as cursor:
+        # Check if CourierCompany table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'couriers_couriercompany'
+            );
+        """)
+        couriercompany_exists = cursor.fetchone()[0]
+        
+        # Check if CourierProfile table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'couriers_courierprofile'
+            );
+        """)
+        courierprofile_exists = cursor.fetchone()[0]
+        
+        # Check if DeliveryOrder table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'couriers_deliveryorder'
+            );
+        """)
+        deliveryorder_exists = cursor.fetchone()[0]
+        
+        # Check if CourierEarnings table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'couriers_courierearnings'
+            );
+        """)
+        courierearnings_exists = cursor.fetchone()[0]
+        
+        # Check if CourierCompanyBranch table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'couriers_couriercompanybranch'
+            );
+        """)
+        couriercompanybranch_exists = cursor.fetchone()[0]
+        
+        if couriercompany_exists and courierprofile_exists and deliveryorder_exists and courierearnings_exists and couriercompanybranch_exists:
+            print("✅ All courier tables already exist")
+            return
+        else:
+            print("⚠️ Some courier tables are missing, will be created by migration")
+
+
+def reverse_check(apps, schema_editor):
+    """Reverse migration for the check function"""
+    pass
 
 
 class Migration(migrations.Migration):
@@ -20,6 +80,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(check_and_create_tables, reverse_check),
         migrations.CreateModel(
             name='CourierCompany',
             fields=[
