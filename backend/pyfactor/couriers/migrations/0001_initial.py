@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('custom_auth', '0001_initial'),
         ('users', '0001_initial'),
-        ('transport', '0001_initial'),
+        ('transport', '0001_ensure_base_tables'),
     ]
 
     operations = [
