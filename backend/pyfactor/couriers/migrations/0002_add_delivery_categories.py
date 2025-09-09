@@ -1,12 +1,12 @@
 # Generated migration for courier delivery enhancements
-from django.db import migrations, models, connection
+from django.db import migrations, models
 
 
 def add_fields_if_table_exists(apps, schema_editor):
     """Add fields only if table exists and fields don't already exist"""
     db_alias = schema_editor.connection.alias
     
-    with connection.cursor() as cursor:
+    with schema_editor.connection.cursor() as cursor:
         # Check if CourierProfile table exists
         cursor.execute("""
             SELECT EXISTS (
@@ -51,7 +51,7 @@ def add_fields_if_table_exists(apps, schema_editor):
 
 def reverse_fields(apps, schema_editor):
     """Remove added fields"""
-    with connection.cursor() as cursor:
+    with schema_editor.connection.cursor() as cursor:
         cursor.execute("""
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 

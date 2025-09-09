@@ -10,7 +10,7 @@ from decimal import Decimal
 
 def check_and_create_tables(apps, schema_editor):
     """Check if tables exist and create them if they don't"""
-    with connection.cursor() as cursor:
+    with schema_editor.connection.cursor() as cursor:
         # Check if CourierCompany table exists
         cursor.execute("""
             SELECT EXISTS (
