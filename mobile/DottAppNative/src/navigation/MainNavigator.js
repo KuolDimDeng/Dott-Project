@@ -75,6 +75,9 @@ import WalletRequestsScreen from '../screens/wallet/WalletRequestsScreen';
 import BusinessWalletHomeScreen from '../screens/BusinessWalletHomeScreen';
 import WalletBankTransferScreen from '../screens/WalletBankTransferScreen';
 
+// Import Courier screens
+import CourierDashboardScreen from '../screens/courier/CourierDashboardScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -212,6 +215,9 @@ export default function MainNavigator() {
       <Stack.Screen name="WalletBankTransfer" component={WalletBankTransferScreen} />
       <Stack.Screen name="WalletTopUp" component={TopUpScreen} />
       <Stack.Screen name="WalletTransactions" component={TransactionsScreen} />
+      
+      {/* Courier screens */}
+      <Stack.Screen name="CourierDashboard" component={CourierDashboardScreen} />
     </Stack.Navigator>
   );
 }

@@ -176,6 +176,66 @@ export const courierApi = {
     }
   },
 
+  // Update online status
+  updateOnlineStatus: async (isOnline) => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.patch('/couriers/couriers/me/', { is_online: isOnline });
+      return response.data;
+    } catch (error) {
+      console.error('Update online status error:', error);
+      throw error;
+    }
+  },
+
+  // Get statistics
+  getStats: async () => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.get('/couriers/couriers/stats/');
+      return response.data;
+    } catch (error) {
+      console.error('Get stats error:', error);
+      throw error;
+    }
+  },
+
+  // Get active orders
+  getActiveOrders: async () => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.get('/couriers/deliveries/?status__in=courier_assigned,picked,in_transit');
+      return response.data;
+    } catch (error) {
+      console.error('Get active orders error:', error);
+      throw error;
+    }
+  },
+
+  // Get delivery history
+  getDeliveryHistory: async (page = 1) => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.get(`/couriers/deliveries/history/?page=${page}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get delivery history error:', error);
+      throw error;
+    }
+  },
+
+  // Verify delivery PIN
+  verifyDeliveryPin: async (deliveryId, pin) => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.post(`/couriers/deliveries/${deliveryId}/verify/`, { verification_code: pin });
+      return response.data;
+    } catch (error) {
+      console.error('Verify PIN error:', error);
+      throw error;
+    }
+  },
+
   // Update courier profile
   updateProfile: async (data) => {
     try {
