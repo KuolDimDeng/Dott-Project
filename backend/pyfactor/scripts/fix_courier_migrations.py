@@ -20,36 +20,58 @@ def fix_courier_migrations():
     
     print("=== Fixing Courier Migration State ===")
     
-    with connection.cursor() as cursor:
-        # Check if courier tables exist
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'couriers_courierprofile'
-            );
-        """)
-        table_exists = cursor.fetchone()[0]
-        
-        if not table_exists:
-            print("❌ CourierProfile table does not exist but migration is marked as applied")
-            
-            # Remove the migration record so it can be re-applied
+    try:
+        with connection.cursor() as cursor:
+            # Check if courier tables exist
             cursor.execute("""
-                DELETE FROM django_migrations 
-                WHERE app = 'couriers' AND name = '0001_initial';
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'couriers_courierprofile'
+                );
             """)
-            print("✅ Removed 0001_initial migration record")
+            table_exists = cursor.fetchone()[0]
             
-            # Also remove dependent migrations
-            cursor.execute("""
-                DELETE FROM django_migrations 
-                WHERE app = 'couriers' AND name LIKE '0002%';
-            """)
-            print("✅ Removed dependent migration records")
-            
-            print("✅ Migration state fixed. Migrations will run on next deploy.")
-        else:
-            print("✅ CourierProfile table exists - no fix needed")
+            if not table_exists:
+                print("❌ CourierProfile table does not exist")
+                
+                # Check if migration is marked as applied
+                cursor.execute("""
+                    SELECT COUNT(*) FROM django_migrations 
+                    WHERE app = 'couriers' AND name = '0001_initial';
+                """)
+                migration_applied = cursor.fetchone()[0] > 0
+                
+                if migration_applied:
+                    print("❌ Migration 0001_initial is marked as applied but table doesn't exist")
+                    
+                    # Remove ALL courier migration records to start fresh
+                    cursor.execute("""
+                        DELETE FROM django_migrations 
+                        WHERE app = 'couriers';
+                    """)
+                    deleted = cursor.rowcount
+                    print(f"✅ Removed {deleted} courier migration record(s)")
+                    
+                    # Also remove marketplace courier integration migrations
+                    cursor.execute("""
+                        DELETE FROM django_migrations 
+                        WHERE app = 'marketplace' 
+                        AND name IN ('0003_add_courier_integration', '0006_merge_20250909_1710');
+                    """)
+                    deleted = cursor.rowcount
+                    if deleted > 0:
+                        print(f"✅ Removed {deleted} marketplace courier migration record(s)")
+                    
+                    print("✅ Migration state fixed. Courier migrations will run fresh.")
+                else:
+                    print("✅ Migration not marked as applied - will run normally")
+            else:
+                print("✅ CourierProfile table exists - no fix needed")
+                
+    except Exception as e:
+        print(f"⚠️ Error fixing migrations: {e}")
+        # Don't fail the deployment
+        pass
 
 if __name__ == '__main__':
     fix_courier_migrations()
