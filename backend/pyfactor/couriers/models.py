@@ -248,6 +248,22 @@ class CourierProfile(models.Model):
     accepts_fragile = models.BooleanField(default=False)
     accepts_food_delivery = models.BooleanField(default=True)
     
+    # Delivery Categories - what they can deliver
+    delivery_categories = models.JSONField(default=list, blank=True, 
+        help_text='List of delivery categories: food, groceries, medicine, packages, documents, etc.')
+    
+    # Operating Hours - when courier is available
+    operating_hours = models.JSONField(default=dict, blank=True,
+        help_text='Operating hours per day: {"monday": {"start": "08:00", "end": "20:00", "is_open": true}, ...}')
+    
+    # Current availability toggle
+    is_online = models.BooleanField(default=False, help_text='Current availability status')
+    
+    # Delivery radius from current location
+    delivery_radius = models.IntegerField(default=10, 
+        validators=[MinValueValidator(1), MaxValueValidator(50)],
+        help_text='Maximum delivery distance in kilometers')
+    
     # Availability
     availability_status = models.CharField(max_length=20, choices=AVAILABILITY_STATUS, default='offline')
     last_online = models.DateTimeField(null=True, blank=True)

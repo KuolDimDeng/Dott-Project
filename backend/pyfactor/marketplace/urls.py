@@ -8,12 +8,17 @@ from .placeholder_inquiry_views import (
     send_placeholder_inquiry,
     check_placeholder_status
 )
+from .views_mobile_orders import MobileBusinessOrdersViewSet
 
 # Business-side marketplace routes
 router = DefaultRouter()
+router.register(r'mobile/orders', MobileBusinessOrdersViewSet, basename='mobile-orders')
 # Note: BusinessListingViewSet is registered with explicit paths below, not via router
 
 urlpatterns = [
+    # Include router URLs for mobile orders
+    path('', include(router.urls)),
+    
     # Consumer endpoints (if needed)
     path('consumer/', include([
         path('businesses/', ConsumerSearchViewSet.as_view({'get': 'list'}), name='consumer-businesses'),

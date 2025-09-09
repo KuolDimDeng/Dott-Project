@@ -16,6 +16,7 @@ import ChatConversationScreen from '../screens/ChatConversationScreen';
 import NewChatScreen from '../screens/NewChatScreen';
 import GroupCreationScreen from '../screens/GroupCreationScreen';
 import AccountScreen from '../screens/AccountScreen';
+import AccountSettingsScreen from '../screens/AccountSettingsScreen';
 import CartScreen from '../screens/CartScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
@@ -69,6 +70,10 @@ import ReceiveMoneyScreen from '../screens/wallet/ReceiveMoneyScreen';
 import TopUpScreen from '../screens/wallet/TopUpScreen';
 import WalletSettingsScreen from '../screens/wallet/WalletSettingsScreen';
 import WalletRequestsScreen from '../screens/wallet/WalletRequestsScreen';
+
+// Import Business Wallet screens
+import BusinessWalletHomeScreen from '../screens/BusinessWalletHomeScreen';
+import WalletBankTransferScreen from '../screens/WalletBankTransferScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -152,6 +157,7 @@ export default function MainNavigator() {
       <Stack.Screen name="NewChat" component={NewChatScreen} />
       <Stack.Screen name="GroupCreation" component={GroupCreationScreen} />
       <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />
+      <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
       {/* Business screens for navigation */}
       <Stack.Screen name="POS" component={ProgressivePOSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />
@@ -200,6 +206,12 @@ export default function MainNavigator() {
       <Stack.Screen name="TopUp" component={TopUpScreen} />
       <Stack.Screen name="WalletSettings" component={WalletSettingsScreen} />
       <Stack.Screen name="WalletRequests" component={WalletRequestsScreen} />
+      
+      {/* Business Wallet screens */}
+      <Stack.Screen name="BusinessWallet" component={BusinessWalletHomeScreen} />
+      <Stack.Screen name="WalletBankTransfer" component={WalletBankTransferScreen} />
+      <Stack.Screen name="WalletTopUp" component={TopUpScreen} />
+      <Stack.Screen name="WalletTransactions" component={TransactionsScreen} />
     </Stack.Navigator>
   );
 }

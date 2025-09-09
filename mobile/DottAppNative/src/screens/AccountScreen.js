@@ -145,7 +145,7 @@ export default function AccountScreen({ navigation }) {
             { icon: 'business', title: 'Business Profile', subtitle: 'Company information' },
             { icon: 'cash', title: 'Currency Preference', subtitle: 'Business display currency', screen: 'CurrencyPreference' },
             { icon: 'people', title: 'Team & Permissions', subtitle: 'Staff access control' },
-            { icon: 'wallet', title: 'Banking & Payouts', subtitle: 'Bank accounts & settlements', screen: 'BankingSetup' },
+            { icon: 'wallet', title: 'Banking & Payouts', subtitle: 'Bank accounts & settlements', screen: 'AccountSettings' },
             { icon: 'document-text', title: 'Tax & Compliance', subtitle: 'Tax settings and documents' },
             { icon: 'bar-chart', title: 'Subscription', subtitle: 'Plan and billing' },
           ]

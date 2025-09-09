@@ -48,6 +48,13 @@ from custom_auth.api.views.phone_auth_views import (
     PhoneResendOTPView
 )
 
+# Import mobile user management views
+from .views_mobile_users import MobileUserManagementViewSet
+
+# Create router for viewsets
+router = DefaultRouter()
+router.register(r'mobile/users', MobileUserManagementViewSet, basename='mobile-users')
+
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
@@ -63,7 +70,10 @@ register_converter(UUIDConverter, 'uuid')
 router = DefaultRouter()
 
 urlpatterns = [
-       # Auth error logging endpoints - handle both patterns explicitly
+    # Include router URLs for mobile user management
+    path('', include(router.urls)),
+    
+    # Auth error logging endpoints - handle both patterns explicitly
     re_path(r'^_log/?$', AuthErrorView.as_view(), name='auth_log'),
     re_path(r'^error/?$', AuthErrorView.as_view(), name='auth_error'),
 

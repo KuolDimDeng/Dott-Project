@@ -11,10 +11,14 @@ class ConsumerOrder(models.Model):
     """
     ORDER_STATUS_CHOICES = [
         ('pending', 'Pending'),
-        ('confirmed', 'Confirmed'),
+        ('business_accepted', 'Business Accepted'),
+        ('searching_courier', 'Searching for Courier'),
+        ('courier_assigned', 'Courier Assigned'),
         ('preparing', 'Preparing'),
-        ('ready', 'Ready for Delivery/Pickup'),
-        ('out_for_delivery', 'Out for Delivery'),
+        ('ready_for_pickup', 'Ready for Pickup'),
+        ('picked_up', 'Picked Up'),
+        ('in_transit', 'In Transit'),
+        ('arrived', 'Courier Arrived'),
         ('delivered', 'Delivered'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
@@ -41,6 +45,20 @@ class ConsumerOrder(models.Model):
     # Parties
     consumer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consumer_orders')
     business = models.ForeignKey(User, on_delete=models.CASCADE, related_name='business_orders')
+    
+    # Courier integration
+    courier = models.ForeignKey('couriers.CourierProfile', on_delete=models.SET_NULL, 
+                               null=True, blank=True, related_name='delivery_orders')
+    courier_assigned_at = models.DateTimeField(null=True, blank=True)
+    courier_accepted_at = models.DateTimeField(null=True, blank=True)
+    courier_earnings = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Delivery PIN verification
+    delivery_pin = models.CharField(max_length=4, blank=True, 
+                                   help_text='4-digit PIN for delivery verification')
+    pin_generated_at = models.DateTimeField(null=True, blank=True)
+    pin_verified = models.BooleanField(default=False)
+    pin_verified_at = models.DateTimeField(null=True, blank=True)
     
     # Order details
     items = models.JSONField(default=dict)  # Array of {product_id, name, quantity, price}
@@ -131,6 +149,45 @@ class ConsumerOrder(models.Model):
         self.order_status = 'cancelled'
         self.cancelled_at = timezone.now()
         self.cancellation_reason = reason
+        self.save()
+    
+    def generate_delivery_pin(self):
+        """Generate a 4-digit PIN for delivery verification"""
+        import random
+        self.delivery_pin = str(random.randint(1000, 9999))
+        self.pin_generated_at = timezone.now()
+        self.pin_verified = False
+        self.save()
+        return self.delivery_pin
+    
+    def verify_delivery_pin(self, pin):
+        """Verify the delivery PIN"""
+        if self.delivery_pin == str(pin):
+            self.pin_verified = True
+            self.pin_verified_at = timezone.now()
+            self.order_status = 'delivered'
+            self.delivered_at = timezone.now()
+            self.save()
+            return True
+        return False
+    
+    def assign_courier(self, courier_profile, earnings):
+        """Assign a courier to this order"""
+        self.courier = courier_profile
+        self.courier_assigned_at = timezone.now()
+        self.courier_earnings = earnings
+        self.order_status = 'courier_assigned'
+        self.save()
+    
+    def courier_accept(self):
+        """Courier accepts the delivery"""
+        self.courier_accepted_at = timezone.now()
+        self.save()
+    
+    def mark_picked_up(self):
+        """Mark order as picked up by courier"""
+        self.order_status = 'picked_up'
+        self.generate_delivery_pin()  # Generate PIN when picked up
         self.save()
 
 
