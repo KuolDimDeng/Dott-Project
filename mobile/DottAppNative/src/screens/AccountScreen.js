@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import profilePictureService from '../services/profilePictureService';
 import walletService from '../services/walletService';
 
 export default function AccountScreen({ navigation }) {
   const { user, logout, sessionToken, refreshUser } = useAuth();
+  const { currency } = useCurrency();
   const hasBusiness = user?.has_business || false;
   const [profilePicture, setProfilePicture] = useState(user?.profile_picture || null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
@@ -281,7 +283,7 @@ export default function AccountScreen({ navigation }) {
               <Text style={styles.walletTitle}>Mobile Money Wallet</Text>
               <Text style={styles.walletSubtitle}>
                 {loadingWallet ? 'Loading...' : 
-                 walletBalance ? `Balance: ${walletService.formatAmount(walletBalance.balance, walletBalance.currency || 'USD')}` : 
+                 walletBalance ? `Balance: ${walletService.formatAmount(walletBalance.balance, currency?.code || 'USD')}` : 
                  'Send & receive money'}
               </Text>
             </View>
