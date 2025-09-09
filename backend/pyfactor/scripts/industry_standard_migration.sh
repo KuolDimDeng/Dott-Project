@@ -40,7 +40,12 @@ python manage.py showmigrations --plan | grep "\[ \]" || echo "✅ No pending mi
 # Step 4: Apply migrations (fail if error)
 echo ""
 echo "4. Applying migrations..."
-python manage.py migrate --noinput --verbosity 2
+python manage.py migrate --noinput --verbosity 2 || {
+    echo "Migration failed with error code $?"
+    echo "Attempting to show migration status..."
+    python manage.py showmigrations || true
+    exit 1
+}
 
 # Step 5: Verify critical migrations
 echo ""
