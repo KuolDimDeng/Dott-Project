@@ -589,7 +589,10 @@ export default function MarketplaceScreen() {
       {/* Original Header with Location, Bell, and Cart */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <View style={styles.headerTitleContainer}>
+            <Icon name="compass-outline" size={28} color="#ffffff" style={styles.discoverIcon} />
+            <Text style={styles.headerTitle}>Discover</Text>
+          </View>
           
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
@@ -711,8 +714,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  discoverIcon: {
+    marginRight: 8,
+  },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#ffffff',
   },

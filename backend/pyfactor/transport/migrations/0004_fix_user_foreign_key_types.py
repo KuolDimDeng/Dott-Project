@@ -19,33 +19,50 @@ def fix_user_foreign_keys(apps, schema_editor):
         driver_table_exists = cursor.fetchone()[0]
         
         if driver_table_exists:
-            # Fix transport_driver.user_id - change from UUID to INTEGER to match User.id
+            # Check if user_id column exists
             cursor.execute("""
-                -- Drop existing foreign key constraint if it exists
-                DO $$ 
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1 FROM information_schema.table_constraints 
-                        WHERE constraint_name = 'transport_driver_user_id_fkey'
-                        AND table_name = 'transport_driver'
-                    ) THEN
-                        ALTER TABLE transport_driver DROP CONSTRAINT transport_driver_user_id_fkey;
-                    END IF;
-                END $$;
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'transport_driver' 
+                AND column_name = 'user_id';
             """)
+            user_id_info = cursor.fetchone()
             
-            cursor.execute("""
-                -- Change user_id column type from UUID to INTEGER (BIGINT to match BigAutoField)
-                ALTER TABLE transport_driver 
-                ALTER COLUMN user_id TYPE BIGINT USING NULL;
-            """)
-            
-            cursor.execute("""
-                -- Recreate the foreign key constraint with correct type
-                ALTER TABLE transport_driver 
-                ADD CONSTRAINT transport_driver_user_id_fkey 
-                FOREIGN KEY (user_id) REFERENCES custom_auth_user(id) ON DELETE SET NULL;
-            """)
+            if user_id_info and user_id_info[1] == 'uuid':
+                # Only fix if column exists and is UUID type
+                print("Fixing transport_driver.user_id from UUID to BIGINT")
+                
+                # Drop existing foreign key constraint if it exists
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.table_constraints 
+                            WHERE constraint_name = 'transport_driver_user_id_fkey'
+                            AND table_name = 'transport_driver'
+                        ) THEN
+                            ALTER TABLE transport_driver DROP CONSTRAINT transport_driver_user_id_fkey;
+                        END IF;
+                    END $$;
+                """)
+                
+                try:
+                    cursor.execute("""
+                        -- Change user_id column type from UUID to INTEGER (BIGINT to match BigAutoField)
+                        ALTER TABLE transport_driver 
+                        ALTER COLUMN user_id TYPE BIGINT USING NULL;
+                    """)
+                    
+                    cursor.execute("""
+                        -- Recreate the foreign key constraint with correct type
+                        ALTER TABLE transport_driver 
+                        ADD CONSTRAINT transport_driver_user_id_fkey 
+                        FOREIGN KEY (user_id) REFERENCES custom_auth_user(id) ON DELETE SET NULL;
+                    """)
+                except Exception as e:
+                    print(f"Warning: Could not alter transport_driver.user_id: {e}")
+            else:
+                print("transport_driver.user_id is already correct type or doesn't exist")
         
         # Check if transport_expense table exists
         cursor.execute("""
@@ -57,50 +74,73 @@ def fix_user_foreign_keys(apps, schema_editor):
         expense_table_exists = cursor.fetchone()[0]
         
         if expense_table_exists:
-            # Fix transport_expense.created_by_id - change from UUID to INTEGER
+            # Check if created_by_id column exists
             cursor.execute("""
-                -- Drop existing foreign key constraint if it exists
-                DO $$ 
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1 FROM information_schema.table_constraints 
-                        WHERE constraint_name = 'transport_expense_created_by_id_fkey'
-                        AND table_name = 'transport_expense'
-                    ) THEN
-                        ALTER TABLE transport_expense DROP CONSTRAINT transport_expense_created_by_id_fkey;
-                    END IF;
-                END $$;
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'transport_expense' 
+                AND column_name = 'created_by_id';
             """)
+            created_by_info = cursor.fetchone()
             
-            cursor.execute("""
-                -- Change created_by_id column type from UUID to INTEGER (BIGINT)
-                ALTER TABLE transport_expense 
-                ALTER COLUMN created_by_id TYPE BIGINT USING NULL;
-            """)
-            
-            cursor.execute("""
-                -- Recreate the foreign key constraint with correct type
-                ALTER TABLE transport_expense 
-                ADD CONSTRAINT transport_expense_created_by_id_fkey 
-                FOREIGN KEY (created_by_id) REFERENCES custom_auth_user(id) ON DELETE SET NULL;
-            """)
+            if created_by_info and created_by_info[1] == 'uuid':
+                # Only fix if column exists and is UUID type
+                print("Fixing transport_expense.created_by_id from UUID to BIGINT")
+                
+                # Drop existing foreign key constraint if it exists
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.table_constraints 
+                            WHERE constraint_name = 'transport_expense_created_by_id_fkey'
+                            AND table_name = 'transport_expense'
+                        ) THEN
+                            ALTER TABLE transport_expense DROP CONSTRAINT transport_expense_created_by_id_fkey;
+                        END IF;
+                    END $$;
+                """)
+                
+                try:
+                    cursor.execute("""
+                        -- Change created_by_id column type from UUID to INTEGER (BIGINT)
+                        ALTER TABLE transport_expense 
+                        ALTER COLUMN created_by_id TYPE BIGINT USING NULL;
+                    """)
+                    
+                    cursor.execute("""
+                        -- Recreate the foreign key constraint with correct type
+                        ALTER TABLE transport_expense 
+                        ADD CONSTRAINT transport_expense_created_by_id_fkey 
+                        FOREIGN KEY (created_by_id) REFERENCES custom_auth_user(id) ON DELETE SET NULL;
+                    """)
+                except Exception as e:
+                    print(f"Warning: Could not alter transport_expense.created_by_id: {e}")
+            else:
+                print("transport_expense.created_by_id is already correct type or doesn't exist")
 
 
 def reverse_user_foreign_keys(apps, schema_editor):
     """Reverse the foreign key fixes if needed"""
     
     with schema_editor.connection.cursor() as cursor:
-        # Revert transport_driver.user_id back to UUID
-        cursor.execute("""
-            ALTER TABLE transport_driver DROP CONSTRAINT IF EXISTS transport_driver_user_id_fkey;
-            ALTER TABLE transport_driver ALTER COLUMN user_id TYPE UUID USING NULL;
-        """)
+        try:
+            # Revert transport_driver.user_id back to UUID
+            cursor.execute("""
+                ALTER TABLE transport_driver DROP CONSTRAINT IF EXISTS transport_driver_user_id_fkey;
+                ALTER TABLE transport_driver ALTER COLUMN user_id TYPE UUID USING NULL;
+            """)
+        except Exception as e:
+            print(f"Could not revert transport_driver.user_id: {e}")
         
-        # Revert transport_expense.created_by_id back to UUID  
-        cursor.execute("""
-            ALTER TABLE transport_expense DROP CONSTRAINT IF EXISTS transport_expense_created_by_id_fkey;
-            ALTER TABLE transport_expense ALTER COLUMN created_by_id TYPE UUID USING NULL;
-        """)
+        try:
+            # Revert transport_expense.created_by_id back to UUID  
+            cursor.execute("""
+                ALTER TABLE transport_expense DROP CONSTRAINT IF EXISTS transport_expense_created_by_id_fkey;
+                ALTER TABLE transport_expense ALTER COLUMN created_by_id TYPE UUID USING NULL;
+            """)
+        except Exception as e:
+            print(f"Could not revert transport_expense.created_by_id: {e}")
 
 
 class Migration(migrations.Migration):
