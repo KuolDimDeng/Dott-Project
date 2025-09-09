@@ -31,7 +31,6 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'custom_auth_tenant',
-                'managed': False,
             },
         ),
         migrations.CreateModel(
