@@ -260,6 +260,7 @@ const AddMenuItemModal = ({
         price: parseFloat(formData.price),
         estimatedCost: parseFloat(formData.estimatedCost) || 0,
         preparationTime: parseInt(formData.preparationTime) || 0,
+        photo: formData.photo, // Include the photo data
       };
 
       await onSave(itemData);

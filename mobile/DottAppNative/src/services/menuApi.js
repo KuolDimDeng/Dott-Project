@@ -87,11 +87,19 @@ class MenuAPI {
       
       // Add photo if provided
       if (itemData.photo) {
-        formData.append('image', {
+        console.log('📸 Adding photo to FormData:', {
           uri: itemData.photo.uri,
           type: itemData.photo.type || 'image/jpeg',
           name: itemData.photo.fileName || `menu-item-${Date.now()}.jpg`,
         });
+        // Use 'image_url' as the field name to match backend expectations
+        formData.append('image_url', {
+          uri: itemData.photo.uri,
+          type: itemData.photo.type || 'image/jpeg',
+          name: itemData.photo.fileName || `menu-item-${Date.now()}.jpg`,
+        });
+      } else {
+        console.log('⚠️ No photo provided for menu item');
       }
 
       // Add other fields
