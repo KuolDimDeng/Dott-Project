@@ -6,6 +6,7 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q, Avg
 from django.shortcuts import get_object_or_404
 
@@ -204,6 +205,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [MenuPermission]
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Support file uploads
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description', 'tags']
     ordering_fields = ['name', 'price', 'category', 'display_order', 'created_at']

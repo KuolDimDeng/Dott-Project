@@ -24,13 +24,14 @@ class MenuItemSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     profit_margin = serializers.ReadOnlyField()
     effective_price = serializers.ReadOnlyField()
+    image = serializers.ImageField(required=False, allow_null=True, write_only=True)
     
     class Meta:
         model = MenuItem
         fields = [
             'id', 'name', 'description', 'category', 'category_name',
             'price', 'discounted_price', 'cost', 'effective_price', 'profit_margin',
-            'image_url', 'thumbnail_url', 'additional_images',
+            'image', 'image_url', 'thumbnail_url', 'additional_images',
             'is_available', 'is_featured', 'is_new', 'is_popular',
             'preparation_time', 'serving_size', 'calories',
             'is_vegetarian', 'is_vegan', 'is_gluten_free', 'is_dairy_free',
@@ -40,7 +41,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
             'rating', 'review_count', 'order_count',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'rating', 'review_count', 'order_count', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'rating', 'review_count', 'order_count', 'created_at', 'updated_at', 'image_url']
     
     def validate_discounted_price(self, value):
         if value and self.initial_data.get('price'):

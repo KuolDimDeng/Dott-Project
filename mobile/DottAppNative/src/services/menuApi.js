@@ -29,7 +29,23 @@ class MenuAPI {
         error: error,
         url: response.url
       });
-      throw new Error(error.message || error.detail || `HTTP error! status: ${response.status}`);
+      
+      // Ensure we always have a string error message
+      let errorMessage = 'An error occurred';
+      if (typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if (typeof error.detail === 'string') {
+        errorMessage = error.detail;
+      } else if (error.category && Array.isArray(error.category)) {
+        // Handle validation errors like category UUID error
+        errorMessage = error.category[0] || 'Invalid category';
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else {
+        errorMessage = `HTTP error! status: ${response.status}`;
+      }
+      
+      throw new Error(errorMessage);
     }
     return response.json();
   }
@@ -92,8 +108,8 @@ class MenuAPI {
           type: itemData.photo.type || 'image/jpeg',
           name: itemData.photo.fileName || `menu-item-${Date.now()}.jpg`,
         });
-        // Use 'image_url' as the field name to match backend expectations
-        formData.append('image_url', {
+        // Use 'image' field for file upload
+        formData.append('image', {
           uri: itemData.photo.uri,
           type: itemData.photo.type || 'image/jpeg',
           name: itemData.photo.fileName || `menu-item-${Date.now()}.jpg`,
@@ -105,9 +121,9 @@ class MenuAPI {
       // Add other fields
       formData.append('name', itemData.name);
       formData.append('description', itemData.description || '');
-      // For now, skip category since we don't have category UUIDs yet
-      // formData.append('category', itemData.category);
       formData.append('price', itemData.price.toString());
+      formData.append('is_available', itemData.isActive !== false ? 'true' : 'false');
+      
       // Optional fields
       if (itemData.estimatedCost) {
         formData.append('cost', itemData.estimatedCost.toString());
@@ -115,7 +131,6 @@ class MenuAPI {
       if (itemData.preparationTime) {
         formData.append('preparation_time', itemData.preparationTime.toString());
       }
-      formData.append('is_available', itemData.isActive !== false ? 'true' : 'false');
       
       // Add ingredients if using recipe costing
       if (itemData.ingredients && itemData.ingredients.length > 0) {
@@ -147,29 +162,48 @@ class MenuAPI {
   async updateMenuItem(itemId, updates) {
     try {
       console.log('🍽️ MenuAPI: Updating menu item:', itemId);
+      console.log('📡 Update data:', {
+        ...updates,
+        photo: updates.photo ? 'Present' : 'Not present'
+      });
+      
+      // Remove category field as backend expects UUID but we have string
+      // Category should not be changing during update anyway
+      const { category, ...cleanUpdates } = updates;
       
       // If photo is being updated, use FormData
-      if (updates.photo) {
+      if (cleanUpdates.photo) {
+        console.log('📸 Photo detected, uploading to backend');
+        
+
         const formData = new FormData();
         
+        // Use 'image' for file upload
         formData.append('image', {
-          uri: updates.photo.uri,
-          type: updates.photo.type || 'image/jpeg',
-          name: updates.photo.fileName || `menu-item-${Date.now()}.jpg`,
+          uri: cleanUpdates.photo.uri,
+          type: cleanUpdates.photo.type || 'image/jpeg',
+          name: cleanUpdates.photo.fileName || `menu-item-${Date.now()}.jpg`,
         });
 
-        // Add other update fields
-        Object.keys(updates).forEach(key => {
-          if (key !== 'photo') {
-            if (typeof updates[key] === 'object') {
-              formData.append(key, JSON.stringify(updates[key]));
-            } else {
-              formData.append(key, updates[key].toString());
+        // Add other update fields, excluding problematic ones
+        Object.keys(cleanUpdates).forEach(key => {
+          if (key !== 'photo' && key !== 'ingredients') {
+            // Convert values appropriately
+            if (key === 'price' || key === 'estimatedCost' || key === 'cost') {
+              formData.append(key === 'estimatedCost' ? 'cost' : key, cleanUpdates[key].toString());
+            } else if (key === 'preparationTime') {
+              formData.append('preparation_time', cleanUpdates[key].toString());
+            } else if (key === 'isActive') {
+              formData.append('is_available', cleanUpdates[key] ? 'true' : 'false');
+            } else if (typeof cleanUpdates[key] !== 'object') {
+              formData.append(key, cleanUpdates[key].toString());
             }
           }
         });
 
         const sessionId = await AsyncStorage.getItem('sessionId');
+        console.log('🔑 Using session for update:', sessionId ? 'Present' : 'Missing');
+        
         const response = await fetch(`${MENU_API_URL}/items/${itemId}/`, {
           method: 'PATCH',
           headers: {
@@ -178,19 +212,38 @@ class MenuAPI {
           body: formData,
         });
         
+        console.log('📡 Update response status:', response.status);
         return this.handleResponse(response);
       } else {
-        // Regular JSON update
+        // Regular JSON update - also clean the data
+        const jsonUpdates = {};
+        Object.keys(cleanUpdates).forEach(key => {
+          if (key !== 'ingredients') {
+            if (key === 'estimatedCost') {
+              jsonUpdates.cost = cleanUpdates[key];
+            } else if (key === 'preparationTime') {
+              jsonUpdates.preparation_time = cleanUpdates[key];
+            } else if (key === 'isActive') {
+              jsonUpdates.is_available = cleanUpdates[key];
+            } else {
+              jsonUpdates[key] = cleanUpdates[key];
+            }
+          }
+        });
+        
+        console.log('📡 JSON update payload:', jsonUpdates);
+        
         const response = await fetch(`${MENU_API_URL}/items/${itemId}/`, {
           method: 'PATCH',
           headers: await this.getHeaders(),
-          body: JSON.stringify(updates),
+          body: JSON.stringify(jsonUpdates),
         });
         
+        console.log('📡 Update response status:', response.status);
         return this.handleResponse(response);
       }
     } catch (error) {
-      console.error('Error updating menu item:', error);
+      console.error('❌ Error updating menu item:', error);
       throw error;
     }
   }

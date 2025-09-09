@@ -219,64 +219,77 @@ const MenuManagementScreen = () => {
     return filtered;
   };
 
-  const renderMenuItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[styles.menuItem, item.available === false && styles.unavailableItem]}
-      onPress={() => handleEditItem(item)}
-    >
-      <View style={styles.itemLeft}>
-        <View style={styles.imageContainer}>
-          {item.image ? (
-            <Image source={{ uri: item.image }} style={styles.itemImage} />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Icon name="image-outline" size={32} color="#9ca3af" />
-            </View>
-          )}
-          {item.available === false && (
-            <View style={styles.unavailableOverlay}>
-              <Text style={styles.unavailableText}>Unavailable</Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.itemDetails}>
-          <View style={styles.itemHeader}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{currency.symbol}{item.price ? (typeof item.price === 'number' ? item.price.toFixed(0) : parseFloat(item.price).toFixed(0)) : '0'}</Text>
+  const renderMenuItem = ({ item }) => {
+    // Ensure all values are safe for rendering
+    const safeItem = {
+      ...item,
+      name: String(item.name || 'Unnamed Item'),
+      description: String(item.description || ''),
+      price: typeof item.price === 'number' ? item.price : (parseFloat(item.price) || 0),
+      stock: typeof item.stock === 'number' ? item.stock : (parseInt(item.stock) || 0),
+      preparationTime: typeof item.preparationTime === 'number' ? item.preparationTime : (parseInt(item.preparationTime) || 0),
+      available: item.available !== false,
+      image: typeof item.image === 'string' ? item.image : null,
+    };
+    
+    return (
+      <TouchableOpacity 
+        style={[styles.menuItem, !safeItem.available && styles.unavailableItem]}
+        onPress={() => handleEditItem(item)}
+      >
+        <View style={styles.itemLeft}>
+          <View style={styles.imageContainer}>
+            {safeItem.image ? (
+              <Image source={{ uri: safeItem.image }} style={styles.itemImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Icon name="image-outline" size={32} color="#9ca3af" />
+              </View>
+            )}
+            {!safeItem.available && (
+              <View style={styles.unavailableOverlay}>
+                <Text style={styles.unavailableText}>Unavailable</Text>
+              </View>
+            )}
           </View>
           
-          <Text style={styles.itemDescription} numberOfLines={2}>
-            {item.description || ''}
-          </Text>
+          <View style={styles.itemDetails}>
+            <View style={styles.itemHeader}>
+              <Text style={styles.itemName}>{safeItem.name}</Text>
+              <Text style={styles.itemPrice}>{currency.symbol}{safeItem.price.toFixed(0)}</Text>
+            </View>
+            
+            <Text style={styles.itemDescription} numberOfLines={2}>
+              {safeItem.description}
+            </Text>
           
-          <View style={styles.itemMeta}>
-            <View style={styles.itemTags}>
-              {item.preparationTime && (
-                <View style={styles.timeTag}>
-                  <Icon name="time-outline" size={12} color="#6b7280" />
-                  <Text style={styles.timeText}>{item.preparationTime}min</Text>
-                </View>
-              )}
-              
-              {item.stock !== undefined && (
-                <View style={[styles.timeTag, { 
-                  backgroundColor: item.stock > 10 ? '#f0fdf4' : item.stock > 0 ? '#fef3c7' : '#fef2f2',
-                  borderColor: item.stock > 10 ? '#10b981' : item.stock > 0 ? '#f59e0b' : '#ef4444',
-                  borderWidth: 1
-                }]}>
-                  <Icon 
-                    name="cube-outline" 
-                    size={12} 
-                    color={item.stock > 10 ? '#10b981' : item.stock > 0 ? '#f59e0b' : '#ef4444'} 
-                  />
-                  <Text style={[styles.timeText, { 
-                    color: item.stock > 10 ? '#065f46' : item.stock > 0 ? '#92400e' : '#dc2626'
+            <View style={styles.itemMeta}>
+              <View style={styles.itemTags}>
+                {safeItem.preparationTime > 0 && (
+                  <View style={styles.timeTag}>
+                    <Icon name="time-outline" size={12} color="#6b7280" />
+                    <Text style={styles.timeText}>{safeItem.preparationTime}min</Text>
+                  </View>
+                )}
+                
+                {safeItem.stock !== undefined && (
+                  <View style={[styles.timeTag, { 
+                    backgroundColor: safeItem.stock > 10 ? '#f0fdf4' : safeItem.stock > 0 ? '#fef3c7' : '#fef2f2',
+                    borderColor: safeItem.stock > 10 ? '#10b981' : safeItem.stock > 0 ? '#f59e0b' : '#ef4444',
+                    borderWidth: 1
                   }]}>
-                    Stock: {item.stock || 0}
-                  </Text>
-                </View>
-              )}
+                    <Icon 
+                      name="cube-outline" 
+                      size={12} 
+                      color={safeItem.stock > 10 ? '#10b981' : safeItem.stock > 0 ? '#f59e0b' : '#ef4444'} 
+                    />
+                    <Text style={[styles.timeText, { 
+                      color: safeItem.stock > 10 ? '#065f46' : safeItem.stock > 0 ? '#92400e' : '#dc2626'
+                    }]}>
+                      Stock: {safeItem.stock}
+                    </Text>
+                  </View>
+                )}
               
               <View style={styles.dietaryTags}>
                 {item.vegetarian === true && (
@@ -297,41 +310,42 @@ const MenuManagementScreen = () => {
               </View>
             </View>
             
-            <View style={styles.itemActions}>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={() => handleEditItem(item)}
-              >
-                <Icon name="create-outline" size={16} color="#3b82f6" />
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.statusButton, item.available !== false ? styles.activeStatus : styles.inactiveStatus]}
-                onPress={() => toggleItemAvailability(item.id)}
-              >
-                <Icon 
-                  name={item.available !== false ? 'checkmark-circle' : 'pause-circle'} 
-                  size={16} 
-                  color="white" 
-                />
-                <Text style={styles.statusButtonText}>
-                  {item.available !== false ? 'Active' : 'Inactive'}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => deleteItem(item.id)}
-              >
-                <Icon name="trash-outline" size={16} color="#ef4444" />
-              </TouchableOpacity>
+              <View style={styles.itemActions}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => handleEditItem(item)}
+                >
+                  <Icon name="create-outline" size={16} color="#3b82f6" />
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.statusButton, safeItem.available ? styles.activeStatus : styles.inactiveStatus]}
+                  onPress={() => toggleItemAvailability(item.id)}
+                >
+                  <Icon 
+                    name={safeItem.available ? 'checkmark-circle' : 'pause-circle'} 
+                    size={16} 
+                    color="white" 
+                  />
+                  <Text style={styles.statusButtonText}>
+                    {safeItem.available ? 'Active' : 'Inactive'}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => deleteItem(item.id)}
+                >
+                  <Icon name="trash-outline" size={16} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

@@ -2,9 +2,17 @@
 Menu Management Models for Restaurant-type Businesses
 """
 import uuid
+import os
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from custom_auth.tenant_base_model import TenantAwareModel
+
+
+def menu_item_image_path(instance, filename):
+    """Generate upload path for menu item images"""
+    ext = filename.split('.')[-1]
+    filename = f'{instance.id}.{ext}'
+    return os.path.join('menu_items', str(instance.tenant_id), filename)
 
 
 class MenuCategory(TenantAwareModel):
@@ -69,7 +77,9 @@ class MenuItem(TenantAwareModel):
                               validators=[MinValueValidator(0)], help_text="Cost to make this item")
     
     # Images
-    image_url = models.URLField(blank=True, help_text="Primary image URL")
+    image = models.ImageField(upload_to=menu_item_image_path, null=True, blank=True, 
+                             help_text="Primary image file")
+    image_url = models.URLField(blank=True, help_text="Primary image URL (auto-generated from image)")
     thumbnail_url = models.URLField(blank=True, help_text="Thumbnail image URL")
     additional_images = models.JSONField(default=list, blank=True, help_text="List of additional image URLs")
     
@@ -160,6 +170,22 @@ class MenuItem(TenantAwareModel):
     def effective_price(self):
         """Return discounted price if available, otherwise regular price"""
         return self.discounted_price if self.discounted_price else self.price
+    
+    def save(self, *args, **kwargs):
+        """Override save to generate image_url from uploaded image"""
+        # Save first to ensure we have an ID
+        super().save(*args, **kwargs)
+        
+        # If we have an image file but no image_url, generate it
+        if self.image and not self.image_url:
+            from django.conf import settings
+            # Generate the full URL for the image
+            if hasattr(settings, 'MEDIA_URL'):
+                # For staging, use the full URL with domain
+                domain = getattr(settings, 'BACKEND_DOMAIN', 'https://dott-api-staging.onrender.com')
+                self.image_url = f"{domain}{settings.MEDIA_URL}{self.image}"
+                # Save again to store the URL
+                super().save(update_fields=['image_url'])
 
 
 class MenuItemReview(TenantAwareModel):

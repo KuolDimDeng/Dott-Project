@@ -124,14 +124,30 @@ export const MenuProvider = ({ children }) => {
       // Try to save to backend first
       const backendItem = await menuApi.createMenuItem(newItem);
       console.log('🍽️ MenuContext: Item saved to backend:', backendItem.id);
+      console.log('🍽️ MenuContext: Backend response:', backendItem);
       
-      // Add to local state with synced flag, ensuring price is a number
+      // Add to local state with synced flag, ensuring all numeric fields are numbers
       const syncedItem = { 
-        ...backendItem, 
+        ...backendItem,
+        // Ensure all numeric fields are properly typed
         price: typeof backendItem.price === 'number' ? backendItem.price : parseFloat(backendItem.price) || 0,
+        stock: typeof backendItem.stock === 'number' ? backendItem.stock : parseInt(backendItem.stock) || 0,
+        estimatedCost: backendItem.cost ? (typeof backendItem.cost === 'number' ? backendItem.cost : parseFloat(backendItem.cost) || 0) : 0,
+        preparationTime: backendItem.preparation_time ? (typeof backendItem.preparation_time === 'number' ? backendItem.preparation_time : parseInt(backendItem.preparation_time) || 0) : 0,
+        available: backendItem.is_available !== false,
+        // Ensure image is a string URL (don't use empty strings)
+        image: (backendItem.image && backendItem.image !== '') ? backendItem.image : 
+               (backendItem.image_url && backendItem.image_url !== '') ? backendItem.image_url : null,
+        // Ensure text fields are strings
+        name: String(backendItem.name || ''),
+        description: String(backendItem.description || ''),
+        category: String(backendItem.category || ''),
         synced: true, 
         syncTime: new Date().toISOString() 
       };
+      
+      console.log('🍽️ MenuContext: Synced item prepared:', syncedItem);
+      
       setMenuItems(prev => [...prev, syncedItem]);
       await saveMenuItems();
       setSyncStatus('synced');
@@ -169,23 +185,119 @@ export const MenuProvider = ({ children }) => {
   const updateMenuItem = async (itemId, updates) => {
     try {
       console.log('🍽️ MenuContext: Updating menu item:', itemId);
+      console.log('🍽️ MenuContext: Update data:', {
+        ...updates,
+        photo: updates.photo ? 'File object present' : 'No photo'
+      });
       
       // Try to update on backend first
-      await menuApi.updateMenuItem(itemId, updates);
-      console.log('🍽️ MenuContext: Item updated on backend');
+      const response = await menuApi.updateMenuItem(itemId, updates);
+      console.log('🍽️ MenuContext: Backend response:', response);
+      console.log('🍽️ MenuContext: Response type:', typeof response);
+      console.log('🍽️ MenuContext: Response keys:', response ? Object.keys(response) : 'null');
       
-      // Update local state
-      setMenuItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, ...updates, synced: true } : item
-      ));
+      // Remove photo field from updates as it's a file object, not the URL
+      const { photo, ...cleanUpdates } = updates;
+      
+      // Update local state carefully, ensuring all values are properly formatted
+      setMenuItems(prev => prev.map(item => {
+        if (item.id === itemId) {
+          console.log('🍽️ MenuContext: Current item:', item);
+          
+          // Start with the existing item
+          let updatedItem = { ...item };
+          
+          // Apply clean updates (without photo)
+          Object.keys(cleanUpdates).forEach(key => {
+            // Ensure price and stock are numbers
+            if (key === 'price' || key === 'stock' || key === 'estimatedCost' || key === 'preparationTime') {
+              const value = cleanUpdates[key];
+              updatedItem[key] = typeof value === 'number' ? value : parseFloat(value) || 0;
+            } else if (typeof cleanUpdates[key] !== 'object' || cleanUpdates[key] === null) {
+              // Only apply non-object values (or null)
+              updatedItem[key] = cleanUpdates[key];
+            }
+          });
+          
+          // If we got a response from backend, use its data
+          if (response && typeof response === 'object') {
+            // Update image URL if provided, but DON'T overwrite with empty string
+            if (response.image_url && response.image_url !== '') {
+              updatedItem.image = response.image_url;
+              console.log('🍽️ MenuContext: Updated image from image_url:', response.image_url);
+            } else if (response.image && response.image !== '') {
+              updatedItem.image = response.image;
+              console.log('🍽️ MenuContext: Updated image from image:', response.image);
+            } else if (updates.photo) {
+              // If we sent a photo but got empty response, it might be processing
+              // Keep the existing image or wait for next fetch
+              console.log('⚠️ MenuContext: Photo uploaded but no URL returned yet, keeping existing image');
+            }
+            
+            // Ensure backend numeric fields are properly handled
+            if (response.price !== undefined) {
+              updatedItem.price = typeof response.price === 'number' ? response.price : parseFloat(response.price) || 0;
+            }
+            if (response.stock !== undefined) {
+              updatedItem.stock = typeof response.stock === 'number' ? response.stock : parseInt(response.stock) || 0;
+            }
+            if (response.cost !== undefined) {
+              updatedItem.estimatedCost = typeof response.cost === 'number' ? response.cost : parseFloat(response.cost) || 0;
+            }
+            if (response.preparation_time !== undefined) {
+              updatedItem.preparationTime = typeof response.preparation_time === 'number' ? response.preparation_time : parseInt(response.preparation_time) || 0;
+            }
+            if (response.is_available !== undefined) {
+              updatedItem.available = response.is_available;
+            }
+          }
+          
+          // Mark as synced
+          updatedItem.synced = true;
+          
+          console.log('🍽️ MenuContext: Updated item:', updatedItem);
+          console.log('🍽️ MenuContext: Updated item price type:', typeof updatedItem.price);
+          console.log('🍽️ MenuContext: Updated item stock type:', typeof updatedItem.stock);
+          
+          return updatedItem;
+        }
+        return item;
+      }));
+      
+      console.log('✅ MenuContext: Update successful');
+      
+      // If a photo was uploaded, refresh menu items after a delay to get the image URL
+      if (updates.photo) {
+        console.log('📸 MenuContext: Photo was uploaded, refreshing menu items in 2 seconds...');
+        setTimeout(() => {
+          loadMenuItems();
+        }, 2000);
+      }
       
     } catch (error) {
       console.error('🍽️ MenuContext: Failed to update on backend:', error);
       
-      // Update locally and mark as needing sync
-      setMenuItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, ...updates, synced: false } : item
-      ));
+      // Remove photo field from updates before merging locally
+      const { photo, ...cleanUpdates } = updates;
+      
+      // Update locally and mark as needing sync, ensuring numeric values
+      setMenuItems(prev => prev.map(item => {
+        if (item.id === itemId) {
+          const updatedItem = { ...item, synced: false };
+          
+          Object.keys(cleanUpdates).forEach(key => {
+            if (key === 'price' || key === 'stock' || key === 'estimatedCost' || key === 'preparationTime') {
+              const value = cleanUpdates[key];
+              updatedItem[key] = typeof value === 'number' ? value : parseFloat(value) || 0;
+            } else if (typeof cleanUpdates[key] !== 'object' || cleanUpdates[key] === null) {
+              updatedItem[key] = cleanUpdates[key];
+            }
+          });
+          
+          return updatedItem;
+        }
+        return item;
+      }));
     }
   };
 
