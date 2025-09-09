@@ -15,10 +15,12 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CardField, useStripe } from '@stripe/stripe-react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import walletService from '../../services/walletService';
 
 export default function TopUpScreen({ navigation, route }) {
   const { user } = useAuth();
+  const { currency } = useCurrency();
   const { confirmPayment } = useStripe();
   const provider = route.params?.provider || 'MTN_MOMO';
   
@@ -55,12 +57,12 @@ export default function TopUpScreen({ navigation, route }) {
     }
 
     if (parseFloat(amount) < 1) {
-      Alert.alert('Error', 'Minimum top-up amount is $1');
+      Alert.alert('Error', `Minimum top-up amount is ${currency?.symbol || '$'}1`);
       return false;
     }
 
     if (parseFloat(amount) > 10000) {
-      Alert.alert('Error', 'Maximum top-up amount is $10,000');
+      Alert.alert('Error', `Maximum top-up amount is ${currency?.symbol || '$'}10,000`);
       return false;
     }
 
@@ -77,7 +79,7 @@ export default function TopUpScreen({ navigation, route }) {
 
     Alert.alert(
       'Confirm Top-up',
-      `Add ${walletService.formatAmount(amount, 'USD')} to your wallet?`,
+      `Add ${walletService.formatAmount(amount, currency?.code || 'USD')} to your wallet?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Confirm', onPress: processTopUp },
@@ -108,7 +110,7 @@ export default function TopUpScreen({ navigation, route }) {
       // Step 3: Success
       Alert.alert(
         'Success',
-        `Your wallet has been topped up with ${walletService.formatAmount(amount, 'USD')}`,
+        `Your wallet has been topped up with ${walletService.formatAmount(amount, currency?.code || 'USD')}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
@@ -154,7 +156,7 @@ export default function TopUpScreen({ navigation, route }) {
           <View style={styles.balanceSection}>
             <Text style={styles.balanceLabel}>Current Balance</Text>
             <Text style={styles.balanceAmount}>
-              {walletService.formatAmount(wallet?.available_balance || 0, 'USD')}
+              {walletService.formatAmount(wallet?.available_balance || 0, currency?.code || 'USD')}
             </Text>
           </View>
 
@@ -177,7 +179,7 @@ export default function TopUpScreen({ navigation, route }) {
                       selectedAmount === value && styles.quickAmountTextActive,
                     ]}
                   >
-                    ${value}
+                    {currency?.symbol || '$'}{value}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -188,7 +190,7 @@ export default function TopUpScreen({ navigation, route }) {
           <View style={styles.inputSection}>
             <Text style={styles.sectionTitle}>Or Enter Amount</Text>
             <View style={styles.inputContainer}>
-              <Text style={styles.currencySymbol}>$</Text>
+              <Text style={styles.currencySymbol}>{currency?.symbol || '$'}</Text>
               <TextInput
                 style={styles.amountInput}
                 placeholder="0.00"
@@ -232,16 +234,16 @@ export default function TopUpScreen({ navigation, route }) {
               <Text style={styles.feeTitle}>Fee Breakdown</Text>
               <View style={styles.feeRow}>
                 <Text style={styles.feeLabel}>Top-up Amount:</Text>
-                <Text style={styles.feeValue}>${amount}</Text>
+                <Text style={styles.feeValue}>{currency?.symbol || '$'}{amount}</Text>
               </View>
               <View style={styles.feeRow}>
                 <Text style={styles.feeLabel}>Processing Fee:</Text>
-                <Text style={styles.feeValue}>${fees.totalFee}</Text>
+                <Text style={styles.feeValue}>{currency?.symbol || '$'}{fees.totalFee}</Text>
               </View>
               <View style={styles.feeDivider} />
               <View style={styles.feeRow}>
                 <Text style={styles.feeTotalLabel}>Total Charge:</Text>
-                <Text style={styles.feeTotalValue}>${fees.totalCharge}</Text>
+                <Text style={styles.feeTotalValue}>{currency?.symbol || '$'}{fees.totalCharge}</Text>
               </View>
             </View>
           )}
@@ -258,7 +260,7 @@ export default function TopUpScreen({ navigation, route }) {
               <>
                 <Icon name="add-circle" size={20} color="white" style={{ marginRight: 8 }} />
                 <Text style={styles.topUpButtonText}>
-                  Top Up {amount ? `$${amount}` : 'Wallet'}
+                  Top Up {amount ? `${currency?.symbol || '$'}${amount}` : 'Wallet'}
                 </Text>
               </>
             )}

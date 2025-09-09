@@ -16,10 +16,12 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Contacts from 'react-native-contacts';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import walletService from '../../services/walletService';
 
 export default function SendMoneyScreen({ navigation, route }) {
   const { user } = useAuth();
+  const { currency } = useCurrency();
   const provider = route.params?.provider || 'MTN_MOMO';
   
   const [amount, setAmount] = useState('');
@@ -128,7 +130,7 @@ export default function SendMoneyScreen({ navigation, route }) {
 
     Alert.alert(
       'Confirm Transfer',
-      `Send ${walletService.formatAmount(amount, wallet?.currency || 'USD')} to ${recipientName || recipientPhone}?`,
+      `Send ${walletService.formatAmount(amount, currency?.code || 'USD')} to ${recipientName || recipientPhone}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Send', onPress: confirmSend },
@@ -191,7 +193,7 @@ export default function SendMoneyScreen({ navigation, route }) {
           <View style={styles.balanceSection}>
             <Text style={styles.balanceLabel}>Available Balance</Text>
             <Text style={styles.balanceAmount}>
-              {walletService.formatAmount(wallet?.available_balance || 0, wallet?.currency || 'USD')}
+              {walletService.formatAmount(wallet?.available_balance || 0, currency?.code || 'USD')}
             </Text>
           </View>
 
@@ -263,7 +265,7 @@ export default function SendMoneyScreen({ navigation, route }) {
             <Text style={styles.sectionTitle}>Amount</Text>
             <View style={styles.inputContainer}>
               <Text style={styles.currencySymbol}>
-                {wallet?.currency === 'USD' ? '$' : wallet?.currency || '$'}
+                {currency?.symbol || '$'}
               </Text>
               <TextInput
                 style={[styles.input, styles.amountInput]}

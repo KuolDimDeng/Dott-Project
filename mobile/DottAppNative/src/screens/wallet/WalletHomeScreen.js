@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import walletService from '../../services/walletService';
 
 export default function WalletHomeScreen({ navigation }) {
   const { user } = useAuth();
+  const { currency } = useCurrency();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export default function WalletHomeScreen({ navigation }) {
         </View>
         <View style={styles.transactionAmount}>
           <Text style={[styles.amount, isCredit ? styles.creditAmount : styles.debitAmount]}>
-            {isCredit ? '+' : '-'}{walletService.formatAmount(item.amount, wallet?.currency || 'USD')}
+            {isCredit ? '+' : '-'}{walletService.formatAmount(item.amount, currency?.code || 'USD')}
           </Text>
           <Text style={styles.transactionStatus}>{item.status}</Text>
         </View>
@@ -163,11 +165,11 @@ export default function WalletHomeScreen({ navigation }) {
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Available Balance</Text>
           <Text style={styles.balanceAmount}>
-            {walletService.formatAmount(wallet?.available_balance || 0, wallet?.currency || 'USD')}
+            {walletService.formatAmount(wallet?.available_balance || 0, currency?.code || 'USD')}
           </Text>
           {wallet?.pending_balance > 0 && (
             <Text style={styles.pendingBalance}>
-              Pending: {walletService.formatAmount(wallet.pending_balance, wallet?.currency || 'USD')}
+              Pending: {walletService.formatAmount(wallet.pending_balance, currency?.code || 'USD')}
             </Text>
           )}
           
