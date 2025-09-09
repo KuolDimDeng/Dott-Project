@@ -24,6 +24,7 @@ import {
   BUSINESS_CATEGORIES,
   REGISTRATION_STATUS,
   VEHICLE_TYPES,
+  DELIVERY_CATEGORIES,
   mapToBackendType,
 } from '../../constants/businessTypes';
 
@@ -57,6 +58,7 @@ export default function BusinessRegistrationScreen({ navigation }) {
     offersCourier: false,
     vehicleType: '',
     vehicleRegistration: '',
+    deliveryCategories: [],
     
     // Documents
     governmentId: null,
@@ -115,9 +117,15 @@ export default function BusinessRegistrationScreen({ navigation }) {
         }
         break;
       case 5:
-        if (formData.offersCourier && !formData.vehicleType) {
-          Alert.alert('Required', 'Please select your vehicle type');
-          return false;
+        if (formData.offersCourier || formData.businessType === 'COURIER') {
+          if (!formData.vehicleType) {
+            Alert.alert('Required', 'Please select your vehicle type');
+            return false;
+          }
+          if (formData.deliveryCategories.length === 0) {
+            Alert.alert('Required', 'Please select at least one delivery category');
+            return false;
+          }
         }
         break;
     }
@@ -173,10 +181,11 @@ export default function BusinessRegistrationScreen({ navigation }) {
       };
 
       // If offering courier services, add courier-specific data
-      if (formData.offersCourier) {
+      if (formData.offersCourier || formData.businessType === 'COURIER') {
         submissionData.courier_data = {
           vehicle_type: formData.vehicleType,
           vehicle_registration: formData.vehicleRegistration || '',
+          delivery_categories: formData.deliveryCategories,
           government_id: formData.governmentId,
           drivers_license: formData.driversLicense,
         };
@@ -613,6 +622,61 @@ export default function BusinessRegistrationScreen({ navigation }) {
               </View>
             )}
 
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>What can you deliver? *</Text>
+              <Text style={styles.inputHint}>Select all categories you're willing to deliver</Text>
+              <View style={styles.deliveryCategoriesContainer}>
+                {DELIVERY_CATEGORIES.map((category) => (
+                  <TouchableOpacity
+                    key={category.value}
+                    style={[
+                      styles.deliveryCategoryCard,
+                      formData.deliveryCategories.includes(category.value) && styles.deliveryCategoryCardSelected,
+                    ]}
+                    onPress={() => {
+                      const isSelected = formData.deliveryCategories.includes(category.value);
+                      let newCategories;
+                      
+                      if (category.value === 'all') {
+                        // If selecting "All", select all categories
+                        newCategories = isSelected ? [] : DELIVERY_CATEGORIES.map(c => c.value);
+                      } else {
+                        // Toggle individual category
+                        if (isSelected) {
+                          newCategories = formData.deliveryCategories.filter(c => c !== category.value && c !== 'all');
+                        } else {
+                          newCategories = [...formData.deliveryCategories, category.value];
+                          // Check if all other categories are selected
+                          const otherCategories = DELIVERY_CATEGORIES.filter(c => c.value !== 'all').map(c => c.value);
+                          const allSelected = otherCategories.every(c => newCategories.includes(c));
+                          if (allSelected) {
+                            newCategories.push('all');
+                          }
+                        }
+                      }
+                      
+                      setFormData({ ...formData, deliveryCategories: newCategories });
+                    }}
+                  >
+                    <Icon 
+                      name={category.icon} 
+                      size={24} 
+                      color={formData.deliveryCategories.includes(category.value) ? '#2563eb' : '#6b7280'} 
+                    />
+                    <Text style={[
+                      styles.deliveryCategoryText,
+                      formData.deliveryCategories.includes(category.value) && styles.deliveryCategoryTextSelected,
+                    ]}>
+                      {category.label}
+                    </Text>
+                    {formData.deliveryCategories.includes(category.value) && (
+                      <Icon name="checkmark" size={16} color="#2563eb" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={() => handleImagePicker('governmentId')}
@@ -957,5 +1021,32 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  deliveryCategoriesContainer: {
+    marginTop: 12,
+  },
+  deliveryCategoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  deliveryCategoryCardSelected: {
+    borderColor: '#2563eb',
+    backgroundColor: '#eff6ff',
+  },
+  deliveryCategoryText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+    marginLeft: 12,
+  },
+  deliveryCategoryTextSelected: {
+    color: '#2563eb',
+    fontWeight: '500',
   },
 });

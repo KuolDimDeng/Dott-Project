@@ -272,6 +272,18 @@ export const VEHICLE_TYPES = [
   { value: 'truck', label: 'Truck', requiresLicense: true },
 ];
 
+export const DELIVERY_CATEGORIES = [
+  { value: 'food', label: 'Food & Beverages', icon: 'fast-food-outline' },
+  { value: 'groceries', label: 'Groceries & Essentials', icon: 'basket-outline' },
+  { value: 'packages', label: 'Packages & Documents', icon: 'cube-outline' },
+  { value: 'medicine', label: 'Medicine & Healthcare', icon: 'medical-outline' },
+  { value: 'electronics', label: 'Electronics & Gadgets', icon: 'phone-portrait-outline' },
+  { value: 'clothing', label: 'Clothing & Fashion', icon: 'shirt-outline' },
+  { value: 'fragile', label: 'Fragile Items', icon: 'warning-outline' },
+  { value: 'heavy', label: 'Heavy/Large Items', icon: 'barbell-outline' },
+  { value: 'all', label: 'All Categories', icon: 'checkmark-circle-outline' },
+];
+
 // Helper function to get all business types for backend
 export const getAllBusinessTypes = () => {
   const types = [];
