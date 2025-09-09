@@ -25,9 +25,14 @@ echo ""
 echo "2. Fixing transport migration conflicts..."
 python scripts/pre_migration_fix.py || echo "Migration fix attempted"
 
-# Step 2a: Comprehensive courier deployment fix
+# Step 2a: Force courier migration to clean state
 echo ""
-echo "2a. Running comprehensive courier deployment fix..."
+echo "2a. Forcing courier migration to clean state..."
+python scripts/force_courier_migration.py || echo "Force migration fix attempted"
+
+# Step 2b: Backup - try comprehensive fix if force didn't work
+echo ""
+echo "2b. Running comprehensive courier deployment fix as backup..."
 python scripts/fix_courier_deployment.py || echo "Courier deployment fix attempted"
 
 # Step 2c: Skip makemigrations in production - all migrations should be committed
