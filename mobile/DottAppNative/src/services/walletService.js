@@ -28,9 +28,13 @@ class WalletService {
   /**
    * Get wallet balance and details
    */
-  async getWallet(provider = 'MTN_MOMO') {
+  async getWallet(walletType = 'personal', provider = 'MTN_MOMO') {
     try {
-      const response = await api.get(`/api/payments/wallet/balance/`, {
+      const endpoint = walletType === 'business' 
+        ? '/api/payments/wallet/business_wallet/'
+        : '/api/payments/wallet/balance/';
+      
+      const response = await api.get(endpoint, {
         params: { provider }
       });
 
@@ -469,6 +473,55 @@ class WalletService {
       throw error;
     }
   }
+
+  /**
+   * Transfer funds from wallet to bank account
+   */
+  async transferToBank(data) {
+    try {
+      const response = await api.post('/api/payments/wallet/transfer_to_bank/', data);
+      
+      if (response.data.success) {
+        return response.data.data;
+      }
+      
+      throw new Error(response.data.error || 'Transfer failed');
+    } catch (error) {
+      console.error('[Wallet] Error transferring to bank:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's bank accounts
+   */
+  async getUserBankAccounts() {
+    try {
+      const response = await api.get('/api/payments/wallet/user_bank_accounts/');
+      
+      if (response.data.success) {
+        return response.data.data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('[Wallet] Error getting bank accounts:', error);
+      return [];
+    }
+  }
 }
 
-export default new WalletService();
+const walletService = new WalletService();
+
+export const getWallet = (walletType, provider) => walletService.getWallet(walletType, provider);
+export const getWalletTransactions = (provider, limit, offset) => walletService.getTransactions(provider, limit, offset);
+export const sendMoney = (recipientPhone, amount, description, provider) => walletService.sendMoney(recipientPhone, amount, description, provider);
+export const topUpWallet = (amount, provider) => walletService.topUpWallet(amount, provider);
+export const getTransferRequests = (type) => walletService.getTransferRequests(type);
+export const acceptTransferRequest = (requestId) => walletService.acceptTransferRequest(requestId);
+export const rejectTransferRequest = (requestId, reason) => walletService.rejectTransferRequest(requestId, reason);
+export const transferToBank = (data) => walletService.transferToBank(data);
+export const getUserBankAccounts = () => walletService.getUserBankAccounts();
+export const initializeWallet = (user) => walletService.initializeWallet(user);
+
+export default walletService;

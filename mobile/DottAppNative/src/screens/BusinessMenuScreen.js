@@ -585,6 +585,25 @@ export default function BusinessMenuScreen() {
         <Icon name="chevron-forward" size={20} color="#9ca3af" />
       </TouchableOpacity>
 
+      {/* Business Wallet Section - Only for OWNER and ADMIN */}
+      {(user?.role === 'OWNER' || user?.role === 'ADMIN') && (
+        <TouchableOpacity 
+          style={styles.walletSection}
+          onPress={() => navigation.navigate('BusinessWallet')}
+        >
+          <View style={styles.walletContent}>
+            <View style={[styles.walletIconContainer, { backgroundColor: '#3b82f6' }]}>
+              <Icon name="wallet-outline" size={28} color="white" />
+            </View>
+            <View style={styles.walletTextContainer}>
+              <Text style={styles.walletTitle}>Business Wallet</Text>
+              <Text style={styles.walletSubtitle}>Manage funds and transfers</Text>
+            </View>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#9ca3af" />
+        </TouchableOpacity>
+      )}
+
       {/* Active Orders Alert */}
       {activeOrdersCount > 0 && isOpen && (
         <TouchableOpacity 
@@ -867,6 +886,47 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   qrCodeSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  walletSection: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  walletContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  walletIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  walletTextContainer: {
+    flex: 1,
+  },
+  walletTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  walletSubtitle: {
     fontSize: 13,
     color: '#6b7280',
   },

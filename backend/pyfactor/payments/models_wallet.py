@@ -20,10 +20,17 @@ class MobileMoneyWallet(TenantAwareModel):
         ('suspended', 'Suspended'),
     ]
     
+    WALLET_TYPE = [
+        ('personal', 'Personal'),
+        ('business', 'Business'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallets')  # Changed to ForeignKey to allow multiple providers per user
     provider = models.ForeignKey(MobileMoneyProvider, on_delete=models.PROTECT, to_field='name')
     phone_number = models.CharField(max_length=20, db_index=True)
+    wallet_type = models.CharField(max_length=20, choices=WALLET_TYPE, default='personal')
+    business_id = models.UUIDField(null=True, blank=True, help_text="ID of the business if this is a business wallet")
     
     # Balance fields
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
@@ -103,6 +110,48 @@ class MobileMoneyWallet(TenantAwareModel):
         return self.balance
     
     @transaction.atomic
+    def transfer_to_bank(self, bank_account, amount, reference, description="Transfer to bank"):
+        """Transfer funds from wallet to bank account"""
+        
+        if amount <= 0:
+            raise ValidationError("Amount must be positive")
+        
+        if amount > self.available_balance:
+            raise ValidationError("Insufficient balance")
+        
+        # Check if this is the user's bank account (WiseItem has user field)
+        if bank_account.user != self.user:
+            raise ValidationError("Can only transfer to your own bank account")
+        
+        # Deduct from wallet
+        self.balance -= amount
+        self.available_balance -= amount
+        self.save(update_fields=['balance', 'available_balance', 'updated_at'])
+        
+        # Create transaction record
+        transaction = WalletTransaction.objects.create(
+            wallet=self,
+            transaction_type='bank_transfer',
+            amount=amount,
+            balance_after=self.balance,
+            reference=reference,
+            description=description,
+            status='processing',
+            metadata={
+                'bank_account_id': str(bank_account.id),
+                'bank_name': bank_account.bank_name,
+                'account_number': bank_account.account_number[-4:],  # Last 4 digits only
+            }
+        )
+        
+        # TODO: Integrate with actual bank transfer API (MTN/M-Pesa to bank)
+        # For now, mark as completed after creating the record
+        transaction.status = 'completed'
+        transaction.save()
+        
+        return transaction
+    
+    @transaction.atomic
     def deduct_funds(self, amount, reference, description="Wallet debit"):
         """Deduct funds from wallet"""
         if amount <= 0:
@@ -148,6 +197,7 @@ class WalletTransaction(TenantAwareModel):
         ('withdrawal', 'Withdrawal'),
         ('fee', 'Transaction Fee'),
         ('refund', 'Refund'),
+        ('bank_transfer', 'Bank Transfer'),
     ]
     
     STATUS_CHOICES = [

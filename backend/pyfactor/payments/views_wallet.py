@@ -30,6 +30,7 @@ from .serializers_wallet import (
 from .stripe_payment_service import StripePaymentService
 from .momo_service import momo_service
 from custom_auth.models import User
+from banking.models import BankAccount
 
 logger = logging.getLogger(__name__)
 
@@ -547,6 +548,190 @@ class WalletViewSet(viewsets.ViewSet):
             
         except Exception as e:
             logger.error(f"Error getting providers: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def business_wallet(self, request):
+        """Get business wallet details"""
+        try:
+            # Check if user has OWNER or ADMIN role
+            user_profile = request.user.profile
+            if user_profile.role not in ['OWNER', 'ADMIN']:
+                return Response({
+                    'success': False,
+                    'error': 'Insufficient permissions. Only OWNER and ADMIN can access business wallet.'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get or create business wallet
+            provider_code = request.query_params.get('provider', 'MTN_MOMO')
+            provider = MobileMoneyProvider.objects.filter(
+                name=provider_code,
+                is_active=True
+            ).first()
+            
+            if not provider:
+                return Response({
+                    'success': False,
+                    'error': f'Provider {provider_code} not available'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            wallet, created = MobileMoneyWallet.objects.get_or_create(
+                user=request.user,
+                provider=provider,
+                wallet_type='business',
+                defaults={
+                    'phone_number': user_profile.phone_number or '',
+                    'business_id': user_profile.business_id if hasattr(user_profile, 'business_id') else None,
+                    'tenant': request.tenant
+                }
+            )
+            
+            if created:
+                logger.info(f"Created new business wallet for user {request.user.email}")
+            
+            serializer = MobileMoneyWalletSerializer(wallet)
+            return Response({
+                'success': True,
+                'data': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error retrieving business wallet: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def transfer_to_bank(self, request):
+        """Transfer funds from wallet to bank account"""
+        try:
+            # Check permissions
+            user_profile = request.user.profile
+            if user_profile.role not in ['OWNER', 'ADMIN']:
+                return Response({
+                    'success': False,
+                    'error': 'Insufficient permissions'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            amount = Decimal(str(request.data.get('amount', 0)))
+            bank_account_id = request.data.get('bank_account_id')
+            wallet_type = request.data.get('wallet_type', 'business')
+            provider_code = request.data.get('provider', 'MTN_MOMO')
+            description = request.data.get('description', 'Transfer to bank')
+            
+            if amount <= 0:
+                return Response({
+                    'success': False,
+                    'error': 'Amount must be greater than 0'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not bank_account_id:
+                return Response({
+                    'success': False,
+                    'error': 'Bank account ID required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get wallet
+            wallet = MobileMoneyWallet.objects.filter(
+                user=request.user,
+                provider__name=provider_code,
+                wallet_type=wallet_type
+            ).first()
+            
+            if not wallet:
+                return Response({
+                    'success': False,
+                    'error': 'Wallet not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Get bank account (WiseItem)
+            from banking.models import WiseItem
+            bank_account = WiseItem.objects.filter(
+                id=bank_account_id,
+                user=request.user,
+                is_active=True
+            ).first()
+            
+            if not bank_account:
+                return Response({
+                    'success': False,
+                    'error': 'Bank account not found or inactive'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Generate reference
+            reference = f"BANK-TRF-{uuid.uuid4().hex[:8].upper()}"
+            
+            # Process transfer
+            from django.core.exceptions import ValidationError
+            transaction = wallet.transfer_to_bank(
+                bank_account=bank_account,
+                amount=amount,
+                reference=reference,
+                description=description
+            )
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'transaction_id': str(transaction.id),
+                    'reference': reference,
+                    'amount': str(amount),
+                    'bank_name': bank_account.bank_name,
+                    'account_last4': bank_account.get_masked_account_number(),
+                    'status': transaction.status,
+                    'message': 'Transfer initiated successfully'
+                }
+            })
+            
+        except ValidationError as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error processing bank transfer: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def user_bank_accounts(self, request):
+        """Get user's bank accounts for wallet transfers"""
+        try:
+            from banking.models import WiseItem
+            
+            # Get user's active bank accounts
+            bank_accounts = WiseItem.objects.filter(
+                user=request.user,
+                is_active=True
+            ).order_by('-created_at')
+            
+            # Format response
+            accounts = []
+            for account in bank_accounts:
+                accounts.append({
+                    'id': str(account.id),
+                    'bank_name': account.bank_name,
+                    'account_holder_name': account.account_holder_name,
+                    'account_number_masked': account.get_masked_account_number(),
+                    'country': account.bank_country,
+                    'currency': account.currency,
+                    'is_verified': account.is_verified,
+                    'is_default': account.is_default_for_pos or account.is_default_for_invoices
+                })
+            
+            return Response({
+                'success': True,
+                'data': accounts
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting bank accounts: {str(e)}")
             return Response({
                 'success': False,
                 'error': str(e)
