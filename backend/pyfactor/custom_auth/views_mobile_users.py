@@ -16,7 +16,7 @@ import uuid
 from .models import User, UserInvitation, UserPageAccess, PagePermission
 from hr.models import Employee
 from users.models import UserProfile
-from .serializers import UserSerializer
+from .serializers import UserListSerializer as UserSerializer
 
 logger = logging.getLogger(__name__)
 
