@@ -6,7 +6,7 @@ import django.core.validators
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('couriers', '0001_initial'),
+        ('couriers', '0001_initial'),  # Keep dependency on initial migration
     ]
 
     operations = [

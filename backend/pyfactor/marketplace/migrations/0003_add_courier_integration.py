@@ -6,8 +6,8 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketplace', '0002_auto_20240101_0000'),  # Update with actual previous migration
-        ('couriers', '0002_add_delivery_categories'),
+        ('marketplace', '0002_consumerorder_orderreview'),  # Update to actual migration name
+        ('couriers', '0001_initial'),  # Depend on initial courier migration
     ]
 
     operations = [

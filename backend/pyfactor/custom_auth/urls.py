@@ -51,10 +51,6 @@ from custom_auth.api.views.phone_auth_views import (
 # Import mobile user management views
 from .views_mobile_users import MobileUserManagementViewSet
 
-# Create router for viewsets
-router = DefaultRouter()
-router.register(r'mobile/users', MobileUserManagementViewSet, basename='mobile-users')
-
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
@@ -68,6 +64,7 @@ register_converter(UUIDConverter, 'uuid')
 
 # Create router for Rest Framework
 router = DefaultRouter()
+router.register(r'mobile/users', MobileUserManagementViewSet, basename='mobile-users')
 
 urlpatterns = [
     # Include router URLs for mobile user management
