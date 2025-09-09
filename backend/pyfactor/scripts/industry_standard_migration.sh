@@ -25,6 +25,11 @@ echo ""
 echo "2. Fixing transport migration conflicts..."
 python scripts/pre_migration_fix.py || echo "Migration fix attempted"
 
+# Step 2a: Fix courier migration state
+echo ""
+echo "2a. Fixing courier migration state..."
+python scripts/fix_courier_migrations.py || echo "Courier migration fix attempted"
+
 # Step 2b: Skip makemigrations in production - all migrations should be committed
 echo ""
 echo "2b. Skipping makemigrations (production environment)..."
