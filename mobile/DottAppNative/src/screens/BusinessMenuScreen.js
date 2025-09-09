@@ -258,7 +258,7 @@ export default function BusinessMenuScreen() {
   // Business type feature configuration
   const BUSINESS_TYPE_FEATURES = {
     'RESTAURANT_CAFE': {
-      enabled: ['POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise'],
+      enabled: ['POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise', 'Dashboard'],
       highlighted: ['POS Terminal']
     },
     'RETAIL': {

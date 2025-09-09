@@ -15,6 +15,9 @@ from accounts import views_payment
 from . import pos_payment_views
 
 urlpatterns = [
+    # Mobile Money Wallet endpoints
+    path('wallet/', include('payments.urls_wallet')),
+    
     # Mobile Money endpoints (MTN MoMo & M-Pesa)
     path('mobile-money/', include('payments.urls_mobile_money')),
     

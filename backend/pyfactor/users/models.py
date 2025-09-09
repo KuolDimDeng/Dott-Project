@@ -643,6 +643,49 @@ class UserProfile(models.Model):
         help_text='Last time profile picture was updated'
     )
     
+    # Location fields for personal address and delivery
+    latitude = models.DecimalField(
+        max_digits=10, 
+        decimal_places=7, 
+        null=True, 
+        blank=True,
+        help_text='User location latitude for delivery and services'
+    )
+    longitude = models.DecimalField(
+        max_digits=10, 
+        decimal_places=7, 
+        null=True, 
+        blank=True,
+        help_text='User location longitude for delivery and services'
+    )
+    location_accuracy = models.FloatField(
+        null=True, 
+        blank=True,
+        help_text='Location accuracy in meters'
+    )
+    location_updated_at = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text='Last time location was updated'
+    )
+    location_address = models.TextField(
+        null=True, 
+        blank=True,
+        help_text='Geocoded or user-provided address description'
+    )
+    landmark = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        help_text='Nearby landmark for easier delivery location'
+    )
+    area_description = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        help_text='Area or neighborhood description'
+    )
+    
     # WhatsApp Business preference - defaults based on country
     show_whatsapp_commerce = models.BooleanField(null=True, blank=True, help_text='Whether to show WhatsApp Commerce in menu (null = use country default)')
     

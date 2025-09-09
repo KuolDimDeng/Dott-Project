@@ -35,6 +35,8 @@
 	<string>Dott needs camera access to scan QR codes and take photos</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Dott needs access to contacts for call features</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Dott needs your location to provide delivery services and find nearby businesses</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Dott needs your location to find nearby businesses and services</string>
 	<key>NSPhotoLibraryUsageDescription</key>

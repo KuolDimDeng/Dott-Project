@@ -4,6 +4,7 @@ import axios from 'axios';
 import api from '../services/api';
 import { userApi } from '../services/userApi';
 import { phoneAuthService } from '../services/phoneAuthApi';
+import walletService from '../services/walletService';
 import ENV, { getSessionBaseUrl } from '../config/environment';
 
 const AuthContext = createContext({});
@@ -64,6 +65,14 @@ export const AuthProvider = ({ children }) => {
         await AsyncStorage.setItem('userData', JSON.stringify(userData));
         
         setUser(userData);
+        
+        // Initialize wallet after successful profile fetch
+        try {
+          await walletService.initializeWallet();
+          console.log('💰 Wallet initialized successfully');
+        } catch (walletError) {
+          console.error('⚠️ Failed to initialize wallet:', walletError);
+        }
         
         return userData;
       }
@@ -254,6 +263,15 @@ export const AuthProvider = ({ children }) => {
         if (completeUserData) {
           // Use complete profile data
           const mode = completeUserData.has_business ? 'business' : 'consumer';
+          
+          // Initialize wallet after successful login
+          try {
+            await walletService.initializeWallet();
+            console.log('💰 Wallet initialized after login');
+          } catch (walletError) {
+            console.error('⚠️ Failed to initialize wallet after login:', walletError);
+          }
+          
           return { success: true, mode };
         } else {
           // Fallback to session response data

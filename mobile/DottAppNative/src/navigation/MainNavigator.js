@@ -52,6 +52,7 @@ import TablesScreen from '../screens/business/TablesScreen';
 import DeliveryScreen from '../screens/business/DeliveryScreen';
 import MarketplaceProfileEditor from '../screens/business/MarketplaceProfileEditor';
 import ReceiptScreen from '../screens/business/ReceiptScreen';
+import TransactionDetailScreen from '../screens/business/TransactionDetailScreen';
 
 // Import Dual QR Payment screens
 import DualQRScreen from '../screens/DualQRScreen';
@@ -59,6 +60,15 @@ import BusinessQRScreen from '../screens/BusinessQRScreen';
 // import QRScannerScreen from '../screens/QRScannerScreen'; // Commented out - missing react-native-camera dependency
 import P2PPaymentScreen from '../screens/P2PPaymentScreen';
 import P2PHistoryScreen from '../screens/P2PHistoryScreen';
+import PersonalInfoScreen from '../screens/PersonalInfoScreen';
+
+// Import Wallet screens
+import WalletHomeScreen from '../screens/wallet/WalletHomeScreen';
+import SendMoneyScreen from '../screens/wallet/SendMoneyScreen';
+import ReceiveMoneyScreen from '../screens/wallet/ReceiveMoneyScreen';
+import TopUpScreen from '../screens/wallet/TopUpScreen';
+import WalletSettingsScreen from '../screens/wallet/WalletSettingsScreen';
+import WalletRequestsScreen from '../screens/wallet/WalletRequestsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -154,6 +164,7 @@ export default function MainNavigator() {
       <Stack.Screen name="MenuManagement" component={MenuManagementScreen} />
       <Stack.Screen name="BankingSetup" component={BankingSetupScreen} />
       <Stack.Screen name="CurrencyPreference" component={CurrencyPreferenceScreen} />
+      <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="Jobs" component={JobsScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="Transactions" component={TransactionsScreen} />
@@ -181,6 +192,14 @@ export default function MainNavigator() {
       {/* <Stack.Screen name="QRScanner" component={QRScannerScreen} /> */}
       <Stack.Screen name="P2PPayment" component={P2PPaymentScreen} />
       <Stack.Screen name="P2PHistory" component={P2PHistoryScreen} />
+      
+      {/* Mobile Money Wallet screens */}
+      <Stack.Screen name="WalletHome" component={WalletHomeScreen} />
+      <Stack.Screen name="SendMoney" component={SendMoneyScreen} />
+      <Stack.Screen name="ReceiveMoney" component={ReceiveMoneyScreen} />
+      <Stack.Screen name="TopUp" component={TopUpScreen} />
+      <Stack.Screen name="WalletSettings" component={WalletSettingsScreen} />
+      <Stack.Screen name="WalletRequests" component={WalletRequestsScreen} />
     </Stack.Navigator>
   );
 }

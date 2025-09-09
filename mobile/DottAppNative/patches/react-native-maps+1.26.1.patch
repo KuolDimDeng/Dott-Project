@@ -1,0 +1,39 @@
+diff --git a/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.h b/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.h
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.h
+@@ -0,0 +1,15 @@
++#import <React/RCTViewComponentView.h>
++#import <UIKit/UIKit.h>
++
++#ifndef RNMapsMarkerView_h
++#define RNMapsMarkerView_h
++
++NS_ASSUME_NONNULL_BEGIN
++
++@interface RNMapsMarkerView : RCTViewComponentView
++
++@end
++
++NS_ASSUME_NONNULL_END
++
++#endif /* RNMapsMarkerView_h */
+diff --git a/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.mm b/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.mm
+index 1234567..8901234 100644
+--- a/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.mm
++++ b/node_modules/react-native-maps/ios/AirMaps/RNMapsMarkerView.mm
+@@ -29,7 +29,12 @@
+ 
+ using namespace facebook::react;
+ 
+-@interface RNMapsMarkerView () <RCTRNMapsMarkerViewProtocol>
++#import "RNMapsMarkerView.h"
++
++@interface RNMapsMarkerView () <RCTRNMapsMarkerViewProtocol> {
++    RNMapsMarkerProps::Shared _props;
++    facebook::react::SharedEventEmitter _eventEmitter;
++}
+ @end
+ 
+ @implementation RNMapsMarkerView {

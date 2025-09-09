@@ -198,6 +198,18 @@ class UserProfileMeView(APIView):
                 'employee': employee_data,  # Add employee data
                 'profile_picture': profile.profile_picture,  # Base64 encoded profile picture
                 'profile_picture_updated_at': profile.profile_picture_updated_at.isoformat() if profile.profile_picture_updated_at else None,
+                # Location fields
+                'street': profile.street,
+                'city': profile.city,
+                'state': profile.state,
+                'postcode': profile.postcode,
+                'latitude': str(profile.latitude) if profile.latitude else None,
+                'longitude': str(profile.longitude) if profile.longitude else None,
+                'location_accuracy': profile.location_accuracy,
+                'location_updated_at': profile.location_updated_at.isoformat() if profile.location_updated_at else None,
+                'location_address': profile.location_address,
+                'landmark': profile.landmark,
+                'area_description': profile.area_description,
                 'request_id': request_id
             }
             
@@ -337,6 +349,79 @@ class UserProfileMeView(APIView):
                 updated = True
                 
                 # Clear cache when profile picture is updated
+                cache_service.delete_user_profile(request.user.id)
+            
+            # Update personal information fields
+            personal_fields = ['phone_number', 'street', 'city', 'state', 'postcode', 'landmark', 'area_description', 'location_address']
+            for field in personal_fields:
+                if field in request.data:
+                    setattr(profile, field, request.data[field] or None)
+                    updated = True
+                    logger.info(f"[UserProfileMeView] Updated {field} to: {request.data[field]}")
+            
+            # Update country if provided
+            if 'country' in request.data:
+                country_code = request.data['country']
+                if country_code:
+                    profile.country = country_code
+                    updated = True
+                    logger.info(f"[UserProfileMeView] Updated country to: {country_code}")
+            
+            # Update User model fields (first_name, last_name) if provided
+            user_updated = False
+            if 'first_name' in request.data:
+                request.user.first_name = request.data['first_name'] or ''
+                user_updated = True
+                logger.info(f"[UserProfileMeView] Updated first_name to: {request.data['first_name']}")
+            
+            if 'last_name' in request.data:
+                request.user.last_name = request.data['last_name'] or ''
+                user_updated = True
+                logger.info(f"[UserProfileMeView] Updated last_name to: {request.data['last_name']}")
+            
+            # Update location fields
+            location_fields = ['latitude', 'longitude', 'location_accuracy']
+            location_updated = False
+            for field in location_fields:
+                if field in request.data:
+                    value = request.data[field]
+                    if value is not None and value != '':
+                        if field in ['latitude', 'longitude']:
+                            try:
+                                # Convert to Decimal for lat/lng fields
+                                from decimal import Decimal
+                                setattr(profile, field, Decimal(str(value)))
+                                location_updated = True
+                            except (ValueError, TypeError):
+                                return Response({
+                                    'error': f'{field} must be a valid decimal number',
+                                    'request_id': request_id
+                                }, status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            # location_accuracy is float
+                            try:
+                                setattr(profile, field, float(value))
+                                location_updated = True
+                            except (ValueError, TypeError):
+                                return Response({
+                                    'error': f'{field} must be a valid number',
+                                    'request_id': request_id
+                                }, status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        setattr(profile, field, None)
+                        location_updated = True
+                    
+                    logger.info(f"[UserProfileMeView] Updated {field} to: {getattr(profile, field)}")
+            
+            # Update location timestamp if location was updated
+            if location_updated:
+                profile.location_updated_at = timezone.now()
+                updated = True
+            
+            # Save User model if updated
+            if user_updated:
+                request.user.save()
+                # Clear cache when user data is updated
                 cache_service.delete_user_profile(request.user.id)
             
             # Save profile if any updates were made

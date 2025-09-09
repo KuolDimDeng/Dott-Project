@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import profilePictureService from '../services/profilePictureService';
+import walletService from '../services/walletService';
 
 export default function AccountScreen({ navigation }) {
   const { user, logout, sessionToken, refreshUser } = useAuth();
@@ -21,14 +22,17 @@ export default function AccountScreen({ navigation }) {
   const [profilePicture, setProfilePicture] = useState(user?.profile_picture || null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [loadingWallet, setLoadingWallet] = useState(false);
   
   console.log('👤 AccountScreen - User data:', user);
   console.log('👤 AccountScreen - User role:', user?.role);
   console.log('👤 AccountScreen - Has business:', hasBusiness);
 
-  // Load cached profile picture on mount
+  // Load cached profile picture and wallet on mount
   useEffect(() => {
     loadCachedProfilePicture();
+    loadWalletBalance();
   }, []);
 
   // Update profile picture when user data changes
@@ -48,6 +52,18 @@ export default function AccountScreen({ navigation }) {
       }
     } catch (error) {
       console.error('Error loading cached profile picture:', error);
+    }
+  };
+
+  const loadWalletBalance = async () => {
+    try {
+      setLoadingWallet(true);
+      const wallet = await walletService.getWallet();
+      setWalletBalance(wallet);
+    } catch (error) {
+      console.error('Error loading wallet:', error);
+    } finally {
+      setLoadingWallet(false);
     }
   };
 
@@ -252,6 +268,49 @@ export default function AccountScreen({ navigation }) {
           <Icon name="chevron-forward" size={20} color="#9ca3af" />
         </TouchableOpacity>
 
+        {/* Mobile Money Wallet Section */}
+        <TouchableOpacity 
+          style={styles.walletSection}
+          onPress={() => navigation.navigate('WalletHome')}
+        >
+          <View style={styles.walletSectionContent}>
+            <View style={[styles.walletIconContainer, { backgroundColor: '#047857' }]}>
+              <Icon name="wallet-outline" size={24} color="white" />
+            </View>
+            <View style={styles.walletTextContainer}>
+              <Text style={styles.walletTitle}>Mobile Money Wallet</Text>
+              <Text style={styles.walletSubtitle}>
+                {loadingWallet ? 'Loading...' : 
+                 walletBalance ? `Balance: ${walletService.formatAmount(walletBalance.balance, walletBalance.currency || 'USD')}` : 
+                 'Send & receive money'}
+              </Text>
+            </View>
+            <View style={styles.walletActions}>
+              <TouchableOpacity 
+                style={styles.walletActionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  navigation.navigate('SendMoney');
+                }}
+              >
+                <Icon name="arrow-up-circle" size={20} color="#047857" />
+                <Text style={styles.walletActionText}>Send</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.walletActionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  navigation.navigate('ReceiveMoney');
+                }}
+              >
+                <Icon name="arrow-down-circle" size={20} color="#2563eb" />
+                <Text style={styles.walletActionText}>Receive</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#9ca3af" />
+        </TouchableOpacity>
+
         {/* Create Business Button for Non-Business Users */}
         {!hasBusiness && (
           <TouchableOpacity style={styles.createBusinessButton} onPress={handleCreateBusiness}>
@@ -277,6 +336,8 @@ export default function AccountScreen({ navigation }) {
                 onPress={() => {
                   if (item.screen) {
                     navigation.navigate(item.screen);
+                  } else if (item.title === 'Personal Info') {
+                    navigation.navigate('PersonalInfo');
                   }
                 }}
               >
@@ -552,5 +613,60 @@ const styles = StyleSheet.create({
   qrSubtitle: {
     fontSize: 13,
     color: '#6b7280',
+  },
+  walletSection: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  walletSectionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  walletIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  walletTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  walletTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  walletSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  walletActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginRight: 8,
+  },
+  walletActionButton: {
+    alignItems: 'center',
+    padding: 4,
+  },
+  walletActionText: {
+    fontSize: 10,
+    color: '#6b7280',
+    marginTop: 2,
   },
 });
