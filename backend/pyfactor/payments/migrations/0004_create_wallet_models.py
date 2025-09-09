@@ -14,6 +14,44 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Create MobileMoneyProvider model first
+        migrations.CreateModel(
+            name='MobileMoneyProvider',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=50, unique=True)),
+                ('code', models.CharField(max_length=20, unique=True)),
+                ('description', models.CharField(max_length=200)),
+                ('logo_url', models.URLField(blank=True, null=True)),
+                ('primary_color', models.CharField(default='#000000', max_length=7)),
+                ('secondary_color', models.CharField(default='#FFFFFF', max_length=7)),
+                ('countries', models.JSONField(default=list)),
+                ('currencies', models.JSONField(default=list)),
+                ('is_active', models.BooleanField(default=True)),
+                ('min_amount', models.DecimalField(decimal_places=2, default=1.00, max_digits=10)),
+                ('max_amount', models.DecimalField(decimal_places=2, default=10000.00, max_digits=10)),
+                ('daily_limit', models.DecimalField(decimal_places=2, default=5000.00, max_digits=10)),
+                ('monthly_limit', models.DecimalField(decimal_places=2, default=50000.00, max_digits=10)),
+                ('transaction_fee_percentage', models.DecimalField(decimal_places=4, default=0.0100, max_digits=5)),
+                ('transaction_fee_fixed', models.DecimalField(decimal_places=2, default=0.00, max_digits=10)),
+                ('api_endpoint', models.URLField(blank=True, null=True)),
+                ('api_key', models.CharField(blank=True, max_length=255, null=True)),
+                ('api_secret', models.CharField(blank=True, max_length=255, null=True)),
+                ('webhook_url', models.URLField(blank=True, null=True)),
+                ('webhook_secret', models.CharField(blank=True, max_length=255, null=True)),
+                ('sandbox_mode', models.BooleanField(default=True)),
+                ('sandbox_api_endpoint', models.URLField(blank=True, null=True)),
+                ('sandbox_api_key', models.CharField(blank=True, max_length=255, null=True)),
+                ('sandbox_api_secret', models.CharField(blank=True, max_length=255, null=True)),
+                ('metadata', models.JSONField(blank=True, default=dict)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+            ],
+            options={
+                'db_table': 'payments_mobilemoney_provider',
+                'ordering': ['name'],
+            },
+        ),
         # Create MobileMoneyWallet model
         migrations.CreateModel(
             name='MobileMoneyWallet',
