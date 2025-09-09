@@ -436,6 +436,30 @@ export const BusinessProvider = ({ children }) => {
       console.log('💰 Added Transactions option for business:', transactionsOption);
     }
     
+    // Check if Dashboard option exists
+    const hasDashboardOption = menuItems.some(item => 
+      item.id === 'dashboard' || 
+      item.screen === 'Dashboard' ||
+      item.screen === 'DashboardScreen' ||
+      item.label?.toLowerCase().includes('dashboard')
+    );
+    
+    console.log('📊 Has Dashboard option already:', hasDashboardOption);
+    
+    if (!hasDashboardOption) {
+      // Add Dashboard option for all businesses (including restaurants)
+      const dashboardOption = {
+        id: 'dashboard',
+        label: 'Dashboard',
+        title: 'Dashboard',
+        icon: 'analytics-outline',
+        screen: 'Dashboard',
+        subtitle: 'View business analytics & insights'
+      };
+      menuItems.push(dashboardOption);
+      console.log('📊 Added Dashboard option for business:', dashboardOption);
+    }
+    
     console.log('🔍 Final menu items count:', menuItems.length);
     
     return menuItems;
