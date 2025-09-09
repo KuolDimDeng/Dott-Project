@@ -25,11 +25,9 @@ echo ""
 echo "2. Fixing transport migration conflicts..."
 python scripts/pre_migration_fix.py || echo "Migration fix attempted"
 
-# Step 2b: Generate marketplace migrations if needed (but don't fail if they error)
+# Step 2b: Skip makemigrations in production - all migrations should be committed
 echo ""
-echo "2b. Generating marketplace app migrations..."
-python manage.py makemigrations marketplace --noinput 2>&1 | grep -v "No changes detected" || true
-python manage.py makemigrations chat --noinput 2>&1 | grep -v "No changes detected" || true
+echo "2b. Skipping makemigrations (production environment)..."
 
 # Now set exit on error for the actual migrations
 set -e
