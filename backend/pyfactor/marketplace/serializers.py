@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import BusinessListing, ConsumerProfile, BusinessSearch
+from .order_models import ConsumerOrder, OrderReview
 from inventory.models import Product, Service
 
 User = get_user_model()
@@ -158,3 +159,38 @@ class ServiceSerializer(serializers.ModelSerializer):
             return profile.business_name if profile else None
         except:
             return None
+
+
+class ConsumerOrderSerializer(serializers.ModelSerializer):
+    """Serializer for consumer orders"""
+    consumer_name = serializers.CharField(source='consumer.full_name', read_only=True)
+    consumer_email = serializers.EmailField(source='consumer.email', read_only=True)
+    business_name = serializers.CharField(source='business.business_name', read_only=True)
+    courier_name = serializers.CharField(source='courier.user.full_name', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = ConsumerOrder
+        fields = [
+            'id', 'order_number', 'consumer', 'consumer_name', 'consumer_email',
+            'business', 'business_name', 'courier', 'courier_name',
+            'items', 'subtotal', 'tax_amount', 'delivery_fee', 'discount_amount',
+            'total_amount', 'order_status', 'payment_status', 'payment_method',
+            'delivery_address', 'delivery_notes', 'estimated_delivery_time',
+            'actual_delivery_time', 'courier_assigned_at', 'courier_accepted_at',
+            'courier_earnings', 'delivery_pin', 'pin_generated_at', 'pin_verified',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'order_number', 'consumer_name', 'consumer_email',
+            'business_name', 'courier_name', 'created_at', 'updated_at'
+        ]
+
+
+class OrderReviewSerializer(serializers.ModelSerializer):
+    """Serializer for order reviews"""
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    
+    class Meta:
+        model = OrderReview
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at']
