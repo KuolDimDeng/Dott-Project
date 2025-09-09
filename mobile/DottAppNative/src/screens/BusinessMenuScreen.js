@@ -253,6 +253,7 @@ export default function BusinessMenuScreen() {
     { icon: 'people-outline', title: 'Staff', color: '#8b5cf6', screen: 'Employees' },
     { icon: 'bar-chart-outline', title: 'Reports', color: '#0891b2', screen: 'Reports' },
     { icon: 'list-outline', title: 'Menu', color: '#10b981', screen: 'MenuManagement' },
+    { icon: 'bicycle-outline', title: 'Courier', color: '#f59e0b', screen: 'CourierDashboard' },
   ];
 
   // Business type feature configuration
@@ -344,6 +345,7 @@ export default function BusinessMenuScreen() {
           'POS': '#10b981', // green for POS
           'Tables': '#3b82f6', // blue for tables  
           'Delivery': '#f59e0b', // orange for delivery
+          'CourierDashboard': '#f59e0b', // orange for courier
           'Inventory': '#ec4899', // pink for inventory
           'MenuManagement': '#8b5cf6', // purple for menu
           'Employees': '#8b5cf6', // purple for employees

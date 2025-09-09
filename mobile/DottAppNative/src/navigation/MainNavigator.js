@@ -77,6 +77,9 @@ import WalletBankTransferScreen from '../screens/WalletBankTransferScreen';
 
 // Import Courier screens
 import CourierDashboardScreen from '../screens/courier/CourierDashboardScreen';
+import RequestDeliveryScreen from '../screens/courier/RequestDeliveryScreen';
+import DeliveryTrackingScreen from '../screens/courier/DeliveryTrackingScreen';
+import OrderListScreen from '../screens/courier/OrderListScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -218,6 +221,9 @@ export default function MainNavigator() {
       
       {/* Courier screens */}
       <Stack.Screen name="CourierDashboard" component={CourierDashboardScreen} />
+      <Stack.Screen name="RequestDelivery" component={RequestDeliveryScreen} />
+      <Stack.Screen name="DeliveryTracking" component={DeliveryTrackingScreen} />
+      <Stack.Screen name="OrderList" component={OrderListScreen} />
     </Stack.Navigator>
   );
 }

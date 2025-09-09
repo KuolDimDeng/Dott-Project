@@ -170,7 +170,7 @@ const CourierDashboardScreen = ({ navigation }) => {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('AvailableOrders')}
+            onPress={() => navigation.navigate('OrderList', { type: 'available' })}
           >
             <Icon name="list-outline" size={24} color="#fff" />
             <Text style={styles.actionText}>Available Orders</Text>
@@ -178,15 +178,15 @@ const CourierDashboardScreen = ({ navigation }) => {
           
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
-            onPress={() => navigation.navigate('MyEarnings')}
+            onPress={() => navigation.navigate('OrderList', { type: 'active' })}
           >
-            <Icon name="wallet-outline" size={24} color="#fff" />
-            <Text style={styles.actionText}>My Earnings</Text>
+            <Icon name="bicycle-outline" size={24} color="#fff" />
+            <Text style={styles.actionText}>Active</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#FF9800' }]}
-            onPress={() => navigation.navigate('DeliveryHistory')}
+            onPress={() => navigation.navigate('OrderList', { type: 'completed' })}
           >
             <Icon name="time-outline" size={24} color="#fff" />
             <Text style={styles.actionText}>History</Text>
