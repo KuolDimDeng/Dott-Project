@@ -110,6 +110,9 @@ TENANT_APPS = (
     'hr.apps.HrConfig',
     'crm.apps.CrmConfig',
     'transport.apps.TransportConfig',
+    'marketplace.apps.MarketplaceConfig',  # Marketplace for businesses
+    'chat.apps.ChatConfig',  # Chat functionality for marketplace
+    'couriers.apps.CouriersConfig',  # Courier delivery service
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
