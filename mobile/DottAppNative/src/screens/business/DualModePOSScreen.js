@@ -89,6 +89,7 @@ export default function DualModePOSScreen() {
   const [mtnProcessing, setMtnProcessing] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showMtnModal, setShowMtnModal] = useState(false);
+  const [showCashModal, setShowCashModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [sendingSMS, setSendingSMS] = useState(false);
@@ -645,9 +646,9 @@ export default function DualModePOSScreen() {
           mobile_number: mtnNumber || null,
         },
         
-        // Customer info for receipt
-        customer_phone: customerPhone || null,
-        send_sms_receipt: !!customerPhone,
+        // Customer info for receipt - use from payment details or state
+        customer_phone: paymentDetails.customer_phone || customerPhone || null,
+        send_sms_receipt: !!(paymentDetails.customer_phone || customerPhone),
         
         // Metadata
         metadata: {
@@ -664,9 +665,24 @@ export default function DualModePOSScreen() {
         if (response.data?.success) {
           setLastTransactionId(response.data.transaction_id);
           
-          // Show receipt modal if customer phone was provided
-          if (customerPhone) {
-            setShowReceiptModal(true);
+          // Check if customer phone was provided during payment
+          const hasCustomerPhone = paymentDetails.customer_phone || customerPhone;
+          
+          if (hasCustomerPhone) {
+            // If phone was provided, send receipt automatically
+            Alert.alert(
+              'Transaction Complete',
+              `Receipt has been sent to ${hasCustomerPhone}`,
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    setCurrentStep('mode');
+                    resetPOS();
+                  },
+                },
+              ]
+            );
           } else {
             // Ask if they want to send receipt
             Alert.alert(
@@ -1249,31 +1265,7 @@ export default function DualModePOSScreen() {
 
           <TouchableOpacity
             style={styles.paymentMethodButton}
-            onPress={() => {
-              // For cash payment, we should ask for cash received amount first
-              Alert.alert(
-                'Cash Payment',
-                `Total Amount: ${currency.symbol}${total.toFixed(2)}`,
-                [
-                  {
-                    text: 'Cancel',
-                    style: 'cancel',
-                  },
-                  {
-                    text: 'Confirm Payment',
-                    onPress: () => {
-                      // Complete the transaction with cash payment details
-                      completeTransaction({
-                        method: 'cash',
-                        gateway: null,
-                        cash_received: total.toFixed(2),
-                        change_amount: '0.00',
-                      });
-                    },
-                  },
-                ]
-              );
-            }}
+            onPress={() => setShowCashModal(true)}
           >
             <Icon name="cash" size={24} color={THEME_COLOR} />
             <View style={styles.paymentMethodInfo}>
@@ -1333,6 +1325,120 @@ export default function DualModePOSScreen() {
         <Text style={styles.backButtonText}>Back to Cart</Text>
       </TouchableOpacity>
     </Animated.View>
+  );
+
+  // Render Cash Payment Modal
+  const renderCashModal = () => (
+    <Modal
+      visible={showCashModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowCashModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Icon name="cash" size={24} color={THEME_COLOR} />
+            <Text style={styles.modalTitle}>Cash Payment</Text>
+            <TouchableOpacity onPress={() => {
+              setShowCashModal(false);
+              setCashReceived('');
+              setCustomerPhone('');
+            }}>
+              <Icon name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.paymentAmount}>
+              Total Due: {currency.symbol}{total.toFixed(2)}
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Cash Received</Text>
+              <TextInput
+                style={styles.cardInput}
+                value={cashReceived}
+                onChangeText={setCashReceived}
+                placeholder={`${currency.symbol}0.00`}
+                keyboardType="decimal-pad"
+                autoFocus={true}
+              />
+            </View>
+
+            {parseFloat(cashReceived || 0) > 0 && (
+              <View style={styles.changeContainer}>
+                <Text style={styles.changeLabel}>Change Due:</Text>
+                <Text style={[
+                  styles.changeAmount,
+                  parseFloat(cashReceived || 0) < total && styles.changeAmountError
+                ]}>
+                  {currency.symbol}{Math.max(0, parseFloat(cashReceived || 0) - total).toFixed(2)}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Customer Phone (for SMS Receipt)</Text>
+              <TextInput
+                style={styles.cardInput}
+                value={customerPhone}
+                onChangeText={setCustomerPhone}
+                placeholder="+1234567890 (Optional)"
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <Text style={styles.receiptNote}>
+              Enter customer's phone to send SMS receipt
+            </Text>
+          </ScrollView>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setShowCashModal(false);
+                setCashReceived('');
+                setCustomerPhone('');
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                styles.confirmButton,
+                (!cashReceived || parseFloat(cashReceived) < total) && styles.disabledButton
+              ]}
+              onPress={() => {
+                const cashAmount = parseFloat(cashReceived || 0);
+                if (cashAmount < total) {
+                  Alert.alert('Insufficient Cash', 'Cash received is less than total amount');
+                  return;
+                }
+                
+                setShowCashModal(false);
+                
+                // Complete transaction with cash details and customer phone
+                completeTransaction({
+                  method: 'cash',
+                  gateway: null,
+                  cash_received: cashAmount.toFixed(2),
+                  change_amount: (cashAmount - total).toFixed(2),
+                  customer_phone: customerPhone,
+                });
+              }}
+              disabled={!cashReceived || parseFloat(cashReceived) < total}
+            >
+              <Text style={styles.confirmButtonText}>Complete Payment</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 
   // Render Card Payment Modal
@@ -1788,6 +1894,9 @@ export default function DualModePOSScreen() {
 
       {/* QR Modal */}
       {renderQRModal()}
+      
+      {/* Cash Payment Modal */}
+      {renderCashModal()}
       
       {/* Card Payment Modal */}
       {renderCardModal()}
@@ -2671,5 +2780,32 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
     fontStyle: 'italic',
+  },
+  changeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f0f8ff',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  changeLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  changeAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME_COLOR,
+  },
+  changeAmountError: {
+    color: '#ef4444',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e1e8ed',
+    marginVertical: 20,
   },
 });
