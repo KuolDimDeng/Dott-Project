@@ -12,9 +12,9 @@ class HealthCheckService {
       { category: 'Auth', method: 'GET', path: '/users/me/', name: 'User Profile' },
       
       // Business Operations
-      { category: 'Business', method: 'GET', path: '/users/business/details/', name: 'Business Details' },
-      { category: 'Business', method: 'PATCH', path: '/users/business/update/', name: 'Business Update', testData: {} },
-      { category: 'Business', method: 'GET', path: '/users/business/register/', name: 'Business Registration' },
+      { category: 'Business', method: 'GET', path: '/business/details/', name: 'Business Details' },
+      { category: 'Business', method: 'PATCH', path: '/business/update/', name: 'Business Update', testData: {} },
+      { category: 'Business', method: 'GET', path: '/business/register/', name: 'Business Registration' },
       
       // Marketplace
       { category: 'Marketplace', method: 'GET', path: '/marketplace/business/listing/', name: 'Marketplace Listing' },
@@ -36,8 +36,8 @@ class HealthCheckService {
       { category: 'Courier', method: 'GET', path: '/couriers/deliveries/', name: 'Deliveries' },
       
       // Wallet
-      { category: 'Wallet', method: 'GET', path: '/wallet/', name: 'Wallet Info' },
-      { category: 'Wallet', method: 'GET', path: '/wallet/transactions/', name: 'Wallet Transactions' },
+      { category: 'Wallet', method: 'GET', path: '/api/payments/wallet/balance/', name: 'Wallet Balance' },
+      { category: 'Wallet', method: 'GET', path: '/api/payments/wallet/transactions/', name: 'Wallet Transactions' },
     ];
     
     this.healthStatus = {

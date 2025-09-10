@@ -5,11 +5,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Business, BusinessMember
+from .models import Business, BusinessMember, UserProfile
 from integrations.models import Integration
 from .forms import BusinessRegistrationForm
 from .business_serializers import AddBusinessMemberSerializer, BusinessSerializer, BusinessRegistrationSerializer
-from .models import UserProfile
 import requests
 from django.contrib.auth import get_user_model
 import stripe
@@ -140,24 +139,40 @@ def get_business_details(request):
     Get detailed information about a business.
     """
     try:
-        user_profile = UserProfile.objects.get(user=request.user)
+        # First try to get the user profile
+        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+        
+        # Check if user has a business_id
+        if not user_profile.business_id:
+            # Try to get business from tenant if user is authenticated with tenant
+            from custom_auth.models import Tenant
+            tenant = getattr(request, 'tenant', None)
+            if tenant:
+                # Get business from tenant
+                business = Business.objects.filter(tenant_id=tenant.id).first()
+                if business:
+                    # Update user profile with business
+                    user_profile.business_id = business.id
+                    user_profile.save()
+                    business_data = BusinessSerializer(business).data
+                    return Response(business_data)
+            return Response({'error': 'No business found for user'}, status=404)
+        
+        # Get the business using the business_id
         business = user_profile.business
-
         if not business:
             return Response({'error': 'No business found for user'}, status=404)
             
-        # Get detailed business information
-        # This could be expanded to include more detailed information as needed
         business_data = BusinessSerializer(business).data
-        
-        # You can add more data here as needed
-        
         return Response(business_data)
-    except UserProfile.DoesNotExist:
-        return Response({'error': 'User profile not found'}, status=404)
+        
     except Exception as e:
         logger.error(f"Error getting business details: {str(e)}")
-        return Response({'error': 'An internal server error occurred'}, status=500)
+        # Return more detailed error in development
+        return Response({
+            'error': 'An internal server error occurred',
+            'detail': str(e) if settings.DEBUG else None
+        }, status=500)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -195,22 +210,42 @@ def update_business(request):
     Update basic business information.
     """
     try:
-        user_profile = UserProfile.objects.get(user=request.user)
-        business = user_profile.business
+        # Get or create user profile
+        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
         
+        # Check if user has a business_id
+        if not user_profile.business_id:
+            # Try to get business from tenant
+            from custom_auth.models import Tenant
+            tenant = getattr(request, 'tenant', None)
+            if tenant:
+                business = Business.objects.filter(tenant_id=tenant.id).first()
+                if business:
+                    user_profile.business_id = business.id
+                    user_profile.save()
+                else:
+                    return Response({'error': 'No business found for user'}, status=404)
+            else:
+                return Response({'error': 'No business found for user'}, status=404)
+        
+        # Get the business
+        business = user_profile.business
         if not business:
-            return Response({'error': 'No business found for user'}, status=404)
+            return Response({'error': 'Business not found'}, status=404)
             
+        # Update the business
         serializer = BusinessSerializer(business, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
-    except UserProfile.DoesNotExist:
-        return Response({'error': 'User profile not found'}, status=404)
+        
     except Exception as e:
         logger.error(f"Error updating business: {str(e)}")
-        return Response({'error': 'An internal server error occurred'}, status=500)
+        return Response({
+            'error': 'An internal server error occurred',
+            'detail': str(e) if settings.DEBUG else None
+        }, status=500)
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
