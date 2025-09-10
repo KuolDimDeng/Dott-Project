@@ -8,6 +8,7 @@ import { CartProvider } from './src/context/CartContext';
 import { BusinessProvider } from './src/context/BusinessContext';
 import { CurrencyProvider } from './src/context/CurrencyContext';
 import { MenuProvider } from './src/context/MenuContext';
+import { CountryProvider } from './src/context/CountryContext';
 import { StatusBar, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import EnvironmentBadge from './src/components/EnvironmentBadge';
@@ -39,22 +40,24 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <BusinessProvider>
-          <MenuProvider>
-            <CurrencyProvider>
-              <CartProvider>
-                <CallManager>
-                  <View style={{ flex: 1 }}>
-                    <AppNavigator />
-                    <EnvironmentBadge />
-                  </View>
-                </CallManager>
-              </CartProvider>
-            </CurrencyProvider>
-          </MenuProvider>
-        </BusinessProvider>
-      </AuthProvider>
+      <CountryProvider>
+        <AuthProvider>
+          <BusinessProvider>
+            <MenuProvider>
+              <CurrencyProvider>
+                <CartProvider>
+                  <CallManager>
+                    <View style={{ flex: 1 }}>
+                      <AppNavigator />
+                      <EnvironmentBadge />
+                    </View>
+                  </CallManager>
+                </CartProvider>
+              </CurrencyProvider>
+            </MenuProvider>
+          </BusinessProvider>
+        </AuthProvider>
+      </CountryProvider>
     </SafeAreaProvider>
   );
 }
