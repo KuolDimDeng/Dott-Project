@@ -84,8 +84,18 @@ export default function DualModePOSScreen() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [cashReceived, setCashReceived] = useState('');
-  const [mpesaNumber, setMpesaNumber] = useState('');
+  const [mtnNumber, setMtnNumber] = useState('');
   const [cardProcessing, setCardProcessing] = useState(false);
+  const [mtnProcessing, setMtnProcessing] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [showMtnModal, setShowMtnModal] = useState(false);
+  const [cardDetails, setCardDetails] = useState({
+    number: '',
+    exp_month: '',
+    exp_year: '',
+    cvc: '',
+    name: '',
+  });
   
   // QR Code States
   const [showQRModal, setShowQRModal] = useState(false);
@@ -419,24 +429,159 @@ export default function DualModePOSScreen() {
     }
   };
 
+  // Process Stripe card payment
   const processStripePayment = async () => {
+    if (!cardDetails.number || !cardDetails.exp_month || !cardDetails.exp_year || !cardDetails.cvc) {
+      Alert.alert('Incomplete Details', 'Please fill in all card details');
+      return;
+    }
+
     setCardProcessing(true);
     try {
-      // Mock Stripe payment for demo
-      setTimeout(() => {
+      const paymentData = {
+        amount: total.toFixed(2),
+        currency: currency.code,
+        payment_method_type: 'card',
+        gateway: 'stripe',
+        card_details: {
+          number: cardDetails.number.replace(/\s/g, ''),
+          exp_month: parseInt(cardDetails.exp_month),
+          exp_year: parseInt(cardDetails.exp_year),
+          cvc: cardDetails.cvc,
+          name: cardDetails.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim(),
+        },
+        metadata: {
+          pos_mode: posMode,
+          items: posMode === 'simple' ? [{
+            name: simpleNote || 'Payment',
+            quantity: 1,
+            price: subtotal.toFixed(2),
+          }] : cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price.toFixed(2),
+          })),
+          tax: tax.toFixed(2),
+          subtotal: subtotal.toFixed(2),
+        },
+      };
+
+      const response = await api.post('/payments/pos/process-card/', paymentData);
+      
+      if (response.data?.success) {
+        setShowCardModal(false);
         Alert.alert(
-          'Card Payment Successful',
-          `Payment of ${currency.symbol}${total.toFixed(0)} processed successfully`,
+          'Payment Successful',
+          `Card payment of ${currency.symbol}${total.toFixed(0)} processed successfully`,
           [{ text: 'OK', onPress: () => completeTransaction() }]
         );
-      }, 2000);
+      } else {
+        throw new Error(response.data?.message || 'Payment failed');
+      }
     } catch (error) {
       console.error('Stripe payment error:', error);
-      Alert.alert('Payment Failed', 'Card payment failed. Please try again.');
+      Alert.alert(
+        'Payment Failed', 
+        error.response?.data?.message || 'Card payment failed. Please try again.'
+      );
     } finally {
       setCardProcessing(false);
-      setShowPaymentModal(false);
     }
+  };
+
+  // Process MTN Mobile Money payment
+  const processMtnPayment = async () => {
+    if (!mtnNumber || mtnNumber.length < 9) {
+      Alert.alert('Invalid Number', 'Please enter a valid MTN phone number');
+      return;
+    }
+
+    setMtnProcessing(true);
+    try {
+      const paymentData = {
+        amount: total.toFixed(2),
+        currency: currency.code,
+        payment_method_type: 'mobile_money',
+        gateway: 'mtn',
+        phone_number: mtnNumber,
+        metadata: {
+          pos_mode: posMode,
+          items: posMode === 'simple' ? [{
+            name: simpleNote || 'Payment',
+            quantity: 1,
+            price: subtotal.toFixed(2),
+          }] : cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price.toFixed(2),
+          })),
+          tax: tax.toFixed(2),
+          subtotal: subtotal.toFixed(2),
+        },
+      };
+
+      const response = await api.post('/payments/pos/process-mobile-money/', paymentData);
+      
+      if (response.data?.success) {
+        // Start polling for payment confirmation
+        pollMtnPaymentStatus(response.data.transaction_id);
+        Alert.alert(
+          'Payment Initiated',
+          'Please approve the payment request on your phone',
+          [{ text: 'OK' }]
+        );
+      } else {
+        throw new Error(response.data?.message || 'Payment initiation failed');
+      }
+    } catch (error) {
+      console.error('MTN payment error:', error);
+      Alert.alert(
+        'Payment Failed',
+        error.response?.data?.message || 'MTN payment failed. Please try again.'
+      );
+      setMtnProcessing(false);
+    }
+  };
+
+  // Poll MTN payment status
+  const pollMtnPaymentStatus = async (transactionId) => {
+    let attempts = 0;
+    const maxAttempts = 30; // Poll for 2.5 minutes max
+    
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      
+      if (attempts > maxAttempts) {
+        clearInterval(pollInterval);
+        setMtnProcessing(false);
+        setShowMtnModal(false);
+        Alert.alert('Payment Timeout', 'The payment request has expired. Please try again.');
+        return;
+      }
+      
+      try {
+        const response = await api.get(`/payments/mobile-money/status/${transactionId}/`);
+        
+        if (response.data?.status === 'completed') {
+          clearInterval(pollInterval);
+          setMtnProcessing(false);
+          setShowMtnModal(false);
+          
+          Alert.alert(
+            'Payment Successful',
+            `MTN payment of ${currency.symbol}${total.toFixed(0)} received successfully`,
+            [{ text: 'OK', onPress: () => completeTransaction() }]
+          );
+        } else if (response.data?.status === 'failed' || response.data?.status === 'cancelled') {
+          clearInterval(pollInterval);
+          setMtnProcessing(false);
+          setShowMtnModal(false);
+          Alert.alert('Payment Failed', 'The payment was not completed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error polling MTN payment status:', error);
+      }
+    }, 5000); // Poll every 5 seconds
   };
 
   const completeTransaction = () => {
@@ -452,7 +597,14 @@ export default function DualModePOSScreen() {
       setCart([]);
     }
     setCashReceived('');
-    setMpesaNumber('');
+    setMtnNumber('');
+    setCardDetails({
+      number: '',
+      exp_month: '',
+      exp_year: '',
+      cvc: '',
+      name: '',
+    });
     setPaymentMethod('cash');
     setSearchQuery('');
     setSelectedCategory('all');
@@ -953,24 +1105,28 @@ export default function DualModePOSScreen() {
 
           <TouchableOpacity
             style={styles.paymentMethodButton}
-            onPress={() => {
-              Alert.alert('M-Pesa Payment', 'M-Pesa payment initiated');
-              completeTransaction();
-            }}
+            onPress={() => setShowMtnModal(true)}
+            disabled={mtnProcessing}
           >
-            <View style={styles.mpesaIcon}>
-              <Text style={styles.mpesaIconText}>M</Text>
-            </View>
-            <View style={styles.paymentMethodInfo}>
-              <Text style={styles.paymentMethodNameAlt}>M-Pesa</Text>
-              <Text style={styles.paymentMethodDescAlt}>Mobile money payment</Text>
-            </View>
-            <Icon name="chevron-forward" size={20} color={THEME_COLOR} />
+            {mtnProcessing ? (
+              <ActivityIndicator color={THEME_COLOR} size={24} />
+            ) : (
+              <>
+                <View style={styles.mtnIcon}>
+                  <Text style={styles.mtnIconText}>MTN</Text>
+                </View>
+                <View style={styles.paymentMethodInfo}>
+                  <Text style={styles.paymentMethodNameAlt}>MTN Mobile Money</Text>
+                  <Text style={styles.paymentMethodDescAlt}>Pay with MTN MoMo</Text>
+                </View>
+                <Icon name="chevron-forward" size={20} color={THEME_COLOR} />
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.paymentMethodButton}
-            onPress={processStripePayment}
+            onPress={() => setShowCardModal(true)}
             disabled={cardProcessing}
           >
             {cardProcessing ? (
@@ -997,6 +1153,212 @@ export default function DualModePOSScreen() {
         <Text style={styles.backButtonText}>Back to Cart</Text>
       </TouchableOpacity>
     </Animated.View>
+  );
+
+  // Render Card Payment Modal
+  const renderCardModal = () => (
+    <Modal
+      visible={showCardModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowCardModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Card Payment</Text>
+            <TouchableOpacity onPress={() => setShowCardModal(false)}>
+              <Icon name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.paymentAmount}>
+              Amount: {currency.symbol}{total.toFixed(2)}
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Card Number</Text>
+              <TextInput
+                style={styles.cardInput}
+                value={cardDetails.number}
+                onChangeText={(text) => {
+                  // Format card number with spaces
+                  const formatted = text.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                  setCardDetails({ ...cardDetails, number: formatted });
+                }}
+                placeholder="4242 4242 4242 4242"
+                keyboardType="numeric"
+                maxLength={19}
+              />
+            </View>
+
+            <View style={styles.inputRow}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                <Text style={styles.inputLabel}>Expiry Date</Text>
+                <View style={styles.expiryContainer}>
+                  <TextInput
+                    style={[styles.cardInput, { flex: 1, marginRight: 5 }]}
+                    value={cardDetails.exp_month}
+                    onChangeText={(text) => setCardDetails({ ...cardDetails, exp_month: text })}
+                    placeholder="MM"
+                    keyboardType="numeric"
+                    maxLength={2}
+                  />
+                  <Text style={styles.expirySeparator}>/</Text>
+                  <TextInput
+                    style={[styles.cardInput, { flex: 1, marginLeft: 5 }]}
+                    value={cardDetails.exp_year}
+                    onChangeText={(text) => setCardDetails({ ...cardDetails, exp_year: text })}
+                    placeholder="YY"
+                    keyboardType="numeric"
+                    maxLength={2}
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.inputGroup, { flex: 0.5 }]}>
+                <Text style={styles.inputLabel}>CVC</Text>
+                <TextInput
+                  style={styles.cardInput}
+                  value={cardDetails.cvc}
+                  onChangeText={(text) => setCardDetails({ ...cardDetails, cvc: text })}
+                  placeholder="123"
+                  keyboardType="numeric"
+                  maxLength={4}
+                  secureTextEntry
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Cardholder Name</Text>
+              <TextInput
+                style={styles.cardInput}
+                value={cardDetails.name}
+                onChangeText={(text) => setCardDetails({ ...cardDetails, name: text })}
+                placeholder="John Doe"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.securityNote}>
+              <Icon name="lock-closed" size={16} color="#666" />
+              <Text style={styles.securityText}>
+                Your payment info is encrypted and secure
+              </Text>
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShowCardModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton, cardProcessing && styles.disabledButton]}
+              onPress={processStripePayment}
+              disabled={cardProcessing}
+            >
+              {cardProcessing ? (
+                <ActivityIndicator color="white" size={20} />
+              ) : (
+                <Text style={styles.confirmButtonText}>Pay {currency.symbol}{total.toFixed(2)}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Render MTN Payment Modal
+  const renderMtnModal = () => (
+    <Modal
+      visible={showMtnModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowMtnModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <View style={styles.mtnLogoContainer}>
+              <View style={styles.mtnIcon}>
+                <Text style={styles.mtnIconText}>MTN</Text>
+              </View>
+              <Text style={styles.modalTitle}>Mobile Money Payment</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowMtnModal(false)}>
+              <Icon name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.paymentAmount}>
+            Amount: {currency.symbol}{total.toFixed(2)}
+          </Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>MTN Phone Number</Text>
+            <View style={styles.phoneInputContainer}>
+              <Text style={styles.countryCode}>+256</Text>
+              <TextInput
+                style={[styles.cardInput, { flex: 1 }]}
+                value={mtnNumber}
+                onChangeText={setMtnNumber}
+                placeholder="771234567"
+                keyboardType="phone-pad"
+                maxLength={9}
+              />
+            </View>
+          </View>
+
+          <View style={styles.mtnInfo}>
+            <Icon name="information-circle" size={20} color="#ffcc00" />
+            <Text style={styles.mtnInfoText}>
+              You will receive a prompt on your phone to approve the payment
+            </Text>
+          </View>
+
+          {mtnProcessing && (
+            <View style={styles.processingContainer}>
+              <ActivityIndicator size="large" color="#ffcc00" />
+              <Text style={styles.processingText}>
+                Waiting for payment approval...
+              </Text>
+              <Text style={styles.processingSubtext}>
+                Please check your phone and enter your PIN
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setShowMtnModal(false);
+                setMtnProcessing(false);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.mtnConfirmButton, mtnProcessing && styles.disabledButton]}
+              onPress={processMtnPayment}
+              disabled={mtnProcessing}
+            >
+              {mtnProcessing ? (
+                <ActivityIndicator color="black" size={20} />
+              ) : (
+                <Text style={styles.mtnConfirmText}>Send Payment Request</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 
   // Render QR Code Modal
@@ -1123,6 +1485,12 @@ export default function DualModePOSScreen() {
 
       {/* QR Modal */}
       {renderQRModal()}
+      
+      {/* Card Payment Modal */}
+      {renderCardModal()}
+      
+      {/* MTN Payment Modal */}
+      {renderMtnModal()}
     </SafeAreaView>
   );
 }
@@ -1609,19 +1977,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: THEME_COLOR,
   },
-  mpesaIcon: {
+  mtnIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#00875a',
+    backgroundColor: '#ffcc00',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  mpesaIconText: {
-    fontSize: 16,
+  mtnIconText: {
+    fontSize: 12,
     fontWeight: 'bold',
-    color: 'white',
+    color: 'black',
   },
   paymentMethodInfo: {
     flex: 1,
@@ -1808,5 +2176,168 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 16,
     color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: screenWidth - 40,
+    maxHeight: screenHeight * 0.8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  paymentAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: THEME_COLOR,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 15,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  cardInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  expiryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  expirySeparator: {
+    fontSize: 16,
+    color: '#666',
+    marginHorizontal: 5,
+  },
+  securityNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f8ff',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  securityText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f1f1f1',
+    marginRight: 10,
+  },
+  confirmButton: {
+    backgroundColor: THEME_COLOR,
+    marginLeft: 10,
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  mtnLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingLeft: 12,
+    backgroundColor: '#f9f9f9',
+  },
+  countryCode: {
+    fontSize: 16,
+    color: '#666',
+    marginRight: 8,
+  },
+  mtnInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbf0',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 15,
+  },
+  mtnInfoText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+  },
+  processingContainer: {
+    alignItems: 'center',
+    padding: 20,
+    marginTop: 20,
+  },
+  processingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 15,
+  },
+  processingSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  mtnConfirmButton: {
+    backgroundColor: '#ffcc00',
+    marginLeft: 10,
+  },
+  mtnConfirmText: {
+    color: 'black',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
