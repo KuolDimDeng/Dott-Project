@@ -355,6 +355,70 @@ export const COUNTRY_CONFIGURATIONS = {
       end: '18:00',
       timezone: 'Africa/Kigali'
     }
+  },
+
+  'US': { // United States
+    name: 'United States',
+    currency: {
+      code: 'USD',
+      symbol: '$',
+      name: 'US Dollar'
+    },
+    paymentMethods: [
+      PAYMENT_METHODS.CARD,
+      PAYMENT_METHODS.BANK_TRANSFER,
+      PAYMENT_METHODS.CASH
+    ],
+    vehicleTypes: [
+      VEHICLE_TYPES.CAR,
+      VEHICLE_TYPES.VAN,
+      VEHICLE_TYPES.TRUCK,
+      VEHICLE_TYPES.BICYCLE
+    ],
+    phoneFormat: '+1 (XXX) XXX-XXXX',
+    languages: ['en', 'es'],
+    primaryLanguage: 'en',
+    addressFormat: {
+      format: '{street}, {city}, {state} {zip}',
+      requiresPostalCode: true
+    },
+    businessHours: {
+      start: '09:00',
+      end: '17:00',
+      timezone: 'America/New_York'
+    }
+  },
+
+  'GB': { // United Kingdom
+    name: 'United Kingdom',
+    currency: {
+      code: 'GBP',
+      symbol: '£',
+      name: 'British Pound'
+    },
+    paymentMethods: [
+      PAYMENT_METHODS.CARD,
+      PAYMENT_METHODS.BANK_TRANSFER,
+      PAYMENT_METHODS.CASH
+    ],
+    vehicleTypes: [
+      VEHICLE_TYPES.CAR,
+      VEHICLE_TYPES.VAN,
+      VEHICLE_TYPES.BICYCLE,
+      VEHICLE_TYPES.MOTORCYCLE
+    ],
+    phoneFormat: '+44 XXXX XXX XXX',
+    languages: ['en'],
+    primaryLanguage: 'en',
+    addressFormat: {
+      format: '{street}, {city}, {postcode}',
+      requiresPostalCode: true
+    },
+    businessHours: {
+      start: '09:00',
+      end: '17:00',
+      timezone: 'Europe/London'
+    }
   }
 };
 
