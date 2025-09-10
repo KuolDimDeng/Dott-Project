@@ -188,7 +188,7 @@ def get_user_subscription(request):
         logger.error(f"Error getting user subscription: {str(e)}")
         return Response({'error': 'An internal server error occurred'}, status=500)
 
-@api_view(['POST'])
+@api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_business(request):
     """
@@ -212,7 +212,7 @@ def update_business(request):
         logger.error(f"Error updating business: {str(e)}")
         return Response({'error': 'An internal server error occurred'}, status=500)
 
-@api_view(['POST'])
+@api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_business_details(request):
     """
