@@ -3,6 +3,45 @@
 from django.db import migrations
 
 
+def rename_index_if_exists(apps, schema_editor):
+    """Rename index only if it exists"""
+    with schema_editor.connection.cursor() as cursor:
+        # Check if the old index exists
+        cursor.execute("""
+            SELECT indexname FROM pg_indexes 
+            WHERE tablename = 'crm_customer' 
+            AND indexname = 'crm_customer_tenant_id_idx'
+        """)
+        
+        if cursor.fetchone():
+            # Index exists, rename it
+            cursor.execute("""
+                ALTER INDEX crm_customer_tenant_id_idx 
+                RENAME TO crm_custome_tenant__db2f56_idx
+            """)
+            print("✅ Renamed crm_customer_tenant_id_idx to crm_custome_tenant__db2f56_idx")
+        else:
+            print("ℹ️  Index crm_customer_tenant_id_idx does not exist, skipping rename")
+
+
+def reverse_rename_index(apps, schema_editor):
+    """Reverse the index rename"""
+    with schema_editor.connection.cursor() as cursor:
+        # Check if the new index exists
+        cursor.execute("""
+            SELECT indexname FROM pg_indexes 
+            WHERE tablename = 'crm_customer' 
+            AND indexname = 'crm_custome_tenant__db2f56_idx'
+        """)
+        
+        if cursor.fetchone():
+            # Index exists, rename it back
+            cursor.execute("""
+                ALTER INDEX crm_custome_tenant__db2f56_idx 
+                RENAME TO crm_customer_tenant_id_idx
+            """)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,9 +49,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameIndex(
-            model_name='customer',
-            new_name='crm_custome_tenant__db2f56_idx',
-            old_name='crm_customer_tenant_idx',
-        ),
+        migrations.RunPython(rename_index_if_exists, reverse_rename_index),
     ]

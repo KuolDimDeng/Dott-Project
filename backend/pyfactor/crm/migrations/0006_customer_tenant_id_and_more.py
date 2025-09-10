@@ -3,6 +3,83 @@
 from django.db import migrations, models
 
 
+def add_tenant_field_if_needed(apps, schema_editor):
+    """Add tenant_id field only if it doesn't exist"""
+    with schema_editor.connection.cursor() as cursor:
+        # Check if tenant_id column exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'crm_customer' 
+                AND column_name = 'tenant_id'
+            );
+        """)
+        
+        exists = cursor.fetchone()[0]
+        if not exists:
+            # Add the field
+            cursor.execute("""
+                ALTER TABLE crm_customer 
+                ADD COLUMN tenant_id uuid
+            """)
+            print("✅ Added tenant_id column to crm_customer")
+        else:
+            print("ℹ️  tenant_id column already exists in crm_customer")
+
+
+def add_index_if_needed(apps, schema_editor):
+    """Add index only if it doesn't exist"""
+    with schema_editor.connection.cursor() as cursor:
+        # Check if index exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_indexes 
+                WHERE tablename = 'crm_customer' 
+                AND indexname = 'crm_custome_tenant__db2f56_idx'
+            );
+        """)
+        
+        exists = cursor.fetchone()[0]
+        if not exists:
+            # Create the index
+            cursor.execute("""
+                CREATE INDEX crm_custome_tenant__db2f56_idx 
+                ON crm_customer(tenant_id, account_number)
+            """)
+            print("✅ Created index crm_custome_tenant__db2f56_idx")
+        else:
+            print("ℹ️  Index crm_custome_tenant__db2f56_idx already exists")
+
+
+def add_constraint_if_needed(apps, schema_editor):
+    """Add constraint only if it doesn't exist"""
+    with schema_editor.connection.cursor() as cursor:
+        # Check if constraint exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_constraint 
+                WHERE conname = 'unique_crm_customer_account_number_per_tenant'
+            );
+        """)
+        
+        exists = cursor.fetchone()[0]
+        if not exists:
+            # Create the constraint
+            cursor.execute("""
+                ALTER TABLE crm_customer 
+                ADD CONSTRAINT unique_crm_customer_account_number_per_tenant 
+                UNIQUE (tenant_id, account_number)
+            """)
+            print("✅ Created constraint unique_crm_customer_account_number_per_tenant")
+        else:
+            print("ℹ️  Constraint unique_crm_customer_account_number_per_tenant already exists")
+
+
+def reverse_changes(apps, schema_editor):
+    """Reverse the changes (no-op since we only add if needed)"""
+    pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,17 +87,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='customer',
-            name='tenant_id',
-            field=models.UUIDField(db_index=True, help_text='The tenant ID this record belongs to. Used by Row Level Security.', null=True),
-        ),
-        migrations.AddIndex(
-            model_name='customer',
-            index=models.Index(fields=['tenant_id', 'account_number'], name='crm_custome_tenant__db2f56_idx'),
-        ),
-        migrations.AddConstraint(
-            model_name='customer',
-            constraint=models.UniqueConstraint(fields=('tenant_id', 'account_number'), name='unique_crm_customer_account_number_per_tenant'),
-        ),
+        migrations.RunPython(add_tenant_field_if_needed, reverse_changes),
+        migrations.RunPython(add_index_if_needed, reverse_changes),
+        migrations.RunPython(add_constraint_if_needed, reverse_changes),
     ]
