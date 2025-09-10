@@ -55,6 +55,10 @@ python manage.py showmigrations --plan | grep "\[ \]" || echo "✅ No pending mi
 # Step 4: Apply migrations (fail if error)
 echo ""
 echo "4. Applying migrations..."
+# First, fake the transport 0004 migration since tables already exist
+python manage.py migrate transport 0004 --fake || echo "Could not fake transport 0004"
+
+# Now run all migrations
 python manage.py migrate --noinput --verbosity 2 || {
     echo "Migration failed with error code $?"
     echo "Attempting to show migration status..."

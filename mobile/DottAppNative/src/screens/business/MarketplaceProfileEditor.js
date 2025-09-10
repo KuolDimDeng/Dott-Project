@@ -160,6 +160,11 @@ export default function MarketplaceProfileEditor({ navigation }) {
       const businessId = businessData?.businessId || user?.business_id;
       const businessType = businessData?.businessType || 'OTHER';
       
+      console.log('🍔 Loading business offerings...');
+      console.log('🍔 Business Type:', businessType);
+      console.log('🍔 Menu items from context:', menuItems?.length || 0);
+      console.log('🍔 First menu item:', menuItems?.[0]);
+      
       // First try to use MenuContext for restaurants
       if ((businessType.includes('RESTAURANT') || businessType.includes('CAFE')) && menuItems?.length > 0) {
         // Use menu items from context
@@ -173,6 +178,7 @@ export default function MarketplaceProfileEditor({ navigation }) {
           available: item.available !== false,
         }));
         setBusinessOfferings(formattedData);
+        console.log('🍔 Set business offerings from menu context:', formattedData.length);
       } else if (businessId) {
         // Fallback to API
         const result = await businessDataApi.getBusinessOfferings(businessId, businessType);
