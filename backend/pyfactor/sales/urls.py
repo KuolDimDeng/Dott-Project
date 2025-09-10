@@ -26,6 +26,7 @@ from .views import (
     print_estimate,
 )
 from .receipt_views import send_receipt_email
+from .views_pos_complete import complete_pos_transaction, send_pos_receipt
 
 # Create router for ViewSets
 router = DefaultRouter()
@@ -40,6 +41,10 @@ router.register(r'pos/refunds', POSRefundViewSet, basename='pos-refund')
 urlpatterns = [
     # Include ViewSet routes
     path('', include(router.urls)),
+    
+    # POS Transaction Completion endpoints
+    path('pos/complete-transaction/', complete_pos_transaction, name='complete_pos_transaction'),
+    path('pos/send-receipt/', send_pos_receipt, name='send_pos_receipt'),
     
     # Keep existing customer endpoints (they work)
     path('customers/create/', create_customer, name='create_customer'),

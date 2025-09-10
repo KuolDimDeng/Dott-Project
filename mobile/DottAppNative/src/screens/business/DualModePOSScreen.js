@@ -89,6 +89,10 @@ export default function DualModePOSScreen() {
   const [mtnProcessing, setMtnProcessing] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showMtnModal, setShowMtnModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [sendingSMS, setSendingSMS] = useState(false);
+  const [lastTransactionId, setLastTransactionId] = useState(null);
   const [cardDetails, setCardDetails] = useState({
     number: '',
     exp_month: '',
@@ -351,7 +355,11 @@ export default function DualModePOSScreen() {
           Alert.alert(
             'Payment Successful!',
             `Payment of ${currency.symbol}${total.toFixed(0)} received successfully`,
-            [{ text: 'OK', onPress: () => completeTransaction() }]
+            [{ text: 'OK', onPress: () => completeTransaction({
+              method: 'qr_code',
+              gateway: 'dott_pay',
+              transaction_id: transactionId,
+            }) }]
           );
         } else if (response.data?.status === 'failed' || response.data?.status === 'cancelled') {
           clearInterval(pollInterval);
@@ -373,7 +381,11 @@ export default function DualModePOSScreen() {
         Alert.alert(
           'Payment Successful!',
           `Payment of ${currency.symbol}${total.toFixed(0)} received successfully`,
-          [{ text: 'OK', onPress: () => completeTransaction() }]
+          [{ text: 'OK', onPress: () => completeTransaction({
+            method: 'qr_code',
+            gateway: 'dott_pay',
+            transaction_id: transactionId,
+          }) }]
         );
       }
     }, 10000);
@@ -473,7 +485,12 @@ export default function DualModePOSScreen() {
         Alert.alert(
           'Payment Successful',
           `Card payment of ${currency.symbol}${total.toFixed(0)} processed successfully`,
-          [{ text: 'OK', onPress: () => completeTransaction() }]
+          [{ text: 'OK', onPress: () => completeTransaction({
+            method: 'card',
+            gateway: 'stripe',
+            cardLastFour: cardDetails.number.slice(-4),
+            stripe_payment_id: response.data?.payment_id,
+          }) }]
         );
       } else {
         throw new Error(response.data?.message || 'Payment failed');
@@ -570,7 +587,12 @@ export default function DualModePOSScreen() {
           Alert.alert(
             'Payment Successful',
             `MTN payment of ${currency.symbol}${total.toFixed(0)} received successfully`,
-            [{ text: 'OK', onPress: () => completeTransaction() }]
+            [{ text: 'OK', onPress: () => completeTransaction({
+            method: 'mobile_money',
+            gateway: 'mtn',
+            mobile_number: mtnNumber,
+            transaction_id: transactionId,
+          }) }]
           );
         } else if (response.data?.status === 'failed' || response.data?.status === 'cancelled') {
           clearInterval(pollInterval);
@@ -584,9 +606,108 @@ export default function DualModePOSScreen() {
     }, 5000); // Poll every 5 seconds
   };
 
-  const completeTransaction = () => {
-    setCurrentStep('mode');
-    resetPOS();
+  const completeTransaction = async (paymentDetails = {}) => {
+    try {
+      // Prepare transaction data
+      const transactionData = {
+        // Transaction details
+        transaction_type: posMode === 'simple' ? 'quick_sale' : 'full_pos',
+        payment_method: paymentDetails.method || paymentMethod,
+        payment_gateway: paymentDetails.gateway || null,
+        
+        // Amounts
+        subtotal: subtotal.toFixed(2),
+        tax_amount: tax.toFixed(2),
+        total_amount: total.toFixed(2),
+        currency: currency.code,
+        
+        // Items
+        items: posMode === 'simple' ? [{
+          item_name: simpleNote || 'Quick Sale',
+          quantity: 1,
+          unit_price: subtotal.toFixed(2),
+          total_price: subtotal.toFixed(2),
+        }] : cart.map(item => ({
+          item_name: item.name,
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price.toFixed(2),
+          total_price: (item.price * item.quantity).toFixed(2),
+          tax_amount: (item.price * item.quantity * taxRate).toFixed(2),
+        })),
+        
+        // Payment specific details
+        payment_details: {
+          ...paymentDetails,
+          cash_received: cashReceived || null,
+          change_amount: change || null,
+          card_last_four: paymentDetails.cardLastFour || null,
+          mobile_number: mtnNumber || null,
+        },
+        
+        // Customer info for receipt
+        customer_phone: customerPhone || null,
+        send_sms_receipt: !!customerPhone,
+        
+        // Metadata
+        metadata: {
+          pos_mode: posMode,
+          device_type: Platform.OS,
+          app_version: '1.0.0',
+        },
+      };
+
+      // Call backend to complete transaction
+      const response = await api.post('/pos/complete-transaction/', transactionData);
+      
+      if (response.data?.success) {
+        setLastTransactionId(response.data.transaction_id);
+        
+        // Show receipt modal if customer phone was provided
+        if (customerPhone) {
+          setShowReceiptModal(true);
+        } else {
+          // Ask if they want to send receipt
+          Alert.alert(
+            'Transaction Complete',
+            'Would you like to send a receipt via SMS?',
+            [
+              {
+                text: 'No',
+                onPress: () => {
+                  setCurrentStep('mode');
+                  resetPOS();
+                },
+                style: 'cancel',
+              },
+              {
+                text: 'Yes',
+                onPress: () => setShowReceiptModal(true),
+              },
+            ]
+          );
+        }
+      } else {
+        throw new Error(response.data?.message || 'Transaction recording failed');
+      }
+    } catch (error) {
+      console.error('Transaction completion error:', error);
+      
+      // Still reset POS even if recording failed (transaction was successful)
+      Alert.alert(
+        'Recording Error',
+        'Payment was successful but transaction recording failed. The sale will be saved for later sync.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setCurrentStep('mode');
+              resetPOS();
+            },
+          },
+        ]
+      );
+    }
   };
 
   const resetPOS = () => {
@@ -1092,7 +1213,12 @@ export default function DualModePOSScreen() {
             style={styles.paymentMethodButton}
             onPress={() => {
               Alert.alert('Cash Payment', 'Cash payment recorded successfully');
-              completeTransaction();
+              completeTransaction({
+                method: 'cash',
+                gateway: null,
+                cash_received: cashReceived,
+                change_amount: change,
+              });
             }}
           >
             <Icon name="cash" size={24} color={THEME_COLOR} />
@@ -1361,6 +1487,129 @@ export default function DualModePOSScreen() {
     </Modal>
   );
 
+  // Render Receipt Modal
+  const renderReceiptModal = () => (
+    <Modal
+      visible={showReceiptModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowReceiptModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Icon name="receipt" size={24} color={THEME_COLOR} />
+            <Text style={styles.modalTitle}>Send Receipt</Text>
+            <TouchableOpacity onPress={() => {
+              setShowReceiptModal(false);
+              setCurrentStep('mode');
+              resetPOS();
+            }}>
+              <Icon name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.receiptSuccessIcon}>
+            <Icon name="checkmark-circle" size={60} color="#4CAF50" />
+          </View>
+
+          <Text style={styles.receiptSuccessText}>
+            Transaction Successful!
+          </Text>
+          <Text style={styles.receiptAmount}>
+            {currency.symbol}{total.toFixed(2)}
+          </Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Customer Phone Number (Optional)</Text>
+            <TextInput
+              style={styles.cardInput}
+              value={customerPhone}
+              onChangeText={setCustomerPhone}
+              placeholder="+1234567890"
+              keyboardType="phone-pad"
+              autoFocus={true}
+            />
+          </View>
+
+          <Text style={styles.receiptNote}>
+            Enter customer's phone number to send receipt via SMS
+          </Text>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setShowReceiptModal(false);
+                setCurrentStep('mode');
+                resetPOS();
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Skip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton, sendingSMS && styles.disabledButton]}
+              onPress={async () => {
+                if (!customerPhone) {
+                  Alert.alert('No Phone Number', 'Please enter a phone number or skip');
+                  return;
+                }
+                
+                setSendingSMS(true);
+                try {
+                  const response = await api.post('/pos/send-receipt/', {
+                    transaction_id: lastTransactionId,
+                    phone_number: customerPhone,
+                  });
+                  
+                  if (response.data?.success) {
+                    Alert.alert(
+                      'Receipt Sent',
+                      `Receipt has been sent to ${customerPhone}`,
+                      [{
+                        text: 'OK',
+                        onPress: () => {
+                          setShowReceiptModal(false);
+                          setCurrentStep('mode');
+                          resetPOS();
+                        },
+                      }]
+                    );
+                  } else {
+                    throw new Error(response.data?.message || 'Failed to send receipt');
+                  }
+                } catch (error) {
+                  console.error('Receipt sending error:', error);
+                  Alert.alert(
+                    'Send Failed',
+                    'Could not send receipt. Transaction was recorded successfully.',
+                    [{
+                      text: 'OK',
+                      onPress: () => {
+                        setShowReceiptModal(false);
+                        setCurrentStep('mode');
+                        resetPOS();
+                      },
+                    }]
+                  );
+                } finally {
+                  setSendingSMS(false);
+                }
+              }}
+              disabled={sendingSMS}
+            >
+              {sendingSMS ? (
+                <ActivityIndicator color="white" size={20} />
+              ) : (
+                <Text style={styles.confirmButtonText}>Send Receipt</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Render QR Code Modal
   const renderQRModal = () => (
     <Modal
@@ -1491,6 +1740,9 @@ export default function DualModePOSScreen() {
       
       {/* MTN Payment Modal */}
       {renderMtnModal()}
+      
+      {/* Receipt Modal */}
+      {renderReceiptModal()}
     </SafeAreaView>
   );
 }
@@ -2339,5 +2591,31 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 16,
     fontWeight: '600',
+  },
+  receiptSuccessIcon: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  receiptSuccessText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  receiptAmount: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: THEME_COLOR,
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  receiptNote: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+    fontStyle: 'italic',
   },
 });
