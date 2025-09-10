@@ -1010,8 +1010,13 @@ export default function DualModePOSScreen() {
       <View style={styles.qrModalOverlay}>
         <View style={styles.qrModalContent}>
           <View style={styles.qrHeader}>
-            <View style={styles.dottLogo}>
-              <Text style={styles.dottLogoText}>Dott</Text>
+            <View style={styles.dottLogoHeader}>
+              <Image 
+                source={require('../../assets/logo.png')} 
+                style={styles.dottLogoImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.dottBrandText}>Dott</Text>
             </View>
             <TouchableOpacity
               style={styles.qrCloseButton}
@@ -1028,12 +1033,19 @@ export default function DualModePOSScreen() {
 
           <View style={styles.qrContainer}>
             {qrData && (
-              <QRCode
-                value={qrData}
-                size={200}
-                backgroundColor="white"
-                color="black"
-              />
+              <View style={styles.qrWrapper}>
+                <QRCode
+                  value={qrData}
+                  size={200}
+                  backgroundColor="white"
+                  color="black"
+                  logo={require('../../assets/logo.png')}
+                  logoSize={40}
+                  logoBackgroundColor="white"
+                  logoMargin={2}
+                  logoBorderRadius={8}
+                />
+              </View>
             )}
           </View>
 
@@ -1091,7 +1103,7 @@ export default function DualModePOSScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dott POS</Text>
+        <Text style={styles.headerTitle}>POS Terminal</Text>
         <View style={styles.headerRight}>
           {cart.length > 0 && currentStep !== 'mode' && (
             <View style={styles.cartIndicator}>
@@ -1706,6 +1718,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
+  },
+  dottLogoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dottLogoImage: {
+    width: 32,
+    height: 32,
+  },
+  dottBrandText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME_COLOR,
+  },
+  qrWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   qrCloseButton: {
     padding: 4,
