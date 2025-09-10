@@ -844,7 +844,8 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         Get or update current business's marketplace listing
         Endpoint: GET/PATCH /api/marketplace/business/listing/
         """
-        if not hasattr(request.user, 'tenant_id'):
+        if not hasattr(request.user, 'tenant_id') or not request.user.tenant_id:
+            logger.warning(f"[BusinessListing] User {request.user.id} does not have tenant_id")
             return Response(
                 {'success': False, 'error': 'Only businesses can manage listings'},
                 status=status.HTTP_403_FORBIDDEN
@@ -877,11 +878,21 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             })
         
         elif request.method == 'PATCH':
+            logger.info(f"[BusinessListing] PATCH request data: {request.data}")
+            
             # Handle the mobile app's nested profile structure
             profile_data = request.data.get('profile', {})
             
             # Extract data from nested structure
             update_data = {}
+            
+            # Handle root-level publish status fields (for mobile app compatibility)
+            if 'is_published' in request.data:
+                logger.info(f"[BusinessListing] Mapping is_published={request.data['is_published']} to is_visible_in_marketplace")
+                update_data['is_visible_in_marketplace'] = request.data['is_published']
+            if 'is_active' in request.data:
+                logger.info(f"[BusinessListing] Mapping is_active={request.data['is_active']} to is_visible_in_marketplace")
+                update_data['is_visible_in_marketplace'] = request.data['is_active']
             
             # Basic information
             if 'basic' in profile_data:
@@ -918,20 +929,31 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                     update_data['is_visible_in_marketplace'] = discovery['is_visible_in_marketplace']
             
             # Update listing with validated data
-            serializer = BusinessListingSerializer(listing, data=update_data, partial=True, context={'request': request})
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    'success': True,
-                    'message': 'Business listing updated successfully',
-                    'data': serializer.data
-                })
-            else:
+            logger.info(f"[BusinessListing] Final update_data: {update_data}")
+            
+            try:
+                serializer = BusinessListingSerializer(listing, data=update_data, partial=True, context={'request': request})
+                if serializer.is_valid():
+                    serializer.save()
+                    logger.info(f"[BusinessListing] Successfully updated listing for user {request.user.id}")
+                    return Response({
+                        'success': True,
+                        'message': 'Business listing updated successfully',
+                        'data': serializer.data
+                    })
+                else:
+                    logger.error(f"[BusinessListing] Serializer validation errors: {serializer.errors}")
+                    return Response({
+                        'success': False,
+                        'error': 'Invalid data provided',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                logger.error(f"[BusinessListing] Unexpected error updating listing: {str(e)}")
                 return Response({
                     'success': False,
-                    'error': 'Invalid data provided',
-                    'errors': serializer.errors
-                }, status=status.HTTP_400_BAD_REQUEST)
+                    'error': f'Server error: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['patch'])
     def operating_hours(self, request):
