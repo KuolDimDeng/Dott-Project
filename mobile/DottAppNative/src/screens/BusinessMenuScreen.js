@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useBusinessContext } from '../context/BusinessContext';
 import { isBusinessOpen } from '../config/categoryHierarchy';
 import marketplaceApi from '../services/marketplaceApi';
+import CountrySelector from '../components/common/CountrySelector';
 
 const { width } = Dimensions.get('window');
 
@@ -546,12 +547,15 @@ export default function BusinessMenuScreen() {
             <Text style={styles.businessType}>{businessType}</Text>
           ) : null}
           
-          {/* Location Row */}
+          {/* Business Country Selector for Testing */}
           <View style={styles.locationRow}>
             <Icon name="location" size={14} color="rgba(255, 255, 255, 0.8)" />
-            <Text style={styles.locationText}>
-              South Sudan
-            </Text>
+            <CountrySelector
+              testMode={true}
+              compact={true}
+              showFlag={false}
+              style={styles.businessCountrySelector}
+            />
           </View>
           
           {/* Open/Closed Toggle */}
@@ -708,6 +712,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     marginBottom: 12,
+  },
+  businessCountrySelector: {
+    marginLeft: 4,
   },
   statusButton: {
     flexDirection: 'row',

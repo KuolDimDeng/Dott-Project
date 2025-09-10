@@ -22,6 +22,7 @@ import marketplaceApi from '../services/marketplaceApi';
 import ImageCarousel from '../components/ImageCarousel';
 import SubcategoryModal from '../components/SubcategoryModal';
 import locationService from '../services/locationService';
+import CountrySelector from '../components/common/CountrySelector';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -593,6 +594,14 @@ export default function MarketplaceScreen() {
             <Icon name="compass-outline" size={28} color="#ffffff" style={styles.discoverIcon} />
             <Text style={styles.headerTitle}>Discover</Text>
           </View>
+
+          {/* Country Selector for Testing UI Changes */}
+          <CountrySelector
+            testMode={true}
+            compact={true}
+            showFlag={true}
+            style={styles.countrySelector}
+          />
           
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
@@ -725,6 +734,9 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  countrySelector: {
+    marginLeft: 12,
   },
   locationContainer: {
     flexDirection: 'row',
