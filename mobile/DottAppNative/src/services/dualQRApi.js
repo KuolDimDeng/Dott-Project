@@ -99,6 +99,19 @@ class DualQRService {
   }
 
   /**
+   * Get customer info by ID or QR data
+   */
+  async getCustomerInfo(customerIdOrQR) {
+    try {
+      const response = await api.get(`/payments/dott-pay/customer/${customerIdOrQR}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting customer info:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get P2P transaction history
    */
   async getP2PHistory() {

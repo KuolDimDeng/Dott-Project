@@ -24,6 +24,7 @@ import { useMenuContext } from '../../context/MenuContext';
 import { useBusinessContext } from '../../context/BusinessContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
+import dottPayApi from '../../services/dottPayApi';
 import { getCurrencyForCountry } from '../../utils/currencyUtils';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -386,41 +387,46 @@ export default function ProgressivePOSScreen() {
 
   // Dott Payment Functions
   const handleDottScanQR = () => {
-    // For now, simulate QR scan with modal for manual entry
-    // In production, this would open camera for QR scanning
-    setScannerType('qr');
-    Alert.alert(
-      'Scan Customer QR',
-      'Point camera at customer\'s BLUE QR code or enter their ID manually',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Enter ID', onPress: () => setScannerType('manual') }
-      ]
-    );
+    // Navigate to QR scanner for customer payment
+    navigation.navigate('QRScanner', {
+      mode: 'merchant_scan',
+      currentQRType: 'MERCHANT_SCAN',
+      onScanSuccess: (customerData) => {
+        setDottCustomerInfo({
+          id: customerData.id,
+          name: customerData.name,
+          phone: customerData.phone,
+          type: customerData.type,
+          payment_methods: customerData.payment_methods,
+          default_method: customerData.default_method
+        });
+      }
+    });
   };
 
   const handleDottManualEntry = async () => {
-    if (!dottCustomerId) {
-      Alert.alert('Error', 'Please enter customer ID or phone number');
+    if (!dottCustomerId || dottCustomerId.length < 6) {
+      Alert.alert('Error', 'Please enter a valid customer ID');
       return;
     }
 
     try {
-      // Simulate customer lookup - in production this would call API
-      // Format: BIZ12345678 for business or USER12345678 for consumer
-      const mockCustomer = {
-        id: dottCustomerId,
-        name: dottCustomerId.startsWith('BIZ') ? 'Business Customer' : 'John Doe',
-        phone: dottCustomerId.startsWith('211') ? dottCustomerId : '211123456789',
-        type: dottCustomerId.startsWith('BIZ') ? 'business' : 'consumer',
-        payment_methods: ['mobile_money', 'card'],
-        default_method: 'mobile_money'
-      };
-
-      setDottCustomerInfo(mockCustomer);
+      // Call API to get real customer info
+      const response = await api.get(`/payments/dott-pay/customer/${dottCustomerId}/`);
+      const customer = response.data;
+      
+      setDottCustomerInfo({
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        type: customer.type,
+        payment_methods: customer.payment_methods,
+        default_method: customer.default_method
+      });
+      
       Alert.alert(
         'Customer Found',
-        `${mockCustomer.name}\n${mockCustomer.phone}\nPayment will be processed via ${mockCustomer.default_method}`,
+        `${customer.name}\nID: ${customer.id}\nType: ${customer.type === 'business' ? 'Business' : 'Personal'}\nPayment: ${customer.default_method}`,
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -481,7 +487,28 @@ export default function ProgressivePOSScreen() {
         }),
       };
 
-      const response = await api.post('/pos/transactions/', transactionData);
+      let response;
+      
+      // Process payment based on method
+      if (paymentMethod === 'dott_qr') {
+        // Use Dott Pay API for QR payments
+        const dottResponse = await dottPayApi.scanAndPay(
+          dottCustomerInfo.id,
+          total,
+          currency.code,
+          Date.now().toString(),
+          `POS Transaction - ${cart.length} items`
+        );
+        
+        // Then record transaction in POS system
+        response = await api.post('/pos/transactions/', {
+          ...transactionData,
+          dott_transaction_id: dottResponse.transaction_id
+        });
+      } else {
+        // Regular POS transaction
+        response = await api.post('/pos/transactions/', transactionData);
+      }
       
       // Store transaction for receipt
       const transaction = {
@@ -1061,7 +1088,7 @@ export default function ProgressivePOSScreen() {
                   <View style={styles.dottManualEntry}>
                     <TextInput
                       style={styles.dottIdInput}
-                      placeholder="Enter Customer ID or Phone"
+                      placeholder="Enter Customer ID"
                       value={dottCustomerId}
                       onChangeText={setDottCustomerId}
                       autoCapitalize="characters"

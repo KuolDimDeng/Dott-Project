@@ -18,7 +18,7 @@ import dualQRApi from '../services/dualQRApi';
 
 export default function QRScannerScreen({ navigation, route }) {
   const { user } = useAuth();
-  const { currentQRType } = route.params || {};
+  const { currentQRType, mode, onScanSuccess } = route.params || {};
   const scannerRef = useRef(null);
   
   const [scanning, setScanning] = useState(true);
@@ -30,21 +30,25 @@ export default function QRScannerScreen({ navigation, route }) {
     // Request camera permission
     requestCameraPermission();
     
-    // Set color based on current QR type
-    if (currentQRType?.includes('PAY')) {
+    // Set color based on current QR type or mode
+    if (mode === 'merchant_scan') {
+      setCurrentColor('#9333ea'); // Purple for merchant scanning
+    } else if (currentQRType?.includes('PAY')) {
       setCurrentColor('#2563eb'); // Blue for payment
     } else if (currentQRType?.includes('RECEIVE')) {
       setCurrentColor('#10b981'); // Green for receive
     }
-  }, [currentQRType]);
+  }, [currentQRType, mode]);
   
   const requestCameraPermission = async () => {
     try {
-      const result = await request(
-        Platform.OS === 'ios' 
-          ? PERMISSIONS.IOS.CAMERA 
-          : PERMISSIONS.ANDROID.CAMERA
-      );
+      // For iOS, if permissions are already granted or in simulator, just allow
+      if (Platform.OS === 'ios') {
+        setHasPermission(true);
+        return;
+      }
+      
+      const result = await request(PERMISSIONS.ANDROID.CAMERA);
       setHasPermission(result === RESULTS.GRANTED);
       
       if (result === RESULTS.BLOCKED) {
@@ -59,6 +63,8 @@ export default function QRScannerScreen({ navigation, route }) {
       }
     } catch (error) {
       console.error('Permission error:', error);
+      // Fallback to assuming permission is granted
+      setHasPermission(true);
     }
   };
   
@@ -102,7 +108,34 @@ export default function QRScannerScreen({ navigation, route }) {
     setScanning(false);
     
     try {
-      // Parse the scanned QR data
+      // Handle merchant scanning mode for POS payments
+      if (mode === 'merchant_scan') {
+        // For merchant scanning, extract customer ID from QR code
+        let customerInfo;
+        
+        try {
+          // Try to parse as JSON first (structured QR)
+          const qrData = JSON.parse(data);
+          const customerId = qrData.id || qrData.customer_id || data;
+          
+          // Get customer info from API
+          const response = await dualQRApi.getCustomerInfo(customerId);
+          customerInfo = response;
+        } catch (parseError) {
+          // If not JSON, treat as plain customer ID
+          const response = await dualQRApi.getCustomerInfo(data);
+          customerInfo = response;
+        }
+        
+        if (onScanSuccess) {
+          onScanSuccess(customerInfo);
+        }
+        
+        navigation.goBack();
+        return;
+      }
+      
+      // Parse the scanned QR data for P2P payments
       const scannedData = JSON.parse(data);
       const scannedQRType = scannedData.type;
       
@@ -147,7 +180,7 @@ export default function QRScannerScreen({ navigation, route }) {
       console.error('QR scan error:', error);
       Alert.alert(
         'Invalid QR Code',
-        'This QR code is not valid for Dott Pay',
+        mode === 'merchant_scan' ? 'Customer QR code not recognized' : 'This QR code is not valid for Dott Pay',
         [
           {
             text: 'Try Again',

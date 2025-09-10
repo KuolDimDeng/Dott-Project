@@ -43,7 +43,8 @@ def fix_migration_conflicts():
         transport_order = [
             '0001_ensure_base_tables',
             '0002_initial',
-            '0003_add_transport_models'
+            '0003_add_transport_models',
+            '0004_fix_user_foreign_key_types'  # ADD THIS TO PREVENT DEPLOYMENT FAILURES
         ]
         
         for migration_name in transport_order:

@@ -59,7 +59,7 @@ import TransactionDetailScreen from '../screens/business/TransactionDetailScreen
 // Import Dual QR Payment screens
 import DualQRScreen from '../screens/DualQRScreen';
 import BusinessQRScreen from '../screens/BusinessQRScreen';
-// import QRScannerScreen from '../screens/QRScannerScreen'; // Commented out - missing react-native-camera dependency
+import QRScannerScreen from '../screens/QRScannerScreen';
 import P2PPaymentScreen from '../screens/P2PPaymentScreen';
 import P2PHistoryScreen from '../screens/P2PHistoryScreen';
 import PersonalInfoScreen from '../screens/PersonalInfoScreen';
@@ -214,7 +214,7 @@ export default function MainNavigator() {
       {/* Dual QR Payment screens - Phase 1 */}
       <Stack.Screen name="DualQR" component={DualQRScreen} />
       <Stack.Screen name="BusinessQR" component={BusinessQRScreen} />
-      {/* <Stack.Screen name="QRScanner" component={QRScannerScreen} /> */}
+      <Stack.Screen name="QRScanner" component={QRScannerScreen} />
       <Stack.Screen name="P2PPayment" component={P2PPaymentScreen} />
       <Stack.Screen name="P2PHistory" component={P2PHistoryScreen} />
       
