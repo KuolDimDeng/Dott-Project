@@ -64,6 +64,11 @@ import P2PPaymentScreen from '../screens/P2PPaymentScreen';
 import P2PHistoryScreen from '../screens/P2PHistoryScreen';
 import PersonalInfoScreen from '../screens/PersonalInfoScreen';
 
+// Import Delivery Address screens
+import DeliveryAddressesScreen from '../screens/DeliveryAddressesScreen';
+import AddEditAddressScreen from '../screens/AddEditAddressScreen';
+import AddressMapPickerScreen from '../screens/AddressMapPickerScreen';
+
 // Import Wallet screens
 import WalletHomeScreen from '../screens/wallet/WalletHomeScreen';
 import SendMoneyScreen from '../screens/wallet/SendMoneyScreen';
@@ -166,6 +171,12 @@ export default function MainNavigator() {
       <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />
       <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
+      
+      {/* Delivery Address screens */}
+      <Stack.Screen name="DeliveryAddresses" component={DeliveryAddressesScreen} />
+      <Stack.Screen name="AddEditAddress" component={AddEditAddressScreen} />
+      <Stack.Screen name="AddressMapPicker" component={AddressMapPickerScreen} />
+      
       {/* Business screens for navigation */}
       <Stack.Screen name="POS" component={ProgressivePOSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />

@@ -12,8 +12,11 @@ import {
   ActivityIndicator,
   Switch,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { CardField, useStripe } from '@stripe/stripe-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -27,13 +30,19 @@ export default function PaymentMethodsScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { currency } = useCurrency();
+  const { createPaymentMethod } = useStripe();
   
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultMethod, setDefaultMethod] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [showMobileMoneyModal, setShowMobileMoneyModal] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [addMethodType, setAddMethodType] = useState('');
   const [formData, setFormData] = useState({});
+  const [cardDetails, setCardDetails] = useState(null);
 
   useEffect(() => {
     loadPaymentMethods();
@@ -43,125 +52,112 @@ export default function PaymentMethodsScreen() {
   const loadPaymentMethods = async () => {
     setLoading(true);
     try {
-      // Get payment methods from API
-      const response = await api.get('/payments/methods/');
-      const methods = response.data?.filter(method => 
-        method.verification_status === 'verified' &&
-        ['card', 'mobile_money'].includes(method.method_type)
-      ) || [];
-      setPaymentMethods(methods);
+      // Use dottPayApi to get payment methods
+      const methods = await dottPayApi.getPaymentMethods();
+      setPaymentMethods(methods || []);
       
       // Find default method
       const defaultMethod = methods?.find(m => m.is_default);
       setDefaultMethod(defaultMethod?.id);
     } catch (error) {
       console.error('Error loading payment methods:', error);
+      setPaymentMethods([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddCard = async () => {
+  const handleAddCard = () => {
+    setShowAddModal(false);
+    setShowCardModal(true);
+  };
+
+  const processCardAddition = async () => {
+    if (!cardDetails?.complete) {
+      Alert.alert('Error', 'Please enter valid card details');
+      return;
+    }
+
     try {
       setLoading(true);
-      
-      // Create Stripe Setup Intent
-      const response = await api.post('/payments/stripe/setup-intent/');
-      const { client_secret } = response.data;
-      
-      // In production, use Stripe's CardField component
-      Alert.alert(
-        'Add Card',
-        'Card linking will open Stripe secure form',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Continue',
-            onPress: async () => {
-              // Mock card addition for now
-              const mockCard = {
-                type: 'card',
-                brand: 'Visa',
-                last4: '4242',
-                exp_month: 12,
-                exp_year: 2025,
-              };
-              
-              await api.post('/payments/methods/add/', {
-                type: 'card',
-                stripe_payment_method_id: 'pm_mock_' + Date.now(),
-                details: mockCard,
-              });
-              
-              loadPaymentMethods();
-              setShowAddModal(false);
-            },
-          },
-        ]
-      );
+
+      // Create payment method with Stripe
+      const { error, paymentMethod } = await createPaymentMethod({
+        paymentMethodType: 'Card',
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Send payment method to backend
+      await dottPayApi.linkCard({
+        stripe_payment_method_id: paymentMethod.id,
+        details: {
+          brand: paymentMethod.card.brand,
+          last4: paymentMethod.card.last4,
+          exp_month: paymentMethod.card.expMonth,
+          exp_year: paymentMethod.card.expYear,
+        },
+      });
+
+      Alert.alert('Success', 'Card added successfully!');
+      loadPaymentMethods();
+      setShowCardModal(false);
+      setCardDetails(null);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add card');
+      Alert.alert('Error', error.message || 'Failed to add card');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddMobileMoney = async (provider) => {
+  const handleAddMobileMoney = (provider) => {
+    setSelectedProvider(provider);
+    setMobileNumber('');
+    setShowAddModal(false);
+    setShowMobileMoneyModal(true);
+  };
+
+  const processMobileMoneyAddition = async () => {
+    if (!mobileNumber || mobileNumber.length < 10) {
+      Alert.alert('Error', 'Please enter a valid phone number');
+      return;
+    }
+
     const providerDetails = {
       mpesa: {
         name: 'M-Pesa',
-        icon: 'phone-portrait-outline',
-        color: '#00B251',
-        placeholder: '254XXXXXXXXX',
+        gateway: 'M_PESA',
       },
       mtn: {
         name: 'MTN Mobile Money',
-        icon: 'phone-portrait-outline',
-        color: '#FFCC00',
-        placeholder: '256XXXXXXXXX',
+        gateway: 'MTN',
       },
     };
 
-    const details = providerDetails[provider];
-    
-    Alert.prompt(
-      `Add ${details.name}`,
-      'Enter your mobile money number',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: async (phoneNumber) => {
-            if (!phoneNumber) return;
-            
-            try {
-              setLoading(true);
-              await api.post('/payments/methods/add/', {
-                type: 'mobile_money',
-                provider: provider,
-                phone_number: phoneNumber,
-                details: {
-                  provider: provider,
-                  phone_number: phoneNumber,
-                  name: details.name,
-                },
-              });
-              
-              Alert.alert('Success', `${details.name} added successfully`);
-              loadPaymentMethods();
-              setShowAddModal(false);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to add mobile money account');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ],
-      'plain-text',
-      '',
-      'phone-pad'
-    );
+    const details = providerDetails[selectedProvider];
+
+    try {
+      setLoading(true);
+      
+      // Use dottPayApi instead of direct API call
+      await dottPayApi.linkMobileMoney(mobileNumber, selectedProvider.toUpperCase());
+      
+      Alert.alert('Success', `${details.name} added successfully!`);
+      await loadPaymentMethods();
+      setShowMobileMoneyModal(false);
+      setMobileNumber('');
+      setSelectedProvider('');
+    } catch (error) {
+      console.error('Error adding mobile money:', error);
+      Alert.alert(
+        'Error', 
+        error.response?.data?.message || 'Failed to add mobile money account. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSetDefault = async (methodId) => {
@@ -263,6 +259,223 @@ export default function PaymentMethodsScreen() {
       </View>
     );
   };
+
+  const renderMobileMoneyModal = () => {
+    const providerInfo = {
+      mpesa: {
+        name: 'M-Pesa',
+        color: '#00B251',
+        placeholder: '254XXXXXXXXX',
+        example: 'e.g., 254712345678',
+        instructions: 'Enter your M-Pesa registered phone number'
+      },
+      mtn: {
+        name: 'MTN Mobile Money',
+        color: '#FFCC00',
+        placeholder: '211XXXXXXXXX',
+        example: 'e.g., 211123456789',
+        instructions: 'Enter your MTN Mobile Money number'
+      }
+    };
+
+    const info = providerInfo[selectedProvider] || providerInfo.mtn;
+
+    return (
+      <Modal
+        visible={showMobileMoneyModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowMobileMoneyModal(false);
+          setMobileNumber('');
+          setSelectedProvider('');
+        }}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.mobileMoneyModalContainer}>
+            <View style={styles.mobileMoneyHeader}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowMobileMoneyModal(false);
+                  setMobileNumber('');
+                  setSelectedProvider('');
+                }}
+              >
+                <Icon name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+              <Text style={styles.mobileMoneyTitle}>Add {info.name}</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView style={styles.mobileMoneyBody} showsVerticalScrollIndicator={false}>
+              <View style={[styles.providerBanner, { backgroundColor: info.color }]}>
+                <Icon name="phone-portrait-outline" size={48} color="white" />
+                <Text style={styles.providerBannerText}>{info.name}</Text>
+              </View>
+
+              <View style={styles.mobileMoneyInputSection}>
+                <Text style={styles.mobileMoneyLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.mobileMoneyInput}
+                  placeholder={info.placeholder}
+                  placeholderTextColor="#9ca3af"
+                  value={mobileNumber}
+                  onChangeText={setMobileNumber}
+                  keyboardType="phone-pad"
+                  autoFocus={true}
+                />
+                <Text style={styles.mobileMoneyExample}>{info.example}</Text>
+                <Text style={styles.mobileMoneyInstructions}>{info.instructions}</Text>
+              </View>
+
+              <View style={styles.mobileMoneyInfo}>
+                <Icon name="information-circle" size={16} color="#6b7280" />
+                <Text style={styles.mobileMoneyInfoText}>
+                  You will receive a verification SMS to confirm your number
+                </Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.mobileMoneyFooter}>
+              <TouchableOpacity
+                style={styles.mobileMoneyCancelButton}
+                onPress={() => {
+                  setShowMobileMoneyModal(false);
+                  setMobileNumber('');
+                  setSelectedProvider('');
+                }}
+              >
+                <Text style={styles.mobileMoneyCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.mobileMoneyAddButton,
+                  { backgroundColor: info.color },
+                  (!mobileNumber || loading) && styles.mobileMoneyAddButtonDisabled,
+                ]}
+                onPress={processMobileMoneyAddition}
+                disabled={!mobileNumber || loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.mobileMoneyAddText}>Add Number</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  };
+
+  const renderCardModal = () => (
+    <Modal
+      visible={showCardModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => {
+        setShowCardModal(false);
+        setCardDetails(null);
+      }}
+    >
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.cardModalContainer}>
+          <View style={styles.cardModalHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowCardModal(false);
+                setCardDetails(null);
+              }}
+            >
+              <Icon name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+            <Text style={styles.cardModalTitle}>Add Credit Card</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <ScrollView style={styles.cardModalBody} showsVerticalScrollIndicator={false}>
+            <View style={styles.cardInputSection}>
+              <Text style={styles.cardInputLabel}>Card Information</Text>
+              <CardField
+                postalCodeEnabled={false}
+                placeholder={{
+                  number: '4242 4242 4242 4242',
+                  expiration: 'MM/YY',
+                  cvc: 'CVC',
+                }}
+                cardStyle={{
+                  backgroundColor: '#ffffff',
+                  textColor: '#000000',
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                }}
+                style={styles.cardField}
+                onCardChange={(details) => {
+                  setCardDetails(details);
+                }}
+              />
+              <View style={styles.cardSecurityInfo}>
+                <Icon name="lock-closed" size={14} color="#6b7280" />
+                <Text style={styles.cardSecurityText}>
+                  Your card information is securely processed by Stripe
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.cardBenefits}>
+              <Text style={styles.benefitsTitle}>Benefits of adding a card:</Text>
+              <View style={styles.benefitItem}>
+                <Icon name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.benefitText}>Instant payments to businesses</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Icon name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.benefitText}>Secure Stripe encryption</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Icon name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.benefitText}>Easy QR code payments</Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.cardModalFooter}>
+            <TouchableOpacity
+              style={[styles.cardCancelButton]}
+              onPress={() => {
+                setShowCardModal(false);
+                setCardDetails(null);
+              }}
+            >
+              <Text style={styles.cardCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.cardAddButton,
+                (!cardDetails?.complete || loading) && styles.cardAddButtonDisabled,
+              ]}
+              onPress={processCardAddition}
+              disabled={!cardDetails?.complete || loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.cardAddButtonText}>Add Card</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 
   const renderAddMethodModal = () => (
     <Modal
@@ -386,6 +599,8 @@ export default function PaymentMethodsScreen() {
       </ScrollView>
 
       {renderAddMethodModal()}
+      {renderCardModal()}
+      {renderMobileMoneyModal()}
     </SafeAreaView>
   );
 }
@@ -698,5 +913,227 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 40,
+  },
+  // Card Modal Styles
+  cardModalContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+    marginTop: 100,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  cardModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  cardModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  cardModalBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  cardInputSection: {
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  cardInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+  },
+  cardField: {
+    height: 50,
+    marginBottom: 12,
+  },
+  cardSecurityInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cardSecurityText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 6,
+  },
+  cardBenefits: {
+    marginBottom: 20,
+  },
+  benefitsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginLeft: 8,
+  },
+  cardModalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    gap: 12,
+  },
+  cardCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  cardCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  cardAddButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+  },
+  cardAddButtonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  cardAddButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  // Mobile Money Modal Styles
+  mobileMoneyModalContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+    marginTop: 100,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  mobileMoneyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  mobileMoneyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  mobileMoneyBody: {
+    flex: 1,
+  },
+  providerBanner: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    marginBottom: 24,
+  },
+  providerBannerText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: 'white',
+    marginTop: 8,
+  },
+  mobileMoneyInputSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  mobileMoneyLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  mobileMoneyInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  mobileMoneyExample: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 6,
+  },
+  mobileMoneyInstructions: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  mobileMoneyInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 12,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+  },
+  mobileMoneyInfoText: {
+    fontSize: 12,
+    color: '#065f46',
+    marginLeft: 8,
+    flex: 1,
+  },
+  mobileMoneyFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    gap: 12,
+  },
+  mobileMoneyCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  mobileMoneyCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  mobileMoneyAddButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  mobileMoneyAddButtonDisabled: {
+    opacity: 0.6,
+  },
+  mobileMoneyAddText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
 });

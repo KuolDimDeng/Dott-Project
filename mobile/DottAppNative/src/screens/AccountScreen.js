@@ -340,6 +340,8 @@ export default function AccountScreen({ navigation }) {
                     navigation.navigate(item.screen);
                   } else if (item.title === 'Personal Info') {
                     navigation.navigate('PersonalInfo');
+                  } else if (item.title === 'Delivery Addresses') {
+                    navigation.navigate('DeliveryAddresses');
                   }
                 }}
               >

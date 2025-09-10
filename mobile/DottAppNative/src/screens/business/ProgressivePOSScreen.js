@@ -86,6 +86,12 @@ export default function ProgressivePOSScreen() {
   const [mtnNumber, setMtnNumber] = useState('');
   const [customerNote, setCustomerNote] = useState('');
   
+  // Dott Payment states
+  const [dottCustomerId, setDottCustomerId] = useState('');
+  const [showDottScanner, setShowDottScanner] = useState(false);
+  const [dottCustomerInfo, setDottCustomerInfo] = useState(null);
+  const [scannerType, setScannerType] = useState('qr'); // 'qr' or 'manual'
+  
   // Calculation States
   const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
@@ -378,6 +384,50 @@ export default function ProgressivePOSScreen() {
     setTotal(afterDiscount + taxAmount);
   };
 
+  // Dott Payment Functions
+  const handleDottScanQR = () => {
+    // For now, simulate QR scan with modal for manual entry
+    // In production, this would open camera for QR scanning
+    setScannerType('qr');
+    Alert.alert(
+      'Scan Customer QR',
+      'Point camera at customer\'s BLUE QR code or enter their ID manually',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Enter ID', onPress: () => setScannerType('manual') }
+      ]
+    );
+  };
+
+  const handleDottManualEntry = async () => {
+    if (!dottCustomerId) {
+      Alert.alert('Error', 'Please enter customer ID or phone number');
+      return;
+    }
+
+    try {
+      // Simulate customer lookup - in production this would call API
+      // Format: BIZ12345678 for business or USER12345678 for consumer
+      const mockCustomer = {
+        id: dottCustomerId,
+        name: dottCustomerId.startsWith('BIZ') ? 'Business Customer' : 'John Doe',
+        phone: dottCustomerId.startsWith('211') ? dottCustomerId : '211123456789',
+        type: dottCustomerId.startsWith('BIZ') ? 'business' : 'consumer',
+        payment_methods: ['mobile_money', 'card'],
+        default_method: 'mobile_money'
+      };
+
+      setDottCustomerInfo(mockCustomer);
+      Alert.alert(
+        'Customer Found',
+        `${mockCustomer.name}\n${mockCustomer.phone}\nPayment will be processed via ${mockCustomer.default_method}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Customer not found. Please check the ID.');
+    }
+  };
+
   const processPayment = async () => {
     if (cart.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to cart before checkout');
@@ -389,8 +439,8 @@ export default function ProgressivePOSScreen() {
       return;
     }
 
-    if (paymentMethod === 'dott_qr') {
-      Alert.alert('QR Payment', 'QR code scanning will be implemented soon');
+    if (paymentMethod === 'dott_qr' && !dottCustomerInfo) {
+      Alert.alert('Customer Required', 'Please scan customer QR or enter their ID first');
       return;
     }
 
@@ -418,6 +468,7 @@ export default function ProgressivePOSScreen() {
         cash_received: paymentMethod === 'cash' ? parseFloat(cashReceived) : null,
         change: paymentMethod === 'cash' ? change : null,
         qr_payment: paymentMethod === 'dott_qr' ? true : null,
+        dott_customer: paymentMethod === 'dott_qr' ? dottCustomerInfo : null,
         mtn_number: paymentMethod === 'mtn' ? mtnNumber : null,
         note: customerNote,
         // Double-entry accounting data
@@ -919,7 +970,12 @@ export default function ProgressivePOSScreen() {
             
             <TouchableOpacity
               style={[styles.methodCard, paymentMethod === 'dott_qr' && styles.methodActive]}
-              onPress={() => setPaymentMethod('dott_qr')}
+              onPress={() => {
+                setPaymentMethod('dott_qr');
+                // Reset Dott states when selecting this payment method
+                setDottCustomerId('');
+                setDottCustomerInfo(null);
+              }}
             >
               <Image 
                 source={require('../../assets/icon.png')} 
@@ -988,16 +1044,65 @@ export default function ProgressivePOSScreen() {
         {paymentMethod === 'dott_qr' && (
           <View style={styles.dottQRSection}>
             <Text style={styles.sectionTitle}>Dott Payment</Text>
-            <View style={styles.qrPlaceholder}>
-              <Image 
-                source={require('../../assets/icon.png')} 
-                style={styles.qrDottLogo} 
-              />
-              <Text style={styles.qrText}>QR Scanner Coming Soon</Text>
-            </View>
-            <Text style={styles.dottQRInfo}>
-              Scan customer's QR or enter phone number
-            </Text>
+            
+            {!dottCustomerInfo ? (
+              <>
+                <View style={styles.dottActionButtons}>
+                  <TouchableOpacity 
+                    style={styles.dottScanButton}
+                    onPress={handleDottScanQR}
+                  >
+                    <Icon name="scan-outline" size={24} color="white" />
+                    <Text style={styles.dottScanButtonText}>Scan QR</Text>
+                  </TouchableOpacity>
+                  
+                  <Text style={styles.dottOrText}>OR</Text>
+                  
+                  <View style={styles.dottManualEntry}>
+                    <TextInput
+                      style={styles.dottIdInput}
+                      placeholder="Enter Customer ID or Phone"
+                      value={dottCustomerId}
+                      onChangeText={setDottCustomerId}
+                      autoCapitalize="characters"
+                    />
+                    <TouchableOpacity 
+                      style={styles.dottLookupButton}
+                      onPress={handleDottManualEntry}
+                      disabled={!dottCustomerId}
+                    >
+                      <Icon name="search" size={20} color={dottCustomerId ? '#2563eb' : '#9ca3af'} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                <Text style={styles.dottQRInfo}>
+                  Scan customer's BLUE QR code or enter their Dott ID
+                </Text>
+              </>
+            ) : (
+              <View style={styles.dottCustomerCard}>
+                <View style={styles.dottCustomerHeader}>
+                  <Icon name="person-circle" size={48} color="#2563eb" />
+                  <View style={styles.dottCustomerDetails}>
+                    <Text style={styles.dottCustomerName}>{dottCustomerInfo.name}</Text>
+                    <Text style={styles.dottCustomerPhone}>{dottCustomerInfo.phone}</Text>
+                    <Text style={styles.dottCustomerType}>
+                      {dottCustomerInfo.type === 'business' ? 'Business' : 'Personal'} • {dottCustomerInfo.default_method}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  style={styles.dottChangeButton}
+                  onPress={() => {
+                    setDottCustomerInfo(null);
+                    setDottCustomerId('');
+                  }}
+                >
+                  <Text style={styles.dottChangeButtonText}>Change Customer</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
@@ -1838,6 +1943,102 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  dottActionButtons: {
+    marginVertical: 15,
+  },
+  dottScanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    gap: 8,
+  },
+  dottScanButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  dottOrText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#9ca3af',
+    marginVertical: 10,
+  },
+  dottManualEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dottIdInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  dottLookupButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  dottCustomerCard: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#60a5fa',
+  },
+  dottCustomerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  dottCustomerDetails: {
+    flex: 1,
+  },
+  dottCustomerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111',
+  },
+  dottCustomerPhone: {
+    fontSize: 14,
+    color: '#4b5563',
+    marginTop: 2,
+  },
+  dottCustomerType: {
+    fontSize: 12,
+    color: '#2563eb',
+    marginTop: 4,
+  },
+  dottChangeButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  dottChangeButtonText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   mtnSection: {
     backgroundColor: 'white',

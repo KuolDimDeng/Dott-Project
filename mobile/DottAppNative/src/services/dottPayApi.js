@@ -133,12 +133,7 @@ class DottPayService {
   async getPaymentMethods() {
     try {
       const response = await api.get('/payments/methods/');
-      // Filter for verified payment methods that work with Dott Pay
-      const validMethods = response.data.filter(method => 
-        method.verification_status === 'verified' &&
-        ['card', 'mobile_money'].includes(method.method_type)
-      );
-      return validMethods;
+      return response.data;
     } catch (error) {
       console.error('Error getting payment methods:', error);
       throw error;
@@ -150,8 +145,7 @@ class DottPayService {
    */
   async linkCard(cardDetails) {
     try {
-      // This would integrate with Stripe's card tokenization
-      const response = await api.post('/payments/methods/card/', {
+      const response = await api.post('/payments/methods/add/', {
         ...cardDetails,
         gateway: 'STRIPE',
         method_type: 'card',
@@ -168,7 +162,7 @@ class DottPayService {
    */
   async linkMobileMoney(phoneNumber, provider) {
     try {
-      const response = await api.post('/payments/methods/mobile/', {
+      const response = await api.post('/payments/methods/add/', {
         phone_number: phoneNumber,
         mobile_provider: provider,
         method_type: 'mobile_money',
