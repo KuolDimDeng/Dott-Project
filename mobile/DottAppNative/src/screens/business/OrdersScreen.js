@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
 import { useBusinessContext } from '../../context/BusinessContext';
+import orderVerificationApi from '../../services/orderVerificationApi';
 
 export default function OrdersScreen() {
   const navigation = useNavigation();
@@ -87,6 +88,14 @@ export default function OrdersScreen() {
         deliveryStatus: order.delivery_status || 'pending',
         notes: order.notes || '',
         items: order.items || [],
+        // Passcode fields
+        pickupCode: order.pickup_code || order.pickup_passcode,
+        deliveryCode: order.delivery_code || order.delivery_passcode,
+        pickupVerified: order.pickup_verified || false,
+        deliveryVerified: order.delivery_verified || false,
+        passcodeExpiresAt: order.passcode_expires_at || order.code_expires_at,
+        courierName: order.courier_name || order.courier,
+        courierPhone: order.courier_phone,
       }));
       
       // Sort by date (most recent first)
@@ -255,6 +264,38 @@ export default function OrdersScreen() {
           </View>
         </View>
       </View>
+
+      {/* Passcode Section */}
+      {order.pickupCode && (
+        <View style={styles.passcodeSection}>
+          {!order.pickupVerified ? (
+            <View style={styles.passcodeRow}>
+              <View style={styles.passcodeInfo}>
+                <Text style={styles.passcodeLabel}>Pickup Code:</Text>
+                <Text style={styles.passcode}>{order.pickupCode}</Text>
+                {order.courierName && (
+                  <Text style={styles.courierText}>Courier: {order.courierName}</Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={styles.verifyButton}
+                onPress={() => navigation.navigate('PasscodeVerification', { 
+                  order: order, 
+                  verificationType: 'pickup' 
+                })}
+              >
+                <Icon name="shield-checkmark" size={16} color="#fff" />
+                <Text style={styles.verifyButtonText}>Verify</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.verifiedRow}>
+              <Icon name="checkmark-circle" size={20} color="#10b981" />
+              <Text style={styles.verifiedText}>Pickup Verified</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <View style={styles.orderMeta}>
         <View style={styles.metaItem}>
@@ -628,5 +669,63 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     marginTop: 4,
     textAlign: 'center',
+  },
+  // Passcode styles
+  passcodeSection: {
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+  },
+  passcodeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  passcodeInfo: {
+    flex: 1,
+  },
+  passcodeLabel: {
+    fontSize: 12,
+    color: '#92400e',
+    marginBottom: 4,
+  },
+  passcode: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#451a03',
+    letterSpacing: 2,
+  },
+  courierText: {
+    fontSize: 12,
+    color: '#78350f',
+    marginTop: 4,
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 12,
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  verifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedText: {
+    color: '#10b981',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });

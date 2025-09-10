@@ -167,10 +167,21 @@ const OrderListScreen = ({ navigation, route }) => {
         )}
 
         {type === 'active' && (
-          <View style={[styles.statusBadge, { backgroundColor: '#3b82f6' }]}>
-            <Icon name="bicycle" size={16} color="white" />
-            <Text style={styles.statusText}>{item.status.replace('_', ' ').toUpperCase()}</Text>
-          </View>
+          <>
+            <View style={[styles.statusBadge, { backgroundColor: '#3b82f6' }]}>
+              <Icon name="bicycle" size={16} color="white" />
+              <Text style={styles.statusText}>{item.status.replace('_', ' ').toUpperCase()}</Text>
+            </View>
+            {item.deliveryCode && !item.deliveryVerified && (
+              <TouchableOpacity
+                style={styles.verifyDeliveryButton}
+                onPress={() => navigation.navigate('CourierVerification', { order: item })}
+              >
+                <Icon name="qr-code-outline" size={20} color="#10b981" />
+                <Text style={styles.verifyDeliveryText}>Verify Delivery</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         {type === 'completed' && (
@@ -447,6 +458,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#2563eb',
+    marginLeft: 6,
+  },
+  verifyDeliveryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#10b981',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  verifyDeliveryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
     marginLeft: 6,
   },
 });

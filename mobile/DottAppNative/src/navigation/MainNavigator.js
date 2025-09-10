@@ -55,6 +55,7 @@ import DeliveryScreen from '../screens/business/DeliveryScreen';
 import MarketplaceProfileEditor from '../screens/business/MarketplaceProfileEditor';
 import ReceiptScreen from '../screens/business/ReceiptScreen';
 import TransactionDetailScreen from '../screens/business/TransactionDetailScreen';
+import PasscodeVerificationScreen from '../screens/business/PasscodeVerificationScreen';
 
 // Import Dual QR Payment screens
 import DualQRScreen from '../screens/DualQRScreen';
@@ -86,6 +87,7 @@ import CourierDashboardScreen from '../screens/courier/CourierDashboardScreen';
 import RequestDeliveryScreen from '../screens/courier/RequestDeliveryScreen';
 import DeliveryTrackingScreen from '../screens/courier/DeliveryTrackingScreen';
 import OrderListScreen from '../screens/courier/OrderListScreen';
+import CourierVerificationScreen from '../screens/courier/CourierVerificationScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -195,6 +197,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Transactions" component={TransactionsScreen} />
       <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
       <Stack.Screen name="Receipt" component={ReceiptScreen} />
+      <Stack.Screen name="PasscodeVerification" component={PasscodeVerificationScreen} />
       <Stack.Screen name="Customers" component={CustomersScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="WhatsApp" component={WhatsAppScreen} />
@@ -237,6 +240,7 @@ export default function MainNavigator() {
       <Stack.Screen name="RequestDelivery" component={RequestDeliveryScreen} />
       <Stack.Screen name="DeliveryTracking" component={DeliveryTrackingScreen} />
       <Stack.Screen name="OrderList" component={OrderListScreen} />
+      <Stack.Screen name="CourierVerification" component={CourierVerificationScreen} />
     </Stack.Navigator>
   );
 }
