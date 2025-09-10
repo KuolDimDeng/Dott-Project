@@ -200,7 +200,15 @@ export default function ProductDetailScreen() {
   };
 
   const renderImageCarousel = () => {
-    const images = product?.images || ['https://via.placeholder.com/400'];
+    // Handle both single image and array of images
+    let images = [];
+    if (product?.images && Array.isArray(product.images)) {
+      images = product.images;
+    } else if (product?.image) {
+      images = [product.image];
+    } else {
+      images = ['https://via.placeholder.com/400'];
+    }
     
     return (
       <View style={styles.imageSection}>
@@ -250,21 +258,29 @@ export default function ProductDetailScreen() {
     );
   };
 
-  const renderProductInfo = () => (
-    <View style={styles.infoSection}>
-      <Text style={styles.productName}>{product?.name}</Text>
-      
-      <View style={styles.priceRow}>
-        <Text style={styles.price}>${product?.price?.toFixed(2)}</Text>
-        {product?.originalPrice && (
-          <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
-        )}
-        {product?.discount && (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{product.discount}% OFF</Text>
-          </View>
-        )}
-      </View>
+  const renderProductInfo = () => {
+    // Handle price display - check if price is in cents or not
+    const displayPrice = product?.currency ? 
+      `${product.currency} ${product.price}` : 
+      `SSP ${((product?.price || 0) / 100).toFixed(2)}`;
+    
+    return (
+      <View style={styles.infoSection}>
+        <Text style={styles.productName}>{product?.name || 'Product'}</Text>
+        
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>{displayPrice}</Text>
+          {product?.originalPrice && (
+            <Text style={styles.originalPrice}>
+              SSP {(product.originalPrice / 100).toFixed(2)}
+            </Text>
+          )}
+          {product?.discount && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>{product.discount}% OFF</Text>
+            </View>
+          )}
+        </View>
 
       <View style={styles.ratingRow}>
         <View style={styles.stars}>
@@ -282,19 +298,20 @@ export default function ProductDetailScreen() {
         </Text>
       </View>
 
-      {product?.inStock !== false ? (
-        <View style={styles.stockBadge}>
-          <Icon name="checkmark-circle" size={16} color="#10b981" />
-          <Text style={styles.stockText}>In Stock</Text>
-        </View>
-      ) : (
-        <View style={[styles.stockBadge, styles.outOfStock]}>
-          <Icon name="close-circle" size={16} color="#ef4444" />
-          <Text style={[styles.stockText, styles.outOfStockText]}>Out of Stock</Text>
-        </View>
-      )}
-    </View>
-  );
+        {product?.inStock !== false ? (
+          <View style={styles.stockBadge}>
+            <Icon name="checkmark-circle" size={16} color="#10b981" />
+            <Text style={styles.stockText}>In Stock</Text>
+          </View>
+        ) : (
+          <View style={[styles.stockBadge, styles.outOfStock]}>
+            <Icon name="close-circle" size={16} color="#ef4444" />
+            <Text style={[styles.stockText, styles.outOfStockText]}>Out of Stock</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const renderVariants = () => {
     if (!product?.variants || product.variants.length === 0) return null;

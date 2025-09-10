@@ -25,7 +25,7 @@ export default function BusinessDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { addToCart } = useCart();
-  const { businessId, businessName, isPlaceholder, previewMode, previewData } = route.params || {};
+  const { businessId, businessName, isPlaceholder, previewMode, previewData, previewProducts } = route.params || {};
   
   const [business, setBusiness] = useState(null);
   const [products, setProducts] = useState([]);
@@ -79,9 +79,13 @@ export default function BusinessDetailScreen() {
     
     setBusiness(previewBusiness);
     
-    // Load products/services from the profile offerings
-    if (profileData.offerings?.type === 'menu') {
-      // Would load from menu context
+    // Load products/services from the preview data
+    if (previewProducts && previewProducts.length > 0) {
+      // Use the actual products passed from the editor
+      console.log('🍔 Preview: Using actual products:', previewProducts.length);
+      setProducts(previewProducts);
+    } else if (profileData.offerings?.type === 'menu') {
+      // Fallback to mock if no products provided
       setProducts(mockProducts());
     } else if (profileData.offerings?.type === 'products') {
       setProducts(mockProducts());
@@ -454,42 +458,54 @@ export default function BusinessDetailScreen() {
 
   const renderProducts = () => (
     <View style={styles.productsGrid}>
-      {products.map((product) => (
-        <TouchableOpacity
-          key={product.id}
-          style={styles.productCard}
-          onPress={() => navigation.navigate('ProductDetail', {
-            productId: product.id,
-            businessId: business.id,
-            businessName: business.business_name,
-          })}
-        >
-          <View style={styles.productImage}>
-            {product.image ? (
-              <Image source={{ uri: product.image }} style={styles.productImageContent} />
-            ) : (
-              <Icon name="cube-outline" size={40} color="#9ca3af" />
-            )}
-          </View>
-          
-          <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-          <Text style={styles.productPrice}>{product.currency} {product.price}</Text>
-          
-          {product.stock !== undefined && (
-            <Text style={styles.productStock}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-            </Text>
-          )}
-          
+      {products.map((product) => {
+        // Handle price display for preview products (price in cents) vs mock products
+        const displayPrice = product.currency ? 
+          `${product.currency} ${product.price}` : 
+          `SSP ${(product.price / 100).toFixed(2)}`;
+        
+        return (
           <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => handleAddToCart(product, 'product')}
-            disabled={product.stock === 0}
+            key={product.id}
+            style={styles.productCard}
+            onPress={() => navigation.navigate('ProductDetail', {
+              product: product,
+              productId: product.id,
+              businessId: business?.id,
+              businessName: business?.business_name,
+            })}
           >
-            <Icon name="add-circle" size={24} color={product.stock > 0 ? "#10b981" : "#d1d5db"} />
+            <View style={styles.productImage}>
+              {product.image ? (
+                <Image source={{ uri: product.image }} style={styles.productImageContent} />
+              ) : (
+                <Icon name="cube-outline" size={40} color="#9ca3af" />
+              )}
+            </View>
+            
+            <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+            <Text style={styles.productPrice}>{displayPrice}</Text>
+            
+            {product.stock !== undefined && (
+              <Text style={styles.productStock}>
+                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+              </Text>
+            )}
+            
+            {!product.available && (
+              <Text style={styles.productUnavailable}>Unavailable</Text>
+            )}
+            
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => handleAddToCart(product, 'product')}
+              disabled={product.stock === 0 || !product.available}
+            >
+              <Icon name="add-circle" size={24} color={(product.stock > 0 && product.available !== false) ? "#10b981" : "#d1d5db"} />
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
-      ))}
+        );
+      })}
     </View>
   );
 
@@ -594,12 +610,26 @@ export default function BusinessDetailScreen() {
 
       <View style={styles.infoSection}>
         <Text style={styles.infoTitle}>Business Hours</Text>
-        {business?.business_hours && Object.entries(business.business_hours).map(([day, hours]) => (
-          <View key={day} style={styles.hoursItem}>
-            <Text style={styles.dayText}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-            <Text style={styles.hoursText}>{hours}</Text>
-          </View>
-        ))}
+        {business?.business_hours && Object.entries(business.business_hours).map(([day, hours]) => {
+          // Handle both string format and object format for hours
+          let displayHours = 'Closed';
+          if (typeof hours === 'string') {
+            displayHours = hours;
+          } else if (typeof hours === 'object' && hours !== null) {
+            if (hours.isClosed) {
+              displayHours = 'Closed';
+            } else if (hours.open && hours.close) {
+              displayHours = `${hours.open} - ${hours.close}`;
+            }
+          }
+          
+          return (
+            <View key={day} style={styles.hoursItem}>
+              <Text style={styles.dayText}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
+              <Text style={styles.hoursText}>{displayHours}</Text>
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -931,6 +961,11 @@ const styles = StyleSheet.create({
   productStock: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  productUnavailable: {
+    fontSize: 12,
+    color: '#ef4444',
+    fontWeight: '500',
   },
   addButton: {
     position: 'absolute',

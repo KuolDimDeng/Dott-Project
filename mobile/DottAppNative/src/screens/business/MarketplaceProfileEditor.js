@@ -21,6 +21,7 @@ import { useBusinessContext } from '../../context/BusinessContext';
 import { useMenuContext } from '../../context/MenuContext';
 import marketplaceApi from '../../services/marketplaceApi';
 import businessDataApi from '../../services/businessDataApi';
+import menuApi from '../../services/menuApi';
 import { 
   generateBusinessProfileTemplate,
   calculateProfileCompleteness,
@@ -48,6 +49,8 @@ export default function MarketplaceProfileEditor({ navigation }) {
   // Track changes
   const [hasChanges, setHasChanges] = useState(false);
   const [autoSaveTimer, setAutoSaveTimer] = useState(null);
+  const [isPublished, setIsPublished] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   
   // Currency configuration using comprehensive utility
   const country = businessData?.businessCountry || 'SS';
@@ -94,8 +97,11 @@ export default function MarketplaceProfileEditor({ navigation }) {
       // Try to load existing profile
       const existingProfile = await marketplaceApi.getBusinessListing();
       
-      if (existingProfile && existingProfile.profile) {
-        setProfile(existingProfile.profile);
+      if (existingProfile) {
+        if (existingProfile.profile) {
+          setProfile(existingProfile.profile);
+        }
+        setIsPublished(existingProfile.is_published || false);
       } else {
         // Check for local draft first
         try {
@@ -165,29 +171,54 @@ export default function MarketplaceProfileEditor({ navigation }) {
       console.log('🍔 Menu items from context:', menuItems?.length || 0);
       console.log('🍔 First menu item:', menuItems?.[0]);
       
-      // First try to use MenuContext for restaurants
-      if ((businessType.includes('RESTAURANT') || businessType.includes('CAFE')) && menuItems?.length > 0) {
-        // Use menu items from context
-        const formattedData = menuItems.map(item => ({
-          id: item.id,
-          name: item.name || item.title,
-          description: item.description,
-          price: item.price,
-          image: item.image_url || item.image,
-          category: item.category,
-          available: item.available !== false,
-        }));
-        setBusinessOfferings(formattedData);
-        console.log('🍔 Set business offerings from menu context:', formattedData.length);
+      // For restaurants, ALWAYS use MenuContext first if available
+      if ((businessType.includes('RESTAURANT') || businessType.includes('CAFE'))) {
+        if (menuItems && menuItems.length > 0) {
+          // Use menu items from context
+          const formattedData = menuItems.map(item => ({
+            id: item.id,
+            name: item.name || item.title,
+            description: item.description || '',
+            price: parseFloat(item.price) || 0,
+            image: item.image || item.image_url || null,
+            category: item.category || 'main_courses',
+            available: item.available !== false && item.is_available !== false,
+          }));
+          setBusinessOfferings(formattedData);
+          console.log('🍔 Set business offerings from menu context:', formattedData.length);
+          console.log('🍔 Formatted offerings:', formattedData);
+        } else {
+          // If no menu items in context, try loading them
+          console.log('🍔 No menu items in context, attempting to load from API...');
+          try {
+            const response = await menuApi.getMenuItems();
+            const items = response?.results || response || [];
+            console.log('🍔 Loaded menu items from API:', items.length);
+            
+            if (items.length > 0) {
+              const formattedData = items.map(item => ({
+                id: item.id,
+                name: item.name || item.title,
+                description: item.description || '',
+                price: parseFloat(item.effective_price || item.price) || 0,
+                image: item.image || item.image_url || null,
+                category: item.category || 'main_courses',
+                available: item.is_available !== false && item.available !== false,
+              }));
+              setBusinessOfferings(formattedData);
+              console.log('🍔 Set business offerings from API:', formattedData.length);
+            }
+          } catch (menuError) {
+            console.error('Error loading menu items from API:', menuError);
+          }
+        }
       } else if (businessId) {
-        // Fallback to API
+        // For non-restaurant businesses, use the business data API
         const result = await businessDataApi.getBusinessOfferings(businessId, businessType);
         if (result.success) {
           // Format data based on type
           let formattedData = [];
-          if (businessType.includes('RESTAURANT') || businessType.includes('CAFE')) {
-            formattedData = businessDataApi.formatMenuItems(result.data);
-          } else if (businessType.includes('RETAIL') || businessType.includes('STORE')) {
+          if (businessType.includes('RETAIL') || businessType.includes('STORE')) {
             formattedData = businessDataApi.formatInventoryItems(result.data);
           } else if (businessType.includes('SERVICE')) {
             formattedData = businessDataApi.formatServices(result.data);
@@ -217,6 +248,50 @@ export default function MarketplaceProfileEditor({ navigation }) {
       } catch (storageError) {
         console.error('Failed to save to local storage:', storageError);
       }
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      setPublishing(true);
+      
+      // First save the profile if there are changes
+      if (hasChanges) {
+        await handleSave();
+      }
+      
+      // Toggle publish status
+      const newPublishStatus = !isPublished;
+      
+      try {
+        // Update publish status on backend
+        await marketplaceApi.updateBusinessListing({ 
+          profile,
+          is_published: newPublishStatus,
+          is_active: newPublishStatus,
+        });
+        
+        setIsPublished(newPublishStatus);
+        
+        if (newPublishStatus) {
+          Alert.alert(
+            'Business Published!', 
+            'Your business is now visible in the marketplace. Customers can discover and order from you.',
+            [{ text: 'Great!' }]
+          );
+        } else {
+          Alert.alert(
+            'Business Unpublished', 
+            'Your business is now hidden from the marketplace.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error('Error publishing business:', error);
+        Alert.alert('Error', 'Failed to update publish status. Please try again.');
+      }
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -289,18 +364,25 @@ export default function MarketplaceProfileEditor({ navigation }) {
     const businessType = businessData?.businessType || 'OTHER';
     
     try {
-      if ((businessType.includes('RESTAURANT') || businessType.includes('CAFE')) && menuItems?.length > 0) {
-        // Sync menu items for restaurants from MenuContext
-        const formattedMenuItems = menuItems.map(item => ({
-          id: item.id,
-          name: item.name || item.title,
-          description: item.description,
-          price: item.price,
-          image: item.image_url || item.image,
-          category: item.category,
-          available: item.available !== false,
-        }));
-        await marketplaceApi.updateBusinessProducts(formattedMenuItems);
+      if ((businessType.includes('RESTAURANT') || businessType.includes('CAFE'))) {
+        // For restaurants, sync the current businessOfferings which should be populated from menu
+        if (businessOfferings.length > 0) {
+          console.log('🍔 Syncing menu items to marketplace:', businessOfferings.length);
+          await marketplaceApi.updateBusinessProducts(businessOfferings);
+        } else if (menuItems?.length > 0) {
+          // Fallback: If businessOfferings is empty but menuItems exist, format and sync them
+          const formattedMenuItems = menuItems.map(item => ({
+            id: item.id,
+            name: item.name || item.title,
+            description: item.description || '',
+            price: parseFloat(item.price) || 0,
+            image: item.image || item.image_url || null,
+            category: item.category || 'main_courses',
+            available: item.available !== false && item.is_available !== false,
+          }));
+          console.log('🍔 Syncing menu items from context:', formattedMenuItems.length);
+          await marketplaceApi.updateBusinessProducts(formattedMenuItems);
+        }
       } else if (businessType.includes('RETAIL') || businessType.includes('STORE') || businessType.includes('PHARMACY')) {
         // Sync inventory for retail businesses
         if (businessOfferings.length > 0) {
@@ -925,6 +1007,10 @@ export default function MarketplaceProfileEditor({ navigation }) {
       return 'Products & Services';
     };
 
+    console.log('🍔 Rendering Products Tab:');
+    console.log('🍔 businessOfferings length:', businessOfferings.length);
+    console.log('🍔 businessOfferings:', businessOfferings);
+
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -975,7 +1061,7 @@ export default function MarketplaceProfileEditor({ navigation }) {
                   )}
                   <View style={styles.productMeta}>
                     <Text style={styles.productPrice}>
-                      {currency.symbol}{item.price?.toFixed(0) || '0'}
+                      {currency.symbol}{(item.price / 100).toFixed(2) || '0.00'}
                     </Text>
                     {item.available ? (
                       <Text style={styles.productAvailable}>Available</Text>
@@ -1037,7 +1123,7 @@ export default function MarketplaceProfileEditor({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {renderContent()}
         
-        {/* Preview Buttons */}
+        {/* Preview & Publish Buttons */}
         <View style={styles.previewSection}>
           <Text style={styles.previewSectionTitle}>Preview how customers will see your business:</Text>
           
@@ -1048,11 +1134,46 @@ export default function MarketplaceProfileEditor({ navigation }) {
               businessName: profile?.basic?.businessName,
               previewMode: true,
               previewData: profile,
+              previewProducts: businessOfferings,
             })}
           >
             <Icon name="document-text-outline" size={20} color="#fff" />
             <Text style={styles.previewButtonText}>Preview Full Profile</Text>
           </TouchableOpacity>
+          
+          {/* Publish Button */}
+          <TouchableOpacity 
+            style={[
+              styles.publishButton,
+              isPublished && styles.publishedButton
+            ]}
+            onPress={handlePublish}
+            disabled={publishing}
+          >
+            {publishing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Icon 
+                  name={isPublished ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#fff" 
+                />
+                <Text style={styles.publishButtonText}>
+                  {isPublished ? 'Unpublish from Marketplace' : 'Publish to Marketplace'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+          
+          {isPublished && (
+            <View style={styles.publishedIndicator}>
+              <Icon name="checkmark-circle" size={16} color="#10b981" />
+              <Text style={styles.publishedText}>
+                Your business is live in the marketplace!
+              </Text>
+            </View>
+          )}
           
           <View style={styles.listingPreview}>
             <Text style={styles.listingPreviewTitle}>Marketplace Listing Preview:</Text>
@@ -1394,6 +1515,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  publishButton: {
+    flexDirection: 'row',
+    backgroundColor: '#10b981',
+    marginHorizontal: 20,
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  publishedButton: {
+    backgroundColor: '#6b7280',
+  },
+  publishButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  publishedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  publishedText: {
+    fontSize: 14,
+    color: '#10b981',
+    fontWeight: '500',
+    marginLeft: 6,
   },
   autoSaveIndicator: {
     flexDirection: 'row',
