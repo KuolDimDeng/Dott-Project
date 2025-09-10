@@ -615,58 +615,72 @@ export default function DualModePOSScreen() {
 
   // Render simple amount entry
   const renderSimpleAmount = () => (
-    <Animated.View style={[styles.stepContainer, {
-      opacity: fadeAnim,
-      transform: [{ translateX: slideAnim }]
-    }]}>
-      <Text style={styles.stepTitle}>Enter Amount</Text>
-      
-      <View style={styles.amountSection}>
-        <View style={styles.amountInputContainer}>
-          <Text style={styles.currencySymbol}>{currency.symbol}</Text>
-          <TextInput
-            style={styles.amountInput}
-            value={simpleAmount}
-            onChangeText={setSimpleAmount}
-            keyboardType="decimal-pad"
-            placeholder="0"
-            placeholderTextColor="#999"
-          />
-        </View>
-        
-        <TextInput
-          style={styles.noteInput}
-          value={simpleNote}
-          onChangeText={setSimpleNote}
-          placeholder="Add note (optional)"
-          placeholderTextColor="#999"
-          multiline
-        />
-
-        <View style={styles.quickAmountButtons}>
-          {[1000, 2000, 5000, 10000, 20000].map(amount => (
-            <TouchableOpacity
-              key={amount}
-              style={styles.quickAmountButton}
-              onPress={() => setSimpleAmount(amount.toString())}
-            >
-              <Text style={styles.quickAmountText}>
-                {currency.symbol}{amount}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <TouchableOpacity
-        style={[styles.nextButton, (!simpleAmount || parseFloat(simpleAmount) <= 0) && styles.nextButtonDisabled]}
-        onPress={() => setCurrentStep('cart')}
-        disabled={!simpleAmount || parseFloat(simpleAmount) <= 0}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidingView}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.nextButtonText}>Continue to Review</Text>
-        <Icon name="arrow-forward" size={20} color="white" />
-      </TouchableOpacity>
-    </Animated.View>
+        <Animated.View style={[styles.stepContainer, {
+          opacity: fadeAnim,
+          transform: [{ translateX: slideAnim }]
+        }]}>
+          <View style={styles.amountHeader}>
+            <Text style={styles.stepTitle}>Enter Amount</Text>
+            <TouchableOpacity
+              style={[styles.continueButton, (!simpleAmount || parseFloat(simpleAmount) <= 0) && styles.continueButtonDisabled]}
+              onPress={() => setCurrentStep('cart')}
+              disabled={!simpleAmount || parseFloat(simpleAmount) <= 0}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+              <Icon name="arrow-forward" size={18} color="white" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.amountSection}>
+            <View style={styles.amountInputContainer}>
+              <Text style={styles.currencySymbol}>{currency.symbol}</Text>
+              <TextInput
+                style={styles.amountInput}
+                value={simpleAmount}
+                onChangeText={setSimpleAmount}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor="#999"
+                autoFocus={true}
+              />
+            </View>
+            
+            <TextInput
+              style={styles.noteInput}
+              value={simpleNote}
+              onChangeText={setSimpleNote}
+              placeholder="Add note (optional)"
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={2}
+            />
+
+            <View style={styles.quickAmountButtons}>
+              {[1000, 2000, 5000, 10000, 20000].map(amount => (
+                <TouchableOpacity
+                  key={amount}
+                  style={styles.quickAmountButton}
+                  onPress={() => setSimpleAmount(amount.toString())}
+                >
+                  <Text style={styles.quickAmountText}>
+                    {currency.symbol}{amount}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   // Render product selection for advanced mode
@@ -1238,6 +1252,36 @@ const styles = StyleSheet.create({
   },
   modeDescriptionActive: {
     color: 'rgba(255, 255, 255, 0.9)',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  amountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  continueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME_COLOR,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
+  },
+  continueButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   amountSection: {
     backgroundColor: 'white',
