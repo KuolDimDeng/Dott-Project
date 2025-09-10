@@ -139,3 +139,6 @@ google-auth-oauthlib==1.2.1
 # ASGI server - Used in run scripts (not needed for Render deployment)
 # uvicorn==0.34.0  # Commented out as Render uses gunicorn
 resend==2.5.1
+
+# Cloud Storage - Cloudinary for Africa
+cloudinary==1.41.0

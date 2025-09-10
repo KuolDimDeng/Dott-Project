@@ -36,8 +36,8 @@ class HealthCheckService {
       { category: 'Courier', method: 'GET', path: '/couriers/deliveries/', name: 'Deliveries' },
       
       // Wallet
-      { category: 'Wallet', method: 'GET', path: '/api/payments/wallet/balance/', name: 'Wallet Balance' },
-      { category: 'Wallet', method: 'GET', path: '/api/payments/wallet/transactions/', name: 'Wallet Transactions' },
+      { category: 'Wallet', method: 'GET', path: '/payments/wallet/balance/', name: 'Wallet Balance' },
+      { category: 'Wallet', method: 'GET', path: '/payments/wallet/transactions/', name: 'Wallet Transactions' },
     ];
     
     this.healthStatus = {

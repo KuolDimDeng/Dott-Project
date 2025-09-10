@@ -14,7 +14,12 @@ from accounts import views_payment
 # Import POS payment views for credit card processing
 from . import pos_payment_views
 
+# Import transactions view
+from .views_transactions import payment_transactions
+
 urlpatterns = [
+    # Payment transactions endpoint
+    path('transactions/', payment_transactions, name='payment_transactions'),
     # Mobile Money Wallet endpoints
     path('wallet/', include('payments.urls_wallet')),
     

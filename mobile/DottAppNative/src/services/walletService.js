@@ -31,8 +31,8 @@ class WalletService {
   async getWallet(walletType = 'personal', provider = 'MTN_MOMO') {
     try {
       const endpoint = walletType === 'business' 
-        ? '/api/payments/wallet/business_wallet/'
-        : '/api/payments/wallet/balance/';
+        ? '/payments/wallet/business_wallet/'
+        : '/payments/wallet/balance/';
       
       const response = await api.get(endpoint, {
         params: { provider }
@@ -88,7 +88,7 @@ class WalletService {
    */
   async topUp(amount, provider = 'MTN_MOMO') {
     try {
-      const response = await api.post('/api/payments/wallet/topup/', {
+      const response = await api.post('/payments/wallet/topup/', {
         amount,
         provider
       });
@@ -132,7 +132,7 @@ class WalletService {
         };
       }
 
-      const response = await api.post('/api/payments/wallet/send/', {
+      const response = await api.post('/payments/wallet/send/', {
         recipient_phone: recipientPhone,
         amount,
         description,
@@ -157,7 +157,7 @@ class WalletService {
    */
   async getTransactions(provider = 'MTN_MOMO', limit = 20, offset = 0) {
     try {
-      const response = await api.get('/api/payments/wallet/transactions/', {
+      const response = await api.get('/payments/wallet/transactions/', {
         params: { provider, limit, offset }
       });
 
@@ -204,7 +204,7 @@ class WalletService {
    */
   async getTransferRequests(type = 'received') {
     try {
-      const response = await api.get('/api/payments/wallet/requests/', {
+      const response = await api.get('/payments/wallet/requests/', {
         params: { type }
       });
 
@@ -224,7 +224,7 @@ class WalletService {
    */
   async acceptRequest(requestId) {
     try {
-      const response = await api.post('/api/payments/wallet/accept_request/', {
+      const response = await api.post('/payments/wallet/accept_request/', {
         request_id: requestId
       });
 
@@ -244,7 +244,7 @@ class WalletService {
    */
   async rejectRequest(requestId, reason) {
     try {
-      const response = await api.post('/api/payments/wallet/reject_request/', {
+      const response = await api.post('/payments/wallet/reject_request/', {
         request_id: requestId,
         reason
       });
@@ -265,7 +265,7 @@ class WalletService {
    */
   async getProviders() {
     try {
-      const response = await api.get('/api/payments/wallet/providers/');
+      const response = await api.get('/payments/wallet/providers/');
 
       if (response.data.success) {
         return response.data.data;
@@ -425,7 +425,7 @@ class WalletService {
   // Cancel a transfer request
   async cancelRequest(requestId) {
     try {
-      const response = await api.delete(`/api/wallet/requests/${requestId}/`);
+      const response = await api.delete(`/wallet/requests/${requestId}/`);
       return response.data;
     } catch (error) {
       console.error('Error canceling request:', error);
@@ -441,7 +441,7 @@ class WalletService {
       
       if (!wallet) {
         // Create wallet if it doesn't exist
-        const response = await api.post('/api/wallet/create/', {
+        const response = await api.post('/wallet/create/', {
           provider: 'MTN_MOMO'
         });
         
@@ -479,7 +479,7 @@ class WalletService {
    */
   async transferToBank(data) {
     try {
-      const response = await api.post('/api/payments/wallet/transfer_to_bank/', data);
+      const response = await api.post('/payments/wallet/transfer_to_bank/', data);
       
       if (response.data.success) {
         return response.data.data;
@@ -497,7 +497,7 @@ class WalletService {
    */
   async getUserBankAccounts() {
     try {
-      const response = await api.get('/api/payments/wallet/user_bank_accounts/');
+      const response = await api.get('/payments/wallet/user_bank_accounts/');
       
       if (response.data.success) {
         return response.data.data;
