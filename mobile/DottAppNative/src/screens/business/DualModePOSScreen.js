@@ -1265,7 +1265,13 @@ export default function DualModePOSScreen() {
 
           <TouchableOpacity
             style={styles.paymentMethodButton}
-            onPress={() => setShowCashModal(true)}
+            onPress={() => {
+              // Pre-fill customer phone with user's stored phone if available
+              if (user?.phone_number && !customerPhone) {
+                setCustomerPhone(user.phone_number);
+              }
+              setShowCashModal(true);
+            }}
           >
             <Icon name="cash" size={24} color={THEME_COLOR} />
             <View style={styles.paymentMethodInfo}>
@@ -1381,18 +1387,25 @@ export default function DualModePOSScreen() {
             <View style={styles.divider} />
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Customer Phone (for SMS Receipt)</Text>
+              <Text style={styles.inputLabel}>
+                Customer Phone (for SMS Receipt) 
+                {customerPhone === user?.phone_number && (
+                  <Text style={styles.autoFilledLabel}> (Your number)</Text>
+                )}
+              </Text>
               <TextInput
                 style={styles.cardInput}
                 value={customerPhone}
                 onChangeText={setCustomerPhone}
-                placeholder="+1234567890 (Optional)"
+                placeholder={user?.phone_number ? `${user.phone_number} (Your number)` : "+1234567890 (Optional)"}
                 keyboardType="phone-pad"
               />
             </View>
 
             <Text style={styles.receiptNote}>
-              Enter customer's phone to send SMS receipt
+              {customerPhone ? 
+                'SMS receipt will be sent to this number' : 
+                'Enter customer\'s phone to send SMS receipt'}
             </Text>
           </ScrollView>
 
@@ -2779,6 +2792,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  autoFilledLabel: {
+    fontSize: 12,
+    color: THEME_COLOR,
     fontStyle: 'italic',
   },
   changeContainer: {

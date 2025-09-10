@@ -34,8 +34,8 @@ export default function TransactionsScreen() {
     try {
       setLoading(true);
       
-      // Fetch transactions from the finance API like the web app
-      const response = await api.get('/finance/transactions/');
+      // Fetch transactions - use catch to handle 404s gracefully
+      const response = await api.get('/finance/transactions/').catch(() => ({ data: [] }));
       
       let transactionsData = [];
       if (Array.isArray(response.data)) {
@@ -46,10 +46,20 @@ export default function TransactionsScreen() {
         transactionsData = response.data.transactions;
       }
       
-      // Also fetch invoices and payments for a complete view
-      const [invoicesRes, paymentsRes] = await Promise.all([
-        api.get('/sales/invoices/').catch(() => ({ data: [] })),
-        api.get('/payments/transactions/').catch(() => ({ data: [] })),
+      // Also fetch invoices, payments, and POS transactions for a complete view
+      const [invoicesRes, paymentsRes, posRes] = await Promise.all([
+        api.get('/sales/invoices/').catch(err => {
+          console.log('Invoices endpoint error:', err.response?.status);
+          return { data: [] };
+        }),
+        api.get('/payments/transactions/').catch(err => {
+          console.log('Payments endpoint error:', err.response?.status);
+          return { data: [] };
+        }),
+        api.get('/sales/pos/transactions/').catch(err => {
+          console.log('POS transactions endpoint error:', err.response?.status);
+          return { data: [] };
+        }),
       ]);
       
       const invoices = Array.isArray(invoicesRes.data) 
@@ -59,6 +69,10 @@ export default function TransactionsScreen() {
       const payments = Array.isArray(paymentsRes.data)
         ? paymentsRes.data
         : (paymentsRes.data.results || paymentsRes.data.payments || []);
+      
+      const posTransactions = Array.isArray(posRes.data)
+        ? posRes.data
+        : (posRes.data.results || posRes.data.transactions || []);
       
       // Combine and format all transaction types
       const allTransactions = [
@@ -95,6 +109,17 @@ export default function TransactionsScreen() {
           description: p.description || `Payment ${p.id}`,
           date: p.date || p.created_at,
           paymentMethod: p.payment_method || 'card',
+        })),
+        // Format POS transactions
+        ...posTransactions.map(pos => ({
+          id: `POS-${pos.transaction_number || pos.id}`,
+          type: 'pos',
+          amount: parseFloat(pos.total_amount || pos.amount || 0),
+          status: pos.status || 'completed',
+          customer: pos.customer_phone || pos.customer_name || 'Walk-in Customer',
+          description: `POS Sale #${pos.transaction_number || pos.id.slice(-6)}`,
+          date: pos.created_at || pos.date,
+          paymentMethod: pos.payment_method || 'cash',
         })),
       ];
       
@@ -263,7 +288,7 @@ export default function TransactionsScreen() {
         </View>
       )}
 
-      {transaction.type === 'payment' && transaction.status === 'completed' && (
+      {(transaction.type === 'payment' || transaction.type === 'pos') && transaction.status === 'completed' && (
         <View style={styles.transactionActions}>
           <TouchableOpacity 
             style={styles.actionButton}
@@ -288,7 +313,7 @@ export default function TransactionsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#ffffff" />
+          <Icon name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transactions</Text>
       </View>
@@ -330,6 +355,14 @@ export default function TransactionsScreen() {
           >
             <Text style={[styles.filterChipText, filterType === 'payment' && styles.filterChipTextActive]}>
               Payments
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterType === 'pos' && styles.filterChipActive]}
+            onPress={() => setFilterType('pos')}
+          >
+            <Text style={[styles.filterChipText, filterType === 'pos' && styles.filterChipTextActive]}>
+              POS Sales
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -388,7 +421,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -396,7 +429,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -404,7 +437,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
     flex: 1,
   },
   searchSection: {

@@ -65,6 +65,8 @@ import QRScannerScreen from '../screens/QRScannerScreen';
 import P2PPaymentScreen from '../screens/P2PPaymentScreen';
 import P2PHistoryScreen from '../screens/P2PHistoryScreen';
 import PersonalInfoScreen from '../screens/PersonalInfoScreen';
+import BusinessProfileScreen from '../screens/BusinessProfileScreen';
+import DiagnosticsScreen from '../screens/DiagnosticsScreen';
 
 // Import Delivery Address screens
 import DeliveryAddressesScreen from '../screens/DeliveryAddressesScreen';
@@ -193,6 +195,8 @@ export default function MainNavigator() {
       <Stack.Screen name="BankingSetup" component={BankingSetupScreen} />
       <Stack.Screen name="CurrencyPreference" component={CurrencyPreferenceScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+      <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} />
+      <Stack.Screen name="Diagnostics" component={DiagnosticsScreen} />
       <Stack.Screen name="Jobs" component={JobsScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="Transactions" component={TransactionsScreen} />

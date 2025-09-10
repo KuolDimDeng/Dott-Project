@@ -37,17 +37,17 @@ router = DefaultRouter()
 router.register(r'menu-privileges', UserMenuPrivilegeViewSet, basename='menu-privileges')
 
 urlpatterns = [
-    path('profile', ProfileView.as_view(), name='user-profile'),
-    path('business/search', business_search, name='business_search'),
-    path('business/details', get_business_details, name='get_business_details'),
-    path('business/subscription', get_user_subscription, name='get_user_subscription'),
-    path('business/update', update_business, name='update_business'),
-    path('business/details/update', update_business_details, name='update_business_details'),
-    path('business/details/create', create_business_details, name='create_business_details'),
-    path('business/create', create_business, name='create_business'),
+    path('profile/', ProfileView.as_view(), name='user-profile'),
+    path('business/search/', business_search, name='business_search'),
+    path('business/details/', get_business_details, name='get_business_details'),
+    path('business/subscription/', get_user_subscription, name='get_user_subscription'),
+    path('business/update/', update_business, name='update_business'),
+    path('business/details/update/', update_business_details, name='update_business_details'),
+    path('business/details/create/', create_business_details, name='create_business_details'),
+    path('business/create/', create_business, name='create_business'),
     # Consumer to Business Registration
-    path('business/register', create_business_account, name='create_business_account'),
-    path('business/check-status', check_business_status, name='check_business_status'),
+    path('business/register/', create_business_account, name='create_business_account'),
+    path('business/check-status/', check_business_status, name='check_business_status'),
     path('subscription/update', update_subscription_plan, name='update_subscription_plan'),
     path('checkout-session', create_checkout_session, name='checkout-session'),
     path('stripe-webhook', stripe_webhook, name='stripe-webhook'),

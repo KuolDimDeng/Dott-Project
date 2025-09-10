@@ -205,7 +205,12 @@ export const marketplaceApi = {
   // Update business status (Open/Closed)
   updateBusinessStatus: async (statusData) => {
     try {
-      const response = await api.patch('/marketplace/business/status/', statusData);
+      // Use the listing endpoint to update status fields
+      const response = await api.patch('/marketplace/business/listing/', {
+        is_published: statusData.is_open,
+        is_active: statusData.is_open,
+        is_open_now: statusData.is_open
+      });
       return response.data;
     } catch (error) {
       console.error('Error updating business status:', error);

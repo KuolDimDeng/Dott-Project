@@ -26,6 +26,8 @@ export default function AccountScreen({ navigation }) {
   const [syncStatus, setSyncStatus] = useState(null);
   const [walletBalance, setWalletBalance] = useState(null);
   const [loadingWallet, setLoadingWallet] = useState(false);
+  const [devTapCount, setDevTapCount] = useState(0);
+  const [developerMode, setDeveloperMode] = useState(false);
   
   console.log('👤 AccountScreen - User data:', user);
   console.log('👤 AccountScreen - User role:', user?.role);
@@ -126,11 +128,46 @@ export default function AccountScreen({ navigation }) {
     navigation.navigate('BusinessRegistration');
   };
 
+  const handleVersionTap = () => {
+    const newCount = devTapCount + 1;
+    setDevTapCount(newCount);
+    
+    if (newCount === 5) {
+      setDeveloperMode(true);
+      Alert.alert('🔧 Developer Mode', 'Developer mode activated!');
+      setDevTapCount(0);
+    } else if (newCount === 10 && developerMode) {
+      setDeveloperMode(false);
+      Alert.alert('Developer Mode', 'Developer mode deactivated');
+      setDevTapCount(0);
+    }
+    
+    // Reset count after 2 seconds
+    setTimeout(() => setDevTapCount(0), 2000);
+  };
+
   // Unified menu sections based on business ownership
   const getMenuSections = () => {
+    const sections = [];
+    
+    // Add developer section if enabled
+    if (developerMode) {
+      sections.push({
+        title: '🔧 Developer Tools',
+        items: [
+          { 
+            icon: 'pulse', 
+            title: 'API Diagnostics', 
+            subtitle: 'Test all API endpoints',
+            screen: 'Diagnostics'
+          },
+        ]
+      });
+    }
+    
     if (hasBusiness) {
       // Business users get unified account with all features
-      return [
+      sections.push(...[
         {
           title: 'Personal',
           items: [
@@ -144,7 +181,7 @@ export default function AccountScreen({ navigation }) {
         {
           title: 'Business Settings',
           items: [
-            { icon: 'business', title: 'Business Profile', subtitle: 'Company information' },
+            { icon: 'business', title: 'Business Profile', subtitle: 'Company information', screen: 'BusinessProfile' },
             { icon: 'cash', title: 'Currency Preference', subtitle: 'Business display currency', screen: 'CurrencyPreference' },
             { icon: 'people', title: 'Team & Permissions', subtitle: 'Staff access control' },
             { icon: 'wallet', title: 'Banking & Payouts', subtitle: 'Bank accounts & settlements', screen: 'AccountSettings' },
@@ -162,10 +199,10 @@ export default function AccountScreen({ navigation }) {
             { icon: 'information-circle', title: 'About', subtitle: 'App version and legal' },
           ]
         }
-      ];
+      ]);
     } else {
       // Non-business users get consumer menu
-      return [
+      sections.push(...[
         {
           title: 'Personal',
           items: [
@@ -185,8 +222,10 @@ export default function AccountScreen({ navigation }) {
             { icon: 'information-circle', title: 'About', subtitle: 'App information' },
           ]
         }
-      ];
+      ]);
     }
+    
+    return sections;
   };
 
   const menuSections = getMenuSections();
@@ -235,6 +274,31 @@ export default function AccountScreen({ navigation }) {
           </TouchableOpacity>
           <Text style={styles.userName}>{user?.full_name || user?.name || 'User'}</Text>
           <Text style={styles.userEmail}>{user?.email || ''}</Text>
+          
+          {/* Phone Number Display */}
+          <TouchableOpacity 
+            onPress={() => {
+              if (!user?.phone_number) {
+                navigation.navigate('PersonalInfo');
+              }
+            }}
+            style={styles.phoneContainer}
+          >
+            <Icon 
+              name="call-outline" 
+              size={14} 
+              color={user?.phone_number ? "#6b7280" : "#ef4444"} 
+            />
+            <Text style={[
+              styles.userPhone, 
+              !user?.phone_number && styles.phoneNumberMissing
+            ]}>
+              {user?.phone_number || 'Phone number missing'}
+            </Text>
+            {!user?.phone_number && (
+              <Icon name="chevron-forward" size={14} color="#ef4444" />
+            )}
+          </TouchableOpacity>
           
           {/* Role Badge */}
           {user?.role && (
@@ -362,6 +426,14 @@ export default function AccountScreen({ navigation }) {
           <Icon name="log-out-outline" size={24} color="#ef4444" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+        
+        {/* Version info with tap counter for developer mode */}
+        <TouchableOpacity onPress={handleVersionTap} activeOpacity={1}>
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>Version 1.0.0</Text>
+            {developerMode && <Text style={styles.devModeIndicator}>🔧 Dev Mode</Text>}
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -456,7 +528,22 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#6b7280',
+    marginBottom: 4,
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 8,
+    paddingVertical: 4,
+  },
+  userPhone: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  phoneNumberMissing: {
+    color: '#ef4444',
+    fontStyle: 'italic',
   },
   roleBadge: {
     flexDirection: 'row',
@@ -672,5 +759,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#6b7280',
     marginTop: 2,
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  devModeIndicator: {
+    fontSize: 12,
+    color: '#14532d',
+    fontWeight: '600',
   },
 });

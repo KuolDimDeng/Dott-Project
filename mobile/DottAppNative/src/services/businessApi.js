@@ -88,10 +88,22 @@ export const businessApi = {
   updateBusiness: async (data) => {
     try {
       const api = await createApiInstance();
+      // Try the business/update endpoint first (with trailing slash)
       const response = await api.patch('/users/business/update/', data);
       return response.data;
     } catch (error) {
       console.error('Update business error:', error);
+      // If that fails, try the details/update endpoint
+      if (error.response?.status === 404) {
+        try {
+          const api = await createApiInstance();
+          const response = await api.patch('/users/business/details/update/', data);
+          return response.data;
+        } catch (fallbackError) {
+          console.error('Fallback update business error:', fallbackError);
+          throw fallbackError;
+        }
+      }
       throw error;
     }
   },

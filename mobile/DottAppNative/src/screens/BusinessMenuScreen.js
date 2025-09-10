@@ -590,6 +590,29 @@ export default function BusinessMenuScreen() {
             <Text style={styles.businessType}>{businessType}</Text>
           ) : null}
           
+          {/* Email and Phone Display */}
+          <View style={styles.contactInfo}>
+            {(user?.email || user?.phone_number) && (
+              <TouchableOpacity 
+                onPress={() => {
+                  if (!user?.phone_number) {
+                    navigation.navigate('BusinessProfile');
+                  }
+                }}
+                style={styles.contactRow}
+              >
+                {user?.email && (
+                  <Text style={styles.contactText}>{user.email}</Text>
+                )}
+                {user?.phone_number ? (
+                  <Text style={styles.contactText}>{user.phone_number}</Text>
+                ) : (
+                  <Text style={styles.addPhoneText}>Add phone number</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+          
           {/* Business Country Selector for Testing */}
           <View style={styles.locationRow}>
             <Icon name="location" size={14} color="rgba(255, 255, 255, 0.8)" />
@@ -783,6 +806,32 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '400',
     marginTop: 2,
+  },
+  contactInfo: {
+    marginTop: 6,
+    alignItems: 'flex-start',
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 12,
+  },
+  contactText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '400',
+  },
+  contactDivider: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginHorizontal: 6,
+  },
+  addPhoneText: {
+    fontSize: 12,
+    color: '#fbbf24',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   businessInfoRow: {
     flexDirection: 'row',
