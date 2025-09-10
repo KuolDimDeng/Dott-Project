@@ -78,23 +78,6 @@ export default function MarketplaceScreen() {
 
   const detectLocation = async () => {
     try {
-      // FOR TESTING: Always use Juba, South Sudan
-      // Comment this out when ready for production
-      const testLocation = {
-        latitude: 4.8517,
-        longitude: 31.5825,
-        city: 'Juba',
-        state: 'Central Equatoria',
-        country: 'South Sudan',
-        displayName: 'Juba, South Sudan',
-        formattedAddress: 'Juba, Central Equatoria, South Sudan',
-        isDefault: true,
-      };
-      setLocationData(testLocation);
-      setCurrentLocation('Juba, South Sudan');
-      return;
-      
-      // Production code (currently disabled for testing)
       const location = await locationService.getCurrentLocation();
       setLocationData(location);
       setCurrentLocation(`${location.city}, ${location.country}`);
@@ -637,21 +620,13 @@ export default function MarketplaceScreen() {
         onSelectSubcategory={handleSubcategorySelect}
       />
       
-      {/* Original Header with Location, Bell, and Cart */}
+      {/* Header with Location, Bell, Cart, and Purchases */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
           <View style={styles.headerTitleContainer}>
             <Icon name="compass-outline" size={28} color="#ffffff" style={styles.discoverIcon} />
             <Text style={styles.headerTitle}>Discover</Text>
           </View>
-
-          {/* Country Selector for Testing UI Changes */}
-          <CountrySelector
-            testMode={true}
-            compact={true}
-            showFlag={true}
-            style={styles.countrySelector}
-          />
           
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
@@ -669,6 +644,16 @@ export default function MarketplaceScreen() {
                 </View>
               )}
             </TouchableOpacity>
+            
+            {/* Add Purchases icon for consumers without business */}
+            {userMode === 'consumer' && !user?.has_business && (
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={() => navigation.navigate('Purchases')}
+              >
+                <Icon name="receipt-outline" size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         
@@ -677,7 +662,7 @@ export default function MarketplaceScreen() {
           onPress={() => setShowLocationPicker(true)}
         >
           <Icon name="location" size={16} color="rgba(255, 255, 255, 0.9)" />
-          <Text style={styles.locationText}>Juba, South Sudan</Text>
+          <Text style={styles.locationText}>{currentLocation}</Text>
         </TouchableOpacity>
       </View>
 

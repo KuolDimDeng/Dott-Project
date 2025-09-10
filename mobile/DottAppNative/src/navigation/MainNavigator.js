@@ -151,9 +151,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Call" component={CallScreen} />
       <Tab.Screen name="Discover" component={MarketplaceScreen} />
-      {!hasBusiness ? (
-        <Tab.Screen name="Purchases" component={PurchasesScreen} />
-      ) : (
+      {hasBusiness && (
         <Tab.Screen name="Business" component={BusinessMenuScreen} />
       )}
       <Tab.Screen name="Chats" component={ChatScreen} />
@@ -168,6 +166,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Common screens */}
       <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Purchases" component={PurchasesScreen} />
       <Stack.Screen name="BusinessDetail" component={BusinessDetailScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
