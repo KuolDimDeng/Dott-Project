@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def get_marketplace_businesses(request):
     """
-    Get placeholder businesses for marketplace display
+    Get ALL businesses for marketplace display - both PlaceholderBusiness and published BusinessListing
     Filters by user's city and optional category/search
     """
     try:
@@ -25,16 +25,10 @@ def get_marketplace_businesses(request):
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 20))
         
-        # Start with all placeholder businesses
-        businesses = PlaceholderBusiness.objects.filter(
-            opted_out=False,  # Don't show businesses that opted out
-        )
+        logger.info(f"[Marketplace] Fetching businesses for city: {city}, country: {country}")
         
-        # IMPORTANT: Filter by city - users only see businesses in their city
-        if city:
-            businesses = businesses.filter(city__iexact=city)
-        else:
-            # If no city provided, return empty (we require city-based filtering)
+        # CRITICAL: City is required for filtering
+        if not city:
             return Response({
                 'success': False,
                 'message': 'City is required for marketplace filtering',
@@ -42,9 +36,17 @@ def get_marketplace_businesses(request):
                 'count': 0
             })
         
-        # Optional country filter (handle both full names and ISO codes)
+        # Build combined results from both PlaceholderBusiness and BusinessListing
+        all_results = []
+        
+        # 1. Get PlaceholderBusiness records (existing marketplace businesses)
+        placeholder_businesses = PlaceholderBusiness.objects.filter(
+            opted_out=False,
+            city__iexact=city
+        )
+        
+        # Apply country filter to placeholders
         if country:
-            # Map common country names to ISO codes
             country_mapping = {
                 'south sudan': 'SS',
                 'kenya': 'KE',
@@ -58,43 +60,29 @@ def get_marketplace_businesses(request):
                 'egypt': 'EG',
             }
             
-            # Check if it's a full country name and map to ISO code
             country_code = country_mapping.get(country.lower(), country)
-            
-            # If it's already an ISO code (2 chars), use it directly
             if len(country_code) == 2:
-                businesses = businesses.filter(country__iexact=country_code)
+                placeholder_businesses = placeholder_businesses.filter(country__iexact=country_code)
             else:
-                # Try to match against the provided country string
-                businesses = businesses.filter(
+                placeholder_businesses = placeholder_businesses.filter(
                     Q(country__iexact=country_code) | Q(country__iexact=country[:2])
                 )
         
-        # Category filter
+        # Apply category filter to placeholders
         if category:
-            businesses = businesses.filter(
-                Q(category__icontains=category)
-            )
+            placeholder_businesses = placeholder_businesses.filter(category__icontains=category)
         
-        # Search filter - search in name, category, and description
+        # Apply search filter to placeholders
         if search_query:
-            businesses = businesses.filter(
+            placeholder_businesses = placeholder_businesses.filter(
                 Q(name__icontains=search_query) |
                 Q(category__icontains=search_query) |
                 Q(description__icontains=search_query)
             )
         
-        # Order by rating (if available) and name
-        businesses = businesses.order_by('-rating', 'name')
-        
-        # Paginate results
-        paginator = Paginator(businesses, page_size)
-        page_obj = paginator.get_page(page)
-        
-        # Serialize the results
-        results = []
-        for business in page_obj:
-            results.append({
+        # Convert PlaceholderBusiness to standard format
+        for business in placeholder_businesses:
+            all_results.append({
                 'id': business.id,
                 'name': business.name,
                 'phone': business.phone,
@@ -113,18 +101,104 @@ def get_marketplace_businesses(request):
                 'latitude': float(business.latitude) if business.latitude else None,
                 'longitude': float(business.longitude) if business.longitude else None,
                 'is_verified': business.converted_to_real_business,
+                'is_placeholder': True,
+                'source': 'placeholder'
             })
+        
+        # 2. Get BusinessListing records (published real businesses)
+        from marketplace.models import BusinessListing
+        
+        business_listings = BusinessListing.objects.filter(
+            is_visible_in_marketplace=True,
+            business__is_active=True,
+            city__iexact=city
+        ).select_related('business', 'business__userprofile')
+        
+        # Apply country filter to listings
+        if country:
+            country_code = country_mapping.get(country.lower(), country) if country else None
+            if country_code and len(country_code) == 2:
+                business_listings = business_listings.filter(country__iexact=country_code)
+            elif country:
+                business_listings = business_listings.filter(
+                    Q(country__iexact=country) | Q(country__iexact=country[:2])
+                )
+        
+        # Apply category filter to listings
+        if category:
+            business_listings = business_listings.filter(
+                Q(business_type__icontains=category) |
+                Q(secondary_categories__contains=[category])
+            )
+        
+        # Apply search filter to listings
+        if search_query:
+            business_listings = business_listings.filter(
+                Q(business__userprofile__business_name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(search_tags__overlap=[search_query.lower()])
+            )
+        
+        # Convert BusinessListing to standard format
+        for listing in business_listings:
+            user = listing.business
+            profile = getattr(user, 'userprofile', None)
+            business_name = getattr(profile, 'business_name', user.email) if profile else user.email
+            
+            all_results.append({
+                'id': str(listing.id),  # UUID, convert to string
+                'name': business_name,
+                'phone': getattr(profile, 'phone', '') if profile else '',
+                'address': getattr(profile, 'business_address', '') if profile else '',
+                'category': listing.business_type,
+                'email': user.email,
+                'description': listing.description or '',
+                'image_url': '',  # TODO: Add business image support
+                'logo_url': '',   # TODO: Add business logo support
+                'website': getattr(profile, 'website', '') if profile else '',
+                'opening_hours': listing.business_hours or {},
+                'rating': float(listing.average_rating) if listing.average_rating else None,
+                'social_media': {},  # TODO: Add social media support
+                'city': listing.city,
+                'country': listing.country,
+                'latitude': listing.latitude,
+                'longitude': listing.longitude,
+                'is_verified': True,  # Published businesses are verified
+                'is_placeholder': False,
+                'source': 'published'
+            })
+        
+        logger.info(f"[Marketplace] Found {len(all_results)} total businesses ({len(placeholder_businesses)} placeholders, {len(business_listings)} published)")
+        
+        # Sort combined results by rating and name
+        all_results.sort(key=lambda x: (
+            -(x['rating'] or 0),  # Higher ratings first
+            x['name']  # Then alphabetical
+        ))
+        
+        # Manual pagination of combined results
+        total_count = len(all_results)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        page_results = all_results[start_idx:end_idx]
+        
+        total_pages = (total_count + page_size - 1) // page_size
         
         return Response({
             'success': True,
-            'results': results,
-            'count': paginator.count,
+            'results': page_results,
+            'count': total_count,
             'page': page,
-            'pages': paginator.num_pages,
+            'pages': total_pages,
             'page_size': page_size,
             'city': city,
             'country': country,
-            'category': category
+            'category': category,
+            'breakdown': {
+                'placeholder_businesses': len(placeholder_businesses),
+                'published_businesses': len(business_listings),
+                'total': total_count
+            }
         })
         
     except Exception as e:
