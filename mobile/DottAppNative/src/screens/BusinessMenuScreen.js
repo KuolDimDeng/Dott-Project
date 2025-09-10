@@ -20,6 +20,7 @@ import { useBusinessContext } from '../context/BusinessContext';
 import { isBusinessOpen } from '../config/categoryHierarchy';
 import marketplaceApi from '../services/marketplaceApi';
 import CountrySelector from '../components/common/CountrySelector';
+import orderNotificationService from '../services/orderNotificationService';
 
 const { width } = Dimensions.get('window');
 
@@ -68,10 +69,15 @@ const MenuCard = ({ item, iconBgColor, iconColor, onPress }) => {
         {item.subtitle && (
           <Text style={menuCardStyles.subtitle}>{item.subtitle}</Text>
         )}
-        {/* Optional: Add badge for counts */}
-        {item.badge && (
-          <View style={menuCardStyles.badge}>
-            <Text style={menuCardStyles.badgeText}>{item.badge}</Text>
+        {/* Badge for counts (Orders, etc) */}
+        {(item.badge || (item.screen === 'Orders' && item.unreadCount > 0)) && (
+          <View style={[
+            menuCardStyles.badge,
+            item.screen === 'Orders' && item.unreadCount > 0 && menuCardStyles.ordersBadge
+          ]}>
+            <Text style={menuCardStyles.badgeText}>
+              {item.screen === 'Orders' ? item.unreadCount : item.badge}
+            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -138,6 +144,10 @@ const menuCardStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
   },
+  ordersBadge: {
+    backgroundColor: '#ef4444',
+    animation: 'pulse 2s infinite',
+  },
 });
 
 // Import business screens
@@ -162,6 +172,9 @@ export default function BusinessMenuScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [manualOverride, setManualOverride] = useState(false);
+  const [unreadOrderCount, setUnreadOrderCount] = useState(0);
+  const [showNewOrderBanner, setShowNewOrderBanner] = useState(false);
+  const [latestNewOrder, setLatestNewOrder] = useState(null);
   const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
   const activeOrdersCount = businessData?.activeOrders?.length || 0;
   
@@ -260,8 +273,8 @@ export default function BusinessMenuScreen() {
   // Business type feature configuration
   const BUSINESS_TYPE_FEATURES = {
     'RESTAURANT_CAFE': {
-      enabled: ['POS Terminal', 'Inventory', 'Staff', 'Menu', 'Advertise', 'Dashboard'],
-      highlighted: ['POS Terminal']
+      enabled: ['POS Terminal', 'Orders', 'Inventory', 'Staff', 'Menu', 'Advertise', 'Dashboard'],
+      highlighted: ['POS Terminal', 'Orders']
     },
     'RETAIL': {
       enabled: ['POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
@@ -342,7 +355,7 @@ export default function BusinessMenuScreen() {
         // Create mapping for items not in ALL_MENU_ITEMS
         const screenToColorMap = {
           'Dashboard': '#8b5cf6', // purple for dashboard
-          'Orders': '#84cc16', // green for orders
+          'Orders': '#10b981', // green for orders (updated to match theme)
           'POS': '#10b981', // green for POS
           'Tables': '#3b82f6', // blue for tables  
           'Delivery': '#f59e0b', // orange for delivery
@@ -438,7 +451,7 @@ export default function BusinessMenuScreen() {
   const getIconBackgroundColor = (screen) => {
     const colors = {
       'Dashboard': '#EDE9FE', // light purple
-      'Orders': '#FEE2E2', // light red
+      'Orders': '#D1FAE5', // light green for orders
       'POS': '#DBEAFE', // light blue
       'Tables': '#DBEAFE', // light blue
       'Delivery': '#FED7AA', // light orange
@@ -465,7 +478,7 @@ export default function BusinessMenuScreen() {
   const getIconColor = (screen) => {
     const colors = {
       'Dashboard': '#8B5CF6', // purple
-      'Orders': '#EF4444', // red
+      'Orders': '#10B981', // green for orders
       'POS': '#2563EB', // blue
       'Tables': '#3B82F6', // blue
       'Delivery': '#F59E0B', // orange
@@ -487,6 +500,36 @@ export default function BusinessMenuScreen() {
     };
     return colors[screen] || '#6B7280';
   };
+
+  // Initialize order notifications
+  useEffect(() => {
+    // Start polling for new orders if business is open
+    if (isOpen && user?.id) {
+      orderNotificationService.startOrderPolling(user.id);
+      
+      // Subscribe to new order events
+      const unsubscribe = orderNotificationService.subscribeToNewOrders((newOrders, unreadCount) => {
+        console.log('🔔 New orders received:', newOrders.length, 'Unread:', unreadCount);
+        setUnreadOrderCount(unreadCount);
+        
+        // Show banner for latest order
+        if (newOrders.length > 0) {
+          setLatestNewOrder(newOrders[0]);
+          setShowNewOrderBanner(true);
+          
+          // Auto-hide banner after 10 seconds
+          setTimeout(() => {
+            setShowNewOrderBanner(false);
+          }, 10000);
+        }
+      });
+      
+      return () => {
+        orderNotificationService.stopOrderPolling();
+        unsubscribe();
+      };
+    }
+  }, [isOpen, user?.id]);
 
   // Check business open status based on operating hours
   useEffect(() => {
@@ -610,15 +653,49 @@ export default function BusinessMenuScreen() {
         </TouchableOpacity>
       )}
 
+      {/* NEW ORDER BANNER - Most Prominent Alert */}
+      {showNewOrderBanner && latestNewOrder && (
+        <Animated.View style={styles.newOrderBanner}>
+          <TouchableOpacity 
+            style={styles.newOrderBannerContent}
+            onPress={() => {
+              setShowNewOrderBanner(false);
+              navigation.navigate('Orders');
+            }}
+          >
+            <View style={styles.newOrderBannerLeft}>
+              <Icon name="notifications" size={32} color="#fff" />
+              <View style={styles.newOrderBannerText}>
+                <Text style={styles.newOrderBannerTitle}>🎉 NEW ORDER!</Text>
+                <Text style={styles.newOrderBannerSubtitle}>
+                  Order #{latestNewOrder.id} from {latestNewOrder.customer_name}
+                </Text>
+                {latestNewOrder.total && (
+                  <Text style={styles.newOrderBannerAmount}>
+                    Total: ${latestNewOrder.total.toFixed(2)}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.newOrderBannerRight}>
+              <Text style={styles.viewOrderText}>VIEW</Text>
+              <Icon name="chevron-forward" size={24} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       {/* Active Orders Alert */}
-      {activeOrdersCount > 0 && isOpen && (
+      {unreadOrderCount > 0 && isOpen && !showNewOrderBanner && (
         <TouchableOpacity 
-          style={styles.activeOrdersAlert}
+          style={[styles.activeOrdersAlert, styles.unreadOrdersAlert]}
           onPress={() => navigation.navigate('Orders')}
         >
-          <Icon name="alert-circle" size={20} color="#fff" />
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>{unreadOrderCount}</Text>
+          </View>
           <Text style={styles.activeOrdersText}>
-            {activeOrdersCount} active {activeOrdersCount === 1 ? 'order' : 'orders'}
+            {unreadOrderCount} new {unreadOrderCount === 1 ? 'order' : 'orders'} waiting
           </Text>
           <Icon name="chevron-forward" size={20} color="#fff" />
         </TouchableOpacity>
@@ -637,15 +714,25 @@ export default function BusinessMenuScreen() {
             const iconBgColor = getIconBackgroundColor(item.screen);
             const iconColor = getIconColor(item.screen);
             
+            // Add unread count to Orders item
+            const itemWithCount = item.screen === 'Orders' 
+              ? { ...item, unreadCount: unreadOrderCount }
+              : item;
+            
             return (
               <MenuCard
                 key={index}
-                item={item}
+                item={itemWithCount}
                 iconBgColor={iconBgColor}
                 iconColor={iconColor}
                 onPress={() => {
                   console.log('📱 Menu item clicked:', item.title);
                   console.log('📱 Screen to navigate to:', item.screen);
+                  if (item.screen === 'Orders') {
+                    // Mark orders as viewed when navigating
+                    orderNotificationService.markAllOrdersAsViewed();
+                    setUnreadOrderCount(0);
+                  }
                   if (item.screen) {
                     try {
                       navigation.navigate(item.screen);

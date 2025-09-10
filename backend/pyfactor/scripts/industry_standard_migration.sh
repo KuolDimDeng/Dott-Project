@@ -25,6 +25,11 @@ echo ""
 echo "2. Fixing transport migration conflicts..."
 python scripts/pre_migration_fix.py || echo "Migration fix attempted"
 
+# Step 2.0: Force mark transport 0004 as applied (tables already exist)
+echo ""
+echo "2.0. Force marking transport 0004 as applied..."
+python scripts/force_mark_transport_0004.py || echo "Force mark attempted"
+
 # Step 2a: Force courier migration to clean state
 echo ""
 echo "2a. Forcing courier migration to clean state..."

@@ -364,6 +364,29 @@ export const BusinessProvider = ({ children }) => {
         return item;
       });
       
+      // Check if Orders item already exists
+      const hasOrdersOption = menuItems.some(item => 
+        item.id === 'orders' || 
+        item.screen === 'Orders' ||
+        item.label?.toLowerCase() === 'orders'
+      );
+      
+      console.log('🍽️ Has Orders option already:', hasOrdersOption);
+      
+      if (!hasOrdersOption) {
+        // Add Orders option for restaurants
+        const ordersOption = {
+          id: 'orders',
+          label: 'Orders',
+          title: 'Orders',
+          icon: 'receipt-outline',
+          screen: 'Orders',
+          subtitle: 'Manage customer orders'
+        };
+        menuItems.push(ordersOption);
+        console.log('🍽️ Added Orders option:', ordersOption);
+      }
+      
       // Check if Menu item already exists
       const hasMenuOption = menuItems.some(item => 
         item.id === 'menu' || 
