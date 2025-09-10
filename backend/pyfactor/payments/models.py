@@ -1019,3 +1019,135 @@ class PlatformFeeCollection(models.Model):
     
     def __str__(self):
         return f"Fee {self.id} - {self.transaction_type} - ${self.platform_fee}"
+
+
+class QRPaymentTransaction(TenantAwareModel):
+    """QR Code Payment Transaction model for dynamic payments"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('expired', 'Expired'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Transaction identification
+    transaction_id = models.CharField(max_length=100, unique=True, db_index=True)
+    business_id = models.UUIDField(db_index=True)
+    business_name = models.CharField(max_length=255)
+    
+    # User and business references
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='qr_payment_transactions'
+    )
+    
+    # Payment details
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+    tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2)
+    
+    # Transaction status and tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Items data as JSON
+    items = models.JSONField(default=list, help_text="List of items with name, quantity, price")
+    
+    # Timing fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(help_text="Transaction expiry time (5 minutes from creation)")
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Payment processing references
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
+    gateway_transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    gateway_response = models.JSONField(default=dict, blank=True)
+    
+    # Customer information (when payment is completed)
+    customer_name = models.CharField(max_length=255, blank=True, null=True)
+    customer_email = models.EmailField(blank=True, null=True)
+    customer_phone = models.CharField(max_length=20, blank=True, null=True)
+    
+    # Additional metadata
+    metadata = models.JSONField(default=dict, blank=True)
+    
+    class Meta:
+        db_table = 'payments_qr_transaction'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['tenant_id', 'user']),
+            models.Index(fields=['transaction_id']),
+            models.Index(fields=['business_id', 'status']),
+            models.Index(fields=['status', 'expires_at']),
+        ]
+    
+    def __str__(self):
+        return f"QR Payment {self.transaction_id} - {self.business_name} - {self.amount} {self.currency} - {self.status}"
+    
+    def is_expired(self):
+        """Check if transaction has expired"""
+        return timezone.now() > self.expires_at
+    
+    def mark_as_completed(self, customer_name=None, customer_email=None, customer_phone=None, payment_intent_id=None):
+        """Mark transaction as completed"""
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        
+        if customer_name:
+            self.customer_name = customer_name
+        if customer_email:
+            self.customer_email = customer_email
+        if customer_phone:
+            self.customer_phone = customer_phone
+        if payment_intent_id:
+            self.stripe_payment_intent_id = payment_intent_id
+            
+        self.save()
+        return self
+    
+    def mark_as_failed(self, error_message=None):
+        """Mark transaction as failed"""
+        self.status = 'failed'
+        if error_message:
+            self.metadata['error_message'] = error_message
+        self.save()
+        return self
+    
+    def mark_as_expired(self):
+        """Mark transaction as expired"""
+        if self.is_expired() and self.status == 'pending':
+            self.status = 'expired'
+            self.save()
+        return self
+    
+    def generate_transaction_id(self):
+        """Generate unique transaction ID"""
+        import time
+        timestamp = str(int(time.time()))
+        user_suffix = str(self.user.id)[:8]
+        return f"TXN_{timestamp}_{user_suffix}"
+    
+    def save(self, *args, **kwargs):
+        # Generate transaction ID if not provided
+        if not self.transaction_id:
+            self.transaction_id = self.generate_transaction_id()
+        
+        # Set expiry time if not provided (5 minutes from creation)
+        if not self.expires_at and not self.pk:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=5)
+        
+        # Calculate subtotal if not provided
+        if not self.subtotal and self.amount and self.tax is not None:
+            self.subtotal = self.amount - self.tax
+        
+        # Auto-expire if needed
+        if self.is_expired() and self.status == 'pending':
+            self.status = 'expired'
+            
+        super().save(*args, **kwargs)

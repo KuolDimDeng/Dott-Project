@@ -158,10 +158,45 @@ export default function MarketplaceScreen() {
         firstBusiness: response?.results?.[0]?.name || 'none'
       });
       
+      let businessList = response.results || [];
+      
+      // If user has a business, prioritize showing their own business first
+      if (pageNum === 1 && user?.business_id) {
+        console.log('👔 User has a business, checking if it should be shown first');
+        
+        // Check if user's business is in the list
+        const userBusinessIndex = businessList.findIndex(b => 
+          b.id === user.business_id || b.business_id === user.business_id
+        );
+        
+        if (userBusinessIndex > 0) {
+          // Move user's business to the front
+          const userBusiness = businessList[userBusinessIndex];
+          businessList.splice(userBusinessIndex, 1);
+          businessList.unshift(userBusiness);
+          console.log('✅ Moved user\'s business to the front:', userBusiness.name);
+        } else if (userBusinessIndex === -1) {
+          // User's business not in list, try to fetch it separately
+          try {
+            const userBusinessResponse = await marketplaceApi.getBusinessDetail(user.business_id);
+            if (userBusinessResponse && userBusinessResponse.is_published) {
+              businessList.unshift({
+                ...userBusinessResponse,
+                isOwnerBusiness: true,
+                featured: true,
+              });
+              console.log('✅ Added user\'s business to the front:', userBusinessResponse.name);
+            }
+          } catch (error) {
+            console.log('Could not fetch user\'s business:', error);
+          }
+        }
+      }
+      
       if (pageNum === 1) {
-        setBusinesses(response.results || []);
+        setBusinesses(businessList);
       } else {
-        setBusinesses(prev => [...prev, ...(response.results || [])]);
+        setBusinesses(prev => [...prev, ...businessList]);
       }
       
       setHasMore(!!response.next);
@@ -497,34 +532,48 @@ export default function MarketplaceScreen() {
     );
   };
 
-  const renderBusinessItem = ({ item }) => (
-    <TouchableOpacity style={styles.businessCard} onPress={() => handleBusinessPress(item)}>
-      <View style={styles.businessImageContainer}>
-        {item.logo ? (
-          <Image source={{ uri: item.logo }} style={styles.businessImage} />
-        ) : (
-          <View style={styles.businessImagePlaceholder}>
-            <Icon name="business-outline" size={30} color="#9ca3af" />
+  const renderBusinessItem = ({ item }) => {
+    const isOwnerBusiness = item.isOwnerBusiness || 
+      (user?.business_id && (item.id === user.business_id || item.business_id === user.business_id));
+    
+    return (
+      <TouchableOpacity 
+        style={[styles.businessCard, isOwnerBusiness && styles.ownerBusinessCard]} 
+        onPress={() => handleBusinessPress(item)}
+      >
+        {isOwnerBusiness && (
+          <View style={styles.yourBusinessBanner}>
+            <Icon name="star" size={14} color="#fbbf24" />
+            <Text style={styles.yourBusinessText}>Your Business</Text>
           </View>
         )}
-        {item.is_verified && (
-          <View style={styles.verifiedBadge}>
-            <Icon name="checkmark-circle" size={16} color="#10b981" />
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.businessInfo}>
-        <View style={styles.businessHeader}>
-          <Text style={styles.businessName} numberOfLines={1}>
-            {item.business_name}
-          </Text>
-          {item.is_featured && (
-            <View style={styles.featuredBadge}>
-              <Text style={styles.featuredBadgeText}>Featured</Text>
+        
+        <View style={styles.businessImageContainer}>
+          {item.logo ? (
+            <Image source={{ uri: item.logo }} style={styles.businessImage} />
+          ) : (
+            <View style={styles.businessImagePlaceholder}>
+              <Icon name="business-outline" size={30} color="#9ca3af" />
+            </View>
+          )}
+          {item.is_verified && (
+            <View style={styles.verifiedBadge}>
+              <Icon name="checkmark-circle" size={16} color="#10b981" />
             </View>
           )}
         </View>
+        
+        <View style={styles.businessInfo}>
+          <View style={styles.businessHeader}>
+            <Text style={styles.businessName} numberOfLines={1}>
+              {item.business_name}
+            </Text>
+            {item.is_featured && (
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>Featured</Text>
+              </View>
+            )}
+          </View>
         
         <Text style={styles.businessCategory}>{item.category_display}</Text>
         
@@ -562,7 +611,8 @@ export default function MarketplaceScreen() {
         </View>
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   const ListHeaderComponent = () => (
     <>
@@ -1021,6 +1071,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+    position: 'relative',
+  },
+  ownerBusinessCard: {
+    borderWidth: 2,
+    borderColor: '#fbbf24',
+    backgroundColor: '#fffbeb',
+  },
+  yourBusinessBanner: {
+    position: 'absolute',
+    top: -8,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fbbf24',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  yourBusinessText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 4,
   },
   businessImageContainer: {
     position: 'relative',

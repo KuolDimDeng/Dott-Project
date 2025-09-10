@@ -30,6 +30,9 @@ urlpatterns = [
     # Dual QR System (Payment & Receive)
     path('dual-qr/', include('payments.urls_dual_qr')),
     
+    # QR Payment System (Dynamic QR for businesses)
+    path('qr/', include('payments.urls_qr_payment')),
+    
     # Payment provider endpoints
     path('providers/country/<str:country_code>/', views.country_payment_providers, name='country-payment-providers'),
     path('providers/<str:provider_name>/form/', views.provider_form, name='provider-form'),

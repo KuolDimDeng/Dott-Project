@@ -3,7 +3,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     PaymentGateway, PaymentMethod, Transaction, WebhookEvent,
-    PaymentAuditLog, PaymentReconciliation, PaymentConfiguration
+    PaymentAuditLog, PaymentReconciliation, PaymentConfiguration,
+    QRPaymentTransaction
 )
 
 User = get_user_model()
@@ -327,3 +328,107 @@ class WebhookProcessingResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     transaction_updated = serializers.BooleanField(default=False)
     transaction_id = serializers.UUIDField(required=False)
+
+# QR Payment Transaction Serializers
+class QRPaymentTransactionSerializer(serializers.ModelSerializer):
+    """Serializer for QRPaymentTransaction model"""
+    
+    # Related field displays
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    # Calculated fields
+    is_expired = serializers.SerializerMethodField()
+    time_remaining = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = QRPaymentTransaction
+        fields = [
+            'id', 'transaction_id', 'business_id', 'business_name', 'user', 'amount',
+            'currency', 'tax', 'subtotal', 'status', 'items', 'created_at',
+            'updated_at', 'expires_at', 'completed_at', 'stripe_payment_intent_id',
+            'gateway_transaction_id', 'gateway_response', 'customer_name',
+            'customer_email', 'customer_phone', 'metadata', 'user_email',
+            'status_display', 'is_expired', 'time_remaining'
+        ]
+        read_only_fields = [
+            'id', 'transaction_id', 'created_at', 'updated_at', 'completed_at',
+            'gateway_transaction_id', 'gateway_response', 'user_email',
+            'status_display', 'is_expired', 'time_remaining'
+        ]
+    
+    def get_is_expired(self, obj):
+        """Check if transaction has expired"""
+        return obj.is_expired()
+    
+    def get_time_remaining(self, obj):
+        """Get remaining time in seconds until expiry"""
+        from django.utils import timezone
+        if obj.is_expired():
+            return 0
+        remaining = obj.expires_at - timezone.now()
+        return int(remaining.total_seconds()) if remaining.total_seconds() > 0 else 0
+
+class CreateQRPaymentRequestSerializer(serializers.Serializer):
+    """Request serializer for creating QR payment transactions"""
+    
+    business_id = serializers.UUIDField()
+    business_name = serializers.CharField(max_length=255)
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2, min_value=0.01)
+    currency = serializers.CharField(max_length=3, default='USD')
+    tax = serializers.DecimalField(max_digits=15, decimal_places=2, default=0, min_value=0)
+    subtotal = serializers.DecimalField(max_digits=15, decimal_places=2, min_value=0)
+    items = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="List of items with name, quantity, price"
+    )
+    metadata = serializers.JSONField(required=False, default=dict)
+
+class CreateQRPaymentResponseSerializer(serializers.Serializer):
+    """Response serializer for QR payment creation"""
+    
+    success = serializers.BooleanField()
+    transaction_id = serializers.CharField()
+    qr_transaction_id = serializers.UUIDField()
+    expires_at = serializers.DateTimeField()
+    time_remaining = serializers.IntegerField(help_text="Seconds until expiry")
+    message = serializers.CharField()
+
+class QRPaymentStatusSerializer(serializers.Serializer):
+    """Serializer for QR payment status response"""
+    
+    success = serializers.BooleanField()
+    transaction_id = serializers.CharField()
+    status = serializers.CharField()
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+    currency = serializers.CharField(max_length=3)
+    business_name = serializers.CharField(max_length=255)
+    is_expired = serializers.BooleanField()
+    time_remaining = serializers.IntegerField(help_text="Seconds until expiry")
+    completed_at = serializers.DateTimeField(required=False, allow_null=True)
+    customer_name = serializers.CharField(required=False, allow_null=True)
+    items = serializers.ListField(child=serializers.DictField())
+    message = serializers.CharField()
+
+class CompleteQRPaymentRequestSerializer(serializers.Serializer):
+    """Request serializer for completing QR payment"""
+    
+    transaction_id = serializers.CharField(max_length=100)
+    customer_name = serializers.CharField(max_length=255, required=False)
+    customer_email = serializers.EmailField(required=False)
+    customer_phone = serializers.CharField(max_length=20, required=False)
+    payment_method = serializers.CharField(max_length=50, default='mobile_app')
+    metadata = serializers.JSONField(required=False, default=dict)
+
+class CompleteQRPaymentResponseSerializer(serializers.Serializer):
+    """Response serializer for QR payment completion"""
+    
+    success = serializers.BooleanField()
+    transaction_id = serializers.CharField()
+    status = serializers.CharField()
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+    currency = serializers.CharField(max_length=3)
+    business_name = serializers.CharField(max_length=255)
+    completed_at = serializers.DateTimeField()
+    receipt_url = serializers.URLField(required=False)
+    message = serializers.CharField()

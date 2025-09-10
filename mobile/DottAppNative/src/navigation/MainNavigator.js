@@ -23,6 +23,7 @@ import ProductDetailScreen from '../screens/ProductDetailScreen';
 
 // Import business screens
 import ProgressivePOSScreen from '../screens/business/ProgressivePOSScreen';
+import DualModePOSScreen from '../screens/business/DualModePOSScreen';
 import TimesheetScreen from '../screens/business/TimesheetScreen';
 import ReportsScreen from '../screens/business/ReportsScreen';
 import EmployeesScreen from '../screens/business/EmployeesScreen';
@@ -180,7 +181,7 @@ export default function MainNavigator() {
       <Stack.Screen name="AddressMapPicker" component={AddressMapPickerScreen} />
       
       {/* Business screens for navigation */}
-      <Stack.Screen name="POS" component={ProgressivePOSScreen} />
+      <Stack.Screen name="POS" component={DualModePOSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />
       <Stack.Screen name="Reports" component={ReportsScreen} />
       <Stack.Screen name="Employees" component={EmployeesScreen} />
