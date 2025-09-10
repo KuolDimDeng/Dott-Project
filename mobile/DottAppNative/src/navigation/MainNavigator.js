@@ -17,6 +17,7 @@ import NewChatScreen from '../screens/NewChatScreen';
 import GroupCreationScreen from '../screens/GroupCreationScreen';
 import AccountScreen from '../screens/AccountScreen';
 import AccountSettingsScreen from '../screens/AccountSettingsScreen';
+import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import CartScreen from '../screens/CartScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
@@ -164,6 +165,7 @@ export default function MainNavigator() {
       <Stack.Screen name="GroupCreation" component={GroupCreationScreen} />
       <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />
       <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
       {/* Business screens for navigation */}
       <Stack.Screen name="POS" component={ProgressivePOSScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />

@@ -9,6 +9,7 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import LinearGradient from 'react-native-linear-gradient';
@@ -110,11 +111,22 @@ export default function BusinessQRScreen({ navigation }) {
               
               {/* QR Code */}
               <View style={[styles.qrWrapper, { borderColor: '#10b981' }]}>
+                <View style={styles.qrHeader}>
+                  <Image 
+                    source={require('../assets/icon.png')} 
+                    style={styles.qrHeaderLogo} 
+                  />
+                  <Text style={[styles.qrHeaderText, { color: '#10b981' }]}>Dott</Text>
+                </View>
                 <QRCode
                   value={receiveQR?.data || ''}
-                  size={200}
-                  color="#10b981"
-                  backgroundColor="white"
+                  size={250}
+                  color="#fff"
+                  backgroundColor="#10b981"
+                  logo={require('../assets/icon.png')}
+                  logoSize={50}
+                  logoBackgroundColor="#fff"
+                  logoBorderRadius={25}
                 />
                 
                 {/* Animated corners */}
@@ -286,6 +298,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 4,
     position: 'relative',
+  },
+  qrHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    gap: 8,
+  },
+  qrHeaderLogo: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  qrHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   corner: {
     position: 'absolute',

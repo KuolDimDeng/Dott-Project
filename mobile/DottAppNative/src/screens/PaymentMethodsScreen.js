@@ -14,7 +14,6 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import QRCode from 'react-native-qrcode-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -32,63 +31,29 @@ export default function PaymentMethodsScreen() {
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultMethod, setDefaultMethod] = useState(null);
-  const [qrData, setQrData] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addMethodType, setAddMethodType] = useState('');
   const [formData, setFormData] = useState({});
-  const [showQRDetails, setShowQRDetails] = useState(false);
 
   useEffect(() => {
     loadPaymentMethods();
-    generateQRCode();
   }, []);
 
-  const generateQRCode = async () => {
-    try {
-      // Get QR code from Dott Pay API
-      const qrResponse = await dottPayApi.getQRCode();
-      setQrData(qrResponse.qr_code);
-      
-      // Store locally for offline access
-      await AsyncStorage.setItem('dott_pay_qr', qrResponse.qr_code);
-    } catch (error) {
-      console.log('Error getting QR code:', error);
-      
-      // Try to load from local storage if API fails
-      const cachedQR = await AsyncStorage.getItem('dott_pay_qr');
-      if (cachedQR) {
-        setQrData(cachedQR);
-      } else {
-        // Generate fallback QR if no cached version
-        const qrPayload = {
-          userId: user?.id,
-          userEmail: user?.email,
-          timestamp: Date.now(),
-          version: '1.0',
-          type: 'DOTT_PAY',
-        };
-        const qrString = btoa(JSON.stringify(qrPayload));
-        setQrData(qrString);
-      }
-    }
-  };
 
   const loadPaymentMethods = async () => {
     setLoading(true);
     try {
-      // Get payment methods from Dott Pay API
-      const methods = await dottPayApi.getPaymentMethods();
-      setPaymentMethods(methods || []);
+      // Get payment methods from API
+      const response = await api.get('/payments/methods/');
+      const methods = response.data?.filter(method => 
+        method.verification_status === 'verified' &&
+        ['card', 'mobile_money'].includes(method.method_type)
+      ) || [];
+      setPaymentMethods(methods);
       
-      // Get Dott Pay profile to find default method
-      const profile = await dottPayApi.getMyProfile();
-      if (profile?.default_payment_method) {
-        setDefaultMethod(profile.default_payment_method);
-      } else {
-        // Find default from methods list
-        const defaultMethod = methods?.find(m => m.is_default);
-        setDefaultMethod(defaultMethod?.id);
-      }
+      // Find default method
+      const defaultMethod = methods?.find(m => m.is_default);
+      setDefaultMethod(defaultMethod?.id);
     } catch (error) {
       console.error('Error loading payment methods:', error);
     } finally {
@@ -377,56 +342,6 @@ export default function PaymentMethodsScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* QR Code Section */}
-        <View style={styles.qrSection}>
-          <Text style={styles.sectionTitle}>Your Dott Pay QR Code</Text>
-          <Text style={styles.sectionDescription}>
-            Show this QR code to receive payments instantly
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.qrContainer}
-            onPress={() => setShowQRDetails(!showQRDetails)}
-          >
-            {qrData ? (
-              <QRCode
-                value={qrData}
-                size={200}
-                color="#000"
-                backgroundColor="#fff"
-                logo={require('../assets/logo.png')}
-                logoSize={40}
-                logoBackgroundColor="#fff"
-                logoBorderRadius={20}
-              />
-            ) : (
-              <ActivityIndicator size="large" color="#2563eb" />
-            )}
-          </TouchableOpacity>
-
-          {showQRDetails && (
-            <View style={styles.qrDetails}>
-              <Text style={styles.qrDetailText}>
-                <Icon name="checkmark-circle" size={16} color="#10b981" /> 
-                {' '}Instant payments
-              </Text>
-              <Text style={styles.qrDetailText}>
-                <Icon name="shield-checkmark" size={16} color="#10b981" /> 
-                {' '}Secure & encrypted
-              </Text>
-              <Text style={styles.qrDetailText}>
-                <Icon name="flash" size={16} color="#10b981" /> 
-                {' '}Works offline temporarily
-              </Text>
-            </View>
-          )}
-
-          <TouchableOpacity style={styles.shareButton}>
-            <Icon name="share-outline" size={20} color="#fff" />
-            <Text style={styles.shareButtonText}>Share QR Code</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Payment Methods Section */}
         <View style={styles.methodsSection}>
           <View style={styles.sectionHeader}>
@@ -526,6 +441,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+  },
+  qrWrapper: {
+    alignItems: 'center',
+  },
+  qrHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    gap: 8,
+  },
+  qrHeaderLogo: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  qrHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2563eb',
   },
   qrDetails: {
     marginTop: 16,

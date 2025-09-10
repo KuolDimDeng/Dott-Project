@@ -52,8 +52,27 @@ export const MenuProvider = ({ children }) => {
         
         if (items.length > 0) {
           console.log('🍽️ MenuContext: Loaded from backend:', items.length);
-          setMenuItems(items);
-          await AsyncStorage.setItem('restaurantMenuItems', JSON.stringify(items));
+          
+          // Normalize field names for consistent usage
+          const normalizedItems = items.map(item => ({
+            ...item,
+            // Ensure availability field is consistent
+            available: item.is_available !== false && item.available !== false,
+            // Ensure stock fields are consistent  
+            stock: item.stock_quantity || item.stock || 0,
+            // Map price fields
+            price: item.effective_price || item.price || 0,
+            // Ensure other fields exist
+            category: item.category || 'main_courses',
+            image: item.image || item.image_url || null,
+            description: item.description || '',
+          }));
+          
+          console.log('🍽️ MenuContext: Normalized items:', normalizedItems.length);
+          console.log('🍽️ MenuContext: First item after normalization:', normalizedItems[0]);
+          
+          setMenuItems(normalizedItems);
+          await AsyncStorage.setItem('restaurantMenuItems', JSON.stringify(normalizedItems));
           await AsyncStorage.setItem('lastMenuSync', new Date().toISOString());
           setLastSyncTime(new Date());
           setSyncStatus('synced');
@@ -345,7 +364,32 @@ export const MenuProvider = ({ children }) => {
   };
 
   const getAvailableMenuItems = () => {
-    return menuItems.filter(item => item.available && item.stock > 0);
+    return menuItems.filter(item => {
+      // Check availability - handle both 'available' and 'is_available' fields
+      const isAvailable = item.available !== false && item.is_available !== false;
+      
+      // Stock check: For POS purposes, only filter out if explicitly out of stock
+      // If unlimited_stock = true OR no stock fields defined OR stock > 0, consider available
+      const hasStock = item.unlimited_stock === true || 
+                      (item.stock === undefined && item.stock_quantity === undefined) || // No stock management
+                      (item.stock !== undefined && item.stock > 0) || 
+                      (item.stock_quantity !== undefined && item.stock_quantity > 0) ||
+                      (item.stock === 0 && item.stock_quantity === undefined && item.unlimited_stock !== false); // Default stock=0 case
+      
+      console.log('🍔 POS: Item filter check:', {
+        name: item.name,
+        available: item.available,
+        is_available: item.is_available,
+        stock: item.stock,
+        stock_quantity: item.stock_quantity,
+        unlimited_stock: item.unlimited_stock,
+        isAvailable,
+        hasStock,
+        result: isAvailable && hasStock
+      });
+      
+      return isAvailable && hasStock;
+    });
   };
 
   const getMenuItemsByCategory = (categoryId) => {

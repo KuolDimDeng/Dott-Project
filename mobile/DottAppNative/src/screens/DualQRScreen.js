@@ -10,6 +10,7 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import LinearGradient from 'react-native-linear-gradient';
@@ -109,11 +110,22 @@ export default function DualQRScreen({ navigation }) {
           </View>
           
           <View style={[styles.qrWrapper, { borderColor: QR_COLOR.primary }]}>
+            <View style={styles.qrHeader}>
+              <Image 
+                source={require('../assets/icon.png')} 
+                style={styles.qrHeaderLogo} 
+              />
+              <Text style={[styles.qrHeaderText, { color: QR_COLOR.primary }]}>Dott</Text>
+            </View>
             <QRCode
               value={paymentQR.data}
-              size={200}
+              size={250}
               color={QR_COLOR.primary}
               backgroundColor="white"
+              logo={require('../assets/icon.png')}
+              logoSize={50}
+              logoBackgroundColor="#fff"
+              logoBorderRadius={25}
             />
             
             <View style={[styles.corner, styles.cornerTL, { borderColor: QR_COLOR.primary }]} />
@@ -314,6 +326,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 4,
     position: 'relative',
+  },
+  qrHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    gap: 8,
+  },
+  qrHeaderLogo: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  qrHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   corner: {
     position: 'absolute',

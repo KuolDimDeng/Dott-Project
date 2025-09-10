@@ -14,6 +14,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -805,12 +806,15 @@ export default function AdaptivePOSScreen() {
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.paymentMethodCard, paymentMethod === 'mobile' && [styles.paymentMethodActive, { backgroundColor: posConfig.primaryColor }]]}
-                    onPress={() => setPaymentMethod('mobile')}
+                    style={[styles.paymentMethodCard, paymentMethod === 'dott_qr' && [styles.paymentMethodActive, { backgroundColor: posConfig.primaryColor }]]}
+                    onPress={() => setPaymentMethod('dott_qr')}
                   >
-                    <Icon name="phone-portrait" size={28} color={paymentMethod === 'mobile' ? 'white' : '#666'} />
-                    <Text style={[styles.paymentMethodText, paymentMethod === 'mobile' && styles.paymentMethodTextActive]}>
-                      Mobile Money
+                    <Image 
+                      source={require('../../assets/icon.png')} 
+                      style={[styles.dottQRLogo, paymentMethod === 'dott_qr' && styles.dottQRLogoActive]} 
+                    />
+                    <Text style={[styles.paymentMethodText, paymentMethod === 'dott_qr' && styles.paymentMethodTextActive]}>
+                      Dott (QR)
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1380,6 +1384,14 @@ const styles = StyleSheet.create({
   },
   paymentMethodTextActive: {
     color: 'white',
+  },
+  dottQRLogo: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
+  },
+  dottQRLogoActive: {
+    // Keep same size for active state
   },
   cashInputLabel: {
     fontSize: 14,

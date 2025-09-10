@@ -138,7 +138,7 @@ export default function AccountScreen({ navigation }) {
             { icon: 'receipt', title: 'Order History', subtitle: 'Your marketplace purchases' },
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your delivery locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items and businesses' },
-            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Personal payment options', screen: 'PaymentMethods' },
           ]
         },
         {
@@ -173,7 +173,7 @@ export default function AccountScreen({ navigation }) {
             { icon: 'receipt', title: 'Order History', subtitle: 'Your purchases' },
             { icon: 'location', title: 'Delivery Addresses', subtitle: 'Your locations' },
             { icon: 'heart', title: 'Favorites', subtitle: 'Saved items' },
-            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets' },
+            { icon: 'card', title: 'Payment Methods', subtitle: 'Cards and wallets', screen: 'PaymentMethods' },
           ]
         },
         {

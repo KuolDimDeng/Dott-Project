@@ -64,31 +64,32 @@ function POSPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products', {
+      const response = await fetch('/api/menu/items/?available=true', {
         credentials: 'include'
       });
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[POS] Raw API response:', data);
-        console.log('[POS] Products array:', data.products);
+        console.log('[POS] Raw menu items response:', data);
         
-        if (data.products && data.products.length > 0) {
-          console.log('[POS] First product received:', data.products[0]);
-          console.log('[POS] First product quantity_in_stock:', data.products[0].quantity_in_stock);
+        // Handle DRF response format - data could be in results array for pagination
+        const menuItems = data.results || data;
+        
+        if (menuItems && menuItems.length > 0) {
+          console.log('[POS] First menu item received:', menuItems[0]);
         }
         
-        setProducts(Array.isArray(data.products) ? data.products : []);
+        setProducts(Array.isArray(menuItems) ? menuItems : []);
       } else if (response.status === 401) {
         console.warn('Authentication required, redirecting to login');
         router.push('/auth/signin');
       } else {
-        console.error('Failed to fetch products:', response.status);
-        toast.error('Failed to load products');
+        console.error('Failed to fetch menu items:', response.status);
+        toast.error('Failed to load menu items');
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Error loading products');
+      console.error('Error fetching menu items:', error);
+      toast.error('Error loading menu items');
     }
   };
 
@@ -118,7 +119,7 @@ function POSPage() {
   };
 
   const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + ((item.effective_price || item.price) * item.quantity), 0);
   };
 
   const processSale = async () => {
@@ -132,10 +133,10 @@ function POSPage() {
     try {
       const saleData = {
         items: cart.map(item => ({
-          product_id: item.id,
+          menu_item_id: item.id,
           quantity: item.quantity,
-          price: item.price,
-          subtotal: item.price * item.quantity
+          price: item.effective_price || item.price,
+          subtotal: (item.effective_price || item.price) * item.quantity
         })),
         payment_method: paymentMethod,
         total_amount: getTotalAmount(),
@@ -189,7 +190,8 @@ function POSPage() {
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+    product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Show loading spinner while session is loading or not mounted (prevents hydration mismatch)
@@ -226,7 +228,7 @@ function POSPage() {
           <div className="mb-4">
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search menu items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -247,11 +249,16 @@ function POSPage() {
                   {product.name || 'Unnamed Product'}
                 </h3>
                 <p className="text-lg font-semibold text-blue-600 mt-1">
-                  ${(product.price || 0).toFixed(2)}
+                  ${(product.effective_price || product.price || 0).toFixed(2)}
                 </p>
-                {product.quantity_in_stock !== undefined && (
+                {product.stock_quantity !== undefined && !product.unlimited_stock && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Stock: {product.quantity_in_stock}
+                    Stock: {product.stock_quantity}
+                  </p>
+                )}
+                {product.unlimited_stock && (
+                  <p className="text-xs text-green-500 mt-1">
+                    Always Available
                   </p>
                 )}
               </button>
@@ -278,7 +285,7 @@ function POSPage() {
                           {item.name}
                         </h4>
                         <p className="text-sm text-gray-600">
-                          ${item.price.toFixed(2)} each
+                          ${(item.effective_price || item.price).toFixed(2)} each
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -307,7 +314,7 @@ function POSPage() {
                     </div>
                     <div className="mt-2 text-right">
                       <span className="text-sm font-medium text-gray-900">
-                        Subtotal: ${(item.price * item.quantity).toFixed(2)}
+                        Subtotal: ${((item.effective_price || item.price) * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   </div>

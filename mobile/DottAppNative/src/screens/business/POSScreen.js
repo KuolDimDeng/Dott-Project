@@ -650,14 +650,22 @@ export default function POSScreen() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.methodButton, paymentMethod === 'mpesa' && styles.methodActive]}
-                  onPress={() => setPaymentMethod('mpesa')}
+                  style={[styles.methodButton, paymentMethod === 'dott_qr' && styles.methodActive]}
+                  onPress={() => {
+                    setPaymentMethod('dott_qr');
+                    setShowPaymentModal(false);
+                    setShowQRScanner(true);
+                  }}
                 >
-                  <View style={[styles.mpesaLogo, paymentMethod === 'mpesa' && styles.mpesaLogoActive]}>
-                    <Text style={[styles.mpesaLogoText, paymentMethod === 'mpesa' && styles.mpesaLogoTextActive]}>M</Text>
-                  </View>
-                  <Text style={[styles.methodText, paymentMethod === 'mpesa' && styles.methodTextActive]}>
-                    M-Pesa
+                  <Image 
+                    source={require('../../assets/icon.png')} 
+                    style={[
+                      styles.dottQRLogo, 
+                      paymentMethod === 'dott_qr' && styles.dottQRLogoActive
+                    ]} 
+                  />
+                  <Text style={[styles.methodText, paymentMethod === 'dott_qr' && styles.methodTextActive]}>
+                    Dott (QR)
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1525,24 +1533,14 @@ const styles = StyleSheet.create({
   dottLogoActive: {
     tintColor: 'white',
   },
-  mpesaLogo: {
+  dottQRLogo: {
     width: 20,
     height: 20,
-    borderRadius: 10,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
+    resizeMode: 'contain',
+    tintColor: '#666',
   },
-  mpesaLogoActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  mpesaLogoText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  mpesaLogoTextActive: {
-    color: 'white',
+  dottQRLogoActive: {
+    tintColor: 'white',
   },
   mtnLogo: {
     width: 20,

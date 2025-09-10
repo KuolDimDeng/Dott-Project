@@ -82,7 +82,7 @@ export default function ProgressivePOSScreen() {
   const [discountType, setDiscountType] = useState('percentage');
   const [discountValue, setDiscountValue] = useState(0);
   const [cashReceived, setCashReceived] = useState('');
-  const [mpesaNumber, setMpesaNumber] = useState('');
+  // QR payment doesn't need phone number state
   const [mtnNumber, setMtnNumber] = useState('');
   const [customerNote, setCustomerNote] = useState('');
   
@@ -389,8 +389,8 @@ export default function ProgressivePOSScreen() {
       return;
     }
 
-    if (paymentMethod === 'mpesa' && !mpesaNumber) {
-      Alert.alert('M-Pesa Number Required', 'Please enter M-Pesa phone number');
+    if (paymentMethod === 'dott_qr') {
+      Alert.alert('QR Payment', 'QR code scanning will be implemented soon');
       return;
     }
 
@@ -417,7 +417,7 @@ export default function ProgressivePOSScreen() {
         currency: currency.code,
         cash_received: paymentMethod === 'cash' ? parseFloat(cashReceived) : null,
         change: paymentMethod === 'cash' ? change : null,
-        mpesa_number: paymentMethod === 'mpesa' ? mpesaNumber : null,
+        qr_payment: paymentMethod === 'dott_qr' ? true : null,
         mtn_number: paymentMethod === 'mtn' ? mtnNumber : null,
         note: customerNote,
         // Double-entry accounting data
@@ -465,7 +465,7 @@ export default function ProgressivePOSScreen() {
     setCart([]);
     setDiscountValue(0);
     setCashReceived('');
-    setMpesaNumber('');
+    // No QR reset needed
     setMtnNumber('');
     setCustomerNote('');
     setPaymentMethod('cash');
@@ -481,7 +481,7 @@ export default function ProgressivePOSScreen() {
     // Debit: Cash/Bank account (based on payment method)
     const debitAccount = paymentMethod === 'cash' ? 'Cash' : 
                          paymentMethod === 'card' ? 'Bank' : 
-                         paymentMethod === 'mpesa' ? 'M-Pesa Merchant' : 
+                         paymentMethod === 'dott_qr' ? 'Dott QR Payment' : 
                          paymentMethod === 'mtn' ? 'MTN MoMo Merchant' : 'Cash';
     
     entries.push({
@@ -918,14 +918,15 @@ export default function ProgressivePOSScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[styles.methodCard, paymentMethod === 'mpesa' && styles.methodActive]}
-              onPress={() => setPaymentMethod('mpesa')}
+              style={[styles.methodCard, paymentMethod === 'dott_qr' && styles.methodActive]}
+              onPress={() => setPaymentMethod('dott_qr')}
             >
-              <View style={[styles.mpesaIcon, paymentMethod === 'mpesa' && styles.mpesaIconActive]}>
-                <Text style={[styles.mpesaText, paymentMethod === 'mpesa' && styles.mpesaTextActive]}>M</Text>
-              </View>
-              <Text style={[styles.methodText, paymentMethod === 'mpesa' && styles.methodTextActive]}>
-                M-Pesa
+              <Image 
+                source={require('../../assets/icon.png')} 
+                style={[styles.dottQRLogo, paymentMethod === 'dott_qr' && styles.dottQRLogoActive]} 
+              />
+              <Text style={[styles.methodText, paymentMethod === 'dott_qr' && styles.methodTextActive]}>
+                Dott
               </Text>
             </TouchableOpacity>
             
@@ -984,18 +985,18 @@ export default function ProgressivePOSScreen() {
           </View>
         )}
 
-        {paymentMethod === 'mpesa' && (
-          <View style={styles.mpesaSection}>
-            <Text style={styles.sectionTitle}>M-Pesa Payment</Text>
-            <TextInput
-              style={styles.mpesaInput}
-              value={mpesaNumber}
-              onChangeText={setMpesaNumber}
-              keyboardType="phone-pad"
-              placeholder="Phone Number (07XXXXXXXX)"
-            />
-            <Text style={styles.mpesaInfo}>
-              Customer will receive a payment prompt
+        {paymentMethod === 'dott_qr' && (
+          <View style={styles.dottQRSection}>
+            <Text style={styles.sectionTitle}>Dott Payment</Text>
+            <View style={styles.qrPlaceholder}>
+              <Image 
+                source={require('../../assets/icon.png')} 
+                style={styles.qrDottLogo} 
+              />
+              <Text style={styles.qrText}>QR Scanner Coming Soon</Text>
+            </View>
+            <Text style={styles.dottQRInfo}>
+              Scan customer's QR or enter phone number
             </Text>
           </View>
         )}
@@ -1748,24 +1749,13 @@ const styles = StyleSheet.create({
   methodTextActive: {
     color: 'white',
   },
-  mpesaIcon: {
+  dottQRLogo: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#00875a',
-    justifyContent: 'center',
-    alignItems: 'center',
+    resizeMode: 'contain',
   },
-  mpesaIconActive: {
-    backgroundColor: 'white',
-  },
-  mpesaText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  mpesaTextActive: {
-    color: '#00875a',
+  dottQRLogoActive: {
+    // Keep same size for active state
   },
   cashSection: {
     backgroundColor: 'white',
@@ -1819,22 +1809,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#166534',
   },
-  mpesaSection: {
+  dottQRSection: {
     backgroundColor: 'white',
     marginHorizontal: 15,
     marginVertical: 10,
     padding: 15,
     borderRadius: 10,
   },
-  mpesaInput: {
-    fontSize: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+  qrPlaceholder: {
+    alignItems: 'center',
+    padding: 20,
     backgroundColor: '#f8f9fa',
     borderRadius: 10,
     marginBottom: 10,
   },
-  mpesaInfo: {
+  qrDottLogo: {
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
+    marginBottom: 10,
+  },
+  qrText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  dottQRInfo: {
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',

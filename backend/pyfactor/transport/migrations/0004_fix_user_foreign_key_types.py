@@ -8,7 +8,57 @@ from django.conf import settings
 def fix_user_foreign_keys(apps, schema_editor):
     """Fix foreign key constraints that have UUID/integer type mismatches - DEFENSIVE VERSION"""
     
+    print("🔧 [Transport 0004] Starting user foreign key fix...")
+    
     with schema_editor.connection.cursor() as cursor:
+        # First, check if this migration is already effectively applied
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM django_migrations 
+                WHERE app = 'transport' AND name = '0004_fix_user_foreign_key_types'
+            );
+        """)
+        already_applied = cursor.fetchone()[0]
+        
+        if already_applied:
+            print("ℹ️  [Transport 0004] Migration already marked as applied - checking if tables are correct")
+            
+            # If already applied, verify the tables are in correct state and exit
+            cursor.execute("""
+                SELECT table_name FROM information_schema.tables 
+                WHERE table_name IN ('transport_driver', 'transport_expense')
+            """)
+            existing_tables = [row[0] for row in cursor.fetchall()]
+            
+            all_correct = True
+            for table_name in existing_tables:
+                if table_name == 'transport_driver':
+                    cursor.execute("""
+                        SELECT data_type FROM information_schema.columns 
+                        WHERE table_name = 'transport_driver' AND column_name = 'user_id'
+                    """)
+                    result = cursor.fetchone()
+                    if result and result[0] not in ['bigint', 'integer']:
+                        all_correct = False
+                        print(f"⚠️  transport_driver.user_id still has wrong type: {result[0]}")
+                
+                elif table_name == 'transport_expense':
+                    cursor.execute("""
+                        SELECT data_type FROM information_schema.columns 
+                        WHERE table_name = 'transport_expense' AND column_name = 'created_by_id'
+                    """)
+                    result = cursor.fetchone()
+                    if result and result[0] not in ['bigint', 'integer']:
+                        all_correct = False
+                        print(f"⚠️  transport_expense.created_by_id still has wrong type: {result[0]}")
+            
+            if all_correct:
+                print("✅ All tables are in correct state - migration was previously successful")
+                return
+            else:
+                print("⚠️  Migration marked as applied but tables need fixing - proceeding with fixes")
+        else:
+            print("ℹ️  [Transport 0004] Migration not yet applied - proceeding with checks")
         # Check if transport_driver table exists
         cursor.execute("""
             SELECT EXISTS (
@@ -141,6 +191,56 @@ def fix_user_foreign_keys(apps, schema_editor):
         else:
             print("ℹ️  transport_expense table doesn't exist")
             
+        # Final verification and self-correction
+        driver_correct = True
+        expense_correct = True
+        
+        # Check transport_driver final state
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'transport_driver'
+            );
+        """)
+        if cursor.fetchone()[0]:
+            cursor.execute("""
+                SELECT data_type FROM information_schema.columns 
+                WHERE table_name = 'transport_driver' AND column_name = 'user_id'
+            """)
+            result = cursor.fetchone()
+            if result and result[0] not in ['bigint', 'integer']:
+                driver_correct = False
+        
+        # Check transport_expense final state  
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'transport_expense'
+            );
+        """)
+        if cursor.fetchone()[0]:
+            cursor.execute("""
+                SELECT data_type FROM information_schema.columns 
+                WHERE table_name = 'transport_expense' AND column_name = 'created_by_id'
+            """)
+            result = cursor.fetchone()
+            if result and result[0] not in ['bigint', 'integer']:
+                expense_correct = False
+        
+        # If tables are correct but migration isn't marked as applied, this will fix it
+        if driver_correct and expense_correct:
+            print("✅ All transport tables verified as correct")
+            
+            # Double-check if we're already marked as applied
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM django_migrations 
+                    WHERE app = 'transport' AND name = '0004_fix_user_foreign_key_types'
+                );
+            """)
+            if not cursor.fetchone()[0]:
+                print("ℹ️  Tables are correct but migration not marked - Django will auto-mark this migration")
+        
         print("✅ Transport foreign key migration completed successfully")
 
 

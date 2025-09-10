@@ -92,6 +92,12 @@ export const AuthProvider = ({ children }) => {
 
   const loadUser = async () => {
     try {
+      // Set a timeout to prevent infinite loading
+      const loadTimeout = setTimeout(() => {
+        console.log('⏰ Auth loading timeout, setting isLoading to false');
+        setIsLoading(false);
+      }, 10000); // 10 seconds timeout
+
       const userData = await AsyncStorage.getItem('userData');
       const mode = await AsyncStorage.getItem('userMode');
       const sessionId = await AsyncStorage.getItem('sessionId');
@@ -124,6 +130,8 @@ export const AuthProvider = ({ children }) => {
           }
         }
       }
+      
+      clearTimeout(loadTimeout);
     } catch (error) {
       console.error('Load user error:', error);
     } finally {
