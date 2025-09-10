@@ -48,7 +48,7 @@ export const businessApi = {
       
       // If offering courier services, we'll need to make a separate call
       // to register as a courier after business creation
-      const businessResponse = await api.post('/business/register/', requestData);
+      const businessResponse = await api.post('/users/business/register/', requestData);
       
       // If courier services are offered, register as courier too
       if (data.offers_courier_services && data.courier_data) {
@@ -76,7 +76,7 @@ export const businessApi = {
   getBusinessDetails: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/business/details/');
+      const response = await api.get('/users/business/details/');
       return response.data;
     } catch (error) {
       console.error('Get business details error:', error);
@@ -89,7 +89,7 @@ export const businessApi = {
     try {
       const api = await createApiInstance();
       // Try the business/update endpoint first (with trailing slash)
-      const response = await api.patch('/business/update/', data);
+      const response = await api.patch('/users/business/update/', data);
       return response.data;
     } catch (error) {
       console.error('Update business error:', error);
@@ -97,7 +97,7 @@ export const businessApi = {
       if (error.response?.status === 404) {
         try {
           const api = await createApiInstance();
-          const response = await api.patch('/business/details/update/', data);
+          const response = await api.patch('/users/business/details/update/', data);
           return response.data;
         } catch (fallbackError) {
           console.error('Fallback update business error:', fallbackError);
@@ -112,7 +112,7 @@ export const businessApi = {
   checkBusinessStatus: async () => {
     try {
       const api = await createApiInstance();
-      const response = await api.get('/business/check-status/');
+      const response = await api.get('/users/business/check-status/');
       return response.data;
     } catch (error) {
       console.error('Check business status error:', error);

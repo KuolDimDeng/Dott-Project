@@ -12,9 +12,9 @@ class HealthCheckService {
       { category: 'Auth', method: 'GET', path: '/users/me/', name: 'User Profile' },
       
       // Business Operations
-      { category: 'Business', method: 'GET', path: '/business/details/', name: 'Business Details' },
-      { category: 'Business', method: 'PATCH', path: '/business/update/', name: 'Business Update', testData: {} },
-      { category: 'Business', method: 'GET', path: '/business/register/', name: 'Business Registration' },
+      { category: 'Business', method: 'GET', path: '/users/business/details/', name: 'Business Details' },
+      { category: 'Business', method: 'PATCH', path: '/users/business/update/', name: 'Business Update', testData: {} },
+      { category: 'Business', method: 'POST', path: '/users/business/register/', name: 'Business Registration', testData: {} },
       
       // Marketplace
       { category: 'Marketplace', method: 'GET', path: '/marketplace/business/listing/', name: 'Marketplace Listing' },
