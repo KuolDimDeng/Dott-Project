@@ -12,7 +12,6 @@ CORE_FEATURES = [
     'inventory', 
     'customers',
     'invoicing',
-    'messages',
     'banking',
     'menu',  # For restaurants/food businesses
     'orders',  # For service/retail businesses
@@ -31,7 +30,6 @@ FEATURE_PRICING = {
     'inventory': 0,
     'customers': 0,
     'invoicing': 0,
-    'messages': 0,
     'banking': 0,
     'menu': 0,  # Free for restaurants/food businesses
     'orders': 0,  # Free for all businesses
@@ -84,7 +82,6 @@ class FeatureAccessService:
             'dashboard',
             'customers',
             'invoicing',
-            'messages',
             'banking',
             'orders',
             'discover',

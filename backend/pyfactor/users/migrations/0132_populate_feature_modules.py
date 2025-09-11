@@ -54,15 +54,6 @@ def create_initial_features(apps, schema_editor):
             'is_core': True,
         },
         {
-            'code': 'messages',
-            'name': 'Messages & Chat',
-            'description': 'Unlimited messaging, voice and video calls',
-            'category': 'core',
-            'monthly_price': 0.00,
-            'developing_country_price': 0.00,
-            'is_core': True,
-        },
-        {
             'code': 'banking',
             'name': 'Banking',
             'description': 'Bank account connections and reconciliation',
