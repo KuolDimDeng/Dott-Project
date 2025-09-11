@@ -216,10 +216,25 @@ class FeatureApi {
       case 'SERVICE':
       case 'CONSULTING':
       case 'PROFESSIONAL':
-        return baseFeatures;
+      case 'CONTRACTOR':
+        // Service businesses get jobs/projects for free
+        return [...baseFeatures, 'jobs'];
+      
+      case 'TRANSPORT':
+      case 'LOGISTICS':
+      case 'DELIVERY':
+      case 'TRUCKING':
+        // Transport businesses get transport and courier features for free
+        return [...baseFeatures, 'transport', 'courier'];
+      
+      case 'COURIER':
+      case 'DELIVERY_SERVICE':
+      case 'MESSENGER':
+        // Courier businesses get courier feature for free
+        return [...baseFeatures, 'courier'];
       
       default:
-        // Mixed/Other businesses get everything
+        // Mixed/Other businesses get POS, inventory, and menu
         return [...baseFeatures, 'pos', 'inventory', 'menu'];
     }
   }

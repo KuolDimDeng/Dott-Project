@@ -98,12 +98,17 @@ class FeatureAccessService:
         elif business_type in ['RESTAURANT', 'FOOD', 'CAFE', 'BAR']:
             # Food businesses get POS, inventory, and menu
             base_features.extend(['pos', 'inventory', 'menu'])
-        elif business_type in ['SERVICE', 'CONSULTING', 'PROFESSIONAL']:
-            # Service businesses focus on orders and invoicing
-            # They already have orders and invoicing in base
-            pass
+        elif business_type in ['SERVICE', 'CONSULTING', 'PROFESSIONAL', 'CONTRACTOR']:
+            # Service businesses get jobs/projects for free
+            base_features.extend(['jobs'])
+        elif business_type in ['TRANSPORT', 'LOGISTICS', 'DELIVERY', 'TRUCKING']:
+            # Transport businesses get transport and courier features for free
+            base_features.extend(['transport', 'courier'])
+        elif business_type in ['COURIER', 'DELIVERY_SERVICE', 'MESSENGER']:
+            # Courier businesses get courier feature for free
+            base_features.extend(['courier'])
         else:
-            # Mixed/Other businesses get everything
+            # Mixed/Other businesses get POS, inventory, and menu
             base_features.extend(['pos', 'inventory', 'menu'])
         
         return base_features
