@@ -51,7 +51,7 @@ class Migration(migrations.Migration):
                 ('paused_at', models.DateTimeField(blank=True, null=True)),
                 ('completed_at', models.DateTimeField(blank=True, null=True)),
                 ('business', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='advertising_campaigns', to='users.business')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_campaigns', to='auth.user')),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_campaigns', to='custom_auth.user')),
             ],
             options={
                 'ordering': ['-created_at'],
