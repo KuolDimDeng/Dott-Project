@@ -25,10 +25,16 @@ def fix_support_business():
         user = User.objects.get(email='support@dottapps.com')
         print(f"✅ Found user: {user.email} (ID: {user.id})")
         
+        # Convert integer ID to UUID format (padded with zeros)
+        # Format: 00000000-0000-0000-0000-0000000000fa (where fa = 250 in hex)
+        import uuid
+        business_uuid = uuid.UUID(f'00000000-0000-0000-0000-{user.id:012x}')
+        print(f"📦 Business UUID: {business_uuid}")
+        
         # Use raw SQL to update or create the business
         with connection.cursor() as cursor:
             # Check if business exists
-            cursor.execute("SELECT id FROM users_business WHERE id = %s", [user.id])
+            cursor.execute("SELECT id FROM users_business WHERE id = %s", [str(business_uuid)])
             business_exists = cursor.fetchone()
             
             if business_exists:
@@ -59,7 +65,7 @@ def fix_support_business():
                     '123 Restaurant Street',
                     'Juba',
                     'SS',
-                    user.id
+                    str(business_uuid)
                 ])
                 print(f"✅ Updated existing business to RESTAURANT_CAFE")
             else:
@@ -76,7 +82,7 @@ def fix_support_business():
                         NOW(), NOW()
                     )
                 """, [
-                    user.id,  # id
+                    str(business_uuid),  # id
                     'Dott Restaurant & Cafe',  # name
                     'RESTAURANT_CAFE',  # business_type
                     'RESTAURANT',  # simplified_business_type
@@ -89,21 +95,21 @@ def fix_support_business():
                     'Juba',  # city
                     'SS',  # country
                     'local',  # primary_interaction_type (using 'local' as a safe default)
-                    user.id  # tenant_id should match user id
+                    str(business_uuid)  # tenant_id should match business id
                 ])
                 print(f"✅ Created new business as RESTAURANT_CAFE")
         
         # Update or create user profile
         user_profile, profile_created = UserProfile.objects.get_or_create(
             user=user,
-            defaults={'business_id': user.id}
+            defaults={'business_id': business_uuid}
         )
         if not profile_created:
-            user_profile.business_id = user.id
+            user_profile.business_id = business_uuid
             user_profile.save()
-            print(f"✅ Updated existing user profile - business_id: {user.id}")
+            print(f"✅ Updated existing user profile - business_id: {business_uuid}")
         else:
-            print(f"✅ Created user profile with business_id: {user.id}")
+            print(f"✅ Created user profile with business_id: {business_uuid}")
         
         print(f"\n✅ Successfully updated support@dottapps.com to RESTAURANT_CAFE business type")
         print(f"📍 Business Name: Dott Restaurant & Cafe")
