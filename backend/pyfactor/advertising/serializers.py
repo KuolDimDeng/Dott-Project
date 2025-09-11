@@ -51,9 +51,11 @@ class AdvertisingCampaignSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """
-        Create campaign with tenant and user
+        Create campaign with tenant and user, auto-activate if free
         """
         request = self.context.get('request')
+        auto_activate = validated_data.pop('auto_activate', False)
+        
         if request and hasattr(request, 'user'):
             validated_data['created_by'] = request.user
             validated_data['tenant'] = request.user.tenant
@@ -69,7 +71,14 @@ class AdvertisingCampaignSerializer(serializers.ModelSerializer):
             except:
                 pass
         
-        return super().create(validated_data)
+        # Create the campaign
+        campaign = super().create(validated_data)
+        
+        # Auto-activate if it's a free campaign
+        if auto_activate or validated_data.get('payment_method') == 'free':
+            campaign.activate()
+        
+        return campaign
 
 
 class CampaignAnalyticsSerializer(serializers.ModelSerializer):

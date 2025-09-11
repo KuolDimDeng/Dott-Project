@@ -20,10 +20,10 @@ import { useAuth } from '../../context/AuthContext';
 import advertisingApi from '../../services/advertisingApi';
 
 const CAMPAIGN_TYPES = [
-  { id: 'featured', name: 'Featured Listing', icon: 'star', price: 50, duration: '7 days' },
-  { id: 'banner', name: 'Banner Ad', icon: 'image', price: 100, duration: '7 days' },
-  { id: 'spotlight', name: 'Spotlight', icon: 'flash', price: 150, duration: '7 days' },
-  { id: 'premium', name: 'Premium Package', icon: 'diamond', price: 250, duration: '30 days' },
+  { id: 'featured', name: 'Featured Listing', icon: 'star', price: 'FREE', duration: 'Custom duration' },
+  { id: 'banner', name: 'Banner Ad', icon: 'image', price: 'FREE', duration: 'Custom duration' },
+  { id: 'spotlight', name: 'Spotlight', icon: 'flash', price: 'FREE', duration: 'Custom duration' },
+  { id: 'premium', name: 'Premium Package', icon: 'diamond', price: 'FREE', duration: 'Custom duration' },
 ];
 
 const PLATFORMS = [
@@ -136,16 +136,8 @@ const CreateCampaignScreen = ({ navigation, route }) => {
   };
 
   const calculatePrice = () => {
-    const campaignType = CAMPAIGN_TYPES.find(t => t.id === campaignData.type);
-    const days = Math.ceil((campaignData.end_date - campaignData.start_date) / (1000 * 60 * 60 * 24));
-    const basePrice = campaignType?.price || 50;
-    
-    // Add platform multipliers
-    let multiplier = 1;
-    if (campaignData.platforms.includes('homepage')) multiplier += 0.5;
-    if (campaignData.platforms.includes('discovery')) multiplier += 0.3;
-    
-    return Math.round(basePrice * (days / 7) * multiplier);
+    // All campaigns are now completely free
+    return 0;
   };
 
   const validateCampaign = () => {
@@ -190,7 +182,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
         }
       }
 
-      // Prepare campaign data
+      // Prepare campaign data - now completely free
       const submitData = {
         name: campaignData.name,
         description: campaignData.description,
@@ -201,16 +193,17 @@ const CreateCampaignScreen = ({ navigation, route }) => {
         target_keywords: campaignData.target_keywords || '',
         start_date: campaignData.start_date,
         end_date: campaignData.end_date,
-        total_budget: calculatePrice(),
-        daily_budget: campaignData.daily_budget || Math.ceil(calculatePrice() / Math.ceil((campaignData.end_date - campaignData.start_date) / (1000 * 60 * 60 * 24))),
+        total_budget: 0, // Free campaigns
+        daily_budget: 0, // Free campaigns
         image_url: imageUrl,
         banner_text: campaignData.description,
         call_to_action: campaignData.call_to_action || 'Learn More',
         landing_url: campaignData.landing_url || '',
-        payment_method: 'mobile_money',
+        payment_method: 'free', // Mark as free
+        auto_activate: true, // Auto-activate without payment
       };
 
-      console.log('📤 Submitting campaign data:', submitData);
+      console.log('📤 Submitting free campaign data:', submitData);
 
       let response;
       if (editMode && existingCampaign?.id) {
@@ -220,23 +213,26 @@ const CreateCampaignScreen = ({ navigation, route }) => {
       }
 
       if (response.success) {
-        const campaignId = response.data.id;
-        console.log('✅ Campaign created with ID:', campaignId);
+        console.log('✅ Free campaign created and activated:', response.data.id);
         
-        // Show payment options for new campaigns
         if (!editMode) {
           Alert.alert(
-            'Campaign Created',
-            `Your campaign has been created successfully! To activate it and start showing in the marketplace, please proceed with payment.`,
+            'Campaign Activated! 🎉',
+            'Your FREE advertising campaign is now live and will appear prominently in the marketplace. Customers will see your business featured in search results.',
             [
               {
-                text: 'Pay with M-Pesa',
-                onPress: () => handleMobileMoneyPayment(campaignId, calculatePrice()),
+                text: 'View in Marketplace',
+                onPress: () => {
+                  navigation.navigate('MainTabs', { 
+                    screen: 'Marketplace',
+                    params: { refresh: true }
+                  });
+                },
               },
               {
-                text: 'Save Draft',
+                text: 'Campaign Dashboard',
                 onPress: () => navigation.navigate('AdvertiseScreen'),
-                style: 'cancel',
+                style: 'default',
               },
             ]
           );
@@ -258,72 +254,6 @@ const CreateCampaignScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleMobileMoneyPayment = async (campaignId, amount) => {
-    try {
-      // Show payment instructions
-      Alert.alert(
-        'M-Pesa Payment Instructions',
-        `To activate your campaign, please send ${amount} SSP to:\n\nM-Pesa Number: 0955 123 456\nReference: CAMP${campaignId}\n\nAfter sending, click "I've Paid" to activate your campaign.`,
-        [
-          {
-            text: "I've Paid",
-            onPress: () => activateCampaign(campaignId, {
-              payment_method: 'mobile_money',
-              payment_reference: `CAMP${campaignId}`,
-              amount: amount,
-            }),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => navigation.navigate('AdvertiseScreen'),
-          },
-        ]
-      );
-    } catch (error) {
-      console.error('Payment error:', error);
-      Alert.alert('Error', 'Payment processing failed');
-    }
-  };
-
-  const activateCampaign = async (campaignId, paymentData) => {
-    try {
-      setLoading(true);
-      console.log('🔥 Activating campaign:', campaignId);
-      
-      const response = await advertisingApi.activateCampaign(campaignId, paymentData);
-      
-      if (response.success) {
-        Alert.alert(
-          'Campaign Activated! 🎉',
-          'Your campaign is now live and will appear prominently in the marketplace. Customers will see your business featured in search results.',
-          [
-            {
-              text: 'View in Marketplace',
-              onPress: () => {
-                navigation.navigate('MainTabs', { 
-                  screen: 'Marketplace',
-                  params: { refresh: true }
-                });
-              },
-            },
-            {
-              text: 'Campaign Dashboard',
-              onPress: () => navigation.navigate('AdvertiseScreen'),
-              style: 'default',
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Activation Failed', response.message || 'Failed to activate campaign. Please contact support.');
-      }
-    } catch (error) {
-      console.error('Campaign activation error:', error);
-      Alert.alert('Error', 'Failed to activate campaign. Please try again or contact support.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const togglePlatform = (platformId) => {
     setCampaignData(prev => ({
@@ -385,7 +315,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
               ]}>
                 {type.name}
               </Text>
-              <Text style={styles.typePrice}>${type.price}/{type.duration}</Text>
+              <Text style={styles.typePrice}>{type.price} - {type.duration}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -582,14 +512,14 @@ const CreateCampaignScreen = ({ navigation, route }) => {
         
         <View style={styles.summaryRow}>
           <Text style={styles.totalLabel}>Total Cost:</Text>
-          <Text style={styles.totalValue}>${calculatePrice()}</Text>
+          <Text style={styles.totalValue}>FREE</Text>
         </View>
       </View>
 
       <View style={styles.paymentNote}>
-        <Icon name="information-circle" size={20} color="#f59e0b" />
-        <Text style={styles.paymentNoteText}>
-          Your campaign will be activated immediately after payment
+        <Icon name="checkmark-circle" size={20} color="#10b981" />
+        <Text style={styles.freeNoteText}>
+          Your campaign will be activated immediately - completely FREE!
         </Text>
       </View>
     </View>
@@ -689,7 +619,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
             disabled={loading}
           >
             <Text style={styles.submitButtonText}>
-              {editMode ? 'Update Campaign' : 'Create & Pay'}
+              {editMode ? 'Update Campaign' : 'Create FREE Campaign'}
             </Text>
           </TouchableOpacity>
         )}
@@ -997,6 +927,13 @@ const styles = StyleSheet.create({
     color: '#92400e',
     marginLeft: 10,
     flex: 1,
+  },
+  freeNoteText: {
+    fontSize: 14,
+    color: '#065f46',
+    marginLeft: 10,
+    flex: 1,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
