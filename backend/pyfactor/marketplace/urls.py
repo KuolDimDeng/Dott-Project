@@ -37,6 +37,9 @@ urlpatterns = [
     # New mobile app business endpoints
     path('business/listing/', BusinessListingViewSet.as_view({'get': 'listing', 'patch': 'listing'}), name='business-listing'),
     path('business/operating-hours/', BusinessListingViewSet.as_view({'patch': 'operating_hours'}), name='business-operating-hours'),
+    path('business/subcategories/', BusinessListingViewSet.as_view({'patch': 'subcategories'}), name='business-subcategories'),
+    path('business/sync-products/', BusinessListingViewSet.as_view({'post': 'sync_products'}), name='business-sync-products'),
+    path('business/analytics/', BusinessListingViewSet.as_view({'get': 'analytics'}), name='business-analytics'),
     path('business/products/', BusinessListingViewSet.as_view({'get': 'products', 'post': 'products'}), name='business-products-management'),
     
     # Placeholder business inquiry endpoints

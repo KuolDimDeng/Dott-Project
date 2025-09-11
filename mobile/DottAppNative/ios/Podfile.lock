@@ -2404,6 +2404,8 @@ PODS:
     - React-Core
   - RNCPicker (2.11.1):
     - React-Core
+  - RNDateTimePicker (8.4.4):
+    - React-Core
   - RNGestureHandler (2.28.0):
     - boost
     - DoubleConversion
@@ -2640,7 +2642,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNSVG (15.12.1):
+  - RNSVG (15.13.0):
     - React-Core
   - RNVectorIcons (10.3.0):
     - boost
@@ -2798,6 +2800,7 @@ DEPENDENCIES:
   - ReactNativeIncallManager (from `../node_modules/react-native-incall-manager`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCPicker (from `../node_modules/@react-native-picker/picker`)"
+  - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
@@ -2999,6 +3002,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNCPicker:
     :path: "../node_modules/@react-native-picker/picker"
+  RNDateTimePicker:
+    :path: "../node_modules/@react-native-community/datetimepicker"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNPermissions:
@@ -3108,12 +3113,13 @@ SPEC CHECKSUMS:
   ReactNativeIncallManager: 65a85aed033c1d9ec66f98a943cca51c61a210e9
   RNCAsyncStorage: ec53e44dc3e75b44aa2a9f37618a49c3bc080a7a
   RNCPicker: 55f4c211f69edb5c7a0faf85933e36c3621ebf64
+  RNDateTimePicker: 7ba9064ff26e62ef59d9fb337387b33f6540ab1c
   RNGestureHandler: 4e01eefc427d3af22b877fdb4f7bc826132daab6
   RNPermissions: f4df15c4027ee5093d0436c67868216c046da115
   RNReanimated: 1d9e9249c9e4222881b7107e52b52f4a9ee879b6
   RNScreens: 98ec6cf825046e56c672f01b78fdf8c2710f4a9c
   RNShare: e51269cfd18df490b4ca6fb763493de9c9c92fdd
-  RNSVG: 3e87821b2215b30e19f90232247007e5c313a06c
+  RNSVG: 4edfc63937f4673436fac1a3a110e62c8f8adda1
   RNVectorIcons: db7630db4a5f05d808f5c7990781cbe7bb160b4f
   SimpleKeychain: 768cf43ae778b1c21816e94dddf01bb8ee96a075
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748

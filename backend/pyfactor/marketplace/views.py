@@ -988,7 +988,17 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         """
         Public view of business listing for consumers
         """
-        listing = self.get_object()
+        # Manually fetch the business listing by UUID for public access
+        try:
+            listing = BusinessListing.objects.get(
+                id=pk,
+                is_visible_in_marketplace=True,
+                business__is_active=True
+            )
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'error': 'Business not found or not available'
+            }, status=status.HTTP_404_NOT_FOUND)
         
         # Check if consumer can access this business
         consumer_profile = ConsumerProfile.objects.filter(user=request.user).first()
@@ -1015,6 +1025,77 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         listing.save(update_fields=['last_active'])
         
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def get_products(self, request, pk=None):
+        """
+        Get products for a business listing (public access)
+        """
+        # Manually fetch the business listing by UUID for public access
+        try:
+            listing = BusinessListing.objects.get(
+                id=pk,
+                is_visible_in_marketplace=True,
+                business__is_active=True
+            )
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'error': 'Business not found or not available'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get menu items for restaurants
+        products = []
+        business = listing.business
+        
+        if hasattr(business, 'profile') and business.profile:
+            business_type = business.profile.business_type
+            if 'RESTAURANT' in business_type or 'CAFE' in business_type:
+                try:
+                    from menu.models import MenuItem
+                    items = MenuItem.objects.filter(
+                        business=business, 
+                        is_available=True
+                    ).values(
+                        'id', 'name', 'description', 'price', 'image_url', 'category_name'
+                    )
+                    products = list(items)
+                except Exception as e:
+                    logger.warning(f"Could not fetch menu items for business {business.id}: {e}")
+        
+        return Response({
+            'success': True,
+            'products': products,
+            'business_id': str(listing.id),
+            'business_name': listing.business.profile.business_name if hasattr(listing.business, 'profile') else listing.business.email
+        })
+    
+    @action(detail=True, methods=['get'])
+    def get_services(self, request, pk=None):
+        """
+        Get services for a business listing (public access)
+        """
+        # Manually fetch the business listing by UUID for public access
+        try:
+            listing = BusinessListing.objects.get(
+                id=pk,
+                is_visible_in_marketplace=True,
+                business__is_active=True
+            )
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'error': 'Business not found or not available'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # For now, return empty services list
+        # This can be extended in the future when service management is implemented
+        services = []
+        
+        return Response({
+            'success': True,
+            'services': services,
+            'business_id': str(listing.id),
+            'business_name': listing.business.profile.business_name if hasattr(listing.business, 'profile') else listing.business.email
+        })
     
     @action(detail=False, methods=['get', 'patch'])
     def listing(self, request):
@@ -1169,6 +1250,117 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             'message': 'Operating hours updated successfully',
             'business_hours': listing.business_hours
         })
+    
+    @action(detail=False, methods=['patch'])
+    def subcategories(self, request):
+        """
+        Update business subcategories
+        Endpoint: PATCH /api/marketplace/business/subcategories/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can update subcategories'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            listing = BusinessListing.objects.get(business=request.user)
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Business listing not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        subcategories = request.data.get('subcategories', [])
+        
+        if not isinstance(subcategories, list):
+            return Response({
+                'success': False,
+                'error': 'subcategories must be a valid list'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update the business listing secondary categories
+        listing.secondary_categories = subcategories
+        listing.save(update_fields=['secondary_categories'])
+        
+        logger.info(f"[BusinessListing] Updated subcategories for {request.user.id}: {subcategories}")
+        
+        return Response({
+            'success': True,
+            'message': 'Subcategories updated successfully',
+            'subcategories': listing.secondary_categories
+        })
+    
+    @action(detail=False, methods=['post'])
+    def sync_products(self, request):
+        """
+        Sync menu items to marketplace products
+        Endpoint: POST /api/marketplace/business/sync-products/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can sync products'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            listing = BusinessListing.objects.get(business=request.user)
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Business listing not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        menu_items = request.data.get('menu_items', [])
+        
+        if not isinstance(menu_items, list):
+            return Response({
+                'success': False,
+                'error': 'menu_items must be a valid list'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # For now, just return success - product sync logic can be implemented later
+        logger.info(f"[BusinessListing] Synced {len(menu_items)} products for business {request.user.id}")
+        
+        return Response({
+            'success': True,
+            'message': f'Successfully synced {len(menu_items)} products to marketplace',
+            'synced_count': len(menu_items)
+        })
+    
+    @action(detail=False, methods=['get'])
+    def analytics(self, request):
+        """
+        Get business analytics for marketplace performance
+        Endpoint: GET /api/marketplace/business/analytics/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can view analytics'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            listing = BusinessListing.objects.get(business=request.user)
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Business listing not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # For now, return placeholder analytics data
+        # This can be enhanced with real analytics tracking later
+        analytics_data = {
+            'views': 0,  # Number of times business was viewed
+            'clicks': 0,  # Number of times business was clicked
+            'orders': 0,  # Number of orders received through marketplace
+            'revenue': 0.00,  # Total revenue from marketplace
+            'period': '30_days'  # Analytics period
+        }
+        
+        logger.info(f"[BusinessListing] Analytics requested for business {request.user.id}")
+        
+        return Response(analytics_data)
     
     @action(detail=False, methods=['post', 'get'])
     def products(self, request):

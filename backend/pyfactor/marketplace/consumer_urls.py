@@ -16,7 +16,7 @@ from .placeholder_views import (
 
 urlpatterns = [
     # Placeholder businesses endpoints (main marketplace)
-    path('businesses/', get_marketplace_businesses, name='marketplace-businesses'),
+    path('businesses/', ConsumerSearchViewSet.as_view({'get': 'marketplace_businesses'}), name='marketplace-businesses'),
     path('businesses/categories/', get_business_categories, name='business-categories'),
     path('businesses/featured/', ConsumerSearchViewSet.as_view({'get': 'featured'}), name='featured-businesses'),
     

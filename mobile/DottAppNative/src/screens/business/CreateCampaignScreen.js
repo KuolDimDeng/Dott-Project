@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+// import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'react-native-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import advertisingApi from '../../services/advertisingApi';
@@ -390,7 +390,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
             {campaignData.start_date.toLocaleDateString()}
           </Text>
         </TouchableOpacity>
-        {showStartPicker && (
+        {/* showStartPicker && (
           <DateTimePicker
             value={campaignData.start_date}
             mode="date"
@@ -403,7 +403,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
               }
             }}
           />
-        )}
+        ) */}
       </View>
 
       <View style={styles.inputGroup}>
@@ -417,7 +417,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
             {campaignData.end_date.toLocaleDateString()}
           </Text>
         </TouchableOpacity>
-        {showEndPicker && (
+        {/* showEndPicker && (
           <DateTimePicker
             value={campaignData.end_date}
             mode="date"
@@ -430,7 +430,7 @@ const CreateCampaignScreen = ({ navigation, route }) => {
               }
             }}
           />
-        )}
+        ) */}
       </View>
 
       <View style={styles.inputGroup}>

@@ -88,11 +88,11 @@ export default function PersonalInfoScreen({ navigation }) {
     if (user) {
       // First, try to get the full profile from the API
       try {
-        const response = await api.get('/users/profile/');
+        const response = await api.get('/api/users/me/');
         console.log('📝 PersonalInfo - Full API response:', response.data);
         
-        // The response has nested structure: { data: { profile: {...} } }
-        const profileData = response.data?.data?.profile || response.data?.profile || response.data;
+        // The /api/users/me/ returns a flat structure
+        const profileData = response.data;
         
         console.log('📝 PersonalInfo - Extracted profile data:', profileData);
         console.log('📝 PersonalInfo - Location fields:', {
