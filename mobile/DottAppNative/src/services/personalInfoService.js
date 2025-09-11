@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { BASE_URL } from '../config/environment';
+import axios from 'axios';
 
 const PENDING_PERSONAL_INFO_KEY = '@pending_personal_info';
 const CACHED_PERSONAL_INFO_KEY = '@cached_personal_info';
@@ -84,30 +85,28 @@ class PersonalInfoService {
       console.log('📤 Request data:', personalInfo);
       console.log('🔑 Session token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'missing');
       
-      const response = await fetch(`${BASE_URL}/api/users/me/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Session ${sessionToken}`,
-        },
-        body: JSON.stringify(personalInfo)
-      });
+      const response = await axios.patch(
+        `${BASE_URL}/api/users/me/`,
+        personalInfo,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Session ${sessionToken}`,
+          }
+        }
+      );
 
       console.log('📥 Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Error response:', errorData);
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
       console.log('✅ Personal info synced successfully');
-      console.log('📥 Response data:', data);
+      console.log('📥 Response data:', response.data);
       
-      return data;
+      return response.data;
     } catch (error) {
       console.error('❌ Backend sync failed:', error);
+      if (error.response) {
+        console.error('❌ Error response:', error.response.data);
+        throw new Error(error.response.data.error || `HTTP ${error.response.status}`);
+      }
       throw error;
     }
   }
