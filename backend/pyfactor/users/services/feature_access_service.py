@@ -5,7 +5,7 @@ Determines which features a user/business can access
 from django.conf import settings
 from users.services.proration_service import TEST_ACCOUNTS, TESTING_MODE
 
-# Core features that are always free
+# Core features that are always free (may vary by business type)
 CORE_FEATURES = [
     'dashboard',
     'pos',
@@ -14,8 +14,9 @@ CORE_FEATURES = [
     'invoicing',
     'messages',
     'banking',
-    'marketplace',
-    'discover',
+    'menu',  # For restaurants/food businesses
+    'orders',  # For service/retail businesses
+    'discover',  # Marketplace discovery (already in footer)
     'advertise',
     'invite',
     'qr_code',
@@ -32,7 +33,9 @@ FEATURE_PRICING = {
     'invoicing': 0,
     'messages': 0,
     'banking': 0,
-    'marketplace': 0,
+    'menu': 0,  # Free for restaurants/food businesses
+    'orders': 0,  # Free for all businesses
+    'discover': 0,  # Free marketplace discovery
     
     # À la carte modules
     'payroll': 15.00,  # $15/month
@@ -66,6 +69,49 @@ class FeatureAccessService:
     """Service to check feature access for users"""
     
     @staticmethod
+    def get_business_core_features(business_type):
+        """
+        Get core features based on business type
+        
+        Args:
+            business_type: Business type (SERVICE, RETAIL, RESTAURANT, etc.)
+            
+        Returns:
+            List of core feature codes for this business type
+        """
+        # Base features for all businesses
+        base_features = [
+            'dashboard',
+            'customers',
+            'invoicing',
+            'messages',
+            'banking',
+            'orders',
+            'discover',
+            'advertise',
+            'invite',
+            'qr_code',
+            'business_wallet'
+        ]
+        
+        # Add business type specific features
+        if business_type in ['RETAIL', 'GROCERY', 'PHARMACY', 'SHOP']:
+            # Retail businesses get POS and inventory
+            base_features.extend(['pos', 'inventory'])
+        elif business_type in ['RESTAURANT', 'FOOD', 'CAFE', 'BAR']:
+            # Food businesses get POS, inventory, and menu
+            base_features.extend(['pos', 'inventory', 'menu'])
+        elif business_type in ['SERVICE', 'CONSULTING', 'PROFESSIONAL']:
+            # Service businesses focus on orders and invoicing
+            # They already have orders and invoicing in base
+            pass
+        else:
+            # Mixed/Other businesses get everything
+            base_features.extend(['pos', 'inventory', 'menu'])
+        
+        return base_features
+    
+    @staticmethod
     def has_feature_access(user, feature_code):
         """
         Check if user has access to a specific feature
@@ -85,9 +131,17 @@ class FeatureAccessService:
         if TESTING_MODE:
             return True
         
-        # Core features are always available
-        if feature_code in CORE_FEATURES:
-            return True
+        # Get business-specific core features
+        if hasattr(user, 'business') and user.business:
+            business_type = getattr(user.business, 'simplified_business_type', 'OTHER')
+            core_features = FeatureAccessService.get_business_core_features(business_type)
+            
+            if feature_code in core_features:
+                return True
+        else:
+            # No business, check against general core features
+            if feature_code in CORE_FEATURES:
+                return True
         
         # Check if feature module is enabled for business
         from users.models import BusinessFeatureModule, FeatureModule
@@ -127,9 +181,17 @@ class FeatureAccessService:
         """
         from users.models import BusinessFeatureModule, FeatureModule
         
+        # Get business-specific core features
+        if hasattr(user, 'business') and user.business:
+            business_type = getattr(user.business, 'simplified_business_type', 'OTHER')
+            core_features = FeatureAccessService.get_business_core_features(business_type)
+        else:
+            core_features = CORE_FEATURES.copy()
+        
         # Start with core features
         features = {
-            'core': CORE_FEATURES.copy(),
+            'core': core_features,
+            'business_type': getattr(user.business, 'simplified_business_type', 'OTHER') if hasattr(user, 'business') else None,
             'enabled_modules': [],
             'available_modules': [],
             'is_test_account': user.email in TEST_ACCOUNTS,
