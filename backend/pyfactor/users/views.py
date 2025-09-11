@@ -210,7 +210,14 @@ class ProfileView(APIView):
                     'tenant_name': user_profile.tenant.name if user_profile.tenant else None,
                     'database_status': user_profile.tenant.database_status if user_profile.tenant else 'not_created',
                     'setup_status': user_profile.tenant.setup_status if user_profile.tenant else 'pending',
-                    'last_setup_attempt': user_profile.tenant.last_setup_attempt.isoformat() if user_profile.tenant and user_profile.tenant.last_setup_attempt else None
+                    'last_setup_attempt': user_profile.tenant.last_setup_attempt.isoformat() if user_profile.tenant and user_profile.tenant.last_setup_attempt else None,
+                    # Add location fields
+                    'latitude': str(user_profile.latitude) if user_profile.latitude else None,
+                    'longitude': str(user_profile.longitude) if user_profile.longitude else None,
+                    'location_accuracy': user_profile.location_accuracy,
+                    'location_address': user_profile.location_address,
+                    'landmark': user_profile.landmark,
+                    'area_description': user_profile.area_description,
                 }
             }
 
@@ -240,7 +247,7 @@ class ProfileView(APIView):
                 "message": str(e) if settings.DEBUG else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def patch(self, request):
+    def put(self, request):
         """
         Update user profile information including first_name and last_name
         """
@@ -299,6 +306,13 @@ class ProfileView(APIView):
                     'phone_number': user_profile.phone_number,
                     'is_business_owner': user_profile.is_business_owner,
                     'tenant_name': user_profile.tenant.name if user_profile.tenant else None,
+                    # Add location fields
+                    'latitude': str(user_profile.latitude) if user_profile.latitude else None,
+                    'longitude': str(user_profile.longitude) if user_profile.longitude else None,
+                    'location_accuracy': user_profile.location_accuracy,
+                    'location_address': user_profile.location_address,
+                    'landmark': user_profile.landmark,
+                    'area_description': user_profile.area_description,
                 }
             }
             
@@ -318,6 +332,12 @@ class ProfileView(APIView):
                 "error": "Failed to update profile",
                 "message": str(e) if settings.DEBUG else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """
+        Alias for PUT method to support both PATCH and PUT
+        """
+        return self.put(request)
 
 class UserMenuPrivilegeViewSet(TenantIsolatedViewSet):
     """
