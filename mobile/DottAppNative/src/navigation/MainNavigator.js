@@ -136,15 +136,17 @@ function TabNavigator() {
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: '#9ca3af',
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 104,
+          paddingBottom: 35,
+          paddingTop: 0,
           backgroundColor: '#14532d',
           borderTopWidth: 0,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
+          marginTop: -20,
+          marginBottom: 0,
         },
         headerShown: false,
       })}

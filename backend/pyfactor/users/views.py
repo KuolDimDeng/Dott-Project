@@ -239,6 +239,57 @@ class ProfileView(APIView):
                 "code": "server_error",
                 "message": str(e) if settings.DEBUG else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """
+        Update user profile information including first_name and last_name
+        """
+        try:
+            user = request.user
+            
+            # Get or create user profile
+            user_profile, created = UserProfile.objects.get_or_create(user=user)
+            
+            # Update User model fields (first_name, last_name)
+            if 'first_name' in request.data:
+                user.first_name = request.data.get('first_name', '')
+            if 'last_name' in request.data:
+                user.last_name = request.data.get('last_name', '')
+            
+            # Save user changes
+            user.save()
+            
+            # Update UserProfile fields
+            profile_fields = [
+                'phone_number', 'street', 'city', 'state', 'postcode', 
+                'country', 'latitude', 'longitude', 'location_accuracy',
+                'location_address', 'landmark', 'area_description', 'occupation'
+            ]
+            
+            for field in profile_fields:
+                if field in request.data:
+                    setattr(user_profile, field, request.data[field])
+            
+            # Save profile changes
+            user_profile.save()
+            
+            # Return updated profile data
+            serializer = UserProfileSerializer(user_profile)
+            
+            return Response({
+                "success": True,
+                "data": serializer.data,
+                "message": "Profile updated successfully",
+                "timestamp": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error updating profile: {str(e)}", exc_info=True)
+            return Response({
+                "success": False,
+                "error": "Failed to update profile",
+                "message": str(e) if settings.DEBUG else "Internal server error"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserMenuPrivilegeViewSet(TenantIsolatedViewSet):
     """

@@ -86,7 +86,7 @@ class PersonalInfoService {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': sessionToken,
+          'Authorization': `Session ${sessionToken}`,
         },
         body: JSON.stringify(personalInfo)
       });

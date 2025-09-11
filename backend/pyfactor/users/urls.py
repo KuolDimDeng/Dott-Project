@@ -38,6 +38,7 @@ router.register(r'menu-privileges', UserMenuPrivilegeViewSet, basename='menu-pri
 
 urlpatterns = [
     path('profile/', ProfileView.as_view(), name='user-profile'),
+    path('me/', ProfileView.as_view(), name='user-me'),
     path('business/search/', business_search, name='business_search'),
     path('business/details/', get_business_details, name='get_business_details'),
     path('business/subscription/', get_user_subscription, name='get_user_subscription'),

@@ -85,15 +85,56 @@ export default function PersonalInfoScreen({ navigation }) {
 
   const loadUserData = () => {
     if (user) {
+      // Handle different possible user object structures
+      let firstName = '';
+      let lastName = '';
+      
+      // Try to get first_name and last_name directly
+      if (user.first_name) {
+        firstName = user.first_name;
+      }
+      if (user.last_name) {
+        lastName = user.last_name;
+      }
+      
+      // If no first_name/last_name but we have a name field, split it
+      if (!firstName && !lastName && user.name) {
+        const nameParts = user.name.trim().split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
+      // If no first_name/last_name but we have full_name field, split it
+      if (!firstName && !lastName && user.full_name) {
+        const nameParts = user.full_name.trim().split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
+      // Fallback to email prefix if no name available
+      if (!firstName && !lastName && user.email) {
+        firstName = user.email.split('@')[0] || '';
+      }
+      
+      console.log('📝 PersonalInfo - Loading user data:', {
+        firstName,
+        lastName,
+        email: user.email,
+        hasFirstName: !!user.first_name,
+        hasLastName: !!user.last_name,
+        hasName: !!user.name,
+        hasFullName: !!user.full_name
+      });
+      
       setFormData({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
-        phoneNumber: user.phone_number || '',
-        street: user.street || '',
-        city: user.city || '',
-        state: user.state || '',
-        postcode: user.postcode || '',
-        country: user.country || 'SS',
+        firstName: firstName,
+        lastName: lastName,
+        phoneNumber: user.phone_number || user.phone || '',
+        street: user.street || user.address || '',
+        city: user.city || user.business_city || '',
+        state: user.state || user.province || '',
+        postcode: user.postcode || user.postal_code || user.zip || '',
+        country: user.country || user.business_country || 'SS',
         latitude: user.latitude ? parseFloat(user.latitude) : null,
         longitude: user.longitude ? parseFloat(user.longitude) : null,
         locationAccuracy: user.location_accuracy || null,
