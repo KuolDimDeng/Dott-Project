@@ -156,6 +156,17 @@ export const marketplaceApi = {
     }
   },
 
+  // Alias for getBusinessDetails (for consistency)
+  getBusinessDetail: async (businessId) => {
+    try {
+      const response = await api.get(`/api/marketplace/business/${businessId}/public/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching business detail:', error);
+      throw error;
+    }
+  },
+
   // Get products for a business
   getBusinessProducts: async (businessId) => {
     try {

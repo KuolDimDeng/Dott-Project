@@ -475,30 +475,57 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     Q(description__icontains=search_query)
                 )
             
+            # Get active featured campaigns to check for featured status
+            from advertising.models import AdvertisingCampaign
+            from datetime import date
+            
+            today = date.today()
+            featured_campaign_business_ids = set(
+                AdvertisingCampaign.objects.filter(
+                    type='featured',
+                    status='active',
+                    start_date__lte=today,
+                    end_date__gte=today,
+                    business__city__iexact=city
+                ).values_list('business_id', flat=True)
+            )
+            
             # Convert PlaceholderBusiness to standard format
             for business in placeholder_businesses:
-                all_results.append({
-                    'id': business.id,
-                    'name': business.name,
+                is_featured = business.id in featured_campaign_business_ids
+                business_data = {
+                    'id': str(business.id),  # Convert to string for consistency
+                    'business_name': business.name,  # Frontend expects business_name
+                    'name': business.name,  # Also include name for backward compatibility
                     'phone': business.phone,
                     'address': business.address,
                     'category': business.category,
+                    'category_display': business.category.title() if business.category else 'Business',
                     'email': business.email or '',
                     'description': business.description or '',
                     'image_url': business.image_url or '',
+                    'logo': business.logo_url or '',  # Frontend expects 'logo'
                     'logo_url': business.logo_url or '',
                     'website': business.website or '',
                     'opening_hours': business.opening_hours or {},
                     'rating': float(business.rating) if business.rating else None,
+                    'average_rating': float(business.rating) if business.rating else 4.2,  # Frontend expects average_rating
                     'social_media': business.social_media or {},
                     'city': business.city,
                     'country': business.country,
                     'latitude': float(business.latitude) if business.latitude else None,
                     'longitude': float(business.longitude) if business.longitude else None,
                     'is_verified': business.converted_to_real_business,
+                    'is_featured': is_featured,  # Add featured status from advertising campaigns
                     'is_placeholder': True,
                     'source': 'placeholder'
-                })
+                }
+                
+                # Featured businesses get priority (added to front of list)
+                if is_featured:
+                    all_results.insert(0, business_data)
+                else:
+                    all_results.append(business_data)
             
             # 2. Get BusinessListing records (published real businesses)
             business_listings = BusinessListing.objects.filter(
@@ -557,28 +584,45 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 profile = getattr(user, 'userprofile', None)
                 business_name = getattr(profile, 'business_name', user.email) if profile else user.email
                 
-                all_results.append({
+                # Check if business is featured from advertising campaigns or listing
+                is_featured = (
+                    listing.is_featured or  # Direct featured status
+                    (user.id in featured_campaign_business_ids if hasattr(user, 'id') else False)
+                )
+                
+                business_data = {
                     'id': str(listing.id),  # UUID, convert to string
-                    'name': business_name,
+                    'business_name': business_name,  # Frontend expects business_name
+                    'name': business_name,  # Also include name for backward compatibility
                     'phone': getattr(profile, 'phone', '') if profile else '',
                     'address': getattr(profile, 'business_address', '') if profile else '',
                     'category': listing.business_type,
+                    'category_display': listing.business_type.title() if listing.business_type else 'Business',
                     'email': user.email,
                     'description': listing.description or '',
                     'image_url': '',  # TODO: Add business image support
+                    'logo': '',   # Frontend expects 'logo'
                     'logo_url': '',   # TODO: Add business logo support
                     'website': getattr(profile, 'website', '') if profile else '',
                     'opening_hours': listing.business_hours or {},
                     'rating': float(listing.average_rating) if listing.average_rating else None,
+                    'average_rating': float(listing.average_rating) if listing.average_rating else 4.5,  # Frontend expects average_rating
                     'social_media': {},  # TODO: Add social media support
                     'city': listing.city,
                     'country': listing.country,
                     'latitude': listing.latitude,
                     'longitude': listing.longitude,
                     'is_verified': True,  # Published businesses are verified
+                    'is_featured': is_featured,  # Featured status from campaigns or listing
                     'is_placeholder': False,
                     'source': 'published'
-                })
+                }
+                
+                # Featured businesses get priority (added to front of list)
+                if is_featured:
+                    all_results.insert(0, business_data)
+                else:
+                    all_results.append(business_data)
             
             logger.info(f"[Marketplace] Found {len(all_results)} total businesses ({len(placeholder_businesses)} placeholders, {len(business_listings)} published)")
             

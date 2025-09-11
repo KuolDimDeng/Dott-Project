@@ -18,7 +18,7 @@ urlpatterns = [
     # Placeholder businesses endpoints (main marketplace)
     path('businesses/', get_marketplace_businesses, name='marketplace-businesses'),
     path('businesses/categories/', get_business_categories, name='business-categories'),
-    path('businesses/featured/', get_featured_businesses, name='featured-businesses'),
+    path('businesses/featured/', ConsumerSearchViewSet.as_view({'get': 'featured'}), name='featured-businesses'),
     
     # Category hierarchy endpoint (for subcategories)
     path('category_hierarchy/', ConsumerSearchViewSet.as_view({'get': 'marketplace_category_hierarchy'}), name='category-hierarchy'),
