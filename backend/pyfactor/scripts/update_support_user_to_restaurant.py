@@ -38,7 +38,7 @@ def update_user_to_restaurant():
                 'simplified_business_type': 'RESTAURANT',
                 'entity_type': 'SMALL_BUSINESS',
                 'registration_status': 'REGISTERED',
-                'primary_interaction_type': 'CONSUMER',  # Required field
+                'legal_structure': 'SOLE_PROPRIETORSHIP',
                 'phone': '+211912345678',
                 'email': 'restaurant@dottapps.com',
                 'address': '123 Restaurant Street',
