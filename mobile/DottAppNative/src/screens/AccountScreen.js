@@ -37,6 +37,10 @@ export default function AccountScreen({ navigation }) {
   useEffect(() => {
     loadCachedProfilePicture();
     loadWalletBalance();
+    // Refresh user data to get latest phone number
+    if (refreshUser) {
+      refreshUser();
+    }
   }, []);
 
   // Update profile picture when user data changes

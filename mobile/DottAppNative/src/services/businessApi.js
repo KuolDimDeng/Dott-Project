@@ -84,24 +84,45 @@ export const businessApi = {
     }
   },
   
+  // Alias for getBusinessDetails
+  getBusiness: async () => {
+    return businessApi.getBusinessDetails();
+  },
+  
   // Update business details
   updateBusiness: async (data) => {
     try {
       const api = await createApiInstance();
-      // Try the business/update endpoint first (with trailing slash)
-      const response = await api.patch('/users/business/update/', data);
+      // Use PUT method for update as PATCH might not be configured
+      const response = await api.put('/users/business/update/', data);
       return response.data;
     } catch (error) {
       console.error('Update business error:', error);
-      // If that fails, try the details/update endpoint
-      if (error.response?.status === 404) {
+      // If that fails, try the alternative endpoint with PUT
+      if (error.response?.status === 404 || error.response?.status === 405) {
         try {
           const api = await createApiInstance();
-          const response = await api.patch('/users/business/details/update/', data);
+          // Try PUT on the main business endpoint
+          const response = await api.put('/users/business/', data);
           return response.data;
         } catch (fallbackError) {
           console.error('Fallback update business error:', fallbackError);
-          throw fallbackError;
+          // Last resort - try to use the profile endpoint
+          try {
+            const api = await createApiInstance();
+            const response = await api.put('/users/profile/', {
+              ...data,
+              // Map business fields to profile fields
+              phone_number: data.business_phone || data.phone,
+              city: data.business_city || data.city,
+              state: data.business_state || data.state,
+              country: data.business_country || data.country,
+            });
+            return response.data;
+          } catch (lastError) {
+            console.error('Profile update error:', lastError);
+            throw fallbackError;
+          }
         }
       }
       throw error;

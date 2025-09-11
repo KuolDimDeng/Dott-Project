@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { BASE_URL } from '../config/environment';
-import axios from 'axios';
+import api from './api';
 
 const PENDING_PERSONAL_INFO_KEY = '@pending_personal_info';
 const CACHED_PERSONAL_INFO_KEY = '@cached_personal_info';
@@ -23,7 +22,7 @@ class PersonalInfoService {
   /**
    * Update personal information with offline support
    */
-  async updatePersonalInfo(personalInfo, sessionToken) {
+  async updatePersonalInfo(personalInfo) {
     try {
       console.log('🔄 PersonalInfoService - Updating personal info:', personalInfo);
       
@@ -35,7 +34,7 @@ class PersonalInfoService {
       if (netInfo.isConnected && netInfo.isInternetReachable) {
         try {
           // Try to sync immediately if online
-          const result = await this.syncToBackend(personalInfo, sessionToken);
+          const result = await this.syncToBackend(personalInfo);
           
           // Remove from pending if successful
           await AsyncStorage.removeItem(PENDING_PERSONAL_INFO_KEY);
@@ -49,7 +48,7 @@ class PersonalInfoService {
           console.error('❌ Sync failed, saving for later:', error);
           
           // Save to pending queue if sync fails
-          await this.saveToPendingQueue(personalInfo, sessionToken);
+          await this.saveToPendingQueue(personalInfo);
           
           return {
             success: true,
@@ -62,7 +61,7 @@ class PersonalInfoService {
         console.log('📱 No internet, saving for later sync');
         
         // Save to pending queue if offline
-        await this.saveToPendingQueue(personalInfo, sessionToken);
+        await this.saveToPendingQueue(personalInfo);
         
         return {
           success: true,
@@ -79,33 +78,45 @@ class PersonalInfoService {
   /**
    * Sync personal info to backend
    */
-  async syncToBackend(personalInfo, sessionToken) {
+  async syncToBackend(personalInfo) {
     try {
       console.log('🔄 Syncing personal info to backend...');
       console.log('📤 Request data:', personalInfo);
-      console.log('🔑 Session token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'missing');
       
-      const response = await axios.patch(
-        `${BASE_URL}/api/users/me/`,
-        personalInfo,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Session ${sessionToken}`,
-          }
-        }
-      );
+      // Check if sessionId exists in AsyncStorage
+      const sessionId = await AsyncStorage.getItem('sessionId');
+      console.log('🔑 Session ID exists:', !!sessionId);
+      
+      // The api instance already handles Authorization header via interceptor
+      // Use /users/profile/ endpoint with PUT method (the only one that works on staging)
+      const response = await api.put('/users/profile/', personalInfo);
 
       console.log('📥 Response status:', response.status);
       console.log('✅ Personal info synced successfully');
-      console.log('📥 Response data:', response.data);
+      console.log('📥 Full response:', JSON.stringify(response.data, null, 2));
+      
+      // Log location fields specifically
+      const profileData = response.data?.data?.profile || response.data?.profile || response.data;
+      console.log('📍 Location fields in response:', {
+        latitude: profileData.latitude,
+        longitude: profileData.longitude,
+        location_address: profileData.location_address,
+        landmark: profileData.landmark,
+        area_description: profileData.area_description
+      });
       
       return response.data;
     } catch (error) {
       console.error('❌ Backend sync failed:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
       if (error.response) {
-        console.error('❌ Error response:', error.response.data);
-        throw new Error(error.response.data.error || `HTTP ${error.response.status}`);
+        throw new Error(error.response.data?.error || `HTTP ${error.response.status}`);
       }
       throw error;
     }
@@ -149,11 +160,10 @@ class PersonalInfoService {
   /**
    * Save to pending queue for later sync
    */
-  async saveToPendingQueue(personalInfo, sessionToken) {
+  async saveToPendingQueue(personalInfo) {
     try {
       const pendingData = {
         data: personalInfo,
-        sessionToken,
         timestamp: new Date().toISOString(),
         attempts: 0,
         maxAttempts: 3
@@ -200,7 +210,7 @@ class PersonalInfoService {
 
       try {
         // Try to sync
-        const result = await this.syncToBackend(pending.data, pending.sessionToken);
+        const result = await this.syncToBackend(pending.data);
         
         // Success - remove from pending queue
         await AsyncStorage.removeItem(PENDING_PERSONAL_INFO_KEY);

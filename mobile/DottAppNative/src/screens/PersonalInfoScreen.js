@@ -19,6 +19,7 @@ import PhoneInput from '../components/forms/PhoneInput';
 import MapPinPicker from '../components/location/MapPinPicker';
 import { useAuth } from '../context/AuthContext';
 import personalInfoService from '../services/personalInfoService';
+import api from '../services/api';
 
 // Common countries for the picker
 const COUNTRIES = [
@@ -34,7 +35,7 @@ const COUNTRIES = [
 ];
 
 export default function PersonalInfoScreen({ navigation }) {
-  const { user, sessionToken, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -83,8 +84,68 @@ export default function PersonalInfoScreen({ navigation }) {
     return unsubscribe;
   };
 
-  const loadUserData = () => {
+  const loadUserData = async () => {
     if (user) {
+      // First, try to get the full profile from the API
+      try {
+        const response = await api.get('/users/profile/');
+        console.log('📝 PersonalInfo - Full API response:', response.data);
+        
+        // The response has nested structure: { data: { profile: {...} } }
+        const profileData = response.data?.data?.profile || response.data?.profile || response.data;
+        
+        console.log('📝 PersonalInfo - Extracted profile data:', profileData);
+        console.log('📝 PersonalInfo - Location fields:', {
+          latitude: profileData.latitude,
+          longitude: profileData.longitude,
+          location_address: profileData.location_address,
+        });
+        
+        // Check for cached location data if not in API response
+        let locationData = {
+          latitude: profileData.latitude ? parseFloat(profileData.latitude) : null,
+          longitude: profileData.longitude ? parseFloat(profileData.longitude) : null,
+          locationAccuracy: profileData.location_accuracy || null,
+          locationAddress: profileData.location_address || '',
+          landmark: profileData.landmark || '',
+          areaDescription: profileData.area_description || '',
+        };
+        
+        // If location fields are missing from API, check local cache
+        if (!locationData.latitude && !locationData.longitude) {
+          const cachedInfo = await personalInfoService.getCachedPersonalInfo();
+          if (cachedInfo?.data) {
+            console.log('📍 Using cached location data:', cachedInfo.data);
+            locationData = {
+              latitude: cachedInfo.data.latitude ? parseFloat(cachedInfo.data.latitude) : null,
+              longitude: cachedInfo.data.longitude ? parseFloat(cachedInfo.data.longitude) : null,
+              locationAccuracy: cachedInfo.data.location_accuracy || null,
+              locationAddress: cachedInfo.data.location_address || '',
+              landmark: cachedInfo.data.landmark || '',
+              areaDescription: cachedInfo.data.area_description || '',
+            };
+          }
+        }
+        
+        // Use profile data if available
+        setFormData({
+          firstName: profileData.first_name || profileData.firstName || '',
+          lastName: profileData.last_name || profileData.lastName || '',
+          phoneNumber: profileData.phone_number || '',
+          street: profileData.street || '',
+          city: profileData.city || '',
+          state: profileData.state || '',
+          postcode: profileData.postcode || '',
+          country: profileData.country || 'SS',
+          ...locationData
+        });
+        setHasUnsavedChanges(false);
+        return;
+      } catch (error) {
+        console.log('📝 PersonalInfo - Could not fetch full profile, using basic user data');
+      }
+      
+      // Fallback to basic user data if profile fetch fails
       // Handle different possible user object structures
       let firstName = '';
       let lastName = '';
@@ -242,12 +303,11 @@ export default function PersonalInfoScreen({ navigation }) {
       
       console.log('📝 PersonalInfo - Saving data:', {
         formData,
-        apiData,
-        sessionToken: sessionToken ? 'exists' : 'missing'
+        apiData
       });
       
       // Save using service with offline support
-      const result = await personalInfoService.updatePersonalInfo(apiData, sessionToken);
+      const result = await personalInfoService.updatePersonalInfo(apiData);
       
       console.log('📝 PersonalInfo - Save result:', result);
       

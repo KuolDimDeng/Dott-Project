@@ -104,6 +104,7 @@ function TabNavigator() {
 
   return (
     <Tab.Navigator
+      initialRouteName="Discover"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;

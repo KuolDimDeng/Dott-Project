@@ -230,7 +230,7 @@ export default function BusinessMenuScreen() {
 
   // Complete menu items from HTML version
   const ALL_MENU_ITEMS = [
-    // Row 1 - Core Operations
+    // Row 1 - Core Operations (Always show POS)
     { icon: 'card-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
     { icon: 'cube-outline', title: 'Inventory', color: '#ec4899', screen: 'Inventory' },
     { icon: 'cash-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },

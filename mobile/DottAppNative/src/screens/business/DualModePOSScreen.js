@@ -907,13 +907,13 @@ export default function DualModePOSScreen() {
       <Text style={styles.stepSubtitle}>Choose how you want to process this sale</Text>
 
       <TouchableOpacity
-        style={[styles.modeCard, posMode === 'simple' && styles.modeCardActive]}
+        style={[styles.modeCard, styles.quickSaleCard, posMode === 'simple' && styles.quickSaleCardActive]}
         onPress={() => {
           setPosMode('simple');
           setCurrentStep('menu');
         }}
       >
-        <Icon name="calculator" size={48} color={posMode === 'simple' ? 'white' : THEME_COLOR} />
+        <Icon name="calculator" size={48} color={posMode === 'simple' ? 'white' : '#2563eb'} />
         <Text style={[styles.modeTitle, posMode === 'simple' && styles.modeTitleActive]}>
           Quick Sale
         </Text>
@@ -923,13 +923,13 @@ export default function DualModePOSScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.modeCard, posMode === 'advanced' && styles.modeCardActive]}
+        style={[styles.modeCard, styles.fullPOSCard, posMode === 'advanced' && styles.fullPOSCardActive]}
         onPress={() => {
           setPosMode('advanced');
           setCurrentStep('menu');
         }}
       >
-        <Icon name="storefront" size={48} color={posMode === 'advanced' ? 'white' : THEME_COLOR} />
+        <Icon name="storefront" size={48} color={posMode === 'advanced' ? 'white' : '#22c55e'} />
         <Text style={[styles.modeTitle, posMode === 'advanced' && styles.modeTitleActive]}>
           Full POS
         </Text>
@@ -1885,7 +1885,7 @@ export default function DualModePOSScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>POS Terminal</Text>
         <View style={styles.headerRight}>
@@ -1934,7 +1934,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: THEME_COLOR,
+    backgroundColor: 'white',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1944,20 +1944,20 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: 'white',
+    color: 'black',
   },
   headerRight: {
     width: 40,
     alignItems: 'flex-end',
   },
   cartIndicator: {
-    backgroundColor: 'white',
+    backgroundColor: '#2563eb',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   cartCount: {
-    color: THEME_COLOR,
+    color: 'white',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -2042,6 +2042,20 @@ const styles = StyleSheet.create({
   modeCardActive: {
     backgroundColor: THEME_COLOR,
     borderColor: THEME_COLOR,
+  },
+  quickSaleCard: {
+    borderColor: '#2563eb',
+  },
+  quickSaleCardActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  fullPOSCard: {
+    borderColor: '#22c55e',
+  },
+  fullPOSCardActive: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
   },
   modeTitle: {
     fontSize: 20,

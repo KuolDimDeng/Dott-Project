@@ -49,6 +49,21 @@ export const AuthProvider = ({ children }) => {
         console.log('🔍 User email:', userData.email);
         console.log('🔍 User role:', userData.role);
         console.log('🔍 Has business:', userData.has_business);
+        console.log('🔍 Phone number from userData:', userData.phone_number);
+        
+        // The phone_number should already be in userData from the API response
+        // No need to extract from response as userData already contains it
+        if (userData.phone_number) {
+          console.log('📱 Phone number found:', userData.phone_number);
+        } else {
+          console.log('⚠️ No phone number in user data');
+        }
+        
+        // Ensure full_name is set for display purposes
+        if (!userData.full_name && (userData.first_name || userData.last_name)) {
+          userData.full_name = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+          console.log('👤 Full name constructed:', userData.full_name);
+        }
         
         // Also extract business information from the response
         if (response.businessName || response.business_name || response.tenant?.name) {
@@ -232,6 +247,8 @@ export const AuthProvider = ({ children }) => {
           console.log('🔍 Has business value:', response.data.user.has_business);
           console.log('🔍 Role field exists:', 'role' in response.data.user);
           console.log('🔍 Role value:', response.data.user.role);
+          console.log('🔍 Phone number field exists:', 'phone_number' in response.data.user);
+          console.log('🔍 Phone number value:', response.data.user.phone_number);
         } else {
           console.log('⚠️ No user object in response');
         }
@@ -285,6 +302,11 @@ export const AuthProvider = ({ children }) => {
           // Fallback to session response data
           const userData = response.data.user || response.data.data?.user;
           
+          // Ensure full_name is set for display purposes
+          if (!userData.full_name && (userData.first_name || userData.last_name)) {
+            userData.full_name = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+          }
+          
           // Add business information from response
           if (response.data.businessName || response.data.business_name || response.data.tenant?.name) {
             userData.business_name = response.data.businessName || response.data.business_name || response.data.tenant?.name;
@@ -294,6 +316,7 @@ export const AuthProvider = ({ children }) => {
             userData.business_country_name = response.data.business_country_name || response.data.country_name;
           }
           
+          console.log('💾 Storing user data with phone:', userData.phone_number);
           await AsyncStorage.setItem('userData', JSON.stringify(userData));
           
           const mode = userData.has_business ? 'business' : 'consumer';
