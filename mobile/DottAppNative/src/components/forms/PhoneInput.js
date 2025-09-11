@@ -119,8 +119,18 @@ const PhoneInput = ({
   };
 
   const handlePhoneChange = (text) => {
-    // Don't add country code if it's already there
-    // Just pass the text through
+    // If the user is typing and removes the country code, add it back
+    if (!text.startsWith(selectedCountry.dialCode)) {
+      // If text is empty or just spaces, set to country code with space
+      if (!text || !text.trim()) {
+        text = selectedCountry.dialCode + ' ';
+      } else {
+        // Remove any partial country codes and add the correct one
+        const cleanedText = text.replace(/^\+?\d{0,3}\s*/, '');
+        text = selectedCountry.dialCode + ' ' + cleanedText;
+      }
+    }
+    
     if (onChangeText) {
       onChangeText(text);
     }
@@ -193,7 +203,13 @@ const PhoneInput = ({
           placeholderTextColor="#9ca3af"
           keyboardType="phone-pad"
           editable={editable}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            setIsFocused(true);
+            // If the field is empty, initialize with country code
+            if (!value && onChangeText) {
+              onChangeText(selectedCountry.dialCode + ' ');
+            }
+          }}
           onBlur={() => setIsFocused(false)}
           {...props}
         />

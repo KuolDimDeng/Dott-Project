@@ -209,10 +209,17 @@ export default function PersonalInfoScreen({ navigation }) {
       newErrors.lastName = 'Last name is required';
     }
     
-    // Phone number validation
+    // Phone number validation - more flexible
     if (formData.phoneNumber) {
-      const phoneRegex = /^\+\d{1,4}\s?\d{7,15}$/;
-      if (!phoneRegex.test(formData.phoneNumber)) {
+      // Remove all non-digit characters except + for validation
+      const cleanPhone = formData.phoneNumber.replace(/[^\d+]/g, '');
+      
+      // Check if it's a valid phone number format
+      // Either starts with + and country code, or just the number
+      const phoneWithCountryCode = /^\+\d{1,4}\d{7,15}$/;
+      const phoneWithoutCountryCode = /^\d{7,15}$/;
+      
+      if (!phoneWithCountryCode.test(cleanPhone) && !phoneWithoutCountryCode.test(cleanPhone)) {
         newErrors.phoneNumber = 'Please enter a valid phone number';
       }
     }
