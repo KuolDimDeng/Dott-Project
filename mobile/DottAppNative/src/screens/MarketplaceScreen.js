@@ -624,20 +624,20 @@ export default function MarketplaceScreen() {
       <View style={styles.headerContainer}>
         <View style={styles.header}>
           <View style={styles.headerTitleContainer}>
-            <Icon name="compass-outline" size={28} color="#ffffff" style={styles.discoverIcon} />
+            <Icon name="compass-outline" size={28} color="#000000" style={styles.discoverIcon} />
             <Text style={styles.headerTitle}>Discover</Text>
           </View>
           
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
-              <Icon name="notifications-outline" size={24} color="#fff" />
+              <Icon name="notifications-outline" size={24} color="#000" />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={() => navigation.navigate('Cart')}
             >
-              <Icon name="cart-outline" size={24} color="#fff" />
+              <Icon name="cart-outline" size={24} color="#000" />
               {cartCount > 0 && (
                 <View style={styles.cartBadge}>
                   <Text style={styles.cartBadgeText}>{cartCount}</Text>
@@ -650,7 +650,7 @@ export default function MarketplaceScreen() {
               style={styles.headerButton}
               onPress={() => navigation.navigate('Purchases')}
             >
-              <Icon name="receipt-outline" size={24} color="#fff" />
+              <Icon name="receipt-outline" size={24} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -745,10 +745,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f7f7',
   },
   headerContainer: {
-    backgroundColor: '#14532d',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   header: {
     flexDirection: 'row',
@@ -766,7 +768,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#000000',
   },
   countrySelector: {
     marginLeft: 12,
@@ -777,7 +779,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   locationText: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#6b7280',
     fontSize: 14,
     fontWeight: '500',
     marginHorizontal: 6,

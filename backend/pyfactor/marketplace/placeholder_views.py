@@ -142,30 +142,62 @@ def get_marketplace_businesses(request):
         # Convert BusinessListing to standard format
         for listing in business_listings:
             user = listing.business
-            profile = getattr(user, 'userprofile', None)
+            profile = getattr(user, 'profile', None)  # Changed from 'userprofile' to 'profile'
             business_name = getattr(profile, 'business_name', user.email) if profile else user.email
+            
+            # Get the business type from profile if available, otherwise from listing
+            business_type = getattr(profile, 'business_type', listing.business_type) if profile else listing.business_type
+            
+            # Get category display - for restaurants show 'food', for retail show 'shopping'
+            category_display = 'food' if 'RESTAURANT' in business_type or 'CAFE' in business_type else listing.business_type
+            
+            # Get logo from profile
+            logo_url = ''
+            if profile and hasattr(profile, 'logo_data') and profile.logo_data:
+                logo_url = profile.logo_data  # This is already a base64 data URL
+            
+            # Get menu items for restaurants
+            menu_items = []
+            products = []
+            if 'RESTAURANT' in business_type or 'CAFE' in business_type:
+                try:
+                    from menu.models import MenuItem
+                    items = MenuItem.objects.filter(business=user, is_available=True).values(
+                        'id', 'name', 'description', 'price', 'image_url', 'category_name'
+                    )[:10]  # Limit to 10 items for performance
+                    menu_items = list(items)
+                    products = menu_items  # Use same data for products field
+                except Exception as e:
+                    logger.warning(f"Could not fetch menu items for business {user.id}: {e}")
             
             all_results.append({
                 'id': str(listing.id),  # UUID, convert to string
                 'name': business_name,
+                'business_name': business_name,
                 'phone': getattr(profile, 'phone', '') if profile else '',
                 'address': getattr(profile, 'business_address', '') if profile else '',
-                'category': listing.business_type,
+                'category': category_display,
+                'category_display': category_display,
+                'business_type': business_type,
                 'email': user.email,
                 'description': listing.description or '',
-                'image_url': '',  # TODO: Add business image support
-                'logo_url': '',   # TODO: Add business logo support
+                'image_url': logo_url,  # Use logo for main image
+                'logo_url': logo_url,
+                'logo': logo_url,
                 'website': getattr(profile, 'website', '') if profile else '',
                 'opening_hours': listing.business_hours or {},
                 'rating': float(listing.average_rating) if listing.average_rating else None,
-                'social_media': {},  # TODO: Add social media support
+                'social_media': {},
                 'city': listing.city,
                 'country': listing.country,
                 'latitude': listing.latitude,
                 'longitude': listing.longitude,
                 'is_verified': True,  # Published businesses are verified
                 'is_placeholder': False,
-                'source': 'published'
+                'is_published': True,
+                'source': 'published',
+                'menu_items': menu_items,
+                'products': products
             })
         
         logger.info(f"[Marketplace] Found {len(all_results)} total businesses ({len(placeholder_businesses)} placeholders, {len(business_listings)} published)")
