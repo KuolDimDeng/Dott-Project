@@ -447,7 +447,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 is_visible_in_marketplace=True,
                 business__is_active=True,
                 city__iexact=city
-            ).select_related('business', 'business__userprofile')
+            ).select_related('business', 'business__profile')
             
             # Apply country filter to listings
             if country:
