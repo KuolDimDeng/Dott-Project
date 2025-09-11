@@ -97,10 +97,8 @@ export default function MarketplaceProfileEditor({ navigation }) {
       // Try to load existing profile
       const existingProfile = await marketplaceApi.getBusinessListing();
       
-      if (existingProfile) {
-        if (existingProfile.profile) {
-          setProfile(existingProfile.profile);
-        }
+      if (existingProfile && existingProfile.profile) {
+        setProfile(existingProfile.profile);
         setIsPublished(existingProfile.is_published || false);
       } else {
         // Check for local draft first
@@ -1115,6 +1113,24 @@ export default function MarketplaceProfileEditor({ navigation }) {
     );
   }
 
+  // Add null check for profile after loading
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderHeader()}
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Failed to load business profile</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={loadBusinessProfile}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
@@ -1255,6 +1271,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   completenessCard: {
     backgroundColor: '#fff',

@@ -645,15 +645,13 @@ export default function MarketplaceScreen() {
               )}
             </TouchableOpacity>
             
-            {/* Add Purchases icon for consumers without business */}
-            {userMode === 'consumer' && !user?.has_business && (
-              <TouchableOpacity 
-                style={styles.headerButton}
-                onPress={() => navigation.navigate('Purchases')}
-              >
-                <Icon name="receipt-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-            )}
+            {/* Add Purchases icon for all users */}
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Purchases')}
+            >
+              <Icon name="receipt-outline" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
         
