@@ -42,7 +42,6 @@ def update_user_to_restaurant():
                 'email': 'restaurant@dottapps.com',
                 'address': '123 Restaurant Street',
                 'city': 'Juba',
-                'state': 'Central Equatoria',
                 'country': 'SS',
             }
         )
