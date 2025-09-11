@@ -127,7 +127,7 @@ class SessionV2View(APIView):
                 response_data['user'].update({
                     'phone_number': profile.phone_number,
                     'country': profile.country,
-                    'business_name': profile.business_name,
+                    'business_name': profile.business.business_name if profile.business else None,
                     'industry': profile.industry,
                     'onboarding_completed': profile.onboarding_completed,
                     'subscription_plan': profile.subscription_plan,

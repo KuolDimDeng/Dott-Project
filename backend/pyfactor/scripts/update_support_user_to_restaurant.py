@@ -31,11 +31,11 @@ def update_user_to_restaurant():
         
         # Get or create business
         business, created = Business.objects.get_or_create(
-            tenant=user.tenant,
+            id=user.id,  # Business ID matches User ID in this system
             defaults={
-                'business_name': 'Dott Restaurant & Cafe',
+                'name': 'Dott Restaurant & Cafe',
                 'business_type': 'RESTAURANT_CAFE',
-                'simplified_business_type': 'RETAIL',
+                'simplified_business_type': 'RESTAURANT',
                 'entity_type': 'SMALL_BUSINESS',
                 'registration_status': 'REGISTERED',
                 'phone': '+211912345678',
@@ -49,9 +49,9 @@ def update_user_to_restaurant():
         
         if not created:
             # Update existing business
-            business.business_name = 'Dott Restaurant & Cafe'
+            business.name = 'Dott Restaurant & Cafe'
             business.business_type = 'RESTAURANT_CAFE'
-            business.simplified_business_type = 'RETAIL'
+            business.simplified_business_type = 'RESTAURANT'
             business.entity_type = 'SMALL_BUSINESS'
             business.save()
             print(f"✅ Updated existing business to RESTAURANT_CAFE")
@@ -59,11 +59,16 @@ def update_user_to_restaurant():
             print(f"✅ Created new business as RESTAURANT_CAFE")
         
         # Update user profile if needed
-        user_profile = UserProfile.objects.filter(user=user).first()
-        if user_profile:
-            user_profile.has_business = True
+        user_profile, profile_created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={'business_id': business.id}
+        )
+        if not profile_created:
+            user_profile.business_id = business.id
             user_profile.save()
-            print(f"✅ Updated user profile - has_business: True")
+            print(f"✅ Updated existing user profile - business_id: {business.id}")
+        else:
+            print(f"✅ Created user profile with business_id: {business.id}")
         
         # Add some restaurant-specific sample inventory items
         print("\n📦 Adding restaurant-specific inventory items...")
@@ -218,15 +223,17 @@ def update_user_to_restaurant():
             },
         ]
         
-        # Clear existing products for this tenant (optional)
-        # Product.objects.filter(tenant=user.tenant).delete()
+        # Clear existing products for this business (optional)
+        # Product.objects.filter(business=business).delete()
         # print("✅ Cleared existing products")
         
         # Add restaurant items
         with transaction.atomic():
             for item_data in restaurant_items:
+                # Add business reference to item data
+                item_data['business'] = business
                 product, created = Product.objects.update_or_create(
-                    tenant=user.tenant,
+                    business=business,
                     sku=item_data['sku'],
                     defaults=item_data
                 )
@@ -236,7 +243,7 @@ def update_user_to_restaurant():
                     print(f"  ↻ Updated: {item_data['name']}")
         
         print(f"\n✅ Successfully updated support@dottapps.com to RESTAURANT_CAFE business type")
-        print(f"📍 Business Name: {business.business_name}")
+        print(f"📍 Business Name: {business.name}")
         print(f"🍽️ Business Type: {business.business_type}")
         print(f"📦 Added {len(restaurant_items)} restaurant-specific inventory items")
         print("\n🎉 You can now test the restaurant-specific inventory features!")
