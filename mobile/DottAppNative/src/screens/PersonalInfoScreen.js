@@ -233,8 +233,16 @@ export default function PersonalInfoScreen({ navigation }) {
       // Format data for API
       const apiData = personalInfoService.formatForAPI(formData);
       
+      console.log('📝 PersonalInfo - Saving data:', {
+        formData,
+        apiData,
+        sessionToken: sessionToken ? 'exists' : 'missing'
+      });
+      
       // Save using service with offline support
       const result = await personalInfoService.updatePersonalInfo(apiData, sessionToken);
+      
+      console.log('📝 PersonalInfo - Save result:', result);
       
       if (result.success) {
         setHasUnsavedChanges(false);
@@ -249,7 +257,10 @@ export default function PersonalInfoScreen({ navigation }) {
           
           // Refresh user data
           if (refreshUser) {
+            console.log('📝 PersonalInfo - Refreshing user data...');
             await refreshUser();
+            // Reload the form with updated data
+            loadUserData();
           }
         } else {
           // Saved offline
@@ -264,10 +275,10 @@ export default function PersonalInfoScreen({ navigation }) {
         checkSyncStatus();
         
       } else {
-        throw new Error('Failed to save personal information');
+        throw new Error(result.error || 'Failed to save personal information');
       }
     } catch (error) {
-      console.error('Save error:', error);
+      console.error('📝 PersonalInfo - Save error:', error);
       Alert.alert(
         'Error',
         `Failed to save personal information: ${error.message}`,

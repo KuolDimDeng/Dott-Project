@@ -246,6 +246,7 @@ class ProfileView(APIView):
         """
         try:
             user = request.user
+            logger.info(f"PATCH request for user {user.email} with data: {request.data}")
             
             # Get or create user profile
             user_profile, created = UserProfile.objects.get_or_create(user=user)
@@ -268,17 +269,44 @@ class ProfileView(APIView):
             
             for field in profile_fields:
                 if field in request.data:
-                    setattr(user_profile, field, request.data[field])
+                    value = request.data[field]
+                    # Handle None values properly
+                    if value is not None:
+                        setattr(user_profile, field, value)
+                        logger.info(f"Updated {field} to: {value}")
             
             # Save profile changes
             user_profile.save()
             
-            # Return updated profile data
-            serializer = UserProfileSerializer(user_profile)
+            # Refresh from database to get all fields
+            user_profile.refresh_from_db()
+            user.refresh_from_db()
+            
+            # Build response in the same format as GET method
+            profile_data = {
+                "email": user.email,
+                "profile": {
+                    'id': user_profile.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'occupation': user_profile.occupation,
+                    'street': user_profile.street,
+                    'city': user_profile.city,
+                    'state': user_profile.state,
+                    'postcode': user_profile.postcode,
+                    'country': str(user_profile.country) if user_profile.country else None,
+                    'country_name': user_profile.country.name if user_profile.country else None,
+                    'phone_number': user_profile.phone_number,
+                    'is_business_owner': user_profile.is_business_owner,
+                    'tenant_name': user_profile.tenant.name if user_profile.tenant else None,
+                }
+            }
+            
+            logger.info(f"Profile updated successfully for {user.email}. Phone: {user_profile.phone_number}")
             
             return Response({
                 "success": True,
-                "data": serializer.data,
+                "data": profile_data,
                 "message": "Profile updated successfully",
                 "timestamp": timezone.now().isoformat()
             }, status=status.HTTP_200_OK)

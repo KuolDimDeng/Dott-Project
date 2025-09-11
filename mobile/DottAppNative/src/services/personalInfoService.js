@@ -81,6 +81,8 @@ class PersonalInfoService {
   async syncToBackend(personalInfo, sessionToken) {
     try {
       console.log('🔄 Syncing personal info to backend...');
+      console.log('📤 Request data:', personalInfo);
+      console.log('🔑 Session token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'missing');
       
       const response = await fetch(`${BASE_URL}/api/users/me/`, {
         method: 'PATCH',
@@ -91,13 +93,17 @@ class PersonalInfoService {
         body: JSON.stringify(personalInfo)
       });
 
+      console.log('📥 Response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Error response:', errorData);
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log('✅ Personal info synced successfully');
+      console.log('📥 Response data:', data);
       
       return data;
     } catch (error) {
