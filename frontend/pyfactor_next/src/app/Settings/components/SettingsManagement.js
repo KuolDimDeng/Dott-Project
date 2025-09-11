@@ -18,6 +18,7 @@ import DepartmentManagement from './sections/DepartmentManagement';
 import PermissionAuditLog from './sections/PermissionAuditLog';
 import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
+import FeatureModules from './sections/FeatureModules';
 import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
 import BankingSettings from '../banking/page';
@@ -156,6 +157,14 @@ const SettingsManagement = () => {
       description: t('billing.title'),
       component: BillingSubscriptions,
       requiredRole: 'owner' // Only owner can access
+    },
+    {
+      id: 'feature-modules',
+      title: 'Features',
+      icon: SparklesIcon,
+      description: 'Manage à la carte features for your business',
+      component: FeatureModules,
+      requiredRole: 'user' // All users can view, but only owner can modify
     },
     {
       id: 'integrations',
