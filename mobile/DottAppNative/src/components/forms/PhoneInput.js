@@ -69,9 +69,20 @@ const PhoneInput = ({
   containerStyle = {},
   ...props
 }) => {
-  const [selectedCountry, setSelectedCountry] = useState(
-    COUNTRIES.find(country => country.code === defaultCountry) || COUNTRIES[0]
-  );
+  // Initialize country based on phone number value or defaultCountry
+  const getInitialCountry = () => {
+    if (value && value.startsWith('+')) {
+      // Try to find country by dial code in the value
+      const matchedCountry = COUNTRIES.find(country => 
+        value.startsWith(country.dialCode)
+      );
+      if (matchedCountry) return matchedCountry;
+    }
+    // Otherwise use defaultCountry or first country (South Sudan)
+    return COUNTRIES.find(country => country.code === defaultCountry) || COUNTRIES[0];
+  };
+  
+  const [selectedCountry, setSelectedCountry] = useState(getInitialCountry());
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -87,23 +98,29 @@ const PhoneInput = ({
     setShowCountryPicker(false);
     setSearchText('');
     
-    // If there's existing phone number, try to preserve it without country code
-    if (value && value.startsWith('+')) {
-      const phoneWithoutCode = value.replace(/^\+\d+\s*/, '');
+    // If there's existing phone number, replace old country code with new one
+    if (value) {
+      // Remove any existing country code
+      let phoneWithoutCode = value;
+      // Remove any country code pattern at the start
+      COUNTRIES.forEach(c => {
+        if (phoneWithoutCode.startsWith(c.dialCode)) {
+          phoneWithoutCode = phoneWithoutCode.substring(c.dialCode.length).trim();
+        }
+      });
+      
       if (onChangeText) {
         onChangeText(`${country.dialCode} ${phoneWithoutCode}`.trim());
       }
-    } else if (onChangeText && !value) {
+    } else if (onChangeText) {
+      // If no value, just set the country code
       onChangeText(country.dialCode + ' ');
     }
   };
 
   const handlePhoneChange = (text) => {
-    // Ensure the text always starts with the selected country's dial code
-    if (!text.startsWith(selectedCountry.dialCode)) {
-      text = selectedCountry.dialCode + ' ' + text.replace(/^\+\d+\s*/, '');
-    }
-    
+    // Don't add country code if it's already there
+    // Just pass the text through
     if (onChangeText) {
       onChangeText(text);
     }
