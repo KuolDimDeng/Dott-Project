@@ -42,9 +42,8 @@ class AdvertisingCampaign(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, related_name='advertising_campaigns')
-    business = models.ForeignKey('business.PlaceholderBusiness', on_delete=models.CASCADE, 
-                                 related_name='advertising_campaigns', null=True, blank=True)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, 
+                                 related_name='advertising_campaigns')
     
     # Campaign details
     name = models.CharField(max_length=255)
@@ -100,7 +99,7 @@ class AdvertisingCampaign(models.Model):
     class Meta:
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['tenant', 'status']),
+            models.Index(fields=['business', 'status']),
             models.Index(fields=['start_date', 'end_date']),
             models.Index(fields=['type', 'status']),
         ]
@@ -145,7 +144,6 @@ class AdvertisingCampaign(models.Model):
                 # Create listing if it doesn't exist
                 BusinessListing.objects.create(
                     business=self.business,
-                    tenant=self.tenant,
                     is_featured=True,
                     featured_until=self.end_date,
                     is_published=True,
@@ -258,7 +256,7 @@ class FeaturedBusinessSchedule(models.Model):
     Schedule for featured businesses to ensure no conflicts
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    business = models.ForeignKey('business.PlaceholderBusiness', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     campaign = models.ForeignKey(AdvertisingCampaign, on_delete=models.CASCADE)
     
     start_date = models.DateField()
@@ -281,4 +279,4 @@ class FeaturedBusinessSchedule(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.business.business_name} featured from {self.start_date} to {self.end_date}"
+        return f"{self.business.name} featured from {self.start_date} to {self.end_date}"

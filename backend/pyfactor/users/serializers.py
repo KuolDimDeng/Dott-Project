@@ -1,7 +1,7 @@
 import uuid
 from rest_framework import serializers
 from django_countries.serializers import CountryFieldMixin
-from .models import UserProfile, User, Business, UserMenuPrivilege
+from .models import UserProfile, User, Business, UserMenuPrivilege, FeatureModule, BusinessFeatureModule
 from .serializer_helpers import BusinessProfileSerializer
 from pyfactor.logging_config import get_logger
 
@@ -148,3 +148,30 @@ class UserMenuPrivilegeSerializer(serializers.ModelSerializer):
         if user.first_name or user.last_name:
             return f"{user.first_name} {user.last_name}".strip()
         return user.email
+
+
+class FeatureModuleSerializer(serializers.ModelSerializer):
+    """Serializer for Feature Module model"""
+    class Meta:
+        model = FeatureModule
+        fields = [
+            'id', 'code', 'name', 'description', 'category',
+            'monthly_price', 'developing_country_price',
+            'is_active', 'is_core', 'required_features',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class BusinessFeatureModuleSerializer(serializers.ModelSerializer):
+    """Serializer for Business Feature Module relationship"""
+    feature_module = FeatureModuleSerializer(read_only=True)
+    
+    class Meta:
+        model = BusinessFeatureModule
+        fields = [
+            'id', 'business', 'feature_module', 'enabled',
+            'added_at', 'removed_at', 'next_bill_date',
+            'last_billed', 'billing_active'
+        ]
+        read_only_fields = ['id', 'added_at']

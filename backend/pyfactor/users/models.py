@@ -944,3 +944,78 @@ class MenuVisibilitySettings(models.Model):
     
     def __str__(self):
         return f"{self.menu_item} visibility for {self.business.name}"
+
+
+class FeatureModule(models.Model):
+    """À la carte feature modules that can be purchased"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.CharField(max_length=50, unique=True, help_text="Unique identifier like 'payroll', 'analytics'")
+    name = models.CharField(max_length=100, help_text="Display name like 'Payroll & HR'")
+    description = models.TextField(help_text="Description of what this module includes")
+    category = models.CharField(max_length=50, help_text="Category like 'hr', 'analytics', 'operations'")
+    monthly_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Monthly price in USD")
+    developing_country_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Discounted price for developing countries")
+    is_active = models.BooleanField(default=True, help_text="Whether this module is available for purchase")
+    is_core = models.BooleanField(default=False, help_text="Core features are always free")
+    required_features = models.JSONField(default=list, blank=True, help_text="List of feature codes that must be enabled first")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'users_feature_modules'
+        indexes = [
+            models.Index(fields=['code']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} (${self.monthly_price}/month)"
+
+
+class BusinessFeatureModule(models.Model):
+    """Track which modules each business has enabled"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='feature_modules')
+    feature_module = models.ForeignKey(FeatureModule, on_delete=models.CASCADE)
+    enabled = models.BooleanField(default=True)
+    added_at = models.DateTimeField(auto_now_add=True)
+    removed_at = models.DateTimeField(null=True, blank=True)
+    next_bill_date = models.DateTimeField(null=True, blank=True)
+    last_billed = models.DateTimeField(null=True, blank=True)
+    billing_active = models.BooleanField(default=False, help_text="False during testing mode")
+    
+    class Meta:
+        db_table = 'users_business_feature_modules'
+        unique_together = ['business', 'feature_module']
+        indexes = [
+            models.Index(fields=['business', 'enabled']),
+            models.Index(fields=['feature_module', 'enabled']),
+        ]
+    
+    def __str__(self):
+        return f"{self.feature_module.name} for {self.business.name}"
+
+
+class FeatureBillingEvent(models.Model):
+    """Track all feature add/remove events for proration"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='feature_billing_events')
+    feature_module = models.ForeignKey(FeatureModule, on_delete=models.CASCADE)
+    event_type = models.CharField(max_length=20, choices=[('added', 'Added'), ('removed', 'Removed')])
+    event_date = models.DateTimeField(auto_now_add=True)
+    prorated_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    days_remaining = models.IntegerField()
+    days_in_period = models.IntegerField()
+    charged = models.BooleanField(default=False, help_text="False during testing mode")
+    stripe_charge_id = models.CharField(max_length=255, null=True, blank=True)
+    
+    class Meta:
+        db_table = 'users_feature_billing_events'
+        indexes = [
+            models.Index(fields=['business', 'event_date']),
+            models.Index(fields=['charged']),
+        ]
+    
+    def __str__(self):
+        return f"{self.event_type} {self.feature_module.name} for {self.business.name}"

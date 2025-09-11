@@ -31,6 +31,15 @@ from .api.currency_views_v3 import currency_preferences_v3 as get_currency_prefe
 from .api.business_settings_views import business_settings, accounting_standards_info
 from .views_business_registration import create_business_account, check_business_status
 from rest_framework_simplejwt.views import TokenRefreshView
+from .api.feature_module_views import (
+    get_available_features,
+    get_enabled_features,
+    add_feature_module,
+    remove_feature_module,
+    check_feature_access,
+    get_feature_billing_details,
+    get_feature_catalog
+)
 
 # Create a router for the menu privileges API
 router = DefaultRouter()
@@ -80,6 +89,14 @@ urlpatterns = [
     # Business settings and accounting standards
     path('api/business/settings', business_settings, name='business_settings'),
     path('api/accounting/standards-info', accounting_standards_info, name='accounting_standards_info'),
+    # Feature Module Management (À La Carte)
+    path('api/features/available', get_available_features, name='get_available_features'),
+    path('api/features/enabled', get_enabled_features, name='get_enabled_features'),
+    path('api/features/add', add_feature_module, name='add_feature_module'),
+    path('api/features/remove', remove_feature_module, name='remove_feature_module'),
+    path('api/features/check-access', check_feature_access, name='check_feature_access'),
+    path('api/features/billing-details', get_feature_billing_details, name='get_feature_billing_details'),
+    path('api/features/catalog', get_feature_catalog, name='get_feature_catalog'),
     # Include the router URLs
     path('api', include(router.urls)),
 ]
