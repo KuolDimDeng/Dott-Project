@@ -192,12 +192,25 @@ const CreateCampaignScreen = ({ navigation, route }) => {
 
       // Prepare campaign data
       const submitData = {
-        ...campaignData,
-        image_url: imageUrl,
-        business_id: user?.business_id,
-        status: 'draft',
+        name: campaignData.name,
+        description: campaignData.description,
+        type: campaignData.type,
+        platforms: campaignData.platforms,
+        target_location: campaignData.target_location,
+        target_audience: campaignData.target_audience,
+        target_keywords: campaignData.target_keywords || '',
+        start_date: campaignData.start_date,
+        end_date: campaignData.end_date,
         total_budget: calculatePrice(),
+        daily_budget: campaignData.daily_budget || Math.ceil(calculatePrice() / Math.ceil((campaignData.end_date - campaignData.start_date) / (1000 * 60 * 60 * 24))),
+        image_url: imageUrl,
+        banner_text: campaignData.description,
+        call_to_action: campaignData.call_to_action || 'Learn More',
+        landing_url: campaignData.landing_url || '',
+        payment_method: 'mobile_money',
       };
+
+      console.log('📤 Submitting campaign data:', submitData);
 
       let response;
       if (editMode && existingCampaign?.id) {
@@ -207,30 +220,106 @@ const CreateCampaignScreen = ({ navigation, route }) => {
       }
 
       if (response.success) {
-        Alert.alert(
-          'Success',
-          editMode ? 'Campaign updated successfully!' : 'Campaign created successfully! Proceed to payment to activate.',
-          [
-            {
-              text: 'View Campaign',
-              onPress: () => navigation.navigate('AdvertiseScreen'),
-            },
-            {
-              text: 'Make Payment',
-              onPress: () => navigation.navigate('PaymentScreen', {
-                campaign: response.data,
-                amount: calculatePrice(),
-              }),
-              style: 'default',
-            },
-          ]
-        );
+        const campaignId = response.data.id;
+        console.log('✅ Campaign created with ID:', campaignId);
+        
+        // Show payment options for new campaigns
+        if (!editMode) {
+          Alert.alert(
+            'Campaign Created',
+            `Your campaign has been created successfully! To activate it and start showing in the marketplace, please proceed with payment.`,
+            [
+              {
+                text: 'Pay with M-Pesa',
+                onPress: () => handleMobileMoneyPayment(campaignId, calculatePrice()),
+              },
+              {
+                text: 'Save Draft',
+                onPress: () => navigation.navigate('AdvertiseScreen'),
+                style: 'cancel',
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Success',
+            'Campaign updated successfully!',
+            [{ text: 'OK', onPress: () => navigation.navigate('AdvertiseScreen') }]
+          );
+        }
       } else {
         throw new Error(response.message || 'Failed to save campaign');
       }
     } catch (error) {
       console.error('Campaign submission error:', error);
-      Alert.alert('Error', 'Failed to save campaign. Please try again.');
+      Alert.alert('Error', error.message || 'Failed to save campaign. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMobileMoneyPayment = async (campaignId, amount) => {
+    try {
+      // Show payment instructions
+      Alert.alert(
+        'M-Pesa Payment Instructions',
+        `To activate your campaign, please send ${amount} SSP to:\n\nM-Pesa Number: 0955 123 456\nReference: CAMP${campaignId}\n\nAfter sending, click "I've Paid" to activate your campaign.`,
+        [
+          {
+            text: "I've Paid",
+            onPress: () => activateCampaign(campaignId, {
+              payment_method: 'mobile_money',
+              payment_reference: `CAMP${campaignId}`,
+              amount: amount,
+            }),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => navigation.navigate('AdvertiseScreen'),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Payment error:', error);
+      Alert.alert('Error', 'Payment processing failed');
+    }
+  };
+
+  const activateCampaign = async (campaignId, paymentData) => {
+    try {
+      setLoading(true);
+      console.log('🔥 Activating campaign:', campaignId);
+      
+      const response = await advertisingApi.activateCampaign(campaignId, paymentData);
+      
+      if (response.success) {
+        Alert.alert(
+          'Campaign Activated! 🎉',
+          'Your campaign is now live and will appear prominently in the marketplace. Customers will see your business featured in search results.',
+          [
+            {
+              text: 'View in Marketplace',
+              onPress: () => {
+                navigation.navigate('MainTabs', { 
+                  screen: 'Marketplace',
+                  params: { refresh: true }
+                });
+              },
+            },
+            {
+              text: 'Campaign Dashboard',
+              onPress: () => navigation.navigate('AdvertiseScreen'),
+              style: 'default',
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Activation Failed', response.message || 'Failed to activate campaign. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Campaign activation error:', error);
+      Alert.alert('Error', 'Failed to activate campaign. Please try again or contact support.');
     } finally {
       setLoading(false);
     }

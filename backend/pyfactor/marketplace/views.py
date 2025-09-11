@@ -31,11 +31,9 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
     
     def featured(self, request):
         """
-        Get featured businesses
+        Get featured businesses from active advertising campaigns
         """
         try:
-            from business.models import PlaceholderBusiness
-            
             city = request.query_params.get('city', '').strip()
             country = request.query_params.get('country', '').strip()
             
@@ -46,49 +44,109 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'results': []
                 })
             
-            # Get businesses - check if is_featured field exists
-            businesses = PlaceholderBusiness.objects.filter(
-                city__iexact=city,
-                opted_out=False
-            )
+            # Get currently active featured campaigns
+            from advertising.models import AdvertisingCampaign
+            from datetime import date
             
-            # Try to filter by is_featured if it exists
-            if hasattr(PlaceholderBusiness, 'is_featured'):
-                businesses = businesses.filter(is_featured=True)
+            today = date.today()
+            featured_campaigns = AdvertisingCampaign.objects.filter(
+                type='featured',
+                status='active',
+                start_date__lte=today,
+                end_date__gte=today
+            ).select_related('business')
+            
+            # Filter by location if business exists
+            if country:
+                featured_campaigns = featured_campaigns.filter(
+                    business__city__iexact=city,
+                    business__country__iexact=country[:2]
+                )
             else:
-                # If no featured field, just get first 10 businesses
-                businesses = businesses[:10]
+                featured_campaigns = featured_campaigns.filter(
+                    business__city__iexact=city
+                )
+            
+            # Also get featured businesses from BusinessListing model
+            featured_listings = BusinessListing.objects.filter(
+                is_featured=True,
+                is_visible_in_marketplace=True,
+                featured_until__gte=today,
+                business__city__iexact=city,
+                business__opted_out=False
+            ).select_related('business')
             
             if country:
-                businesses = businesses.filter(country__iexact=country[:2])
+                featured_listings = featured_listings.filter(
+                    business__country__iexact=country[:2]
+                )
             
-            # Serialize businesses
+            # Combine results from both sources
             business_list = []
-            for business in businesses[:10]:  # Limit to 10 featured
-                business_data = {
-                    'id': str(business.id),
-                    'business_name': business.business_name,
-                    'category': business.category,
-                    'city': business.city,
-                    'country': business.country,
-                    'phone': business.phone,
-                    'owner_phone': business.owner_phone,
-                    'opted_out': business.opted_out
-                }
-                
-                # Add is_featured if it exists
-                if hasattr(business, 'is_featured'):
-                    business_data['is_featured'] = business.is_featured
-                else:
-                    business_data['is_featured'] = False
-                
-                business_list.append(business_data)
+            seen_business_ids = set()
+            
+            # Add businesses from active campaigns first (highest priority)
+            for campaign in featured_campaigns[:10]:
+                if campaign.business and campaign.business.id not in seen_business_ids:
+                    business = campaign.business
+                    business_data = {
+                        'id': str(business.id),
+                        'business_name': business.business_name,
+                        'name': business.business_name,
+                        'category': business.category,
+                        'category_display': business.category.title() if business.category else 'Business',
+                        'city': business.city,
+                        'country': business.country,
+                        'phone': business.phone,
+                        'owner_phone': business.owner_phone,
+                        'opted_out': business.opted_out,
+                        'is_featured': True,
+                        'is_verified': True,
+                        'logo': None,  # Add logo URL if available
+                        'cover_image': None,  # Add cover image if available
+                        'average_rating': 4.8,  # Mock rating for now
+                        'campaign_type': campaign.type,
+                        'campaign_name': campaign.name
+                    }
+                    business_list.append(business_data)
+                    seen_business_ids.add(business.id)
+            
+            # Add businesses from featured listings if we need more
+            for listing in featured_listings:
+                if len(business_list) >= 10:
+                    break
+                    
+                if listing.business and listing.business.id not in seen_business_ids:
+                    business = listing.business
+                    business_data = {
+                        'id': str(business.id),
+                        'business_name': business.business_name,
+                        'name': business.business_name,
+                        'category': business.category,
+                        'category_display': business.category.title() if business.category else 'Business',
+                        'city': business.city,
+                        'country': business.country,
+                        'phone': business.phone,
+                        'owner_phone': business.owner_phone,
+                        'opted_out': business.opted_out,
+                        'is_featured': True,
+                        'is_verified': True,
+                        'logo': None,
+                        'cover_image': None,
+                        'average_rating': 4.5,
+                        'featured_until': listing.featured_until.isoformat() if listing.featured_until else None
+                    }
+                    business_list.append(business_data)
+                    seen_business_ids.add(business.id)
             
             return Response({
                 'success': True,
                 'results': business_list,
-                'count': len(business_list)
+                'count': len(business_list),
+                'city': city,
+                'country': country
             })
+            
         except Exception as e:
             logger.error(f"Error fetching featured businesses: {e}")
             return Response({
