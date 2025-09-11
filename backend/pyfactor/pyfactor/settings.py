@@ -1099,6 +1099,7 @@ TENANT_APPS = (
     'jobs.apps.JobsConfig',
     'communications.apps.CommunicationsConfig',
     'couriers.apps.CouriersConfig',  # Courier delivery service
+    'advertising',  # Advertising and campaign management
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]

@@ -45,6 +45,7 @@ import MessagesScreen from '../screens/business/MessagesScreen';
 import HRScreen from '../screens/business/HRScreen';
 import PayrollScreen from '../screens/business/PayrollScreen';
 import AdvertiseScreen from '../screens/business/AdvertiseScreen';
+import CreateCampaignScreen from '../screens/business/CreateCampaignScreen';
 import ServicesScreen from '../screens/business/ServicesScreen';
 import MarketplaceBusinessScreen from '../screens/business/MarketplaceBusinessScreen';
 import InviteScreen from '../screens/business/InviteScreen';
@@ -212,6 +213,8 @@ export default function MainNavigator() {
       <Stack.Screen name="HR" component={HRScreen} />
       <Stack.Screen name="Payroll" component={PayrollScreen} />
       <Stack.Screen name="Advertise" component={MarketplaceProfileEditor} />
+      <Stack.Screen name="AdvertiseScreen" component={AdvertiseScreen} />
+      <Stack.Screen name="CreateCampaign" component={CreateCampaignScreen} />
       <Stack.Screen name="Services" component={ServicesScreen} />
       <Stack.Screen name="MarketplaceBusiness" component={MarketplaceBusinessScreen} />
       <Stack.Screen name="Invite" component={InviteScreen} />

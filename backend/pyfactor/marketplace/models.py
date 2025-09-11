@@ -55,6 +55,7 @@ class BusinessListing(models.Model):
     is_visible_in_marketplace = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
+    featured_until = models.DateField(null=True, blank=True)  # When featured status expires
     
     # Business hours
     business_hours = models.JSONField(default=dict, blank=True)
