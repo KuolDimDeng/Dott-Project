@@ -3,11 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Modal,
-  FlatList,
-  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -69,102 +65,10 @@ const PhoneInput = ({
   containerStyle = {},
   ...props
 }) => {
-  // Initialize country based on phone number value or defaultCountry
-  const getInitialCountry = () => {
-    if (value && value.startsWith('+')) {
-      // Try to find country by dial code in the value
-      const matchedCountry = COUNTRIES.find(country => 
-        value.startsWith(country.dialCode)
-      );
-      if (matchedCountry) return matchedCountry;
-    }
-    // Otherwise use defaultCountry or first country (South Sudan)
-    return COUNTRIES.find(country => country.code === defaultCountry) || COUNTRIES[0];
-  };
-  
-  const [selectedCountry, setSelectedCountry] = useState(getInitialCountry());
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [searchText, setSearchText] = useState('');
+  // For South Sudan, we don't need country selection
+  const selectedCountry = COUNTRIES.find(country => country.code === 'SS'); // Always South Sudan
   const [isFocused, setIsFocused] = useState(false);
 
-  const filteredCountries = COUNTRIES.filter(country =>
-    country.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    country.dialCode.includes(searchText) ||
-    country.code.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  const handleCountrySelect = (country) => {
-    setSelectedCountry(country);
-    setShowCountryPicker(false);
-    setSearchText('');
-    
-    // If there's existing phone number, replace old country code with new one
-    if (value) {
-      // Remove any existing country code
-      let phoneWithoutCode = value;
-      // Remove any country code pattern at the start
-      COUNTRIES.forEach(c => {
-        if (phoneWithoutCode.startsWith(c.dialCode)) {
-          phoneWithoutCode = phoneWithoutCode.substring(c.dialCode.length).trim();
-        }
-      });
-      
-      if (onChangeText) {
-        onChangeText(`${country.dialCode} ${phoneWithoutCode}`.trim());
-      }
-    } else if (onChangeText) {
-      // If no value, just set the country code
-      onChangeText(country.dialCode + ' ');
-    }
-  };
-
-  const handlePhoneChange = (text) => {
-    // If the user is typing and removes the country code, add it back
-    if (!text.startsWith(selectedCountry.dialCode)) {
-      // If text is empty or just spaces, set to country code with space
-      if (!text || !text.trim()) {
-        text = selectedCountry.dialCode + ' ';
-      } else {
-        // Remove any partial country codes and add the correct one
-        const cleanedText = text.replace(/^\+?\d{0,3}\s*/, '');
-        text = selectedCountry.dialCode + ' ' + cleanedText;
-      }
-    }
-    
-    if (onChangeText) {
-      onChangeText(text);
-    }
-  };
-
-  const formatPhoneNumber = (phoneNumber) => {
-    if (!phoneNumber) return '';
-    
-    // Basic formatting - add spaces for readability
-    let formatted = phoneNumber;
-    
-    // For common formats, add some basic spacing
-    if (formatted.length > 4) {
-      formatted = formatted.replace(/(\+\d{1,4})\s*(\d{3})(\d{3})(\d+)/, '$1 $2-$3-$4');
-    }
-    
-    return formatted;
-  };
-
-  const renderCountryItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.countryItem}
-      onPress={() => handleCountrySelect(item)}
-    >
-      <Text style={styles.countryFlag}>{item.flag}</Text>
-      <View style={styles.countryInfo}>
-        <Text style={styles.countryName}>{item.name}</Text>
-        <Text style={styles.countryCode}>{item.dialCode}</Text>
-      </View>
-      {selectedCountry.code === item.code && (
-        <Icon name="checkmark" size={20} color="#047857" />
-      )}
-    </TouchableOpacity>
-  );
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -183,33 +87,26 @@ const PhoneInput = ({
         error && styles.inputContainerError,
         !editable && styles.inputContainerDisabled,
       ]}>
-        <TouchableOpacity
-          style={styles.countrySelector}
-          onPress={() => editable && setShowCountryPicker(true)}
-          disabled={!editable}
-        >
+        <View style={styles.countrySelector}>
           <Text style={styles.flagText}>{selectedCountry.flag}</Text>
           <Text style={styles.dialCodeText}>{selectedCountry.dialCode}</Text>
-          {editable && (
-            <Icon name="chevron-down" size={16} color="#6b7280" />
-          )}
-        </TouchableOpacity>
+        </View>
         
         <TextInput
           style={styles.phoneInput}
-          value={value}
-          onChangeText={handlePhoneChange}
+          value={value ? value.replace(selectedCountry.dialCode, '').trim() : ''}
+          onChangeText={(text) => {
+            // Always combine the country code with the entered text
+            const fullNumber = selectedCountry.dialCode + ' ' + text.trim();
+            if (onChangeText) {
+              onChangeText(fullNumber);
+            }
+          }}
           placeholder={placeholder}
           placeholderTextColor="#9ca3af"
           keyboardType="phone-pad"
           editable={editable}
-          onFocus={() => {
-            setIsFocused(true);
-            // If the field is empty, initialize with country code
-            if (!value && onChangeText) {
-              onChangeText(selectedCountry.dialCode + ' ');
-            }
-          }}
+          onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
         />
@@ -221,46 +118,6 @@ const PhoneInput = ({
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
-
-      <Modal
-        visible={showCountryPicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCountryPicker(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowCountryPicker(false)}
-            >
-              <Icon name="close" size={24} color="#374151" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Select Country</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          
-          <View style={styles.searchContainer}>
-            <Icon name="search" size={20} color="#6b7280" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search countries..."
-              placeholderTextColor="#9ca3af"
-              value={searchText}
-              onChangeText={setSearchText}
-              autoCapitalize="none"
-            />
-          </View>
-          
-          <FlatList
-            data={filteredCountries}
-            keyExtractor={(item) => item.code}
-            renderItem={renderCountryItem}
-            style={styles.countriesList}
-            keyboardShouldPersistTaps="handled"
-          />
-        </SafeAreaView>
-      </Modal>
     </View>
   );
 };
