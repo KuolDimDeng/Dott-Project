@@ -76,9 +76,10 @@ def fix_support_business():
                         entity_type, registration_status, legal_structure,
                         phone, email, address, city, country,
                         primary_interaction_type, tenant_id,
+                        stripe_onboarding_complete,
                         created_at, updated_at
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                         NOW(), NOW()
                     )
                 """, [
@@ -95,7 +96,8 @@ def fix_support_business():
                     'Juba',  # city
                     'SS',  # country
                     'local',  # primary_interaction_type (using 'local' as a safe default)
-                    str(business_uuid)  # tenant_id should match business id
+                    str(business_uuid),  # tenant_id should match business id
+                    False  # stripe_onboarding_complete - default to False
                 ])
                 print(f"✅ Created new business as RESTAURANT_CAFE")
         
