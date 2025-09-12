@@ -42,7 +42,7 @@ class AdvertisingCampaign(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, 
+    business = models.ForeignKey('custom_auth.User', on_delete=models.CASCADE, 
                                  related_name='advertising_campaigns')
     
     # Campaign details
@@ -132,23 +132,40 @@ class AdvertisingCampaign(models.Model):
         self.paid_at = timezone.now()
         self.save()
         
-        # If it's a featured campaign, update business listing
+        # 🎯 [ADVERTISING_ACTIVATION] Update business listing when featured campaign activates
         if self.type == 'featured' and self.business:
             from marketplace.models import BusinessListing
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info(f"[ADVERTISING_DEBUG] Activating featured campaign for user {self.business.id}")
+            
             try:
+                # Find existing business listing for this user
                 listing = BusinessListing.objects.get(business=self.business)
                 listing.is_featured = True
                 listing.featured_until = self.end_date
                 listing.save()
+                logger.info(f"[ADVERTISING_DEBUG] ✓ Updated existing listing for user {self.business.id}")
+                
             except BusinessListing.DoesNotExist:
-                # Create listing if it doesn't exist
-                BusinessListing.objects.create(
-                    business=self.business,
-                    is_featured=True,
-                    featured_until=self.end_date,
-                    is_published=True,
-                    is_visible_in_marketplace=True
-                )
+                # Create listing if it doesn't exist and user has required business info
+                profile = getattr(self.business, 'userprofile', None)
+                if profile and getattr(profile, 'business_name', None):
+                    listing = BusinessListing.objects.create(
+                        business=self.business,
+                        is_featured=True,
+                        featured_until=self.end_date,
+                        is_visible_in_marketplace=True,
+                        # Copy data from user profile
+                        city=getattr(profile, 'city', ''),
+                        country=getattr(profile, 'country', ''),
+                        business_type=getattr(profile, 'business_type', 'OTHER'),
+                        description=f"Featured business: {profile.business_name}"
+                    )
+                    logger.info(f"[ADVERTISING_DEBUG] ✓ Created new listing for user {self.business.id}")
+                else:
+                    logger.warning(f"[ADVERTISING_DEBUG] ⚠️ Cannot create listing for user {self.business.id} - missing business profile")
     
     def pause(self):
         """Pause the campaign"""
@@ -168,16 +185,22 @@ class AdvertisingCampaign(models.Model):
         self.completed_at = timezone.now()
         self.save()
         
-        # Remove featured status if it's a featured campaign
+        # 🎯 [ADVERTISING_COMPLETION] Remove featured status when campaign completes
         if self.type == 'featured' and self.business:
             from marketplace.models import BusinessListing
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info(f"[ADVERTISING_DEBUG] Completing featured campaign for user {self.business.id}")
+            
             try:
                 listing = BusinessListing.objects.get(business=self.business)
                 listing.is_featured = False
                 listing.featured_until = None
                 listing.save()
+                logger.info(f"[ADVERTISING_DEBUG] ✓ Removed featured status for user {self.business.id}")
             except BusinessListing.DoesNotExist:
-                pass
+                logger.warning(f"[ADVERTISING_DEBUG] ⚠️ No listing found for user {self.business.id}")
 
 
 class CampaignAnalytics(models.Model):
@@ -256,7 +279,7 @@ class FeaturedBusinessSchedule(models.Model):
     Schedule for featured businesses to ensure no conflicts
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('custom_auth.User', on_delete=models.CASCADE)
     campaign = models.ForeignKey(AdvertisingCampaign, on_delete=models.CASCADE)
     
     start_date = models.DateField()
@@ -279,4 +302,5 @@ class FeaturedBusinessSchedule(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.business.name} featured from {self.start_date} to {self.end_date}"
+        business_name = getattr(getattr(self.business, 'userprofile', None), 'business_name', self.business.email)
+        return f"{business_name} featured from {self.start_date} to {self.end_date}"

@@ -408,131 +408,25 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 'egypt': 'EG',
             }
             
+            # 🎯 [MARKETPLACE_SEARCH] Simple marketplace search - focus on BusinessListing only
+            logger.info(f"[MARKETPLACE_DEBUG] Starting marketplace search for city={city}, country={country}")
+            
             all_results = []
             
-            # 1. Get PlaceholderBusiness records (existing marketplace businesses)
-            placeholder_businesses = PlaceholderBusiness.objects.filter(
-                opted_out=False,
-                city__iexact=city
-            )
+            # For now, disable advertising integration to fix immediate issues
+            featured_campaign_user_ids = set()
+            logger.info(f"[ADVERTISING_DEBUG] Advertising integration temporarily disabled for debugging")
             
-            # Apply country filter to placeholders
-            if country:
-                country_code = country_mapping.get(country.lower(), country)
-                if len(country_code) == 2:
-                    placeholder_businesses = placeholder_businesses.filter(country__iexact=country_code)
-                else:
-                    placeholder_businesses = placeholder_businesses.filter(
-                        Q(country__iexact=country_code) | Q(country__iexact=country[:2])
-                    )
-            
-            # Apply category filtering to placeholders
-            if category and not main_category:
-                placeholder_businesses = placeholder_businesses.filter(category__icontains=category)
-            
-            # Advanced subcategory filtering for placeholders
-            if main_category:
-                from marketplace.marketplace_categories import MARKETPLACE_CATEGORIES, get_business_types_for_subcategory
-                from core.business_types import OLD_CATEGORY_MAPPING
-                
-                if subcategory and subcategory != 'all':
-                    # Filter by specific subcategory
-                    business_types = get_business_types_for_subcategory(main_category, subcategory)
-                    old_categories = []
-                    for bt in business_types:
-                        for old_cat, mapped_type in OLD_CATEGORY_MAPPING.items():
-                            if mapped_type == bt:
-                                old_categories.append(old_cat)
-                    
-                    placeholder_businesses = placeholder_businesses.filter(
-                        Q(category__in=business_types) |
-                        Q(category__icontains=subcategory) |
-                        Q(category__in=old_categories)
-                    )
-                else:
-                    # Filter by main category
-                    all_business_types = set()
-                    if main_category in MARKETPLACE_CATEGORIES:
-                        for sub_data in MARKETPLACE_CATEGORIES[main_category]['subcategories'].values():
-                            all_business_types.update(sub_data.get('business_types', []))
-                    
-                    old_categories = []
-                    for bt in all_business_types:
-                        for old_cat, mapped_type in OLD_CATEGORY_MAPPING.items():
-                            if mapped_type == bt:
-                                old_categories.append(old_cat)
-                    
-                    placeholder_businesses = placeholder_businesses.filter(
-                        Q(category__in=list(all_business_types)) |
-                        Q(category__in=old_categories)
-                    )
-            
-            # Apply search filter to placeholders
-            if search_query:
-                placeholder_businesses = placeholder_businesses.filter(
-                    Q(name__icontains=search_query) |
-                    Q(category__icontains=search_query) |
-                    Q(description__icontains=search_query)
-                )
-            
-            # Get active featured campaigns to check for featured status
-            from advertising.models import AdvertisingCampaign
-            from datetime import date
-            
-            today = date.today()
-            featured_campaign_business_ids = set(
-                AdvertisingCampaign.objects.filter(
-                    type='featured',
-                    status='active',
-                    start_date__lte=today,
-                    end_date__gte=today,
-                    business__city__iexact=city
-                ).values_list('business_id', flat=True)
-            )
-            
-            # Convert PlaceholderBusiness to standard format
-            for business in placeholder_businesses:
-                is_featured = business.id in featured_campaign_business_ids
-                business_data = {
-                    'id': str(business.id),  # Convert to string for consistency
-                    'business_name': business.name,  # Frontend expects business_name
-                    'name': business.name,  # Also include name for backward compatibility
-                    'phone': business.phone,
-                    'address': business.address,
-                    'category': business.category,
-                    'category_display': business.category.title() if business.category else 'Business',
-                    'email': business.email or '',
-                    'description': business.description or '',
-                    'image_url': business.image_url or '',
-                    'logo': business.logo_url or '',  # Frontend expects 'logo'
-                    'logo_url': business.logo_url or '',
-                    'website': business.website or '',
-                    'opening_hours': business.opening_hours or {},
-                    'rating': float(business.rating) if business.rating else None,
-                    'average_rating': float(business.rating) if business.rating else 4.2,  # Frontend expects average_rating
-                    'social_media': business.social_media or {},
-                    'city': business.city,
-                    'country': business.country,
-                    'latitude': float(business.latitude) if business.latitude else None,
-                    'longitude': float(business.longitude) if business.longitude else None,
-                    'is_verified': business.converted_to_real_business,
-                    'is_featured': is_featured,  # Add featured status from advertising campaigns
-                    'is_placeholder': True,
-                    'source': 'placeholder'
-                }
-                
-                # Featured businesses get priority (added to front of list)
-                if is_featured:
-                    all_results.insert(0, business_data)
-                else:
-                    all_results.append(business_data)
-            
-            # 2. Get BusinessListing records (published real businesses)
+            # 🎯 [BUSINESS_LISTING_DEBUG] Get real BusinessListing records only
             business_listings = BusinessListing.objects.filter(
                 is_visible_in_marketplace=True,
                 business__is_active=True,
                 city__iexact=city
-            ).select_related('business', 'business__profile')
+            ).select_related('business', 'business__userprofile')
+            
+            logger.info(f"[BUSINESS_LISTING_DEBUG] Found {business_listings.count()} business listings in {city}")
+            
+            from marketplace.marketplace_categories import MARKETPLACE_CATEGORIES, get_business_types_for_subcategory
             
             # Apply country filter to listings
             if country:
@@ -578,17 +472,18 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     Q(search_tags__overlap=[search_query.lower()])
                 )
             
-            # Convert BusinessListing to standard format
+            # 🎯 [BUSINESS_CONVERSION_DEBUG] Convert BusinessListing to standard format
+            logger.info(f"[BUSINESS_CONVERSION_DEBUG] Processing {business_listings.count()} business listings")
+            
             for listing in business_listings:
                 user = listing.business
                 profile = getattr(user, 'userprofile', None)
                 business_name = getattr(profile, 'business_name', user.email) if profile else user.email
                 
-                # Check if business is featured from advertising campaigns or listing
-                is_featured = (
-                    listing.is_featured or  # Direct featured status
-                    (user.id in featured_campaign_business_ids if hasattr(user, 'id') else False)
-                )
+                # 🎯 [FEATURED_CHECK] Use direct BusinessListing.is_featured for now
+                is_featured = listing.is_featured or False
+                
+                logger.info(f"[BUSINESS_DEBUG] Business '{business_name}' (User ID: {user.id}) - Featured: {is_featured} (from listing)")
                 
                 business_data = {
                     'id': str(listing.id),  # UUID, convert to string
@@ -618,20 +513,22 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'source': 'published'
                 }
                 
-                # Featured businesses get priority (added to front of list)
+                # 🎯 [ADVERTISING_PRIORITY] Featured businesses get priority (added to front of list)
                 if is_featured:
                     all_results.insert(0, business_data)
+                    logger.info(f"[ADVERTISING_DEBUG] ⬆️ Featured business '{business_name}' moved to top of results")
                 else:
                     all_results.append(business_data)
             
-            logger.info(f"[Marketplace] Found {len(all_results)} total businesses ({len(placeholder_businesses)} placeholders, {len(business_listings)} published)")
+            logger.info(f"[MARKETPLACE_DEBUG] Found {len(all_results)} total real businesses (no more fake placeholders)")
             
-            # Sort combined results by verification status, rating, and name
+            # 🎯 [SORTING_DEBUG] Sort results by featured status, rating, and name
             all_results.sort(key=lambda x: (
-                -1 if not x['is_placeholder'] else 0,  # Published businesses first
+                -1 if x['is_featured'] else 0,  # Featured businesses first
                 -(x['rating'] or 0),  # Higher ratings first
                 x['name']  # Then alphabetical
             ))
+            logger.info(f"[SORTING_DEBUG] Sorted {len(all_results)} businesses by featured status and rating")
             
             # Manual pagination of combined results
             total_count = len(all_results)
@@ -653,10 +550,12 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 'city': city,
                 'country': country,
                 'category': category,
-                'breakdown': {
-                    'placeholder_businesses': len(placeholder_businesses),
-                    'published_businesses': len(business_listings),
-                    'total': total_count
+                'debug_info': {
+                    'real_businesses': len(business_listings),
+                    'featured_businesses': len([b for b in page_results if b.get('is_featured', False)]),
+                    'total_results': total_count,
+                    'city_filter': city,
+                    'country_filter': country
                 }
             })
             
@@ -1103,17 +1002,37 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         Get or update current business's marketplace listing
         Endpoint: GET/PATCH /api/marketplace/business/listing/
         """
-        if not hasattr(request.user, 'tenant_id') or not request.user.tenant_id:
-            logger.warning(f"[BusinessListing] User {request.user.id} does not have tenant_id")
-            return Response(
-                {'success': False, 'error': 'Only businesses can manage listings'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # 🛠️ [AUTH_DEBUG] Check user authentication and tenant access
+        logger.info(f"[BusinessListing] User: {request.user.id}, Email: {getattr(request.user, 'email', 'N/A')}")
+        logger.info(f"[BusinessListing] Has tenant_id attr: {hasattr(request.user, 'tenant_id')}")
+        logger.info(f"[BusinessListing] Tenant ID value: {getattr(request.user, 'tenant_id', 'NONE')}")
         
-        # Get or create the business listing
+        if not hasattr(request.user, 'tenant_id') or not request.user.tenant_id:
+            logger.warning(f"[BusinessListing] User {request.user.id} does not have tenant_id - checking alternatives")
+            
+            # Try to get tenant from related business or tenant relationship
+            tenant_id = None
+            if hasattr(request.user, 'tenant') and request.user.tenant:
+                tenant_id = request.user.tenant.id
+                logger.info(f"[BusinessListing] Found tenant via user.tenant: {tenant_id}")
+            elif hasattr(request.user, 'business_id') and request.user.business_id:
+                tenant_id = request.user.business_id
+                logger.info(f"[BusinessListing] Found tenant via user.business_id: {tenant_id}")
+            
+            if not tenant_id:
+                return Response(
+                    {'success': False, 'error': 'Only businesses can manage listings'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        # 🛠️ [LISTING_DEBUG] Get or create the business listing
+        logger.info(f"[BusinessListing] Attempting to find listing for user {request.user.id}")
+        
         try:
             listing = BusinessListing.objects.get(business=request.user)
+            logger.info(f"[BusinessListing] Found existing listing: {listing.id}")
         except BusinessListing.DoesNotExist:
+            logger.info(f"[BusinessListing] No listing found, creating new one")
             # Create new listing with business profile data
             profile_data = {}
             if hasattr(request.user, 'userprofile'):
