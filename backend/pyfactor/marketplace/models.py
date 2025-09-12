@@ -69,6 +69,41 @@ class BusinessListing(models.Model):
     )
     description = models.TextField(blank=True)
     
+    # Cloudinary image fields
+    logo_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='Cloudinary URL for business logo'
+    )
+    logo_public_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Cloudinary public ID for logo'
+    )
+    
+    # Cover image for marketplace listing
+    cover_image_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='Cloudinary URL for cover/banner image'
+    )
+    cover_image_public_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Cloudinary public ID for cover image'
+    )
+    
+    # Gallery images (up to 10 images)
+    gallery_images = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of Cloudinary image URLs and public IDs for gallery'
+    )
+    
     # Subcategory fields for marketplace categorization
     manual_subcategories = ArrayField(
         models.CharField(max_length=50),

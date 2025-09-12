@@ -131,6 +131,9 @@ urlpatterns = [
     # Direct user profile routes for frontend compatibility
     path('api/user/', include('users.api.urls')),
     
+    # Media/Cloudinary API routes
+    path('api/media/', include('media.urls')),
+    
     # Business SMS API routes
     path('api/business/', include('business.urls')),
     
