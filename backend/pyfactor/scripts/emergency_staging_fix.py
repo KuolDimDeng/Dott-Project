@@ -5,7 +5,7 @@ Emergency Staging Fix Script
 Fixes all critical database schema and API issues found in staging.
 
 Run in staging shell:
-    python3 scripts/emergency_staging_fix.py
+    python manage.py shell < scripts/emergency_staging_fix.py
 
 Issues addressed:
 1. Missing courier_profiles.verified_by_id column
@@ -13,14 +13,6 @@ Issues addressed:
 3. Marketplace API errors
 4. Business API endpoint issues
 """
-
-import os
-import sys
-import django
-
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-django.setup()
 
 from django.db import connection, transaction
 from django.db.migrations.recorder import MigrationRecorder
@@ -247,6 +239,8 @@ def verify_fixes():
         
     except Exception as e:
         logger.error(f"❌ Verification failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def main():
@@ -290,4 +284,6 @@ def main():
 
 if __name__ == '__main__':
     success = main()
-    sys.exit(0 if success else 1)
+    # Don't exit when running in shell
+    if not success:
+        print("❌ Fix failed - please check the errors above")
