@@ -11,7 +11,11 @@ from rest_framework.response import Response
 from django.contrib.auth.decorators import login_required
 import cloudinary
 import cloudinary.uploader
-from services.cloudinary_service import cloudinary_service
+try:
+    from services.cloudinary_service import cloudinary_service
+except ImportError:
+    # If services is not available, create a dummy service
+    cloudinary_service = None
 import logging
 import os
 
@@ -191,7 +195,15 @@ def get_cloudinary_usage(request):
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Get usage stats from Cloudinary service
-        usage_stats = cloudinary_service.get_usage_stats()
+        if cloudinary_service:
+            usage_stats = cloudinary_service.get_usage_stats()
+        else:
+            # Return mock data if service not available
+            usage_stats = {
+                'storage_used_gb': 0,
+                'bandwidth_used_gb': 0,
+                'message': 'Cloudinary service not configured'
+            }
         
         return Response({
             'success': True,
