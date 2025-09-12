@@ -558,13 +558,17 @@ export default function MarketplaceScreen() {
             )}
           </View>
         
-        <Text style={styles.businessCategory}>{item.category_display}</Text>
+        <Text style={styles.businessCategory}>{item.business_type_display || item.category_display || 'Business'}</Text>
         
         <View style={styles.businessMeta}>
           <View style={styles.ratingContainer}>
             <Icon name="star" size={14} color="#fbbf24" />
             <Text style={styles.rating}>
-              {item.average_rating ? item.average_rating.toFixed(1) : 'New'}
+              {item.average_rating && item.total_reviews >= 10 
+                ? item.average_rating.toFixed(1) 
+                : item.total_reviews > 0 && item.total_reviews < 10
+                ? `${item.total_reviews} reviews`
+                : 'Be the first'}
             </Text>
           </View>
           
