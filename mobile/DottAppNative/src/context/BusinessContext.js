@@ -271,7 +271,13 @@ export const BusinessProvider = ({ children }) => {
     return businessConfig.features[feature] === true;
   };
 
-  const getMenuItems = () => {
+  // Add refresh function for menu items
+  const refreshMenuItems = () => {
+    // Just trigger a re-render by updating a state
+    setBusinessData(prev => ({ ...prev, lastUpdate: Date.now() }));
+  };
+
+  const getMenuItems = async () => {
     console.log('🔍 === getMenuItems CALLED (UPDATED) ===');
     console.log('🔍 businessData.businessName:', businessData?.businessName);
     console.log('🔍 businessData.businessType:', businessData?.businessType);
@@ -280,6 +286,18 @@ export const BusinessProvider = ({ children }) => {
     console.log('🔍 businessConfig exists:', !!businessConfig);
     
     let menuItems = [];
+    
+    // Load purchased features
+    let purchasedFeatures = [];
+    try {
+      const savedFeatures = await AsyncStorage.getItem(`selectedFeatures_${user?.id}`);
+      if (savedFeatures) {
+        purchasedFeatures = JSON.parse(savedFeatures);
+        console.log('🔍 Loaded purchased features:', purchasedFeatures);
+      }
+    } catch (error) {
+      console.error('Failed to load purchased features:', error);
+    }
     
     // First use dynamic menu items from API if available
     if (dynamicMenuItems && dynamicMenuItems.length > 0) {
@@ -483,6 +501,50 @@ export const BusinessProvider = ({ children }) => {
       console.log('📊 Added Dashboard option for business:', dashboardOption);
     }
     
+    // Add purchased features to menu
+    if (purchasedFeatures.length > 0) {
+      console.log('🔍 Adding purchased features to menu:', purchasedFeatures);
+      
+      // Define feature configurations (matching FeatureSelectionScreen)
+      const FEATURE_CONFIGS = {
+        'payroll': { title: 'Payroll', icon: 'people-outline', screen: 'PayrollManagement', color: '#10b981' },
+        'analytics': { title: 'Analytics', icon: 'analytics-outline', screen: 'AdvancedAnalytics', color: '#8b5cf6' },
+        'loyalty': { title: 'Loyalty', icon: 'gift-outline', screen: 'CustomerLoyalty', color: '#f59e0b' },
+        'email_marketing': { title: 'Email Marketing', icon: 'mail-outline', screen: 'EmailMarketing', color: '#ef4444' },
+        'reservations': { title: 'Reservations', icon: 'calendar-outline', screen: 'TableReservations', color: '#3b82f6' },
+        'delivery': { title: 'Delivery', icon: 'car-outline', screen: 'DeliveryManagement', color: '#06b6d4' },
+        'suppliers': { title: 'Suppliers', icon: 'business-outline', screen: 'SupplierManagement', color: '#84cc16' },
+        'recipe_costing': { title: 'Recipe Costing', icon: 'calculator-outline', screen: 'RecipeCosting', color: '#f97316' },
+        'booking': { title: 'Appointments', icon: 'time-outline', screen: 'AppointmentBooking', color: '#ec4899' },
+        'crm_advanced': { title: 'Advanced CRM', icon: 'person-add-outline', screen: 'AdvancedCRM', color: '#6366f1' },
+      };
+      
+      purchasedFeatures.forEach(featureId => {
+        const config = FEATURE_CONFIGS[featureId];
+        if (config) {
+          const featureMenuItem = {
+            id: featureId,
+            label: config.title,
+            title: config.title,
+            icon: config.icon,
+            screen: config.screen,
+            subtitle: `Premium feature`,
+            isPurchased: true
+          };
+          
+          // Check if already exists in menu
+          const alreadyExists = menuItems.some(item => 
+            item.id === featureId || item.screen === config.screen
+          );
+          
+          if (!alreadyExists) {
+            menuItems.push(featureMenuItem);
+            console.log('🔍 Added purchased feature to menu:', featureMenuItem);
+          }
+        }
+      });
+    }
+    
     console.log('🔍 Final menu items count:', menuItems.length);
     
     return menuItems;
@@ -536,6 +598,7 @@ export const BusinessProvider = ({ children }) => {
     // Helpers
     hasFeature,
     getMenuItems,
+    refreshMenuItems,
     getNavigationMode,
     isBusinessMode: businessData.isBusinessMode,
     isOnline: businessData.isOnline,

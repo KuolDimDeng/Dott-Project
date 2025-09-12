@@ -93,6 +93,9 @@ import DeliveryTrackingScreen from '../screens/courier/DeliveryTrackingScreen';
 import OrderListScreen from '../screens/courier/OrderListScreen';
 import CourierVerificationScreen from '../screens/courier/CourierVerificationScreen';
 
+// Import Feature Selection screen
+import FeatureSelectionScreen from '../screens/FeatureSelectionScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -251,6 +254,9 @@ export default function MainNavigator() {
       <Stack.Screen name="DeliveryTracking" component={DeliveryTrackingScreen} />
       <Stack.Screen name="OrderList" component={OrderListScreen} />
       <Stack.Screen name="CourierVerification" component={CourierVerificationScreen} />
+      
+      {/* Feature Selection screen */}
+      <Stack.Screen name="FeatureSelection" component={FeatureSelectionScreen} />
     </Stack.Navigator>
   );
 }

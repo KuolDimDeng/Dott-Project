@@ -8,12 +8,14 @@ User = get_user_model()
 
 class BusinessListingSerializer(serializers.ModelSerializer):
     """Serializer for business marketplace listings"""
-    business_name = serializers.CharField(source='business.business_name', read_only=True)
+    business_name = serializers.SerializerMethodField()
     business_email = serializers.EmailField(source='business.email', read_only=True)
     total_products = serializers.SerializerMethodField()
     is_open_now = serializers.SerializerMethodField()
     distance_km = serializers.FloatField(read_only=True, required=False)
-    business_type_display = serializers.CharField(source='get_business_type_display', read_only=True)
+    business_type_display = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    total_reviews = serializers.SerializerMethodField()
     
     class Meta:
         model = BusinessListing
@@ -28,7 +30,18 @@ class BusinessListingSerializer(serializers.ModelSerializer):
             'average_response_time', 'response_rate', 'distance_km',
             'created_at', 'updated_at', 'last_active'
         ]
-        read_only_fields = ['id', 'average_rating', 'total_reviews', 'total_orders']
+        read_only_fields = ['id', 'total_orders']
+    
+    def get_business_name(self, obj):
+        """Get business name from UserProfile"""
+        try:
+            # Try to get from UserProfile
+            if hasattr(obj.business, 'profile'):
+                return obj.business.profile.business_name or obj.business.profile.name or 'Unnamed Business'
+            # Fallback to email if no profile
+            return obj.business.email.split('@')[0].replace('.', ' ').title()
+        except Exception:
+            return 'Unnamed Business'
     
     def get_total_products(self, obj):
         """Get total number of active products"""
@@ -63,6 +76,55 @@ class BusinessListingSerializer(serializers.ModelSerializer):
             return open_time <= current_time <= close_time
         
         return False
+    
+    def get_business_type_display(self, obj):
+        """Get clean business type display name"""
+        # Clean up the business type display
+        if obj.business_type == 'RESTAURANT_CAFE':
+            return 'Restaurant'
+        elif obj.business_type == 'GROCERY_MARKET':
+            return 'Grocery Store'
+        elif obj.business_type == 'MEDICAL_DENTAL':
+            return 'Medical Practice'
+        elif obj.business_type == 'AUTO_PARTS_REPAIR':
+            return 'Auto Repair'
+        elif obj.business_type == 'FASHION_CLOTHING':
+            return 'Fashion & Clothing'
+        elif obj.business_type == 'ELECTRONICS_TECH':
+            return 'Electronics'
+        elif obj.business_type == 'HARDWARE_BUILDING':
+            return 'Hardware Store'
+        elif obj.business_type == 'BOOKSTORE_STATIONERY':
+            return 'Bookstore'
+        elif obj.business_type == 'FUEL_STATION':
+            return 'Fuel Station'
+        elif obj.business_type == 'SALON_SPA':
+            return 'Salon & Spa'
+        elif obj.business_type == 'FITNESS_CENTER':
+            return 'Fitness Center'
+        elif obj.business_type == 'HOTEL_HOSPITALITY':
+            return 'Hotel'
+        elif obj.business_type == 'TRANSPORT_SERVICE':
+            return 'Transport'
+        elif obj.business_type == 'FINANCIAL_SERVICES':
+            return 'Financial Services'
+        else:
+            # For other types, capitalize properly
+            return obj.business_type.replace('_', ' ').title()
+    
+    def get_average_rating(self, obj):
+        """Get average rating with threshold logic"""
+        # Only show rating if there are 10+ reviews to avoid bias
+        if obj.total_reviews < 10:
+            return None  # Will show "Be the first to rate" in frontend
+        return float(obj.average_rating) if obj.average_rating else 0.0
+    
+    def get_total_reviews(self, obj):
+        """Get total reviews with threshold logic"""
+        # Only show review count if there are 10+ reviews
+        if obj.total_reviews < 10:
+            return 0  # Frontend will show "Be the first to rate"
+        return obj.total_reviews
 
 
 class ConsumerProfileSerializer(serializers.ModelSerializer):

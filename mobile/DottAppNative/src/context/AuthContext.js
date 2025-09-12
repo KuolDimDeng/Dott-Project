@@ -6,6 +6,7 @@ import { userApi } from '../services/userApi';
 import { phoneAuthService } from '../services/phoneAuthApi';
 import walletService from '../services/walletService';
 import ENV, { getSessionBaseUrl } from '../config/environment';
+import SecureStorage from '../services/secureStorage';
 
 const AuthContext = createContext({});
 
@@ -22,9 +23,13 @@ export const AuthProvider = ({ children }) => {
   // Fetch complete user profile from backend
   const fetchUserProfile = async () => {
     try {
-      console.log('🔄 === FETCH USER PROFILE START ===');
-      const sessionId = await AsyncStorage.getItem('sessionId');
-      console.log('Session ID for profile fetch:', sessionId);
+      if (__DEV__) {
+        console.log('🔄 === FETCH USER PROFILE START ===');
+      }
+      const sessionId = await SecureStorage.getSecureItem('sessionId');
+      if (__DEV__) {
+        console.log('Session ID for profile fetch:', sessionId ? 'Present' : 'Not found');
+      }
       
       const response = await userApi.getCurrentUser();
       console.log('👤 === USER PROFILE RESPONSE ===');

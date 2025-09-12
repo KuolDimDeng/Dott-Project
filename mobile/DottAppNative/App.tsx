@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import AuthNavigator from './src/navigation/AuthNavigator';
@@ -13,6 +13,8 @@ import { StatusBar, View, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import EnvironmentBadge from './src/components/EnvironmentBadge';
 import CallManager from './src/components/CallManager';
+import ErrorBoundary from './src/components/ErrorBoundary';
+// Sentry initialization moved to index.js for proper timing
 
 const Stack = createStackNavigator();
 
@@ -69,62 +71,7 @@ function AppNavigator() {
   );
 }
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('App Error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={{ 
-          flex: 1, 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          backgroundColor: '#ffffff',
-          padding: 20 
-        }}>
-          <Text style={{ 
-            fontSize: 24, 
-            fontWeight: 'bold', 
-            color: '#ef4444',
-            marginBottom: 20,
-            textAlign: 'center'
-          }}>
-            Something went wrong
-          </Text>
-          <Text style={{ 
-            fontSize: 16, 
-            color: '#666',
-            textAlign: 'center',
-            marginBottom: 20
-          }}>
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </Text>
-          <Text style={{ 
-            fontSize: 14, 
-            color: '#888',
-            textAlign: 'center'
-          }}>
-            Please restart the app
-          </Text>
-        </View>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+// The comprehensive ErrorBoundary is now imported from components
 
 export default function App() {
   return (

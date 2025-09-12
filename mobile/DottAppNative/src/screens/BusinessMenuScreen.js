@@ -758,7 +758,16 @@ export default function BusinessMenuScreen() {
                   }
                   if (item.screen) {
                     try {
-                      navigation.navigate(item.screen);
+                      // Check if it's a purchased feature
+                      if (item.isPurchased) {
+                        Alert.alert(
+                          item.title,
+                          'This premium feature is coming soon! Thank you for your purchase.',
+                          [{ text: 'OK' }]
+                        );
+                      } else {
+                        navigation.navigate(item.screen);
+                      }
                     } catch (error) {
                       console.log(`📱 Screen ${item.screen} not implemented yet`);
                     }
@@ -779,20 +788,12 @@ export default function BusinessMenuScreen() {
             iconColor="#ffffff"
             onPress={() => {
               console.log('📱 Add Feature clicked by:', user?.email);
-              Alert.alert(
-                'Add Feature',
-                'Select additional features to add to your business dashboard.',
-                [
-                  { 
-                    text: 'View Available Features', 
-                    onPress: () => {
-                      // Navigate to feature selection screen
-                      navigation.navigate('FeatureSelection');
-                    }
-                  },
-                  { text: 'Cancel', style: 'cancel' }
-                ]
-              );
+              try {
+                navigation.navigate('FeatureSelection');
+              } catch (error) {
+                console.error('Navigation error:', error);
+                Alert.alert('Error', 'Feature selection screen is not available yet.');
+              }
             }}
           />
         </View>
