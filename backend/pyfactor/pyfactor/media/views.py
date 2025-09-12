@@ -34,20 +34,49 @@ def upload_image(request):
     - advertisement: Advertising campaign images
     - marketplace: General marketplace images
     """
+    logger.info("🎯 [CLOUDINARY_UPLOAD] === START UPLOAD REQUEST ===")
+    logger.info(f"[CLOUDINARY_UPLOAD] Request method: {request.method}")
+    logger.info(f"[CLOUDINARY_UPLOAD] Request user: {request.user if request.user.is_authenticated else 'Anonymous'}")
+    logger.info(f"[CLOUDINARY_UPLOAD] Request FILES: {list(request.FILES.keys())}")
+    logger.info(f"[CLOUDINARY_UPLOAD] Request DATA: {dict(request.data)}")
+    
     try:
+        # Check Cloudinary configuration
+        cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', '')
+        api_key = os.environ.get('CLOUDINARY_API_KEY', '')
+        api_secret = os.environ.get('CLOUDINARY_API_SECRET', '')
+        
+        logger.info(f"[CLOUDINARY_UPLOAD] Cloudinary config - Cloud Name: {cloud_name[:10]}..." if cloud_name else "[CLOUDINARY_UPLOAD] ⚠️ CLOUDINARY_CLOUD_NAME not set!")
+        logger.info(f"[CLOUDINARY_UPLOAD] Cloudinary config - API Key: {api_key[:10]}..." if api_key else "[CLOUDINARY_UPLOAD] ⚠️ CLOUDINARY_API_KEY not set!")
+        logger.info(f"[CLOUDINARY_UPLOAD] Cloudinary config - API Secret: {'***' if api_secret else 'NOT SET'}")
+        
+        if not all([cloud_name, api_key, api_secret]):
+            logger.error("[CLOUDINARY_UPLOAD] ❌ Missing Cloudinary configuration!")
+            return Response({
+                'success': False,
+                'message': 'Cloudinary not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         # Get the uploaded file
         image_file = request.FILES.get('image')
         if not image_file:
+            logger.warning("[CLOUDINARY_UPLOAD] ⚠️ No image file provided in request")
             return Response({
                 'success': False,
                 'message': 'No image file provided'
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        logger.info(f"[CLOUDINARY_UPLOAD] Image file received: {image_file.name}")
+        logger.info(f"[CLOUDINARY_UPLOAD] Image size: {image_file.size} bytes")
+        logger.info(f"[CLOUDINARY_UPLOAD] Image content type: {image_file.content_type}")
+        
         # Get purpose (what the image is for)
         purpose = request.data.get('purpose', 'general')
+        logger.info(f"[CLOUDINARY_UPLOAD] Upload purpose: {purpose}")
         
         # Get user ID for organization
         user_id = str(request.user.id) if request.user.is_authenticated else None
+        logger.info(f"[CLOUDINARY_UPLOAD] User ID: {user_id}")
         
         # Different transformations based on purpose
         transformations = []
@@ -99,22 +128,44 @@ def upload_image(request):
                 {'fetch_format': 'auto'}
             ]
         
-        # Upload to Cloudinary
-        upload_result = cloudinary.uploader.upload(
-            image_file,
-            folder=folder,
-            resource_type="image",
-            transformation=transformations,
-            eager=eager_transformations,
-            eager_async=True,  # Process transformations asynchronously
-            use_filename=True,
-            unique_filename=True,
-            overwrite=False,
-            tags=[purpose, 'dott'],
-            context={'uploaded_by': user_id} if user_id else {}
+        # Configure Cloudinary
+        logger.info("[CLOUDINARY_UPLOAD] Configuring Cloudinary...")
+        cloudinary.config(
+            cloud_name=cloud_name,
+            api_key=api_key,
+            api_secret=api_secret,
+            secure=True
         )
         
-        logger.info(f"[CLOUDINARY_UPLOAD] Successfully uploaded {purpose} image: {upload_result['public_id']}")
+        # Upload to Cloudinary
+        logger.info(f"[CLOUDINARY_UPLOAD] Starting upload to Cloudinary folder: {folder}")
+        logger.info(f"[CLOUDINARY_UPLOAD] Transformations: {transformations}")
+        logger.info(f"[CLOUDINARY_UPLOAD] Eager transformations: {eager_transformations}")
+        
+        try:
+            upload_result = cloudinary.uploader.upload(
+                image_file,
+                folder=folder,
+                resource_type="image",
+                transformation=transformations,
+                eager=eager_transformations,
+                eager_async=True,  # Process transformations asynchronously
+                use_filename=True,
+                unique_filename=True,
+                overwrite=False,
+                tags=[purpose, 'dott'],
+                context={'uploaded_by': user_id} if user_id else {}
+            )
+            
+            logger.info(f"[CLOUDINARY_UPLOAD] ✅ Successfully uploaded {purpose} image!")
+            logger.info(f"[CLOUDINARY_UPLOAD] Public ID: {upload_result['public_id']}")
+            logger.info(f"[CLOUDINARY_UPLOAD] Secure URL: {upload_result['secure_url']}")
+            logger.info(f"[CLOUDINARY_UPLOAD] Format: {upload_result.get('format')}")
+            logger.info(f"[CLOUDINARY_UPLOAD] Size: {upload_result.get('bytes')} bytes")
+            
+        except Exception as upload_error:
+            logger.error(f"[CLOUDINARY_UPLOAD] ❌ Upload failed: {str(upload_error)}")
+            raise upload_error
         
         # Prepare response with all URLs
         response_data = {
@@ -130,15 +181,25 @@ def upload_image(request):
         
         # Add eager transformation URLs if available
         if upload_result.get('eager'):
+            logger.info(f"[CLOUDINARY_UPLOAD] Eager transformations count: {len(upload_result['eager'])}")
             if len(upload_result['eager']) > 0:
                 response_data['thumbnail_url'] = upload_result['eager'][0]['secure_url']
+                logger.info(f"[CLOUDINARY_UPLOAD] Thumbnail URL: {response_data['thumbnail_url']}")
             if len(upload_result['eager']) > 1:
                 response_data['small_url'] = upload_result['eager'][1]['secure_url']
+                logger.info(f"[CLOUDINARY_UPLOAD] Small URL: {response_data['small_url']}")
+        
+        logger.info(f"[CLOUDINARY_UPLOAD] === UPLOAD SUCCESSFUL ===")
+        logger.info(f"[CLOUDINARY_UPLOAD] Response data: {response_data}")
         
         return Response(response_data)
         
     except Exception as e:
-        logger.error(f"[CLOUDINARY_UPLOAD] Error uploading image: {e}")
+        logger.error(f"[CLOUDINARY_UPLOAD] ❌ ERROR: {str(e)}")
+        logger.error(f"[CLOUDINARY_UPLOAD] Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"[CLOUDINARY_UPLOAD] Traceback: {traceback.format_exc()}")
+        
         return Response({
             'success': False,
             'message': f'Failed to upload image: {str(e)}'
