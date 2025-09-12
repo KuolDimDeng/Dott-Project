@@ -301,8 +301,8 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         profile, created = ConsumerProfile.objects.get_or_create(
             user=user,
             defaults={
-                'current_country': user.userprofile.country if hasattr(user, 'userprofile') else '',
-                'current_city': user.userprofile.city if hasattr(user, 'userprofile') else ''
+                'current_country': user.profile.country if hasattr(user, 'profile') else '',
+                'current_city': user.profile.city if hasattr(user, 'profile') else ''
             }
         )
         return profile
@@ -422,7 +422,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 is_visible_in_marketplace=True,
                 business__is_active=True,
                 city__iexact=city
-            ).select_related('business', 'business__userprofile')
+            ).select_related('business', 'business__profile')
             
             logger.info(f"[BUSINESS_LISTING_DEBUG] Found {business_listings.count()} business listings in {city}")
             
