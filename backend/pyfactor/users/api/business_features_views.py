@@ -186,19 +186,25 @@ class BusinessFeaturesView(APIView):
             
             # Legacy users always see all features
             if is_legacy_user:
-                # Get business name for legacy users
+                # Get business name and type for legacy users
                 business_name = None
+                simplified_type = None
                 if profile.business:
                     business_name = profile.business.name
+                    # Try to get business type even for legacy users
+                    if hasattr(profile.business, 'details') and profile.business.details:
+                        simplified_type = profile.business.details.simplified_business_type
                     
-                # Legacy users get all menu items
+                # Legacy users get all features including menu
                 all_features = ['jobs', 'pos', 'menu']
-                menu_items = get_menu_items_for_business_type('OTHER', all_features)
+                # Use actual business type if available, otherwise 'OTHER'
+                business_type_for_menu = simplified_type if simplified_type else 'RESTAURANT_CAFE'  # Default to restaurant for legacy
+                menu_items = get_menu_items_for_business_type(business_type_for_menu, all_features)
                 
                 return Response({
-                    'business_type': None,
+                    'business_type': simplified_type,
                     'business_name': business_name,
-                    'features': ['jobs', 'pos'],
+                    'features': all_features,  # Include menu in features for legacy users
                     'menu_items': menu_items,
                     'category': 'OTHER',
                     'is_legacy_user': True

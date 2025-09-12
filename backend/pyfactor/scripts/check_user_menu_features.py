@@ -51,7 +51,7 @@ def check_user_menu(email='support@dottapps.com'):
             
             # Get features
             business_type = profile.simplified_business_type or profile.business_type
-            features = get_features_for_business_type(business_type, is_legacy)
+            features = get_features_for_business_type(business_type)
             logger.info(f"\n🎯 Features for business type '{business_type}':")
             logger.info(f"   Features: {features}")
             
