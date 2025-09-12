@@ -20,6 +20,17 @@ export default function SignupOptionsScreen() {
       </View>
 
       <View style={styles.content}>
+        <TouchableOpacity 
+          style={styles.optionButton}
+          onPress={() => navigation.navigate('PhoneSignup')}
+        >
+          <Icon name="call-outline" size={24} color="#14532d" />
+          <View style={styles.optionText}>
+            <Text style={styles.optionTitle}>Sign up with Phone</Text>
+            <Text style={styles.optionSubtitle}>Use your phone number</Text>
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.optionButton}
           onPress={() => navigation.navigate('Register')}
@@ -28,14 +39,6 @@ export default function SignupOptionsScreen() {
           <View style={styles.optionText}>
             <Text style={styles.optionTitle}>Sign up with Email</Text>
             <Text style={styles.optionSubtitle}>Use your email address</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.optionButton}>
-          <Icon name="call-outline" size={24} color="#14532d" />
-          <View style={styles.optionText}>
-            <Text style={styles.optionTitle}>Sign up with Phone</Text>
-            <Text style={styles.optionSubtitle}>Use your phone number</Text>
           </View>
         </TouchableOpacity>
 

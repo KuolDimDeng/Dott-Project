@@ -88,7 +88,7 @@ export default function PersonalInfoScreen({ navigation }) {
     if (user) {
       // First, try to get the full profile from the API
       try {
-        const response = await api.get('/api/users/me/');
+        const response = await api.get('/users/me/');
         console.log('📝 PersonalInfo - Full API response:', response.data);
         
         // The /api/users/me/ returns a flat structure

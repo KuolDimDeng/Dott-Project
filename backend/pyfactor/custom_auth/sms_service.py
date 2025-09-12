@@ -10,6 +10,7 @@ import requests
 import json
 from typing import Tuple, Optional, Dict, Any
 from django.conf import settings
+from .sms_service_smart import smart_sms_service
 
 # Conditional Twilio import - handle gracefully if not installed
 try:
@@ -90,9 +91,10 @@ class SMSService:
     
     def send_otp(self, phone_number: str, otp_code: str) -> Tuple[bool, str, Optional[str]]:
         """
-        Send OTP code via SMS using intelligent routing:
+        Send OTP code via SMS using SmartSMSService for intelligent routing:
         - African numbers: Africa's Talking (primary) -> Twilio (fallback)
         - Other numbers: Twilio only
+        - Future: WhatsApp Business API support
         
         Args:
             phone_number: Phone number in E.164 format (e.g., +1234567890)
@@ -101,36 +103,9 @@ class SMSService:
         Returns:
             Tuple of (success, status_message, message_sid)
         """
-        # Format the message
-        message_body = f"Your Dott verification code is: {otp_code}\n\nThis code will expire in 10 minutes."
-        
-        # Check if it's an African number
-        is_african = self._is_african_number(phone_number)
-        
-        if is_african:
-            logger.info(f"📍 Detected African number {phone_number}, using Africa's Talking first")
-            
-            # Try Africa's Talking first for African numbers
-            if self.at_available:
-                success, message, message_id = self._send_via_africas_talking(phone_number, message_body)
-                if success:
-                    return success, message, message_id
-                else:
-                    logger.warning(f"Africa's Talking failed, falling back to Twilio: {message}")
-            
-            # Fallback to Twilio for African numbers
-            if self.twilio_client:
-                logger.info("Using Twilio as fallback for African number")
-                return self._send_via_twilio(phone_number, message_body)
-        else:
-            # Use Twilio for non-African numbers
-            logger.info(f"📍 Non-African number {phone_number}, using Twilio")
-            if self.twilio_client:
-                return self._send_via_twilio(phone_number, message_body)
-        
-        # If no service available, simulate
-        logger.warning(f"📱 SIMULATED SMS to {phone_number}: {message_body}")
-        return True, "SMS simulated (no credentials configured)", None
+        # Use the smart SMS service which has enhanced African country detection
+        # and WhatsApp support preparation
+        return smart_sms_service.send_otp(phone_number, otp_code)
     
     def _send_via_africas_talking(self, phone_number: str, message: str) -> Tuple[bool, str, Optional[str]]:
         """Send SMS via Africa's Talking API"""

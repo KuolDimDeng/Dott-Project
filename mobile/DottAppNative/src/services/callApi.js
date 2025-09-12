@@ -31,7 +31,7 @@ const callApi = {
   // Initiate a call
   initiateCall: async (conversationId, callType = 'voice') => {
     try {
-      const response = await api.post(`/api/chat/conversations/${conversationId}/initiate_call/`, {
+      const response = await api.post(`/chat/conversations/${conversationId}/initiate_call/`, {
         call_type: callType,
       });
       return response.data;
@@ -44,7 +44,7 @@ const callApi = {
   // Accept a call
   acceptCall: async (conversationId, sessionId) => {
     try {
-      const response = await api.post(`/api/chat/conversations/${conversationId}/accept_call/`, {
+      const response = await api.post(`/chat/conversations/${conversationId}/accept_call/`, {
         session_id: sessionId,
       });
       return response.data;
@@ -57,7 +57,7 @@ const callApi = {
   // Decline a call
   declineCall: async (conversationId, sessionId) => {
     try {
-      const response = await api.post(`/api/chat/conversations/${conversationId}/decline_call/`, {
+      const response = await api.post(`/chat/conversations/${conversationId}/decline_call/`, {
         session_id: sessionId,
       });
       return response.data;
@@ -70,7 +70,7 @@ const callApi = {
   // End a call
   endCall: async (conversationId, sessionId) => {
     try {
-      const response = await api.post(`/api/chat/conversations/${conversationId}/end_call/`, {
+      const response = await api.post(`/chat/conversations/${conversationId}/end_call/`, {
         session_id: sessionId,
       });
       return response.data;
@@ -83,7 +83,7 @@ const callApi = {
   // Update WebRTC data (offer/answer/ICE candidates)
   updateWebRTCData: async (conversationId, sessionId, dataType, data) => {
     try {
-      const response = await api.post(`/api/chat/conversations/${conversationId}/update_webrtc_data/`, {
+      const response = await api.post(`/chat/conversations/${conversationId}/update_webrtc_data/`, {
         session_id: sessionId,
         data_type: dataType, // 'offer', 'answer', or 'ice_candidate'
         data: data,
@@ -98,7 +98,7 @@ const callApi = {
   // Get call history
   getCallHistory: async () => {
     try {
-      const response = await api.get('/api/chat/conversations/call_history/');
+      const response = await api.get('/chat/conversations/call_history/');
       return response.data;
     } catch (error) {
       console.error('Error fetching call history:', error.response?.data || error.message);

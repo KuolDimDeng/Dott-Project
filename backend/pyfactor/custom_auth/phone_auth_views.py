@@ -19,7 +19,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 # Import our custom models and services
-from .phone_otp_models import PhoneOTP, PhoneVerificationAttempt
+from .phone_otp_models import PhoneOTP, PhoneVerificationAttempt, UserPhonePIN
 from .models import User, Tenant
 from .sms_service import sms_service
 from session_manager.services import SessionService
@@ -238,6 +238,8 @@ def verify_otp(request):
         data = request.data if hasattr(request, 'data') else json.loads(request.body)
         phone_number = data.get('phone')
         otp_code = data.get('code')
+        first_name = data.get('first_name', '')
+        last_name = data.get('last_name', '')
         
         if not phone_number or not otp_code:
             return Response({
@@ -320,6 +322,18 @@ def verify_otp(request):
             user = User.objects.get(phone_number=normalized_phone)
             logger.info(f"👤 Found existing user for {normalized_phone}: {user.email}")
             
+            # Update first_name and last_name if they're empty and provided
+            updated = False
+            if first_name and not user.first_name:
+                user.first_name = first_name
+                updated = True
+            if last_name and not user.last_name:
+                user.last_name = last_name
+                updated = True
+            if updated:
+                user.save()
+                logger.info(f"📝 Updated user names: {user.first_name} {user.last_name}")
+            
         except User.DoesNotExist:
             try:
                 # Create new user with phone as email (temporary)
@@ -334,10 +348,12 @@ def verify_otp(request):
                     temp_email = f"phone_{phone_digits}_{counter}@dottapps.com"
                     counter += 1
                 
-                # Create user
+                # Create user with provided names
                 user = User.objects.create_user(
                     email=temp_email,
                     phone_number=normalized_phone,
+                    first_name=first_name or '',
+                    last_name=last_name or '',
                     is_active=True,
                     onboarding_completed=False  # Will need to complete onboarding
                 )
@@ -405,7 +421,9 @@ def verify_otp(request):
                 'id': user.id,
                 'email': user.email,
                 'phone_number': user.phone_number,
-                'name': user.name or '',
+                'first_name': user.first_name or '',
+                'last_name': user.last_name or '',
+                'name': f"{user.first_name or ''} {user.last_name or ''}".strip() or user.name or '',
                 'role': user.role,
                 'has_business': user.onboarding_completed,  # Simplified for mobile
                 'onboarding_completed': user.onboarding_completed,
@@ -416,6 +434,11 @@ def verify_otp(request):
             return Response({
                 'success': True,
                 'message': 'Login successful' if not created else 'Account created and logged in',
+                'is_new_user': created,
+                'session_id': session_token,
+                'session_token': session_token,
+                'auth_token': session_token,
+                'user': user_data,
                 'data': {
                     'token': session_token,
                     'user': user_data,
@@ -482,4 +505,254 @@ def phone_auth_status(request):
         return Response({
             'success': False,
             'message': 'Failed to get status'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def check_account(request):
+    """
+    Check if a phone number has an account and PIN set.
+    Used for smart button text in login screen.
+    """
+    try:
+        data = request.data if hasattr(request, 'data') else json.loads(request.body)
+        phone_number = data.get('phone')
+        
+        if not phone_number:
+            return Response({
+                'success': False,
+                'message': 'Phone number is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Normalize phone number
+        normalized_phone = normalize_phone_number(phone_number)
+        if not normalized_phone:
+            return Response({
+                'success': False,
+                'message': 'Invalid phone number format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user exists
+        try:
+            user = User.objects.get(phone_number=normalized_phone)
+            
+            # Check if PIN is set
+            has_pin = False
+            try:
+                pin_obj = UserPhonePIN.objects.get(
+                    user=user,
+                    phone_number=normalized_phone,
+                    is_active=True
+                )
+                has_pin = True
+            except UserPhonePIN.DoesNotExist:
+                pass
+            
+            return Response({
+                'success': True,
+                'has_account': True,
+                'has_pin': has_pin,
+                'phone_number': normalized_phone
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({
+                'success': True,
+                'has_account': False,
+                'has_pin': False,
+                'phone_number': normalized_phone
+            }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        logger.error(f"❌ Error checking account: {str(e)}")
+        return Response({
+            'success': False,
+            'message': 'Failed to check account status'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def set_pin(request):
+    """
+    Set or update a 4-digit PIN for quick phone sign-in.
+    Requires phone number and user_id (usually called after OTP verification).
+    """
+    try:
+        # Get request data
+        data = request.data if hasattr(request, 'data') else json.loads(request.body)
+        phone_number = data.get('phone')
+        user_id = data.get('user_id')
+        pin = data.get('pin')
+        
+        if not phone_number or not user_id or not pin:
+            return Response({
+                'success': False,
+                'message': 'Phone number, user ID, and PIN are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate PIN format
+        if not str(pin).isdigit() or len(str(pin)) != 4:
+            return Response({
+                'success': False,
+                'message': 'PIN must be exactly 4 digits'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Normalize phone number
+        normalized_phone = normalize_phone_number(phone_number)
+        if not normalized_phone:
+            return Response({
+                'success': False,
+                'message': 'Invalid phone number format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Find user
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # Verify phone number matches
+            if user.phone_number != normalized_phone:
+                return Response({
+                    'success': False,
+                    'message': 'Phone number does not match user account'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Create or update PIN
+            pin_obj = UserPhonePIN.create_or_update_pin(
+                user=user,
+                phone_number=normalized_phone,
+                pin=pin
+            )
+            
+            logger.info(f"✅ PIN set for user {user.email} ({normalized_phone})")
+            
+            return Response({
+                'success': True,
+                'message': 'PIN set successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'User not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+    except Exception as e:
+        logger.error(f"❌ Error setting PIN: {str(e)}")
+        return Response({
+            'success': False,
+            'message': 'Failed to set PIN'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_pin(request):
+    """
+    Verify PIN for quick phone sign-in.
+    Returns session token if PIN is valid.
+    """
+    try:
+        # Get request data
+        data = request.data if hasattr(request, 'data') else json.loads(request.body)
+        phone_number = data.get('phone')
+        pin = data.get('pin')
+        
+        if not phone_number or not pin:
+            return Response({
+                'success': False,
+                'message': 'Phone number and PIN are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Normalize phone number
+        normalized_phone = normalize_phone_number(phone_number)
+        if not normalized_phone:
+            return Response({
+                'success': False,
+                'message': 'Invalid phone number format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get client info
+        ip_address = get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        logger.info(f"🔐 PIN verification for {normalized_phone} from {ip_address}")
+        
+        # Verify PIN
+        success, message, user = UserPhonePIN.verify_phone_pin(normalized_phone, pin)
+        
+        if not success:
+            logger.warning(f"❌ Invalid PIN for {normalized_phone}: {message}")
+            PhoneVerificationAttempt.log_attempt(
+                phone_number=normalized_phone,
+                ip_address=ip_address,
+                attempt_type='verify_pin',
+                success=False,
+                error_message=message,
+                user_agent=user_agent
+            )
+            return Response({
+                'success': False,
+                'message': message
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Create session
+        try:
+            session_service = SessionService()
+            session = session_service.create_session(
+                user=user,
+                access_token="phone_pin_session",
+                request_meta={
+                    'ip_address': ip_address,
+                    'user_agent': user_agent,
+                    'auth_method': 'phone_pin'
+                }
+            )
+            session_token = session.session_id
+            
+            logger.info(f"✅ PIN verified and session created for {user.email}")
+            
+            PhoneVerificationAttempt.log_attempt(
+                phone_number=normalized_phone,
+                ip_address=ip_address,
+                attempt_type='verify_pin',
+                success=True,
+                user_agent=user_agent
+            )
+            
+            # Prepare user data
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'phone_number': user.phone_number,
+                'name': user.name or '',
+                'role': user.role,
+                'has_business': user.onboarding_completed,
+                'onboarding_completed': user.onboarding_completed,
+                'subscription_plan': user.subscription_plan
+            }
+            
+            return Response({
+                'success': True,
+                'message': 'PIN verified successfully',
+                'data': {
+                    'token': session_token,
+                    'user': user_data,
+                    'requires_onboarding': not user.onboarding_completed
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to create session: {str(e)}")
+            return Response({
+                'success': False,
+                'message': 'PIN verified but session creation failed'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+    except Exception as e:
+        logger.error(f"❌ Error verifying PIN: {str(e)}")
+        return Response({
+            'success': False,
+            'message': 'Failed to verify PIN'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

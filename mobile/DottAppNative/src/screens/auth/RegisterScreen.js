@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -62,6 +63,13 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+      >
+        <Icon name="arrow-back" size={24} color="#1a1a1a" />
+      </TouchableOpacity>
+      
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image
@@ -197,7 +205,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#14532d',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -216,7 +224,16 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    color: '#2563eb',
+    color: '#14532d',
     fontSize: 14,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1,
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
 });

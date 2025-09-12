@@ -88,8 +88,8 @@ class PersonalInfoService {
       console.log('🔑 Session ID exists:', !!sessionId);
       
       // The api instance already handles Authorization header via interceptor
-      // Use /users/profile/ endpoint with PUT method (the only one that works on staging)
-      const response = await api.put('/users/profile/', personalInfo);
+      // Use /users/me/ endpoint with PATCH method for updating user profile
+      const response = await api.patch('/users/me/', personalInfo);
 
       console.log('📥 Response status:', response.status);
       console.log('✅ Personal info synced successfully');

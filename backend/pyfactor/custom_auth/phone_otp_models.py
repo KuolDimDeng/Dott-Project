@@ -4,6 +4,8 @@ from django.utils import timezone
 import secrets
 import string
 from datetime import timedelta
+from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth import get_user_model
 
 class PhoneOTP(models.Model):
     """
@@ -241,3 +243,112 @@ class PhoneVerificationAttempt(models.Model):
         cutoff = timezone.now() - timedelta(days=days)
         deleted_count = cls.objects.filter(created_at__lt=cutoff).delete()[0]
         return deleted_count
+
+
+class UserPhonePIN(models.Model):
+    """
+    Model for storing user's 4-digit PIN for quick phone sign-in.
+    PIN is hashed for security.
+    """
+    
+    User = get_user_model()
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='phone_pin')
+    phone_number = models.CharField(max_length=20, db_index=True, help_text='Phone number associated with PIN')
+    pin_hash = models.CharField(max_length=128, help_text='Hashed 4-digit PIN')
+    
+    # Security features
+    is_active = models.BooleanField(default=True, help_text='Whether PIN is currently active')
+    failed_attempts = models.IntegerField(default=0, help_text='Number of failed PIN attempts')
+    max_failed_attempts = models.IntegerField(default=5, help_text='Max failed attempts before lockout')
+    locked_until = models.DateTimeField(null=True, blank=True, help_text='Lockout expiry time')
+    
+    # Tracking
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'custom_auth_userphonepin'
+        indexes = [
+            models.Index(fields=['phone_number', 'is_active']),
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"PIN for {self.user.email} ({self.phone_number})"
+    
+    def set_pin(self, pin):
+        """Set a new PIN (hashed)"""
+        if not pin or len(str(pin)) != 4 or not str(pin).isdigit():
+            raise ValueError("PIN must be exactly 4 digits")
+        self.pin_hash = make_password(str(pin))
+        self.failed_attempts = 0
+        self.locked_until = None
+        self.save()
+    
+    def verify_pin(self, pin):
+        """Verify a PIN against the stored hash"""
+        if not self.is_active:
+            return False, "PIN is disabled"
+        
+        # Check if locked out
+        if self.locked_until and self.locked_until > timezone.now():
+            remaining = int((self.locked_until - timezone.now()).total_seconds() / 60)
+            return False, f"PIN locked. Try again in {remaining} minutes"
+        
+        # Verify PIN
+        if check_password(str(pin), self.pin_hash):
+            # Reset failed attempts on success
+            self.failed_attempts = 0
+            self.locked_until = None
+            self.last_used_at = timezone.now()
+            self.save()
+            return True, "PIN verified"
+        else:
+            # Increment failed attempts
+            self.failed_attempts += 1
+            
+            # Lock after max attempts
+            if self.failed_attempts >= self.max_failed_attempts:
+                self.locked_until = timezone.now() + timedelta(minutes=30)
+                self.save()
+                return False, "Too many failed attempts. PIN locked for 30 minutes"
+            
+            self.save()
+            remaining = self.max_failed_attempts - self.failed_attempts
+            return False, f"Invalid PIN. {remaining} attempts remaining"
+    
+    def reset_pin(self):
+        """Reset PIN (requires new OTP verification)"""
+        self.is_active = False
+        self.save()
+    
+    @classmethod
+    def create_or_update_pin(cls, user, phone_number, pin):
+        """Create or update PIN for a user"""
+        pin_obj, created = cls.objects.get_or_create(
+            user=user,
+            defaults={'phone_number': phone_number}
+        )
+        pin_obj.phone_number = phone_number
+        pin_obj.set_pin(pin)
+        pin_obj.is_active = True
+        return pin_obj
+    
+    @classmethod
+    def verify_phone_pin(cls, phone_number, pin):
+        """
+        Verify PIN for a phone number.
+        Returns (success, message, user)
+        """
+        try:
+            pin_obj = cls.objects.get(
+                phone_number=phone_number,
+                is_active=True
+            )
+            success, message = pin_obj.verify_pin(pin)
+            return success, message, pin_obj.user if success else None
+        except cls.DoesNotExist:
+            return False, "No PIN set for this phone number", None

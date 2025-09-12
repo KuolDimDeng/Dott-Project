@@ -767,6 +767,34 @@ export default function BusinessMenuScreen() {
               />
             );
           })}
+          
+          {/* Add Feature button - available to all users */}
+          <MenuCard
+            item={{
+              icon: 'add-circle-outline',
+              title: 'Add Feature',
+              subtitle: 'Add new modules'
+            }}
+            iconBgColor="#9333ea"
+            iconColor="#ffffff"
+            onPress={() => {
+              console.log('📱 Add Feature clicked by:', user?.email);
+              Alert.alert(
+                'Add Feature',
+                'Select additional features to add to your business dashboard.',
+                [
+                  { 
+                    text: 'View Available Features', 
+                    onPress: () => {
+                      // Navigate to feature selection screen
+                      navigation.navigate('FeatureSelection');
+                    }
+                  },
+                  { text: 'Cancel', style: 'cancel' }
+                ]
+              );
+            }}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

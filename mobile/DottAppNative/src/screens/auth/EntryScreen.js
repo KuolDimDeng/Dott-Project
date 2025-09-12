@@ -48,14 +48,8 @@ export default function EntryScreen() {
             },
           ]}
         >
-          {/* Logo Section */}
-          <View style={styles.logoSection}>
-            <Image
-              source={require('../../assets/loginSignUp.png')}
-              style={styles.loginSignUpImage}
-              resizeMode="contain"
-            />
-          </View>
+          {/* Spacer */}
+          <View style={styles.spacer} />
 
           {/* Buttons Section */}
           <View style={styles.buttonSection}>
@@ -69,7 +63,7 @@ export default function EntryScreen() {
 
             <TouchableOpacity
               style={styles.signupButton}
-              onPress={() => navigation.navigate('SignupOptions')}
+              onPress={() => navigation.navigate('PhoneSignup')}
               activeOpacity={0.8}
             >
               <Text style={styles.signupButtonText}>Sign Up</Text>
@@ -104,21 +98,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 48,
   },
-  logoSection: {
-    alignItems: 'center',
-    marginTop: height * 0.35,
-  },
-  logo: {
-    width: 60,
-    height: 60,
-  },
-  loginSignUpImage: {
-    width: 62,
-    height: 62,
+  spacer: {
+    flex: 1,
   },
   buttonSection: {
-    marginTop: 30,
-    marginBottom: 0,
+    marginBottom: 40,
   },
   loginButton: {
     backgroundColor: '#14532d',

@@ -55,8 +55,8 @@ export const userApi = {
   // Get current user profile with all fields including role and has_business
   getCurrentUser: async () => {
     try {
-      console.log('📡 Fetching user profile from /api/users/me/...');
-      const response = await api.get('/api/users/me/');
+      console.log('📡 Fetching user profile from /users/me/...');
+      const response = await api.get('/users/me/');
       console.log('✅ User profile response received:');
       console.log('  - Status:', response.status);
       console.log('  - Data keys:', response.data ? Object.keys(response.data) : 'null');
@@ -77,7 +77,7 @@ export const userApi = {
   // Update user profile
   updateProfile: async (userData) => {
     try {
-      const response = await api.patch('/api/users/me/', userData);
+      const response = await api.patch('/users/me/', userData);
       return response.data;
     } catch (error) {
       console.error('Error updating user profile:', error);
