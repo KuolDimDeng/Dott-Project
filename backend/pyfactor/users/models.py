@@ -389,20 +389,6 @@ class BusinessDetails(models.Model):
         help_text='Cloudinary public ID for business logo'
     )
     
-    # Profile image fields for Cloudinary
-    profile_image_url = models.URLField(
-        max_length=500,
-        null=True,
-        blank=True,
-        help_text='Cloudinary URL for profile image'
-    )
-    profile_image_public_id = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-        help_text='Cloudinary public ID for profile image'
-    )
-    
     # Currency preferences
     preferred_currency_code = models.CharField(
         max_length=3,
