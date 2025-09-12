@@ -26,6 +26,24 @@ def add_cloudinary_fields():
     logger.info("🔍 Adding Cloudinary fields to database...")
     
     with connection.cursor() as cursor:
+        # Add fields to users_business_details
+        logger.info("\n📋 Adding fields to users_business_details...")
+        
+        business_details_fields = [
+            ('logo_cloudinary_url', 'VARCHAR(500)'),
+            ('logo_cloudinary_public_id', 'VARCHAR(255)')
+        ]
+        
+        for field_name, field_type in business_details_fields:
+            try:
+                cursor.execute(f"""
+                    ALTER TABLE users_business_details 
+                    ADD COLUMN IF NOT EXISTS {field_name} {field_type}
+                """)
+                logger.info(f"   ✅ Added {field_name}")
+            except Exception as e:
+                logger.info(f"   ⚠️ {field_name} may already exist or error: {e}")
+        
         # Add fields to users_userprofile
         logger.info("\n📋 Adding fields to users_userprofile...")
         
