@@ -114,6 +114,18 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, null=True, blank=True, unique=True, db_index=True)
     business_id = models.UUIDField(null=True, blank=True)
     
+    # Signup method tracking
+    signup_method = models.CharField(
+        max_length=10,
+        choices=[
+            ('email', 'Email'),
+            ('phone', 'Phone'),
+            ('auth0', 'Auth0 Social')
+        ],
+        default='email',
+        help_text='How the user originally signed up'
+    )
+    
     # Role field with choices - using enum
     ROLE_CHOICES = UserRole.choices  # Keep for backward compatibility
     role = models.CharField(max_length=10, choices=UserRole.choices, default=UserRole.OWNER)

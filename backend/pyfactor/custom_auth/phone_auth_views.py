@@ -355,7 +355,8 @@ def verify_otp(request):
                     first_name=first_name or '',
                     last_name=last_name or '',
                     is_active=True,
-                    onboarding_completed=False  # Will need to complete onboarding
+                    onboarding_completed=False,  # Will need to complete onboarding
+                    signup_method='phone'
                 )
                 
                 # Create tenant for user
@@ -428,6 +429,7 @@ def verify_otp(request):
                 'has_business': user.onboarding_completed,  # Simplified for mobile
                 'onboarding_completed': user.onboarding_completed,
                 'subscription_plan': user.subscription_plan,
+                'signup_method': user.signup_method,
                 'created': created
             }
             
@@ -730,7 +732,8 @@ def verify_pin(request):
                 'role': user.role,
                 'has_business': user.onboarding_completed,
                 'onboarding_completed': user.onboarding_completed,
-                'subscription_plan': user.subscription_plan
+                'subscription_plan': user.subscription_plan,
+                'signup_method': user.signup_method
             }
             
             return Response({

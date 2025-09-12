@@ -54,6 +54,7 @@ export default function PersonalInfoScreen({ navigation }) {
     landmark: '',
     areaDescription: '',
   });
+  const [isPhoneNumberPrimary, setIsPhoneNumberPrimary] = useState(false);
   
   // UI state
   const [loading, setLoading] = useState(false);
@@ -95,6 +96,10 @@ export default function PersonalInfoScreen({ navigation }) {
         const profileData = response.data;
         
         console.log('📝 PersonalInfo - Extracted profile data:', profileData);
+        
+        // Check if phone number is the primary identifier
+        const signupMethod = user?.signup_method || profileData?.signup_method;
+        setIsPhoneNumberPrimary(signupMethod === 'phone');
         console.log('📝 PersonalInfo - Location fields:', {
           latitude: profileData.latitude,
           longitude: profileData.longitude,
@@ -474,7 +479,13 @@ export default function PersonalInfoScreen({ navigation }) {
               placeholder="Enter phone number"
               error={errors.phoneNumber}
               defaultCountry={formData.country}
+              editable={!isPhoneNumberPrimary}
             />
+            {isPhoneNumberPrimary && (
+              <Text style={styles.disabledNote}>
+                Phone number cannot be changed as it's your primary login method
+              </Text>
+            )}
           </View>
 
           {/* Location Section */}
@@ -768,5 +779,11 @@ const styles = StyleSheet.create({
   countryText: {
     fontSize: 16,
     color: '#111827',
+  },
+  disabledNote: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
