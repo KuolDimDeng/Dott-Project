@@ -132,7 +132,7 @@ urlpatterns = [
     path('api/user/', include('users.api.urls')),
     
     # Media/Cloudinary API routes
-    path('api/media/', include('media.urls')),
+    path('api/media/', include('pyfactor.media.urls')),
     
     # Business SMS API routes
     path('api/business/', include('business.urls')),
