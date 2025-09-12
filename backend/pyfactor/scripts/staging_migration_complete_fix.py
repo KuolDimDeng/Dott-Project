@@ -122,7 +122,7 @@ def fix_courier_marketplace_dependencies():
 
 
 def fix_custom_auth_migrations():
-    """Fix custom_auth migration status if needed"""
+    """Fix custom_auth migration status and missing columns"""
     print("\n🔧 === CUSTOM_AUTH MIGRATION FIX ===")
     
     recorder = MigrationRecorder(connection)
@@ -137,6 +137,73 @@ def fix_custom_auth_migrations():
         auth_tables = [row[0] for row in cursor.fetchall()]
     
     print(f"Found custom_auth tables: {auth_tables}")
+    
+    # Check for missing signup_method column that's causing the advertising system to fail
+    if 'custom_auth_user' in auth_tables:
+        print("🔍 Checking for missing columns in custom_auth_user...")
+        with connection.cursor() as cursor:
+            # Check if signup_method column exists
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'custom_auth_user' AND column_name = 'signup_method'
+            """)
+            has_signup_method = cursor.fetchone() is not None
+            
+            if not has_signup_method:
+                print("❌ Missing signup_method column - this is causing advertising system failures!")
+                try:
+                    cursor.execute("""
+                        ALTER TABLE custom_auth_user 
+                        ADD COLUMN signup_method VARCHAR(10) DEFAULT 'email'
+                    """)
+                    print("✅ Added signup_method column with default 'email'")
+                except Exception as e:
+                    print(f"❌ Failed to add signup_method column: {e}")
+            else:
+                print("✅ signup_method column exists")
+            
+            # Check for other missing columns that might cause issues
+            missing_columns = []
+            required_columns = [
+                ('auth0_sub', 'VARCHAR(255)'),
+                ('name', 'VARCHAR(255)'),
+                ('picture', 'TEXT'),
+                ('email_verified', 'BOOLEAN DEFAULT FALSE'),
+                ('onboarding_completed', 'BOOLEAN DEFAULT FALSE'),
+                ('onboarding_completed_at', 'TIMESTAMP'),
+                ('subscription_plan', "VARCHAR(20) DEFAULT 'free'"),
+                ('timezone', "VARCHAR(50) DEFAULT 'UTC'"),
+                ('is_deleted', 'BOOLEAN DEFAULT FALSE'),
+                ('deleted_at', 'TIMESTAMP'),
+                ('deletion_reason', 'VARCHAR(255)'),
+                ('deletion_feedback', 'TEXT'),
+                ('deletion_initiated_by', 'VARCHAR(255)'),
+            ]
+            
+            for col_name, col_type in required_columns:
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'custom_auth_user' AND column_name = %s
+                """, [col_name])
+                
+                if cursor.fetchone() is None:
+                    missing_columns.append((col_name, col_type))
+            
+            if missing_columns:
+                print(f"⚠️  Found {len(missing_columns)} missing columns: {[col[0] for col in missing_columns]}")
+                for col_name, col_type in missing_columns:
+                    try:
+                        cursor.execute(f"""
+                            ALTER TABLE custom_auth_user 
+                            ADD COLUMN {col_name} {col_type}
+                        """)
+                        print(f"✅ Added {col_name} column")
+                    except Exception as e:
+                        print(f"⚠️  Could not add {col_name}: {e}")
+            else:
+                print("✅ All required columns present")
     
     # If both tables exist, ensure 0001_initial is marked as applied
     if len(auth_tables) >= 2:
