@@ -45,12 +45,20 @@ def check_user_menu(email='support@dottapps.com'):
         try:
             profile = UserProfile.objects.get(user=user)
             logger.info(f"\n📋 User Profile:")
-            logger.info(f"   Business name: {profile.business_name}")
-            logger.info(f"   Business type: {profile.business_type}")
-            logger.info(f"   Simplified business type: {profile.simplified_business_type}")
+            
+            # Get business name if business exists
+            business_name = profile.business.name if profile.business else "No business"
+            logger.info(f"   Business name: {business_name}")
+            
+            # Get business type - this might be in BusinessDetails
+            simplified_type = None
+            if profile.business and hasattr(profile.business, 'details') and profile.business.details:
+                simplified_type = profile.business.details.simplified_business_type
+            
+            logger.info(f"   Simplified business type: {simplified_type}")
             
             # Get features
-            business_type = profile.simplified_business_type or profile.business_type
+            business_type = simplified_type  # Use the simplified_type we just found
             features = get_features_for_business_type(business_type)
             logger.info(f"\n🎯 Features for business type '{business_type}':")
             logger.info(f"   Features: {features}")
