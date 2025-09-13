@@ -100,11 +100,21 @@ export default function MarketplaceProfileEditor({ navigation }) {
       if (existingProfile && existingProfile.data) {
         // The backend returns data object with the listing info
         const listingData = existingProfile.data;
-        setProfile(existingProfile.profile || {});
+        // Ensure profile has the right structure
+        const profileData = existingProfile.profile || {};
+        if (!profileData.discovery) {
+          profileData.discovery = { subcategories: [] };
+        }
+        setProfile(profileData);
         // Check the actual field the backend uses
         setIsPublished(listingData.is_visible_in_marketplace || false);
       } else if (existingProfile && existingProfile.profile) {
-        setProfile(existingProfile.profile);
+        // Ensure profile has the right structure
+        const profileData = existingProfile.profile;
+        if (!profileData.discovery) {
+          profileData.discovery = { subcategories: [] };
+        }
+        setProfile(profileData);
         // Check for the visibility field
         setIsPublished(existingProfile.is_visible_in_marketplace || existingProfile.is_published || false);
       } else {
@@ -471,13 +481,17 @@ export default function MarketplaceProfileEditor({ navigation }) {
   const updateProfile = (path, value) => {
     const keys = path.split('.');
     const newProfile = JSON.parse(JSON.stringify(profile));
-    
+
+    // Ensure nested objects exist
     let current = newProfile;
     for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) {
+        current[keys[i]] = {};
+      }
       current = current[keys[i]];
     }
     current[keys[keys.length - 1]] = value;
-    
+
     setProfile(newProfile);
     setHasChanges(true);
   };
