@@ -211,7 +211,9 @@ export default function BusinessDetailScreen() {
     id: businessId,
     business_name: businessName || 'Sample Business',
     description: 'Your trusted partner for quality products and services. We have been serving the community for over 10 years with dedication and excellence.',
-    category: 'Shopping',
+    category: 'RETAIL_SHOP',
+    category_display: 'Retail',
+    business_type_display: 'Retail',
     phone: '+211 912 345 678',
     email: 'info@business.com',
     address: '123 Main Street, Juba, South Sudan',
@@ -223,6 +225,7 @@ export default function BusinessDetailScreen() {
     response_time: '< 1 hour',
     is_verified: true,
     is_featured: true,
+    is_open_now: true,  // Add open status
     logo_url: null,  // Add image fields to prevent undefined errors
     cover_image_url: null,
     gallery_images: [],
@@ -375,7 +378,7 @@ export default function BusinessDetailScreen() {
         </View>
         
         <View style={styles.categoryStatusRow}>
-          <Text style={styles.category}>{business?.category}</Text>
+          <Text style={styles.category}>{business?.business_type_display || business?.category_display || 'Business'}</Text>
           <View style={[styles.statusBadge, business?.is_open_now ? styles.openBadge : styles.closedBadge]}>
             <View style={[styles.statusDot, business?.is_open_now ? styles.openDot : styles.closedDot]} />
             <Text style={[styles.statusText, business?.is_open_now ? styles.openText : styles.closedText]}>
