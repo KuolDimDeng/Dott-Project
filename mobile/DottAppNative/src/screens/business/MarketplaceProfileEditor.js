@@ -100,23 +100,52 @@ export default function MarketplaceProfileEditor({ navigation }) {
       if (existingProfile && existingProfile.data) {
         // The backend returns data object with the listing info
         const listingData = existingProfile.data;
-        // Ensure profile has the right structure
-        const profileData = existingProfile.profile || {};
-        if (!profileData.discovery) {
-          profileData.discovery = { subcategories: [] };
-        }
+        console.log('📦 Loading existing listing data from backend:', listingData);
+
+        // Convert backend data structure to our profile structure
+        const profileData = {
+          basic: {
+            businessName: listingData.business_name || businessData?.businessName || user?.business_name,
+            businessType: listingData.business_type || businessData?.businessType || 'OTHER',
+            description: listingData.description || '',
+            searchTags: listingData.search_tags || [],
+          },
+          contact: {
+            phone: listingData.phone || user?.phone || '',
+            email: listingData.business_email || user?.email || '',
+            website: listingData.website || '',
+            address: {
+              street: listingData.address || '',
+              city: listingData.city || businessData?.businessCity || '',
+              state: listingData.state || '',
+              postalCode: listingData.postal_code || '',
+              country: listingData.country || businessData?.businessCountry || '',
+            },
+            socialMedia: listingData.social_media || {},
+          },
+          visuals: {
+            logoImage: listingData.logo_url || listingData.logo || null,
+            bannerImage: listingData.cover_image_url || listingData.cover_image || null,
+            galleryImages: listingData.gallery_images || [],
+          },
+          operations: {
+            operatingHours: listingData.business_hours || {},
+            deliveryOptions: {
+              delivery: listingData.delivery_scope === 'local' || listingData.delivery_scope === 'nationwide',
+              pickup: true,
+              shipping: listingData.delivery_scope === 'nationwide' || listingData.delivery_scope === 'international',
+            },
+            paymentMethods: listingData.payment_methods || [],
+          },
+          discovery: {
+            mainCategory: listingData.business_type || '',
+            subcategories: listingData.secondary_categories || [],
+          },
+        };
+
         setProfile(profileData);
-        // Check the actual field the backend uses
         setIsPublished(listingData.is_visible_in_marketplace || false);
-      } else if (existingProfile && existingProfile.profile) {
-        // Ensure profile has the right structure
-        const profileData = existingProfile.profile;
-        if (!profileData.discovery) {
-          profileData.discovery = { subcategories: [] };
-        }
-        setProfile(profileData);
-        // Check for the visibility field
-        setIsPublished(existingProfile.is_visible_in_marketplace || existingProfile.is_published || false);
+        console.log('✅ Loaded profile from backend successfully');
       } else {
         // Check for local draft first
         try {

@@ -1270,6 +1270,10 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                     update_data['description'] = basic['description']
                 if 'search_tags' in basic:
                     update_data['search_tags'] = basic['search_tags']
+
+            # Also check for root-level description (mobile app compatibility)
+            if 'description' in request.data and 'description' not in update_data:
+                update_data['description'] = request.data['description']
             
             # Contact information
             if 'contact' in profile_data:
