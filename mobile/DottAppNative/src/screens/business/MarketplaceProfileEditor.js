@@ -263,12 +263,13 @@ export default function MarketplaceProfileEditor({ navigation }) {
       
       try {
         // Update publish status on backend
-        await marketplaceApi.updateBusinessListing({ 
+        await marketplaceApi.updateBusinessListing({
           profile,
           is_published: newPublishStatus,
           is_active: newPublishStatus,
+          is_visible_in_marketplace: newPublishStatus,  // Add the actual field backend expects
         });
-        
+
         setIsPublished(newPublishStatus);
         
         if (newPublishStatus) {
@@ -320,7 +321,9 @@ export default function MarketplaceProfileEditor({ navigation }) {
           // Map logo image to the field backend expects
           logo_url: profile.visuals?.logoImage || null,
           cover_image_url: profile.visuals?.bannerImage || null,
-          gallery_images: profile.visuals?.galleryImages || []
+          gallery_images: profile.visuals?.galleryImages || [],
+          // Include the current publish status
+          is_visible_in_marketplace: isPublished
         };
         console.log('🖼️ Sending image data:', {
           logo_url: listingData.logo_url ? 'has logo' : 'no logo',
