@@ -1274,7 +1274,30 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 discovery = profile_data['discovery']
                 if 'is_visible_in_marketplace' in discovery:
                     update_data['is_visible_in_marketplace'] = discovery['is_visible_in_marketplace']
-            
+
+            # Handle image fields from root level (for mobile app image uploads)
+            if 'logo_url' in request.data:
+                update_data['logo_url'] = request.data['logo_url']
+                logger.info(f"[BusinessListing] Updating logo_url")
+
+            if 'cover_image_url' in request.data:
+                update_data['cover_image_url'] = request.data['cover_image_url']
+                logger.info(f"[BusinessListing] Updating cover_image_url")
+
+            if 'gallery_images' in request.data:
+                update_data['gallery_images'] = request.data['gallery_images']
+                logger.info(f"[BusinessListing] Updating gallery_images with {len(request.data.get('gallery_images', []))} images")
+
+            # Also check for nested visuals (alternative structure)
+            if 'visuals' in profile_data:
+                visuals = profile_data['visuals']
+                if 'logoImage' in visuals and visuals['logoImage']:
+                    update_data['logo_url'] = visuals['logoImage']
+                if 'bannerImage' in visuals and visuals['bannerImage']:
+                    update_data['cover_image_url'] = visuals['bannerImage']
+                if 'galleryImages' in visuals and visuals['galleryImages']:
+                    update_data['gallery_images'] = visuals['galleryImages']
+
             # Update listing with validated data
             logger.info(f"[BusinessListing] Final update_data: {update_data}")
             
