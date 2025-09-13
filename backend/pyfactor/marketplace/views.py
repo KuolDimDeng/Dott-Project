@@ -505,18 +505,23 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 
                 # 🎯 [MARKETPLACE_NAME_FIX] Get proper business name
                 business_name = None
-                if profile:
-                    # Try business_name first
-                    business_name = getattr(profile, 'business_name', None)
-                    # If empty or is email, try business entity name
-                    if not business_name or '@' in business_name:
-                        business_obj = getattr(profile, 'business', None)
-                        if business_obj:
-                            business_name = getattr(business_obj, 'name', None)
-                
+
+                # First try user.name (from Auth0)
+                if user.name and user.name.strip() and '@' not in user.name:
+                    business_name = user.name.strip()
+                    logger.info(f"🎯 [NAME_DEBUG] Using user.name: {business_name}")
+
+                # If no user.name, try profile business
+                elif profile:
+                    business_obj = getattr(profile, 'business', None)
+                    if business_obj and hasattr(business_obj, 'name'):
+                        business_name = business_obj.name
+                        logger.info(f"🎯 [NAME_DEBUG] Using business.name: {business_name}")
+
                 # Fallback to email-based name if still no name
                 if not business_name:
                     business_name = user.email.split('@')[0].replace('.', ' ').replace('_', ' ').title() + " Business"
+                    logger.info(f"🎯 [NAME_DEBUG] Using email fallback: {business_name}")
                 
                 logger.info(f"🎯 [MARKETPLACE_NAME_DEBUG] User: {user.email}, Business Name: {business_name}")
                 
@@ -943,6 +948,19 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             listing.description = data.get('description', '')
             listing.country = data.get('country', 'SS')
             listing.city = data.get('city', 'Juba')
+
+            # Ensure we have proper business info for marketplace display
+            # Get business name from user profile or sent data
+            business_name = data.get('business_name', '')
+            if not business_name:
+                # Try to get from user profile
+                profile = getattr(user, 'userprofile', None)
+                if profile:
+                    business_name = getattr(profile, 'business_name', '') or user.name or user.email.split('@')[0]
+                else:
+                    business_name = user.name or user.email.split('@')[0]
+
+            logger.info(f"[MARKETPLACE_PUBLISH] Setting business name: {business_name}")
             
             # Handle Cloudinary image URLs
             if 'logo_url' in data:
