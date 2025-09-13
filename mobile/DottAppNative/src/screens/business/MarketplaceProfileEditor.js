@@ -313,8 +313,23 @@ export default function MarketplaceProfileEditor({ navigation }) {
 
       try {
         console.log('🚀 Attempting to save to backend...');
+        // Prepare data with proper image fields for backend
+        const listingData = {
+          ...profile,
+          description: profile.basic?.description || '',
+          // Map logo image to the field backend expects
+          logo_url: profile.visuals?.logoImage || null,
+          cover_image_url: profile.visuals?.bannerImage || null,
+          gallery_images: profile.visuals?.galleryImages || []
+        };
+        console.log('🖼️ Sending image data:', {
+          logo_url: listingData.logo_url ? 'has logo' : 'no logo',
+          cover_image_url: listingData.cover_image_url ? 'has cover' : 'no cover',
+          gallery_count: listingData.gallery_images?.length || 0
+        });
+
         // Save profile
-        const saveResult = await marketplaceApi.updateBusinessListing({ profile });
+        const saveResult = await marketplaceApi.updateBusinessListing(listingData);
         console.log('✅ Backend save successful:', saveResult);
         
         // Update operating hours
