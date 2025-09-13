@@ -217,7 +217,6 @@ class AdvertisingCampaign(models.Model):
 
     def publish_to_marketplace(self):
         """Publish this campaign to the marketplace with full business info and images"""
-        from marketplace.services import BusinessListingService
         import logging
         logger = logging.getLogger(__name__)
 
@@ -248,11 +247,17 @@ class AdvertisingCampaign(models.Model):
         }
 
         try:
+            # Import here to avoid circular imports at module level
+            from marketplace.services import BusinessListingService
+
             listing = BusinessListingService.publish_to_marketplace(self.business, campaign_data)
             self.marketplace_listing_id = listing.id
             self.save(update_fields=['marketplace_listing_id'])
             logger.info(f"[ADVERTISING] Successfully published to marketplace: {listing.id}")
             return listing
+        except ImportError as e:
+            logger.error(f"[ADVERTISING] Failed to import marketplace services: {e}")
+            return None
         except Exception as e:
             logger.error(f"[ADVERTISING] Failed to publish to marketplace: {e}")
             return None

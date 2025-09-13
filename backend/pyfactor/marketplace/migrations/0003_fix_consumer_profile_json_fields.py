@@ -27,7 +27,7 @@ def reverse_fix(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketplace', '0002_auto_20250830_0000'),  # Replace with your latest migration
+        ('marketplace', '0002_consumerorder_orderreview'),
     ]
 
     operations = [

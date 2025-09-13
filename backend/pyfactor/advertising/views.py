@@ -47,13 +47,13 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Filter campaigns by tenant
+        Filter campaigns by business (current user)
         """
-        if not hasattr(self.request.user, 'tenant'):
+        if not self.request.user.is_authenticated:
             return AdvertisingCampaign.objects.none()
-        
+
         queryset = AdvertisingCampaign.objects.filter(
-            tenant=self.request.user.tenant
+            business=self.request.user
         )
         
         # Filter by status if provided
@@ -433,15 +433,15 @@ class AdvertisingAnalyticsViewSet(viewsets.ViewSet):
         Get overall advertising analytics for the business
         """
         try:
-            if not hasattr(request.user, 'tenant'):
+            if not request.user.is_authenticated:
                 return Response({
                     'success': False,
-                    'message': 'No business associated with user'
+                    'message': 'User not authenticated'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Get all campaigns for the tenant
+
+            # Get all campaigns for the current user/business
             campaigns = AdvertisingCampaign.objects.filter(
-                tenant=request.user.tenant
+                business=request.user
             )
             
             # Calculate totals
