@@ -41,13 +41,13 @@ const MarketplaceBusinessScreen = ({ navigation }) => {
       setBusinessListing(listingRes.data || getMockBusinessListing());
       setAnalytics(analyticsRes.data || getMockAnalytics());
       setProducts(productsRes.data || getMockProducts());
-      setIsPublished(listingRes.data?.is_published || false);
+      setIsPublished(listingRes.data?.is_visible_in_marketplace || false);
     } catch (error) {
       console.error('Error loading marketplace data:', error);
       setBusinessListing(getMockBusinessListing());
       setAnalytics(getMockAnalytics());
       setProducts(getMockProducts());
-      setIsPublished(true);
+      setIsPublished(false); // Default to unpublished if API fails
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -134,13 +134,26 @@ const MarketplaceBusinessScreen = ({ navigation }) => {
 
   const handleTogglePublish = async () => {
     try {
-      await marketplaceApi.updateBusinessListing({ is_published: !isPublished });
+      if (isPublished) {
+        // Unpublish from marketplace
+        await marketplaceApi.updateBusinessListing({ is_visible_in_marketplace: false });
+      } else {
+        // Publish to marketplace with basic business info
+        await marketplaceApi.publishToMarketplace({
+          is_visible_in_marketplace: true,
+          business_type: 'RESTAURANT_CAFE', // Default type
+          description: businessListing?.description || 'Business listing on marketplace',
+          country: 'SS',
+          city: 'Juba'
+        });
+      }
       setIsPublished(!isPublished);
       Alert.alert(
         'Success',
         isPublished ? 'Your business is now offline' : 'Your business is now live on the marketplace!'
       );
     } catch (error) {
+      console.error('Toggle publish error:', error);
       Alert.alert('Error', 'Failed to update business status');
     }
   };

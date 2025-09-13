@@ -254,6 +254,17 @@ export const marketplaceApi = {
     }
   },
 
+  // Publish business to marketplace (from Advertise feature)
+  publishToMarketplace: async (businessData) => {
+    try {
+      const response = await api.post('/marketplace/business/publish_to_marketplace/', businessData);
+      return response.data;
+    } catch (error) {
+      console.error('Error publishing to marketplace:', error);
+      throw error;
+    }
+  },
+
   // Get business listing for editing
   getBusinessListing: async () => {
     try {

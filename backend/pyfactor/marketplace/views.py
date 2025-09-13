@@ -1200,6 +1200,9 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             if 'is_active' in request.data:
                 logger.info(f"[BusinessListing] Mapping is_active={request.data['is_active']} to is_visible_in_marketplace")
                 update_data['is_visible_in_marketplace'] = request.data['is_active']
+            if 'is_visible_in_marketplace' in request.data:
+                logger.info(f"[BusinessListing] Direct is_visible_in_marketplace={request.data['is_visible_in_marketplace']}")
+                update_data['is_visible_in_marketplace'] = request.data['is_visible_in_marketplace']
             
             # Basic information
             if 'basic' in profile_data:
