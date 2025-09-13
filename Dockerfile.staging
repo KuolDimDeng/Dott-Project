@@ -19,8 +19,14 @@ COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml .
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy application code
-COPY frontend/pyfactor_next .
+# Copy application code - preserving directory structure
+COPY frontend/pyfactor_next/src ./src
+COPY frontend/pyfactor_next/public ./public
+COPY frontend/pyfactor_next/next.config.js ./
+COPY frontend/pyfactor_next/tailwind.config.js ./
+COPY frontend/pyfactor_next/postcss.config.js ./
+COPY frontend/pyfactor_next/tsconfig.json ./
+COPY frontend/pyfactor_next/.eslintrc.json ./
 
 # Build arguments
 ARG NEXT_PUBLIC_API_URL=https://dott-api-staging.onrender.com
