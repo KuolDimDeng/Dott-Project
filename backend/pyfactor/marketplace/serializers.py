@@ -26,21 +26,46 @@ class BusinessListingSerializer(serializers.ModelSerializer):
             'is_digital_only', 'country', 'city', 'latitude', 'longitude',
             'is_visible_in_marketplace', 'is_verified', 'is_featured',
             'business_hours', 'is_open_now', 'search_tags', 'description',
-            'average_rating', 'total_reviews', 'total_orders', 'total_products',
+            'logo_url', 'logo_public_id', 'cover_image_url', 'cover_image_public_id',
+            'gallery_images', 'average_rating', 'total_reviews', 'total_orders', 'total_products',
             'average_response_time', 'response_rate', 'distance_km',
             'created_at', 'updated_at', 'last_active'
         ]
         read_only_fields = ['id', 'total_orders']
     
     def get_business_name(self, obj):
-        """Get business name from UserProfile"""
+        """Get business name from multiple sources in priority order"""
         try:
-            # Try to get from UserProfile
+            # Priority 1: Tenant name (most authoritative)
+            if hasattr(obj.business, 'tenant') and obj.business.tenant:
+                tenant_name = obj.business.tenant.name
+                if tenant_name and tenant_name != '' and '@' not in tenant_name:
+                    return tenant_name
+            
+            # Priority 2: UserProfile business_name
             if hasattr(obj.business, 'profile'):
-                return obj.business.profile.business_name or obj.business.profile.name or 'Unnamed Business'
-            # Fallback to email if no profile
-            return obj.business.email.split('@')[0].replace('.', ' ').title()
-        except Exception:
+                profile = obj.business.profile
+                if profile.business_name and profile.business_name != '' and '@' not in profile.business_name:
+                    return profile.business_name
+                if profile.name and profile.name != '' and '@' not in profile.name:
+                    return profile.name
+            
+            # Priority 3: User's name field
+            if hasattr(obj.business, 'name') and obj.business.name:
+                if obj.business.name != '' and '@' not in obj.business.name:
+                    return obj.business.name
+            
+            # Last resort: Format email
+            if obj.business.email:
+                name_part = obj.business.email.split('@')[0]
+                return name_part.replace('.', ' ').replace('_', ' ').title() + ' Business'
+            
+            return 'Unnamed Business'
+        except Exception as e:
+            # Log error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting business name: {e}")
             return 'Unnamed Business'
     
     def get_total_products(self, obj):

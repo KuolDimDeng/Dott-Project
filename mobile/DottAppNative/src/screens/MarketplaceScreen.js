@@ -416,7 +416,7 @@ export default function MarketplaceScreen() {
     if (featuredBusinesses.length === 0) return null;
 
     // For businesses without images, we'll show a card with name and category
-    const hasImages = featuredBusinesses.some(b => b.logo || b.cover_image || b.image_url);
+    const hasImages = featuredBusinesses.some(b => b.logo_url || b.logo || b.cover_image_url || b.cover_image || b.image_url);
     
     // If no businesses have images, show a different featured section
     if (!hasImages) {
@@ -425,7 +425,7 @@ export default function MarketplaceScreen() {
 
     // Prepare images for carousel
     const carouselImages = featuredBusinesses.map(business => ({
-      url: business.logo || business.cover_image || business.image_url,
+      url: business.logo_url || business.logo || business.cover_image_url || business.cover_image || business.image_url,
       business: business,
     }));
 
@@ -532,8 +532,11 @@ export default function MarketplaceScreen() {
         )}
         
         <View style={styles.businessImageContainer}>
-          {item.logo ? (
-            <Image source={{ uri: item.logo }} style={styles.businessImage} />
+          {(item.logo_url || item.logo || item.cover_image_url) ? (
+            <Image 
+              source={{ uri: item.logo_url || item.logo || item.cover_image_url }} 
+              style={styles.businessImage} 
+            />
           ) : (
             <View style={styles.businessImagePlaceholder}>
               <Icon name="business-outline" size={30} color="#9ca3af" />
