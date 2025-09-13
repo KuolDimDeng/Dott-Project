@@ -207,13 +207,18 @@ export default function BusinessDetailScreen() {
     }
   };
 
-  const mockBusinessData = () => ({
+  const mockBusinessData = () => {
+    // Detect if it's a restaurant from the business name
+    const isRestaurant = businessName?.toLowerCase().includes('restaurant') ||
+                         businessName?.toLowerCase().includes('cafe');
+
+    return {
     id: businessId,
     business_name: businessName || 'Sample Business',
     description: 'Your trusted partner for quality products and services. We have been serving the community for over 10 years with dedication and excellence.',
-    category: 'RETAIL_SHOP',
-    category_display: 'Retail',
-    business_type_display: 'Retail',
+    business_type: isRestaurant ? 'RESTAURANT_CAFE' : 'RETAIL_SHOP',
+    business_type_display: isRestaurant ? 'Restaurant' : 'Retail',
+    category_display: isRestaurant ? 'Restaurant' : 'Retail',
     phone: '+211 912 345 678',
     email: 'info@business.com',
     address: '123 Main Street, Juba, South Sudan',
@@ -241,7 +246,8 @@ export default function BusinessDetailScreen() {
     images: [null, null, null], // Placeholder for business images
     logo: null,
     cover_image: null,
-  });
+  };
+  };
 
   const mockProducts = () => [
     { id: '1', name: 'Product 1', price: 1500, currency: 'SSP', description: 'High quality product', stock: 50, image: null },
