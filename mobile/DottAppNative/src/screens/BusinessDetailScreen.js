@@ -163,6 +163,12 @@ export default function BusinessDetailScreen() {
     try {
       // Load business details
       const businessData = await marketplaceApi.getBusinessDetails(businessId);
+      console.log('🎯 Business Detail Data:', {
+        hasData: !!businessData,
+        is_open_now: businessData?.is_open_now,
+        business_type_display: businessData?.business_type_display,
+        business_name: businessData?.business_name
+      });
       setBusiness(businessData || mockBusinessData());
 
       // Load products/menu items - don't fail if this errors
@@ -230,7 +236,7 @@ export default function BusinessDetailScreen() {
     response_time: '< 1 hour',
     is_verified: true,
     is_featured: true,
-    is_open_now: true,  // Add open status
+    is_open_now: false,  // Default to closed (matches most businesses)
     logo_url: null,  // Add image fields to prevent undefined errors
     cover_image_url: null,
     gallery_images: [],
