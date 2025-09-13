@@ -308,9 +308,6 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         if hasattr(user, 'profile'):
             defaults['current_country'] = getattr(user.profile, 'country', '') or ''
             defaults['current_city'] = getattr(user.profile, 'city', '') or ''
-        elif hasattr(user, 'userprofile'):
-            defaults['current_country'] = getattr(user.userprofile, 'country', '') or ''
-            defaults['current_city'] = getattr(user.userprofile, 'city', '') or ''
 
         profile, created = ConsumerProfile.objects.get_or_create(
             user=user,
@@ -491,7 +488,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             # Apply search filter to listings
             if search_query:
                 business_listings = business_listings.filter(
-                    Q(business__userprofile__business_name__icontains=search_query) |
+                    Q(business__profile__business_name__icontains=search_query) |
                     Q(description__icontains=search_query) |
                     Q(search_tags__overlap=[search_query.lower()])
                 )
@@ -501,7 +498,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             
             for listing in business_listings:
                 user = listing.business
-                profile = getattr(user, 'userprofile', None)
+                profile = getattr(user, 'profile', None)
                 
                 # 🎯 [MARKETPLACE_NAME_FIX] Get proper business name
                 business_name = None
@@ -909,8 +906,8 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         listing, created = BusinessListing.objects.get_or_create(
             business=request.user,
             defaults={
-                'country': request.user.userprofile.country if hasattr(request.user, 'userprofile') else '',
-                'city': request.user.userprofile.city if hasattr(request.user, 'userprofile') else '',
+                'country': request.user.profile.country if hasattr(request.user, 'profile') else '',
+                'city': request.user.profile.city if hasattr(request.user, 'profile') else '',
             }
         )
         
@@ -959,7 +956,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             business_name = data.get('business_name', '')
             if not business_name:
                 # Try to get from user profile
-                profile = getattr(user, 'userprofile', None)
+                profile = getattr(user, 'profile', None)
                 if profile:
                     business_name = getattr(profile, 'business_name', '') or user.name or user.email.split('@')[0]
                 else:
@@ -980,7 +977,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 listing.gallery_images = data['gallery_images']
 
             # If no images provided, copy from UserProfile if available
-            profile = getattr(user, 'userprofile', None)
+            profile = getattr(user, 'profile', None)
             if profile:
                 if not listing.logo_url and hasattr(profile, 'logo_cloudinary_url') and profile.logo_cloudinary_url:
                     listing.logo_url = profile.logo_cloudinary_url
@@ -1204,16 +1201,16 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             logger.info(f"[BusinessListing] No listing found, creating new one")
             # Create new listing with business profile data
             profile_data = {}
-            if hasattr(request.user, 'userprofile'):
+            if hasattr(request.user, 'profile'):
                 profile_data.update({
-                    'country': getattr(request.user.userprofile, 'country', ''),
-                    'city': getattr(request.user.userprofile, 'city', ''),
-                    'description': getattr(request.user.userprofile, 'business_description', ''),
+                    'country': getattr(request.user.profile, 'country', ''),
+                    'city': getattr(request.user.profile, 'city', ''),
+                    'description': getattr(request.user.profile, 'business_description', ''),
                 })
             
             listing = BusinessListing.objects.create(
                 business=request.user,
-                business_type=getattr(request.user.userprofile, 'business_type', 'service') if hasattr(request.user, 'userprofile') else 'service',
+                business_type=getattr(request.user.profile, 'business_type', 'service') if hasattr(request.user, 'profile') else 'service',
                 **profile_data
             )
         

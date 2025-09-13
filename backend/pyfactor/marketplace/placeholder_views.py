@@ -133,7 +133,7 @@ def get_marketplace_businesses(request):
         # Apply search filter to listings
         if search_query:
             business_listings = business_listings.filter(
-                Q(business__userprofile__business_name__icontains=search_query) |
+                Q(business__profile__business_name__icontains=search_query) |
                 Q(description__icontains=search_query) |
                 Q(search_tags__overlap=[search_query.lower()])
             )
