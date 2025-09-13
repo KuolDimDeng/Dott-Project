@@ -12,6 +12,7 @@ import {
   Dimensions,
   Share,
   Linking,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -24,11 +25,12 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function BusinessDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart();
   const { businessId, businessName, isPlaceholder, previewMode, previewData, previewProducts } = route.params || {};
-  
+
   const [business, setBusiness] = useState(null);
   const [products, setProducts] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [services, setServices] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,23 @@ export default function BusinessDetailScreen() {
   const [imageIndex, setImageIndex] = useState(0);
   const [placeholderStatus, setPlaceholderStatus] = useState(null);
   const [inquirySent, setInquirySent] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState(null);
+  const [showMenuItemModal, setShowMenuItemModal] = useState(false);
+
+  // Detect if business is a restaurant
+  const isRestaurant = () => {
+    if (!business) return false;
+    const businessType = business?.business_type?.toLowerCase() || '';
+    const businessName = business?.business_name?.toLowerCase() || '';
+    return (
+      businessType.includes('restaurant') ||
+      businessType.includes('cafe') ||
+      businessName.includes('restaurant') ||
+      businessName.includes('cafe') ||
+      businessName.includes('diner') ||
+      businessName.includes('bistro')
+    );
+  };
 
   useEffect(() => {
     if (previewMode && previewData) {
@@ -146,13 +165,22 @@ export default function BusinessDetailScreen() {
       const businessData = await marketplaceApi.getBusinessDetails(businessId);
       setBusiness(businessData || mockBusinessData());
 
-      // Load products - don't fail if this errors
+      // Load products/menu items - don't fail if this errors
       try {
         const productsData = await marketplaceApi.getBusinessProducts(businessId);
-        setProducts(productsData?.products || productsData?.results || []);
+        const items = productsData?.products || productsData?.results || [];
+
+        // Check if it's restaurant data (menu items)
+        if (businessData?.business_type?.includes('RESTAURANT') || businessData?.business_type?.includes('CAFE')) {
+          setMenuItems(items);
+          setActiveTab('menu'); // Default to menu tab for restaurants
+        } else {
+          setProducts(items);
+        }
       } catch (productError) {
-        console.log('Could not load products:', productError.message);
+        console.log('Could not load products/menu:', productError.message);
         setProducts([]);
+        setMenuItems([]);
       }
 
       // Load services - don't fail if this errors
@@ -434,23 +462,36 @@ export default function BusinessDetailScreen() {
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'products' && styles.activeTab]}
-          onPress={() => setActiveTab('products')}
-        >
-          <Text style={[styles.tabText, activeTab === 'products' && styles.activeTabText]}>
-            Products
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'services' && styles.activeTab]}
-          onPress={() => setActiveTab('services')}
-        >
-          <Text style={[styles.tabText, activeTab === 'services' && styles.activeTabText]}>
-            Services
-          </Text>
-        </TouchableOpacity>
+        {isRestaurant() ? (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'menu' && styles.activeTab]}
+            onPress={() => setActiveTab('menu')}
+          >
+            <Text style={[styles.tabText, activeTab === 'menu' && styles.activeTabText]}>
+              Menu
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'products' && styles.activeTab]}
+              onPress={() => setActiveTab('products')}
+            >
+              <Text style={[styles.tabText, activeTab === 'products' && styles.activeTabText]}>
+                Products
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'services' && styles.activeTab]}
+              onPress={() => setActiveTab('services')}
+            >
+              <Text style={[styles.tabText, activeTab === 'services' && styles.activeTabText]}>
+                Services
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'reviews' && styles.activeTab]}
@@ -651,8 +692,76 @@ export default function BusinessDetailScreen() {
     </View>
   );
 
+  const renderMenu = () => (
+    <View style={styles.menuContainer}>
+      {menuItems.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Icon name="restaurant-outline" size={48} color="#9ca3af" />
+          <Text style={styles.emptyText}>No menu items available</Text>
+        </View>
+      ) : (
+        <View style={styles.menuGrid}>
+          {menuItems.map((item) => {
+            const displayPrice = `$${(item.price / 100).toFixed(2)}`;
+
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuCard}
+                onPress={() => {
+                  setSelectedMenuItem(item);
+                  setShowMenuItemModal(true);
+                }}
+              >
+                <View style={styles.menuImageContainer}>
+                  {item.image_url || item.image ? (
+                    <Image
+                      source={{ uri: item.image_url || item.image }}
+                      style={styles.menuImage}
+                    />
+                  ) : (
+                    <View style={styles.menuImagePlaceholder}>
+                      <Icon name="restaurant" size={32} color="#9ca3af" />
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.menuInfo}>
+                  <Text style={styles.menuName} numberOfLines={2}>{item.name}</Text>
+                  {item.description && (
+                    <Text style={styles.menuDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                  )}
+                  <View style={styles.menuPriceRow}>
+                    <Text style={styles.menuPrice}>{displayPrice}</Text>
+                    {item.category_name && (
+                      <Text style={styles.menuCategory}>{item.category_name}</Text>
+                    )}
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.addToCartButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleAddToCart(item, 'menu');
+                  }}
+                >
+                  <Icon name="add-circle" size={32} color="#10b981" />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
+      case 'menu':
+        return renderMenu();
       case 'products':
         return renderProducts();
       case 'services':
@@ -666,17 +775,20 @@ export default function BusinessDetailScreen() {
     }
   };
 
+  // Calculate total items in cart
+  const cartItemCount = cartItems?.length || 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
-        
+
         <Text style={styles.headerTitle} numberOfLines={1}>
           {business?.business_name || 'Business'}
         </Text>
-        
+
         <TouchableOpacity style={styles.moreButton}>
           <Icon name="ellipsis-vertical" size={24} color="#1a1a1a" />
         </TouchableOpacity>
@@ -686,6 +798,108 @@ export default function BusinessDetailScreen() {
         {renderHeader()}
         {renderContent()}
       </ScrollView>
+
+      {/* Floating Cart Button */}
+      {cartItemCount > 0 && (
+        <TouchableOpacity
+          style={styles.floatingCartButton}
+          onPress={() => navigation.navigate('Cart')}
+          activeOpacity={0.8}
+        >
+          <Icon name="cart" size={24} color="#fff" />
+          <View style={styles.cartBadge}>
+            <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Menu Item Detail Modal */}
+      <Modal
+        visible={showMenuItemModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowMenuItemModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowMenuItemModal(false)}
+            >
+              <Icon name="close" size={24} color="#333" />
+            </TouchableOpacity>
+
+            {selectedMenuItem && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {selectedMenuItem.image_url || selectedMenuItem.image ? (
+                  <Image
+                    source={{ uri: selectedMenuItem.image_url || selectedMenuItem.image }}
+                    style={styles.modalImage}
+                  />
+                ) : (
+                  <View style={styles.modalImagePlaceholder}>
+                    <Icon name="restaurant" size={60} color="#9ca3af" />
+                  </View>
+                )}
+
+                <View style={styles.modalBody}>
+                  <Text style={styles.modalTitle}>{selectedMenuItem.name}</Text>
+
+                  {selectedMenuItem.category_name && (
+                    <Text style={styles.modalCategory}>{selectedMenuItem.category_name}</Text>
+                  )}
+
+                  {selectedMenuItem.description && (
+                    <Text style={styles.modalDescription}>{selectedMenuItem.description}</Text>
+                  )}
+
+                  <View style={styles.modalPriceSection}>
+                    <Text style={styles.modalPrice}>
+                      ${(selectedMenuItem.price / 100).toFixed(2)}
+                    </Text>
+                    {selectedMenuItem.preparation_time && (
+                      <Text style={styles.modalPrepTime}>
+                        <Icon name="time-outline" size={16} color="#6b7280" />
+                        {' '}{selectedMenuItem.preparation_time} min
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Dietary info if available */}
+                  <View style={styles.dietaryInfo}>
+                    {selectedMenuItem.is_vegetarian && (
+                      <View style={styles.dietaryBadge}>
+                        <Text style={styles.dietaryText}>🌱 Vegetarian</Text>
+                      </View>
+                    )}
+                    {selectedMenuItem.is_vegan && (
+                      <View style={styles.dietaryBadge}>
+                        <Text style={styles.dietaryText}>🌿 Vegan</Text>
+                      </View>
+                    )}
+                    {selectedMenuItem.is_gluten_free && (
+                      <View style={styles.dietaryBadge}>
+                        <Text style={styles.dietaryText}>🌾 Gluten Free</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.modalAddButton}
+                    onPress={() => {
+                      handleAddToCart(selectedMenuItem, 'menu');
+                      setShowMenuItemModal(false);
+                    }}
+                  >
+                    <Icon name="cart" size={20} color="#fff" />
+                    <Text style={styles.modalAddButtonText}>Add to Cart</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1157,5 +1371,217 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1a1a1a',
     fontWeight: '500',
+  },
+  // Menu Styles
+  menuContainer: {
+    padding: 16,
+  },
+  menuGrid: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+  },
+  menuCard: {
+    flexDirection: 'row',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    alignItems: 'center',
+  },
+  menuImageContainer: {
+    width: 80,
+    height: 80,
+    marginRight: 12,
+  },
+  menuImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  menuImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  menuName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  menuDescription: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginBottom: 6,
+  },
+  menuPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  menuPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#10b981',
+  },
+  menuCategory: {
+    fontSize: 12,
+    color: '#9ca3af',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  addToCartButton: {
+    padding: 4,
+  },
+  // Floating Cart Button
+  floatingCartButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#10b981',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  modalImage: {
+    width: '100%',
+    height: 250,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalImagePlaceholder: {
+    width: '100%',
+    height: 250,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  modalCategory: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: '#4b5563',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  modalPriceSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalPrice: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#10b981',
+  },
+  modalPrepTime: {
+    fontSize: 14,
+    color: '#6b7280',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dietaryInfo: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  dietaryBadge: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  dietaryText: {
+    fontSize: 12,
+    color: '#16a34a',
+  },
+  modalAddButton: {
+    backgroundColor: '#10b981',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  modalAddButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
