@@ -478,12 +478,50 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             for listing in business_listings:
                 user = listing.business
                 profile = getattr(user, 'userprofile', None)
-                business_name = getattr(profile, 'business_name', user.email) if profile else user.email
+                
+                # 🎯 [MARKETPLACE_NAME_FIX] Get proper business name
+                business_name = None
+                if profile:
+                    # Try business_name first
+                    business_name = getattr(profile, 'business_name', None)
+                    # If empty or is email, try business entity name
+                    if not business_name or '@' in business_name:
+                        business_obj = getattr(profile, 'business', None)
+                        if business_obj:
+                            business_name = getattr(business_obj, 'name', None)
+                
+                # Fallback to email-based name if still no name
+                if not business_name:
+                    business_name = user.email.split('@')[0].replace('.', ' ').replace('_', ' ').title() + " Business"
+                
+                logger.info(f"🎯 [MARKETPLACE_NAME_DEBUG] User: {user.email}, Business Name: {business_name}")
                 
                 # 🎯 [FEATURED_CHECK] Use direct BusinessListing.is_featured for now
                 is_featured = listing.is_featured or False
                 
-                logger.info(f"[BUSINESS_DEBUG] Business '{business_name}' (User ID: {user.id}) - Featured: {is_featured} (from listing)")
+                # 🎯 [BUSINESS_TYPE_MAPPING] Map business types for display
+                business_type_display_map = {
+                    'RESTAURANT_CAFE': 'Restaurant',
+                    'RETAIL_SHOP': 'Retail',
+                    'SERVICE_PROVIDER': 'Service',
+                    'HEALTH_WELLNESS': 'Health & Wellness',
+                    'BEAUTY_SALON': 'Beauty',
+                    'HOTEL_HOSPITALITY': 'Hotel',
+                    'GROCERY_MARKET': 'Grocery',
+                    'EVENT_PLANNING': 'Events',
+                    'OTHER': 'Other'
+                }
+                
+                business_type_display = business_type_display_map.get(listing.business_type, listing.business_type.title() if listing.business_type else 'Business')
+                
+                logger.info(f"🎯 [BUSINESS_TYPE_DEBUG] Raw Type: {listing.business_type}, Display: {business_type_display}")
+                
+                # 🎯 [IMAGE_DEBUG] Check for Cloudinary images
+                logo_url = getattr(listing, 'logo_url', '') or getattr(listing, 'logo_cloudinary_url', '') or ''
+                cover_image_url = getattr(listing, 'cover_image_url', '') or ''
+                gallery_images = getattr(listing, 'gallery_images', []) or []
+                
+                logger.info(f"🎯 [IMAGE_DEBUG] Logo: {bool(logo_url)}, Cover: {bool(cover_image_url)}, Gallery: {len(gallery_images)} images")
                 
                 business_data = {
                     'id': str(listing.id),  # UUID, convert to string
@@ -492,12 +530,14 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'phone': getattr(profile, 'phone', '') if profile else '',
                     'address': getattr(profile, 'business_address', '') if profile else '',
                     'category': listing.business_type,
-                    'category_display': listing.business_type.title() if listing.business_type else 'Business',
+                    'category_display': business_type_display,
                     'email': user.email,
                     'description': listing.description or '',
-                    'image_url': '',  # TODO: Add business image support
-                    'logo': '',   # Frontend expects 'logo'
-                    'logo_url': '',   # TODO: Add business logo support
+                    'image_url': cover_image_url or logo_url,  # Use cover image or logo
+                    'logo': logo_url,   # Frontend expects 'logo'
+                    'logo_url': logo_url,   # Logo URL from Cloudinary
+                    'cover_image_url': cover_image_url,  # Cover image from Cloudinary
+                    'gallery_images': gallery_images,  # Gallery images from Cloudinary
                     'website': getattr(profile, 'website', '') if profile else '',
                     'opening_hours': listing.business_hours or {},
                     'rating': float(listing.average_rating) if listing.average_rating else None,
