@@ -169,7 +169,12 @@ export default function BusinessDetailScreen() {
         business_type_display: businessData?.business_type_display,
         business_name: businessData?.business_name
       });
-      setBusiness(businessData || mockBusinessData());
+      // Only use real data from API, no mock data
+      if (businessData) {
+        setBusiness(businessData);
+      } else {
+        throw new Error('Failed to load business details');
+      }
 
       // Load products/menu items - don't fail if this errors
       try {
@@ -198,80 +203,19 @@ export default function BusinessDetailScreen() {
         setServices([]);
       }
 
-      setReviews(mockReviews());
+      // TODO: Load real reviews when API endpoint is available
+      setReviews([]);
     } catch (error) {
       console.error('Error loading business details:', error);
-      // Don't replace with mock data if we already have business data
-      if (!business) {
-        setBusiness(mockBusinessData());
-        setProducts(mockProducts());
-        setServices(mockServices());
-        setReviews(mockReviews());
-      }
+      Alert.alert(
+        'Error',
+        'Failed to load business details. Please check your connection and try again.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
     } finally {
       setLoading(false);
     }
   };
-
-  const mockBusinessData = () => {
-    // Detect if it's a restaurant from the business name
-    const isRestaurant = businessName?.toLowerCase().includes('restaurant') ||
-                         businessName?.toLowerCase().includes('cafe');
-
-    return {
-    id: businessId,
-    business_name: businessName || 'Sample Business',
-    description: 'Your trusted partner for quality products and services. We have been serving the community for over 10 years with dedication and excellence.',
-    business_type: isRestaurant ? 'RESTAURANT_CAFE' : 'RETAIL_SHOP',
-    business_type_display: isRestaurant ? 'Restaurant' : 'Retail',
-    category_display: isRestaurant ? 'Restaurant' : 'Retail',
-    phone: '+211 912 345 678',
-    email: 'info@business.com',
-    address: '123 Main Street, Juba, South Sudan',
-    city: 'Juba',
-    country: 'South Sudan',
-    average_rating: 4.5,
-    total_reviews: 128,
-    total_orders: 500,
-    response_time: '< 1 hour',
-    is_verified: true,
-    is_featured: true,
-    is_open_now: false,  // Default to closed (matches most businesses)
-    logo_url: null,  // Add image fields to prevent undefined errors
-    cover_image_url: null,
-    gallery_images: [],
-    business_hours: {
-      monday: '9:00 AM - 6:00 PM',
-      tuesday: '9:00 AM - 6:00 PM',
-      wednesday: '9:00 AM - 6:00 PM',
-      thursday: '9:00 AM - 6:00 PM',
-      friday: '9:00 AM - 6:00 PM',
-      saturday: '10:00 AM - 4:00 PM',
-      sunday: 'Closed',
-    },
-    images: [null, null, null], // Placeholder for business images
-    logo: null,
-    cover_image: null,
-  };
-  };
-
-  const mockProducts = () => [
-    { id: '1', name: 'Product 1', price: 1500, currency: 'SSP', description: 'High quality product', stock: 50, image: null },
-    { id: '2', name: 'Product 2', price: 2500, currency: 'SSP', description: 'Premium item', stock: 30, image: null },
-    { id: '3', name: 'Product 3', price: 800, currency: 'SSP', description: 'Best seller', stock: 100, image: null },
-    { id: '4', name: 'Product 4', price: 3200, currency: 'SSP', description: 'Limited edition', stock: 10, image: null },
-  ];
-
-  const mockServices = () => [
-    { id: '1', name: 'Service 1', price: 5000, currency: 'SSP', description: 'Professional service', duration: '1 hour' },
-    { id: '2', name: 'Service 2', price: 8000, currency: 'SSP', description: 'Premium service', duration: '2 hours' },
-  ];
-
-  const mockReviews = () => [
-    { id: '1', user: 'John D.', rating: 5, comment: 'Excellent service and quality products!', date: '2024-01-15' },
-    { id: '2', user: 'Sarah M.', rating: 4, comment: 'Good experience, fast delivery', date: '2024-01-10' },
-    { id: '3', user: 'Mike R.', rating: 5, comment: 'Best shop in town!', date: '2024-01-05' },
-  ];
 
   const handleCall = () => {
     if (business?.phone) {
