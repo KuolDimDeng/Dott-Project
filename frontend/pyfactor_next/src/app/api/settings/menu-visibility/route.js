@@ -55,7 +55,8 @@ export async function GET(request) {
         submenus: [
           { key: 'catalog', label: 'Products', is_visible: true, default_visible: true },
           { key: 'services', label: 'Services', is_visible: true, default_visible: true },
-          { key: 'warehouse_tracker', label: 'Stock Adjustments', is_visible: true, default_visible: true }
+          { key: 'warehouse_tracker', label: 'Stock Adjustments', is_visible: true, default_visible: true },
+          { key: 'menu_management', label: 'Menu Management', is_visible: true, default_visible: true }
         ]
       },
       {

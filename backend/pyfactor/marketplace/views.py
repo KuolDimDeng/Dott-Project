@@ -895,6 +895,74 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['post'])
+    def publish_to_marketplace(self, request):
+        """
+        Publish business from Advertise feature to marketplace
+        This integrates with the Advertise form to make businesses visible
+        """
+        try:
+            user = request.user
+            data = request.data
+            
+            logger.info(f"[MARKETPLACE_PUBLISH] Publishing business for user: {user.email}")
+            
+            # Get or create the business listing
+            listing, created = BusinessListing.objects.get_or_create(
+                business=user,
+                defaults={
+                    'tenant_id': user.tenant_id if hasattr(user, 'tenant_id') else None
+                }
+            )
+            
+            # Update listing with advertise data
+            listing.business_type = data.get('business_type', 'RESTAURANT_CAFE')
+            listing.description = data.get('description', '')
+            listing.country = data.get('country', 'SS')
+            listing.city = data.get('city', 'Juba')
+            
+            # Handle Cloudinary image URLs
+            if 'logo_url' in data:
+                listing.logo_url = data['logo_url']
+            if 'logo_public_id' in data:
+                listing.logo_public_id = data['logo_public_id']
+            if 'cover_image_url' in data:
+                listing.cover_image_url = data['cover_image_url']
+            if 'cover_image_public_id' in data:
+                listing.cover_image_public_id = data['cover_image_public_id']
+            if 'gallery_images' in data:
+                listing.gallery_images = data['gallery_images']
+            
+            # Business hours and features
+            if 'business_hours' in data:
+                listing.business_hours = data['business_hours']
+            if 'search_tags' in data:
+                listing.search_tags = data['search_tags']
+            
+            # Make visible in marketplace
+            listing.is_visible_in_marketplace = True
+            listing.is_verified = data.get('is_verified', False)
+            listing.is_featured = data.get('is_featured', False)
+            
+            # Save the listing
+            listing.save()
+            
+            logger.info(f"[MARKETPLACE_PUBLISH] Successfully published listing ID: {listing.id}")
+            
+            return Response({
+                'success': True,
+                'message': 'Business successfully published to marketplace',
+                'listing_id': str(listing.id),
+                'is_visible': listing.is_visible_in_marketplace
+            })
+            
+        except Exception as e:
+            logger.error(f"[MARKETPLACE_PUBLISH] Error publishing to marketplace: {str(e)}")
+            return Response({
+                'success': False,
+                'message': f'Error publishing to marketplace: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
     def update_delivery_settings(self, request):
         """
         Update business delivery settings
