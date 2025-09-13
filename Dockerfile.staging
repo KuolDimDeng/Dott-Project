@@ -1,12 +1,11 @@
-# Staging Dockerfile - Simplified version
-# Builds from repository root with frontend code
-# Updated: 2025-09-13 - Multi-stage build for Render
+# Staging Dockerfile - Self-contained version for Render
+# Downloads code from GitHub to ensure correct structure
+# Updated: 2025-09-13
 
-# Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:18-alpine
 
 # Install dependencies
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat git
 
 # Install pnpm
 RUN npm install -g pnpm@8.15.3
@@ -14,26 +13,13 @@ RUN npm install -g pnpm@8.15.3
 # Set working directory
 WORKDIR /app
 
-# Copy package files from frontend
-COPY frontend/pyfactor_next/package*.json ./
-COPY frontend/pyfactor_next/pnpm-lock.yaml* ./
+# Clone the repository and get the frontend code
+RUN git clone --depth 1 --branch staging https://github.com/Dott-Application/projectx.git /tmp/repo && \
+    cp -r /tmp/repo/frontend/pyfactor_next/* . && \
+    rm -rf /tmp/repo
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install
-
-# Stage 2: Builder
-FROM node:18-alpine AS builder
-
-# Install pnpm
-RUN npm install -g pnpm@8.15.3
-
-WORKDIR /app
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy all frontend code
-COPY frontend/pyfactor_next/ ./
+RUN pnpm install
 
 # Build arguments
 ARG NEXT_PUBLIC_API_URL=https://dott-api-staging.onrender.com
@@ -57,33 +43,15 @@ ARG NEXT_PUBLIC_SHOW_STAGING_BANNER=true
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=3584"
+ENV PORT=10000
+ENV HOSTNAME="0.0.0.0"
 
 # Build the application
 RUN pnpm build
 
-# Stage 3: Runner
-FROM node:18-alpine AS runner
-
-# Install pnpm
-RUN npm install -g pnpm@8.15.3
-
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=3584"
-ENV PORT=10000
-ENV HOSTNAME="0.0.0.0"
-
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
-
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 
 # Change ownership
 RUN chown -R nextjs:nodejs /app
