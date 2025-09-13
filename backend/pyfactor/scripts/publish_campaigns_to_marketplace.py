@@ -34,18 +34,40 @@ def publish_campaigns_to_marketplace():
     print("\n🎯 Publishing Advertising Campaigns to Marketplace")
     print("=" * 60)
 
-    # Get all active campaigns
-    campaigns = AdvertisingCampaign.objects.filter(
-        status='active'
-    ).select_related('business')
+    # Get all campaigns (not just active, for testing)
+    # You can filter by status='active' once campaigns are created
+    campaigns = AdvertisingCampaign.objects.all()
 
-    print(f"\n📊 Found {campaigns.count()} active campaigns")
+    print(f"\n📊 Found {campaigns.count()} total campaigns")
+
+    # Show breakdown by status
+    for status in ['draft', 'active', 'pending_payment', 'paused', 'completed', 'cancelled']:
+        count = AdvertisingCampaign.objects.filter(status=status).count()
+        if count > 0:
+            print(f"   - {status}: {count} campaigns")
+
+    if campaigns.count() == 0:
+        print("\n⚠️  No campaigns found in the database.")
+        print("   Create campaigns through the Advertising menu in the app first.")
+        return True
 
     for campaign in campaigns:
         try:
             print(f"\n📢 Processing campaign: {campaign.name}")
             print(f"   Business: {campaign.business.email}")
             print(f"   Type: {campaign.type}")
+            print(f"   Status: {campaign.status}")
+
+            # Skip non-active campaigns unless you want to process them
+            if campaign.status not in ['active', 'draft']:
+                print(f"   ⏭️  Skipping {campaign.status} campaign")
+                continue
+
+            # Auto-activate draft campaigns for testing
+            if campaign.status == 'draft':
+                campaign.status = 'active'
+                campaign.save()
+                print(f"   ✅ Auto-activated draft campaign")
 
             # Check if business already has a listing
             listing, created = BusinessListing.objects.get_or_create(
