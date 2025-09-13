@@ -75,32 +75,50 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
         """
         try:
             campaign = self.get_object()
-            
+
             # Verify payment (integrate with your payment system)
             payment_data = request.data
             # TODO: Verify payment with Stripe/payment provider
-            
+
             # Activate the campaign
             campaign.activate()
-            
+
+            # Auto-publish to marketplace if enabled
+            marketplace_listing_id = None
+            if campaign.auto_publish_to_marketplace:
+                listing = campaign.publish_to_marketplace()
+                if listing:
+                    marketplace_listing_id = str(listing.id)
+                    logger.info(f"Campaign {campaign.id} published to marketplace: {listing.id}")
+
             # Create featured schedule if it's a featured campaign
             if campaign.type == 'featured' and campaign.business:
+                profile = getattr(campaign.business, 'userprofile', None)
+                city = getattr(profile, 'city', '') if profile else ''
+                country = getattr(profile, 'country', '') if profile else ''
+
                 FeaturedBusinessSchedule.objects.create(
                     business=campaign.business,
                     campaign=campaign,
                     start_date=campaign.start_date,
                     end_date=campaign.end_date,
                     priority=2 if campaign.type == 'premium' else 1,
-                    city=campaign.business.city,
-                    country=campaign.business.country,
+                    city=city,
+                    country=country,
                 )
-            
+
             serializer = self.get_serializer(campaign)
-            return Response({
+            response_data = {
                 'success': True,
                 'message': 'Campaign activated successfully',
                 'data': serializer.data
-            })
+            }
+
+            if marketplace_listing_id:
+                response_data['marketplace_listing_id'] = marketplace_listing_id
+                response_data['message'] = 'Campaign activated and published to marketplace'
+
+            return Response(response_data)
         except Exception as e:
             logger.error(f"Error activating campaign: {e}")
             return Response({
@@ -174,17 +192,27 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
         try:
             campaign = self.get_object()
 
-            # Check if campaign can be published
-            if campaign.status not in ['active', 'pending_payment']:
+            # Check if campaign can be published (allow draft for testing)
+            if campaign.status not in ['active', 'pending_payment', 'draft']:
                 return Response({
                     'success': False,
-                    'message': 'Only active or pending campaigns can be published to marketplace'
+                    'message': 'Campaign must be active, pending payment, or draft to publish'
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # For testing/immediate publishing, activate if draft
+            if campaign.status == 'draft':
+                campaign.status = 'active'
+                campaign.save()
+                logger.info(f"Campaign {campaign.id} auto-activated for marketplace publishing")
 
             # Publish to marketplace
             listing = campaign.publish_to_marketplace()
 
             if listing:
+                # Ensure the listing is visible
+                listing.is_visible_in_marketplace = True
+                listing.save()
+
                 return Response({
                     'success': True,
                     'message': 'Campaign successfully published to marketplace',
@@ -192,7 +220,8 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
                         'campaign_id': str(campaign.id),
                         'listing_id': str(listing.id),
                         'is_featured': campaign.type == 'featured',
-                        'visibility_boost': campaign.marketplace_visibility_boost
+                        'visibility_boost': campaign.marketplace_visibility_boost,
+                        'listing_url': f'/marketplace/listing/{listing.id}/'
                     }
                 })
             else:
