@@ -1,7 +1,7 @@
 # Staging Dockerfile - Working around Render's build context
 # Assumes entire repo is available
 FROM node:18-alpine AS base
-ARG CACHEBUST=2025-09-13-staging-v3
+ARG CACHEBUST=2025-09-13-staging-v4
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0
@@ -12,13 +12,20 @@ WORKDIR /tmp
 # Copy everything from build context (should be repo root)
 COPY . .
 # Move frontend files to /app
-RUN cp -r frontend/pyfactor_next/* /app/ || cp -r pyfactor_next/* /app/ || cp -r * /app/ || echo "Files copied"
+RUN if [ -d "frontend/pyfactor_next" ]; then \
+        cp -r frontend/pyfactor_next/* /app/; \
+    elif [ -d "pyfactor_next" ]; then \
+        cp -r pyfactor_next/* /app/; \
+    else \
+        cp -r * /app/; \
+    fi
 
 # Dependencies stage
 FROM base AS deps
 WORKDIR /app
 # Copy package files from source stage
-COPY --from=source /app/package.json /app/pnpm-lock.yaml* ./
+COPY --from=source /app/package.json ./
+COPY --from=source /app/pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile || pnpm install
 
 # Build stage
@@ -85,9 +92,9 @@ RUN adduser --system --uid 1001 nextjs
 # Install pnpm in runner
 RUN npm install -g pnpm@8.10.0
 
-# Copy built application - try multiple possible locations
-COPY --from=builder /app/public ./public || echo "No public dir"
-COPY --from=builder /app/.next ./.next || echo "No .next dir"
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
@@ -98,5 +105,5 @@ USER nextjs
 
 EXPOSE 10000
 
-# Try multiple start commands
+# Start command
 CMD ["pnpm", "next", "start", "-p", "10000"]
