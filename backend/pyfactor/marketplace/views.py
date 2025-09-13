@@ -1170,12 +1170,15 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         # For now, return empty services list
         # This can be extended in the future when service management is implemented
         services = []
-        
+
+        # Get business name safely
+        business_name = listing.business.name if hasattr(listing.business, 'name') else listing.business.email
+
         return Response({
             'success': True,
             'services': services,
             'business_id': str(listing.id),
-            'business_name': listing.business.profile.business_name if hasattr(listing.business, 'profile') else listing.business.email
+            'business_name': business_name
         })
     
     @action(detail=False, methods=['get', 'patch'])

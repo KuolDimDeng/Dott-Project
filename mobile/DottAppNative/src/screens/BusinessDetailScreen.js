@@ -142,24 +142,38 @@ export default function BusinessDetailScreen() {
   const loadBusinessDetails = async () => {
     setLoading(true);
     try {
-      // In production, these would be actual API calls
+      // Load business details
       const businessData = await marketplaceApi.getBusinessDetails(businessId);
       setBusiness(businessData || mockBusinessData());
-      
-      const productsData = await marketplaceApi.getBusinessProducts(businessId);
-      setProducts(productsData?.results || mockProducts());
-      
-      const servicesData = await marketplaceApi.getBusinessServices(businessId);
-      setServices(servicesData?.results || mockServices());
-      
+
+      // Load products - don't fail if this errors
+      try {
+        const productsData = await marketplaceApi.getBusinessProducts(businessId);
+        setProducts(productsData?.products || productsData?.results || []);
+      } catch (productError) {
+        console.log('Could not load products:', productError.message);
+        setProducts([]);
+      }
+
+      // Load services - don't fail if this errors
+      try {
+        const servicesData = await marketplaceApi.getBusinessServices(businessId);
+        setServices(servicesData?.services || servicesData?.results || []);
+      } catch (serviceError) {
+        console.log('Could not load services:', serviceError.message);
+        setServices([]);
+      }
+
       setReviews(mockReviews());
     } catch (error) {
       console.error('Error loading business details:', error);
-      // Use mock data as fallback
-      setBusiness(mockBusinessData());
-      setProducts(mockProducts());
-      setServices(mockServices());
-      setReviews(mockReviews());
+      // Don't replace with mock data if we already have business data
+      if (!business) {
+        setBusiness(mockBusinessData());
+        setProducts(mockProducts());
+        setServices(mockServices());
+        setReviews(mockReviews());
+      }
     } finally {
       setLoading(false);
     }
@@ -181,6 +195,9 @@ export default function BusinessDetailScreen() {
     response_time: '< 1 hour',
     is_verified: true,
     is_featured: true,
+    logo_url: null,  // Add image fields to prevent undefined errors
+    cover_image_url: null,
+    gallery_images: [],
     business_hours: {
       monday: '9:00 AM - 6:00 PM',
       tuesday: '9:00 AM - 6:00 PM',
