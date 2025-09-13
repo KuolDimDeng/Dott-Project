@@ -97,9 +97,16 @@ export default function MarketplaceProfileEditor({ navigation }) {
       // Try to load existing profile
       const existingProfile = await marketplaceApi.getBusinessListing();
       
-      if (existingProfile && existingProfile.profile) {
+      if (existingProfile && existingProfile.data) {
+        // The backend returns data object with the listing info
+        const listingData = existingProfile.data;
+        setProfile(existingProfile.profile || {});
+        // Check the actual field the backend uses
+        setIsPublished(listingData.is_visible_in_marketplace || false);
+      } else if (existingProfile && existingProfile.profile) {
         setProfile(existingProfile.profile);
-        setIsPublished(existingProfile.is_published || false);
+        // Check for the visibility field
+        setIsPublished(existingProfile.is_visible_in_marketplace || existingProfile.is_published || false);
       } else {
         // Check for local draft first
         try {
@@ -419,7 +426,7 @@ export default function MarketplaceProfileEditor({ navigation }) {
   const handleImagePick = async (imageType) => {
     const options = {
       mediaType: 'photo',
-      includeBase64: false,
+      includeBase64: true,  // Enable base64 to send actual image data
       maxHeight: 2000,
       maxWidth: 2000,
       quality: 0.8,
@@ -429,10 +436,14 @@ export default function MarketplaceProfileEditor({ navigation }) {
       if (response.didCancel || response.error) {
         return;
       }
-      
+
       if (response.assets && response.assets[0]) {
-        const imageUri = response.assets[0].uri;
-        
+        const asset = response.assets[0];
+        // Create data URL from base64 if available, otherwise use URI
+        const imageData = asset.base64
+          ? `data:${asset.type || 'image/jpeg'};base64,${asset.base64}`
+          : asset.uri;
+
         // Handle gallery images array
         if (imageType.startsWith('galleryImages')) {
           const match = imageType.match(/\[(\d+)\]/);
@@ -440,18 +451,18 @@ export default function MarketplaceProfileEditor({ navigation }) {
             const index = parseInt(match[1]);
             const currentGallery = profile?.visuals?.galleryImages || [];
             const newGallery = [...currentGallery];
-            
+
             // Ensure array is large enough
             while (newGallery.length <= index) {
               newGallery.push(null);
             }
-            
-            newGallery[index] = imageUri;
+
+            newGallery[index] = imageData;
             updateProfile('visuals.galleryImages', newGallery);
           }
         } else {
           // Handle single images (banner, logo)
-          updateProfile(`visuals.${imageType}`, imageUri);
+          updateProfile(`visuals.${imageType}`, imageData);
         }
       }
     });
