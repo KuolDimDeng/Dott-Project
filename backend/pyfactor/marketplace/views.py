@@ -42,50 +42,63 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         try:
             city = request.query_params.get('city', '').strip()
             country = request.query_params.get('country', '').strip()
-            
+
             if not city:
                 return Response({
                     'success': False,
                     'message': 'City is required',
                     'results': []
                 })
-            
+
             # Get currently active featured campaigns
-            from advertising.models import AdvertisingCampaign
-            from datetime import date
-            
-            today = date.today()
-            featured_campaigns = AdvertisingCampaign.objects.filter(
-                type='featured',
-                status='active',
-                start_date__lte=today,
-                end_date__gte=today
-            ).select_related('business')
-            
-            # Filter by location if business exists
-            if country:
-                featured_campaigns = featured_campaigns.filter(
-                    business__city__iexact=city,
-                    business__country__iexact=country[:2]
-                )
-            else:
-                featured_campaigns = featured_campaigns.filter(
-                    business__city__iexact=city
-                )
-            
+            try:
+                from advertising.models import AdvertisingCampaign
+                from datetime import date
+
+                today = date.today()
+                featured_campaigns = AdvertisingCampaign.objects.filter(
+                    type='featured',
+                    status='active',
+                    start_date__lte=today,
+                    end_date__gte=today
+                ).select_related('business')
+
+                # Filter by location if business exists
+                if country:
+                    featured_campaigns = featured_campaigns.filter(
+                        business__city__iexact=city,
+                        business__country__iexact=country[:2]
+                    )
+                else:
+                    featured_campaigns = featured_campaigns.filter(
+                        business__city__iexact=city
+                    )
+            except Exception as e:
+                logger.warning(f"Error getting advertising campaigns: {e}")
+                featured_campaigns = AdvertisingCampaign.objects.none()
+
             # Also get featured businesses from BusinessListing model
-            featured_listings = BusinessListing.objects.filter(
-                is_featured=True,
-                is_visible_in_marketplace=True,
-                featured_until__gte=today,
-                business__city__iexact=city,
-                business__opted_out=False
-            ).select_related('business')
-            
-            if country:
+            try:
+                from datetime import date
+                today = date.today()
+                featured_listings = BusinessListing.objects.filter(
+                    is_featured=True,
+                    is_visible_in_marketplace=True,
+                    city__iexact=city
+                ).select_related('business')
+
+                # Add optional featured_until filter if the field has data
                 featured_listings = featured_listings.filter(
-                    business__country__iexact=country[:2]
+                    Q(featured_until__isnull=True) | Q(featured_until__gte=today)
                 )
+
+                if country:
+                    featured_listings = featured_listings.filter(
+                        country__iexact=country[:2]
+                    )
+            except Exception as e:
+                logger.warning(f"Error getting featured listings: {e}")
+                featured_listings = BusinessListing.objects.none()
             
             # Combine results from both sources
             business_list = []
@@ -356,38 +369,61 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         """
         Get available categories with counts
         """
-        # Get consumer location for filtering
-        profile = self.get_consumer_profile(request.user)
-        
-        # Get businesses that can deliver to user
-        businesses = BusinessListing.objects.filter(
-            is_visible_in_marketplace=True
-        )
-        
-        businesses = self.filter_by_delivery_capability(
-            businesses,
-            profile.current_country,
-            profile.current_city,
-            profile.current_latitude,
-            profile.current_longitude
-        )
-        
-        # Count businesses per category
-        from core.business_types import BUSINESS_TYPE_CHOICES
-        category_counts = {}
-        for choice in BUSINESS_TYPE_CHOICES:
-            count = businesses.filter(business_type=choice[0]).count()
-            if count > 0:
-                category_counts[choice[0]] = {
-                    'id': choice[0],
-                    'name': choice[1],
-                    'count': count
-                }
-        
-        return Response({
-            'success': True,
-            'categories': list(category_counts.values())
-        })
+        try:
+            # Get consumer location for filtering
+            try:
+                profile = self.get_consumer_profile(request.user)
+                consumer_country = profile.current_country
+                consumer_city = profile.current_city
+                consumer_lat = profile.current_latitude
+                consumer_lng = profile.current_longitude
+            except Exception as e:
+                logger.warning(f"Error getting consumer profile for categories: {e}")
+                # Fall back to request parameters if profile fails
+                consumer_country = request.query_params.get('country', '')
+                consumer_city = request.query_params.get('city', '')
+                consumer_lat = None
+                consumer_lng = None
+
+            # Get businesses that can deliver to user
+            businesses = BusinessListing.objects.filter(
+                is_visible_in_marketplace=True
+            )
+
+            # Apply location filtering if we have location data
+            if consumer_country or consumer_city:
+                businesses = self.filter_by_delivery_capability(
+                    businesses,
+                    consumer_country,
+                    consumer_city,
+                    consumer_lat,
+                    consumer_lng
+                )
+
+            # Count businesses per category
+            from core.business_types import BUSINESS_TYPE_CHOICES
+            category_counts = {}
+            for choice in BUSINESS_TYPE_CHOICES:
+                count = businesses.filter(business_type=choice[0]).count()
+                if count > 0:
+                    category_counts[choice[0]] = {
+                        'id': choice[0],
+                        'name': choice[1],
+                        'count': count
+                    }
+
+            return Response({
+                'success': True,
+                'categories': list(category_counts.values())
+            })
+
+        except Exception as e:
+            logger.error(f"Error fetching categories: {str(e)}")
+            return Response({
+                'success': False,
+                'message': 'Error fetching categories',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['get'])
     def marketplace_businesses(self, request):
@@ -442,28 +478,69 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             
             # 🎯 [BUSINESS_LISTING_DEBUG] Get real BusinessListing records only
             business_listings = BusinessListing.objects.filter(
-                is_visible_in_marketplace=True,
-                city__iexact=city
+                is_visible_in_marketplace=True
             ).select_related('business', 'business__profile')
-            
-            logger.info(f"[BUSINESS_LISTING_DEBUG] Found {business_listings.count()} business listings in {city}")
-            
+
+            logger.info(f"[BUSINESS_LISTING_DEBUG] Found {business_listings.count()} total visible business listings")
+
+            # 🔍 [DEBUG_BUSINESSES] Show what businesses are actually in the database
+            for bl in business_listings[:5]:  # Show first 5 businesses for debugging
+                logger.info(f"[DEBUG_BUSINESS] ID: {bl.id}, City: '{bl.city}', Country: '{bl.country}', Type: '{bl.business_type}', Visible: {bl.is_visible_in_marketplace}")
+                if bl.business:
+                    logger.info(f"[DEBUG_BUSINESS] Business User: {bl.business.email}, Name: {getattr(bl.business, 'name', 'NO_NAME')}")
+            if business_listings.count() > 5:
+                logger.info(f"[DEBUG_BUSINESS] ... and {business_listings.count() - 5} more businesses")
+
+            # Apply city filter - be more flexible with case and partial matching
+            # For testing, let's make city filter optional for now
+            if city:
+                original_count = business_listings.count()
+                # Try very flexible city matching
+                city_filtered = business_listings.filter(
+                    Q(city__iexact=city) | Q(city__icontains=city) | Q(city__isnull=True) | Q(city='')
+                )
+                # If flexible matching gives us no results, show all businesses anyway (for debugging)
+                if city_filtered.count() == 0:
+                    logger.warning(f"[CITY_DEBUG] No businesses found for city '{city}', showing all businesses for debugging")
+                    # Don't apply city filter if no matches found
+                else:
+                    business_listings = city_filtered
+                    logger.info(f"[CITY_DEBUG] After flexible city filter ({city}): {business_listings.count()}/{original_count} listings")
+
             from marketplace.marketplace_categories import MARKETPLACE_CATEGORIES, get_business_types_for_subcategory
-            
-            # Apply country filter to listings
+
+            # Apply country filter to listings - be more flexible
             if country:
+                original_count = business_listings.count()
                 country_code = country_mapping.get(country.lower(), country)
                 logger.info(f"[COUNTRY_DEBUG] Input country: '{country}' -> mapped to: '{country_code}'")
-                if country_code and len(country_code) == 2:
-                    business_listings = business_listings.filter(country__iexact=country_code)
-                    logger.info(f"[COUNTRY_DEBUG] Filtering by country code: {country_code}")
-                elif country:
-                    business_listings = business_listings.filter(
-                        Q(country__iexact=country) | Q(country__iexact=country[:2])
-                    )
-                    logger.info(f"[COUNTRY_DEBUG] Filtering by country name: {country}")
 
-                logger.info(f"[COUNTRY_DEBUG] After country filter: {business_listings.count()} listings")
+                # Try multiple country matching approaches including empty/null values
+                country_filters = Q()
+                if country_code and len(country_code) == 2:
+                    country_filters |= Q(country__iexact=country_code)
+                    logger.info(f"[COUNTRY_DEBUG] Added filter for country code: {country_code}")
+
+                # Also try the original country name
+                country_filters |= Q(country__iexact=country)
+                country_filters |= Q(country__icontains=country)
+
+                # Try first 2 characters as country code
+                if len(country) >= 2:
+                    country_filters |= Q(country__iexact=country[:2])
+
+                # Include businesses with no country set (for debugging)
+                country_filters |= Q(country__isnull=True) | Q(country='')
+
+                country_filtered = business_listings.filter(country_filters)
+
+                # If no results with country filter, show all for debugging
+                if country_filtered.count() == 0:
+                    logger.warning(f"[COUNTRY_DEBUG] No businesses found for country '{country}', showing all businesses for debugging")
+                    # Don't apply country filter if no matches found
+                else:
+                    business_listings = country_filtered
+                    logger.info(f"[COUNTRY_DEBUG] After flexible country filter: {business_listings.count()}/{original_count} listings")
             
             # Apply category filter to listings
             if category and not main_category:
