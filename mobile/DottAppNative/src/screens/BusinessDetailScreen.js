@@ -207,11 +207,19 @@ export default function BusinessDetailScreen() {
       setReviews([]);
     } catch (error) {
       console.error('Error loading business details:', error);
-      Alert.alert(
-        'Error',
-        'Failed to load business details. Please check your connection and try again.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      if (error.response?.status === 404) {
+        Alert.alert(
+          'Business Not Found',
+          'This business is not available in the marketplace. It may not be published yet.',
+          [{ text: 'Go Back', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to load business details. Please check your connection and try again.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
     } finally {
       setLoading(false);
     }
