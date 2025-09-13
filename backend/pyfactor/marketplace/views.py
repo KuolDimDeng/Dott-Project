@@ -14,6 +14,12 @@ from .serializers import (
 )
 from business.models import PlaceholderBusiness
 import logging
+import base64
+import os
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.conf import settings
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -1275,28 +1281,116 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 if 'is_visible_in_marketplace' in discovery:
                     update_data['is_visible_in_marketplace'] = discovery['is_visible_in_marketplace']
 
+            # Helper function to handle base64 image upload
+            def handle_image_upload(image_data, purpose='marketplace', user_id=None):
+                """Upload base64 image and return URL"""
+                if not image_data:
+                    return None
+
+                # Check if it's a base64 data URL
+                if isinstance(image_data, str) and image_data.startswith('data:'):
+                    try:
+                        # Extract base64 data from data URL
+                        format, imgstr = image_data.split(';base64,')
+                        ext = format.split('/')[-1]
+
+                        # Validate extension
+                        if ext not in ['jpeg', 'jpg', 'png', 'gif', 'webp']:
+                            ext = 'jpg'  # Default to jpg
+
+                        # Convert base64 to file
+                        file_data = base64.b64decode(imgstr)
+
+                        # Try Cloudinary first if available
+                        if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+                            try:
+                                from services.cloudinary_service import cloudinary_service
+                                data = ContentFile(file_data, name=f'temp.{ext}')
+                                result = cloudinary_service.upload_image(
+                                    data,
+                                    purpose=purpose,
+                                    user_id=str(request.user.id) if request.user else None
+                                )
+                                logger.info(f"[BusinessListing] Uploaded {purpose} image to Cloudinary: {result['url']}")
+                                return result['url']
+                            except Exception as cloud_error:
+                                logger.warning(f"[BusinessListing] Cloudinary upload failed, falling back to local: {cloud_error}")
+
+                        # Fallback to local storage
+                        # Create a unique filename
+                        filename = f"{purpose}_{uuid.uuid4().hex[:8]}.{ext}"
+
+                        # Determine the folder path
+                        user_folder = str(request.user.business_id) if hasattr(request.user, 'business_id') else str(request.user.id)
+                        folder_path = f"marketplace/{user_folder}/{purpose}"
+                        file_path = os.path.join(folder_path, filename)
+
+                        # Save the file
+                        saved_path = default_storage.save(file_path, ContentFile(file_data))
+
+                        # Generate the full URL
+                        if hasattr(settings, 'MEDIA_URL'):
+                            # For local development
+                            media_url = settings.MEDIA_URL.rstrip('/')
+                            full_url = f"{request.build_absolute_uri('/')}{media_url}/{saved_path}".replace('//', '/')
+                        else:
+                            # For production (using staging URL)
+                            full_url = f"https://dott-api-staging.onrender.com/media/{saved_path}"
+
+                        logger.info(f"[BusinessListing] Saved {purpose} image locally: {full_url}")
+                        return full_url
+
+                    except Exception as e:
+                        logger.error(f"[BusinessListing] Failed to upload {purpose} image: {e}")
+                        return None
+                elif isinstance(image_data, str) and (image_data.startswith('http://') or image_data.startswith('https://')):
+                    # It's already a URL, return as is
+                    return image_data
+
+                return None
+
             # Handle image fields from root level (for mobile app image uploads)
             if 'logo_url' in request.data:
-                update_data['logo_url'] = request.data['logo_url']
-                logger.info(f"[BusinessListing] Updating logo_url")
+                uploaded_url = handle_image_upload(request.data['logo_url'], 'logo')
+                if uploaded_url:
+                    update_data['logo_url'] = uploaded_url
+                    logger.info(f"[BusinessListing] Updated logo_url: {uploaded_url}")
 
             if 'cover_image_url' in request.data:
-                update_data['cover_image_url'] = request.data['cover_image_url']
-                logger.info(f"[BusinessListing] Updating cover_image_url")
+                uploaded_url = handle_image_upload(request.data['cover_image_url'], 'cover')
+                if uploaded_url:
+                    update_data['cover_image_url'] = uploaded_url
+                    logger.info(f"[BusinessListing] Updated cover_image_url: {uploaded_url}")
 
             if 'gallery_images' in request.data:
-                update_data['gallery_images'] = request.data['gallery_images']
-                logger.info(f"[BusinessListing] Updating gallery_images with {len(request.data.get('gallery_images', []))} images")
+                gallery_urls = []
+                for idx, img in enumerate(request.data.get('gallery_images', [])):
+                    uploaded_url = handle_image_upload(img, f'gallery_{idx}')
+                    if uploaded_url:
+                        gallery_urls.append(uploaded_url)
+                if gallery_urls:
+                    update_data['gallery_images'] = gallery_urls
+                    logger.info(f"[BusinessListing] Updated gallery_images with {len(gallery_urls)} images")
 
             # Also check for nested visuals (alternative structure)
             if 'visuals' in profile_data:
                 visuals = profile_data['visuals']
                 if 'logoImage' in visuals and visuals['logoImage']:
-                    update_data['logo_url'] = visuals['logoImage']
+                    uploaded_url = handle_image_upload(visuals['logoImage'], 'logo')
+                    if uploaded_url:
+                        update_data['logo_url'] = uploaded_url
                 if 'bannerImage' in visuals and visuals['bannerImage']:
-                    update_data['cover_image_url'] = visuals['bannerImage']
+                    uploaded_url = handle_image_upload(visuals['bannerImage'], 'cover')
+                    if uploaded_url:
+                        update_data['cover_image_url'] = uploaded_url
                 if 'galleryImages' in visuals and visuals['galleryImages']:
-                    update_data['gallery_images'] = visuals['galleryImages']
+                    gallery_urls = []
+                    for idx, img in enumerate(visuals['galleryImages']):
+                        uploaded_url = handle_image_upload(img, f'gallery_{idx}')
+                        if uploaded_url:
+                            gallery_urls.append(uploaded_url)
+                    if gallery_urls:
+                        update_data['gallery_images'] = gallery_urls
 
             # Update listing with validated data
             logger.info(f"[BusinessListing] Final update_data: {update_data}")
