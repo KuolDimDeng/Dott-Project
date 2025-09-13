@@ -166,6 +166,48 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
                 'message': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=True, methods=['post'])
+    def publish_to_marketplace(self, request, pk=None):
+        """
+        Publish a campaign to the marketplace
+        """
+        try:
+            campaign = self.get_object()
+
+            # Check if campaign can be published
+            if campaign.status not in ['active', 'pending_payment']:
+                return Response({
+                    'success': False,
+                    'message': 'Only active or pending campaigns can be published to marketplace'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Publish to marketplace
+            listing = campaign.publish_to_marketplace()
+
+            if listing:
+                return Response({
+                    'success': True,
+                    'message': 'Campaign successfully published to marketplace',
+                    'data': {
+                        'campaign_id': str(campaign.id),
+                        'listing_id': str(listing.id),
+                        'is_featured': campaign.type == 'featured',
+                        'visibility_boost': campaign.marketplace_visibility_boost
+                    }
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'Failed to publish to marketplace. Please check business profile is complete.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Error publishing to marketplace: {e}")
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['get'])
     def analytics(self, request, pk=None):
         """
@@ -252,7 +294,7 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_image(self, request):
         """
-        Upload campaign image to Cloudinary
+        Upload campaign image to Cloudinary with support for different image types
         """
         try:
             serializer = CampaignImageUploadSerializer(data=request.data)
@@ -261,22 +303,48 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
                     'success': False,
                     'errors': serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             image = serializer.validated_data['image']
             folder = serializer.validated_data.get('folder', 'campaigns')
-            
-            # Upload to Cloudinary
-            upload_result = cloudinary.uploader.upload(
-                image,
-                folder=f"dott/{folder}",
-                resource_type="image",
-                transformation=[
+            image_type = serializer.validated_data.get('image_type', 'general')
+
+            # Different transformations based on image type
+            transformations = {
+                'logo': [
+                    {'width': 400, 'height': 400, 'crop': 'fill'},
+                    {'quality': 'auto:best'},
+                    {'fetch_format': 'auto'}
+                ],
+                'cover': [
+                    {'width': 1200, 'height': 628, 'crop': 'fill'},
+                    {'quality': 'auto:good'},
+                    {'fetch_format': 'auto'}
+                ],
+                'gallery': [
+                    {'width': 800, 'height': 600, 'crop': 'fill'},
+                    {'quality': 'auto:good'},
+                    {'fetch_format': 'auto'}
+                ],
+                'banner': [
+                    {'width': 1920, 'height': 600, 'crop': 'fill'},
+                    {'quality': 'auto:good'},
+                    {'fetch_format': 'auto'}
+                ],
+                'general': [
                     {'width': 1200, 'height': 628, 'crop': 'fill'},
                     {'quality': 'auto:good'},
                     {'fetch_format': 'auto'}
                 ]
+            }
+
+            # Upload to Cloudinary with appropriate transformation
+            upload_result = cloudinary.uploader.upload(
+                image,
+                folder=f"dott/{folder}/{image_type}",
+                resource_type="image",
+                transformation=transformations.get(image_type, transformations['general'])
             )
-            
+
             return Response({
                 'success': True,
                 'url': upload_result['secure_url'],
@@ -284,9 +352,69 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
                 'width': upload_result.get('width'),
                 'height': upload_result.get('height'),
                 'format': upload_result.get('format'),
+                'image_type': image_type,
             })
         except Exception as e:
             logger.error(f"Error uploading campaign image: {e}")
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'])
+    def update_images(self, request, pk=None):
+        """
+        Update campaign images (logo, cover, gallery) after upload
+        """
+        try:
+            campaign = self.get_object()
+            image_type = request.data.get('image_type')
+            url = request.data.get('url')
+            public_id = request.data.get('public_id')
+
+            if not image_type or not url:
+                return Response({
+                    'success': False,
+                    'message': 'image_type and url are required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update appropriate field based on image type
+            if image_type == 'logo':
+                campaign.logo_url = url
+                campaign.logo_public_id = public_id
+            elif image_type == 'cover':
+                campaign.cover_image_url = url
+                campaign.cover_image_public_id = public_id
+            elif image_type == 'gallery':
+                # Add to gallery images list
+                if not campaign.gallery_images:
+                    campaign.gallery_images = []
+                campaign.gallery_images.append({
+                    'url': url,
+                    'public_id': public_id,
+                    'uploaded_at': timezone.now().isoformat()
+                })
+            else:
+                campaign.image_url = url
+                campaign.cloudinary_public_id = public_id
+
+            campaign.save()
+
+            # If campaign is active and auto-publish is enabled, update marketplace
+            if campaign.status == 'active' and campaign.auto_publish_to_marketplace:
+                campaign.publish_to_marketplace()
+
+            return Response({
+                'success': True,
+                'message': f'{image_type} image updated successfully',
+                'data': {
+                    'campaign_id': str(campaign.id),
+                    'image_type': image_type,
+                    'url': url
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error updating campaign images: {e}")
             return Response({
                 'success': False,
                 'message': str(e)

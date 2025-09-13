@@ -700,9 +700,26 @@ class UserProfile(models.Model):
         help_text='Area or neighborhood description'
     )
     
+    # Currency preferences (for users without a business or overriding business defaults)
+    preferred_currency_code = models.CharField(
+        max_length=3,
+        default='USD',
+        help_text='3-letter ISO currency code'
+    )
+    preferred_currency_name = models.CharField(
+        max_length=50,
+        default='US Dollar',
+        help_text='Full currency name'
+    )
+    preferred_currency_symbol = models.CharField(
+        max_length=5,
+        default='$',
+        help_text='Currency symbol for display'
+    )
+
     # WhatsApp Business preference - defaults based on country
     show_whatsapp_commerce = models.BooleanField(null=True, blank=True, help_text='Whether to show WhatsApp Commerce in menu (null = use country default)')
-    
+
     # Legal structure display preference
     display_legal_structure = models.BooleanField(default=True, help_text='Whether to show legal structure (LLC, Corp, Ltd) after business name in header')
     
@@ -756,6 +773,26 @@ class UserProfile(models.Model):
             models.Index(fields=['tenant_id']),  # Index for tenant ID queries
             models.Index(fields=['business_id']),  # Index for business ID queries
         ]
+
+    def get_currency_preferences(self):
+        """
+        Get currency preferences from business if available, otherwise from profile.
+        Returns dict with code, name, and symbol.
+        """
+        # Try to get from business first
+        if self.business:
+            return {
+                'code': self.business.preferred_currency_code or 'USD',
+                'name': self.business.preferred_currency_name or 'US Dollar',
+                'symbol': self.business.preferred_currency_symbol or '$'
+            }
+
+        # Fall back to profile's own currency preferences
+        return {
+            'code': self.preferred_currency_code or 'USD',
+            'name': self.preferred_currency_name or 'US Dollar',
+            'symbol': self.preferred_currency_symbol or '$'
+        }
 
     def get_whatsapp_commerce_preference(self):
         """

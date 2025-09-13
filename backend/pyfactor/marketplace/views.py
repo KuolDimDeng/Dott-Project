@@ -296,15 +296,36 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
     
     def get_consumer_profile(self, user):
         """
-        Get or create consumer profile
+        Get or create consumer profile with proper JSON field defaults
         """
+        defaults = {
+            'current_country': '',
+            'current_city': '',
+            'delivery_addresses': [],  # Proper list default
+            'notification_preferences': {},  # Proper dict default
+        }
+
+        # Try to get country and city from user profile
+        if hasattr(user, 'profile'):
+            defaults['current_country'] = getattr(user.profile, 'country', '') or ''
+            defaults['current_city'] = getattr(user.profile, 'city', '') or ''
+        elif hasattr(user, 'userprofile'):
+            defaults['current_country'] = getattr(user.userprofile, 'country', '') or ''
+            defaults['current_city'] = getattr(user.userprofile, 'city', '') or ''
+
         profile, created = ConsumerProfile.objects.get_or_create(
             user=user,
-            defaults={
-                'current_country': user.profile.country if hasattr(user, 'profile') else '',
-                'current_city': user.profile.city if hasattr(user, 'profile') else ''
-            }
+            defaults=defaults
         )
+
+        # Ensure JSON fields are valid even for existing profiles
+        if profile.delivery_addresses in ['', None]:
+            profile.delivery_addresses = []
+            profile.save()
+        if profile.notification_preferences in ['', None]:
+            profile.notification_preferences = {}
+            profile.save()
+
         return profile
     
     @action(detail=False, methods=['post'])

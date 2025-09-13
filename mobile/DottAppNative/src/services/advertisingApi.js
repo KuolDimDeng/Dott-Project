@@ -304,14 +304,133 @@ export const advertisingApi = {
     try {
       const api = await createApiInstance();
       const response = await api.get('/advertising/featured-status/');
-      return { 
-        success: true, 
+      return {
+        success: true,
         is_featured: response.data.is_featured,
         expires_at: response.data.expires_at,
       };
     } catch (error) {
       console.error('Error checking featured status:', error);
       return { success: false, is_featured: false };
+    }
+  },
+
+  // Publish campaign to marketplace
+  publishToMarketplace: async (campaignId) => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.post(`/advertising/campaigns/${campaignId}/publish_to_marketplace/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error publishing to marketplace:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to publish to marketplace',
+        error: error.message
+      };
+    }
+  },
+
+  // Upload multiple images for campaign
+  uploadCampaignImages: async (campaignId, images) => {
+    try {
+      const api = await createMultipartInstance();
+      const uploadedImages = {
+        logo: null,
+        cover: null,
+        gallery: []
+      };
+
+      // Upload logo if provided
+      if (images.logo) {
+        const logoForm = new FormData();
+        logoForm.append('image', {
+          uri: images.logo.uri,
+          type: 'image/jpeg',
+          name: 'logo.jpg'
+        });
+        logoForm.append('image_type', 'logo');
+        logoForm.append('folder', 'campaigns');
+
+        const logoResponse = await api.post('/advertising/campaigns/upload_image/', logoForm);
+        if (logoResponse.data.success) {
+          uploadedImages.logo = {
+            url: logoResponse.data.url,
+            public_id: logoResponse.data.public_id
+          };
+
+          // Update campaign with logo
+          await api.post(`/advertising/campaigns/${campaignId}/update_images/`, {
+            image_type: 'logo',
+            url: logoResponse.data.url,
+            public_id: logoResponse.data.public_id
+          });
+        }
+      }
+
+      // Upload cover if provided
+      if (images.cover) {
+        const coverForm = new FormData();
+        coverForm.append('image', {
+          uri: images.cover.uri,
+          type: 'image/jpeg',
+          name: 'cover.jpg'
+        });
+        coverForm.append('image_type', 'cover');
+        coverForm.append('folder', 'campaigns');
+
+        const coverResponse = await api.post('/advertising/campaigns/upload_image/', coverForm);
+        if (coverResponse.data.success) {
+          uploadedImages.cover = {
+            url: coverResponse.data.url,
+            public_id: coverResponse.data.public_id
+          };
+
+          // Update campaign with cover
+          await api.post(`/advertising/campaigns/${campaignId}/update_images/`, {
+            image_type: 'cover',
+            url: coverResponse.data.url,
+            public_id: coverResponse.data.public_id
+          });
+        }
+      }
+
+      // Upload gallery images
+      if (images.gallery && images.gallery.length > 0) {
+        for (const galleryImage of images.gallery) {
+          const galleryForm = new FormData();
+          galleryForm.append('image', {
+            uri: galleryImage.uri,
+            type: 'image/jpeg',
+            name: `gallery_${Date.now()}.jpg`
+          });
+          galleryForm.append('image_type', 'gallery');
+          galleryForm.append('folder', 'campaigns');
+
+          const galleryResponse = await api.post('/advertising/campaigns/upload_image/', galleryForm);
+          if (galleryResponse.data.success) {
+            uploadedImages.gallery.push({
+              url: galleryResponse.data.url,
+              public_id: galleryResponse.data.public_id
+            });
+
+            // Update campaign with gallery image
+            await api.post(`/advertising/campaigns/${campaignId}/update_images/`, {
+              image_type: 'gallery',
+              url: galleryResponse.data.url,
+              public_id: galleryResponse.data.public_id
+            });
+          }
+        }
+      }
+
+      return { success: true, images: uploadedImages };
+    } catch (error) {
+      console.error('Error uploading campaign images:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   },
 };

@@ -69,6 +69,14 @@ class AdvertisingCampaign(models.Model):
     # Creative assets
     image_url = models.URLField(max_length=500, blank=True, null=True)
     cloudinary_public_id = models.CharField(max_length=255, blank=True, null=True)
+
+    # Multiple images support
+    logo_url = models.URLField(max_length=500, blank=True, null=True)
+    logo_public_id = models.CharField(max_length=255, blank=True, null=True)
+    cover_image_url = models.URLField(max_length=500, blank=True, null=True)
+    cover_image_public_id = models.CharField(max_length=255, blank=True, null=True)
+    gallery_images = models.JSONField(default=list, blank=True, help_text="List of gallery image URLs and public IDs")
+
     banner_text = models.CharField(max_length=255, blank=True)
     call_to_action = models.CharField(max_length=50, default='Learn More')
     landing_url = models.URLField(max_length=500, blank=True, null=True)
@@ -95,7 +103,12 @@ class AdvertisingCampaign(models.Model):
     
     # Created by
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_campaigns')
-    
+
+    # Marketplace Integration
+    marketplace_listing_id = models.UUIDField(null=True, blank=True, help_text="Related BusinessListing ID")
+    auto_publish_to_marketplace = models.BooleanField(default=True, help_text="Automatically publish to marketplace when active")
+    marketplace_visibility_boost = models.IntegerField(default=0, help_text="Boost factor for marketplace ranking (0-100)")
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
@@ -184,15 +197,15 @@ class AdvertisingCampaign(models.Model):
         self.status = 'completed'
         self.completed_at = timezone.now()
         self.save()
-        
+
         # 🎯 [ADVERTISING_COMPLETION] Remove featured status when campaign completes
         if self.type == 'featured' and self.business:
             from marketplace.models import BusinessListing
             import logging
             logger = logging.getLogger(__name__)
-            
+
             logger.info(f"[ADVERTISING_DEBUG] Completing featured campaign for user {self.business.id}")
-            
+
             try:
                 listing = BusinessListing.objects.get(business=self.business)
                 listing.is_featured = False
@@ -201,6 +214,48 @@ class AdvertisingCampaign(models.Model):
                 logger.info(f"[ADVERTISING_DEBUG] ✓ Removed featured status for user {self.business.id}")
             except BusinessListing.DoesNotExist:
                 logger.warning(f"[ADVERTISING_DEBUG] ⚠️ No listing found for user {self.business.id}")
+
+    def publish_to_marketplace(self):
+        """Publish this campaign to the marketplace with full business info and images"""
+        from marketplace.services import BusinessListingService
+        import logging
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"[ADVERTISING] Publishing campaign '{self.name}' to marketplace")
+
+        campaign_data = {
+            'description': self.description,
+            'keywords': self.target_keywords,
+            'campaign_type': self.type,
+            'is_featured': self.type == 'featured',
+            'images': {
+                'logo': {
+                    'url': self.logo_url,
+                    'public_id': self.logo_public_id
+                } if self.logo_url else None,
+                'cover': {
+                    'url': self.cover_image_url,
+                    'public_id': self.cover_image_public_id
+                } if self.cover_image_url else None,
+                'gallery': self.gallery_images or []
+            },
+            'target_location': {
+                'city': '',  # Will be filled from profile
+                'country': '',  # Will be filled from profile
+                'delivery_scope': self.target_location,
+                'radius_km': 10 if self.target_location == 'local' else None
+            }
+        }
+
+        try:
+            listing = BusinessListingService.publish_to_marketplace(self.business, campaign_data)
+            self.marketplace_listing_id = listing.id
+            self.save(update_fields=['marketplace_listing_id'])
+            logger.info(f"[ADVERTISING] Successfully published to marketplace: {listing.id}")
+            return listing
+        except Exception as e:
+            logger.error(f"[ADVERTISING] Failed to publish to marketplace: {e}")
+            return None
 
 
 class CampaignAnalytics(models.Model):
