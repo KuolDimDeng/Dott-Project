@@ -27,7 +27,7 @@ def reverse_fix(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketplace', '0002_consumerorder_orderreview'),
+        ('marketplace', '0003_add_courier_integration'),  # Depend on existing migration
     ]
 
     operations = [
