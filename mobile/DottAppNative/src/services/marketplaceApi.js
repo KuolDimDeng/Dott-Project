@@ -148,7 +148,7 @@ export const marketplaceApi = {
   // Get business details
   getBusinessDetails: async (businessId) => {
     try {
-      const response = await api.get(`/api/marketplace/business/${businessId}/public/`);
+      const response = await api.get(`/marketplace/business/${businessId}/public/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching business details:', error);
@@ -159,7 +159,7 @@ export const marketplaceApi = {
   // Alias for getBusinessDetails (for consistency)
   getBusinessDetail: async (businessId) => {
     try {
-      const response = await api.get(`/api/marketplace/business/${businessId}/public/`);
+      const response = await api.get(`/marketplace/business/${businessId}/public/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching business detail:', error);
@@ -170,7 +170,7 @@ export const marketplaceApi = {
   // Get products for a business
   getBusinessProducts: async (businessId) => {
     try {
-      const response = await api.get(`/api/marketplace/business/${businessId}/products/`);
+      const response = await api.get(`/marketplace/business/${businessId}/products/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching business products:', error);
@@ -181,7 +181,7 @@ export const marketplaceApi = {
   // Get services for a business
   getBusinessServices: async (businessId) => {
     try {
-      const response = await api.get(`/api/marketplace/business/${businessId}/services/`);
+      const response = await api.get(`/marketplace/business/${businessId}/services/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching business services:', error);
@@ -192,7 +192,7 @@ export const marketplaceApi = {
   // Check if a business is a placeholder and get its status
   checkPlaceholderStatus: async (businessId) => {
     try {
-      const response = await api.get(`/api/marketplace/placeholder/${businessId}/status/`);
+      const response = await api.get(`/marketplace/placeholder/${businessId}/status/`);
       return response.data;
     } catch (error) {
       console.error('Error checking placeholder status:', error);
@@ -203,7 +203,7 @@ export const marketplaceApi = {
   // Send inquiry to placeholder business owner
   sendPlaceholderInquiry: async (data) => {
     try {
-      const response = await api.post('/api/marketplace/placeholder/inquiry/', data);
+      const response = await api.post('/marketplace/placeholder/inquiry/', data);
       return response.data;
     } catch (error) {
       console.error('Error sending placeholder inquiry:', error);
