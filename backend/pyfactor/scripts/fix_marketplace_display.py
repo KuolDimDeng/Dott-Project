@@ -37,7 +37,7 @@ def fix_marketplace_display():
         
         cursor.execute("""
             SELECT u.id, u.email, up.business_name, b.name
-            FROM users_user u
+            FROM custom_auth_user u
             LEFT JOIN users_userprofile up ON u.id = up.user_id
             LEFT JOIN users_business b ON b.id = up.business_id
             WHERE up.business_name = u.email OR up.business_name IS NULL OR up.business_name = ''
@@ -150,7 +150,7 @@ def fix_marketplace_display():
         cursor.execute("""
             UPDATE users_userprofile 
             SET business_name = 'Dott Restaurant & Cafe'
-            WHERE user_id = (SELECT id FROM users_user WHERE email = 'support@dottapps.com')
+            WHERE user_id = (SELECT id FROM custom_auth_user WHERE email = 'support@dottapps.com')
         """)
         
         cursor.execute("""
@@ -158,7 +158,7 @@ def fix_marketplace_display():
             SET business_type_display = 'Restaurant'
             WHERE business_id = (
                 SELECT business_id FROM users_userprofile up
-                JOIN users_user u ON u.id = up.user_id
+                JOIN custom_auth_user u ON u.id = up.user_id
                 WHERE u.email = 'support@dottapps.com'
             )
         """)
@@ -166,7 +166,7 @@ def fix_marketplace_display():
         cursor.execute("""
             UPDATE marketplace_businesslisting 
             SET business_type_display = 'Restaurant'
-            WHERE business_id = (SELECT id FROM users_user WHERE email = 'support@dottapps.com')
+            WHERE business_id = (SELECT id FROM custom_auth_user WHERE email = 'support@dottapps.com')
         """)
         
         logger.info("   ✅ Fixed support@dottapps.com display")
