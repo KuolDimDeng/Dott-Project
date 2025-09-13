@@ -929,12 +929,15 @@ const styles = StyleSheet.create({
     left: 20,
     borderWidth: 4,
     borderColor: '#fff',
-    borderRadius: 50,
+    borderRadius: 44,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
   },
   profileImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
+    resizeMode: 'cover',
   },
   profileImagePlaceholder: {
     width: 80,
