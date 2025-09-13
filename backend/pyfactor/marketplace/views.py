@@ -450,12 +450,17 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             # Apply country filter to listings
             if country:
                 country_code = country_mapping.get(country.lower(), country)
+                logger.info(f"[COUNTRY_DEBUG] Input country: '{country}' -> mapped to: '{country_code}'")
                 if country_code and len(country_code) == 2:
                     business_listings = business_listings.filter(country__iexact=country_code)
+                    logger.info(f"[COUNTRY_DEBUG] Filtering by country code: {country_code}")
                 elif country:
                     business_listings = business_listings.filter(
                         Q(country__iexact=country) | Q(country__iexact=country[:2])
                     )
+                    logger.info(f"[COUNTRY_DEBUG] Filtering by country name: {country}")
+
+                logger.info(f"[COUNTRY_DEBUG] After country filter: {business_listings.count()} listings")
             
             # Apply category filter to listings
             if category and not main_category:
