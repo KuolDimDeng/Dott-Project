@@ -9,8 +9,14 @@ import sys
 import django
 from datetime import date
 
-# Setup Django
-sys.path.insert(0, '/backend/pyfactor')
+# Setup Django - adjust path based on where script is run from
+if os.path.exists('/app'):
+    # Running in container
+    sys.path.insert(0, '/app')
+else:
+    # Running locally
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
