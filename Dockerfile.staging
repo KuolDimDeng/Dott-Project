@@ -1,30 +1,37 @@
-# Staging Dockerfile - Self-contained version for Render
-# Downloads code from GitHub to ensure correct structure
-# Updated: 2025-09-13
+# Staging Dockerfile - Based on working production build
+# Multi-stage build with caching
+FROM node:18-alpine AS base
+ARG CACHEBUST=2025-09-13-staging-v1
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+RUN npm install -g pnpm@8.10.0
 
-FROM node:18-alpine
+# Dependencies stage
+FROM base AS deps
+RUN pnpm config set store-dir /pnpm/store
+WORKDIR /app
+# Copy package files for better caching
+COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Install dependencies
-RUN apk add --no-cache libc6-compat git
-
-# Install pnpm
-RUN npm install -g pnpm@8.15.3
-
-# Set working directory
+# Build stage
+FROM base AS builder
 WORKDIR /app
 
-# Clone the repository and get the frontend code
-RUN git clone --depth 1 --branch staging https://github.com/Dott-Application/projectx.git /tmp/repo && \
-    cp -r /tmp/repo/frontend/pyfactor_next/* . && \
-    rm -rf /tmp/repo
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+# Copy source files
+COPY frontend/pyfactor_next/ .
 
-# Install dependencies
-RUN pnpm install
+# Set build environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV BUILD_STANDALONE=true
+ENV NODE_OPTIONS="--max-old-space-size=3584"
 
-# Build arguments
+# Build arguments for staging
 ARG NEXT_PUBLIC_API_URL=https://dott-api-staging.onrender.com
 ARG NEXT_PUBLIC_BASE_URL=https://staging.dottapps.com
-ARG NEXT_PUBLIC_BACKEND_URL=https://dott-api-staging.onrender.com
 ARG NEXT_PUBLIC_AUTH0_DOMAIN=dev-cbyy63jovi6zrcos.us.auth0.com
 ARG NEXT_PUBLIC_AUTH0_CLIENT_ID=9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
 ARG NEXT_PUBLIC_AUTH0_AUDIENCE=https://api-staging.dottapps.com
@@ -35,32 +42,49 @@ ARG AUTH0_CLIENT_ID=9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
 ARG AUTH0_CLIENT_SECRET
 ARG NEXT_PUBLIC_CRISP_WEBSITE_ID
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_PLAID_ENV=sandbox
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-ARG NEXT_PUBLIC_ENVIRONMENT=staging
-ARG NEXT_PUBLIC_SHOW_STAGING_BANNER=true
 
-# Environment variables
+# Convert build args to environment variables
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+ENV NEXT_PUBLIC_AUTH0_DOMAIN=${NEXT_PUBLIC_AUTH0_DOMAIN}
+ENV NEXT_PUBLIC_AUTH0_CLIENT_ID=${NEXT_PUBLIC_AUTH0_CLIENT_ID}
+ENV NEXT_PUBLIC_AUTH0_AUDIENCE=${NEXT_PUBLIC_AUTH0_AUDIENCE}
+
+# Build Next.js with optimizations
+RUN pnpm run build
+
+# Production runner stage
+FROM node:18-alpine AS runner
+WORKDIR /app
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=3584"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 ENV PORT=10000
 ENV HOSTNAME="0.0.0.0"
 
-# Build the application
-RUN pnpm build
+# Add non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Install pnpm in runner
+RUN npm install -g pnpm@8.10.0
 
-# Change ownership
-RUN chown -R nextjs:nodejs /app
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# Switch to non-root user
 USER nextjs
 
-# Expose port
 EXPOSE 10000
 
-# Start the application
-CMD ["pnpm", "next", "start", "-p", "10000"]
+# Use the same start command that worked
+CMD ["node", "server.js"]
