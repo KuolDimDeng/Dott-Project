@@ -93,10 +93,12 @@ export const BusinessProvider = ({ children }) => {
 
   const fetchBusinessFeatures = async () => {
     try {
-      console.log('Fetching business features from API...');
+      console.log('🔄 Fetching business features from API...');
       const response = await userApi.getUserBusinessStatus();
-      
+
       if (response) {
+        console.log('📦 Business features API response:', response);
+
         // Update business data with API response
         if (response.business_name) {
           updateBusinessData({ businessName: response.business_name });
@@ -104,15 +106,21 @@ export const BusinessProvider = ({ children }) => {
         if (response.business_type) {
           updateBusinessData({ businessType: response.business_type });
         }
-        
+
         // Store dynamic features and menu items
         setDynamicFeatures(response.features || []);
         setDynamicMenuItems(response.menu_items || []);
-        
+
         // Cache in AsyncStorage
         await AsyncStorage.setItem('businessFeatures', JSON.stringify(response));
-        
-        console.log('Business features loaded:', response);
+
+        console.log('✅ Business features loaded successfully');
+        console.log('📋 Menu items from API:', response.menu_items?.length || 0);
+        console.log('🎯 Business type from API:', response.business_type);
+        console.log('🏢 Business name from API:', response.business_name);
+        console.log('🔧 Features from API:', response.features);
+      } else {
+        console.log('⚠️ No response from business features API');
       }
 
       // Also fetch complete user profile for location and currency data
@@ -305,14 +313,13 @@ export const BusinessProvider = ({ children }) => {
       // Map API menu items to include title from label
       menuItems = dynamicMenuItems.map(item => ({
         ...item,
-        title: item.label || item.title
+        title: item.label || item.title,
+        // Ensure screen property is present
+        screen: item.screen || 'ComingSoon'
       }));
     } else {
-      console.log('🔍 Using config-based menu items');
-      // Fallback to config-based menu items
-      if (businessConfig && businessConfig.menuItems) {
-        menuItems = businessConfig.menuItems;
-      }
+      console.log('🔍 No dynamic menu items from API, will build based on business type');
+      menuItems = [];
     }
     
     // Check if business type is restaurant

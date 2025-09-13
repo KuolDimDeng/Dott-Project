@@ -194,15 +194,40 @@ class BusinessFeaturesView(APIView):
                     # Try to get business type even for legacy users
                     if hasattr(profile.business, 'details') and profile.business.details:
                         simplified_type = profile.business.details.simplified_business_type
-                    
+
                 # Legacy users get all features including menu
-                all_features = ['jobs', 'pos', 'menu']
-                # Use actual business type if available, otherwise 'OTHER'
-                business_type_for_menu = simplified_type if simplified_type else 'RESTAURANT_CAFE'  # Default to restaurant for legacy
+                all_features = ['jobs', 'pos', 'menu', 'inventory', 'timesheets']
+
+                # Auto-detect restaurant type from business name for legacy users
+                if business_name:
+                    business_name_lower = business_name.lower()
+                    if any(word in business_name_lower for word in ['restaurant', 'cafe', 'diner', 'bistro', 'eatery', 'grill', 'kitchen', 'food']):
+                        # It's a restaurant - use restaurant type even if not set
+                        business_type_for_menu = 'RESTAURANT_CAFE'
+                        logger.info(f"[BusinessFeaturesView] Detected restaurant from name: {business_name}")
+                    else:
+                        # Use actual business type if available, otherwise default to mixed
+                        business_type_for_menu = simplified_type if simplified_type else 'OTHER'
+                else:
+                    business_type_for_menu = simplified_type if simplified_type else 'OTHER'
+
+                # Get menu items including restaurant-specific ones
                 menu_items = get_menu_items_for_business_type(business_type_for_menu, all_features)
-                
+
+                # Ensure Menu option exists for restaurants
+                if business_type_for_menu == 'RESTAURANT_CAFE':
+                    has_menu = any(item['id'] == 'menu' for item in menu_items)
+                    if not has_menu:
+                        menu_items.append({
+                            'id': 'menu',
+                            'label': 'Menu',
+                            'icon': 'list-outline',
+                            'screen': 'MenuManagement',
+                            'requiresFeature': 'menu'
+                        })
+
                 return Response({
-                    'business_type': simplified_type,
+                    'business_type': business_type_for_menu,  # Return detected type
                     'business_name': business_name,
                     'features': all_features,  # Include menu in features for legacy users
                     'menu_items': menu_items,
