@@ -374,8 +374,16 @@ export default function BusinessDetailScreen() {
           )}
         </View>
         
-        <Text style={styles.category}>{business?.category}</Text>
-        
+        <View style={styles.categoryStatusRow}>
+          <Text style={styles.category}>{business?.category}</Text>
+          <View style={[styles.statusBadge, business?.is_open_now ? styles.openBadge : styles.closedBadge]}>
+            <View style={[styles.statusDot, business?.is_open_now ? styles.openDot : styles.closedDot]} />
+            <Text style={[styles.statusText, business?.is_open_now ? styles.openText : styles.closedText]}>
+              {business?.is_open_now ? 'Open Now' : 'Closed'}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Icon name="star" size={16} color="#fbbf24" />
@@ -994,6 +1002,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     marginBottom: 12,
+  },
+  categoryStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  openBadge: {
+    backgroundColor: '#ecfdf5',
+  },
+  closedBadge: {
+    backgroundColor: '#fef2f2',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  openDot: {
+    backgroundColor: '#10b981',
+  },
+  closedDot: {
+    backgroundColor: '#ef4444',
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  openText: {
+    color: '#10b981',
+  },
+  closedText: {
+    color: '#ef4444',
   },
   statsContainer: {
     flexDirection: 'row',

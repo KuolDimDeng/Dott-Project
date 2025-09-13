@@ -587,6 +587,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'is_verified': True,  # Published businesses are verified
                     'is_featured': is_featured,  # Featured status from campaigns or listing
                     'is_placeholder': False,
+                    'is_open_now': listing.is_open_now,  # Add open/closed status
                     'source': 'published'
                 }
                 

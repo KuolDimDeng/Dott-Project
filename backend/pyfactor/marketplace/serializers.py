@@ -76,31 +76,10 @@ class BusinessListingSerializer(serializers.ModelSerializer):
         ).count()
     
     def get_is_open_now(self, obj):
-        """Check if business is currently open"""
-        from datetime import datetime
-        import pytz
-        
-        if not obj.business_hours:
-            return True  # Default to open if no hours set
-        
-        # Get current day and time
-        tz = pytz.timezone('Africa/Nairobi')  # Use business timezone
-        now = datetime.now(tz)
-        day = now.strftime('%A').lower()
-        current_time = now.strftime('%H:%M')
-        
-        # Check if open today
-        if day in obj.business_hours:
-            hours = obj.business_hours[day]
-            if hours.get('closed'):
-                return False
-            
-            open_time = hours.get('open', '00:00')
-            close_time = hours.get('close', '23:59')
-            
-            return open_time <= current_time <= close_time
-        
-        return False
+        """Return business open/closed status from model field (linked to business menu status)"""
+        # Use the is_open_now field from the model which is controlled by the business owner
+        # This links to the business's actual status from their business menu screen
+        return obj.is_open_now
     
     def get_business_type_display(self, obj):
         """Get clean business type display name"""

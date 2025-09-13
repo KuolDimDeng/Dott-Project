@@ -560,8 +560,16 @@ export default function MarketplaceScreen() {
               </View>
             )}
           </View>
-        
-        <Text style={styles.businessCategory}>{item.business_type_display || item.category_display || 'Business'}</Text>
+
+          <View style={styles.businessStatusRow}>
+            <Text style={styles.businessCategory}>{item.business_type_display || item.category_display || 'Business'}</Text>
+            <View style={[styles.statusBadge, item.is_open_now ? styles.openBadge : styles.closedBadge]}>
+              <View style={[styles.statusDot, item.is_open_now ? styles.openDot : styles.closedDot]} />
+              <Text style={[styles.statusText, item.is_open_now ? styles.openText : styles.closedText]}>
+                {item.is_open_now ? 'Open' : 'Closed'}
+              </Text>
+            </View>
+          </View>
         
         <View style={styles.businessMeta}>
           <View style={styles.ratingContainer}>
@@ -1142,6 +1150,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginBottom: 8,
+  },
+  businessStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  openBadge: {
+    backgroundColor: '#ecfdf5',
+  },
+  closedBadge: {
+    backgroundColor: '#fef2f2',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 4,
+  },
+  openDot: {
+    backgroundColor: '#10b981',
+  },
+  closedDot: {
+    backgroundColor: '#ef4444',
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  openText: {
+    color: '#10b981',
+  },
+  closedText: {
+    color: '#ef4444',
   },
   businessMeta: {
     flexDirection: 'row',
