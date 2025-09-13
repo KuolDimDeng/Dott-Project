@@ -298,18 +298,18 @@ export default function BusinessDetailScreen() {
     <View>
       {/* Cover Image */}
       <View style={styles.coverContainer}>
-        {business?.cover_image ? (
-          <Image source={{ uri: business.cover_image }} style={styles.coverImage} />
+        {(business?.cover_image_url || business?.cover_image) ? (
+          <Image source={{ uri: business.cover_image_url || business.cover_image }} style={styles.coverImage} />
         ) : (
           <View style={styles.coverPlaceholder}>
             <Icon name="business" size={60} color="#fff" />
           </View>
         )}
-        
+
         {/* Profile Image */}
         <View style={styles.profileImageContainer}>
-          {business?.logo ? (
-            <Image source={{ uri: business.logo }} style={styles.profileImage} />
+          {(business?.logo_url || business?.logo) ? (
+            <Image source={{ uri: business.logo_url || business.logo }} style={styles.profileImage} />
           ) : (
             <View style={styles.profileImagePlaceholder}>
               <Text style={styles.profileInitial}>

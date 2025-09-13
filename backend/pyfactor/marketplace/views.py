@@ -1118,27 +1118,37 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         # Get menu items for restaurants
         products = []
         business = listing.business
-        
-        if hasattr(business, 'profile') and business.profile:
-            business_type = business.profile.business_type
-            if 'RESTAURANT' in business_type or 'CAFE' in business_type:
-                try:
-                    from menu.models import MenuItem
-                    items = MenuItem.objects.filter(
-                        business=business, 
-                        is_available=True
-                    ).values(
-                        'id', 'name', 'description', 'price', 'image_url', 'category_name'
-                    )
-                    products = list(items)
-                except Exception as e:
-                    logger.warning(f"Could not fetch menu items for business {business.id}: {e}")
+
+        # Check business type from listing or business name
+        business_type = listing.business_type or ''
+        business_name = business.name if hasattr(business, 'name') else business.email
+
+        # Detect restaurant from either business type or name
+        is_restaurant = (
+            'RESTAURANT' in business_type.upper() or
+            'CAFE' in business_type.upper() or
+            'restaurant' in business_name.lower() or
+            'cafe' in business_name.lower()
+        )
+
+        if is_restaurant:
+            try:
+                from menu.models import MenuItem
+                items = MenuItem.objects.filter(
+                    business=business,
+                    is_available=True
+                ).values(
+                    'id', 'name', 'description', 'price', 'image_url', 'category_name'
+                )
+                products = list(items)
+            except Exception as e:
+                logger.warning(f"Could not fetch menu items for business {business.id}: {e}")
         
         return Response({
             'success': True,
             'products': products,
             'business_id': str(listing.id),
-            'business_name': listing.business.profile.business_name if hasattr(listing.business, 'profile') else listing.business.email
+            'business_name': business_name
         })
     
     @action(detail=True, methods=['get'])
