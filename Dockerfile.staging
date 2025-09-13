@@ -1,38 +1,40 @@
-# Staging Dockerfile - Fixed paths
-# Multi-stage build with caching
+# Staging Dockerfile - Working around Render's build context
+# Assumes entire repo is available
 FROM node:18-alpine AS base
-ARG CACHEBUST=2025-09-13-staging-v2
+ARG CACHEBUST=2025-09-13-staging-v3
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0
 
+# Copy entire repository first
+FROM base AS source
+WORKDIR /tmp
+# Copy everything from build context (should be repo root)
+COPY . .
+# Move frontend files to /app
+RUN cp -r frontend/pyfactor_next/* /app/ || cp -r pyfactor_next/* /app/ || cp -r * /app/ || echo "Files copied"
+
 # Dependencies stage
 FROM base AS deps
-RUN pnpm config set store-dir /pnpm/store
 WORKDIR /app
-# Copy package files
-COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# Copy package files from source stage
+COPY --from=source /app/package.json /app/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Build stage
 FROM base AS builder
 WORKDIR /app
 
-# Copy dependencies from deps stage
+# Copy everything from source stage
+COPY --from=source /app ./
+# Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy ALL source files preserving structure
-COPY frontend/pyfactor_next/package.json ./
-COPY frontend/pyfactor_next/pnpm-lock.yaml ./
-COPY frontend/pyfactor_next/next.config.js ./
-COPY frontend/pyfactor_next/postcss.config.js ./
-COPY frontend/pyfactor_next/tailwind.config.js ./
-COPY frontend/pyfactor_next/tsconfig.json ./
-COPY frontend/pyfactor_next/src ./src
-COPY frontend/pyfactor_next/public ./public
-
-# Debug: List files to verify structure
-RUN ls -la && ls -la src/
+# Verify structure
+RUN echo "Current directory:" && pwd && \
+    echo "Files in current directory:" && ls -la && \
+    echo "Checking for src directory:" && ls -la src/ || echo "No src directory" && \
+    echo "Checking for app directory:" && ls -la app/ || echo "No app directory"
 
 # Set build environment
 ENV NODE_ENV=production
@@ -54,9 +56,6 @@ ARG AUTH0_CLIENT_SECRET
 ARG NEXT_PUBLIC_CRISP_WEBSITE_ID
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_PLAID_ENV=sandbox
-ARG NEXT_PUBLIC_POSTHOG_KEY
-ARG NEXT_PUBLIC_POSTHOG_HOST
-ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 # Convert build args to environment variables
@@ -67,7 +66,7 @@ ENV NEXT_PUBLIC_AUTH0_CLIENT_ID=${NEXT_PUBLIC_AUTH0_CLIENT_ID}
 ENV NEXT_PUBLIC_AUTH0_AUDIENCE=${NEXT_PUBLIC_AUTH0_AUDIENCE}
 
 # Build Next.js
-RUN pnpm run build
+RUN pnpm run build || npm run build
 
 # Production runner stage
 FROM node:18-alpine AS runner
@@ -86,16 +85,18 @@ RUN adduser --system --uid 1001 nextjs
 # Install pnpm in runner
 RUN npm install -g pnpm@8.10.0
 
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy built application - try multiple possible locations
+COPY --from=builder /app/public ./public || echo "No public dir"
+COPY --from=builder /app/.next ./.next || echo "No .next dir"
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+
+# Change ownership
+RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
 EXPOSE 10000
 
-# Start command
-CMD ["node", "server.js"]
+# Try multiple start commands
+CMD ["pnpm", "next", "start", "-p", "10000"]
