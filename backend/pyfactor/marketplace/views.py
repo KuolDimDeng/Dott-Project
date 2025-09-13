@@ -190,8 +190,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
         
         # Base query - only visible businesses
         businesses = BusinessListing.objects.filter(
-            is_visible_in_marketplace=True,
-            business__is_active=True
+            is_visible_in_marketplace=True
         )
         
         # Category filter
@@ -441,7 +440,6 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             # 🎯 [BUSINESS_LISTING_DEBUG] Get real BusinessListing records only
             business_listings = BusinessListing.objects.filter(
                 is_visible_in_marketplace=True,
-                business__is_active=True,
                 city__iexact=city
             ).select_related('business', 'business__profile')
             
@@ -1020,8 +1018,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         try:
             listing = BusinessListing.objects.get(
                 id=pk,
-                is_visible_in_marketplace=True,
-                business__is_active=True
+                is_visible_in_marketplace=True
             )
         except BusinessListing.DoesNotExist:
             return Response({
@@ -1063,8 +1060,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         try:
             listing = BusinessListing.objects.get(
                 id=pk,
-                is_visible_in_marketplace=True,
-                business__is_active=True
+                is_visible_in_marketplace=True
             )
         except BusinessListing.DoesNotExist:
             return Response({
@@ -1106,8 +1102,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         try:
             listing = BusinessListing.objects.get(
                 id=pk,
-                is_visible_in_marketplace=True,
-                business__is_active=True
+                is_visible_in_marketplace=True
             )
         except BusinessListing.DoesNotExist:
             return Response({

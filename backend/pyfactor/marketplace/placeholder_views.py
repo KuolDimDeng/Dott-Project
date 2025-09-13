@@ -110,7 +110,6 @@ def get_marketplace_businesses(request):
         
         business_listings = BusinessListing.objects.filter(
             is_visible_in_marketplace=True,
-            business__is_active=True,
             city__iexact=city
         ).select_related('business', 'business__profile')
         
