@@ -37,12 +37,18 @@ const advertisingApi = {
     },
 
     /**
-     * Create a new campaign
+     * Create a new campaign (FREE - auto-activates and publishes)
      * @param {Object} data - Campaign data
      */
     create: async (data) => {
       try {
-        const response = await api.post('/advertising/campaigns/', data);
+        // Set status to active since it's free
+        const campaignData = {
+          ...data,
+          status: 'active',
+          auto_publish_to_marketplace: true  // Auto-publish since it's free
+        };
+        const response = await api.post('/advertising/campaigns/', campaignData);
         return response.data;
       } catch (error) {
         console.error('Error creating campaign:', error);

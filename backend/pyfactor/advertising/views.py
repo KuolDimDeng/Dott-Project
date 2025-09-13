@@ -55,30 +55,79 @@ class AdvertisingCampaignViewSet(viewsets.ModelViewSet):
         queryset = AdvertisingCampaign.objects.filter(
             business=self.request.user
         )
-        
+
         # Filter by status if provided
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-        
+
         # Filter by type if provided
         type_filter = self.request.query_params.get('type')
         if type_filter:
             queryset = queryset.filter(type=type_filter)
-        
+
         return queryset.order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new campaign and auto-activate it (free for now)
+        """
+        try:
+            # Add business to the data
+            data = request.data.copy()
+            data['business'] = request.user.id
+
+            # Set status to active since it's free
+            data['status'] = 'active'
+
+            # Create the campaign
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            campaign = serializer.save(
+                business=request.user,
+                created_by=request.user,
+                status='active'  # Auto-activate since it's free
+            )
+
+            # Auto-activate the campaign (free for now)
+            campaign.activate()
+            logger.info(f"Campaign {campaign.id} auto-activated (free marketplace publishing)")
+
+            # Auto-publish to marketplace if enabled
+            marketplace_listing_id = None
+            if campaign.auto_publish_to_marketplace:
+                listing = campaign.publish_to_marketplace()
+                if listing:
+                    marketplace_listing_id = str(listing.id)
+                    logger.info(f"Campaign {campaign.id} auto-published to marketplace: {listing.id}")
+
+            # Return the response
+            response_data = serializer.data
+            response_data['message'] = 'Campaign created and activated successfully (free publishing)'
+            if marketplace_listing_id:
+                response_data['marketplace_listing_id'] = marketplace_listing_id
+                response_data['message'] = 'Campaign created, activated, and published to marketplace successfully'
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Error creating campaign: {e}")
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
         """
-        Activate a campaign after payment
+        Activate a campaign (free for now, no payment required)
         """
         try:
             campaign = self.get_object()
 
-            # Verify payment (integrate with your payment system)
-            payment_data = request.data
-            # TODO: Verify payment with Stripe/payment provider
+            # Skip payment verification - marketplace publishing is free for now
+            # payment_data = request.data
+            # TODO: Re-enable payment verification when needed
 
             # Activate the campaign
             campaign.activate()
