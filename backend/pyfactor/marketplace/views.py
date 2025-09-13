@@ -545,11 +545,16 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 
                 logger.info(f"🎯 [BUSINESS_TYPE_DEBUG] Raw Type: {listing.business_type}, Display: {business_type_display}")
                 
-                # 🎯 [IMAGE_DEBUG] Check for Cloudinary images
+                # 🎯 [IMAGE_DEBUG] Check for Cloudinary images first, then profile logo_data as fallback
                 logo_url = getattr(listing, 'logo_url', '') or getattr(listing, 'logo_cloudinary_url', '') or ''
                 cover_image_url = getattr(listing, 'cover_image_url', '') or ''
                 gallery_images = getattr(listing, 'gallery_images', []) or []
-                
+
+                # If no Cloudinary logo found, check profile for base64 logo_data (like placeholder_views does)
+                if not logo_url and profile and hasattr(profile, 'logo_data') and profile.logo_data:
+                    logo_url = profile.logo_data  # This is a base64 data URL
+                    logger.info(f"🎯 [IMAGE_DEBUG] Using profile logo_data as fallback")
+
                 logger.info(f"🎯 [IMAGE_DEBUG] Logo: {bool(logo_url)}, Cover: {bool(cover_image_url)}, Gallery: {len(gallery_images)} images")
                 
                 business_data = {
@@ -973,6 +978,23 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 listing.cover_image_public_id = data['cover_image_public_id']
             if 'gallery_images' in data:
                 listing.gallery_images = data['gallery_images']
+
+            # If no images provided, copy from UserProfile if available
+            profile = getattr(user, 'userprofile', None)
+            if profile:
+                if not listing.logo_url and hasattr(profile, 'logo_cloudinary_url') and profile.logo_cloudinary_url:
+                    listing.logo_url = profile.logo_cloudinary_url
+                    logger.info(f"[MARKETPLACE_PUBLISH] Copied logo from profile: {profile.logo_cloudinary_url}")
+                if not listing.logo_public_id and hasattr(profile, 'logo_cloudinary_public_id') and profile.logo_cloudinary_public_id:
+                    listing.logo_public_id = profile.logo_cloudinary_public_id
+                    logger.info(f"[MARKETPLACE_PUBLISH] Copied logo public_id from profile: {profile.logo_cloudinary_public_id}")
+
+                # Also check for base64 logo_data as fallback
+                if not listing.logo_url and hasattr(profile, 'logo_data') and profile.logo_data:
+                    # For base64 data, we can't use it directly in marketplace, but we log it
+                    logger.info(f"[MARKETPLACE_PUBLISH] Profile has base64 logo_data but no Cloudinary URL")
+
+            logger.info(f"[MARKETPLACE_PUBLISH] Final image URLs - Logo: {bool(listing.logo_url)}, Cover: {bool(listing.cover_image_url)}, Gallery: {len(listing.gallery_images) if listing.gallery_images else 0}")
             
             # Business hours and features
             if 'business_hours' in data:
