@@ -961,6 +961,168 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Public marketplace business endpoints - NO AUTHENTICATION REQUIRED
+    """
+    permission_classes = []  # No authentication required
+    authentication_classes = []  # No authentication required
+    serializer_class = BusinessListingSerializer
+
+    def get_queryset(self):
+        """
+        Public view shows all visible marketplace businesses
+        """
+        return BusinessListing.objects.filter(is_visible_in_marketplace=True)
+
+    def retrieve(self, request, pk=None):
+        """
+        Public view of business listing for consumers - NO AUTHENTICATION REQUIRED
+        This endpoint is completely public and requires no authentication
+        """
+        # Debug logging for authentication issues
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Starting public retrieve for business_id: {pk}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Request user: {getattr(request, 'user', 'No user attribute')}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Is authenticated: {request.user.is_authenticated if hasattr(request, 'user') else 'No user'}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Request headers: Authorization={request.META.get('HTTP_AUTHORIZATION', 'None')}")
+
+        # Manually fetch the business listing by UUID for public access
+        try:
+            listing = BusinessListing.objects.get(
+                id=pk,
+                is_visible_in_marketplace=True
+            )
+            logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Found listing: {listing.business_name}")
+        except BusinessListing.DoesNotExist:
+            logger.error(f"🔍 [PUBLIC_VIEW_DEBUG] Business not found: {pk}")
+            return Response({
+                'error': 'Business not found or not available'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if consumer can access this business (only if authenticated)
+        if hasattr(request, 'user') and request.user and request.user.is_authenticated:
+            consumer_profile = ConsumerProfile.objects.filter(user=request.user).first()
+
+            if consumer_profile:
+                can_deliver = listing.can_deliver_to(
+                    consumer_profile.current_country,
+                    consumer_profile.current_city,
+                    (consumer_profile.current_latitude, consumer_profile.current_longitude)
+                    if consumer_profile.current_latitude else None
+                )
+
+                if not can_deliver:
+                    return Response({
+                        'error': 'This business does not deliver to your location',
+                        'business_location': f"{listing.city}, {listing.country}",
+                        'delivery_scope': listing.delivery_scope
+                    }, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = BusinessListingSerializer(listing, context={'request': request})
+
+        # Track view
+        listing.last_active = timezone.now()
+        listing.save(update_fields=['last_active'])
+
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Returning success response")
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def products(self, request, pk=None):
+        """
+        Get products for a business listing (public access)
+        """
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Starting products endpoint for business_id: {pk}")
+
+        # Manually fetch the business listing by UUID for public access
+        try:
+            # First try to find a visible business
+            listing = BusinessListing.objects.filter(id=pk, is_visible_in_marketplace=True).first()
+
+            # If not found and user is authenticated, check if they own this business
+            if not listing and hasattr(request, 'user') and request.user.is_authenticated:
+                listing = BusinessListing.objects.filter(id=pk, business=request.user).first()
+                logger.info(f"🔍 [PRODUCTS_DEBUG] Business owner accessing their own products: {listing.id if listing else 'NOT_FOUND'}")
+
+            # If still not found, try any business (for debugging)
+            if not listing:
+                listing = BusinessListing.objects.filter(id=pk).first()
+                if listing:
+                    logger.warning(f"⚠️ [PRODUCTS_DEBUG] Found business {pk} but is_visible_in_marketplace={listing.is_visible_in_marketplace}")
+
+            if not listing:
+                return Response({
+                    'error': 'Business not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(f"[PRODUCTS_DEBUG] Error fetching business listing {pk}: {e}")
+            return Response({
+                'error': 'Business not found or not available'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Get menu items for restaurants
+        products = []
+        business = listing.business
+
+        # Check business type from listing or business name
+        business_type = listing.business_type or ''
+        business_name = business.name if hasattr(business, 'name') else business.email
+
+        # Detect restaurant from either business type or name
+        is_restaurant = (
+            'RESTAURANT' in business_type.upper() or
+            'CAFE' in business_type.upper() or
+            'restaurant' in business_name.lower() or
+            'cafe' in business_name.lower()
+        )
+
+        if is_restaurant:
+            try:
+                from menu.models import MenuItem
+                logger.info(f"🍔 [MENU_DEBUG] Fetching menu items for restaurant business {business.id}")
+                logger.info(f"🍔 [MENU_DEBUG] Business has tenant_id: {hasattr(business, 'tenant_id')}")
+                logger.info(f"🍔 [MENU_DEBUG] Business tenant_id value: {getattr(business, 'tenant_id', 'NONE')}")
+
+                # Check if menu items exist for this business
+                # MenuItem uses tenant_id, not business field
+                if hasattr(business, 'tenant_id') and business.tenant_id:
+                    all_items = MenuItem.objects.filter(tenant_id=business.tenant_id)
+                    logger.info(f"🍔 [MENU_DEBUG] Filtering by tenant_id: {business.tenant_id}")
+                else:
+                    # Fallback: try filtering by business user
+                    all_items = MenuItem.objects.filter(business=business)
+                    logger.info(f"🍔 [MENU_DEBUG] Filtering by business user: {business.id}")
+
+                available_items = all_items.filter(is_available=True)
+
+                logger.info(f"🍔 [MENU_DEBUG] Found {all_items.count()} total menu items, {available_items.count()} available")
+
+                items = available_items.values(
+                    'id', 'name', 'description', 'price', 'image_url', 'category_name'
+                )
+                products = list(items)
+                logger.info(f"🍔 [MENU_DEBUG] Returning {len(products)} menu items")
+
+                # Log first item for debugging
+                if products:
+                    logger.info(f"🍔 [MENU_DEBUG] First item: {products[0]}")
+            except Exception as e:
+                logger.error(f"🍔 [MENU_DEBUG] Could not fetch menu items for business {business.id}: {e}")
+                import traceback
+                logger.error(f"🍔 [MENU_DEBUG] Full traceback: {traceback.format_exc()}")
+        else:
+            logger.info(f"🍔 [MENU_DEBUG] Business {business.id} is not detected as restaurant - business_type: {business_type}")
+
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Returning {len(products)} products")
+        return Response({
+            'success': True,
+            'products': products,
+            'business_id': str(listing.id),
+            'business_name': business_name
+        })
+
+
 class BusinessListingViewSet(viewsets.ModelViewSet):
     """
     Business marketplace listing management
@@ -1141,13 +1303,22 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         Public view of business listing for consumers - NO AUTHENTICATION REQUIRED
         This endpoint is completely public and requires no authentication
         """
+        # Debug logging for authentication issues
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Starting public_view for business_id: {pk}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Request user: {getattr(request, 'user', 'No user attribute')}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Is authenticated: {request.user.is_authenticated if hasattr(request, 'user') else 'No user'}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Request headers: {dict(request.headers) if hasattr(request, 'headers') else 'No headers'}")
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Request META auth: {request.META.get('HTTP_AUTHORIZATION', 'No auth header')}")
+
         # Manually fetch the business listing by UUID for public access
         try:
             listing = BusinessListing.objects.get(
                 id=pk,
                 is_visible_in_marketplace=True
             )
+            logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Found listing: {listing.business_name}")
         except BusinessListing.DoesNotExist:
+            logger.error(f"🔍 [PUBLIC_VIEW_DEBUG] Business not found: {pk}")
             return Response({
                 'error': 'Business not found or not available'
             }, status=status.HTTP_404_NOT_FOUND)
@@ -1264,6 +1435,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         else:
             logger.info(f"🍔 [MENU_DEBUG] Business {business.id} is not detected as restaurant - business_type: {business_type}")
         
+        logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Returning success response with {len(products)} products")
         return Response({
             'success': True,
             'products': products,

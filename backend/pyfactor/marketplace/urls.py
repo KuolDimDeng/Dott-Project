@@ -1,8 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    ConsumerSearchViewSet, 
-    BusinessListingViewSet
+    ConsumerSearchViewSet,
+    BusinessListingViewSet,
+    PublicBusinessViewSet
 )
 from .placeholder_inquiry_views import (
     send_placeholder_inquiry,
@@ -30,8 +31,8 @@ urlpatterns = [
     # Business marketplace endpoints
     path('business/my-listing/', BusinessListingViewSet.as_view({'get': 'my_listing', 'post': 'my_listing'}), name='my-listing'),
     path('business/update-delivery/', BusinessListingViewSet.as_view({'post': 'update_delivery_settings'}), name='update-delivery'),
-    path('business/<uuid:pk>/public/', BusinessListingViewSet.as_view({'get': 'public_view'}), name='business-public'),
-    path('business/<uuid:pk>/products/', BusinessListingViewSet.as_view({'get': 'get_products'}), name='business-products'),
+    path('business/<uuid:pk>/public/', PublicBusinessViewSet.as_view({'get': 'retrieve'}), name='business-public'),
+    path('business/<uuid:pk>/products/', PublicBusinessViewSet.as_view({'get': 'products'}), name='business-products'),
     path('business/<uuid:pk>/services/', BusinessListingViewSet.as_view({'get': 'get_services'}), name='business-services'),
     
     # New mobile app business endpoints
