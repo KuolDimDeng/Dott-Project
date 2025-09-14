@@ -171,7 +171,13 @@ export default function MarketplaceScreen() {
               console.log('✅ Added user\'s business to the front:', userBusinessResponse.name);
             }
           } catch (error) {
-            console.log('Could not fetch user\'s business:', error);
+            // Handle 404 gracefully - business might not exist yet
+            if (error.response?.status === 404) {
+              console.log('User business not found in marketplace (might not be published yet)');
+              // Don't show error to user - this is normal for new businesses
+            } else {
+              console.log('Could not fetch user\'s business:', error);
+            }
           }
         }
       }
@@ -186,7 +192,22 @@ export default function MarketplaceScreen() {
       setPage(pageNum);
     } catch (error) {
       console.error('Error loading businesses:', error);
-      Alert.alert('Error', 'Failed to load businesses');
+
+      // Handle different error types appropriately
+      if (error.response?.status === 404) {
+        // No businesses found - this is okay, show empty state
+        setBusinesses(pageNum === 1 ? [] : businesses);
+      } else if (!error.response) {
+        // Network error - show offline message
+        Alert.alert(
+          'Connection Error',
+          'Please check your internet connection and try again',
+          [{ text: 'OK', onPress: () => {} }]
+        );
+      } else {
+        // Other errors
+        Alert.alert('Error', 'Failed to load businesses. Please try again.');
+      }
     }
   };
 

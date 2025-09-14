@@ -14,6 +14,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import EnvironmentBadge from './src/components/EnvironmentBadge';
 import CallManager from './src/components/CallManager';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './src/components/ErrorFeedback/ErrorToast';
+import { NetworkMonitor, setupErrorHandling } from './src/setup/ErrorHandlingSetup';
+import Logger from './src/services/logger/Logger';
+import ErrorTracker from './src/services/errorTracking/errorTracker';
+import apiClient from './src/services/api/apiClient';
+import CircuitBreakerManager from './src/services/resilience/circuitBreaker';
+import CacheManager from './src/services/cache/cacheManager';
 // Sentry initialization moved to index.js for proper timing
 
 const Stack = createStackNavigator();
@@ -74,6 +82,32 @@ function AppNavigator() {
 // The comprehensive ErrorBoundary is now imported from components
 
 export default function App() {
+  useEffect(() => {
+    // Initialize error handling
+    setupErrorHandling();
+
+    // Add debug shortcuts in development
+    if (__DEV__) {
+      global.showErrors = () => ErrorTracker.showSummary();
+      global.showAPI = () => apiClient.showStatistics();
+      global.showCircuits = () => CircuitBreakerManager.showStatus();
+      global.showCache = () => CacheManager.showStatistics();
+      global.resetAll = () => {
+        CircuitBreakerManager.resetAll();
+        CacheManager.clear();
+        ErrorTracker.clearErrors();
+        Logger.success('debug', 'All systems reset');
+      };
+
+      Logger.info('debug', '🚀 Debug commands available:');
+      Logger.info('debug', '  showErrors() - Show error summary');
+      Logger.info('debug', '  showAPI() - Show API statistics');
+      Logger.info('debug', '  showCircuits() - Show circuit breakers');
+      Logger.info('debug', '  showCache() - Show cache statistics');
+      Logger.info('debug', '  resetAll() - Reset everything');
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
@@ -84,10 +118,12 @@ export default function App() {
                 <CurrencyProvider>
                   <CartProvider>
                     <CallManager>
+                      <NetworkMonitor />
                       <View style={{ flex: 1 }}>
                         <AppNavigator />
                         <EnvironmentBadge />
                       </View>
+                      <Toast config={toastConfig} />
                     </CallManager>
                   </CartProvider>
                 </CurrencyProvider>
