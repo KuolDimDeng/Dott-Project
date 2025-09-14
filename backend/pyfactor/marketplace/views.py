@@ -992,7 +992,9 @@ class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
                 id=pk,
                 is_visible_in_marketplace=True
             )
-            logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Found listing: {listing.business_name}")
+            # Get business name from the related User object
+            business_name = listing.business.name if hasattr(listing.business, 'name') else listing.business.email
+            logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Found listing for business: {business_name}")
         except BusinessListing.DoesNotExist:
             logger.error(f"🔍 [PUBLIC_VIEW_DEBUG] Business not found: {pk}")
             return Response({
@@ -1316,7 +1318,9 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 id=pk,
                 is_visible_in_marketplace=True
             )
-            logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Found listing: {listing.business_name}")
+            # Get business name from the related User object
+            business_name = listing.business.name if hasattr(listing.business, 'name') else listing.business.email
+            logger.info(f"🔍 [PUBLIC_VIEW_DEBUG] Found listing for business: {business_name}")
         except BusinessListing.DoesNotExist:
             logger.error(f"🔍 [PUBLIC_VIEW_DEBUG] Business not found: {pk}")
             return Response({
