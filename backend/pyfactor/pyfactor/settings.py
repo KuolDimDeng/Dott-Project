@@ -954,6 +954,7 @@ TENANT_EXEMPT_PATHS = [
     '/api/auth/unified/',  # Unified authentication endpoints
     '/api/marketplace/consumer/',  # Public marketplace consumer endpoints
     '/marketplace/consumer/',  # Alternative marketplace consumer path
+    '/api/marketplace/business/',  # Public business detail endpoints
 ]
 
 # Paths that require authentication but not tenant context (used during onboarding)

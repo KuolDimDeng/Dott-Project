@@ -22,6 +22,7 @@ api.interceptors.request.use(
       '/marketplace/consumer/categories/',
       '/marketplace/consumer/category_hierarchy/',
       '/marketplace/consumer/businesses/featured/',
+      '/marketplace/business/',  // Add business detail endpoints as public
     ];
 
     const isPublicEndpoint = publicEndpoints.some(endpoint =>
