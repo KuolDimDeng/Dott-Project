@@ -13,32 +13,50 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests
+// Add auth token to requests (but skip for public consumer endpoints)
 api.interceptors.request.use(
   async (config) => {
-    // Try to get the session token (used by your backend)
-    const sessionId = await AsyncStorage.getItem('sessionId');
-    const sessionToken = await AsyncStorage.getItem('sessionToken');
-    const authToken = await AsyncStorage.getItem('authToken');
-    
-    if (sessionId) {
-      // Use session ID for backend API calls (as Authorization: Session header)
-      config.headers.Authorization = `Session ${sessionId}`;
-    } else if (sessionToken) {
-      // Fallback to session token if available
-      config.headers.Authorization = `Session ${sessionToken}`;
-    } else if (authToken) {
-      // Fallback to auth token if available
-      config.headers.Authorization = `Bearer ${authToken}`;
+    // Check if this is a public consumer endpoint that doesn't need auth
+    const publicEndpoints = [
+      '/marketplace/consumer/businesses/',
+      '/marketplace/consumer/categories/',
+      '/marketplace/consumer/category_hierarchy/',
+      '/marketplace/consumer/businesses/featured/',
+    ];
+
+    const isPublicEndpoint = publicEndpoints.some(endpoint =>
+      config.url && config.url.includes(endpoint)
+    );
+
+    if (isPublicEndpoint) {
+      // Don't add any auth headers for public marketplace endpoints
+      console.log('🌐 Public marketplace endpoint - no auth required:', config.url);
+      delete config.headers.Authorization; // Remove any existing auth header
+    } else {
+      // Try to get the session token (used by your backend)
+      const sessionId = await AsyncStorage.getItem('sessionId');
+      const sessionToken = await AsyncStorage.getItem('sessionToken');
+      const authToken = await AsyncStorage.getItem('authToken');
+
+      if (sessionId) {
+        // Use session ID for backend API calls (as Authorization: Session header)
+        config.headers.Authorization = `Session ${sessionId}`;
+      } else if (sessionToken) {
+        // Fallback to session token if available
+        config.headers.Authorization = `Session ${sessionToken}`;
+      } else if (authToken) {
+        // Fallback to auth token if available
+        config.headers.Authorization = `Bearer ${authToken}`;
+      }
+
+      console.log('🔑 API Request headers:', {
+        hasSessionId: !!sessionId,
+        hasSessionToken: !!sessionToken,
+        hasAuthToken: !!authToken,
+        url: config.url
+      });
     }
-    
-    console.log('🔑 API Request headers:', {
-      hasSessionId: !!sessionId,
-      hasSessionToken: !!sessionToken,
-      hasAuthToken: !!authToken,
-      url: config.url
-    });
-    
+
     return config;
   },
   (error) => {
