@@ -1135,10 +1135,10 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             'ships_to_countries': listing.ships_to_countries
         })
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[])
     def public_view(self, request, pk=None):
         """
-        Public view of business listing for consumers
+        Public view of business listing for consumers - NO AUTHENTICATION REQUIRED
         """
         # Manually fetch the business listing by UUID for public access
         try:
