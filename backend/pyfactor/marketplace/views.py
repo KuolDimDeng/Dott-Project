@@ -502,6 +502,8 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             from marketplace.marketplace_categories import MARKETPLACE_CATEGORIES, get_business_types_for_subcategory
 
             # Apply country filter to listings - map country names to codes
+            # CRITICAL: This fixes the mobile app Discover tab showing 0 businesses
+            # Mobile app sends "South Sudan" but DB stores "SS" - mapping is essential
             if country:
                 original_count = business_listings.count()
                 country_code = country_mapping.get(country.lower(), country)
