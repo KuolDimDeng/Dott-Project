@@ -33,7 +33,7 @@ urlpatterns = [
     path('business/update-delivery/', BusinessListingViewSet.as_view({'post': 'update_delivery_settings'}), name='update-delivery'),
     path('business/<uuid:pk>/public/', PublicBusinessViewSet.as_view({'get': 'retrieve'}), name='business-public'),
     path('business/<uuid:pk>/products/', PublicBusinessViewSet.as_view({'get': 'products'}), name='business-products'),
-    path('business/<uuid:pk>/services/', BusinessListingViewSet.as_view({'get': 'get_services'}), name='business-services'),
+    path('business/<uuid:pk>/services/', PublicBusinessViewSet.as_view({'get': 'services'}), name='business-services'),
     
     # New mobile app business endpoints
     path('business/listing/', BusinessListingViewSet.as_view({'get': 'listing', 'patch': 'listing'}), name='business-listing'),

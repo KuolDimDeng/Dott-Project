@@ -1124,6 +1124,22 @@ class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
             'business_name': business_name
         })
 
+    @action(detail=True, methods=['get'])
+    def services(self, request, pk=None):
+        """
+        Get services for a business listing (public access)
+        """
+        logger.info(f"🔍 [SERVICES_DEBUG] Starting services endpoint for business_id: {pk}")
+
+        # For now, return empty services list (can be implemented later)
+        # Most businesses will use products endpoint for menu items
+        return Response({
+            'success': True,
+            'services': [],
+            'business_id': str(pk),
+            'message': 'Services endpoint - currently returns empty list'
+        })
+
 
 class BusinessListingViewSet(viewsets.ModelViewSet):
     """
