@@ -491,56 +491,39 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             if business_listings.count() > 5:
                 logger.info(f"[DEBUG_BUSINESS] ... and {business_listings.count() - 5} more businesses")
 
-            # Apply city filter - be more flexible with case and partial matching
-            # For testing, let's make city filter optional for now
+            # Apply city filter - match exact city (case-insensitive)
             if city:
                 original_count = business_listings.count()
-                # Try very flexible city matching
-                city_filtered = business_listings.filter(
-                    Q(city__iexact=city) | Q(city__icontains=city) | Q(city__isnull=True) | Q(city='')
-                )
-                # If flexible matching gives us no results, show all businesses anyway (for debugging)
-                if city_filtered.count() == 0:
-                    logger.warning(f"[CITY_DEBUG] No businesses found for city '{city}', showing all businesses for debugging")
-                    # Don't apply city filter if no matches found
-                else:
-                    business_listings = city_filtered
-                    logger.info(f"[CITY_DEBUG] After flexible city filter ({city}): {business_listings.count()}/{original_count} listings")
+                # Filter by city - case-insensitive exact match
+                city_filtered = business_listings.filter(city__iexact=city)
+                business_listings = city_filtered
+                logger.info(f"[CITY_DEBUG] After city filter ({city}): {business_listings.count()}/{original_count} listings")
 
             from marketplace.marketplace_categories import MARKETPLACE_CATEGORIES, get_business_types_for_subcategory
 
-            # Apply country filter to listings - be more flexible
+            # Apply country filter to listings - map country names to codes
             if country:
                 original_count = business_listings.count()
                 country_code = country_mapping.get(country.lower(), country)
                 logger.info(f"[COUNTRY_DEBUG] Input country: '{country}' -> mapped to: '{country_code}'")
 
-                # Try multiple country matching approaches including empty/null values
+                # Build country filter - only match businesses with the correct country
                 country_filters = Q()
+
+                # Primary: Try the mapped country code (e.g., 'SS' for 'South Sudan')
                 if country_code and len(country_code) == 2:
                     country_filters |= Q(country__iexact=country_code)
-                    logger.info(f"[COUNTRY_DEBUG] Added filter for country code: {country_code}")
+                    logger.info(f"[COUNTRY_DEBUG] Primary filter: country code '{country_code}'")
 
-                # Also try the original country name
-                country_filters |= Q(country__iexact=country)
-                country_filters |= Q(country__icontains=country)
+                # Fallback: Also try exact match on original input (in case DB has full names)
+                if country != country_code:
+                    country_filters |= Q(country__iexact=country)
+                    logger.info(f"[COUNTRY_DEBUG] Fallback filter: original country '{country}'")
 
-                # Try first 2 characters as country code
-                if len(country) >= 2:
-                    country_filters |= Q(country__iexact=country[:2])
-
-                # Include businesses with no country set (for debugging)
-                country_filters |= Q(country__isnull=True) | Q(country='')
-
+                # Apply the country filter
                 country_filtered = business_listings.filter(country_filters)
-
-                # If no results with country filter, show all for debugging
-                if country_filtered.count() == 0:
-                    logger.warning(f"[COUNTRY_DEBUG] No businesses found for country '{country}', showing all businesses for debugging")
-                    # Don't apply country filter if no matches found
-                else:
-                    business_listings = country_filtered
-                    logger.info(f"[COUNTRY_DEBUG] After flexible country filter: {business_listings.count()}/{original_count} listings")
+                business_listings = country_filtered
+                logger.info(f"[COUNTRY_DEBUG] After country filter: {business_listings.count()}/{original_count} listings")
             
             # Apply category filter to listings
             if category and not main_category:
