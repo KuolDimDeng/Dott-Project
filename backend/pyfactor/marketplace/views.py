@@ -1169,11 +1169,27 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         """
         # Manually fetch the business listing by UUID for public access
         try:
-            listing = BusinessListing.objects.get(
-                id=pk,
-                is_visible_in_marketplace=True
-            )
-        except BusinessListing.DoesNotExist:
+            # First try to find a visible business
+            listing = BusinessListing.objects.filter(id=pk, is_visible_in_marketplace=True).first()
+
+            # If not found and user is authenticated, check if they own this business
+            if not listing and request.user.is_authenticated:
+                listing = BusinessListing.objects.filter(id=pk, business=request.user).first()
+                logger.info(f"🔍 [PRODUCTS_DEBUG] Business owner accessing their own products: {listing.id if listing else 'NOT_FOUND'}")
+
+            # If still not found, try any business (for debugging)
+            if not listing:
+                listing = BusinessListing.objects.filter(id=pk).first()
+                if listing:
+                    logger.warning(f"⚠️ [PRODUCTS_DEBUG] Found business {pk} but is_visible_in_marketplace={listing.is_visible_in_marketplace}")
+
+            if not listing:
+                return Response({
+                    'error': 'Business not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(f"[PRODUCTS_DEBUG] Error fetching business listing {pk}: {e}")
             return Response({
                 'error': 'Business not found or not available'
             }, status=status.HTTP_404_NOT_FOUND)
@@ -1197,15 +1213,29 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         if is_restaurant:
             try:
                 from menu.models import MenuItem
-                items = MenuItem.objects.filter(
-                    business=business,
-                    is_available=True
-                ).values(
+                logger.info(f"🍔 [MENU_DEBUG] Fetching menu items for restaurant business {business.id}")
+
+                # Check if menu items exist for this business
+                all_items = MenuItem.objects.filter(business=business)
+                available_items = all_items.filter(is_available=True)
+
+                logger.info(f"🍔 [MENU_DEBUG] Found {all_items.count()} total menu items, {available_items.count()} available")
+
+                items = available_items.values(
                     'id', 'name', 'description', 'price', 'image_url', 'category_name'
                 )
                 products = list(items)
+                logger.info(f"🍔 [MENU_DEBUG] Returning {len(products)} menu items")
+
+                # Log first item for debugging
+                if products:
+                    logger.info(f"🍔 [MENU_DEBUG] First item: {products[0]}")
             except Exception as e:
-                logger.warning(f"Could not fetch menu items for business {business.id}: {e}")
+                logger.error(f"🍔 [MENU_DEBUG] Could not fetch menu items for business {business.id}: {e}")
+                import traceback
+                logger.error(f"🍔 [MENU_DEBUG] Full traceback: {traceback.format_exc()}")
+        else:
+            logger.info(f"🍔 [MENU_DEBUG] Business {business.id} is not detected as restaurant - business_type: {business_type}")
         
         return Response({
             'success': True,
@@ -1305,13 +1335,14 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         
         elif request.method == 'PATCH':
             logger.info(f"[BusinessListing] PATCH request data: {request.data}")
-            
+            logger.info(f"[BusinessListing] Current listing visibility: {listing.is_visible_in_marketplace}")
+
             # Handle the mobile app's nested profile structure
             profile_data = request.data.get('profile', {})
-            
+
             # Extract data from nested structure
             update_data = {}
-            
+
             # Handle root-level publish status fields (for mobile app compatibility)
             if 'is_published' in request.data:
                 logger.info(f"[BusinessListing] Mapping is_published={request.data['is_published']} to is_visible_in_marketplace")
@@ -1322,6 +1353,14 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             if 'is_visible_in_marketplace' in request.data:
                 logger.info(f"[BusinessListing] Direct is_visible_in_marketplace={request.data['is_visible_in_marketplace']}")
                 update_data['is_visible_in_marketplace'] = request.data['is_visible_in_marketplace']
+
+            # CRITICAL DEBUG: Log if visibility field is being updated
+            if 'is_visible_in_marketplace' in update_data:
+                logger.info(f"🚨 [VISIBILITY_DEBUG] Will update is_visible_in_marketplace from {listing.is_visible_in_marketplace} to {update_data['is_visible_in_marketplace']}")
+            else:
+                logger.info(f"⚠️ [VISIBILITY_DEBUG] No is_visible_in_marketplace field found in update_data")
+                logger.info(f"⚠️ [VISIBILITY_DEBUG] update_data keys: {list(update_data.keys())}")
+                logger.info(f"⚠️ [VISIBILITY_DEBUG] request.data keys: {list(request.data.keys())}")
             
             # Basic information
             if 'basic' in profile_data:
@@ -1474,11 +1513,23 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
 
             # Update listing with validated data
             logger.info(f"[BusinessListing] Final update_data: {update_data}")
-            
+
             try:
                 serializer = BusinessListingSerializer(listing, data=update_data, partial=True, context={'request': request})
                 if serializer.is_valid():
+                    # Log BEFORE save
+                    if 'is_visible_in_marketplace' in update_data:
+                        logger.info(f"🔍 [VISIBILITY_DEBUG] Before save - database value: {listing.is_visible_in_marketplace}, update value: {update_data['is_visible_in_marketplace']}")
+
+                    # Save the changes
                     serializer.save()
+
+                    # Log AFTER save
+                    listing.refresh_from_db()  # Refresh from database
+                    if 'is_visible_in_marketplace' in update_data:
+                        logger.info(f"✅ [VISIBILITY_DEBUG] After save - database value: {listing.is_visible_in_marketplace}")
+                        logger.info(f"✅ [VISIBILITY_DEBUG] Save was successful: {listing.is_visible_in_marketplace == update_data['is_visible_in_marketplace']}")
+
                     logger.info(f"[BusinessListing] Successfully updated listing for user {request.user.id}")
                     return Response({
                         'success': True,

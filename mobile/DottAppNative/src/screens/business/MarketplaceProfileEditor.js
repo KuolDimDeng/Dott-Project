@@ -308,13 +308,15 @@ export default function MarketplaceProfileEditor({ navigation }) {
       const newPublishStatus = !isPublished;
       
       try {
-        // Update publish status on backend
-        await marketplaceApi.updateBusinessListing({
-          profile,
+        // Update publish status on backend - send only visibility fields, not entire profile
+        const visibilityData = {
           is_published: newPublishStatus,
           is_active: newPublishStatus,
-          is_visible_in_marketplace: newPublishStatus,  // Add the actual field backend expects
-        });
+          is_visible_in_marketplace: newPublishStatus,  // The actual field backend expects
+        };
+
+        console.log('🔄 Updating marketplace visibility with data:', visibilityData);
+        await marketplaceApi.updateBusinessListing(visibilityData);
 
         setIsPublished(newPublishStatus);
         
