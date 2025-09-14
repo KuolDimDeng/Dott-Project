@@ -22,13 +22,14 @@ import { useMenuContext } from '../../context/MenuContext';
 import marketplaceApi from '../../services/marketplaceApi';
 import businessDataApi from '../../services/businessDataApi';
 import menuApi from '../../services/menuApi';
-import { 
+import {
   generateBusinessProfileTemplate,
   calculateProfileCompleteness,
-  BusinessTypeTemplates 
+  BusinessTypeTemplates
 } from '../../models/businessProfileTemplate';
 import { CATEGORY_HIERARCHY } from '../../config/categoryHierarchy';
 import { getCurrencyForCountry } from '../../utils/currencyUtils';
+import ToggleListItem from '../../components/ToggleListItem';
 
 export default function MarketplaceProfileEditor({ navigation }) {
   const { user } = useAuth();
@@ -925,43 +926,56 @@ export default function MarketplaceProfileEditor({ navigation }) {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Operating Hours</Text>
-        
-        {days.map(day => (
-          <View key={day} style={styles.hourRow}>
-            <Text style={styles.dayLabel}>{dayLabels[day]}</Text>
-            <View style={styles.hourControls}>
-              <Switch
-                value={!profile?.operations?.operatingHours?.[day]?.isClosed}
-                onValueChange={(value) => 
+        <Text style={styles.sectionDescription}>
+          Set your business hours for each day of the week
+        </Text>
+
+        <View style={styles.toggleListContainer}>
+          {days.map((day, index) => {
+            const isOpen = !profile?.operations?.operatingHours?.[day]?.isClosed;
+            const openTime = profile?.operations?.operatingHours?.[day]?.open || '09:00';
+            const closeTime = profile?.operations?.operatingHours?.[day]?.close || '17:00';
+
+            return (
+              <ToggleListItem
+                key={day}
+                title={dayLabels[day]}
+                subtitle={isOpen ? `${openTime} - ${closeTime}` : 'Closed'}
+                icon="time-outline"
+                value={isOpen}
+                onValueChange={(value) =>
                   updateProfile(`operations.operatingHours.${day}.isClosed`, !value)
                 }
-                trackColor={{ false: '#cbd5e1', true: '#34d399' }}
-                thumbColor={!profile?.operations?.operatingHours?.[day]?.isClosed ? '#10b981' : '#94a3b8'}
-              />
-              {!profile?.operations?.operatingHours?.[day]?.isClosed && (
-                <View style={styles.timeInputs}>
-                  <TextInput
-                    style={styles.timeInput}
-                    value={profile?.operations?.operatingHours?.[day]?.open}
-                    onChangeText={(value) => 
-                      updateProfile(`operations.operatingHours.${day}.open`, value)
-                    }
-                    placeholder="09:00"
-                  />
-                  <Text style={styles.timeSeparator}>to</Text>
-                  <TextInput
-                    style={styles.timeInput}
-                    value={profile?.operations?.operatingHours?.[day]?.close}
-                    onChangeText={(value) => 
-                      updateProfile(`operations.operatingHours.${day}.close`, value)
-                    }
-                    placeholder="17:00"
-                  />
-                </View>
-              )}
-            </View>
-          </View>
-        ))}
+                showSeparator={index < days.length - 1}
+              >
+                {isOpen && (
+                  <View style={styles.timeInputContainer}>
+                    <View style={styles.timeInputRow}>
+                      <Text style={styles.timeLabel}>Open:</Text>
+                      <TextInput
+                        style={styles.timeInput}
+                        value={openTime}
+                        onChangeText={(text) =>
+                          updateProfile(`operations.operatingHours.${day}.open`, text)
+                        }
+                        placeholder="09:00"
+                      />
+                      <Text style={styles.timeLabel}>Close:</Text>
+                      <TextInput
+                        style={styles.timeInput}
+                        value={closeTime}
+                        onChangeText={(text) =>
+                          updateProfile(`operations.operatingHours.${day}.close`, text)
+                        }
+                        placeholder="17:00"
+                      />
+                    </View>
+                  </View>
+                )}
+              </ToggleListItem>
+            );
+          })}
+        </View>
       </View>
     );
   };
@@ -969,122 +983,129 @@ export default function MarketplaceProfileEditor({ navigation }) {
   const renderServiceOptions = () => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Service Options</Text>
-      
-      {/* Delivery */}
-      <View style={styles.serviceOption}>
-        <View style={styles.optionHeader}>
-          <Text style={styles.optionTitle}>Delivery</Text>
-          <Switch
-            value={profile?.services?.delivery?.enabled}
-            onValueChange={(value) => 
-              updateProfile('services.delivery.enabled', value)
-            }
-            trackColor={{ false: '#cbd5e1', true: '#34d399' }}
-            thumbColor={profile?.services?.delivery?.enabled ? '#10b981' : '#94a3b8'}
-          />
-        </View>
-        {profile?.services?.delivery?.enabled && (
-          <View style={styles.optionDetails}>
-            <View style={styles.inputRow}>
-              <Text style={styles.inputLabel}>Radius (km)</Text>
-              <TextInput
-                style={styles.smallInput}
-                value={profile?.services?.delivery?.radius?.toString()}
-                onChangeText={(value) => 
-                  updateProfile('services.delivery.radius', parseInt(value) || 0)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputRow}>
-              <Text style={styles.inputLabel}>Min Order</Text>
-              <TextInput
-                style={styles.smallInput}
-                value={profile?.services?.delivery?.minOrder?.toString()}
-                onChangeText={(value) => 
-                  updateProfile('services.delivery.minOrder', parseInt(value) || 0)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputRow}>
-              <Text style={styles.inputLabel}>Delivery Fee</Text>
-              <TextInput
-                style={styles.smallInput}
-                value={profile?.services?.delivery?.fee?.toString()}
-                onChangeText={(value) => 
-                  updateProfile('services.delivery.fee', parseInt(value) || 0)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-        )}
-      </View>
+      <Text style={styles.sectionDescription}>
+        Configure how customers can receive your products or services
+      </Text>
 
-      {/* Pickup */}
-      <View style={styles.serviceOption}>
-        <View style={styles.optionHeader}>
-          <Text style={styles.optionTitle}>Pickup</Text>
-          <Switch
-            value={profile?.services?.pickup?.enabled}
-            onValueChange={(value) => 
-              updateProfile('services.pickup.enabled', value)
-            }
-            trackColor={{ false: '#cbd5e1', true: '#34d399' }}
-            thumbColor={profile?.services?.pickup?.enabled ? '#10b981' : '#94a3b8'}
-          />
-        </View>
-      </View>
-
-      {/* Dine In (for restaurants) */}
-      {businessData?.businessType === 'RESTAURANT_CAFE' && (
-        <View style={styles.serviceOption}>
-          <View style={styles.optionHeader}>
-            <Text style={styles.optionTitle}>Dine In</Text>
-            <Switch
-              value={profile?.services?.dineIn?.enabled}
-              onValueChange={(value) => 
-                updateProfile('services.dineIn.enabled', value)
-              }
-              trackColor={{ false: '#cbd5e1', true: '#34d399' }}
-              thumbColor={profile?.services?.dineIn?.enabled ? '#10b981' : '#94a3b8'}
-            />
-          </View>
-          {profile?.services?.dineIn?.enabled && (
-            <View style={styles.optionDetails}>
+      <View style={styles.toggleListContainer}>
+        {/* Delivery */}
+        <ToggleListItem
+          title="Delivery"
+          subtitle="Deliver to customer location"
+          icon="car-outline"
+          value={profile?.operations?.deliveryOptions?.delivery || false}
+          onValueChange={(value) =>
+            updateProfile('operations.deliveryOptions.delivery', value)
+          }
+        >
+          {profile?.operations?.deliveryOptions?.delivery && (
+            <View style={styles.serviceOptionsContainer}>
               <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>Reservations</Text>
-                <Switch
-                  value={profile?.services?.dineIn?.reservations}
-                  onValueChange={(value) => 
-                    updateProfile('services.dineIn.reservations', value)
+                <Text style={styles.inputLabel}>Radius (km)</Text>
+                <TextInput
+                  style={styles.smallInput}
+                  value={profile?.services?.delivery?.radius?.toString() || ''}
+                  onChangeText={(value) =>
+                    updateProfile('services.delivery.radius', parseInt(value) || 0)
                   }
-                  trackColor={{ false: '#cbd5e1', true: '#34d399' }}
-                  thumbColor={profile?.services?.dineIn?.reservations ? '#10b981' : '#94a3b8'}
+                  placeholder="10"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>Min Order ({currency.symbol})</Text>
+                <TextInput
+                  style={styles.smallInput}
+                  value={profile?.services?.delivery?.minOrder?.toString() || ''}
+                  onChangeText={(value) =>
+                    updateProfile('services.delivery.minOrder', parseFloat(value) || 0)
+                  }
+                  placeholder="0"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>Delivery Fee ({currency.symbol})</Text>
+                <TextInput
+                  style={styles.smallInput}
+                  value={profile?.services?.delivery?.fee?.toString() || ''}
+                  onChangeText={(value) =>
+                    updateProfile('services.delivery.fee', parseFloat(value) || 0)
+                  }
+                  placeholder="0"
+                  keyboardType="numeric"
                 />
               </View>
             </View>
           )}
-        </View>
-      )}
+        </ToggleListItem>
 
-      {/* Booking (for service businesses) */}
-      {['SERVICE_BUSINESS', 'HAIRSTYLIST', 'MEDICAL_DENTAL'].includes(businessData?.businessType) && (
-        <View style={styles.serviceOption}>
-          <View style={styles.optionHeader}>
-            <Text style={styles.optionTitle}>Booking</Text>
-            <Switch
-              value={profile?.services?.booking?.enabled}
-              onValueChange={(value) => 
-                updateProfile('services.booking.enabled', value)
-              }
-              trackColor={{ false: '#cbd5e1', true: '#34d399' }}
-              thumbColor={profile?.services?.booking?.enabled ? '#10b981' : '#94a3b8'}
-            />
-          </View>
-        </View>
-      )}
+        {/* Pickup */}
+        <ToggleListItem
+          title="Pickup"
+          subtitle="Customer picks up at your location"
+          icon="walk-outline"
+          value={profile?.operations?.deliveryOptions?.pickup || false}
+          onValueChange={(value) =>
+            updateProfile('operations.deliveryOptions.pickup', value)
+          }
+        />
+
+        {/* Shipping */}
+        <ToggleListItem
+          title="Shipping"
+          subtitle="Ship to other cities or countries"
+          icon="airplane-outline"
+          value={profile?.operations?.deliveryOptions?.shipping || false}
+          onValueChange={(value) =>
+            updateProfile('operations.deliveryOptions.shipping', value)
+          }
+        />
+
+        {/* Dine In (for restaurants) */}
+        {(businessData?.businessType === 'RESTAURANT_CAFE' ||
+          profile?.basic?.businessType?.includes('RESTAURANT')) && (
+          <ToggleListItem
+            title="Dine In"
+            subtitle="Customers can dine at your restaurant"
+            icon="restaurant-outline"
+            value={profile?.services?.dineIn?.enabled || false}
+            onValueChange={(value) =>
+              updateProfile('services.dineIn.enabled', value)
+            }
+          >
+            {profile?.services?.dineIn?.enabled && (
+              <View style={styles.serviceOptionsContainer}>
+                <ToggleListItem
+                  title="Accept Reservations"
+                  subtitle="Allow customers to book tables"
+                  value={profile?.services?.dineIn?.reservations || false}
+                  onValueChange={(value) =>
+                    updateProfile('services.dineIn.reservations', value)
+                  }
+                  indent={true}
+                  showSeparator={false}
+                />
+              </View>
+            )}
+          </ToggleListItem>
+        )}
+
+        {/* Booking (for service businesses) */}
+        {(['SERVICE_PROVIDER', 'HEALTH_WELLNESS', 'BEAUTY_SALON'].includes(businessData?.businessType) ||
+          ['SERVICE_BUSINESS', 'HAIRSTYLIST', 'MEDICAL_DENTAL'].includes(businessData?.businessType)) && (
+          <ToggleListItem
+            title="Appointment Booking"
+            subtitle="Customers can book appointments"
+            icon="calendar-outline"
+            value={profile?.services?.booking?.enabled || false}
+            onValueChange={(value) =>
+              updateProfile('services.booking.enabled', value)
+            }
+            showSeparator={false}
+          />
+        )}
+      </View>
     </View>
   );
 
@@ -1359,6 +1380,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  toggleListContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  timeInputContainer: {
+    paddingVertical: 8,
+  },
+  timeInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  timeLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginRight: 8,
+  },
+  timeInput: {
+    flex: 1,
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    marginRight: 12,
+  },
+  serviceOptionsContainer: {
+    paddingVertical: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 4,
+    marginBottom: 8,
   },
   header: {
     flexDirection: 'row',
