@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('menu', '0002_auto_20250114_0000'),  # Update this to match your last migration
+        ('menu', '0002_add_image_field'),
     ]
 
     operations = [
