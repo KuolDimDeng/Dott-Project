@@ -1000,41 +1000,32 @@ export default function MarketplaceProfileEditor({ navigation }) {
         >
           {profile?.operations?.deliveryOptions?.delivery && (
             <View style={styles.serviceOptionsContainer}>
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>Radius (km)</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={profile?.services?.delivery?.radius?.toString() || ''}
-                  onChangeText={(value) =>
-                    updateProfile('services.delivery.radius', parseInt(value) || 0)
-                  }
-                  placeholder="10"
-                  keyboardType="numeric"
-                />
+              <View style={styles.platformManagedNotice}>
+                <Icon name="information-circle" size={16} color="#3b82f6" />
+                <Text style={styles.platformManagedText}>
+                  Delivery is managed by Dott Couriers
+                </Text>
               </View>
               <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>Min Order ({currency.symbol})</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={profile?.services?.delivery?.minOrder?.toString() || ''}
-                  onChangeText={(value) =>
-                    updateProfile('services.delivery.minOrder', parseFloat(value) || 0)
-                  }
-                  placeholder="0"
-                  keyboardType="numeric"
-                />
+                <Text style={styles.inputLabel}>Radius</Text>
+                <View style={styles.readOnlyInputContainer}>
+                  <Text style={styles.readOnlyValue}>5 km</Text>
+                  <Text style={styles.readOnlyLabel}>(Platform managed)</Text>
+                </View>
               </View>
               <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>Delivery Fee ({currency.symbol})</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={profile?.services?.delivery?.fee?.toString() || ''}
-                  onChangeText={(value) =>
-                    updateProfile('services.delivery.fee', parseFloat(value) || 0)
-                  }
-                  placeholder="0"
-                  keyboardType="numeric"
-                />
+                <Text style={styles.inputLabel}>Min Order</Text>
+                <View style={styles.readOnlyInputContainer}>
+                  <Text style={styles.readOnlyValue}>{currency.symbol}10</Text>
+                  <Text style={styles.readOnlyLabel}>(Platform managed)</Text>
+                </View>
+              </View>
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>Delivery Fee</Text>
+                <View style={styles.readOnlyInputContainer}>
+                  <Text style={styles.readOnlyValue}>{currency.symbol}2-5</Text>
+                  <Text style={styles.readOnlyLabel}>(Based on distance)</Text>
+                </View>
               </View>
             </View>
           )}
@@ -1703,6 +1694,42 @@ const styles = StyleSheet.create({
     width: 80,
     fontSize: 14,
     textAlign: 'center',
+  },
+  platformManagedNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginBottom: 12,
+    marginHorizontal: 16,
+  },
+  platformManagedText: {
+    fontSize: 13,
+    color: '#3b82f6',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  readOnlyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 100,
+  },
+  readOnlyValue: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  readOnlyLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 6,
+    fontStyle: 'italic',
   },
   previewButton: {
     flexDirection: 'row',
