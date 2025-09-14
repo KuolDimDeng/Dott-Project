@@ -169,6 +169,17 @@ export default function BusinessDetailScreen() {
         business_type_display: businessData?.business_type_display,
         business_name: businessData?.business_name
       });
+
+      // Debug log for Info tab data
+      console.log('📱 INFO TAB DATA CHECK:', {
+        phone: businessData?.phone,
+        email: businessData?.email,
+        address: businessData?.address,
+        business_hours: businessData?.business_hours,
+        website: businessData?.website,
+        full_business_object: JSON.stringify(businessData, null, 2)
+      });
+
       // Only use real data from API, no mock data
       if (businessData) {
         setBusiness(businessData);
@@ -618,28 +629,39 @@ export default function BusinessDetailScreen() {
     </View>
   );
 
-  const renderInfo = () => (
-    <View style={styles.infoContainer}>
-      <View style={styles.infoSection}>
-        <Text style={styles.infoTitle}>Contact Information</Text>
-        
-        <TouchableOpacity style={styles.infoItem} onPress={handleCall}>
-          <Icon name="call-outline" size={20} color="#6b7280" />
-          <Text style={styles.infoText}>{business?.phone}</Text>
-        </TouchableOpacity>
-        
-        {business?.email && (
-          <TouchableOpacity style={styles.infoItem}>
-            <Icon name="mail-outline" size={20} color="#6b7280" />
-            <Text style={styles.infoText}>{business?.email}</Text>
+  const renderInfo = () => {
+    // Debug log when rendering Info tab
+    console.log('🔍 RENDERING INFO TAB:', {
+      business_exists: !!business,
+      phone: business?.phone,
+      email: business?.email,
+      address: business?.address,
+      business_hours: business?.business_hours,
+      business_keys: business ? Object.keys(business) : [],
+    });
+
+    return (
+      <View style={styles.infoContainer}>
+        <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>Contact Information</Text>
+
+          <TouchableOpacity style={styles.infoItem} onPress={handleCall}>
+            <Icon name="call-outline" size={20} color="#6b7280" />
+            <Text style={styles.infoText}>{business?.phone || 'No phone available'}</Text>
           </TouchableOpacity>
-        )}
-        
-        <View style={styles.infoItem}>
-          <Icon name="location-outline" size={20} color="#6b7280" />
-          <Text style={styles.infoText}>{business?.address}</Text>
+
+          {business?.email && (
+            <TouchableOpacity style={styles.infoItem}>
+              <Icon name="mail-outline" size={20} color="#6b7280" />
+              <Text style={styles.infoText}>{business?.email}</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.infoItem}>
+            <Icon name="location-outline" size={20} color="#6b7280" />
+            <Text style={styles.infoText}>{business?.address || 'No address available'}</Text>
+          </View>
         </View>
-      </View>
 
       <View style={styles.infoSection}>
         <Text style={styles.infoTitle}>Business Hours</Text>
@@ -665,7 +687,8 @@ export default function BusinessDetailScreen() {
         })}
       </View>
     </View>
-  );
+    );
+  };
 
   const renderMenu = () => (
     <View style={styles.menuContainer}>
