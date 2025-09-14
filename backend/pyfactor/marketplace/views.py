@@ -1139,6 +1139,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
     def public_view(self, request, pk=None):
         """
         Public view of business listing for consumers - NO AUTHENTICATION REQUIRED
+        This endpoint is completely public and requires no authentication
         """
         # Manually fetch the business listing by UUID for public access
         try:
