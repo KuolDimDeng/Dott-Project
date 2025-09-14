@@ -1150,31 +1150,32 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             return Response({
                 'error': 'Business not found or not available'
             }, status=status.HTTP_404_NOT_FOUND)
-        
-        # Check if consumer can access this business
-        consumer_profile = ConsumerProfile.objects.filter(user=request.user).first()
-        
-        if consumer_profile:
-            can_deliver = listing.can_deliver_to(
-                consumer_profile.current_country,
-                consumer_profile.current_city,
-                (consumer_profile.current_latitude, consumer_profile.current_longitude)
-                if consumer_profile.current_latitude else None
-            )
-            
-            if not can_deliver:
-                return Response({
-                    'error': 'This business does not deliver to your location',
-                    'business_location': f"{listing.city}, {listing.country}",
-                    'delivery_scope': listing.delivery_scope
-                }, status=status.HTTP_403_FORBIDDEN)
-        
+
+        # Check if consumer can access this business (only if authenticated)
+        if request.user and request.user.is_authenticated:
+            consumer_profile = ConsumerProfile.objects.filter(user=request.user).first()
+
+            if consumer_profile:
+                can_deliver = listing.can_deliver_to(
+                    consumer_profile.current_country,
+                    consumer_profile.current_city,
+                    (consumer_profile.current_latitude, consumer_profile.current_longitude)
+                    if consumer_profile.current_latitude else None
+                )
+
+                if not can_deliver:
+                    return Response({
+                        'error': 'This business does not deliver to your location',
+                        'business_location': f"{listing.city}, {listing.country}",
+                        'delivery_scope': listing.delivery_scope
+                    }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = BusinessListingSerializer(listing, context={'request': request})
-        
+
         # Track view
         listing.last_active = timezone.now()
         listing.save(update_fields=['last_active'])
-        
+
         return Response(serializer.data)
     
     @action(detail=True, methods=['get'])
