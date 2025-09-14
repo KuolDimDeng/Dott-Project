@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import ArrayField
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketplace', '0002_auto_20250114_0000'),  # Adjust to your latest migration
+        ('marketplace', '0007_add_is_open_now_field'),  # Latest migration in the marketplace app
     ]
 
     operations = [
