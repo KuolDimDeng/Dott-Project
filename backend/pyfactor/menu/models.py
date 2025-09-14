@@ -77,10 +77,11 @@ class MenuItem(TenantAwareModel):
                               validators=[MinValueValidator(0)], help_text="Cost to make this item")
     
     # Images
-    image = models.ImageField(upload_to=menu_item_image_path, null=True, blank=True, 
-                             help_text="Primary image file")
-    image_url = models.URLField(blank=True, help_text="Primary image URL (auto-generated from image)")
-    thumbnail_url = models.URLField(blank=True, help_text="Thumbnail image URL")
+    image = models.ImageField(upload_to=menu_item_image_path, null=True, blank=True,
+                             help_text="Primary image file (for backward compatibility)")
+    image_url = models.URLField(blank=True, help_text="Primary image URL from Cloudinary")
+    image_public_id = models.CharField(max_length=255, blank=True, help_text="Cloudinary public ID")
+    thumbnail_url = models.URLField(blank=True, help_text="Thumbnail image URL from Cloudinary")
     additional_images = models.JSONField(default=list, blank=True, help_text="List of additional image URLs")
     
     # Availability
@@ -172,19 +173,39 @@ class MenuItem(TenantAwareModel):
         return self.discounted_price if self.discounted_price else self.price
     
     def save(self, *args, **kwargs):
-        """Override save to generate image_url from uploaded image"""
+        """Override save to handle Cloudinary upload"""
         # Save first to ensure we have an ID
+        is_new = self.pk is None
         super().save(*args, **kwargs)
-        
-        # If we have an image file but no image_url, generate it
-        if self.image and not self.image_url:
-            from django.conf import settings
-            # Generate the full URL for the image
-            if hasattr(settings, 'MEDIA_URL'):
-                # For staging, use the full URL with domain
+
+        # If we have an image file but no Cloudinary URL, upload to Cloudinary
+        if self.image and not self.image_public_id:
+            try:
+                from services.cloudinary_service import cloudinary_service
+
+                # Upload to Cloudinary
+                result = cloudinary_service.upload_image(
+                    self.image,
+                    purpose='menu_item',
+                    user_id=str(self.tenant_id)
+                )
+
+                # Update fields with Cloudinary URLs
+                self.image_url = result['url']
+                self.image_public_id = result['public_id']
+                self.thumbnail_url = result.get('thumbnail_url', '')
+
+                # Save the Cloudinary URLs
+                super().save(update_fields=['image_url', 'image_public_id', 'thumbnail_url'])
+
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to upload menu item image to Cloudinary: {e}")
+                # Fallback to local URL if Cloudinary fails
+                from django.conf import settings
                 domain = getattr(settings, 'BACKEND_DOMAIN', 'https://dott-api-staging.onrender.com')
                 self.image_url = f"{domain}{settings.MEDIA_URL}{self.image}"
-                # Save again to store the URL
                 super().save(update_fields=['image_url'])
 
 
