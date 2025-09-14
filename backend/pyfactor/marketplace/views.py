@@ -626,30 +626,44 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'id': str(listing.id),  # UUID, convert to string
                     'business_name': business_name,  # Frontend expects business_name
                     'name': business_name,  # Also include name for backward compatibility
-                    'phone': getattr(profile, 'phone', '') if profile else '',
-                    'address': getattr(profile, 'business_address', '') if profile else '',
+                    'phone': listing.phone or getattr(profile, 'phone', '') if profile else '',
+                    'address': listing.address or getattr(profile, 'business_address', '') if profile else '',
                     'category': listing.business_type,
                     'category_display': business_type_display,
-                    'email': user.email,
+                    'business_type': listing.business_type,  # Add business_type for menu detection
+                    'business_type_display': business_type_display,
+                    'email': listing.business_email or user.email,
+                    'business_email': listing.business_email or user.email,
                     'description': listing.description or '',
                     'image_url': cover_image_url or logo_url,  # Use cover image or logo
                     'logo': logo_url,   # Frontend expects 'logo'
                     'logo_url': logo_url,   # Logo URL from Cloudinary
                     'cover_image_url': cover_image_url,  # Cover image from Cloudinary
                     'gallery_images': gallery_images,  # Gallery images from Cloudinary
-                    'website': getattr(profile, 'website', '') if profile else '',
+                    'website': listing.website or getattr(profile, 'website', '') if profile else '',
                     'opening_hours': listing.business_hours or {},
+                    'business_hours': listing.business_hours or {},  # Add business_hours
+                    'payment_methods': listing.payment_methods or [],  # Add payment methods
+                    'delivery_options': listing.delivery_options or {},  # Add delivery options
                     'rating': float(listing.average_rating) if listing.average_rating else None,
                     'average_rating': float(listing.average_rating) if listing.average_rating else 4.5,  # Frontend expects average_rating
-                    'social_media': {},  # TODO: Add social media support
+                    'total_reviews': listing.total_reviews or 0,
+                    'total_orders': listing.total_orders or 0,
+                    'social_media': listing.social_media or {},  # Use saved social media
+                    'social': listing.social_media or {},  # Alternative key for social media
                     'city': listing.city,
                     'country': listing.country,
+                    'state': listing.state or '',
+                    'postal_code': listing.postal_code or '',
                     'latitude': listing.latitude,
                     'longitude': listing.longitude,
-                    'is_verified': True,  # Published businesses are verified
+                    'is_verified': listing.is_verified or True,  # Use listing verified status
                     'is_featured': is_featured,  # Featured status from campaigns or listing
                     'is_placeholder': False,
                     'is_open_now': listing.is_open_now,  # Add open/closed status
+                    'is_visible_in_marketplace': listing.is_visible_in_marketplace,  # Visibility status
+                    'delivery_scope': listing.delivery_scope or 'local',
+                    'response_time': '< 1 hour',  # Default response time
                     'source': 'published'
                 }
                 
@@ -1214,9 +1228,19 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             try:
                 from menu.models import MenuItem
                 logger.info(f"🍔 [MENU_DEBUG] Fetching menu items for restaurant business {business.id}")
+                logger.info(f"🍔 [MENU_DEBUG] Business has tenant_id: {hasattr(business, 'tenant_id')}")
+                logger.info(f"🍔 [MENU_DEBUG] Business tenant_id value: {getattr(business, 'tenant_id', 'NONE')}")
 
                 # Check if menu items exist for this business
-                all_items = MenuItem.objects.filter(business=business)
+                # MenuItem uses tenant_id, not business field
+                if hasattr(business, 'tenant_id') and business.tenant_id:
+                    all_items = MenuItem.objects.filter(tenant_id=business.tenant_id)
+                    logger.info(f"🍔 [MENU_DEBUG] Filtering by tenant_id: {business.tenant_id}")
+                else:
+                    # Fallback: try filtering by business user
+                    all_items = MenuItem.objects.filter(business=business)
+                    logger.info(f"🍔 [MENU_DEBUG] Filtering by business user: {business.id}")
+
                 available_items = all_items.filter(is_available=True)
 
                 logger.info(f"🍔 [MENU_DEBUG] Found {all_items.count()} total menu items, {available_items.count()} available")
@@ -1383,12 +1407,48 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                     update_data['city'] = contact['city']
                 if 'country' in contact:
                     update_data['country'] = contact['country']
-            
+                if 'phone' in contact:
+                    update_data['phone'] = contact['phone']
+                if 'email' in contact:
+                    update_data['business_email'] = contact['email']
+                if 'website' in contact:
+                    update_data['website'] = contact['website']
+                if 'address' in contact and isinstance(contact['address'], dict):
+                    addr = contact['address']
+                    if 'street' in addr:
+                        update_data['address'] = addr['street']
+                    if 'city' in addr:
+                        update_data['city'] = addr['city']
+                    if 'state' in addr:
+                        update_data['state'] = addr['state']
+                    if 'postalCode' in addr:
+                        update_data['postal_code'] = addr['postalCode']
+                    if 'country' in addr:
+                        update_data['country'] = addr['country']
+                if 'socialMedia' in contact:
+                    update_data['social_media'] = contact['socialMedia']
+                logger.info(f"📦 [CONTACT_MAPPING] Extracted contact fields: {[k for k in update_data if k in ['phone', 'business_email', 'website', 'address', 'social_media']]}")
+
             # Operations
             if 'operations' in profile_data:
                 operations = profile_data['operations']
-                if 'business_hours' in operations:
+                # Map operating hours from frontend format
+                if 'operatingHours' in operations:
+                    update_data['business_hours'] = operations['operatingHours']
+                    logger.info(f"📦 [HOURS_MAPPING] Mapped operating hours: {bool(update_data.get('business_hours'))}")
+                elif 'business_hours' in operations:
                     update_data['business_hours'] = operations['business_hours']
+
+                # Map payment methods
+                if 'paymentMethods' in operations:
+                    update_data['payment_methods'] = operations['paymentMethods']
+                    logger.info(f"📦 [PAYMENT_MAPPING] Mapped payment methods: {update_data.get('payment_methods', [])}")
+
+                # Map delivery options
+                if 'deliveryOptions' in operations:
+                    update_data['delivery_options'] = operations['deliveryOptions']
+                    logger.info(f"📦 [DELIVERY_MAPPING] Mapped delivery options: {update_data.get('delivery_options', {})}")
+
                 if 'delivery_scope' in operations:
                     update_data['delivery_scope'] = operations['delivery_scope']
                 if 'delivery_radius_km' in operations:

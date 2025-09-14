@@ -382,17 +382,56 @@ export default function MarketplaceProfileEditor({ navigation }) {
         // Save profile
         const saveResult = await marketplaceApi.updateBusinessListing(listingData);
         console.log('✅ Backend save successful:', saveResult);
-        
+
         // Update operating hours
         await marketplaceApi.updateOperatingHours(profile.operations.operatingHours);
-        
+
         // Sync products/services based on business type
         await syncBusinessOfferings();
-        
+
+        // 🔍 DATA PERSISTENCE VERIFICATION
+        console.log('🔍 [PERSISTENCE_CHECK] Verifying data was saved correctly...');
+        try {
+          // Wait a moment for database to commit
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Fetch the listing again to verify
+          const verifyResult = await marketplaceApi.getBusinessListing();
+
+          if (verifyResult && verifyResult.data) {
+            const savedData = verifyResult.data;
+            console.log('🔍 [PERSISTENCE_CHECK] Retrieved saved data:', {
+              description: savedData.description?.substring(0, 50) + '...',
+              phone: savedData.phone,
+              business_hours: Object.keys(savedData.business_hours || {}).length > 0,
+              payment_methods: savedData.payment_methods?.length || 0,
+              delivery_options: Object.keys(savedData.delivery_options || {}).length > 0,
+              is_visible: savedData.is_visible_in_marketplace
+            });
+
+            // Check critical fields
+            const criticalFieldsMatch =
+              savedData.description === profile.basic.description &&
+              savedData.is_visible_in_marketplace === isPublished;
+
+            if (!criticalFieldsMatch) {
+              console.warn('⚠️ [PERSISTENCE_CHECK] Some fields did not persist correctly!');
+              console.warn('Expected description:', profile.basic.description);
+              console.warn('Got description:', savedData.description);
+              console.warn('Expected visibility:', isPublished);
+              console.warn('Got visibility:', savedData.is_visible_in_marketplace);
+            } else {
+              console.log('✅ [PERSISTENCE_CHECK] All critical fields persisted correctly');
+            }
+          }
+        } catch (verifyError) {
+          console.error('❌ [PERSISTENCE_CHECK] Could not verify persistence:', verifyError);
+        }
+
         // Clear local draft on successful save
         await AsyncStorage.removeItem('marketplaceProfileDraft');
         console.log('🗑️ Cleared local draft');
-        
+
         setHasChanges(false);
         Alert.alert('Success', 'Your marketplace profile has been updated and saved to the database');
         navigation.goBack();

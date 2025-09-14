@@ -60,7 +60,29 @@ class BusinessListing(models.Model):
     # Business hours
     business_hours = models.JSONField(default=dict, blank=True)
     is_open_now = models.BooleanField(default=True)
-    
+
+    # Payment and delivery options
+    payment_methods = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+        help_text='Accepted payment methods (cash, card, mobile_money, etc.)'
+    )
+    delivery_options = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Delivery options configuration (delivery, pickup, shipping)'
+    )
+
+    # Contact information
+    phone = models.CharField(max_length=20, blank=True, null=True, help_text='Business phone number')
+    business_email = models.EmailField(max_length=255, blank=True, null=True, help_text='Business contact email')
+    website = models.URLField(max_length=255, blank=True, null=True, help_text='Business website URL')
+    address = models.TextField(blank=True, null=True, help_text='Full business address')
+    postal_code = models.CharField(max_length=20, blank=True, null=True, help_text='Postal/ZIP code')
+    state = models.CharField(max_length=100, blank=True, null=True, help_text='State/Province')
+    social_media = models.JSONField(default=dict, blank=True, help_text='Social media links')
+
     # Search optimization
     search_tags = ArrayField(
         models.CharField(max_length=50),
