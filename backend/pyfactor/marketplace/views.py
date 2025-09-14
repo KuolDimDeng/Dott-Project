@@ -1101,7 +1101,7 @@ class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
                 logger.info(f"🍔 [MENU_DEBUG] Found {all_items.count()} total menu items, {available_items.count()} available")
 
                 items = available_items.values(
-                    'id', 'name', 'description', 'price', 'image_url', 'category_name'
+                    'id', 'name', 'description', 'price', 'image_url'
                 )
                 products = list(items)
                 logger.info(f"🍔 [MENU_DEBUG] Returning {len(products)} menu items")
@@ -1440,7 +1440,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 logger.info(f"🍔 [MENU_DEBUG] Found {all_items.count()} total menu items, {available_items.count()} available")
 
                 items = available_items.values(
-                    'id', 'name', 'description', 'price', 'image_url', 'category_name'
+                    'id', 'name', 'description', 'price', 'image_url'
                 )
                 products = list(items)
                 logger.info(f"🍔 [MENU_DEBUG] Returning {len(products)} menu items")
