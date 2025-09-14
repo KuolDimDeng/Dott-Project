@@ -26,8 +26,9 @@ logger = logging.getLogger(__name__)
 class ConsumerSearchViewSet(viewsets.ViewSet):
     """
     Location-aware business search for consumers
+    Public access - no authentication required for browsing
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = []  # Public access for marketplace browsing
     
     def list(self, request):
         """
