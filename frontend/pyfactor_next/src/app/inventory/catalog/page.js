@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BulkImportModal from './BulkImportModal';
+import AdvancedSearch from './AdvancedSearch';
 import {
   SearchIcon,
   AddIcon,
   InventoryIcon2 as InventoryIcon,
   FilterListIcon,
   LocalOfferIcon,
-  CheckIcon
+  CheckIcon,
+  QrCodeIcon
 } from '@/app/components/icons';
 
 /**
@@ -25,10 +27,13 @@ export default function ProductCatalogPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [addingProducts, setAddingProducts] = useState(new Set());
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [totalProducts, setTotalProducts] = useState(0);
 
   // Fetch products from StoreItems
   const fetchProducts = async (reset = false) => {
@@ -53,11 +58,17 @@ export default function ProductCatalogPage() {
       }
 
       setHasMore(data.has_next || false);
+      setTotalProducts(data.count || 0);
 
-      // Extract unique categories from products
+      // Extract unique categories and brands from products
       const uniqueCategories = [...new Set(data.results?.map(p => p.category).filter(Boolean))];
+      const uniqueBrands = [...new Set(data.results?.map(p => p.brand).filter(Boolean))];
+
       if (uniqueCategories.length > 0 && categories.length === 0) {
         setCategories(uniqueCategories);
+      }
+      if (uniqueBrands.length > 0 && brands.length === 0) {
+        setBrands(uniqueBrands);
       }
     } catch (error) {
       console.error('Error fetching catalog:', error);
@@ -131,6 +142,30 @@ export default function ProductCatalogPage() {
     setShowBulkImport(true);
   };
 
+  // Handle advanced search
+  const handleAdvancedSearch = (searchParams) => {
+    // Reset and apply new search parameters
+    setPage(1);
+    setProducts([]);
+    setSearchTerm(searchParams.query || '');
+    setSelectedCategory(''); // Will handle multiple categories differently
+
+    // Build new search params
+    const params = new URLSearchParams();
+    if (searchParams.query) params.append('search', searchParams.query);
+    if (searchParams.barcode) params.append('barcode', searchParams.barcode);
+    if (searchParams.brand) params.append('brand', searchParams.brand);
+    if (searchParams.categories.length > 0) {
+      params.append('categories', searchParams.categories.join(','));
+    }
+    if (searchParams.verifiedOnly) params.append('verified', 'true');
+    if (searchParams.hasImages) params.append('has_images', 'true');
+    if (searchParams.sortBy !== 'relevance') params.append('sort', searchParams.sortBy);
+
+    // Fetch with new params
+    fetchProducts(true);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -195,39 +230,14 @@ export default function ProductCatalogPage() {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search by name, barcode, or brand..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Category Filter */}
-          <div className="sm:w-48">
-            <select
-              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+      {/* Advanced Search */}
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <AdvancedSearch
+          onSearch={handleAdvancedSearch}
+          categories={categories}
+          brands={brands}
+          totalProducts={totalProducts}
+        />
       </div>
 
       {/* Products Grid */}
