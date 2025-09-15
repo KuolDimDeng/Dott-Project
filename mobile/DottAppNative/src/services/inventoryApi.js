@@ -1,16 +1,33 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SecureStorage from './secureStorage';
 import ENV from '../config/environment';
 
 const INVENTORY_API_URL = `${ENV.apiUrl}/inventory`;
 
 class InventoryAPI {
   async getHeaders() {
-    // Try sessionId first (new standard), fallback to sessionToken
-    const sessionId = await AsyncStorage.getItem('sessionId');
-    const token = sessionId || await AsyncStorage.getItem('sessionToken');
+    // Try SecureStorage first for sessionId, then AsyncStorage fallbacks
+    let sessionId = null;
+
+    try {
+      sessionId = await SecureStorage.getSecureItem('sessionId');
+    } catch (error) {
+      console.log('Could not get sessionId from SecureStorage:', error);
+    }
+
+    // Fallback to AsyncStorage if SecureStorage fails
+    if (!sessionId) {
+      sessionId = await AsyncStorage.getItem('sessionId');
+    }
+
+    // Final fallback to sessionToken
+    if (!sessionId) {
+      sessionId = await AsyncStorage.getItem('sessionToken');
+    }
+
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Session ${token}` : '',
+      'Authorization': sessionId ? `Session ${sessionId}` : '',
     };
   }
 
@@ -27,12 +44,24 @@ class InventoryAPI {
     try {
       const queryParams = new URLSearchParams(params).toString();
       const url = `${INVENTORY_API_URL}/products/${queryParams ? `?${queryParams}` : ''}`;
-      
+
+      const headers = await this.getHeaders();
+
+      if (__DEV__) {
+        console.log('📦 Inventory API Request:');
+        console.log('  - URL:', url);
+        console.log('  - Auth header:', headers.Authorization ? headers.Authorization.substring(0, 20) + '...' : 'none');
+      }
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: await this.getHeaders(),
+        headers,
       });
-      
+
+      if (__DEV__) {
+        console.log('  - Response status:', response.status);
+      }
+
       return this.handleResponse(response);
     } catch (error) {
       console.error('Error fetching products:', error);
