@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../config/environment';
+import ENV from '../config/environment';
 
-const INVENTORY_API_URL = `${API_BASE_URL}/api/inventory`;
+const INVENTORY_API_URL = `${ENV.apiUrl}/inventory`;
 
 class InventoryAPI {
   async getHeaders() {
@@ -220,6 +220,55 @@ class InventoryAPI {
       barcode: product.barcode_number,
       type: 'product',
     });
+  }
+
+  // Get store items catalog
+  async getStoreItems(params = {}) {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const url = `${INVENTORY_API_URL}/store-items/${queryParams ? `?${queryParams}` : ''}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: await this.getHeaders(),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching store items:', error);
+      throw error;
+    }
+  }
+
+  // Scan barcode to find product in store items
+  async scanBarcode(barcode) {
+    try {
+      const response = await fetch(`${INVENTORY_API_URL}/store-items/scan/?barcode=${encodeURIComponent(barcode)}`, {
+        method: 'GET',
+        headers: await this.getHeaders(),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error scanning barcode:', error);
+      throw error;
+    }
+  }
+
+  // Import product from store items to inventory
+  async importFromCatalog(storeItemId, productData) {
+    try {
+      const response = await fetch(`${INVENTORY_API_URL}/store-items/${storeItemId}/import/`, {
+        method: 'POST',
+        headers: await this.getHeaders(),
+        body: JSON.stringify(productData),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error importing from catalog:', error);
+      throw error;
+    }
   }
 }
 

@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'https://staging.dottapps.com/api';
+import ENV from '../config/environment';
+
+const API_BASE_URL = ENV.apiUrl;
 
 class BusinessDataApi {
   async getHeaders() {
