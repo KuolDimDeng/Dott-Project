@@ -8,6 +8,13 @@ from . import service_api_views
 from .views_materials import MaterialViewSet, MaterialTransactionViewSet
 from .debug_views import debug_tenant_data
 
+# Try to import StoreItems views
+try:
+    from .api_views_storeitems import StoreItemViewSet, MerchantStoreItemViewSet
+    STOREITEMS_AVAILABLE = True
+except ImportError:
+    STOREITEMS_AVAILABLE = False
+
 # Create a router for standard views
 router = DefaultRouter()
 router.register(r'items', views.InventoryItemViewSet, basename='inventory-item')
@@ -23,6 +30,11 @@ router.register(r'bill-of-materials', views.BillOfMaterialsViewSet, basename='bi
 router.register(r'service-materials', views.ServiceMaterialsViewSet, basename='service-materials')
 router.register(r'materials', MaterialViewSet, basename='material')
 router.register(r'material-transactions', MaterialTransactionViewSet, basename='material-transaction')
+
+# Register StoreItems endpoints if available
+if STOREITEMS_AVAILABLE:
+    router.register(r'store-items', StoreItemViewSet, basename='store-items')
+    router.register(r'merchant-items', MerchantStoreItemViewSet, basename='merchant-items')
 
 # Create routers for optimized views
 optimized_router = DefaultRouter()
