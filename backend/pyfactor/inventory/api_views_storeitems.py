@@ -10,13 +10,23 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models_storeitems import StoreItem, MerchantStoreItem, StoreItemVerification, StoreItemPriceHistory
-from .serializers_storeitems import (
-    StoreItemSerializer,
-    MerchantStoreItemSerializer,
-    StoreItemSearchSerializer,
-    BulkPriceUpdateSerializer
-)
+# These imports will be activated after models are integrated
+try:
+    from .models_storeitems import StoreItem, MerchantStoreItem, StoreItemVerification, StoreItemPriceHistory
+    from .serializers_storeitems import (
+        StoreItemSerializer,
+        MerchantStoreItemSerializer,
+        StoreItemSearchSerializer,
+        BulkPriceUpdateSerializer
+    )
+    STOREITEMS_AVAILABLE = True
+except ImportError:
+    # Models not yet integrated
+    STOREITEMS_AVAILABLE = False
+    StoreItem = None
+    MerchantStoreItem = None
+    StoreItemVerification = None
+    StoreItemPriceHistory = None
 
 
 class StoreItemViewSet(viewsets.ModelViewSet):
@@ -24,12 +34,22 @@ class StoreItemViewSet(viewsets.ModelViewSet):
     Global store items catalog - available to all authenticated merchants
     No tenant filtering as these are shared across all tenants
     """
-    serializer_class = StoreItemSerializer
     permission_classes = [IsAuthenticated]
-    queryset = StoreItem.objects.all()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not STOREITEMS_AVAILABLE:
+            self.queryset = []
+            self.serializer_class = None
+        else:
+            self.queryset = StoreItem.objects.all()
+            self.serializer_class = StoreItemSerializer
 
     def get_queryset(self):
         """Filter and search store items"""
+        if not STOREITEMS_AVAILABLE:
+            return []
+
         queryset = StoreItem.objects.all()
 
         # Search functionality
@@ -336,11 +356,21 @@ class MerchantStoreItemViewSet(viewsets.ModelViewSet):
     """
     Merchant-specific store items with custom pricing
     """
-    serializer_class = MerchantStoreItemSerializer
     permission_classes = [IsAuthenticated]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not STOREITEMS_AVAILABLE:
+            self.queryset = []
+            self.serializer_class = None
+        else:
+            self.serializer_class = MerchantStoreItemSerializer
 
     def get_queryset(self):
         """Get merchant's store items"""
+        if not STOREITEMS_AVAILABLE:
+            return []
+
         return MerchantStoreItem.objects.filter(
             merchant_id=self.request.user.id
         ).select_related('store_item')
