@@ -195,6 +195,11 @@ export default function MainNavigator() {
       <Stack.Screen name="Reports" component={ReportsScreen} />
       <Stack.Screen name="Employees" component={EmployeesScreen} />
       <Stack.Screen name="Inventory" component={InventoryScreen} />
+      <Stack.Screen
+        name="StoreCatalog"
+        component={require('../screens/business/StoreCatalogScreen').default}
+        options={{ title: 'Product Catalog' }}
+      />
       <Stack.Screen name="Expenses" component={ExpensesScreen} />
       <Stack.Screen name="Invoices" component={InvoicesScreen} />
       <Stack.Screen name="Banking" component={BankingScreen} />

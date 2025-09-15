@@ -21,8 +21,8 @@ import ViewShot from 'react-native-view-shot';
 import Share from 'react-native-share';
 import inventoryApi from '../../services/inventoryApi';
 
-export default function InventoryScreen() {
-  const navigation = useNavigation();
+export default function InventoryScreen({ navigation: navProp }) {
+  const navigation = navProp || useNavigation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -577,19 +577,29 @@ export default function InventoryScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchBar}>
-        <Icon name="search" size={20} color="#666" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name, SKU, or barcode..."
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Icon name="close-circle" size={20} color="#666" />
-          </TouchableOpacity>
-        )}
+      <View style={styles.searchSection}>
+        <View style={styles.searchBar}>
+          <Icon name="search" size={20} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name, SKU, or barcode..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Icon name="close-circle" size={20} color="#666" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.catalogButton}
+          onPress={() => navigation.navigate('StoreCatalog')}
+        >
+          <Icon name="grid-outline" size={20} color="#fff" />
+          <Text style={styles.catalogButtonText}>Browse Catalog</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.statsBar}>
@@ -669,17 +679,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
+  searchSection: {
+    padding: 16,
+    gap: 12,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
-    margin: 20,
-    marginBottom: 10,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+  },
+  catalogButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  catalogButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   searchInput: {
     flex: 1,
