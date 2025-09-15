@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { unifiedInventoryService } from '@/services/unifiedInventoryService';
 import { logger } from '@/utils/logger';
+import BarcodeScanner from './BarcodeScanner';
 import {
   PhotoCamera,
   DeleteIcon,
@@ -9,7 +10,8 @@ import {
   LocalOfferIcon,
   StorageIcon,
   DetailsIcon,
-  CloseIcon
+  CloseIcon,
+  QrCodeScannerIcon
 } from '@/app/components/icons';
 
 /**
@@ -25,6 +27,7 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
   const [locations, setLocations] = useState([]);
   const [error, setError] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
   const fileInputRef = useRef(null);
   
   // Form field values
@@ -210,6 +213,34 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
   // Handle tab change
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
+  };
+
+  // Handle barcode scan result
+  const handleBarcodeScanned = (productData) => {
+    console.log('DEBUG: ProductForm - Barcode scanned, product data:', productData);
+
+    // Update form with scanned product details
+    setFormData(prev => ({
+      ...prev,
+      barcode: productData.barcode || prev.barcode,
+      name: productData.name || prev.name,
+      description: productData.description || prev.description,
+      category: productData.category || prev.category,
+      // Keep existing pricing as merchant needs to set their own
+      price: prev.price,
+      cost_price: prev.cost_price,
+    }));
+
+    // If there's a suggested price, show it as a hint but don't auto-fill
+    if (productData.suggested_price) {
+      console.log(`Suggested price: $${productData.suggested_price}`);
+    }
+
+    // Close scanner
+    setShowScanner(false);
+
+    // Switch to basic info tab to show the populated fields
+    setActiveTab(0);
   };
   
   // Validate form
@@ -759,15 +790,30 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
                   <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Barcode
                   </label>
-                  <input
-                    type="text"
-                    name="barcode"
-                    id="barcode"
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                    value={formData.barcode}
-                    onChange={handleChange}
-                    disabled={loading}
-                  />
+                  <div className="mt-1 flex rounded-md shadow-sm">
+                    <input
+                      type="text"
+                      name="barcode"
+                      id="barcode"
+                      className="flex-1 block w-full rounded-none rounded-l-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                      value={formData.barcode}
+                      onChange={handleChange}
+                      disabled={loading}
+                      placeholder="Enter or scan barcode"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowScanner(true)}
+                      disabled={loading}
+                      className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <QrCodeScannerIcon className="h-4 w-4" />
+                      <span className="ml-1">Scan</span>
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Scan a product barcode to auto-fill product details
+                  </p>
                 </div>
                 
                 <div>
@@ -859,6 +905,14 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
           </div>
         </div>
       </div>
+
+      {/* Barcode Scanner Modal */}
+      {showScanner && (
+        <BarcodeScanner
+          onScanComplete={handleBarcodeScanned}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 };
