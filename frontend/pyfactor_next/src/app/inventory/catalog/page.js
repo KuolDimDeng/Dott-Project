@@ -183,8 +183,23 @@ export default function ProductCatalogPage() {
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 overflow-hidden"
                 >
+                  {/* Product Image */}
+                  {(product.thumbnail_url || product.image_url) && (
+                    <div className="aspect-w-1 aspect-h-1 w-full bg-gray-200 dark:bg-gray-700">
+                      <img
+                        src={product.thumbnail_url || product.image_url}
+                        alt={product.name}
+                        className="w-full h-48 object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div className="p-4">
                     {/* Product Info */}
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">

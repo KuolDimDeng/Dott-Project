@@ -33,7 +33,9 @@ class StoreItem(models.Model):
 
     # Product details
     description = models.TextField(blank=True, null=True)
-    image_url = models.URLField(blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True, help_text="Image URL from Cloudinary or external source")
+    image_public_id = models.CharField(max_length=255, blank=True, help_text="Cloudinary public ID")
+    thumbnail_url = models.URLField(blank=True, help_text="Thumbnail image URL from Cloudinary")
     unit = models.CharField(
         max_length=50,
         blank=True,

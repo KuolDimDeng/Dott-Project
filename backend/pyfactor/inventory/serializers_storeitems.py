@@ -23,9 +23,9 @@ if STOREITEMS_AVAILABLE:
             model = StoreItem
             fields = [
                 'id', 'barcode', 'name', 'brand', 'category', 'subcategory',
-                'description', 'image_url', 'unit', 'size', 'region_code',
-                'verified', 'verification_count', 'verification_status',
-                'created_at', 'updated_at'
+                'description', 'image_url', 'image_public_id', 'thumbnail_url',
+                'unit', 'size', 'region_code', 'verified', 'verification_count',
+                'verification_status', 'created_at', 'updated_at'
             ]
             read_only_fields = ['id', 'verified', 'verification_count', 'created_at', 'updated_at']
 
