@@ -8,10 +8,12 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 # Import will be activated after models are integrated
-# from inventory.models_storeitems import StoreItem
-
-# Temporary - prevent import error during build
-StoreItem = None
+try:
+    from inventory.models_storeitems import StoreItem
+    STOREITEMS_AVAILABLE = True
+except ImportError:
+    StoreItem = None
+    STOREITEMS_AVAILABLE = False
 
 
 class Command(BaseCommand):
@@ -40,7 +42,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Check if StoreItem model is available
-        if StoreItem is None:
+        if not STOREITEMS_AVAILABLE:
             self.stdout.write(
                 self.style.WARNING(
                     'StoreItem models not yet integrated. Please run migrations first:\n'
