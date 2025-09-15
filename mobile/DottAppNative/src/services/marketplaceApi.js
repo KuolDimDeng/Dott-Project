@@ -336,6 +336,39 @@ export const marketplaceApi = {
       };
     }
   },
+
+  // Get current business's marketplace listing
+  getMyListing: async () => {
+    try {
+      const response = await api.get('/marketplace/business/my_listing/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching business listing:', error);
+      throw error;
+    }
+  },
+
+  // Update current business's marketplace listing
+  updateMyListing: async (data) => {
+    try {
+      const response = await api.post('/marketplace/business/my_listing/', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating business listing:', error);
+      throw error;
+    }
+  },
+
+  // Sync business info from UserProfile to BusinessListing
+  syncBusinessInfo: async () => {
+    try {
+      const response = await api.post('/marketplace/business/sync_business_info/');
+      return response.data;
+    } catch (error) {
+      console.error('Error syncing business info:', error);
+      throw error;
+    }
+  },
 };
 
 export default marketplaceApi;

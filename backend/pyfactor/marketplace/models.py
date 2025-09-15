@@ -191,40 +191,119 @@ class BusinessListing(models.Model):
                     return main_cat
         return 'more'  # Default to 'more' category
     
+    def save(self, *args, **kwargs):
+        """Override save to auto-populate contact fields from UserProfile if empty"""
+        # Auto-populate contact info from UserProfile if not set
+        if self.business and not any([self.phone, self.business_email, self.address, self.website]):
+            try:
+                from users.models import UserProfile
+                profile = UserProfile.objects.filter(user=self.business).first()
+                if profile:
+                    # Sync phone
+                    if not self.phone and profile.phone_number:
+                        self.phone = profile.phone_number
+
+                    # Sync email
+                    if not self.business_email:
+                        self.business_email = self.business.email
+
+                    # Sync address
+                    if not self.address:
+                        # Build address from UserProfile components
+                        address_parts = []
+                        if profile.street:
+                            address_parts.append(profile.street)
+                        if profile.city:
+                            address_parts.append(profile.city)
+                        if profile.state:
+                            address_parts.append(profile.state)
+                        if profile.country:
+                            address_parts.append(str(profile.country.name))
+                        if address_parts:
+                            self.address = ', '.join(address_parts)
+
+                    # Sync website
+                    if not self.website and hasattr(profile, 'website') and profile.website:
+                        self.website = profile.website
+
+                    # Sync postal code
+                    if not self.postal_code and profile.postcode:
+                        self.postal_code = profile.postcode
+
+                    # Sync state
+                    if not self.state and profile.state:
+                        self.state = profile.state
+
+                    # Sync social media
+                    if not self.social_media or self.social_media == {}:
+                        social = {}
+                        if hasattr(profile, 'facebook') and profile.facebook:
+                            social['facebook'] = profile.facebook
+                        if hasattr(profile, 'instagram') and profile.instagram:
+                            social['instagram'] = profile.instagram
+                        if hasattr(profile, 'twitter') and profile.twitter:
+                            social['twitter'] = profile.twitter
+                        if hasattr(profile, 'linkedin') and profile.linkedin:
+                            social['linkedin'] = profile.linkedin
+                        if social:
+                            self.social_media = social
+
+                    # Sync business hours if empty
+                    if not self.business_hours or self.business_hours == {}:
+                        if hasattr(profile, 'operating_hours') and profile.operating_hours:
+                            self.business_hours = profile.operating_hours
+                        else:
+                            # Set default business hours
+                            self.business_hours = {
+                                'monday': {'open': '09:00', 'close': '17:00'},
+                                'tuesday': {'open': '09:00', 'close': '17:00'},
+                                'wednesday': {'open': '09:00', 'close': '17:00'},
+                                'thursday': {'open': '09:00', 'close': '17:00'},
+                                'friday': {'open': '09:00', 'close': '17:00'},
+                                'saturday': {'open': '09:00', 'close': '14:00'},
+                                'sunday': {'isClosed': True}
+                            }
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error syncing UserProfile data to BusinessListing: {e}")
+
+        super().save(*args, **kwargs)
+
     def can_deliver_to(self, consumer_country, consumer_city, consumer_coords=None):
         """Check if business can deliver to consumer location"""
-        
+
         # Digital services can deliver anywhere
         if self.is_digital_only or self.delivery_scope == 'digital':
             return True
-        
+
         # International delivery
         if self.delivery_scope == 'international':
             # Check if specific countries are set
             if self.ships_to_countries:
                 return consumer_country in self.ships_to_countries
             return True  # Ships worldwide
-        
+
         # National delivery (same country only)
         if self.delivery_scope == 'national':
             return self.country == consumer_country
-        
+
         # Local delivery
         if self.delivery_scope == 'local':
             # Must be same city
             if self.city != consumer_city:
                 return False
-            
+
             # If we have coordinates, check distance
             if consumer_coords and self.latitude and self.longitude:
                 from geopy.distance import geodesic
                 business_coords = (self.latitude, self.longitude)
                 distance_km = geodesic(business_coords, consumer_coords).kilometers
                 return distance_km <= self.delivery_radius_km
-            
+
             # Same city without coords - assume deliverable
             return True
-        
+
         return False
 
 

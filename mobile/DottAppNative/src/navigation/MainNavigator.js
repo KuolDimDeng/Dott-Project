@@ -58,6 +58,7 @@ import MarketplaceProfileEditor from '../screens/business/MarketplaceProfileEdit
 import ReceiptScreen from '../screens/business/ReceiptScreen';
 import TransactionDetailScreen from '../screens/business/TransactionDetailScreen';
 import PasscodeVerificationScreen from '../screens/business/PasscodeVerificationScreen';
+import EditBusinessInfoScreen from '../screens/EditBusinessInfoScreen';
 
 // Import Dual QR Payment screens
 import DualQRScreen from '../screens/DualQRScreen';
@@ -227,6 +228,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Tables" component={TablesScreen} />
       <Stack.Screen name="Delivery" component={DeliveryScreen} />
       <Stack.Screen name="MarketplaceSettings" component={MarketplaceProfileEditor} />
+      <Stack.Screen name="EditBusinessInfo" component={EditBusinessInfoScreen} />
       {/* Dual QR Payment screens - Phase 1 */}
       <Stack.Screen name="DualQR" component={DualQRScreen} />
       <Stack.Screen name="BusinessQR" component={BusinessQRScreen} />

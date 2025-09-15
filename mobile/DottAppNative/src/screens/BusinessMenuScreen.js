@@ -268,6 +268,7 @@ export default function BusinessMenuScreen() {
     { icon: 'bar-chart-outline', title: 'Reports', color: '#0891b2', screen: 'Reports' },
     { icon: 'list-outline', title: 'Menu', color: '#10b981', screen: 'MenuManagement' },
     { icon: 'bicycle-outline', title: 'Courier', color: '#f59e0b', screen: 'CourierDashboard' },
+    { icon: 'information-circle-outline', title: 'Business Info', color: '#3b82f6', screen: 'EditBusinessInfo' },
   ];
 
   // Business type feature configuration

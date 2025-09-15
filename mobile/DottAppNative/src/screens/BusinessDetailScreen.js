@@ -630,15 +630,78 @@ export default function BusinessDetailScreen() {
   );
 
   const renderInfo = () => {
+    // Build fallback address from city and country
+    const buildAddress = () => {
+      if (business?.address) return business.address;
+      if (business?.city || business?.country) {
+        const parts = [];
+        if (business.city) parts.push(business.city);
+        if (business.country) {
+          // Convert country code to name
+          const countryNames = {
+            'SS': 'South Sudan',
+            'KE': 'Kenya',
+            'UG': 'Uganda',
+            'TZ': 'Tanzania',
+            'NG': 'Nigeria',
+            'ET': 'Ethiopia',
+            'RW': 'Rwanda',
+            'GH': 'Ghana',
+            'ZA': 'South Africa',
+            'EG': 'Egypt'
+          };
+          parts.push(countryNames[business.country] || business.country);
+        }
+        return parts.join(', ');
+      }
+      return 'No address available';
+    };
+
+    // Get phone or use business email as fallback contact
+    const getContactPhone = () => {
+      if (business?.phone) return business.phone;
+      return 'Contact via email';
+    };
+
+    // Get email - use business_email as primary
+    const getContactEmail = () => {
+      return business?.business_email || business?.email || null;
+    };
+
+    // Build default business hours if empty
+    const getBusinessHours = () => {
+      if (business?.business_hours && Object.keys(business.business_hours).length > 0) {
+        return business.business_hours;
+      }
+      // Return default hours
+      return {
+        monday: { open: '09:00', close: '17:00' },
+        tuesday: { open: '09:00', close: '17:00' },
+        wednesday: { open: '09:00', close: '17:00' },
+        thursday: { open: '09:00', close: '17:00' },
+        friday: { open: '09:00', close: '17:00' },
+        saturday: { open: '09:00', close: '14:00' },
+        sunday: { isClosed: true }
+      };
+    };
+
     // Debug log when rendering Info tab
-    console.log('🔍 RENDERING INFO TAB:', {
+    console.log('🔍 RENDERING INFO TAB WITH FALLBACKS:', {
       business_exists: !!business,
       phone: business?.phone,
+      business_email: business?.business_email,
       email: business?.email,
       address: business?.address,
+      city: business?.city,
+      country: business?.country,
       business_hours: business?.business_hours,
       business_keys: business ? Object.keys(business) : [],
     });
+
+    const displayEmail = getContactEmail();
+    const displayAddress = buildAddress();
+    const displayPhone = getContactPhone();
+    const displayHours = getBusinessHours();
 
     return (
       <View style={styles.infoContainer}>
@@ -647,45 +710,143 @@ export default function BusinessDetailScreen() {
 
           <TouchableOpacity style={styles.infoItem} onPress={handleCall}>
             <Icon name="call-outline" size={20} color="#6b7280" />
-            <Text style={styles.infoText}>{business?.phone || 'No phone available'}</Text>
+            <Text style={styles.infoText}>{displayPhone}</Text>
           </TouchableOpacity>
 
-          {business?.email && (
-            <TouchableOpacity style={styles.infoItem}>
+          {displayEmail && (
+            <TouchableOpacity style={styles.infoItem} onPress={() => {
+              Linking.openURL(`mailto:${displayEmail}`);
+            }}>
               <Icon name="mail-outline" size={20} color="#6b7280" />
-              <Text style={styles.infoText}>{business?.email}</Text>
+              <Text style={styles.infoText}>{displayEmail}</Text>
             </TouchableOpacity>
           )}
 
           <View style={styles.infoItem}>
             <Icon name="location-outline" size={20} color="#6b7280" />
-            <Text style={styles.infoText}>{business?.address || 'No address available'}</Text>
+            <Text style={styles.infoText}>{displayAddress}</Text>
           </View>
+
+          {business?.website && (
+            <TouchableOpacity style={styles.infoItem} onPress={() => {
+              Linking.openURL(business.website.startsWith('http') ? business.website : `https://${business.website}`);
+            }}>
+              <Icon name="globe-outline" size={20} color="#6b7280" />
+              <Text style={styles.infoText}>{business.website}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
       <View style={styles.infoSection}>
         <Text style={styles.infoTitle}>Business Hours</Text>
-        {business?.business_hours && Object.entries(business.business_hours).map(([day, hours]) => {
+        {Object.entries(displayHours).map(([day, hours]) => {
           // Handle both string format and object format for hours
-          let displayHours = 'Closed';
+          let displayHoursText = 'Closed';
           if (typeof hours === 'string') {
-            displayHours = hours;
+            displayHoursText = hours;
           } else if (typeof hours === 'object' && hours !== null) {
             if (hours.isClosed) {
-              displayHours = 'Closed';
+              displayHoursText = 'Closed';
             } else if (hours.open && hours.close) {
-              displayHours = `${hours.open} - ${hours.close}`;
+              displayHoursText = `${hours.open} - ${hours.close}`;
             }
           }
-          
+
           return (
             <View key={day} style={styles.hoursItem}>
               <Text style={styles.dayText}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-              <Text style={styles.hoursText}>{displayHours}</Text>
+              <Text style={styles.hoursText}>{displayHoursText}</Text>
             </View>
           );
         })}
       </View>
+
+      {/* Delivery Options Section */}
+      {(business?.delivery_options || business?.payment_methods) && (
+        <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>Services & Payment</Text>
+
+          {/* Delivery Options */}
+          {business?.delivery_options && (
+            <View style={styles.servicesContainer}>
+              {business.delivery_options.delivery && (
+                <View style={styles.serviceItem}>
+                  <Icon name="bicycle-outline" size={20} color="#10b981" />
+                  <Text style={styles.serviceText}>Delivery Available</Text>
+                </View>
+              )}
+              {business.delivery_options.pickup && (
+                <View style={styles.serviceItem}>
+                  <Icon name="storefront-outline" size={20} color="#3b82f6" />
+                  <Text style={styles.serviceText}>Pickup Available</Text>
+                </View>
+              )}
+              {business.delivery_options.dinein && (
+                <View style={styles.serviceItem}>
+                  <Icon name="restaurant-outline" size={20} color="#f59e0b" />
+                  <Text style={styles.serviceText}>Dine-in Available</Text>
+                </View>
+              )}
+              {business.delivery_options.shipping && (
+                <View style={styles.serviceItem}>
+                  <Icon name="airplane-outline" size={20} color="#8b5cf6" />
+                  <Text style={styles.serviceText}>Shipping Available</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Payment Methods */}
+          {business?.payment_methods && business.payment_methods.length > 0 && (
+            <View style={styles.paymentMethodsContainer}>
+              <Text style={styles.paymentTitle}>Accepted Payments:</Text>
+              <View style={styles.paymentMethods}>
+                {business.payment_methods.map((method, index) => {
+                  let icon = 'cash-outline';
+                  let color = '#10b981';
+                  let displayName = method;
+
+                  switch(method.toLowerCase()) {
+                    case 'cash':
+                      icon = 'cash-outline';
+                      color = '#10b981';
+                      displayName = 'Cash';
+                      break;
+                    case 'card':
+                    case 'credit_card':
+                      icon = 'card-outline';
+                      color = '#3b82f6';
+                      displayName = 'Credit/Debit Card';
+                      break;
+                    case 'mobile_money':
+                    case 'm-pesa':
+                    case 'mpesa':
+                      icon = 'phone-portrait-outline';
+                      color = '#f59e0b';
+                      displayName = 'Mobile Money';
+                      break;
+                    case 'bank_transfer':
+                      icon = 'business-outline';
+                      color = '#8b5cf6';
+                      displayName = 'Bank Transfer';
+                      break;
+                    default:
+                      icon = 'wallet-outline';
+                      color = '#6b7280';
+                  }
+
+                  return (
+                    <View key={index} style={styles.paymentMethod}>
+                      <Icon name={icon} size={18} color={color} />
+                      <Text style={styles.paymentText}>{displayName}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
+      )}
     </View>
     );
   };
@@ -1625,5 +1786,59 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  // New styles for delivery options and payment methods
+  servicesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  serviceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  serviceText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#065f46',
+    fontWeight: '500',
+  },
+  paymentMethodsContainer: {
+    marginTop: 12,
+  },
+  paymentTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4b5563',
+    marginBottom: 8,
+  },
+  paymentMethods: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  paymentMethod: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  paymentText: {
+    marginLeft: 4,
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '500',
   },
 });

@@ -1190,6 +1190,109 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['post'])
+    def sync_business_info(self, request):
+        """
+        Manually sync business info from UserProfile to BusinessListing
+        This allows businesses to update their marketplace info if it's missing
+        """
+        try:
+            user = request.user
+
+            # Get the business listing
+            listing = BusinessListing.objects.filter(business=user).first()
+            if not listing:
+                return Response({
+                    'success': False,
+                    'message': 'No marketplace listing found for this business'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # Get user profile
+            from users.models import UserProfile
+            profile = UserProfile.objects.filter(user=user).first()
+            if not profile:
+                return Response({
+                    'success': False,
+                    'message': 'No user profile found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            updated_fields = []
+
+            # Sync phone
+            if not listing.phone and profile.phone_number:
+                listing.phone = profile.phone_number
+                updated_fields.append('phone')
+
+            # Sync email
+            if not listing.business_email:
+                listing.business_email = user.email
+                updated_fields.append('business_email')
+
+            # Sync address
+            if not listing.address:
+                address_parts = []
+                if profile.street:
+                    address_parts.append(profile.street)
+                if profile.city:
+                    address_parts.append(profile.city)
+                if profile.state:
+                    address_parts.append(profile.state)
+                if profile.country:
+                    address_parts.append(str(profile.country.name))
+                if address_parts:
+                    listing.address = ', '.join(address_parts)
+                    updated_fields.append('address')
+
+            # Sync postal code
+            if not listing.postal_code and profile.postcode:
+                listing.postal_code = profile.postcode
+                updated_fields.append('postal_code')
+
+            # Sync state
+            if not listing.state and profile.state:
+                listing.state = profile.state
+                updated_fields.append('state')
+
+            # Sync business hours if empty
+            if not listing.business_hours or listing.business_hours == {}:
+                listing.business_hours = {
+                    'monday': {'open': '09:00', 'close': '17:00'},
+                    'tuesday': {'open': '09:00', 'close': '17:00'},
+                    'wednesday': {'open': '09:00', 'close': '17:00'},
+                    'thursday': {'open': '09:00', 'close': '17:00'},
+                    'friday': {'open': '09:00', 'close': '17:00'},
+                    'saturday': {'open': '09:00', 'close': '14:00'},
+                    'sunday': {'isClosed': True}
+                }
+                updated_fields.append('business_hours')
+
+            # Save changes
+            if updated_fields:
+                listing.save(update_fields=updated_fields)
+
+                logger.info(f"[SYNC_INFO] Updated fields for {user.email}: {', '.join(updated_fields)}")
+
+                return Response({
+                    'success': True,
+                    'message': f'Successfully synced {len(updated_fields)} fields',
+                    'updated_fields': updated_fields,
+                    'listing': BusinessListingSerializer(listing).data
+                })
+            else:
+                return Response({
+                    'success': True,
+                    'message': 'All fields are already up to date',
+                    'listing': BusinessListingSerializer(listing).data
+                })
+
+        except Exception as e:
+            logger.error(f"[SYNC_INFO] Error syncing business info: {str(e)}")
+            return Response({
+                'success': False,
+                'message': 'Error syncing business information',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
     def publish_to_marketplace(self, request):
         """
         Publish business from Advertise feature to marketplace
