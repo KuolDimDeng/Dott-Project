@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import BulkImportModal from './BulkImportModal';
 import {
   SearchIcon,
   AddIcon,
   InventoryIcon2 as InventoryIcon,
   FilterListIcon,
-  LocalOfferIcon
+  LocalOfferIcon,
+  CheckIcon
 } from '@/app/components/icons';
 
 /**
@@ -24,6 +26,9 @@ export default function ProductCatalogPage() {
   const [hasMore, setHasMore] = useState(true);
   const [categories, setCategories] = useState([]);
   const [addingProducts, setAddingProducts] = useState(new Set());
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   // Fetch products from StoreItems
   const fetchProducts = async (reset = false) => {
@@ -94,6 +99,38 @@ export default function ProductCatalogPage() {
     fetchProducts();
   };
 
+  // Toggle product selection
+  const toggleProductSelection = (productId) => {
+    const newSelection = new Set(selectedProducts);
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId);
+    } else {
+      newSelection.add(productId);
+    }
+    setSelectedProducts(newSelection);
+  };
+
+  // Select all visible products
+  const selectAll = () => {
+    const allIds = new Set(products.map(p => p.id));
+    setSelectedProducts(allIds);
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedProducts(new Set());
+    setSelectionMode(false);
+  };
+
+  // Handle bulk import
+  const handleBulkImport = () => {
+    if (selectedProducts.size === 0) {
+      alert('Please select at least one product');
+      return;
+    }
+    setShowBulkImport(true);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -109,13 +146,51 @@ export default function ProductCatalogPage() {
                 Browse and add products from our global catalog
               </span>
             </div>
-            <button
-              onClick={() => router.push('/inventory')}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <InventoryIcon className="h-4 w-4 mr-2" />
-              My Inventory
-            </button>
+            <div className="flex gap-2">
+              {selectionMode ? (
+                <>
+                  <span className="inline-flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                    {selectedProducts.size} selected
+                  </span>
+                  <button
+                    onClick={selectAll}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={handleBulkImport}
+                    disabled={selectedProducts.size === 0}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Import Selected ({selectedProducts.size})
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setSelectionMode(true)}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
+                    <CheckIcon className="h-4 w-4 mr-2" />
+                    Select Multiple
+                  </button>
+                  <button
+                    onClick={() => router.push('/inventory')}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
+                    <InventoryIcon className="h-4 w-4 mr-2" />
+                    My Inventory
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -183,8 +258,24 @@ export default function ProductCatalogPage() {
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 overflow-hidden"
+                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200 overflow-hidden relative ${
+                    selectedProducts.has(product.id)
+                      ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-500 dark:ring-blue-400'
+                      : 'border-gray-200 dark:border-gray-700'
+                  }`}
                 >
+                  {/* Selection checkbox */}
+                  {selectionMode && (
+                    <div className="absolute top-2 left-2 z-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.has(product.id)}
+                        onChange={() => toggleProductSelection(product.id)}
+                        className="h-5 w-5 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+
                   {/* Product Image */}
                   {(product.thumbnail_url || product.image_url) && (
                     <div className="aspect-w-1 aspect-h-1 w-full bg-gray-200 dark:bg-gray-700">
@@ -282,6 +373,18 @@ export default function ProductCatalogPage() {
           </>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImport && (
+        <BulkImportModal
+          open={showBulkImport}
+          onClose={() => {
+            setShowBulkImport(false);
+            clearSelection();
+          }}
+          selectedProducts={products.filter(p => selectedProducts.has(p.id))}
+        />
+      )}
     </div>
   );
 }
