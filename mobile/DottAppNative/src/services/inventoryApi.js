@@ -5,10 +5,12 @@ const INVENTORY_API_URL = `${ENV.apiUrl}/inventory`;
 
 class InventoryAPI {
   async getHeaders() {
-    const token = await AsyncStorage.getItem('sessionToken');
+    // Try sessionId first (new standard), fallback to sessionToken
+    const sessionId = await AsyncStorage.getItem('sessionId');
+    const token = sessionId || await AsyncStorage.getItem('sessionToken');
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Session ${token}`,
+      'Authorization': token ? `Session ${token}` : '',
     };
   }
 
