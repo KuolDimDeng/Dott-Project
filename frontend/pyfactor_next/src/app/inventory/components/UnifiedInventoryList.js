@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
+import { useRouter } from 'next/navigation';
 import { unifiedInventoryService } from '@/services/unifiedInventoryService';
 import { logger } from '@/utils/logger';
 
@@ -27,7 +28,9 @@ const ProductFiltersPanel = lazy(() => import('./ProductFiltersPanel'));
  * Combines the best features of all inventory list implementations
  * with optimized performance and enhanced features
  */
-const UnifiedInventoryList = ({ initialCreateForm = false }) => {
+const UnifiedInventoryList = ({ initialCreateForm = false, prefillData = null }) => {
+  const router = useRouter();
+
   // State for products and loading
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -365,7 +368,15 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Add Product
               </button>
-              
+
+              <button
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => router.push('/inventory/catalog')}
+              >
+                <Squares2X2Icon className="h-4 w-4 mr-2" />
+                Browse Catalog
+              </button>
+
               <button
                 className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 onClick={handleRefresh}
@@ -796,6 +807,7 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
             onClose={handleCloseFormDialog}
             product={currentItem}
             isEdit={!!currentItem}
+            prefillData={prefillData}
           />
         )}
         

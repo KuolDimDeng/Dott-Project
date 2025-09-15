@@ -19,7 +19,7 @@ import {
  * Provides a comprehensive form for creating and editing products
  * with validation, image upload support, and multi-section organization
  */
-const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
+const ProductForm = ({ open, onClose, product = null, isEdit = false, prefillData = null }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [categories, setCategories] = useState([]);
@@ -55,7 +55,7 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
   
-  // Initialize form data when editing a product
+  // Initialize form data when editing a product or using prefill data
   useEffect(() => {
     if (isEdit && product) {
       const initialData = {
@@ -67,18 +67,27 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
         reorder_level: product.reorder_level || '',
         image_file: null
       };
-      
+
       setFormData(initialData);
-      
+
       // Set image preview if product has an image
       if (product.image_url) {
         setImagePreview(product.image_url);
       }
+    } else if (!isEdit && prefillData) {
+      // Handle prefill data from catalog
+      setFormData(prev => ({
+        ...prev,
+        barcode: prefillData.barcode || prev.barcode,
+        name: prefillData.name || prev.name,
+        description: prefillData.description || prev.description,
+        category: prefillData.category || prev.category,
+      }));
     }
-    
+
     // Load reference data
     fetchReferenceData();
-  }, [isEdit, product]);
+  }, [isEdit, product, prefillData]);
   
   // Fetch categories, suppliers, and locations
   const fetchReferenceData = async () => {
