@@ -28,7 +28,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'subcategory': 'Hair Cream',
         'size': '340g',
         'unit': 'jar',
-        'description': 'Coconut & Hibiscus Curl Enhancing Smoothie for thick, curly hair. Defines curls, reduces frizz and smooths hair for a soft, silky feel.'
+        'description': 'Coconut & Hibiscus Curl Enhancing Smoothie for thick, curly hair. Defines curls, reduces frizz and smooths hair for a soft, silky feel.',
+        'image_url': 'https://www.sheamoisture.com/dw/image/v2/BDCB_PRD/on/demandware.static/-/Sites-sundial-master-catalog/default/dw9b5bc0c6/images/large/764302290025.png'
     },
     {
         'barcode': '764302290346',
@@ -37,7 +38,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Hair Care',
         'subcategory': 'Shampoo',
         'size': '384ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://www.sheamoisture.com/dw/image/v2/BDCB_PRD/on/demandware.static/-/Sites-sundial-master-catalog/default/dwcd3e9a89/images/large/764302290346.png'
     },
     {
         'barcode': '764302290445',
@@ -46,7 +48,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Hair Care',
         'subcategory': 'Hair Treatment',
         'size': '340g',
-        'unit': 'jar'
+        'unit': 'jar',
+        'image_url': 'https://www.sheamoisture.com/dw/image/v2/BDCB_PRD/on/demandware.static/-/Sites-sundial-master-catalog/default/dw8c1e4c76/images/large/764302290445.png'
     },
 
     # === DARK AND LOVELY (Popular in Africa) ===
@@ -86,7 +89,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Hair Care',
         'subcategory': 'Leave-in Conditioner',
         'size': '453g',
-        'unit': 'jar'
+        'unit': 'jar',
+        'image_url': 'https://m.media-amazon.com/images/I/71XzV5qQRTL._SL1500_.jpg'
     },
     {
         'barcode': '817513010194',
@@ -95,7 +99,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Hair Care',
         'subcategory': 'Styling Cream',
         'size': '340g',
-        'unit': 'jar'
+        'unit': 'jar',
+        'image_url': 'https://m.media-amazon.com/images/I/714BRfF+QSL._SL1500_.jpg'
     },
     {
         'barcode': '817513010026',
@@ -104,7 +109,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Hair Care',
         'subcategory': 'Curl Activator',
         'size': '355ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/81qdKLJZsBL._SL1500_.jpg'
     },
 
     # === BLACK OPAL (African-American brand) ===
@@ -135,7 +141,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/71fKXCnFOML._SL1500_.jpg'
     },
     {
         'barcode': '010181040207',
@@ -144,7 +151,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Butter',
         'size': '200g',
-        'unit': 'jar'
+        'unit': 'jar',
+        'image_url': 'https://m.media-amazon.com/images/I/71TjsJr1FPL._SL1500_.jpg'
     },
     {
         'barcode': '010181041310',
@@ -153,7 +161,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/61vSEUGSCDL._SL1000_.jpg'
     },
 
     # === VASELINE (Popular in Africa) ===
@@ -164,7 +173,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/61XYJpFkalL._SL1000_.jpg'
     },
     {
         'barcode': '6001087006262',
@@ -173,7 +183,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/61hwBhOHnoL._SL1500_.jpg'
     },
     {
         'barcode': '8712561681391',
@@ -182,7 +193,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/51i-g5UfSQL.jpg'
     },
 
     # === NIVEA (German brand popular in Africa) ===
@@ -193,7 +205,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/51QOXGu5wRL.jpg'
     },
     {
         'barcode': '4005900136565',
@@ -202,7 +215,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Face Cream',
         'size': '50ml',
-        'unit': 'jar'
+        'unit': 'jar',
+        'image_url': 'https://m.media-amazon.com/images/I/61qz9jJhyZL._SL1500_.jpg'
     },
     {
         'barcode': '42241614',
@@ -211,7 +225,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Skin Care',
         'subcategory': 'Body Lotion',
         'size': '400ml',
-        'unit': 'bottle'
+        'unit': 'bottle',
+        'image_url': 'https://m.media-amazon.com/images/I/71vSHXCxKpL._SL1500_.jpg'
     },
 
     # === FAIR & WHITE (French brand for African skin) ===
