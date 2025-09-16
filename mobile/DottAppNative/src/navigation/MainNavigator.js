@@ -87,6 +87,9 @@ import WalletRequestsScreen from '../screens/wallet/WalletRequestsScreen';
 import BusinessWalletHomeScreen from '../screens/BusinessWalletHomeScreen';
 import WalletBankTransferScreen from '../screens/WalletBankTransferScreen';
 
+// Import Barcode Scanner screen
+import BarcodeScannerScreen from '../screens/business/BarcodeScannerScreen';
+
 // Import Courier screens
 import CourierDashboardScreen from '../screens/courier/CourierDashboardScreen';
 import RequestDeliveryScreen from '../screens/courier/RequestDeliveryScreen';
@@ -200,6 +203,7 @@ export default function MainNavigator() {
         component={require('../screens/business/StoreCatalogScreen').default}
         options={{ title: 'Product Catalog' }}
       />
+      <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
       <Stack.Screen name="Expenses" component={ExpensesScreen} />
       <Stack.Screen name="Invoices" component={InvoicesScreen} />
       <Stack.Screen name="Banking" component={BankingScreen} />

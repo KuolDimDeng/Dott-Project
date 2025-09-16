@@ -10,9 +10,11 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from .services.staging_service import StagingService
 # These imports will be activated after models are integrated
 try:
     from .models_storeitems import StoreItem, MerchantStoreItem, StoreItemVerification, StoreItemPriceHistory
+    from .models_staging import StoreItemStaging
     from .serializers_storeitems import (
         StoreItemSerializer,
         MerchantStoreItemSerializer,
@@ -27,6 +29,7 @@ except ImportError:
     MerchantStoreItem = None
     StoreItemVerification = None
     StoreItemPriceHistory = None
+    StoreItemStaging = None
 
 
 class StoreItemViewSet(viewsets.ModelViewSet):
@@ -140,17 +143,30 @@ class StoreItemViewSet(viewsets.ModelViewSet):
                     'message': 'Exact match not found, but here are similar products'
                 })
 
+        # Check if in staging
+        staging_status = None
+        if StoreItemStaging:
+            staging_item = StoreItemStaging.objects.filter(barcode=barcode).first()
+            if staging_item:
+                staging_status = {
+                    'status': staging_item.status,
+                    'submission_count': staging_item.submission_count,
+                    'confidence_score': float(staging_item.confidence_score),
+                    'message': f'Product is in review with {staging_item.submission_count} submissions'
+                }
+
         # Nothing found
         return Response({
             'found': False,
             'barcode': barcode,
-            'message': 'Product not found. You can add it to the catalog.'
+            'message': 'Product not found. You can add it to the catalog.',
+            'staging_status': staging_status
         })
 
     @action(methods=['post'], detail=False)
     def add_product(self, request):
         """
-        Add a new product to the global catalog
+        Submit a new product to staging for review before adding to global catalog
         POST /api/inventory/store-items/add_product/
         """
         barcode = request.data.get('barcode', '').strip()
@@ -162,41 +178,72 @@ class StoreItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if already exists
+        # Check if already exists in global catalog
         if StoreItem.objects.filter(barcode=barcode).exists():
-            return Response(
-                {'error': 'Product with this barcode already exists'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            store_item = StoreItem.objects.get(barcode=barcode)
 
-        # Create new store item
-        store_item = StoreItem.objects.create(
-            barcode=barcode,
-            name=name,
-            brand=request.data.get('brand', ''),
-            category=request.data.get('category', 'General'),
-            subcategory=request.data.get('subcategory', ''),
-            size=request.data.get('size', ''),
-            unit=request.data.get('unit', ''),
-            description=request.data.get('description', ''),
-            image_url=request.data.get('image_url', ''),
-            created_by_merchant_id=request.user.id
+            # Add merchant's pricing if provided
+            if request.data.get('sell_price'):
+                merchant_item, created = MerchantStoreItem.objects.update_or_create(
+                    merchant_id=request.user.id,
+                    store_item=store_item,
+                    defaults={
+                        'sell_price': Decimal(str(request.data.get('sell_price'))),
+                        'cost_price': Decimal(str(request.data.get('cost_price', 0))) if request.data.get('cost_price') else None,
+                        'stock_quantity': int(request.data.get('stock_quantity', 0)),
+                        'currency': request.data.get('currency', 'USD')
+                    }
+                )
+
+            return Response({
+                'message': 'Product already exists in catalog',
+                'store_item': StoreItemSerializer(store_item).data,
+                'already_exists': True
+            })
+
+        # Submit to staging for review
+        product_data = {
+            'barcode_number': barcode,
+            'name': name,
+            'brand': request.data.get('brand', ''),
+            'category': request.data.get('category', 'General'),
+            'size': request.data.get('size', ''),
+            'unit': request.data.get('unit', ''),
+            'description': request.data.get('description', ''),
+            'image_url': request.data.get('image_url', ''),
+            'price': request.data.get('sell_price'),
+            'tenant_id': getattr(request, 'tenant_id', None),
+        }
+
+        staging_result = StagingService.submit_to_staging(
+            product_data=product_data,
+            user=request.user,
+            request=request
         )
 
-        # Add merchant's pricing
-        if request.data.get('sell_price'):
-            MerchantStoreItem.objects.create(
-                merchant_id=request.user.id,
-                store_item=store_item,
-                sell_price=Decimal(str(request.data.get('sell_price'))),
-                cost_price=Decimal(str(request.data.get('cost_price', 0))) if request.data.get('cost_price') else None,
-                stock_quantity=int(request.data.get('stock_quantity', 0)),
-                currency=request.data.get('currency', 'USD')
-            )
+        if staging_result:
+            staging_item, created, contributed = staging_result
+
+            response_data = {
+                'message': 'Product submitted for review' if created else 'Product submission updated',
+                'barcode': barcode,
+                'submission_count': staging_item.submission_count,
+                'confidence_score': float(staging_item.confidence_score),
+                'status': staging_item.status,
+                'can_auto_approve': staging_item.can_auto_approve()[0],
+                'contributed_to_catalog': contributed
+            }
+
+            # If auto-approved, return the new store item
+            if staging_item.status in ['approved', 'auto_approved'] and staging_item.approved_store_item:
+                response_data['store_item'] = StoreItemSerializer(staging_item.approved_store_item).data
+                response_data['message'] = 'Product auto-approved and added to catalog'
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(
-            StoreItemSerializer(store_item).data,
-            status=status.HTTP_201_CREATED
+            {'error': 'Failed to submit product for review'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
     @action(methods=['post'], detail=True)

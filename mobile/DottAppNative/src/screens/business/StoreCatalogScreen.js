@@ -18,7 +18,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import inventoryApi from '../../services/inventoryApi';
 
-export default function StoreCatalogScreen() {
+export default function StoreCatalogScreen({ route }) {
   const navigation = useNavigation();
   const [storeItems, setStoreItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,22 @@ export default function StoreCatalogScreen() {
   useEffect(() => {
     loadStoreItems();
   }, []);
+
+  // Handle scanned product from barcode scanner
+  useEffect(() => {
+    if (route.params?.scannedProduct) {
+      const product = route.params.scannedProduct;
+      const barcode = route.params.barcode;
+
+      // Set search query to barcode to show the found product
+      setSearchQuery(barcode || product.barcode || '');
+
+      // If product was found, show import modal
+      if (product) {
+        handleImportItem(product);
+      }
+    }
+  }, [route.params?.scannedProduct]);
 
   const loadStoreItems = async () => {
     try {
@@ -67,11 +83,15 @@ export default function StoreCatalogScreen() {
   };
 
   const handleScanBarcode = () => {
-    Alert.alert(
-      'Barcode Scanner',
-      'Barcode scanning will be available soon. You can search for products by name or barcode number.',
-      [{ text: 'OK' }]
-    );
+    navigation.navigate('BarcodeScanner', {
+      source: 'catalog',
+      onScanSuccess: (product) => {
+        // Product found, handle it
+        if (product) {
+          handleImportItem(product);
+        }
+      }
+    });
   };
 
   const handleImportItem = (item) => {
@@ -152,7 +172,6 @@ export default function StoreCatalogScreen() {
         <Image
           source={{ uri: item.thumbnail_url || item.image_url }}
           style={styles.itemImage}
-          defaultSource={require('../../assets/placeholder.png')}
         />
       ) : (
         <View style={styles.itemImagePlaceholder}>

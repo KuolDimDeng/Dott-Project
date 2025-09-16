@@ -21,7 +21,7 @@ import ViewShot from 'react-native-view-shot';
 import Share from 'react-native-share';
 import inventoryApi from '../../services/inventoryApi';
 
-export default function InventoryScreen({ navigation: navProp }) {
+export default function InventoryScreen({ navigation: navProp, route }) {
   const navigation = navProp || useNavigation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +49,50 @@ export default function InventoryScreen({ navigation: navProp }) {
     loadProducts();
   }, []);
 
+  // Handle barcode from scanner when product not found
+  useEffect(() => {
+    if (route?.params?.newProductBarcode && route?.params?.openAddModal) {
+      // Product not found in global catalog, open add modal with barcode pre-filled
+      setFormData({
+        name: '',
+        sku: '',
+        barcode_number: route.params.newProductBarcode,
+        price: '',
+        cost: '',
+        quantity_on_hand: '',
+        reorder_point: '',
+        description: '',
+        is_active: true,
+        submit_to_global: false, // New field for global catalog submission
+      });
+      setSelectedProduct(null);
+      setEditMode(true);
+      setShowProductModal(true);
+
+      // Clear the params to avoid re-opening on navigation
+      navigation.setParams({ newProductBarcode: null, openAddModal: false });
+    }
+  }, [route?.params?.newProductBarcode, route?.params?.openAddModal]);
+
   const loadProducts = async () => {
     try {
       setLoading(true);
       const response = await inventoryApi.getProducts();
-      setProducts(response.products || response || []);
+      console.log('📦 Inventory response:', response);
+
+      // Handle different response formats
+      let productsData = [];
+      if (Array.isArray(response)) {
+        productsData = response;
+      } else if (response && Array.isArray(response.results)) {
+        productsData = response.results;
+      } else if (response && Array.isArray(response.products)) {
+        productsData = response.products;
+      } else if (response && Array.isArray(response.data)) {
+        productsData = response.data;
+      }
+
+      setProducts(productsData);
     } catch (error) {
       console.error('Error fetching products:', error);
       // Don't show alert on initial load to avoid disrupting user experience
@@ -76,11 +115,13 @@ export default function InventoryScreen({ navigation: navProp }) {
     setSearchQuery(text);
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.barcode_number?.includes(searchQuery)
-  );
+  const filteredProducts = Array.isArray(products)
+    ? products.filter(product =>
+        product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.barcode_number?.includes(searchQuery)
+      )
+    : [];
 
   const handleProductPress = (product) => {
     setSelectedProduct(product);
@@ -137,8 +178,19 @@ export default function InventoryScreen({ navigation: navProp }) {
         Alert.alert('Success', 'Product updated successfully');
       } else {
         // Create new product
-        await inventoryApi.createProduct(productData);
-        Alert.alert('Success', 'Product created successfully');
+        const result = await inventoryApi.createProduct(productData);
+
+        // If user opted to submit to global catalog, send a submission request
+        if (formData.submit_to_global && formData.barcode_number) {
+          // TODO: Implement API call to submit product for global catalog review
+          console.log('Product submitted for global catalog review:', productData);
+        }
+
+        const successMessage = formData.submit_to_global
+          ? 'Product created and submitted for global catalog review!'
+          : 'Product created successfully!';
+
+        Alert.alert('Success', successMessage);
       }
 
       setShowProductModal(false);
@@ -314,6 +366,16 @@ export default function InventoryScreen({ navigation: navProp }) {
           )}
         </View>
 
+        {/* Show info banner when adding product from barcode scanner */}
+        {editMode && !selectedProduct && formData.barcode_number && (
+          <View style={styles.infoBanner}>
+            <Icon name="information-circle" size={20} color="#2563eb" />
+            <Text style={styles.infoBannerText}>
+              Product not found in global catalog. Add it to your inventory below.
+            </Text>
+          </View>
+        )}
+
         <ScrollView style={styles.modalContent}>
           <View style={styles.formGroup}>
             <Text style={styles.label}>Product Name *</Text>
@@ -425,6 +487,28 @@ export default function InventoryScreen({ navigation: navProp }) {
               />
             </View>
           </View>
+
+          {/* Show global catalog submission option only for new products with barcodes */}
+          {editMode && !selectedProduct && formData.barcode_number && (
+            <View style={styles.formGroup}>
+              <View style={styles.globalCatalogSection}>
+                <View style={styles.switchRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Share with Community</Text>
+                    <Text style={styles.helperText}>
+                      Help other businesses by submitting this product to the global catalog (pending review)
+                    </Text>
+                  </View>
+                  <Switch
+                    value={formData.submit_to_global}
+                    onValueChange={(value) => setFormData({ ...formData, submit_to_global: value })}
+                    trackColor={{ false: '#d1d5db', true: '#86efac' }}
+                    thumbColor={formData.submit_to_global ? '#10b981' : '#9ca3af'}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
 
           {!editMode && selectedProduct && (
             <View style={styles.quickActions}>
@@ -1015,5 +1099,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4b5563',
     fontWeight: '500',
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  infoBannerText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#1e40af',
+    lineHeight: 20,
+  },
+  globalCatalogSection: {
+    backgroundColor: '#f0f9ff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+    lineHeight: 16,
   },
 });

@@ -25,6 +25,7 @@ from custom_auth.middleware import verify_auth_tables_in_schema
 import uuid
 import logging
 from pyfactor.analytics import track_event, track_business_metric
+from .services.staging_service import StagingService
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -209,7 +210,34 @@ class ProductViewSet(TenantIsolatedViewSet):
                 logger.info(f"[ProductViewSet] Product created successfully: {response.data.get('id', 'Unknown ID')}")
                 user_id = str(request.user.id) if request.user.is_authenticated else None
                 product_data = response.data
-                
+
+                # Submit to staging for global catalog if product has a barcode
+                barcode = request.data.get('barcode_number') or request.data.get('barcode')
+                if barcode:
+                    try:
+                        staging_result = StagingService.submit_to_staging(
+                            product_data={
+                                'barcode_number': barcode,
+                                'name': request.data.get('name', ''),
+                                'brand': request.data.get('brand', ''),
+                                'size': request.data.get('size', ''),
+                                'unit': request.data.get('unit', ''),
+                                'description': request.data.get('description', ''),
+                                'price': request.data.get('price'),
+                                'tenant_id': getattr(request, 'tenant_id', None),
+                                'image_url': request.data.get('image_url'),
+                            },
+                            user=request.user,
+                            request=request
+                        )
+
+                        if staging_result and staging_result[2]:  # contributed_to_catalog
+                            response.data['contributed_to_catalog'] = True
+                            logger.info(f"[ProductViewSet] Product submitted to staging catalog: {barcode}")
+                    except Exception as e:
+                        logger.error(f"[ProductViewSet] Failed to submit to staging: {str(e)}")
+                        # Don't fail the product creation if staging submission fails
+
                 # Track product creation event
                 track_event(
                     user_id=user_id,
@@ -221,10 +249,12 @@ class ProductViewSet(TenantIsolatedViewSet):
                         'has_sku': bool(product_data.get('sku')),
                         'for_sale': product_data.get('for_sale', True),
                         'for_rent': product_data.get('for_rent', False),
-                        'initial_stock': product_data.get('stock_quantity', 0)
+                        'initial_stock': product_data.get('stock_quantity', 0),
+                        'has_barcode': bool(barcode),
+                        'contributed_to_catalog': response.data.get('contributed_to_catalog', False)
                     }
                 )
-                
+
                 # Track inventory value metric
                 if product_data.get('price') and product_data.get('stock_quantity'):
                     inventory_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
