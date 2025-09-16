@@ -20,6 +20,8 @@ import AccountSettingsScreen from '../screens/AccountSettingsScreen';
 import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import CartScreen from '../screens/CartScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
+import CheckoutScreen from '../screens/CheckoutScreen';
+import OrderConfirmationScreen from '../screens/OrderConfirmationScreen';
 
 // Import business screens
 import ProgressivePOSScreen from '../screens/business/ProgressivePOSScreen';
@@ -177,6 +179,8 @@ export default function MainNavigator() {
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Common screens */}
       <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
       <Stack.Screen name="Purchases" component={PurchasesScreen} />
       <Stack.Screen name="BusinessDetail" component={BusinessDetailScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
