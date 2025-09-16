@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 from banking.models import PaymentSettlement, BankAccount
 from couriers.models import CourierProfile, CourierEarnings
-from payments.models import POSTransaction
+from payments.models import Transaction
 import stripe
 import logging
 

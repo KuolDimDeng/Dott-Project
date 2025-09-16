@@ -224,14 +224,26 @@ export const courierApi = {
     }
   },
 
-  // Verify delivery PIN
+  // Verify pickup PIN (releases restaurant payment)
+  verifyPickupPin: async (deliveryId, pin) => {
+    try {
+      const api = await createApiInstance();
+      const response = await api.post(`/couriers/deliveries/${deliveryId}/verify_pickup_pin/`, { pin });
+      return response.data;
+    } catch (error) {
+      console.error('Verify pickup PIN error:', error);
+      throw error;
+    }
+  },
+
+  // Verify delivery PIN (releases courier payment)
   verifyDeliveryPin: async (deliveryId, pin) => {
     try {
       const api = await createApiInstance();
-      const response = await api.post(`/couriers/deliveries/${deliveryId}/verify/`, { verification_code: pin });
+      const response = await api.post(`/couriers/deliveries/${deliveryId}/verify_delivery_pin/`, { pin });
       return response.data;
     } catch (error) {
-      console.error('Verify PIN error:', error);
+      console.error('Verify delivery PIN error:', error);
       throw error;
     }
   },
