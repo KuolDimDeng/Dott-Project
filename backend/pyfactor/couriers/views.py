@@ -19,6 +19,8 @@ from .serializers import (
     CourierNotificationSerializer, CourierDashboardSerializer, NearbyCourierSerializer
 )
 from marketplace.models import BusinessListing
+from marketplace.order_models import ConsumerOrder
+from marketplace.payment_service import MarketplacePaymentService
 from users.models import Business, UserProfile
 from django.contrib.auth import get_user_model
 
@@ -434,6 +436,124 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
             } if order.courier else None,
             'tracking_points': DeliveryTrackingSerializer(tracking_points, many=True).data
         })
+
+    @action(detail=True, methods=['post'])
+    def verify_pickup_pin(self, request, pk=None):
+        """Verify pickup PIN and release restaurant payment"""
+        try:
+            delivery_order = self.get_object()
+            courier = request.user.courier_profile
+            pin = request.data.get('pin')
+
+            if not pin:
+                return Response({
+                    'success': False,
+                    'message': 'PIN is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Verify courier is assigned to this order
+            if delivery_order.driver != courier:
+                return Response({
+                    'success': False,
+                    'message': 'You are not assigned to this delivery'
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            # Get the marketplace order
+            marketplace_order = ConsumerOrder.objects.filter(
+                id=delivery_order.order_id
+            ).first()
+
+            if not marketplace_order:
+                return Response({
+                    'success': False,
+                    'message': 'Order not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # Verify pickup PIN and release restaurant payment
+            success, message = marketplace_order.verify_pickup_pin(pin, courier)
+
+            if success:
+                # Update delivery order status
+                delivery_order.status = 'picked'
+                delivery_order.picked_at = timezone.now()
+                delivery_order.save()
+
+                return Response({
+                    'success': True,
+                    'message': message
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': message
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'])
+    def verify_delivery_pin(self, request, pk=None):
+        """Verify delivery PIN and release courier payment"""
+        try:
+            delivery_order = self.get_object()
+            courier = request.user.courier_profile
+            pin = request.data.get('pin')
+
+            if not pin:
+                return Response({
+                    'success': False,
+                    'message': 'PIN is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Verify courier is assigned to this order
+            if delivery_order.driver != courier:
+                return Response({
+                    'success': False,
+                    'message': 'You are not assigned to this delivery'
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            # Get the marketplace order
+            marketplace_order = ConsumerOrder.objects.filter(
+                id=delivery_order.order_id
+            ).first()
+
+            if not marketplace_order:
+                return Response({
+                    'success': False,
+                    'message': 'Order not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # Verify delivery PIN and release courier payment
+            success, message = marketplace_order.verify_delivery_pin(pin, courier)
+
+            if success:
+                # Update delivery order status
+                delivery_order.status = 'delivered'
+                delivery_order.delivered_at = timezone.now()
+                delivery_order.save()
+
+                # Get courier earnings amount for response
+                earnings_amount = marketplace_order.courier_earnings or marketplace_order.delivery_fee * Decimal('0.75')
+
+                return Response({
+                    'success': True,
+                    'message': message,
+                    'earnings': float(earnings_amount)
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': message
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CourierEarningsViewSet(viewsets.ReadOnlyModelViewSet):

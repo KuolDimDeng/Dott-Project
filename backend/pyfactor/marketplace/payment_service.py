@@ -1,208 +1,270 @@
 """
-Payment service for marketplace transactions
-Handles Stripe (worldwide) and M-Pesa (Kenya) payments
+Payment service for handling marketplace order payments and settlements.
 """
+from decimal import Decimal
+from django.db import transaction
+from django.utils import timezone
+from banking.models import PaymentSettlement, BankAccount
+from couriers.models import CourierProfile, CourierEarnings
+from payments.models import POSTransaction
 import stripe
 import logging
-from decimal import Decimal
-from django.conf import settings
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+
 class MarketplacePaymentService:
-    """
-    Handles payment processing for marketplace orders
-    """
-    
-    def __init__(self):
-        stripe.api_key = settings.STRIPE_SECRET_KEY
-        self.platform_fee_percentage = Decimal('0.025')  # 2.5% platform fee
-        
-    def create_payment_intent(self, order, payment_method='card'):
+    """Service for handling marketplace payment operations."""
+
+    @staticmethod
+    def calculate_platform_fees(amount):
         """
-        Create a Stripe payment intent for an order
+        Calculate platform fees for a transaction.
+
+        Returns:
+            dict: Contains stripe_fee, platform_fee, and net_amount
+        """
+        amount = Decimal(str(amount))
+
+        # Stripe fee: 2.9% + $0.30
+        stripe_fee = (amount * Decimal('0.029')) + Decimal('0.30')
+
+        # Platform fee: 2.5% for marketplace transactions
+        platform_fee = amount * Decimal('0.025')
+
+        # Net amount after fees
+        net_amount = amount - stripe_fee - platform_fee
+
+        return {
+            'stripe_fee': stripe_fee,
+            'platform_fee': platform_fee,
+            'net_amount': net_amount,
+            'total_fees': stripe_fee + platform_fee
+        }
+
+    @staticmethod
+    @transaction.atomic
+    def create_payment_settlement(order, payment_intent_id=None):
+        """
+        Create a payment settlement record for an order.
+
+        Args:
+            order: ConsumerOrder instance
+            payment_intent_id: Stripe payment intent ID
+
+        Returns:
+            PaymentSettlement instance
         """
         try:
-            # Calculate platform fee
-            platform_fee = int(order.total_amount * self.platform_fee_percentage * 100)
-            
-            # Create payment intent
-            intent = stripe.PaymentIntent.create(
-                amount=int(order.total_amount * 100),  # Convert to cents
-                currency='usd',
-                payment_method_types=[payment_method],
-                metadata={
-                    'order_id': str(order.id),
-                    'order_number': order.order_number,
-                    'consumer_id': str(order.consumer.id),
-                    'business_id': str(order.business.id),
-                },
-                # Platform fee configuration for Stripe Connect
-                application_fee_amount=platform_fee,
-                transfer_data={
-                    'destination': self.get_business_stripe_account(order.business),
-                } if self.get_business_stripe_account(order.business) else None
+            # Calculate fees
+            fees = MarketplacePaymentService.calculate_platform_fees(order.total)
+
+            # Get business's default bank account for payouts
+            bank_account = BankAccount.objects.filter(
+                user=order.business,
+                is_default_for_pos=True
+            ).first()
+
+            if not bank_account:
+                # Try to get any active bank account
+                bank_account = BankAccount.objects.filter(
+                    user=order.business,
+                    is_active=True
+                ).first()
+
+            # Create settlement record
+            settlement = PaymentSettlement.objects.create(
+                user=order.business,
+                stripe_payment_intent_id=payment_intent_id or f"order_{order.id}",
+                original_amount=order.total,
+                stripe_fee=fees['stripe_fee'],
+                platform_fee=fees['platform_fee'],
+                settlement_amount=fees['net_amount'],
+                bank_account=bank_account,
+                status='pending',
+                pos_transaction_id=str(order.id),
+                customer_email=order.consumer.email,
+                notes=f"Marketplace Order #{order.order_number}"
             )
-            
-            return {
-                'success': True,
-                'client_secret': intent.client_secret,
-                'payment_intent_id': intent.id,
-                'amount': order.total_amount,
-                'platform_fee': platform_fee / 100
-            }
-            
-        except stripe.error.StripeError as e:
-            logger.error(f"Stripe error creating payment intent: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+
+            logger.info(f"Created payment settlement {settlement.id} for order {order.order_number}")
+            return settlement
+
         except Exception as e:
-            logger.error(f"Error creating payment intent: {str(e)}")
-            return {
-                'success': False,
-                'error': 'Failed to create payment intent'
-            }
-    
-    def get_business_stripe_account(self, business_user):
+            logger.error(f"Error creating payment settlement: {str(e)}")
+            raise
+
+    @staticmethod
+    @transaction.atomic
+    def release_restaurant_payment(order, pickup_pin):
         """
-        Get the Stripe Connect account ID for a business
-        """
-        try:
-            from users.models import UserProfile
-            profile = UserProfile.objects.get(user=business_user)
-            return profile.stripe_connect_account_id
-        except:
-            return None
-    
-    def process_mpesa_payment(self, order, phone_number):
-        """
-        Process M-Pesa payment for Kenya
+        Release payment to restaurant after pickup PIN verification.
+
+        Args:
+            order: ConsumerOrder instance
+            pickup_pin: The PIN to verify
+
+        Returns:
+            tuple: (success: bool, message: str, settlement: PaymentSettlement or None)
         """
         try:
-            # TODO: Integrate with M-Pesa API
-            # For now, return a mock response
-            logger.info(f"Processing M-Pesa payment for order {order.order_number}")
-            
-            return {
-                'success': True,
-                'transaction_id': f'MPESA_{order.order_number}',
-                'message': 'Payment request sent to your phone',
-                'amount': order.total_amount,
-                'phone_number': phone_number
-            }
-            
-        except Exception as e:
-            logger.error(f"Error processing M-Pesa payment: {str(e)}")
-            return {
-                'success': False,
-                'error': 'Failed to process M-Pesa payment'
-            }
-    
-    def confirm_payment(self, order, payment_intent_id=None, transaction_id=None):
-        """
-        Confirm payment completion
-        """
-        try:
-            if payment_intent_id:
-                # Verify Stripe payment
-                intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-                if intent.status == 'succeeded':
-                    order.payment_status = 'paid'
-                    order.payment_intent_id = payment_intent_id
-                    order.paid_at = timezone.now()
-                    order.save()
-                    return {'success': True, 'status': 'paid'}
-                else:
-                    return {'success': False, 'status': intent.status}
-                    
-            elif transaction_id:
-                # Verify M-Pesa payment (would check with M-Pesa API)
-                order.payment_status = 'paid'
-                order.payment_transaction_id = transaction_id
-                order.paid_at = timezone.now()
-                order.save()
-                return {'success': True, 'status': 'paid'}
-                
-            return {'success': False, 'error': 'No payment identifier provided'}
-            
-        except Exception as e:
-            logger.error(f"Error confirming payment: {str(e)}")
-            return {'success': False, 'error': str(e)}
-    
-    def refund_payment(self, order, amount=None, reason=''):
-        """
-        Process a refund for an order
-        """
-        try:
-            if not amount:
-                amount = order.total_amount
-                
-            if order.payment_intent_id:
-                # Stripe refund
-                refund = stripe.Refund.create(
-                    payment_intent=order.payment_intent_id,
-                    amount=int(amount * 100),
-                    reason=reason or 'requested_by_customer',
-                    metadata={
-                        'order_id': str(order.id),
-                        'order_number': order.order_number
-                    }
+            # Verify the pickup PIN
+            if str(order.pickup_pin) != str(pickup_pin):
+                return False, "Invalid pickup PIN", None
+
+            # Check if payment already released
+            existing_settlement = PaymentSettlement.objects.filter(
+                pos_transaction_id=str(order.id),
+                user=order.business
+            ).first()
+
+            if existing_settlement and existing_settlement.status != 'pending':
+                return False, "Payment already processed", existing_settlement
+
+            # Create or update settlement
+            if not existing_settlement:
+                settlement = MarketplacePaymentService.create_payment_settlement(
+                    order,
+                    payment_intent_id=order.stripe_payment_intent_id if hasattr(order, 'stripe_payment_intent_id') else None
                 )
-                
-                if refund.status == 'succeeded':
-                    order.payment_status = 'refunded'
-                    order.refunded_at = timezone.now()
-                    order.refund_amount = amount
-                    order.save()
-                    
-                return {
-                    'success': refund.status == 'succeeded',
-                    'refund_id': refund.id,
-                    'amount': amount
-                }
-                
-            elif order.payment_transaction_id and 'MPESA' in order.payment_transaction_id:
-                # M-Pesa refund (would integrate with M-Pesa API)
-                order.payment_status = 'refunded'
-                order.refunded_at = timezone.now()
-                order.refund_amount = amount
-                order.save()
-                
-                return {
-                    'success': True,
-                    'transaction_id': f'REFUND_{order.payment_transaction_id}',
-                    'amount': amount
-                }
-                
-            return {'success': False, 'error': 'No payment found to refund'}
-            
-        except stripe.error.StripeError as e:
-            logger.error(f"Stripe error processing refund: {str(e)}")
-            return {'success': False, 'error': str(e)}
+            else:
+                settlement = existing_settlement
+
+            # Mark settlement for processing
+            settlement.status = 'processing'
+            settlement.processed_at = timezone.now()
+            settlement.save()
+
+            # Update order status
+            order.pickup_verified = True
+            order.pickup_verified_at = timezone.now()
+            order.order_status = 'picked'
+            order.restaurant_payment_status = 'processing'
+            order.save()
+
+            # TODO: Trigger actual bank transfer via Wise API
+            # This would be handled by a background job/cron that processes all 'processing' settlements
+
+            logger.info(f"Restaurant payment released for order {order.order_number}")
+            return True, "Payment released to restaurant", settlement
+
         except Exception as e:
-            logger.error(f"Error processing refund: {str(e)}")
-            return {'success': False, 'error': str(e)}
-    
-    def calculate_platform_fee(self, amount):
+            logger.error(f"Error releasing restaurant payment: {str(e)}")
+            return False, f"Error processing payment: {str(e)}", None
+
+    @staticmethod
+    @transaction.atomic
+    def release_courier_payment(order, delivery_pin, courier):
         """
-        Calculate the platform fee for a transaction
+        Release payment to courier after delivery PIN verification.
+
+        Args:
+            order: ConsumerOrder instance
+            delivery_pin: The PIN to verify
+            courier: CourierProfile instance
+
+        Returns:
+            tuple: (success: bool, message: str, earnings: CourierEarnings or None)
         """
-        return amount * self.platform_fee_percentage
-    
-    def get_payment_methods_for_country(self, country_code):
+        try:
+            # Verify the delivery PIN (consumer's PIN)
+            if str(order.consumer_delivery_pin) != str(delivery_pin):
+                return False, "Invalid delivery PIN", None
+
+            # Check if payment already released
+            existing_earnings = CourierEarnings.objects.filter(
+                order_id=str(order.id),
+                courier=courier
+            ).first()
+
+            if existing_earnings and existing_earnings.payout_status != 'pending':
+                return False, "Payment already processed", existing_earnings
+
+            # Calculate courier earnings (usually from order.delivery_fee)
+            courier_fee = order.delivery_fee
+            platform_commission = courier_fee * Decimal('0.25')  # 25% platform commission
+            courier_earnings = courier_fee - platform_commission
+
+            # Create or update courier earnings
+            if not existing_earnings:
+                earnings = CourierEarnings.objects.create(
+                    courier=courier,
+                    order_id=str(order.id),
+                    order_number=order.order_number,
+                    gross_amount=courier_fee,
+                    platform_commission=platform_commission,
+                    net_amount=courier_earnings,
+                    payout_method=courier.preferred_payout_method,
+                    payout_status='processing',
+                    currency='USD'
+                )
+            else:
+                earnings = existing_earnings
+                earnings.payout_status = 'processing'
+                earnings.save()
+
+            # Update order status
+            order.delivery_verified = True
+            order.delivery_verified_at = timezone.now()
+            order.order_status = 'delivered'
+            order.delivered_at = timezone.now()
+            order.courier_payment_status = 'processing'
+            order.save()
+
+            # Update courier's total earnings
+            courier.total_earnings += courier_earnings
+            courier.total_deliveries += 1
+            courier.save()
+
+            logger.info(f"Courier payment released for order {order.order_number}")
+            return True, f"Payment of ${courier_earnings:.2f} released to courier", earnings
+
+        except Exception as e:
+            logger.error(f"Error releasing courier payment: {str(e)}")
+            return False, f"Error processing payment: {str(e)}", None
+
+    @staticmethod
+    def process_order_payment(order, payment_method, payment_details=None):
         """
-        Get available payment methods for a country
+        Process initial payment from consumer for an order.
+
+        Args:
+            order: ConsumerOrder instance
+            payment_method: Payment method (card, mpesa, mtn_momo)
+            payment_details: Additional payment details
+
+        Returns:
+            dict: Payment processing result
         """
-        payment_methods = ['card']  # Card available everywhere
-        
-        if country_code == 'KE':
-            payment_methods.append('mpesa')
-        
-        # Add more payment methods as we expand
-        # if country_code == 'NG':
-        #     payment_methods.append('flutterwave')
-        
-        return payment_methods
+        try:
+            if payment_method == 'card':
+                # Process Stripe payment
+                # This would typically be handled by frontend with Stripe Elements
+                pass
+            elif payment_method == 'mpesa':
+                # Process M-Pesa payment
+                # Integration with M-Pesa API
+                pass
+            elif payment_method == 'mtn_momo':
+                # Process MTN Mobile Money
+                # Integration with MTN API
+                pass
+
+            # For now, mark as paid (in production, this would be after actual payment confirmation)
+            order.payment_status = 'paid'
+            order.payment_method = payment_method
+            order.paid_at = timezone.now()
+            order.save()
+
+            return {
+                'success': True,
+                'message': 'Payment processed successfully',
+                'order_id': order.id
+            }
+
+        except Exception as e:
+            logger.error(f"Error processing order payment: {str(e)}")
+            return {
+                'success': False,
+                'message': str(e)
+            }

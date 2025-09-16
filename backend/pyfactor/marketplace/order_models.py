@@ -53,12 +53,30 @@ class ConsumerOrder(models.Model):
     courier_accepted_at = models.DateTimeField(null=True, blank=True)
     courier_earnings = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
-    # Delivery PIN verification
-    delivery_pin = models.CharField(max_length=4, blank=True, 
-                                   help_text='4-digit PIN for delivery verification')
+    # PIN verification system
+    pickup_pin = models.CharField(max_length=4, blank=True,
+                                 help_text='4-digit PIN restaurant gives to courier at pickup')
+    consumer_delivery_pin = models.CharField(max_length=4, blank=True,
+                                            help_text='4-digit PIN consumer gives to courier at delivery')
+    delivery_pin = models.CharField(max_length=4, blank=True,
+                                   help_text='4-digit PIN for delivery verification (restaurant to courier)')
     pin_generated_at = models.DateTimeField(null=True, blank=True)
     pin_verified = models.BooleanField(default=False)
     pin_verified_at = models.DateTimeField(null=True, blank=True)
+
+    # Payment verification tracking
+    pickup_verified = models.BooleanField(default=False)
+    pickup_verified_at = models.DateTimeField(null=True, blank=True)
+    delivery_verified = models.BooleanField(default=False)
+    delivery_verified_at = models.DateTimeField(null=True, blank=True)
+
+    # Payment status for restaurant and courier
+    restaurant_payment_status = models.CharField(max_length=20, default='pending',
+                                                choices=[('pending', 'Pending'), ('processing', 'Processing'),
+                                                        ('completed', 'Completed'), ('failed', 'Failed')])
+    courier_payment_status = models.CharField(max_length=20, default='pending',
+                                             choices=[('pending', 'Pending'), ('processing', 'Processing'),
+                                                     ('completed', 'Completed'), ('failed', 'Failed')])
     
     # Order details
     items = models.JSONField(default=dict)  # Array of {product_id, name, quantity, price}
@@ -151,25 +169,73 @@ class ConsumerOrder(models.Model):
         self.cancellation_reason = reason
         self.save()
     
-    def generate_delivery_pin(self):
-        """Generate a 4-digit PIN for delivery verification"""
+    def generate_pins(self):
+        """Generate unique PINs for pickup and delivery verification"""
         import random
+        self.pickup_pin = str(random.randint(1000, 9999))
         self.delivery_pin = str(random.randint(1000, 9999))
+        self.consumer_delivery_pin = str(random.randint(1000, 9999))
         self.pin_generated_at = timezone.now()
         self.pin_verified = False
         self.save()
-        return self.delivery_pin
-    
-    def verify_delivery_pin(self, pin):
-        """Verify the delivery PIN"""
-        if self.delivery_pin == str(pin):
+        return {
+            'pickup_pin': self.pickup_pin,
+            'delivery_pin': self.delivery_pin,
+            'consumer_pin': self.consumer_delivery_pin
+        }
+
+    def generate_delivery_pin(self):
+        """Legacy method - now calls generate_pins"""
+        pins = self.generate_pins()
+        return pins['delivery_pin']
+
+    def verify_pickup_pin(self, pin, courier=None):
+        """
+        Verify the pickup PIN and trigger restaurant payment release.
+        Called when courier enters PIN at restaurant.
+        """
+        from .payment_service import MarketplacePaymentService
+
+        if str(self.pickup_pin) == str(pin):
+            self.pickup_verified = True
+            self.pickup_verified_at = timezone.now()
+            self.order_status = 'picked'
+            self.save()
+
+            # Release payment to restaurant
+            success, message, settlement = MarketplacePaymentService.release_restaurant_payment(self, pin)
+
+            return True, message
+        return False, "Invalid pickup PIN"
+
+    def verify_delivery_pin(self, pin, courier=None):
+        """
+        Verify the consumer's delivery PIN and trigger courier payment release.
+        Called when courier enters consumer's PIN at delivery.
+        """
+        from .payment_service import MarketplacePaymentService
+
+        # Check if this is the consumer's PIN (new system)
+        if str(self.consumer_delivery_pin) == str(pin) and courier:
+            self.delivery_verified = True
+            self.delivery_verified_at = timezone.now()
+            self.order_status = 'delivered'
+            self.delivered_at = timezone.now()
+            self.save()
+
+            # Release payment to courier
+            success, message, earnings = MarketplacePaymentService.release_courier_payment(self, pin, courier)
+
+            return True, message
+        # Legacy support for old delivery_pin field
+        elif str(self.delivery_pin) == str(pin):
             self.pin_verified = True
             self.pin_verified_at = timezone.now()
             self.order_status = 'delivered'
             self.delivered_at = timezone.now()
             self.save()
-            return True
-        return False
+            return True, "Order delivered successfully"
+        return False, "Invalid delivery PIN"
     
     def assign_courier(self, courier_profile, earnings):
         """Assign a courier to this order"""

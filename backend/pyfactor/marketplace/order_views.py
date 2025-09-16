@@ -6,6 +6,8 @@ from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from .order_models import ConsumerOrder, OrderReview
 from .models import BusinessListing, ConsumerProfile
+from .payment_service import MarketplacePaymentService
+from couriers.models import CourierProfile
 import logging
 
 logger = logging.getLogger(__name__)
@@ -65,15 +67,23 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             business_listing.total_orders += 1
             business_listing.save()
             
+            # Generate PINs for verification
+            pins = order.generate_pins()
+
             # Send notification to business (implement notification system)
             # notify_business_new_order(order)
-            
+
             return Response({
                 'success': True,
                 'order_id': str(order.id),
                 'order_number': order.order_number,
                 'total_amount': float(order.total_amount),
-                'estimated_delivery': '30-45 minutes'  # Should be calculated
+                'estimated_delivery': '30-45 minutes',  # Should be calculated
+                'passcodes': {
+                    'pickupCode': pins['pickup_pin'],
+                    'deliveryCode': pins['delivery_pin'],
+                    'consumerPin': pins['consumer_pin']
+                }
             }, status=status.HTTP_201_CREATED)
             
         except BusinessListing.DoesNotExist:
