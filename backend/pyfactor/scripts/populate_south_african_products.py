@@ -478,7 +478,7 @@ SOUTH_AFRICAN_PRODUCTS = [
         'barcode': '6001620000405',
         'name': 'Kellogg\'s Corn Flakes',
         'brand': 'Kellogg\'s',
-        ''category': 'Food & Beverages',
+        'category': 'Food & Beverages',
         'subcategory': 'Breakfast Cereals',
         'size': '500g',
         'unit': 'box',
