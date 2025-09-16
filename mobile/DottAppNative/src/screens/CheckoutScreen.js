@@ -316,12 +316,18 @@ export default function CheckoutScreen() {
         special_instructions: specialInstructions,
       };
 
-      // Create order
-      const orderResponse = await api.post('/orders/create/', orderData);
+      // Create order using correct marketplace endpoint
+      const orderResponse = await api.post('/marketplace/orders/', orderData);
       const orderId = orderResponse.data.id;
 
-      // Generate passcodes
-      const passcodes = await orderVerificationApi.generateOrderPasscodes(orderId);
+      // The backend now generates both pickup and delivery PINs
+      // Consumer receives delivery PIN to give to courier
+      const passcodes = {
+        pickupCode: orderResponse.data.pickup_pin,
+        deliveryCode: orderResponse.data.delivery_pin,
+        consumerPin: orderResponse.data.consumer_delivery_pin, // PIN consumer gives to courier
+        expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      };
 
       // Store passcodes locally
       await orderVerificationApi.storePasscodesLocally(

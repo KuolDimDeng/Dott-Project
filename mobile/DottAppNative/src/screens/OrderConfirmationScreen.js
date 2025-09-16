@@ -18,6 +18,10 @@ export default function OrderConfirmationScreen() {
   const route = useRoute();
   const { orderId, orderData, passcodes } = route.params || {};
 
+  // Generate consumer delivery PIN
+  const consumerDeliveryPin = passcodes?.consumerPin ||
+                               Math.floor(1000 + Math.random() * 9000).toString();
+
   const [orderSaved, setOrderSaved] = useState(false);
 
   useEffect(() => {
@@ -106,13 +110,26 @@ export default function OrderConfirmationScreen() {
           <View style={[styles.passcodeCard, styles.deliveryCard]}>
             <View style={styles.passcodeHeader}>
               <Icon name="bicycle" size={24} color="#10b981" />
-              <Text style={[styles.passcodeType, styles.deliveryType]}>DELIVERY CODE</Text>
+              <Text style={[styles.passcodeType, styles.deliveryType]}>RESTAURANT TO COURIER</Text>
             </View>
             <Text style={styles.passcodeValue}>{passcodes.deliveryCode}</Text>
             <Text style={styles.passcodeHint}>
-              Provide this code to the courier for delivery verification
+              Restaurant provides this code to courier at pickup
             </Text>
           </View>
+
+          {orderData.delivery_type === 'delivery' && (
+            <View style={[styles.passcodeCard, styles.consumerCard]}>
+              <View style={styles.passcodeHeader}>
+                <Icon name="person" size={24} color="#8b5cf6" />
+                <Text style={[styles.passcodeType, styles.consumerType]}>YOUR DELIVERY PIN</Text>
+              </View>
+              <Text style={styles.passcodeValue}>{consumerDeliveryPin}</Text>
+              <Text style={styles.passcodeHint}>
+                Provide this PIN to the courier when receiving your order
+              </Text>
+            </View>
+          )}
 
           <View style={styles.expiryWarning}>
             <Icon name="time" size={16} color="#ef4444" />
@@ -336,6 +353,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     borderColor: '#10b981',
   },
+  consumerCard: {
+    backgroundColor: '#faf5ff',
+    borderColor: '#8b5cf6',
+  },
   passcodeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -350,6 +371,9 @@ const styles = StyleSheet.create({
   },
   deliveryType: {
     color: '#10b981',
+  },
+  consumerType: {
+    color: '#8b5cf6',
   },
   passcodeValue: {
     fontSize: 32,

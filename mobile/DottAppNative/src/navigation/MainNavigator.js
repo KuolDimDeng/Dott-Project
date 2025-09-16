@@ -61,6 +61,7 @@ import ReceiptScreen from '../screens/business/ReceiptScreen';
 import TransactionDetailScreen from '../screens/business/TransactionDetailScreen';
 import PasscodeVerificationScreen from '../screens/business/PasscodeVerificationScreen';
 import EditBusinessInfoScreen from '../screens/EditBusinessInfoScreen';
+import RestaurantOrdersScreen from '../screens/business/RestaurantOrdersScreen';
 
 // Import Dual QR Payment screens
 import DualQRScreen from '../screens/DualQRScreen';
@@ -94,6 +95,9 @@ import BarcodeScannerScreen from '../screens/business/BarcodeScannerScreen';
 
 // Import Courier screens
 import CourierDashboardScreen from '../screens/courier/CourierDashboardScreen';
+import CourierDeliveriesScreen from '../screens/courier/CourierDeliveriesScreen';
+import PickupPinVerificationScreen from '../screens/courier/PickupPinVerificationScreen';
+import DeliveryPinVerificationScreen from '../screens/courier/DeliveryPinVerificationScreen';
 import RequestDeliveryScreen from '../screens/courier/RequestDeliveryScreen';
 import DeliveryTrackingScreen from '../screens/courier/DeliveryTrackingScreen';
 import OrderListScreen from '../screens/courier/OrderListScreen';
@@ -242,6 +246,7 @@ export default function MainNavigator() {
       <Stack.Screen name="Delivery" component={DeliveryScreen} />
       <Stack.Screen name="MarketplaceSettings" component={MarketplaceProfileEditor} />
       <Stack.Screen name="EditBusinessInfo" component={EditBusinessInfoScreen} />
+      <Stack.Screen name="RestaurantOrders" component={RestaurantOrdersScreen} />
       {/* Dual QR Payment screens - Phase 1 */}
       <Stack.Screen name="DualQR" component={DualQRScreen} />
       <Stack.Screen name="BusinessQR" component={BusinessQRScreen} />
@@ -265,6 +270,9 @@ export default function MainNavigator() {
       
       {/* Courier screens */}
       <Stack.Screen name="CourierDashboard" component={CourierDashboardScreen} />
+      <Stack.Screen name="CourierDeliveries" component={CourierDeliveriesScreen} />
+      <Stack.Screen name="PickupPinVerification" component={PickupPinVerificationScreen} />
+      <Stack.Screen name="DeliveryPinVerification" component={DeliveryPinVerificationScreen} />
       <Stack.Screen name="RequestDelivery" component={RequestDeliveryScreen} />
       <Stack.Screen name="DeliveryTracking" component={DeliveryTrackingScreen} />
       <Stack.Screen name="OrderList" component={OrderListScreen} />

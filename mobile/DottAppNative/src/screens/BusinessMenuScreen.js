@@ -70,13 +70,13 @@ const MenuCard = ({ item, iconBgColor, iconColor, onPress }) => {
           <Text style={menuCardStyles.subtitle}>{item.subtitle}</Text>
         )}
         {/* Badge for counts (Orders, etc) */}
-        {(item.badge || (item.screen === 'Orders' && item.unreadCount > 0)) && (
+        {(item.badge || (item.screen === 'RestaurantOrders' && item.unreadCount > 0)) && (
           <View style={[
             menuCardStyles.badge,
-            item.screen === 'Orders' && item.unreadCount > 0 && menuCardStyles.ordersBadge
+            item.screen === 'RestaurantOrders' && item.unreadCount > 0 && menuCardStyles.ordersBadge
           ]}>
             <Text style={menuCardStyles.badgeText}>
-              {item.screen === 'Orders' ? item.unreadCount : item.badge}
+              {item.screen === 'RestaurantOrders' ? item.unreadCount : item.badge}
             </Text>
           </View>
         )}
@@ -251,7 +251,7 @@ export default function BusinessMenuScreen() {
     { icon: 'compass-outline', title: 'Discover', color: '#0ea5e9', screen: 'Discover' },
     
     // Row 5 - Orders & HR
-    { icon: 'receipt-outline', title: 'Orders', color: '#84cc16', screen: 'Orders' },
+    { icon: 'receipt-outline', title: 'Orders', color: '#84cc16', screen: 'RestaurantOrders' },
     { icon: 'briefcase-outline', title: 'HR', color: '#f59e0b', screen: 'HR' },
     { icon: 'time-outline', title: 'Payroll', color: '#3b82f6', screen: 'Payroll' },
     
@@ -267,15 +267,15 @@ export default function BusinessMenuScreen() {
     { icon: 'people-outline', title: 'Staff', color: '#8b5cf6', screen: 'Employees' },
     { icon: 'bar-chart-outline', title: 'Reports', color: '#0891b2', screen: 'Reports' },
     { icon: 'list-outline', title: 'Menu', color: '#10b981', screen: 'MenuManagement' },
-    { icon: 'bicycle-outline', title: 'Courier', color: '#f59e0b', screen: 'CourierDashboard' },
+    { icon: 'bicycle-outline', title: 'Courier', color: '#f59e0b', screen: 'CourierDeliveries' },
     { icon: 'information-circle-outline', title: 'Business Info', color: '#3b82f6', screen: 'EditBusinessInfo' },
   ];
 
   // Business type feature configuration
   const BUSINESS_TYPE_FEATURES = {
     'RESTAURANT_CAFE': {
-      enabled: ['POS Terminal', 'Orders', 'Inventory', 'Staff', 'Menu', 'Advertise', 'Dashboard'],
-      highlighted: ['POS Terminal', 'Orders']
+      enabled: ['POS Terminal', 'RestaurantOrders', 'Inventory', 'Staff', 'Menu', 'Advertise', 'Dashboard'],
+      highlighted: ['POS Terminal', 'RestaurantOrders']
     },
     'RETAIL': {
       enabled: ['POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
@@ -356,11 +356,11 @@ export default function BusinessMenuScreen() {
         // Create mapping for items not in ALL_MENU_ITEMS
         const screenToColorMap = {
           'Dashboard': '#8b5cf6', // purple for dashboard
-          'Orders': '#10b981', // green for orders (updated to match theme)
+          'RestaurantOrders': '#10b981', // green for orders (updated to match theme)
           'POS': '#10b981', // green for POS
           'Tables': '#3b82f6', // blue for tables  
           'Delivery': '#f59e0b', // orange for delivery
-          'CourierDashboard': '#f59e0b', // orange for courier
+          'CourierDeliveries': '#f59e0b', // orange for courier
           'Inventory': '#ec4899', // pink for inventory
           'MenuManagement': '#8b5cf6', // purple for menu
           'Employees': '#8b5cf6', // purple for employees
@@ -452,7 +452,7 @@ export default function BusinessMenuScreen() {
   const getIconBackgroundColor = (screen) => {
     const colors = {
       'Dashboard': '#EDE9FE', // light purple
-      'Orders': '#D1FAE5', // light green for orders
+      'RestaurantOrders': '#D1FAE5', // light green for orders
       'POS': '#DBEAFE', // light blue
       'Tables': '#DBEAFE', // light blue
       'Delivery': '#FED7AA', // light orange
@@ -479,7 +479,7 @@ export default function BusinessMenuScreen() {
   const getIconColor = (screen) => {
     const colors = {
       'Dashboard': '#8B5CF6', // purple
-      'Orders': '#10B981', // green for orders
+      'RestaurantOrders': '#10B981', // green for orders
       'POS': '#2563EB', // blue
       'Tables': '#3B82F6', // blue
       'Delivery': '#F59E0B', // orange
@@ -684,7 +684,7 @@ export default function BusinessMenuScreen() {
             style={styles.newOrderBannerContent}
             onPress={() => {
               setShowNewOrderBanner(false);
-              navigation.navigate('Orders');
+              navigation.navigate('RestaurantOrders');
             }}
           >
             <View style={styles.newOrderBannerLeft}>
@@ -713,7 +713,7 @@ export default function BusinessMenuScreen() {
       {unreadOrderCount > 0 && isOpen && !showNewOrderBanner && (
         <TouchableOpacity 
           style={[styles.activeOrdersAlert, styles.unreadOrdersAlert]}
-          onPress={() => navigation.navigate('Orders')}
+          onPress={() => navigation.navigate('RestaurantOrders')}
         >
           <View style={styles.unreadBadge}>
             <Text style={styles.unreadBadgeText}>{unreadOrderCount}</Text>
@@ -739,7 +739,7 @@ export default function BusinessMenuScreen() {
             const iconColor = getIconColor(item.screen);
             
             // Add unread count to Orders item
-            const itemWithCount = item.screen === 'Orders' 
+            const itemWithCount = item.screen === 'RestaurantOrders' 
               ? { ...item, unreadCount: unreadOrderCount }
               : item;
             
@@ -752,7 +752,7 @@ export default function BusinessMenuScreen() {
                 onPress={() => {
                   console.log('📱 Menu item clicked:', item.title);
                   console.log('📱 Screen to navigate to:', item.screen);
-                  if (item.screen === 'Orders') {
+                  if (item.screen === 'RestaurantOrders') {
                     // Mark orders as viewed when navigating
                     orderNotificationService.markAllOrdersAsViewed();
                     setUnreadOrderCount(0);
