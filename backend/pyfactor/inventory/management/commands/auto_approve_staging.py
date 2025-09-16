@@ -42,6 +42,24 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Check if the staging tables exist
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = 'inventory_storeitemstaging'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
+
+        if not table_exists:
+            self.stdout.write(self.style.ERROR(
+                'Staging tables do not exist! Please run migrations first:\n'
+                'python manage.py migrate inventory'
+            ))
+            return 'Migration required'
+
         dry_run = options['dry_run']
         verbose = options['verbose']
         min_confidence = Decimal(str(options['min_confidence']))
