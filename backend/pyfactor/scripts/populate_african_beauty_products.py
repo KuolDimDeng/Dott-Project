@@ -27,7 +27,8 @@ AFRICAN_BEAUTY_PRODUCTS = [
         'category': 'Hair Care',
         'subcategory': 'Hair Cream',
         'size': '340g',
-        'unit': 'jar'
+        'unit': 'jar',
+        'description': 'Coconut & Hibiscus Curl Enhancing Smoothie for thick, curly hair. Defines curls, reduces frizz and smooths hair for a soft, silky feel.'
     },
     {
         'barcode': '764302290346',
@@ -535,10 +536,10 @@ def populate_african_beauty_products():
                     INSERT INTO store_items (
                         id, barcode, name, brand, category, subcategory,
                         size, unit, verified, verification_count,
-                        region_code, created_at, updated_at
+                        region_code, description, image_url, created_at, updated_at
                     ) VALUES (
                         gen_random_uuid(), %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     )
                 """, [
                     product['barcode'],
@@ -551,6 +552,8 @@ def populate_african_beauty_products():
                     True,  # Mark as verified since these are real products
                     5,     # Verification count
                     'AF',  # Africa region code
+                    product.get('description', f"{product['brand']} {product['name']} - Popular in African markets"),
+                    product.get('image_url', None),  # Will be null if not provided
                 ])
 
                 success_count += 1
