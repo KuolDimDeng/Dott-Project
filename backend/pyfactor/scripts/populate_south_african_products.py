@@ -758,23 +758,24 @@ def insert_product(cursor, product):
             print(f"⚠️  Skipping {product['name']} - Barcode {product['barcode']} already exists")
             return False
 
-        # Generate image_public_id from image_url
+        # Prepare all required fields
+        image_url = product.get('image_url', '')
+        thumbnail_url = image_url  # Use same URL for thumbnail
         image_public_id = f"south_african_products_{product['barcode']}"
 
-        # Insert the product
-        insert_query = """
-        INSERT INTO store_items (
-            barcode, name, brand, category, subcategory,
-            size, unit, image_url, image_public_id, thumbnail_url,
-            created_at, updated_at
-        ) VALUES (
-            %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s,
-            %s, %s
-        )
-        """
-
-        values = (
+        # Insert the product with all required fields (matching working scripts)
+        cursor.execute("""
+            INSERT INTO store_items (
+                id, barcode, name, brand, category, subcategory,
+                size, unit, verified, verification_count,
+                region_code, description, image_url, image_public_id,
+                thumbnail_url, created_at, updated_at
+            ) VALUES (
+                gen_random_uuid(), %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+        """, [
             product['barcode'],
             product['name'],
             product['brand'],
@@ -782,14 +783,15 @@ def insert_product(cursor, product):
             product['subcategory'],
             product['size'],
             product['unit'],
-            product['image_url'],
+            True,  # verified
+            1,     # verification_count
+            'ZA',  # region_code for South Africa
+            f"{product['brand']} {product['name']} - {product['size']}",  # description
+            image_url,
             image_public_id,
-            product['image_url'],  # Use same URL for thumbnail
-            datetime.now(),
-            datetime.now()
-        )
+            thumbnail_url
+        ])
 
-        cursor.execute(insert_query, values)
         print(f"✅ Added: {product['name']} ({product['brand']}) - {product['barcode']}")
         return True
 
@@ -814,17 +816,21 @@ def main():
     skipped_products = 0
     failed_inserts = 0
 
-    for product in SOUTH_AFRICAN_PRODUCTS:
-        result = insert_product(cursor, product)
-        if result is True:
-            successful_inserts += 1
-        elif result is False and check_barcode_exists(cursor, product['barcode']):
-            skipped_products += 1
-        else:
-            failed_inserts += 1
-
-    # Commit changes
     try:
+        for product in SOUTH_AFRICAN_PRODUCTS:
+            try:
+                result = insert_product(cursor, product)
+                if result is True:
+                    successful_inserts += 1
+                else:
+                    skipped_products += 1
+            except Exception as e:
+                print(f"❌ Error processing {product['name']}: {e}")
+                failed_inserts += 1
+                # Rollback current transaction and start a new one
+                conn.rollback()
+
+        # Commit all successful changes
         conn.commit()
         print("\n" + "=" * 60)
         print("🎉 SOUTH AFRICAN PRODUCTS IMPORT COMPLETED!")
@@ -835,7 +841,7 @@ def main():
         print("=" * 60)
 
     except Exception as e:
-        print(f"❌ Error committing changes: {e}")
+        print(f"❌ Error during import process: {e}")
         conn.rollback()
 
     finally:
