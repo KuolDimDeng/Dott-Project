@@ -39,6 +39,7 @@ export default function CheckoutScreen() {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
+    label: '',
     street: '',
     city: '',
     state: '',
@@ -260,6 +261,7 @@ export default function CheckoutScreen() {
 
     // Reset form
     setNewAddress({
+      label: '',
       street: '',
       city: '',
       state: '',
@@ -425,13 +427,51 @@ export default function CheckoutScreen() {
   const renderAddressSection = () => {
     if (deliveryMethod !== 'delivery') return null;
 
+    const handleMapPicker = () => {
+      navigation.navigate('AddressMapPicker', {
+        initialLocation: selectedAddress ? {
+          latitude: selectedAddress.latitude,
+          longitude: selectedAddress.longitude,
+        } : null,
+        onLocationSelected: (location) => {
+          // Create address from map selection
+          const mapAddress = {
+            id: Date.now().toString(),
+            street: location.address || 'Pin Location',
+            city: location.city || 'Juba',
+            state: location.state || 'CE',
+            postalCode: location.postalCode || '',
+            country: location.country || 'SS',
+            latitude: location.latitude,
+            longitude: location.longitude,
+            label: 'Map Pin',
+            isMapPin: true,
+          };
+
+          // Add to addresses and select it
+          const updatedAddresses = [...savedAddresses, mapAddress];
+          setSavedAddresses(updatedAddresses);
+          setSelectedAddress(mapAddress);
+
+          // Save to storage
+          AsyncStorage.setItem('savedAddresses', JSON.stringify(updatedAddresses));
+        }
+      });
+    };
+
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Delivery Address</Text>
-          <TouchableOpacity onPress={() => setShowAddressForm(true)}>
-            <Text style={styles.addNewText}>Add New</Text>
-          </TouchableOpacity>
+          <View style={styles.addressActions}>
+            <TouchableOpacity onPress={handleMapPicker} style={styles.mapButton}>
+              <Icon name="map-outline" size={16} color="#2563eb" />
+              <Text style={styles.mapButtonText}>Map Pin</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowAddressForm(true)}>
+              <Text style={styles.addNewText}>Add New</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {savedAddresses.length > 0 ? (
@@ -445,12 +485,17 @@ export default function CheckoutScreen() {
                 ]}
                 onPress={() => setSelectedAddress(address)}
               >
-                <Icon
-                  name={selectedAddress?.id === address.id ? "checkmark-circle" : "location-outline"}
-                  size={20}
-                  color={selectedAddress?.id === address.id ? "#2563eb" : "#6b7280"}
-                />
-                <Text style={styles.addressStreet}>{address.street}</Text>
+                <View style={styles.addressCardHeader}>
+                  <Icon
+                    name={address.isMapPin ? "pin" : selectedAddress?.id === address.id ? "checkmark-circle" : "location-outline"}
+                    size={20}
+                    color={selectedAddress?.id === address.id ? "#2563eb" : "#6b7280"}
+                  />
+                  {address.label && (
+                    <Text style={styles.addressLabel}>{address.label}</Text>
+                  )}
+                </View>
+                <Text style={styles.addressStreet}>{address.street || address.address}</Text>
                 <Text style={styles.addressCity}>
                   {address.city}, {address.state} {address.postalCode}
                 </Text>
@@ -458,17 +503,40 @@ export default function CheckoutScreen() {
             ))}
           </ScrollView>
         ) : (
-          <TouchableOpacity
-            style={styles.emptyAddressCard}
-            onPress={() => setShowAddressForm(true)}
-          >
-            <Icon name="add-circle-outline" size={24} color="#2563eb" />
-            <Text style={styles.addAddressText}>Add Delivery Address</Text>
-          </TouchableOpacity>
+          <View style={styles.emptyAddressContainer}>
+            <TouchableOpacity
+              style={styles.emptyAddressCard}
+              onPress={() => setShowAddressForm(true)}
+            >
+              <Icon name="add-circle-outline" size={24} color="#2563eb" />
+              <Text style={styles.addAddressText}>Add Delivery Address</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.emptyAddressCard}
+              onPress={handleMapPicker}
+            >
+              <Icon name="pin-outline" size={24} color="#2563eb" />
+              <Text style={styles.addAddressText}>Drop Pin on Map</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {showAddressForm && (
           <View style={styles.addressForm}>
+            <View style={styles.addressFormHeader}>
+              <Text style={styles.addressFormTitle}>Enter Address Manually</Text>
+              <TouchableOpacity onPress={handleMapPicker}>
+                <Text style={styles.useMapText}>Use Map Instead</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Label (e.g., Home, Office)"
+              value={newAddress.label}
+              onChangeText={(text) => setNewAddress({...newAddress, label: text})}
+            />
             <TextInput
               style={styles.input}
               placeholder="Street Address"
@@ -484,34 +552,44 @@ export default function CheckoutScreen() {
               />
               <TextInput
                 style={[styles.input, styles.halfInput]}
-                placeholder="State"
+                placeholder="State/Province"
                 value={newAddress.state}
                 onChangeText={(text) => setNewAddress({...newAddress, state: text})}
-                maxLength={2}
                 autoCapitalize="characters"
               />
             </View>
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, styles.halfInput]}
-                placeholder="ZIP Code"
+                placeholder="ZIP/Postal Code"
                 value={newAddress.postalCode}
                 onChangeText={(text) => setNewAddress({...newAddress, postalCode: text})}
                 keyboardType="numeric"
               />
               <TextInput
                 style={[styles.input, styles.halfInput]}
-                placeholder="Country"
+                placeholder="Country Code"
                 value={newAddress.country}
                 onChangeText={(text) => setNewAddress({...newAddress, country: text})}
                 maxLength={2}
                 autoCapitalize="characters"
               />
             </View>
+
             <View style={styles.row}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => setShowAddressForm(false)}
+                onPress={() => {
+                  setShowAddressForm(false);
+                  setNewAddress({
+                    street: '',
+                    city: '',
+                    state: '',
+                    postalCode: '',
+                    country: 'US',
+                    label: '',
+                  });
+                }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
@@ -524,80 +602,116 @@ export default function CheckoutScreen() {
             </View>
           </View>
         )}
+
+        {/* Link to manage addresses in Me section */}
+        <TouchableOpacity
+          style={styles.manageAddressesLink}
+          onPress={() => navigation.navigate('DeliveryAddresses')}
+        >
+          <Icon name="settings-outline" size={16} color="#6b7280" />
+          <Text style={styles.manageAddressesText}>
+            Manage all addresses in Me → Delivery Addresses
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   };
 
-  const renderPaymentMethod = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Payment Method</Text>
-      <View style={styles.paymentOptions}>
-        <TouchableOpacity
-          style={[
-            styles.paymentOption,
-            paymentMethod === 'card' && styles.selectedOption
-          ]}
-          onPress={() => setPaymentMethod('card')}
-        >
-          <Icon
-            name="card-outline"
-            size={24}
-            color={paymentMethod === 'card' ? '#2563eb' : '#6b7280'}
-          />
-          <Text style={[
-            styles.optionText,
-            paymentMethod === 'card' && styles.selectedOptionText
-          ]}>
-            Credit/Debit Card
+  const renderPaymentMethod = () => {
+    // Determine available payment methods based on user location
+    const userCountry = user?.country || businessDetails?.country || 'US';
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Payment Method</Text>
+        <View style={styles.paymentOptions}>
+          {/* Credit/Debit Card - Available everywhere */}
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              paymentMethod === 'card' && styles.selectedOption
+            ]}
+            onPress={() => setPaymentMethod('card')}
+          >
+            <Icon
+              name="card-outline"
+              size={24}
+              color={paymentMethod === 'card' ? '#2563eb' : '#6b7280'}
+            />
+            <Text style={[
+              styles.optionText,
+              paymentMethod === 'card' && styles.selectedOptionText
+            ]}>
+              Credit/Debit Card
+            </Text>
+            <Text style={styles.paymentSubtext}>Visa, Mastercard, Amex</Text>
+          </TouchableOpacity>
+
+          {/* MTN Mobile Money - Available in multiple African countries */}
+          {['UG', 'GH', 'ZA', 'NG', 'CM', 'CI', 'ZM', 'RW', 'SS'].includes(userCountry) && (
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                paymentMethod === 'mtn' && styles.selectedOption
+              ]}
+              onPress={() => setPaymentMethod('mtn')}
+            >
+              <View style={[styles.mtnIcon, paymentMethod === 'mtn' && styles.mtnIconSelected]}>
+                <Text style={[styles.mtnIconText, paymentMethod === 'mtn' && styles.mtnIconTextSelected]}>
+                  MTN
+                </Text>
+              </View>
+              <View style={styles.paymentTextContainer}>
+                <Text style={[
+                  styles.optionText,
+                  paymentMethod === 'mtn' && styles.selectedOptionText
+                ]}>
+                  MTN Mobile Money
+                </Text>
+                <Text style={styles.paymentSubtext}>Pay with MoMo</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* M-Pesa - Available in Kenya and other East African countries */}
+          {['KE', 'TZ', 'UG', 'RW', 'ET', 'CD', 'MZ', 'EG', 'LS', 'GH'].includes(userCountry) && (
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                paymentMethod === 'mpesa' && styles.selectedOption
+              ]}
+              onPress={() => setPaymentMethod('mpesa')}
+            >
+              <View style={[styles.mpesaIcon, paymentMethod === 'mpesa' && styles.mpesaIconSelected]}>
+                <Text style={[styles.mpesaIconText, paymentMethod === 'mpesa' && styles.mpesaIconTextSelected]}>
+                  M
+                </Text>
+              </View>
+              <View style={styles.paymentTextContainer}>
+                <Text style={[
+                  styles.optionText,
+                  paymentMethod === 'mpesa' && styles.selectedOptionText
+                ]}>
+                  M-Pesa
+                </Text>
+                <Text style={styles.paymentSubtext}>Safaricom Mobile Money</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Note: Cash on Delivery removed to prevent fraud */}
+        </View>
+
+        {/* Payment security note */}
+        <View style={styles.securityNote}>
+          <Icon name="shield-checkmark-outline" size={16} color="#059669" />
+          <Text style={styles.securityNoteText}>
+            All payments are secure and encrypted
           </Text>
-        </TouchableOpacity>
-
-        {user?.country === 'KE' && (
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              paymentMethod === 'mpesa' && styles.selectedOption
-            ]}
-            onPress={() => setPaymentMethod('mpesa')}
-          >
-            <Icon
-              name="phone-portrait-outline"
-              size={24}
-              color={paymentMethod === 'mpesa' ? '#2563eb' : '#6b7280'}
-            />
-            <Text style={[
-              styles.optionText,
-              paymentMethod === 'mpesa' && styles.selectedOptionText
-            ]}>
-              M-Pesa
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {deliveryMethod === 'delivery' && (
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              paymentMethod === 'cash' && styles.selectedOption
-            ]}
-            onPress={() => setPaymentMethod('cash')}
-          >
-            <Icon
-              name="cash-outline"
-              size={24}
-              color={paymentMethod === 'cash' ? '#2563eb' : '#6b7280'}
-            />
-            <Text style={[
-              styles.optionText,
-              paymentMethod === 'cash' && styles.selectedOptionText
-            ]}>
-              Cash on Delivery
-            </Text>
-          </TouchableOpacity>
-        )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderOrderSummary = () => (
     <View style={styles.section}>
@@ -889,6 +1003,25 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
+  addressActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#eff6ff',
+  },
+  mapButtonText: {
+    fontSize: 12,
+    color: '#2563eb',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
   addressCard: {
     width: 200,
     padding: 16,
@@ -902,18 +1035,33 @@ const styles = StyleSheet.create({
     borderColor: '#2563eb',
     backgroundColor: '#eff6ff',
   },
+  addressCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addressLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2563eb',
+    marginLeft: 6,
+  },
   addressStreet: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
-    marginTop: 8,
   },
   addressCity: {
     fontSize: 12,
     color: '#6b7280',
     marginTop: 4,
   },
+  emptyAddressContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   emptyAddressCard: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -928,6 +1076,34 @@ const styles = StyleSheet.create({
     color: '#2563eb',
     marginLeft: 8,
     fontWeight: '500',
+  },
+  addressFormHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addressFormTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  useMapText: {
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  manageAddressesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    padding: 8,
+  },
+  manageAddressesText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 6,
   },
   addressForm: {
     marginTop: 16,
@@ -986,6 +1162,67 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#e5e7eb',
+    marginBottom: 12,
+  },
+  paymentTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  paymentSubtext: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  mtnIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#ffcc00',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mtnIconSelected: {
+    backgroundColor: '#ffaa00',
+  },
+  mtnIconText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  mtnIconTextSelected: {
+    color: '#000000',
+  },
+  mpesaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#00a54f',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mpesaIconSelected: {
+    backgroundColor: '#008c3f',
+  },
+  mpesaIconText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  mpesaIconTextSelected: {
+    color: '#ffffff',
+  },
+  securityNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+  },
+  securityNoteText: {
+    fontSize: 12,
+    color: '#059669',
+    marginLeft: 6,
   },
   summaryCard: {
     backgroundColor: '#f9fafb',
