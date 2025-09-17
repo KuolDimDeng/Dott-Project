@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """
 Create test consumer account for Steve Majak with phone +211925550100
-Run this on Render shell: python scripts/create_test_consumer_steve.py
+Run this on Render shell: python manage.py shell < scripts/create_test_consumer_steve.py
 """
+
+import os
+import sys
+import django
+
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+django.setup()
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
