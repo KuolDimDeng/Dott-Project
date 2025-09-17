@@ -755,7 +755,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
     'PAGE_SIZE_QUERY_PARAM': 'limit',  # Allow client to specify page size
-    'MAX_PAGE_SIZE': 2000,  # Maximum allowed page size for catalog items
+    'MAX_PAGE_SIZE': 2500,  # Maximum allowed page size for catalog items
     'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',
 }
 
