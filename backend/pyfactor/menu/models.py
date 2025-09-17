@@ -89,6 +89,13 @@ class MenuItem(TenantAwareModel):
     is_featured = models.BooleanField(default=False)
     is_new = models.BooleanField(default=False)
     is_popular = models.BooleanField(default=False)
+
+    # Enhanced featuring fields
+    featured_until = models.DateTimeField(null=True, blank=True, help_text="When featured status expires")
+    featured_priority = models.IntegerField(default=0, help_text="Higher priority items show first")
+    featured_score = models.DecimalField(max_digits=5, decimal_places=2, default=0,
+                                        help_text="Calculated score for automatic featuring")
+    view_count = models.IntegerField(default=0, help_text="Number of times viewed in marketplace")
     
     # Preparation
     preparation_time = models.IntegerField(null=True, blank=True, help_text="Preparation time in minutes")

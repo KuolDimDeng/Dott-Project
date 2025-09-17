@@ -13,6 +13,8 @@ from .serializers import (
     BusinessSearchSerializer, LocationUpdateSerializer
 )
 from business.models import PlaceholderBusiness
+from inventory.models import Product
+from menu.models import MenuItem
 import logging
 import base64
 import os
@@ -175,6 +177,205 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                 'results': []
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    def featured_items(self, request):
+        """
+        Get featured products and menu items from businesses in the marketplace
+        """
+        try:
+            city = request.query_params.get('city', '').strip()
+            country = request.query_params.get('country', '').strip()
+            item_type = request.query_params.get('type', 'all')  # all, products, menu_items
+            limit = int(request.query_params.get('limit', 20))
+
+            if not city:
+                return Response({
+                    'success': False,
+                    'message': 'City is required',
+                    'results': []
+                })
+
+            # Get businesses in the city
+            business_listings = BusinessListing.objects.filter(
+                is_visible_in_marketplace=True,
+                city__iexact=city
+            )
+
+            if country:
+                business_listings = business_listings.filter(
+                    country__iexact=country[:2]
+                )
+
+            business_ids = business_listings.values_list('business_id', flat=True)
+
+            featured_items = {
+                'products': [],
+                'menu_items': []
+            }
+
+            # Get featured products
+            if item_type in ['all', 'products']:
+                try:
+                    from datetime import datetime
+                    now = timezone.now()
+
+                    products = Product.objects.filter(
+                        tenant_id__in=business_ids,
+                        is_featured=True,
+                        is_active=True,
+                        quantity__gt=0  # Only show items in stock
+                    ).filter(
+                        Q(featured_until__isnull=True) | Q(featured_until__gte=now)
+                    ).order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
+
+                    for product in products:
+                        # Get business info
+                        listing = BusinessListing.objects.filter(business_id=product.tenant_id).first()
+                        if listing:
+                            featured_items['products'].append({
+                                'id': str(product.id),
+                                'name': product.name,
+                                'description': product.description,
+                                'price': float(product.price) if product.price else 0,
+                                'image_url': None,  # We'll need to add image handling
+                                'business_id': str(product.tenant_id),
+                                'business_name': listing.business.business_name,
+                                'business_logo': listing.logo_url,
+                                'is_featured': product.is_featured,
+                                'featured_priority': product.featured_priority,
+                                'view_count': product.view_count,
+                                'order_count': product.order_count,
+                                'in_stock': product.quantity > 0,
+                                'quantity': product.quantity
+                            })
+                except Exception as e:
+                    logger.error(f"Error fetching featured products: {e}")
+
+            # Get featured menu items
+            if item_type in ['all', 'menu_items']:
+                try:
+                    from datetime import datetime
+                    now = timezone.now()
+
+                    menu_items = MenuItem.objects.filter(
+                        tenant_id__in=business_ids,
+                        is_featured=True,
+                        is_available=True
+                    ).filter(
+                        Q(featured_until__isnull=True) | Q(featured_until__gte=now)
+                    ).order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
+
+                    for item in menu_items:
+                        # Get business info
+                        listing = BusinessListing.objects.filter(business_id=item.tenant_id).first()
+                        if listing:
+                            featured_items['menu_items'].append({
+                                'id': str(item.id),
+                                'name': item.name,
+                                'description': item.description,
+                                'price': float(item.effective_price),
+                                'image_url': item.image_url or item.thumbnail_url,
+                                'business_id': str(item.tenant_id),
+                                'business_name': listing.business.business_name,
+                                'business_logo': listing.logo_url,
+                                'category': item.category.name if item.category else None,
+                                'is_featured': item.is_featured,
+                                'featured_priority': item.featured_priority,
+                                'view_count': item.view_count,
+                                'order_count': item.order_count,
+                                'is_available': item.is_available,
+                                'preparation_time': item.preparation_time,
+                                'is_vegetarian': item.is_vegetarian,
+                                'is_vegan': item.is_vegan,
+                                'is_spicy': item.is_spicy,
+                                'spice_level': item.spice_level
+                            })
+                except Exception as e:
+                    logger.error(f"Error fetching featured menu items: {e}")
+
+            # Combine and sort all items by priority and score
+            all_items = []
+            if item_type == 'all':
+                all_items = featured_items['products'] + featured_items['menu_items']
+                all_items.sort(key=lambda x: (x.get('featured_priority', 0), x.get('order_count', 0)), reverse=True)
+                all_items = all_items[:limit]
+            elif item_type == 'products':
+                all_items = featured_items['products']
+            else:
+                all_items = featured_items['menu_items']
+
+            return Response({
+                'success': True,
+                'results': all_items,
+                'count': len(all_items),
+                'city': city,
+                'country': country,
+                'type': item_type
+            })
+
+        except Exception as e:
+            logger.error(f"Error fetching featured items: {e}")
+            return Response({
+                'success': False,
+                'error': str(e),
+                'results': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
+    def track_view(self, request):
+        """
+        Track a product or menu item view for analytics
+        """
+        try:
+            item_id = request.data.get('item_id')
+            item_type = request.data.get('item_type')  # 'product' or 'menu_item'
+            business_id = request.data.get('business_id')
+            view_source = request.data.get('view_source', 'search')
+            search_query = request.data.get('search_query', '')
+
+            if not item_id or not item_type or not business_id:
+                return Response({
+                    'success': False,
+                    'message': 'item_id, item_type, and business_id are required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update view count for the item
+            if item_type == 'product':
+                Product.objects.filter(id=item_id).update(
+                    view_count=F('view_count') + 1
+                )
+            elif item_type == 'menu_item':
+                MenuItem.objects.filter(id=item_id).update(
+                    view_count=F('view_count') + 1
+                )
+
+            # Create analytics record if we have the analytics models
+            try:
+                from .analytics_models import ProductView
+
+                view_record = ProductView.objects.create(
+                    product_id=item_id if item_type == 'product' else None,
+                    menu_item_id=item_id if item_type == 'menu_item' else None,
+                    business_id=business_id,
+                    viewer=request.user if request.user.is_authenticated else None,
+                    viewer_ip=request.META.get('REMOTE_ADDR'),
+                    view_source=view_source,
+                    search_query=search_query
+                )
+            except Exception as e:
+                logger.warning(f"Could not create analytics record: {e}")
+
+            return Response({
+                'success': True,
+                'message': 'View tracked successfully'
+            })
+
+        except Exception as e:
+            logger.error(f"Error tracking view: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def category_hierarchy(self, request):
         """
         Alias for marketplace_category_hierarchy (for URL compatibility)

@@ -19,6 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import marketplaceApi from '../services/marketplaceApi';
 import businessDataApi from '../services/businessDataApi';
+import chatApi from '../services/chatApi';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -242,14 +243,51 @@ export default function BusinessDetailScreen() {
     }
   };
 
-  const handleChat = () => {
-    navigation.navigate('ChatConversation', {
-      conversationId: `business_${businessId}`,
-      recipientName: business?.business_name,
-      businessName: business?.business_name,
-      isGroup: false,
-      phoneNumber: business?.phone,
-    });
+  const handleChat = async () => {
+    if (!business?.id) {
+      Alert.alert('Error', 'Business information not available');
+      return;
+    }
+
+    try {
+      console.log('🚀 Starting chat with business:', business.business_name);
+      
+      // Check if conversation already exists
+      let conversation = await chatApi.getConversationByBusinessId(business.id);
+      
+      if (!conversation) {
+        // Start a new conversation
+        console.log('📝 Creating new conversation...');
+        const result = await chatApi.startConversation(
+          business.id, 
+          `Hi! I'm interested in your services.`
+        );
+        conversation = result.conversation;
+      }
+
+      console.log('✅ Conversation ready:', conversation?.id);
+
+      // Navigate to chat screen
+      navigation.navigate('ChatConversation', {
+        conversationId: conversation.id,
+        recipientName: business.business_name,
+        businessName: business.business_name,
+        businessId: business.id,
+        isGroup: false,
+        phoneNumber: business.phone,
+        conversation: conversation,
+      });
+    } catch (error) {
+      console.error('❌ Error starting chat:', error);
+      Alert.alert(
+        'Chat Unavailable', 
+        'Unable to start chat with this business. Please try again or call directly.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Call Instead', onPress: handleCall },
+        ]
+      );
+    }
   };
 
   const handleShare = async () => {

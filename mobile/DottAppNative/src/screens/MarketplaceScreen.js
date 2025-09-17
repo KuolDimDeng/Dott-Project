@@ -227,34 +227,47 @@ export default function MarketplaceScreen() {
   };
 
   const loadFeaturedProducts = async () => {
-    // Mock featured products - in production, this would be an API call
-    const mockProducts = [
-      {
-        id: '1',
-        name: 'Fresh Vegetables',
-        price: 'SSP 500',
-        image: null,
-        businessName: 'Green Market',
-        businessId: '1',
-      },
-      {
-        id: '2',
-        name: 'Electronics',
-        price: 'SSP 15,000',
-        image: null,
-        businessName: 'Tech Store',
-        businessId: '2',
-      },
-      {
-        id: '3',
-        name: 'Fashion Items',
-        price: 'SSP 3,000',
-        image: null,
-        businessName: 'Style Shop',
-        businessId: '3',
-      },
-    ];
-    setFeaturedProducts(mockProducts);
+    try {
+      const location = locationData || { city: 'Juba', country: 'South Sudan' };
+      const response = await marketplaceApi.getFeaturedItems({
+        city: location.city,
+        country: location.country,
+        type: 'all',  // Get both products and menu items
+        limit: 10,
+      });
+
+      if (response?.success && response?.results) {
+        // Transform the response to match the expected format
+        const transformedProducts = response.results.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: `SSP ${item.price ? item.price.toLocaleString() : 0}`,
+          image: item.image_url || null,
+          businessName: item.business_name,
+          businessId: item.business_id,
+          businessLogo: item.business_logo,
+          description: item.description,
+          isMenuRItem: item.category ? true : false,  // Menu items have categories
+          category: item.category,
+          preparationTime: item.preparation_time,
+          isVegetarian: item.is_vegetarian,
+          isVegan: item.is_vegan,
+          isSpicy: item.is_spicy,
+          spiceLevel: item.spice_level,
+          viewCount: item.view_count,
+          orderCount: item.order_count,
+        }));
+
+        setFeaturedProducts(transformedProducts);
+      } else {
+        // Fallback to empty array if no featured items
+        setFeaturedProducts([]);
+      }
+    } catch (error) {
+      console.error('Error loading featured products:', error);
+      // Fallback to empty array on error
+      setFeaturedProducts([]);
+    }
   };
 
   const loadCategories = async () => {
@@ -340,6 +353,31 @@ export default function MarketplaceScreen() {
     navigation.navigate('BusinessDetail', {
       businessId: product.businessId,
       businessName: product.businessName,
+    });
+  };
+
+  const handleFeaturedItemPress = async (item) => {
+    // Track the view
+    try {
+      await marketplaceApi.trackItemView({
+        itemId: item.id,
+        itemType: item.isMenuRItem ? 'menu_item' : 'product',
+        businessId: item.businessId,
+        viewSource: 'featured',
+      });
+    } catch (error) {
+      console.log('Failed to track view:', error);
+    }
+
+    // Navigate to the business detail page with item details
+    navigation.navigate('BusinessDetail', {
+      businessId: item.businessId,
+      businessName: item.businessName,
+      highlightedItem: {
+        id: item.id,
+        name: item.name,
+        type: item.isMenuRItem ? 'menu_item' : 'product',
+      },
     });
   };
 
@@ -500,7 +538,7 @@ export default function MarketplaceScreen() {
     return (
       <View style={styles.productsSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Featured Products</Text>
+          <Text style={styles.sectionTitle}>Featured Items</Text>
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
@@ -510,13 +548,20 @@ export default function MarketplaceScreen() {
             <TouchableOpacity
               key={product.id}
               style={styles.productCard}
-              onPress={() => handleProductPress(product)}
+              onPress={() => handleFeaturedItemPress(product)}
             >
               <View style={styles.productImage}>
                 {product.image ? (
                   <Image source={{ uri: product.image }} style={styles.productImageContent} />
+                ) : product.isMenuRItem ? (
+                  <Icon name="restaurant-outline" size={40} color="#9ca3af" />
                 ) : (
                   <Icon name="cube-outline" size={40} color="#9ca3af" />
+                )}
+                {product.orderCount > 10 && (
+                  <View style={styles.popularBadge}>
+                    <Text style={styles.popularText}>Popular</Text>
+                  </View>
                 )}
               </View>
               <Text style={styles.productName} numberOfLines={2}>
@@ -526,6 +571,17 @@ export default function MarketplaceScreen() {
               <Text style={styles.productBusiness} numberOfLines={1}>
                 {product.businessName}
               </Text>
+              {product.isMenuRItem && product.preparationTime && (
+                <View style={styles.prepTimeContainer}>
+                  <Icon name="time-outline" size={12} color="#6b7280" />
+                  <Text style={styles.prepTimeText}>{product.preparationTime} min</Text>
+                </View>
+              )}
+              {product.isVegan && (
+                <View style={styles.dietBadge}>
+                  <Text style={styles.dietText}>🌱 Vegan</Text>
+                </View>
+              )}
               <TouchableOpacity style={styles.addToCartButton}>
                 <Icon name="add-circle" size={24} color="#10b981" />
               </TouchableOpacity>

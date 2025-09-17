@@ -4,6 +4,7 @@
 const ENV_CONFIG = {
   production: {
     apiUrl: 'https://api.dottapps.com/api',
+    wsUrl: 'wss://api.dottapps.com',
     auth0Domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
     auth0ClientId: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG',
     auth0Audience: 'https://api.dottapps.com',
@@ -11,6 +12,7 @@ const ENV_CONFIG = {
   },
   staging: {
     apiUrl: 'https://dott-api-staging.onrender.com/api',
+    wsUrl: 'wss://dott-api-staging.onrender.com',
     auth0Domain: 'dev-cbyy63jovi6zrcos.us.auth0.com', 
     auth0ClientId: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG',
     auth0Audience: 'https://api-staging.dottapps.com',
@@ -18,6 +20,7 @@ const ENV_CONFIG = {
   },
   local: {
     apiUrl: 'http://localhost:8000/api',
+    wsUrl: 'ws://localhost:8000',
     auth0Domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
     auth0ClientId: 'vltTnrxcC2ZMjlFel04Xeo7PlufLMEiG', 
     auth0Audience: 'https://api.dottapps.com',

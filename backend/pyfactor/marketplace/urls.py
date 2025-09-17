@@ -24,6 +24,8 @@ urlpatterns = [
     path('consumer/', include([
         path('businesses/', ConsumerSearchViewSet.as_view({'get': 'list'}), name='consumer-businesses'),
         path('businesses/featured/', ConsumerSearchViewSet.as_view({'get': 'featured'}), name='consumer-featured'),
+        path('featured_items/', ConsumerSearchViewSet.as_view({'get': 'featured_items'}), name='consumer-featured-items'),
+        path('track_view/', ConsumerSearchViewSet.as_view({'post': 'track_view'}), name='consumer-track-view'),
         path('categories/', ConsumerSearchViewSet.as_view({'get': 'categories'}), name='consumer-categories'),
         path('category_hierarchy/', ConsumerSearchViewSet.as_view({'get': 'category_hierarchy'}), name='consumer-category-hierarchy'),
     ])),

@@ -10,9 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import EmojiSelector from 'react-native-emoji-selector';
+import chatApi from '../services/chatApi';
+import callApi from '../services/callApi';
 
 export default function ChatConversationScreen() {
   const navigation = useNavigation();
@@ -20,12 +24,20 @@ export default function ChatConversationScreen() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [websocket, setWebsocket] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
   
   // Get conversation data from route params
   const { conversationId, recipientName, businessName, isGroup, members, memberCount, phoneNumber, sharedProduct } = route.params || {};
 
   useEffect(() => {
+    if (conversationId) {
+      loadMessages();
+      setupWebSocket();
+    }
+
     // Handle shared product if present
     if (sharedProduct) {
       const productMessage = {
@@ -36,141 +48,259 @@ export default function ChatConversationScreen() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, productMessage]);
-    } else {
-      // Load mock messages for demo
-      setMessages([
-      {
-        id: '1',
-        text: 'Hello! How can I help you today?',
-        sender: 'other',
-        timestamp: new Date(Date.now() - 3600000),
-      },
-      {
-        id: '2',
-        text: 'Hi! I wanted to ask about your services',
-        sender: 'me',
-        timestamp: new Date(Date.now() - 3000000),
-      },
-      {
-        id: '3',
-        text: 'Sure! What would you like to know?',
-        sender: 'other',
-        timestamp: new Date(Date.now() - 2400000),
-      },
-    ]);
     }
-  }, [sharedProduct]);
 
-  const initiateVoiceCall = () => {
-    if (isGroup) {
-      Alert.alert('Group Call', 'Group calling is coming soon!');
-      return;
+    return () => {
+      if (websocket) {
+        websocket.close();
+      }
+    };
+  }, [conversationId, sharedProduct]);
+
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+      console.log('📨 Loading messages for conversation:', conversationId);
+      
+      const response = await chatApi.getMessages(conversationId);
+      const loadedMessages = response.results || [];
+      
+      // Transform backend messages to app format
+      const transformedMessages = loadedMessages.map(msg => ({
+        id: msg.id,
+        text: msg.text_content || msg.content,
+        sender: msg.sender_id === msg.conversation?.consumer_id ? 'me' : 'other',
+        timestamp: new Date(msg.created_at),
+        type: msg.message_type || 'text',
+        image_url: msg.image_url,
+        voice_url: msg.voice_url,
+        video_url: msg.video_url,
+      }));
+
+      setMessages(transformedMessages.reverse()); // Reverse to show latest at bottom
+      console.log('✅ Messages loaded:', transformedMessages.length);
+      
+      // Mark messages as read
+      await chatApi.markAsRead(conversationId);
+    } catch (error) {
+      console.error('❌ Error loading messages:', error);
+      Alert.alert('Error', 'Failed to load messages. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    
-    Alert.alert(
-      'Start Voice Call',
-      `Call ${recipientName || 'User'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Call',
-          onPress: async () => {
-            // Use the global initiateCall function from CallManager
-            if (global.initiateCall) {
-              const callStarted = await global.initiateCall(
-                conversationId || 'demo-conversation-id',
-                'voice',
-                {
-                  name: recipientName || 'Unknown User',
-                  businessName: businessName,
-                  phoneNumber: phoneNumber,
-                  image: null,
-                }
-              );
-              
-              if (!callStarted) {
-                Alert.alert('Call Failed', 'Unable to start the call. Please try again.');
-              }
-            } else {
-              Alert.alert('Error', 'Call service not available. Please restart the app.');
-            }
-          },
-        },
-      ]
-    );
   };
 
-  const initiateVideoCall = () => {
-    if (isGroup) {
-      Alert.alert('Group Video Call', 'Group video calling is coming soon!');
-      return;
-    }
+  const setupWebSocket = () => {
+    if (!conversationId) return;
+
+    console.log('🔌 Setting up WebSocket for conversation:', conversationId);
     
-    Alert.alert(
-      'Start Video Call',
-      `Video call ${recipientName || 'User'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Call',
-          onPress: async () => {
-            // Use the global initiateCall function from CallManager
-            if (global.initiateCall) {
-              const callStarted = await global.initiateCall(
-                conversationId || 'demo-conversation-id',
-                'video',
-                {
-                  name: recipientName || 'Unknown User',
-                  businessName: businessName,
-                  phoneNumber: phoneNumber,
-                  image: null,
-                }
-              );
-              
-              if (!callStarted) {
-                Alert.alert('Call Failed', 'Unable to start the video call. Please try again.');
-              }
-            } else {
-              Alert.alert('Error', 'Call service not available. Please restart the app.');
-            }
-          },
-        },
-      ]
+    const ws = chatApi.createWebSocketConnection(
+      conversationId,
+      (data) => {
+        console.log('📨 WebSocket message received:', data);
+        
+        if (data.type === 'message') {
+          const newMessage = {
+            id: data.message.id,
+            text: data.message.text_content || data.message.content,
+            sender: data.message.sender_id === data.message.conversation?.consumer_id ? 'me' : 'other',
+            timestamp: new Date(data.message.created_at),
+            type: data.message.message_type || 'text',
+            image_url: data.message.image_url,
+            voice_url: data.message.voice_url,
+            video_url: data.message.video_url,
+          };
+          
+          setMessages(prev => [...prev, newMessage]);
+        } else if (data.type === 'typing') {
+          setIsTyping(data.is_typing && data.user_id !== 'current_user_id'); // TODO: Get actual user ID
+        }
+      },
+      () => console.log('✅ WebSocket connected'),
+      () => console.log('🔌 WebSocket disconnected'),
+      (error) => console.error('❌ WebSocket error:', error)
     );
+
+    setWebsocket(ws);
   };
 
-  const sendMessage = () => {
-    if (message.trim()) {
-      const newMessage = {
-        id: Date.now().toString(),
-        text: message.trim(),
+  const sendMessage = async () => {
+    if (!message.trim() || !conversationId) return;
+
+    const messageText = message.trim();
+    setMessage('');
+
+    try {
+      console.log('📤 Sending message:', messageText);
+      
+      // Add message to local state immediately for better UX
+      const tempMessage = {
+        id: `temp_${Date.now()}`,
+        text: messageText,
         sender: 'me',
         timestamp: new Date(),
+        type: 'text',
+        sending: true,
       };
       
-      setMessages([...messages, newMessage]);
-      setMessage('');
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Send to backend
+      const result = await chatApi.sendMessage(conversationId, messageText);
+      
+      // Replace temp message with real message
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === tempMessage.id 
+            ? {
+                ...msg,
+                id: result.id,
+                sending: false,
+                timestamp: new Date(result.created_at),
+              }
+            : msg
+        )
+      );
+
+      console.log('✅ Message sent successfully');
       
       // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
       
-      // Simulate typing indicator
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        // Simulate response
-        const response = {
-          id: (Date.now() + 1).toString(),
-          text: 'Thanks for your message! I\'ll get back to you soon.',
-          sender: 'other',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, response]);
-      }, 2000);
+      // Remove failed message and show error
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      Alert.alert('Error', 'Failed to send message. Please try again.');
     }
   };
+
+  const initiateVoiceCall = async () => {
+    if (isGroup) {
+      Alert.alert('Group Call', 'Group calling is coming soon!');
+      return;
+    }
+
+    if (!conversationId) {
+      Alert.alert('Error', 'No active conversation for calling');
+      return;
+    }
+    
+    Alert.alert(
+      'Start Voice Call',
+      `Call ${recipientName || businessName || 'User'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call',
+          onPress: async () => {
+            try {
+              console.log('📞 Initiating voice call for conversation:', conversationId);
+              
+              // Use the real call API
+              const result = await callApi.initiateCall(conversationId, 'voice');
+              
+              console.log('✅ Call initiated:', result);
+              
+              // Navigate to call screen or show in-app call interface
+              if (result.session_id) {
+                // TODO: Navigate to call screen with session details
+                Alert.alert(
+                  'Call Initiated',
+                  'The call has been started. You should be connected shortly.',
+                  [{ text: 'OK' }]
+                );
+              }
+            } catch (error) {
+              console.error('❌ Error initiating call:', error);
+              
+              // Fallback to regular phone call
+              Alert.alert(
+                'Call Failed',
+                'Unable to start in-app call. Would you like to call their phone number instead?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Call Phone', 
+                    onPress: () => {
+                      if (phoneNumber) {
+                        const { Linking } = require('react-native');
+                        Linking.openURL(`tel:${phoneNumber}`);
+                      } else {
+                        Alert.alert('Error', 'No phone number available');
+                      }
+                    }
+                  },
+                ]
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const initiateVideoCall = async () => {
+    if (isGroup) {
+      Alert.alert('Group Video Call', 'Group video calling is coming soon!');
+      return;
+    }
+
+    if (!conversationId) {
+      Alert.alert('Error', 'No active conversation for calling');
+      return;
+    }
+    
+    Alert.alert(
+      'Start Video Call',
+      `Video call ${recipientName || businessName || 'User'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call',
+          onPress: async () => {
+            try {
+              console.log('📹 Initiating video call for conversation:', conversationId);
+              
+              // Use the real call API
+              const result = await callApi.initiateCall(conversationId, 'video');
+              
+              console.log('✅ Video call initiated:', result);
+              
+              // Navigate to call screen or show in-app video call interface
+              if (result.session_id) {
+                // TODO: Navigate to video call screen with session details
+                Alert.alert(
+                  'Video Call Initiated',
+                  'The video call has been started. You should be connected shortly.',
+                  [{ text: 'OK' }]
+                );
+              }
+            } catch (error) {
+              console.error('❌ Error initiating video call:', error);
+              
+              // Fallback to voice call or phone call
+              Alert.alert(
+                'Video Call Failed',
+                'Unable to start video call. Would you like to try a voice call instead?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Voice Call', 
+                    onPress: () => initiateVoiceCall()
+                  },
+                ]
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
 
   const renderMessage = ({ item }) => {
     const isMe = item.sender === 'me';
@@ -284,6 +414,17 @@ export default function ChatConversationScreen() {
           <Icon name="attach" size={24} color="#6b7280" />
         </TouchableOpacity>
         
+        <TouchableOpacity 
+          style={styles.emojiButton}
+          onPress={() => setShowEmojiPicker(!showEmojiPicker)}
+        >
+          <Icon 
+            name={showEmojiPicker ? "close-circle" : "happy-outline"} 
+            size={24} 
+            color="#6b7280" 
+          />
+        </TouchableOpacity>
+        
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
@@ -305,6 +446,44 @@ export default function ChatConversationScreen() {
           />
         </TouchableOpacity>
       </View>
+      
+      {/* Emoji Picker Modal */}
+      <Modal
+        visible={showEmojiPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEmojiPicker(false)}
+      >
+        <View style={styles.emojiModalContainer}>
+          <TouchableOpacity 
+            style={styles.emojiModalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowEmojiPicker(false)}
+          />
+          <View style={styles.emojiPickerContainer}>
+            <View style={styles.emojiPickerHeader}>
+              <Text style={styles.emojiPickerTitle}>Select Emoji</Text>
+              <TouchableOpacity onPress={() => setShowEmojiPicker(false)}>
+                <Icon name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            <EmojiSelector 
+              onEmojiSelected={(emoji) => {
+                setMessage((prev) => prev + emoji);
+                setShowEmojiPicker(false);
+              }}
+              showSearchBar={false}
+              showTabs={true}
+              showHistory={true}
+              showSectionTitles={true}
+              category={EmojiSelector.Categories.all}
+              columns={8}
+              placeholder="Search emoji..."
+              theme="#2563eb"
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -479,5 +658,38 @@ const styles = StyleSheet.create({
   },
   sendButtonActive: {
     transform: [{ scale: 1.1 }],
+  },
+  emojiButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  emojiModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  emojiModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  emojiPickerContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 0,
+  },
+  emojiPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  emojiPickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
   },
 });

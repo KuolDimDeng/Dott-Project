@@ -22,6 +22,8 @@ api.interceptors.request.use(
       '/marketplace/consumer/categories/',
       '/marketplace/consumer/category_hierarchy/',
       '/marketplace/consumer/businesses/featured/',
+      '/marketplace/consumer/featured_items/',
+      '/marketplace/consumer/track_view/',
       '/marketplace/business/',  // Add business detail endpoints as public
     ];
 
@@ -130,13 +132,13 @@ export const marketplaceApi = {
   // Get featured businesses for user's city - Using correct deployed endpoint
   getFeaturedBusinesses: async (location) => {
     try {
-      const params = typeof location === 'string' 
+      const params = typeof location === 'string'
         ? { city: location }  // Backward compatibility
-        : { 
+        : {
             city: location.city,
             country: location.country,
           };
-      
+
       const response = await api.get('/marketplace/consumer/businesses/featured/', {
         params,
       });
@@ -144,6 +146,42 @@ export const marketplaceApi = {
     } catch (error) {
       console.error('Error fetching featured businesses:', error);
       throw error;
+    }
+  },
+
+  // Get featured products and menu items
+  getFeaturedItems: async (params = {}) => {
+    try {
+      const response = await api.get('/marketplace/consumer/featured_items/', {
+        params: {
+          city: params.city,
+          country: params.country,
+          type: params.type || 'all',  // all, products, menu_items
+          limit: params.limit || 20,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching featured items:', error);
+      throw error;
+    }
+  },
+
+  // Track product/menu item view
+  trackItemView: async (itemData) => {
+    try {
+      const response = await api.post('/marketplace/consumer/track_view/', {
+        item_id: itemData.itemId,
+        item_type: itemData.itemType,  // 'product' or 'menu_item'
+        business_id: itemData.businessId,
+        view_source: itemData.viewSource || 'featured',
+        search_query: itemData.searchQuery || '',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error tracking item view:', error);
+      // Don't throw - tracking shouldn't break the app
+      return null;
     }
   },
 

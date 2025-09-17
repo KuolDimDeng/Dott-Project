@@ -314,7 +314,16 @@ class Product(AuditMixin, TenantAwareModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
-    
+
+    # Featuring fields for marketplace
+    is_featured = models.BooleanField(default=False, help_text="Show as featured product in marketplace")
+    featured_until = models.DateTimeField(null=True, blank=True, help_text="When featured status expires")
+    featured_priority = models.IntegerField(default=0, help_text="Higher priority items show first")
+    featured_score = models.DecimalField(max_digits=5, decimal_places=2, default=0,
+                                        help_text="Calculated score for automatic featuring")
+    view_count = models.IntegerField(default=0, help_text="Number of times viewed in marketplace")
+    order_count = models.IntegerField(default=0, help_text="Number of times ordered")
+
     # Add tenant-aware manager
     objects = TenantManager()
     # Add all_objects manager to access all products across tenants if needed
