@@ -312,7 +312,7 @@ export default function BusinessMenuScreen() {
     console.log('📱 Is Restaurant:', isRestaurant, 'Type:', businessType, 'Name:', businessData?.businessName);
     
     // Items to exclude for restaurant businesses (check both title and label)
-    const restaurantExcludedItems = ['Timesheet', 'Timesheets', 'Expenses', 'Invoices', 'Reports', 'Banking'];
+    const restaurantExcludedItems = ['Tables', 'Timesheet', 'Timesheets', 'Expenses', 'Invoices', 'Reports', 'Banking'];
     
     // First try to get menu items from BusinessContext (includes forced restaurant logic)
     const contextMenuItems = getContextMenuItems();
@@ -475,6 +475,19 @@ export default function BusinessMenuScreen() {
           color: '#6b7280',
           screen: screen
         };
+      }).filter(item => {
+        // Filter out unwanted items for restaurants
+        const businessType = businessData?.businessType;
+        const isRestaurant = businessType === 'RESTAURANT_CAFE' ||
+                            businessData?.businessName?.toLowerCase().includes('restaurant') ||
+                            businessData?.businessName?.toLowerCase().includes('cafe');
+
+        if (isRestaurant) {
+          // Exclude these items for restaurants
+          const restaurantExcludedItems = ['Tables', 'Timesheet', 'Timesheets', 'Invoices', 'Reports', 'Banking'];
+          return !restaurantExcludedItems.includes(item.title) && !restaurantExcludedItems.includes(item.label);
+        }
+        return true;
       })
     : null;
 
