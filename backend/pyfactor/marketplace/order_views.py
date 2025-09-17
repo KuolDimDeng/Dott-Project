@@ -73,6 +73,24 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             # Send notification to business (implement notification system)
             # notify_business_new_order(order)
 
+            # Automatically assign courier for delivery orders
+            if request.data.get('delivery_type') == 'delivery':
+                try:
+                    from couriers.services import CourierAssignmentService
+                    courier = CourierAssignmentService.assign_courier_to_order(
+                        order.id,
+                        auto_assign=True
+                    )
+                    if courier:
+                        logger.info(f"Courier {courier.id} automatically assigned to order {order.order_number}")
+                    else:
+                        logger.warning(f"No courier available for order {order.order_number} - will keep searching")
+                except ImportError:
+                    logger.warning("CourierAssignmentService not available - skipping automatic courier assignment")
+                except Exception as e:
+                    logger.error(f"Error in automatic courier assignment for order {order.order_number}: {str(e)}")
+                    # Don't fail the order creation if courier assignment fails
+
             return Response({
                 'success': True,
                 'order_id': str(order.id),
