@@ -476,7 +476,6 @@ export default function ChatConversationScreen() {
               showTabs={true}
               showHistory={true}
               showSectionTitles={true}
-              category={EmojiSelector.Categories.all}
               columns={8}
               placeholder="Search emoji..."
               theme="#2563eb"
