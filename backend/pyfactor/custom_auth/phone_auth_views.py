@@ -353,6 +353,25 @@ def verify_otp(request):
                 user.save()
                 logger.info(f"📝 Updated user names: {user.first_name} {user.last_name}")
             
+            # Check if user has a tenant - create one if missing (for existing users)
+            if not user.tenant_id:
+                phone_digits = re.sub(r'[^\d]', '', normalized_phone)
+                tenant = Tenant.objects.create(
+                    name=f"User {phone_digits}",
+                    owner_id=str(user.id),
+                    is_active=True
+                )
+                user.tenant = tenant
+                user.save(update_fields=['tenant'])
+                
+                # Also update UserProfile with tenant_id
+                profile = UserProfile.objects.filter(user=user).first()
+                if profile and not profile.tenant_id:
+                    profile.tenant_id = tenant.id
+                    profile.save(update_fields=['tenant_id'])
+                
+                logger.info(f"📋 Created tenant for existing user: {user.email}")
+            
         except User.DoesNotExist:
             try:
                 # Create new user with phone as email (temporary)
@@ -378,15 +397,22 @@ def verify_otp(request):
                     signup_method='phone'
                 )
                 
-                # Create tenant for user
+                # Create tenant for user - REQUIRED for business registration
                 tenant = Tenant.objects.create(
                     name=f"User {phone_digits}",
                     owner_id=str(user.id),
                     is_active=True
                 )
                 
+                # Update user with tenant
                 user.tenant = tenant
                 user.save(update_fields=['tenant'])
+                
+                # Also ensure UserProfile has the tenant_id
+                profile = UserProfile.objects.filter(user=user).first()
+                if profile and not profile.tenant_id:
+                    profile.tenant_id = tenant.id
+                    profile.save(update_fields=['tenant_id'])
                 
                 created = True
                 logger.info(f"👤 Created new user for {normalized_phone}: {user.email}")
