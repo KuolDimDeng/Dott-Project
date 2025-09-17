@@ -273,6 +273,13 @@ export const marketplaceApi = {
   // Update business status (Open/Closed)
   updateBusinessStatus: async (statusData) => {
     try {
+      // Get session for auth
+      const sessionId = await AsyncStorage.getItem('sessionId');
+      if (!sessionId) {
+        console.log('No session available for business status update');
+        return null;
+      }
+
       // Use the listing endpoint to update status fields
       const response = await api.patch('/marketplace/business/listing/', {
         is_published: statusData.is_open,
@@ -281,7 +288,12 @@ export const marketplaceApi = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error updating business status:', error);
+      // Log error details for debugging
+      if (error.response?.status === 401) {
+        console.log('Auth error updating business status - session may have expired');
+      } else {
+        console.error('Error updating business status:', error.message);
+      }
       // Don't throw error, just log it - status update is not critical
       return null;
     }

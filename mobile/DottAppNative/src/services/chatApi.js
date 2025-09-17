@@ -7,7 +7,7 @@ import ENV from '../config/environment';
 
 class ChatApiService {
   constructor() {
-    this.baseURL = `${ENV.apiUrl}/api/chat`;
+    this.baseURL = `${ENV.apiUrl}/chat`;
     this.wsBaseURL = `${ENV.wsUrl}/ws/chat`;
   }
 
@@ -16,10 +16,10 @@ class ChatApiService {
    */
   async getAuthHeaders() {
     try {
-      const sessionToken = await AsyncStorage.getItem('@auth:session_token');
+      const sessionId = await AsyncStorage.getItem('sessionId');
       return {
         'Content-Type': 'application/json',
-        'Authorization': sessionToken ? `Bearer ${sessionToken}` : '',
+        'Authorization': sessionId ? `Session ${sessionId}` : '',
       };
     } catch (error) {
       console.error('Error getting auth headers:', error);
@@ -116,7 +116,7 @@ class ChatApiService {
       const headers = await this.getAuthHeaders();
       
       const response = await fetch(
-        `${this.baseURL}/messages/?conversation=${conversationId}&page=${page}&page_size=${pageSize}`,
+        `${this.baseURL}/conversations/${conversationId}/messages/?page=${page}&page_size=${pageSize}`,
         {
           method: 'GET',
           headers,

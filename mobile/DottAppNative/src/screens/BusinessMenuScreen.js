@@ -427,7 +427,43 @@ export default function BusinessMenuScreen() {
     return items;
   };
 
-  const menuItems = getMenuItems();
+  // Process dynamic menu items to ensure proper screen mapping
+  const processedDynamicMenuItems = dynamicMenuItems && dynamicMenuItems.length > 0
+    ? dynamicMenuItems.map(item => {
+        // Map OrderQueue to RestaurantOrders for navigation
+        let screen = item.screen;
+        if (screen === 'OrderQueue') {
+          screen = 'RestaurantOrders';
+        }
+
+        // Find the matching item from ALL_MENU_ITEMS for styling
+        const matchingItem = ALL_MENU_ITEMS.find(staticItem =>
+          staticItem.title === item.label ||
+          staticItem.title === item.title ||
+          staticItem.screen === screen ||
+          (item.label === 'Orders' && staticItem.title === 'Orders')
+        );
+
+        if (matchingItem) {
+          return {
+            ...matchingItem,
+            title: item.label || item.title || matchingItem.title,
+            screen: screen
+          };
+        }
+
+        // Return item with default styling if no match found
+        return {
+          icon: item.icon || 'grid-outline',
+          title: item.label || item.title,
+          color: '#6b7280',
+          screen: screen
+        };
+      })
+    : null;
+
+  // Use processed dynamic menu items from context if available, otherwise use local fallback
+  const menuItems = processedDynamicMenuItems || getMenuItems();
 
   const onRefresh = async () => {
     setRefreshing(true);
