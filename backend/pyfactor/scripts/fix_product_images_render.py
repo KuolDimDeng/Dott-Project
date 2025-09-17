@@ -2,10 +2,14 @@
 """
 Script to add real product images to items missing them in the database.
 Run this in Render shell:
-python scripts/fix_product_images_render.py
+cd /app && python scripts/fix_product_images_render.py
 """
 import os
 import sys
+
+# Add the parent directory to the Python path
+sys.path.insert(0, '/app')
+
 import django
 
 # Setup Django environment
