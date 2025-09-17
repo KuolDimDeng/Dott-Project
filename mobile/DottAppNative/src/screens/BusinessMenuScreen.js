@@ -162,9 +162,10 @@ import BankingScreen from './business/BankingScreen';
 
 export default function BusinessMenuScreen() {
   const { user } = useAuth();
-  const { 
-    businessData, 
+  const {
+    businessData,
     getMenuItems: getContextMenuItems,
+    dynamicMenuItems,
     isOnline,
     toggleOnlineStatus,
   } = useBusinessContext();
