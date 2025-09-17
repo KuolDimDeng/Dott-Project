@@ -431,10 +431,25 @@ export default function BusinessMenuScreen() {
   // Process dynamic menu items to ensure proper screen mapping
   const processedDynamicMenuItems = dynamicMenuItems && dynamicMenuItems.length > 0
     ? dynamicMenuItems.map(item => {
-        // Map OrderQueue to RestaurantOrders for navigation
+        // Map API screens to actual navigator screen names
         let screen = item.screen;
-        if (screen === 'OrderQueue') {
-          screen = 'RestaurantOrders';
+        const screenMappings = {
+          'OrderQueue': 'RestaurantOrders',
+          'POSScreen': 'POS',
+          'InventoryScreen': 'Inventory',
+          'TimesheetScreen': 'Timesheet',
+          'EmployeesScreen': 'Employees',
+          'ExpensesScreen': 'Expenses',
+          'InvoicesScreen': 'Invoices',
+          'ReportsScreen': 'Reports',
+          'BankingScreen': 'Banking',
+          'TableManagement': 'RestaurantOrders', // Tables doesn't exist, use Orders
+          'MenuManagement': 'MenuManagement',
+        };
+
+        // Apply mapping if exists
+        if (screenMappings[screen]) {
+          screen = screenMappings[screen];
         }
 
         // Find the matching item from ALL_MENU_ITEMS for styling
