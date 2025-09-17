@@ -58,8 +58,8 @@ export default function StoreCatalogScreen({ route }) {
     try {
       setLoading(true);
       console.log('📦 Loading store items catalog...');
-      // Increased limit to show all catalog items (up to 3000 items)
-      const response = await inventoryApi.getStoreItems({ limit: 3000 });
+      // Increased limit to show all catalog items (up to 10,000 items max)
+      const response = await inventoryApi.getStoreItems({ limit: 10000 });
       console.log('📦 Store items loaded:', response.results?.length || 0);
       setStoreItems(response.results || []);
     } catch (error) {

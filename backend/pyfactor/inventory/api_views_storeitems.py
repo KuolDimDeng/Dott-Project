@@ -37,7 +37,7 @@ class LargeResultsSetPagination(PageNumberPagination):
     """Custom pagination for store items to handle large catalogs"""
     page_size = 50
     page_size_query_param = 'limit'
-    max_page_size = 3000
+    max_page_size = 10000  # Support up to 10,000 items in global catalog
 
 
 class StoreItemViewSet(viewsets.ModelViewSet):
