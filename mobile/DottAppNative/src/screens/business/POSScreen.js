@@ -19,6 +19,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useMenuContext } from '../../context/MenuContext';
+import { useInventoryContext } from '../../context/InventoryContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useBusinessContext } from '../../context/BusinessContext';
 import QRScanner from '../../components/QRScanner';
@@ -30,6 +31,13 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function POSScreen() {
   const navigation = useNavigation();
   const { menuItems, categories: menuCategories, getAvailableMenuItems } = useMenuContext();
+  const {
+    products: inventoryProducts,
+    categories: inventoryCategories,
+    getAvailableProducts,
+    updateProductQuantity,
+    isInventoryBasedBusiness
+  } = useInventoryContext();
   const { currency } = useCurrency();
   const { businessData } = useBusinessContext();
   
@@ -74,20 +82,47 @@ export default function POSScreen() {
     loadInitialData();
   }, []);
 
-  // Update products when menu items change
+  // Update products based on business type (menu items for restaurants, inventory for retail)
   useEffect(() => {
-    if (menuItems && menuItems.length > 0) {
-      const availableItems = getAvailableMenuItems();
-      setProducts(availableItems);
-    }
-  }, [menuItems]);
+    console.log('🔄 [POS_DEBUG] Product loading logic triggered');
+    console.log('🔄 [POS_DEBUG] Business type:', businessData?.businessType);
+    console.log('🔄 [POS_DEBUG] Is inventory business:', isInventoryBasedBusiness());
+    console.log('🔄 [POS_DEBUG] Menu items count:', menuItems?.length || 0);
+    console.log('🔄 [POS_DEBUG] Inventory products count:', inventoryProducts?.length || 0);
 
-  // Update categories when menu categories change  
-  useEffect(() => {
-    if (menuCategories && menuCategories.length > 0) {
-      setCategories(menuCategories);
+    if (isInventoryBasedBusiness()) {
+      // Use inventory products for retail businesses
+      if (inventoryProducts && inventoryProducts.length > 0) {
+        const availableProducts = getAvailableProducts();
+        console.log('🛒 [POS_DEBUG] Using inventory products:', availableProducts.length);
+        setProducts(availableProducts);
+      }
+    } else {
+      // Use menu items for restaurants
+      if (menuItems && menuItems.length > 0) {
+        const availableItems = getAvailableMenuItems();
+        console.log('🍔 [POS_DEBUG] Using menu items:', availableItems.length);
+        setProducts(availableItems);
+      }
     }
-  }, [menuCategories]);
+  }, [menuItems, inventoryProducts, businessData?.businessType, isInventoryBasedBusiness]);
+
+  // Update categories based on business type
+  useEffect(() => {
+    if (isInventoryBasedBusiness()) {
+      // Use inventory categories for retail businesses
+      if (inventoryCategories && inventoryCategories.length > 0) {
+        console.log('🛒 [POS_DEBUG] Using inventory categories:', inventoryCategories);
+        setCategories(inventoryCategories);
+      }
+    } else {
+      // Use menu categories for restaurants
+      if (menuCategories && menuCategories.length > 0) {
+        console.log('🍔 [POS_DEBUG] Using menu categories:', menuCategories);
+        setCategories(menuCategories);
+      }
+    }
+  }, [menuCategories, inventoryCategories, businessData?.businessType, isInventoryBasedBusiness]);
 
   useEffect(() => {
     calculateTotals();
@@ -109,9 +144,16 @@ export default function POSScreen() {
       const customersData = customersRes.data.results || customersRes.data || [];
       setCustomers(customersData);
 
-      // Use menu items from MenuContext (these include photos and costing data)
-      const availableItems = getAvailableMenuItems();
-      setProducts(availableItems);
+      // Load products based on business type
+      if (isInventoryBasedBusiness()) {
+        console.log('🛒 [POS_INIT] Loading inventory products for retail business');
+        const availableProducts = getAvailableProducts();
+        setProducts(availableProducts);
+      } else {
+        console.log('🍔 [POS_INIT] Loading menu items for restaurant business');
+        const availableItems = getAvailableMenuItems();
+        setProducts(availableItems);
+      }
       
       // Use menu categories from MenuContext
       setCategories(menuCategories);
@@ -383,6 +425,24 @@ export default function POSScreen() {
       };
 
       const response = await api.post('/pos/transactions/', transactionData);
+
+      // Update inventory quantities for retail businesses
+      if (isInventoryBasedBusiness()) {
+        console.log('🛒 [POS_DEBUG] Updating inventory quantities after sale');
+        for (const cartItem of cart) {
+          try {
+            // Find the product in inventory
+            const product = inventoryProducts.find(p => p.id === cartItem.id);
+            if (product) {
+              const newQuantity = Math.max(0, product.quantity - cartItem.quantity);
+              await updateProductQuantity(cartItem.id, newQuantity);
+              console.log(`🛒 [POS_DEBUG] Updated ${cartItem.name}: ${product.quantity} -> ${newQuantity}`);
+            }
+          } catch (error) {
+            console.error(`🛒 [POS_DEBUG] Error updating quantity for ${cartItem.name}:`, error);
+          }
+        }
+      }
 
       Alert.alert(
         'Payment Successful',

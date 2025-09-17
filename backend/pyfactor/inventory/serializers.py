@@ -86,12 +86,28 @@ class ProductSerializer(serializers.ModelSerializer):
         """Get price calculation breakdown"""
         return obj.get_price_breakdown()
 
+class MarketplaceProductSerializer(serializers.ModelSerializer):
+    """
+    Serializer for products exposed to marketplace consumers.
+    Returns simplified product data for consumer ordering.
+    """
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'description', 'price', 'image_url', 'quantity']
+
+    def get_image_url(self, obj):
+        """Return product image URL if available"""
+        # TODO: Add image field to Product model in future
+        return None
+
 class ServiceSerializer(serializers.ModelSerializer):
     type_fields = ServiceTypeFieldsSerializer(read_only=True)
     # Add customer details for display
     customer_name = serializers.ReadOnlyField(source='customer.name', allow_null=True)
     customer_is_active = serializers.ReadOnlyField(source='customer.is_active', allow_null=True)
-    
+
     class Meta:
         model = Service
         fields = '__all__'

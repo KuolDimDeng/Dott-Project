@@ -8,6 +8,7 @@ import { CartProvider } from './src/context/CartContext';
 import { BusinessProvider } from './src/context/BusinessContext';
 import { CurrencyProvider } from './src/context/CurrencyContext';
 import { MenuProvider } from './src/context/MenuContext';
+import { InventoryProvider } from './src/context/InventoryContext';
 import { CountryProvider } from './src/context/CountryContext';
 import { StatusBar, View, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -81,16 +82,18 @@ export default function App() {
           <AuthProvider>
             <BusinessProvider>
               <MenuProvider>
-                <CurrencyProvider>
-                  <CartProvider>
-                    <CallManager>
-                      <View style={{ flex: 1 }}>
-                        <AppNavigator />
-                        <EnvironmentBadge />
-                      </View>
-                    </CallManager>
-                  </CartProvider>
-                </CurrencyProvider>
+                <InventoryProvider>
+                  <CurrencyProvider>
+                    <CartProvider>
+                      <CallManager>
+                        <View style={{ flex: 1 }}>
+                          <AppNavigator />
+                          <EnvironmentBadge />
+                        </View>
+                      </CallManager>
+                    </CartProvider>
+                  </CurrencyProvider>
+                </InventoryProvider>
               </MenuProvider>
             </BusinessProvider>
           </AuthProvider>

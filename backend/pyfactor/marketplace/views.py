@@ -1063,7 +1063,7 @@ class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
                 'error': 'Business not found or not available'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        # Get menu items for restaurants
+        # Get menu items for restaurants or inventory products for retail businesses
         products = []
         business = listing.business
 
@@ -1078,6 +1078,21 @@ class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
             'restaurant' in business_name.lower() or
             'cafe' in business_name.lower()
         )
+
+        # Detect inventory-based businesses (retail, beauty, grocery, etc.)
+        is_inventory_business = (
+            'RETAIL' in business_type.upper() or
+            'BEAUTY' in business_type.upper() or
+            'GROCERY' in business_type.upper() or
+            'PHARMACY' in business_type.upper() or
+            'SHOP' in business_type.upper() or
+            'STORE' in business_type.upper() or
+            'MARKET' in business_type.upper()
+        )
+
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Business type analysis: {business_type}")
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Is restaurant: {is_restaurant}")
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Is inventory business: {is_inventory_business}")
 
         if is_restaurant:
             try:
@@ -1113,8 +1128,42 @@ class PublicBusinessViewSet(viewsets.ReadOnlyModelViewSet):
                 logger.error(f"🍔 [MENU_DEBUG] Could not fetch menu items for business {business.id}: {e}")
                 import traceback
                 logger.error(f"🍔 [MENU_DEBUG] Full traceback: {traceback.format_exc()}")
+        elif is_inventory_business:
+            try:
+                from inventory.models import Product
+                from inventory.serializers import MarketplaceProductSerializer
+                logger.info(f"🛒 [INVENTORY_DEBUG] Fetching inventory products for business {business.id}")
+                logger.info(f"🛒 [INVENTORY_DEBUG] Business has tenant_id: {hasattr(business, 'tenant_id')}")
+                logger.info(f"🛒 [INVENTORY_DEBUG] Business tenant_id value: {getattr(business, 'tenant_id', 'NONE')}")
+
+                # Check if inventory products exist for this business
+                # Product uses tenant_id, similar to MenuItem
+                if hasattr(business, 'tenant_id') and business.tenant_id:
+                    all_products = Product.objects.filter(tenant_id=business.tenant_id)
+                    logger.info(f"🛒 [INVENTORY_DEBUG] Filtering by tenant_id: {business.tenant_id}")
+                else:
+                    logger.info(f"🛒 [INVENTORY_DEBUG] No tenant_id available for business {business.id}")
+                    all_products = Product.objects.none()
+
+                # Only show active products with stock for marketplace
+                available_products = all_products.filter(is_active=True, quantity__gt=0)
+
+                logger.info(f"🛒 [INVENTORY_DEBUG] Found {all_products.count()} total products, {available_products.count()} available")
+
+                # Use the marketplace serializer for consistent format
+                serializer = MarketplaceProductSerializer(available_products, many=True)
+                products = serializer.data
+                logger.info(f"🛒 [INVENTORY_DEBUG] Returning {len(products)} inventory products")
+
+                # Log first item for debugging
+                if products:
+                    logger.info(f"🛒 [INVENTORY_DEBUG] First item: {products[0]}")
+            except Exception as e:
+                logger.error(f"🛒 [INVENTORY_DEBUG] Could not fetch inventory products for business {business.id}: {e}")
+                import traceback
+                logger.error(f"🛒 [INVENTORY_DEBUG] Full traceback: {traceback.format_exc()}")
         else:
-            logger.info(f"🍔 [MENU_DEBUG] Business {business.id} is not detected as restaurant - business_type: {business_type}")
+            logger.info(f"🔍 [PRODUCTS_DEBUG] Business {business.id} is neither restaurant nor inventory business - business_type: {business_type}")
 
         logger.info(f"🔍 [PRODUCTS_DEBUG] Returning {len(products)} products")
         return Response({
@@ -1505,7 +1554,7 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
                 'error': 'Business not found or not available'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # Get menu items for restaurants
+        # Get menu items for restaurants or inventory products for retail businesses
         products = []
         business = listing.business
 
@@ -1520,6 +1569,21 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             'restaurant' in business_name.lower() or
             'cafe' in business_name.lower()
         )
+
+        # Detect inventory-based businesses (retail, beauty, grocery, etc.)
+        is_inventory_business = (
+            'RETAIL' in business_type.upper() or
+            'BEAUTY' in business_type.upper() or
+            'GROCERY' in business_type.upper() or
+            'PHARMACY' in business_type.upper() or
+            'SHOP' in business_type.upper() or
+            'STORE' in business_type.upper() or
+            'MARKET' in business_type.upper()
+        )
+
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Business type analysis: {business_type}")
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Is restaurant: {is_restaurant}")
+        logger.info(f"🔍 [PRODUCTS_DEBUG] Is inventory business: {is_inventory_business}")
 
         if is_restaurant:
             try:
