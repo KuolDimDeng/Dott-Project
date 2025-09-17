@@ -400,6 +400,25 @@ class WalletService {
     }
   }
 
+  /**
+   * Clear all wallet data (called on logout)
+   */
+  async clearWallet() {
+    try {
+      await AsyncStorage.multiRemove([
+        WALLET_CACHE_KEY,
+        `${TRANSACTIONS_CACHE_KEY}_MTN_MOMO`,
+        `${TRANSACTIONS_CACHE_KEY}_MPESA`,
+        SYNC_QUEUE_KEY,
+        'wallet_settings'
+      ]);
+      console.log('✅ Wallet data cleared');
+    } catch (error) {
+      console.error('[Wallet] Error clearing wallet:', error);
+      throw error;
+    }
+  }
+
   // Get wallet settings
   async getSettings() {
     try {

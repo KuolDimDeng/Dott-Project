@@ -29,20 +29,24 @@ class SecureStorageService {
 
   async setSecureItem(key, value, options = {}) {
     const isAvailable = await this.checkAvailability();
-    
+
     if (!isAvailable) {
       // Fallback to AsyncStorage with warning
       if (__DEV__) {
         console.warn(`⚠️ Storing ${key} in AsyncStorage (not secure)`);
       }
-      return AsyncStorage.setItem(key, JSON.stringify(value));
+      // For AsyncStorage, store strings directly, objects as JSON
+      const storeValue = typeof value === 'string' ? value : JSON.stringify(value);
+      return AsyncStorage.setItem(key, storeValue);
     }
 
     try {
+      // For Keychain, store strings directly, objects as JSON
+      const storeValue = typeof value === 'string' ? value : JSON.stringify(value);
       await Keychain.setInternetCredentials(
         key,
         key,
-        JSON.stringify(value),
+        storeValue,
         {
           accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
           ...options,
@@ -59,17 +63,29 @@ class SecureStorageService {
 
   async getSecureItem(key) {
     const isAvailable = await this.checkAvailability();
-    
+
     if (!isAvailable) {
       // Fallback to AsyncStorage
       const value = await AsyncStorage.getItem(key);
-      return value ? JSON.parse(value) : null;
+      if (!value) return null;
+
+      // Try to parse as JSON, if it fails return as string
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value; // Return as string if not valid JSON
+      }
     }
 
     try {
       const credentials = await Keychain.getInternetCredentials(key);
-      if (credentials) {
-        return JSON.parse(credentials.password);
+      if (credentials && credentials.password) {
+        // Try to parse as JSON, if it fails return as string
+        try {
+          return JSON.parse(credentials.password);
+        } catch {
+          return credentials.password; // Return as string if not valid JSON
+        }
       }
       return null;
     } catch (error) {

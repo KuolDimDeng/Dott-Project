@@ -26,7 +26,10 @@ export const AuthProvider = ({ children }) => {
       if (__DEV__) {
         console.log('🔄 === FETCH USER PROFILE START ===');
       }
-      const sessionId = await SecureStorage.getSecureItem('sessionId');
+      let sessionId = await SecureStorage.getSecureItem('sessionId');
+      if (!sessionId) {
+        sessionId = await AsyncStorage.getItem('sessionId');
+      }
       if (__DEV__) {
         console.log('Session ID for profile fetch:', sessionId ? 'Present' : 'Not found');
       }
@@ -82,7 +85,12 @@ export const AuthProvider = ({ children }) => {
         }
         
         // Update stored user data with complete profile
-        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        try {
+          await AsyncStorage.setItem('userData', JSON.stringify(userData));
+          console.log('✅ User data stored successfully');
+        } catch (storageError) {
+          console.error('⚠️ Failed to store user data:', storageError);
+        }
         
         setUser(userData);
         
@@ -122,35 +130,56 @@ export const AuthProvider = ({ children }) => {
       const mode = await AsyncStorage.getItem('userMode');
       const sessionId = await AsyncStorage.getItem('sessionId');
       const storedToken = await AsyncStorage.getItem('sessionToken');
-      
+
       if (userData && sessionId) {
-        const parsedUser = JSON.parse(userData);
-        setSessionToken(storedToken || sessionId);
-        
-        // Check if cached data has required fields, if not, clear it
-        if (!('has_business' in parsedUser) || !('role' in parsedUser)) {
-          console.log('🔄 Cached user data is incomplete, clearing and fetching fresh data...');
-          await AsyncStorage.removeItem('userData');
-          // Try to fetch fresh profile
-          const refreshedUser = await fetchUserProfile();
-          if (!refreshedUser) {
-            // If fetch fails, logout to force fresh login
-            console.log('⚠️ Could not fetch complete user profile, forcing re-login');
-            await logout();
+        try {
+          const parsedUser = JSON.parse(userData);
+          setSessionToken(storedToken || sessionId);
+
+          // Check if cached data has required fields, if not, clear it
+          if (!('has_business' in parsedUser) || !('role' in parsedUser)) {
+            console.log('🔄 Cached user data is incomplete, clearing and fetching fresh data...');
+            await AsyncStorage.removeItem('userData');
+            // Try to fetch fresh profile but don't call logout to prevent infinite loops
+            try {
+              const refreshedUser = await fetchUserProfile();
+              if (!refreshedUser) {
+                console.log('⚠️ Could not fetch complete user profile');
+                // Set user to null to force login flow
+                setUser(null);
+                setUserMode('consumer');
+                setSessionToken(null);
+              }
+            } catch (fetchError) {
+              console.log('⚠️ Error fetching fresh profile:', fetchError.message);
+              setUser(null);
+              setUserMode('consumer');
+              setSessionToken(null);
+            }
+          } else {
+            setUser(parsedUser);
+            setUserMode(mode || 'consumer');
+
+            // Try to refresh user profile if session exists (but don't block)
+            fetchUserProfile().catch(error => {
+              console.log('Background profile refresh failed:', error.message);
+            });
           }
-        } else {
-          setUser(parsedUser);
-          setUserMode(mode || 'consumer');
-          
-          // Try to refresh user profile if session exists
-          const refreshedUser = await fetchUserProfile();
-          if (!refreshedUser) {
-            // If profile fetch fails but we have complete cached data, use it
-            console.log('Using cached user data with has_business:', parsedUser.has_business);
-          }
+        } catch (parseError) {
+          console.error('Error parsing stored user data:', parseError);
+          // Clear corrupted data
+          await AsyncStorage.multiRemove(['userData', 'sessionId', 'sessionToken']);
+          setUser(null);
+          setUserMode('consumer');
+          setSessionToken(null);
         }
+      } else {
+        // No stored user data, ensure clean state
+        setUser(null);
+        setUserMode('consumer');
+        setSessionToken(null);
       }
-      
+
       clearTimeout(loadTimeout);
     } catch (error) {
       console.error('Load user error:', error);
@@ -279,11 +308,18 @@ export const AuthProvider = ({ children }) => {
       
       if (response.data.success) {
         const sessionId = response.data.session_id || response.data.sid;
-        
+
         if (sessionId) {
-          await AsyncStorage.setItem('sessionId', sessionId);
-          await AsyncStorage.setItem('sessionToken', sessionId);
-          setSessionToken(sessionId);
+          try {
+            await AsyncStorage.setItem('sessionId', sessionId);
+            await AsyncStorage.setItem('sessionToken', sessionId);
+            // Also store in SecureStorage for better security
+            await SecureStorage.setSecureItem('sessionId', sessionId);
+            setSessionToken(sessionId);
+            console.log('✅ Session stored successfully');
+          } catch (storageError) {
+            console.error('⚠️ Failed to store session:', storageError);
+          }
         }
         
         // Fetch complete user profile with role and has_business
@@ -359,12 +395,38 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      console.log('🚪 Starting logout process...');
+
+      // Clear AsyncStorage
       await AsyncStorage.multiRemove(['userToken', 'userData', 'userMode', 'sessionId', 'sessionToken']);
+      console.log('✅ AsyncStorage cleared');
+
+      // Clear SecureStorage
+      try {
+        await SecureStorage.removeSecureItem('sessionId');
+        await SecureStorage.removeSecureItem('sessionToken');
+        await SecureStorage.removeSecureItem('userData');
+        console.log('✅ SecureStorage cleared');
+      } catch (secureError) {
+        console.warn('⚠️ SecureStorage clear error (might not exist):', secureError.message);
+      }
+
+      // Clear wallet service
+      try {
+        await walletService.clearWallet();
+        console.log('✅ Wallet cleared');
+      } catch (walletError) {
+        console.warn('⚠️ Wallet clear error:', walletError.message);
+      }
+
+      // Reset all state
       setUser(null);
       setUserMode('consumer');
       setSessionToken(null);
+
+      console.log('🚪 Logout completed successfully');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
     }
   };
 

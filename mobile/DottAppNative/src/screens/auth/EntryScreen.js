@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,8 @@ const { width, height } = Dimensions.get('window');
 
 export default function EntryScreen() {
   const navigation = useNavigation();
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(50);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   console.log('🎯 EntryScreen loaded');
 
@@ -34,7 +34,7 @@ export default function EntryScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   return (
     <View style={styles.container}>
