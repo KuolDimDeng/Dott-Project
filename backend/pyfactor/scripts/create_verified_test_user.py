@@ -19,6 +19,7 @@ user_data = {
     "phone": "+211925550100",
     "country": "SS",
     "business_type": None,  # Consumer account
+    "user_mode": "consumer",  # Required field for user mode
     "skip_verification": True  # This flag might work if the API supports it
 }
 

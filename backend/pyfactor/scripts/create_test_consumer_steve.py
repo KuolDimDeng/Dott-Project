@@ -1,100 +1,131 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Script to create a test consumer account for Steve Majak
-This user can then manually create a courier business in the app
-Run from Django shell: python manage.py shell < scripts/create_test_consumer_steve.py
+Create test consumer account for Steve Majak with phone +211925550100
+Run this on Render shell: python scripts/create_test_consumer_steve.py
 """
 
 from django.contrib.auth import get_user_model
-from users.models import UserProfile
 from django.db import transaction
+from custom_auth.models import Tenant
+from users.models import UserProfile
+from onboarding.models import OnboardingProgress
 
 User = get_user_model()
 
-# MTN Test number for development (555 numbers are standard test numbers)
-TEST_PHONE = "+211925550100"  # MTN test number format
-TEST_EMAIL = "steve.majak@test.com"
+# Test user details - using phone auth format
+TEST_PHONE = "+211925550100"
+TEST_EMAIL = "phone_211925550100@dottapps.com"  # Phone auth creates this format
 TEST_NAME = "Steve Majak"
 
-try:
-    with transaction.atomic():
-        # Check if user already exists
-        existing_user = User.objects.filter(email=TEST_EMAIL).first()
+print("\n" + "="*60)
+print(f"CREATING TEST CONSUMER: {TEST_NAME}")
+print("="*60)
+
+with transaction.atomic():
+    # Check if user exists
+    user = User.objects.filter(email=TEST_EMAIL).first()
+    
+    if user:
+        print(f"\nUser already exists: {TEST_EMAIL}")
+        print(f"Current status:")
+        print(f"  - Has tenant: {'Yes' if user.tenant else 'No'}")
+        print(f"  - Onboarding completed: {user.onboarding_completed}")
         
-        if existing_user:
-            print(f"✅ User already exists: {TEST_EMAIL}")
-            user = existing_user
-            # Update password in case you forgot it
-            user.set_password("Test123!")
-            user.save()
-            print("✅ Password reset to: Test123!")
-        else:
-            # Create new test user
-            user = User.objects.create_user(
-                email=TEST_EMAIL,
-                password="Test123!",
-                first_name="Steve",
-                last_name="Majak"
+        # Fix missing tenant
+        if not user.tenant:
+            print("\n⚠️ User missing tenant - creating one...")
+            tenant = Tenant.objects.create(
+                name=f"User {user.id}",
+                owner_id=str(user.id),
+                is_active=True,
+                rls_enabled=True
             )
-            print(f"✅ Created new user: {TEST_EMAIL}")
+            user.tenant = tenant
+            user.save()
+            print(f"✅ Created tenant ID: {tenant.id}")
+            
+            # Update profile
+            profile = UserProfile.objects.filter(user=user).first()
+            if profile:
+                if not profile.tenant_id:
+                    profile.tenant_id = tenant.id
+                # Ensure user_mode is set
+                if not hasattr(profile, 'user_mode') or not profile.user_mode:
+                    profile.user_mode = 'consumer'
+                    profile.default_mode = 'consumer'
+                    profile.has_consumer_access = True
+                    profile.has_business_access = False
+                profile.save()
+                print(f"✅ Updated UserProfile with tenant_id and user_mode")
+    else:
+        print(f"\nCreating new user...")
         
-        # Create or update UserProfile
-        profile, created = UserProfile.objects.update_or_create(
+        # Create user
+        user = User.objects.create_user(
+            email=TEST_EMAIL,
+            username=TEST_EMAIL,
+            first_name="Steve",
+            last_name="Majak",
+            phone_number=TEST_PHONE
+        )
+        user.set_unusable_password()  # Phone auth doesn't use password
+        user.save()
+        print(f"✅ Created user: {TEST_EMAIL}")
+        
+        # Create tenant
+        tenant = Tenant.objects.create(
+            name=f"User {user.id}",
+            owner_id=str(user.id),
+            is_active=True,
+            rls_enabled=True
+        )
+        user.tenant = tenant
+        user.save()
+        print(f"✅ Created tenant ID: {tenant.id}")
+        
+        # Create UserProfile with user_mode
+        profile, created = UserProfile.objects.get_or_create(
             user=user,
             defaults={
-                'phone_number': TEST_PHONE,
-                'phone_verified': True,  # Pre-verified for testing
-                'country': 'SS',  # South Sudan
-                'city': 'Juba',
-                'business_type': None,  # No business yet - consumer account
-                'business_name': None,  # Will be set when creating courier business
-                'is_active': True,
-                'onboarding_completed': False,  # Can go through onboarding
-                'preferred_currency_code': 'SSP',
-                'preferred_currency_name': 'South Sudanese Pound',
-                'preferred_currency_symbol': 'SSP'
+                'user_mode': 'consumer',
+                'default_mode': 'consumer',
+                'has_consumer_access': True,
+                'has_business_access': False,
+                'tenant_id': tenant.id,
+                'onboarding_completed': False
             }
         )
-        
         if created:
-            print("✅ Created new user profile")
+            print(f"✅ Created UserProfile with user_mode='consumer'")
         else:
-            print("✅ Updated existing user profile")
+            # Update existing profile
+            profile.user_mode = 'consumer'
+            profile.default_mode = 'consumer'
+            profile.has_consumer_access = True
+            profile.tenant_id = tenant.id
+            profile.save()
+            print(f"✅ Updated UserProfile")
         
-        # Set user as active and verified
-        user.is_active = True
-        user.save()
-        
-        print(f"""
-        ========================================
-        TEST CONSUMER ACCOUNT READY
-        ========================================
-        
-        Login Credentials:
-        ------------------
-        Email: {TEST_EMAIL}
-        Password: Test123!
-        
-        Account Details:
-        ----------------
-        Name: {TEST_NAME}
-        Phone: {TEST_PHONE} (MTN test number - pre-verified)
-        Country: South Sudan
-        City: Juba
-        Account Type: Consumer (No business yet)
-        
-        Next Steps:
-        -----------
-        1. Open the mobile app
-        2. Sign in with email and password above
-        3. You'll be logged in as a consumer
-        4. Go to profile/settings to create a courier business
-        5. The phone number is already verified
-        
-        ========================================
-        """)
-        
-except Exception as e:
-    print(f"❌ Error creating test account: {e}")
-    import traceback
-    traceback.print_exc()
+        # Create OnboardingProgress
+        OnboardingProgress.objects.get_or_create(
+            user=user,
+            defaults={
+                'onboarding_status': 'not_started',
+                'current_step': 'business_info',
+                'completed_steps': []
+            }
+        )
+        print(f"✅ Created OnboardingProgress")
+
+print("\n" + "="*60)
+print("TEST ACCOUNT READY")
+print("="*60)
+print(f"Phone: {TEST_PHONE}")
+print(f"Email: {TEST_EMAIL}")
+print(f"Name: {TEST_NAME}")
+print("\nThis account:")
+print("  - Bypasses SMS verification (returns OTP in response)")
+print("  - Has tenant assigned (can register business)")
+print("  - Is in consumer mode by default")
+print("  - Can switch to business mode after registering courier")
+print("="*60 + "\n")
