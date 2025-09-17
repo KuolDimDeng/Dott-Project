@@ -48,6 +48,9 @@ with transaction.atomic():
         business.marketplace_category = 'Transport'
         business.name = "Steve's Courier Service"
         business.delivery_scope = 'local'
+        # Set primary_interaction_type if field exists
+        if hasattr(business, 'primary_interaction_type'):
+            business.primary_interaction_type = 'order'
         business.save()
         
         print(f"✅ Updated business to courier type")
@@ -66,6 +69,7 @@ with transaction.atomic():
             delivery_scope='local',
             country='SS',
             city='Juba',
+            primary_interaction_type='order',  # Using default value for courier businesses
             tenant_id=user.tenant_id if user.tenant else None
         )
         print(f"✅ Created courier business: {business.name}")
