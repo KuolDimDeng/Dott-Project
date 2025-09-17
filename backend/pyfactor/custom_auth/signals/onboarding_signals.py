@@ -22,8 +22,16 @@ def ensure_onboarding_consistency(sender, instance, created, **kwargs):
     """
     
     if created:
-        # New user - ensure UserProfile exists
-        UserProfile.objects.get_or_create(user=instance)
+        # New user - ensure UserProfile exists with user_mode
+        UserProfile.objects.get_or_create(
+            user=instance,
+            defaults={
+                'user_mode': 'consumer',  # Default to consumer mode for new users
+                'default_mode': 'consumer',
+                'has_consumer_access': True,
+                'has_business_access': False
+            }
+        )
         
         # Ensure OnboardingProgress exists
         OnboardingProgress.objects.get_or_create(
@@ -72,8 +80,14 @@ def ensure_onboarding_consistency(sender, instance, created, **kwargs):
                         logger.info(f"Auto-completed onboarding for {instance.email} with existing tenant/business")
                         
         except UserProfile.DoesNotExist:
-            # Create profile if missing
-            UserProfile.objects.create(user=instance)
+            # Create profile if missing with user_mode
+            UserProfile.objects.create(
+                user=instance,
+                user_mode='consumer',  # Default to consumer mode
+                default_mode='consumer',
+                has_consumer_access=True,
+                has_business_access=False
+            )
             logger.info(f"Created missing UserProfile for {instance.email}")
 
 @receiver(post_save, sender=OnboardingProgress)
