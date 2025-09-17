@@ -354,7 +354,10 @@ export default function BusinessMenuScreen() {
           (contextItem.label === 'Staff' && staticItem.title === 'Staff' && staticItem.screen === 'Employees') ||
           // Special case: Menu mapping
           (contextItem.id === 'menu' && staticItem.title === 'Menu') ||
-          (contextItem.label === 'Menu' && staticItem.title === 'Menu')
+          (contextItem.label === 'Menu' && staticItem.title === 'Menu') ||
+          // Special case: Orders mapping for restaurants
+          (contextItem.id === 'orders' && staticItem.title === 'Orders') ||
+          (contextItem.label === 'Orders' && staticItem.screen === 'RestaurantOrders')
         );
 
         if (matchingItem) {
@@ -362,7 +365,7 @@ export default function BusinessMenuScreen() {
           return {
             ...matchingItem,
             title: contextItem.title || contextItem.label || matchingItem.title,
-            screen: contextItem.screen || matchingItem.screen
+            screen: mappedScreen || contextItem.screen || matchingItem.screen
           };
         }
 
@@ -384,10 +387,10 @@ export default function BusinessMenuScreen() {
         };
 
         return {
-          icon: contextItem.icon || 'list-outline',
+          icon: contextItem.icon || 'receipt-outline',
           title: contextItem.title || contextItem.label,
-          color: screenToColorMap[contextItem.screen] || screenToColorMap[mappedScreen] || '#6b7280',
-          screen: contextItem.screen || mappedScreen
+          color: screenToColorMap[mappedScreen] || screenToColorMap[contextItem.screen] || '#6b7280',
+          screen: mappedScreen || contextItem.screen
         };
       });
       
