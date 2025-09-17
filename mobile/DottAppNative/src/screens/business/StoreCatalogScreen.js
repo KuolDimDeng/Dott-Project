@@ -221,7 +221,12 @@ export default function StoreCatalogScreen({ route }) {
         >
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Product Catalog</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Product Catalog</Text>
+          {!loading && storeItems.length > 0 && (
+            <Text style={styles.itemCount}>{storeItems.length} products</Text>
+          )}
+        </View>
         <TouchableOpacity
           onPress={() => navigation.navigate('Inventory')}
           style={styles.inventoryButton}
@@ -293,6 +298,15 @@ export default function StoreCatalogScreen({ route }) {
             />
           }
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          initialNumToRender={20}
+          maxToRenderPerBatch={20}
+          windowSize={10}
+          removeClippedSubviews={true}
+          getItemLayout={(data, index) => ({
+            length: 100,
+            offset: 100 * index,
+            index,
+          })}
         />
       )}
 
@@ -438,10 +452,19 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#212529',
+  },
+  itemCount: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginTop: 2,
   },
   inventoryButton: {
     flexDirection: 'row',

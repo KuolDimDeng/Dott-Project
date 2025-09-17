@@ -10,6 +10,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from .services.staging_service import StagingService
 # These imports will be activated after models are integrated
 try:
@@ -32,12 +33,20 @@ except ImportError:
     StoreItemStaging = None
 
 
+class LargeResultsSetPagination(PageNumberPagination):
+    """Custom pagination for store items to handle large catalogs"""
+    page_size = 50
+    page_size_query_param = 'limit'
+    max_page_size = 2500
+
+
 class StoreItemViewSet(viewsets.ModelViewSet):
     """
     Global store items catalog - available to all authenticated merchants
     No tenant filtering as these are shared across all tenants
     """
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
