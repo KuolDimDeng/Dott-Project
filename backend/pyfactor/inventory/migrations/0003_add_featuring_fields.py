@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0002_add_supply_fields'),
+        ('inventory', '0002_supplier_created_at_supplier_is_active_and_more'),
     ]
 
     operations = [
