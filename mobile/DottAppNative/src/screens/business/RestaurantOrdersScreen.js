@@ -32,10 +32,20 @@ export default function RestaurantOrdersScreen() {
   const notificationSound = useRef(null);
 
   useEffect(() => {
-    // Load notification sound
-    notificationSound.current = new Sound('notification.mp3', Sound.MAIN_BUNDLE, (error) => {
-      if (error) console.log('Failed to load sound', error);
-    });
+    // Load notification sound safely
+    try {
+      if (Sound && Sound.MAIN_BUNDLE) {
+        notificationSound.current = new Sound('notification.mp3', Sound.MAIN_BUNDLE, (error) => {
+          if (error) {
+            console.log('Failed to load sound', error);
+            // Continue without sound
+          }
+        });
+      }
+    } catch (soundError) {
+      console.log('Sound library not available:', soundError);
+      // Continue without sound functionality
+    }
 
     // Connect to WebSocket for real-time orders
     connectWebSocket();
@@ -46,7 +56,9 @@ export default function RestaurantOrdersScreen() {
     // Cleanup
     return () => {
       if (wsRef.current) wsRef.current.close();
-      if (notificationSound.current) notificationSound.current.release();
+      if (notificationSound.current && notificationSound.current.release) {
+        notificationSound.current.release();
+      }
     };
   }, []);
 
@@ -89,9 +101,13 @@ export default function RestaurantOrdersScreen() {
           // Set 5-minute timer
           setTimers(prev => ({ ...prev, [data.order.id]: 300 }));
 
-          // Play notification sound
-          if (notificationSound.current) {
-            notificationSound.current.play();
+          // Play notification sound safely
+          try {
+            if (notificationSound.current && notificationSound.current.play) {
+              notificationSound.current.play();
+            }
+          } catch (error) {
+            console.log('Could not play notification sound:', error);
           }
 
           // Show alert
