@@ -38,7 +38,7 @@ django-phonenumber-field==8.1.0
 django-countries==7.6.1
 python-barcode==0.15.1
 channels==4.2.2
-channels-redis==4.2.3
+channels-redis==4.2.0
 
 # AWS
 boto3==1.38.27
