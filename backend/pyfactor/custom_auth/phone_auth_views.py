@@ -86,6 +86,10 @@ def send_otp(request):
                 'message': 'Invalid phone number format. Please use international format (+1234567890)'
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # TEST NUMBER BYPASS: MTN Test number for development
+        TEST_NUMBERS = ['+211925550100']  # MTN South Sudan test number
+        is_test_number = normalized_phone in TEST_NUMBERS
+        
         # Get client info for rate limiting
         ip_address = get_client_ip(request)
         user_agent = request.META.get('HTTP_USER_AGENT', '')
@@ -162,9 +166,16 @@ def send_otp(request):
                 'message': 'Failed to generate verification code. Please try again.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Send SMS
+        # Send SMS (skip for test numbers)
         try:
-            sms_success, sms_message, message_sid = sms_service.send_otp(normalized_phone, otp.otp_code)
+            if is_test_number:
+                # For test numbers, simulate successful SMS without actually sending
+                logger.info(f"📱 TEST MODE: Simulating SMS for {normalized_phone} with OTP: {otp.otp_code}")
+                sms_success = True
+                sms_message = f"TEST MODE: OTP is {otp.otp_code}"
+                message_sid = "TEST_MODE_NO_SMS"
+            else:
+                sms_success, sms_message, message_sid = sms_service.send_otp(normalized_phone, otp.otp_code)
             
             # Update OTP with SMS delivery info
             otp.message_sid = message_sid
@@ -181,11 +192,19 @@ def send_otp(request):
                     user_agent=user_agent
                 )
                 
-                return Response({
+                response_data = {
                     'success': True,
                     'message': 'Verification code sent successfully',
                     'expires_in': 600  # 10 minutes in seconds
-                }, status=status.HTTP_200_OK)
+                }
+                
+                # For test numbers, include the OTP in the response
+                if is_test_number:
+                    response_data['test_mode'] = True
+                    response_data['test_otp'] = otp.otp_code
+                    response_data['message'] = f'TEST MODE: Use OTP {otp.otp_code}'
+                
+                return Response(response_data, status=status.HTTP_200_OK)
             else:
                 logger.error(f"❌ SMS sending failed: {sms_message}")
                 PhoneVerificationAttempt.log_attempt(
