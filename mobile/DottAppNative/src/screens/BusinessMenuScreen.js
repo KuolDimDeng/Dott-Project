@@ -338,41 +338,56 @@ export default function BusinessMenuScreen() {
           mappedScreen = 'Reports';
         } else if (contextItem.screen === 'BankingScreen') {
           mappedScreen = 'Banking';
+        } else if (contextItem.screen === 'Orders') {
+          mappedScreen = 'RestaurantOrders';
+        } else if (contextItem.screen === 'MenuManagement') {
+          mappedScreen = 'MenuManagement';
         }
         
         // Find matching item in ALL_MENU_ITEMS or create a default mapping
-        const matchingItem = ALL_MENU_ITEMS.find(staticItem => 
+        const matchingItem = ALL_MENU_ITEMS.find(staticItem =>
           staticItem.title.toLowerCase() === contextItem.label?.toLowerCase() ||
           staticItem.title.toLowerCase() === contextItem.title?.toLowerCase() ||
           staticItem.screen === mappedScreen ||
+          staticItem.screen === contextItem.screen ||
           // Special case: Staff/Employees mapping
-          (contextItem.label === 'Staff' && staticItem.title === 'Staff' && staticItem.screen === 'Employees')
+          (contextItem.label === 'Staff' && staticItem.title === 'Staff' && staticItem.screen === 'Employees') ||
+          // Special case: Menu mapping
+          (contextItem.id === 'menu' && staticItem.title === 'Menu') ||
+          (contextItem.label === 'Menu' && staticItem.title === 'Menu')
         );
-        
+
         if (matchingItem) {
-          return matchingItem;
+          // Preserve the context item's properties but use matching item's visual style
+          return {
+            ...matchingItem,
+            title: contextItem.title || contextItem.label || matchingItem.title,
+            screen: contextItem.screen || matchingItem.screen
+          };
         }
-        
+
         // Create mapping for items not in ALL_MENU_ITEMS
         const screenToColorMap = {
           'Dashboard': '#8b5cf6', // purple for dashboard
           'RestaurantOrders': '#10b981', // green for orders (updated to match theme)
+          'Orders': '#10b981', // green for orders
           'POS': '#10b981', // green for POS
-          'Tables': '#3b82f6', // blue for tables  
+          'Tables': '#3b82f6', // blue for tables
           'Delivery': '#f59e0b', // orange for delivery
           'CourierDeliveries': '#f59e0b', // orange for courier
           'Inventory': '#ec4899', // pink for inventory
-          'MenuManagement': '#8b5cf6', // purple for menu
+          'MenuManagement': '#10b981', // green for menu
+          'Menu': '#10b981', // green for menu
           'Employees': '#8b5cf6', // purple for employees
           'Timesheet': '#14b8a6', // teal for timesheet
           'DualQR': '#2563eb', // blue for dual QR
         };
-        
+
         return {
-          icon: contextItem.icon || 'document-outline',
+          icon: contextItem.icon || 'list-outline',
           title: contextItem.title || contextItem.label,
-          color: screenToColorMap[mappedScreen] || '#6b7280',
-          screen: mappedScreen
+          color: screenToColorMap[contextItem.screen] || screenToColorMap[mappedScreen] || '#6b7280',
+          screen: contextItem.screen || mappedScreen
         };
       });
       
