@@ -187,18 +187,21 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             item_type = request.query_params.get('type', 'all')  # all, products, menu_items
             limit = int(request.query_params.get('limit', 20))
 
+            # If no city is provided, return empty results instead of error
             if not city:
+                logger.warning("No city provided for featured items request")
                 return Response({
-                    'success': False,
-                    'message': 'City is required',
-                    'results': []
+                    'success': True,
+                    'results': [],
+                    'count': 0,
+                    'message': 'City parameter is required for featured items'
                 })
 
             # Get businesses in the city
             business_listings = BusinessListing.objects.filter(
                 is_visible_in_marketplace=True,
                 city__iexact=city
-            )
+            ).select_related('business')  # Add select_related for optimization
 
             if country:
                 business_listings = business_listings.filter(
@@ -218,6 +221,8 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     from datetime import datetime
                     now = timezone.now()
 
+                    logger.info(f"Fetching featured products for businesses: {list(business_ids)[:5]}...")
+
                     products = Product.objects.filter(
                         tenant_id__in=business_ids,
                         is_featured=True,
@@ -225,21 +230,28 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                         quantity__gt=0  # Only show items in stock
                     ).filter(
                         Q(featured_until__isnull=True) | Q(featured_until__gte=now)
-                    ).order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
+                    ).select_related('tenant').order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
+
+                    logger.info(f"Found {products.count()} featured products")
+
+                    # Create mapping of business listings for efficiency
+                    listing_map = {}
+                    for listing in business_listings:
+                        listing_map[listing.business_id] = listing
 
                     for product in products:
-                        # Get business info
-                        listing = BusinessListing.objects.filter(business_id=product.tenant_id).first()
+                        # Get business info from pre-fetched map
+                        listing = listing_map.get(product.tenant_id)
                         if listing:
                             featured_items['products'].append({
                                 'id': str(product.id),
                                 'name': product.name,
-                                'description': product.description,
+                                'description': product.description or '',
                                 'price': float(product.price) if product.price else 0,
                                 'image_url': None,  # We'll need to add image handling
                                 'business_id': str(product.tenant_id),
-                                'business_name': listing.business.business_name,
-                                'business_logo': listing.logo_url,
+                                'business_name': listing.business.business_name if listing.business else 'Unknown Business',
+                                'business_logo': getattr(listing, 'logo_url', None),
                                 'is_featured': product.is_featured,
                                 'featured_priority': product.featured_priority,
                                 'view_count': product.view_count,
@@ -248,7 +260,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                                 'quantity': product.quantity
                             })
                 except Exception as e:
-                    logger.error(f"Error fetching featured products: {e}")
+                    logger.error(f"Error fetching featured products: {str(e)}", exc_info=True)
 
             # Get featured menu items
             if item_type in ['all', 'menu_items']:
@@ -256,27 +268,37 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     from datetime import datetime
                     now = timezone.now()
 
+                    logger.info(f"Fetching featured menu items for businesses: {list(business_ids)[:5]}...")
+
                     menu_items = MenuItem.objects.filter(
                         tenant_id__in=business_ids,
                         is_featured=True,
                         is_available=True
                     ).filter(
                         Q(featured_until__isnull=True) | Q(featured_until__gte=now)
-                    ).order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
+                    ).select_related('tenant', 'category').order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
+
+                    logger.info(f"Found {menu_items.count()} featured menu items")
+
+                    # Use the pre-fetched listing map
+                    if 'listing_map' not in locals():
+                        listing_map = {}
+                        for listing in business_listings:
+                            listing_map[listing.business_id] = listing
 
                     for item in menu_items:
-                        # Get business info
-                        listing = BusinessListing.objects.filter(business_id=item.tenant_id).first()
+                        # Get business info from pre-fetched map
+                        listing = listing_map.get(item.tenant_id)
                         if listing:
                             featured_items['menu_items'].append({
                                 'id': str(item.id),
                                 'name': item.name,
-                                'description': item.description,
-                                'price': float(item.effective_price),
-                                'image_url': item.image_url or item.thumbnail_url,
+                                'description': item.description or '',
+                                'price': float(item.effective_price) if item.effective_price else 0,
+                                'image_url': item.image_url or item.thumbnail_url or None,
                                 'business_id': str(item.tenant_id),
-                                'business_name': listing.business.business_name,
-                                'business_logo': listing.logo_url,
+                                'business_name': listing.business.business_name if listing.business else 'Unknown Business',
+                                'business_logo': getattr(listing, 'logo_url', None),
                                 'category': item.category.name if item.category else None,
                                 'is_featured': item.is_featured,
                                 'featured_priority': item.featured_priority,
@@ -284,13 +306,13 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                                 'order_count': item.order_count,
                                 'is_available': item.is_available,
                                 'preparation_time': item.preparation_time,
-                                'is_vegetarian': item.is_vegetarian,
-                                'is_vegan': item.is_vegan,
-                                'is_spicy': item.is_spicy,
-                                'spice_level': item.spice_level
+                                'is_vegetarian': getattr(item, 'is_vegetarian', False),
+                                'is_vegan': getattr(item, 'is_vegan', False),
+                                'is_spicy': getattr(item, 'is_spicy', False),
+                                'spice_level': getattr(item, 'spice_level', 0)
                             })
                 except Exception as e:
-                    logger.error(f"Error fetching featured menu items: {e}")
+                    logger.error(f"Error fetching featured menu items: {str(e)}", exc_info=True)
 
             # Combine and sort all items by priority and score
             all_items = []
@@ -313,10 +335,11 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
             })
 
         except Exception as e:
-            logger.error(f"Error fetching featured items: {e}")
+            logger.error(f"Error in featured_items view: {str(e)}", exc_info=True)
             return Response({
                 'success': False,
                 'error': str(e),
+                'message': 'An error occurred while fetching featured items',
                 'results': []
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

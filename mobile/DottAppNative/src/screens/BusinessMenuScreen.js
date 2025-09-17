@@ -338,7 +338,7 @@ export default function BusinessMenuScreen() {
           mappedScreen = 'Reports';
         } else if (contextItem.screen === 'BankingScreen') {
           mappedScreen = 'Banking';
-        } else if (contextItem.screen === 'Orders') {
+        } else if (contextItem.screen === 'Orders' || contextItem.screen === 'OrderQueue') {
           mappedScreen = 'RestaurantOrders';
         } else if (contextItem.screen === 'MenuManagement') {
           mappedScreen = 'MenuManagement';
@@ -357,7 +357,8 @@ export default function BusinessMenuScreen() {
           (contextItem.label === 'Menu' && staticItem.title === 'Menu') ||
           // Special case: Orders mapping for restaurants
           (contextItem.id === 'orders' && staticItem.title === 'Orders') ||
-          (contextItem.label === 'Orders' && staticItem.screen === 'RestaurantOrders')
+          (contextItem.label === 'Orders' && staticItem.screen === 'RestaurantOrders') ||
+          (contextItem.screen === 'OrderQueue' && staticItem.screen === 'RestaurantOrders')
         );
 
         if (matchingItem) {
