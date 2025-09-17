@@ -437,7 +437,86 @@ export const BusinessProvider = ({ children }) => {
     } else {
       console.log('❌ Not detected as restaurant');
     }
-    
+
+    // Check if business is a courier business and add courier-specific options
+    const isCourierBusiness = businessData.businessType === 'SERVICE' &&
+                             (businessName.includes('courier') ||
+                              businessName.includes('delivery') ||
+                              businessName.includes('transport') ||
+                              businessType.includes('transport') ||
+                              businessType.includes('courier'));
+
+    console.log('🚚 Is Courier Business?', isCourierBusiness);
+    console.log('🚚 Business Name contains courier/delivery:', businessName.includes('courier') || businessName.includes('delivery'));
+
+    if (isCourierBusiness) {
+      console.log('🚚 Courier business detected! Adding courier-specific options');
+
+      // Check if CourierDeliveries item already exists
+      const hasCourierOption = menuItems.some(item =>
+        item.id === 'courier' ||
+        item.screen === 'CourierDeliveries' ||
+        item.label?.toLowerCase().includes('courier')
+      );
+
+      if (!hasCourierOption) {
+        // Add Courier Deliveries option for courier businesses
+        const courierOption = {
+          id: 'courier',
+          label: 'Deliveries',
+          title: 'Courier Deliveries',
+          icon: 'bicycle-outline',
+          screen: 'CourierDeliveries',
+          subtitle: 'Manage delivery requests and earnings'
+        };
+        menuItems.unshift(courierOption); // Add at the beginning as it's the main feature
+        console.log('🚚 Added Courier Deliveries option:', courierOption);
+      }
+
+      // Check if Transport/Vehicle management exists
+      const hasTransportOption = menuItems.some(item =>
+        item.id === 'transport' ||
+        item.screen === 'Transport' ||
+        item.label?.toLowerCase().includes('transport')
+      );
+
+      if (!hasTransportOption) {
+        // Add Transport option for vehicle management
+        const transportOption = {
+          id: 'transport',
+          label: 'Vehicles',
+          title: 'Transport',
+          icon: 'car-outline',
+          screen: 'Transport',
+          subtitle: 'Manage vehicles and transport'
+        };
+        menuItems.splice(1, 0, transportOption); // Add as second item
+        console.log('🚚 Added Transport option:', transportOption);
+      }
+
+      // Remove less relevant options for courier businesses
+      const courierExcludedItems = ['invoices', 'banking', 'reports'];
+      menuItems = menuItems.filter(item => {
+        const itemLabel = (item.label || item.title || '').toLowerCase();
+        const itemId = (item.id || '').toLowerCase();
+        const itemScreen = (item.screen || '').toLowerCase();
+
+        const shouldExclude = courierExcludedItems.some(excluded =>
+          itemLabel.includes(excluded) ||
+          itemId.includes(excluded) ||
+          itemScreen.includes(excluded)
+        );
+
+        if (shouldExclude) {
+          console.log('🚫 Filtering out item for courier business:', item.label || item.title);
+        }
+
+        return !shouldExclude;
+      });
+
+      console.log('🚚 Final courier menu items count:', menuItems.length);
+    }
+
     // Add Advertise option for ALL business types
     const hasAdvertiseOption = menuItems.some(item => 
       item.id === 'advertise' || 
