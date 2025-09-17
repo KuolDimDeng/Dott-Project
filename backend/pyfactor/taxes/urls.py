@@ -69,6 +69,7 @@ from .views.tax_reporting_views import (
 from .views.pos_tax_views import (
     get_pos_default_tax_rate,
     get_pos_customer_tax_rate,
+    get_pos_global_tax_rate,
     refresh_cached_tax_rate
 )
 from .views.tax_summary_views import (
@@ -186,6 +187,7 @@ urlpatterns = [
     # POS-specific tax endpoints (optimized for speed)
     path('pos/default-rate/', get_pos_default_tax_rate, name='pos-default-tax-rate'),
     path('pos/customer-rate/', get_pos_customer_tax_rate, name='pos-customer-tax-rate'),
+    path('pos/global-rate/', get_pos_global_tax_rate, name='pos-global-tax-rate'),
     path('pos/refresh-cache/', refresh_cached_tax_rate, name='pos-refresh-tax-cache'),
     
     # Tax summary endpoints for dashboard widgets

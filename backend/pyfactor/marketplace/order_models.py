@@ -36,6 +36,7 @@ class ConsumerOrder(models.Model):
         ('cash', 'Cash on Delivery'),
         ('card', 'Credit/Debit Card'),
         ('mpesa', 'M-Pesa'),
+        ('mtn', 'MTN Mobile Money'),
         ('bank_transfer', 'Bank Transfer'),
     ]
     

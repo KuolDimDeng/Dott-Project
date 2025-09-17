@@ -25,20 +25,35 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
     def create(self, request):
         """Create a new order"""
         try:
-            business_id = request.data.get('business_id')
             items = request.data.get('items', [])
-            delivery_address = request.data.get('delivery_address', '')
-            delivery_notes = request.data.get('delivery_notes', '')
-            payment_method = request.data.get('payment_method', 'cash')
-            
-            # Validate business
+            delivery_address = request.data.get('delivery_address')
+            delivery_type = request.data.get('delivery_type', 'delivery')
+            special_instructions = request.data.get('special_instructions', '')
+            payment_method = request.data.get('payment_method', 'card')
+
+            # Get business from first item (assuming single business orders for now)
+            if not items:
+                return Response({
+                    'success': False,
+                    'error': 'No items in order'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            business_id = items[0].get('business_id')
             business_listing = BusinessListing.objects.get(business_id=business_id)
-            
-            # Calculate totals
-            subtotal = sum(item.get('price', 0) * item.get('quantity', 1) for item in items)
-            tax_amount = subtotal * 0.16  # 16% VAT - should be configurable
-            delivery_fee = 0  # Business handles delivery
-            total_amount = subtotal + tax_amount + delivery_fee
+
+            # Use mobile app's calculated totals instead of recalculating
+            subtotal = float(request.data.get('subtotal', 0))
+            tax_amount = float(request.data.get('tax_amount', 0))
+            delivery_fee = float(request.data.get('delivery_fee', 0))
+            service_fee = float(request.data.get('service_fee', 0))
+            total_amount = float(request.data.get('total', 0))
+
+            # Format delivery address as string if it's an object
+            delivery_address_str = ''
+            if delivery_address and isinstance(delivery_address, dict):
+                delivery_address_str = f"{delivery_address.get('street', '')}, {delivery_address.get('city', '')}, {delivery_address.get('state', '')} {delivery_address.get('postal_code', '')}, {delivery_address.get('country', '')}"
+            elif delivery_address:
+                delivery_address_str = str(delivery_address)
             
             # Create order
             order = ConsumerOrder.objects.create(
@@ -50,8 +65,8 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 delivery_fee=delivery_fee,
                 total_amount=total_amount,
                 payment_method=payment_method,
-                delivery_address=delivery_address,
-                delivery_notes=delivery_notes,
+                delivery_address=delivery_address_str,
+                delivery_notes=special_instructions,
                 created_from_chat=request.data.get('created_from_chat', False),
                 chat_conversation_id=request.data.get('conversation_id', None)
             )

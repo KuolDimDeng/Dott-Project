@@ -187,6 +187,71 @@ def get_pos_customer_tax_rate(request):
         })
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_pos_global_tax_rate(request):
+    """
+    Get global tax rate by country for pin-dropped addresses and international orders
+    Optimized for marketplace orders with country-only information
+    """
+    country = request.GET.get('country', '').upper()
+
+    logger.info(f"[POS Global Tax] Getting rate for country: {country}")
+
+    try:
+        if not country:
+            return Response({
+                "success": True,
+                "tax_rate": 0,
+                "rate_percentage": 0,
+                "jurisdiction": "No country specified",
+                "source": "none",
+                "message": "No country specified - no tax applied"
+            })
+
+        # Check global rates by country
+        global_rate = GlobalSalesTaxRate.objects.filter(
+            country=country,
+            is_current=True
+        ).first()
+
+        if global_rate:
+            rate_percentage = float(global_rate.rate * 100)
+            jurisdiction = global_rate.country_name or country
+
+            logger.info(f"[POS Global Tax] Found rate for {country}: {rate_percentage}%")
+            return Response({
+                "success": True,
+                "tax_rate": float(global_rate.rate),
+                "rate_percentage": rate_percentage,
+                "jurisdiction": jurisdiction,
+                "source": "global",
+                "message": f"Global rate: {rate_percentage:.1f}%"
+            })
+
+        # No rate found for this country
+        logger.info(f"[POS Global Tax] No rate found for {country}, returning 0%")
+        return Response({
+            "success": True,
+            "tax_rate": 0,
+            "rate_percentage": 0,
+            "jurisdiction": f"{country} (No tax configured)",
+            "source": "none",
+            "message": f"No tax rate configured for {country}"
+        })
+
+    except Exception as e:
+        logger.error(f"[POS Global Tax] Error getting rate for {country}: {e}")
+        return Response({
+            "success": False,
+            "tax_rate": 0,
+            "rate_percentage": 0,
+            "jurisdiction": "Error",
+            "source": "none",
+            "message": f"Error: {str(e)}"
+        })
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def refresh_cached_tax_rate(request):

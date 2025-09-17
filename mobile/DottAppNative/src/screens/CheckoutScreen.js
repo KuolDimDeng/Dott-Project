@@ -174,13 +174,11 @@ export default function CheckoutScreen() {
         response = await api.get('/taxes/pos/default-rate/');
       } else {
         // For DELIVERY orders: Use customer's delivery address
-        // Tax is calculated based on destination (where product is consumed)
+        // Tax is calculated based on destination country (global sales tax)
         const params = {
           country: address.country || 'US',
-          state: address.state || '',
-          county: address.county || '',
         };
-        response = await api.get('/taxes/pos/customer-rate/', { params });
+        response = await api.get('/taxes/pos/global-rate/', { params });
       }
 
       if (response.data.success) {
@@ -316,16 +314,16 @@ export default function CheckoutScreen() {
         special_instructions: specialInstructions,
       };
 
-      // Create order using correct marketplace endpoint
-      const orderResponse = await api.post('/marketplace/orders/', orderData);
-      const orderId = orderResponse.data.id;
+      // Create order using correct marketplace consumer endpoint
+      const orderResponse = await api.post('/marketplace/consumer/orders/', orderData);
+      const orderId = orderResponse.data.order_id;
 
       // The backend now generates both pickup and delivery PINs
       // Consumer receives delivery PIN to give to courier
       const passcodes = {
-        pickupCode: orderResponse.data.pickup_pin,
-        deliveryCode: orderResponse.data.delivery_pin,
-        consumerPin: orderResponse.data.consumer_delivery_pin, // PIN consumer gives to courier
+        pickupCode: orderResponse.data.passcodes.pickupCode,
+        deliveryCode: orderResponse.data.passcodes.deliveryCode,
+        consumerPin: orderResponse.data.passcodes.consumerPin, // PIN consumer gives to courier
         expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
       };
 
