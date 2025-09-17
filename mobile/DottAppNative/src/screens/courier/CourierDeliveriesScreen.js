@@ -11,6 +11,8 @@ import {
   RefreshControl,
   Switch,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -237,6 +239,93 @@ export default function CourierDeliveriesScreen() {
     });
   };
 
+  const openNavigation = (delivery, type = 'delivery') => {
+    try {
+      let lat, lng, address, fallbackAddress;
+
+      if (type === 'pickup') {
+        lat = delivery.pickup_latitude;
+        lng = delivery.pickup_longitude;
+        address = delivery.pickup_address;
+        fallbackAddress = delivery.pickup_address;
+      } else {
+        lat = delivery.delivery_latitude;
+        lng = delivery.delivery_longitude;
+        address = delivery.delivery_address;
+        fallbackAddress = delivery.delivery_address;
+      }
+
+      console.log(`🗺️ Opening navigation to ${type}:`, { lat, lng, address });
+
+      // Create navigation URL with multiple fallback options
+      let navigationUrl;
+
+      if (lat && lng) {
+        // Use coordinates for precise navigation (best for Africa with dropped pins)
+        if (Platform.OS === 'ios') {
+          // iOS - try Apple Maps first, then Google Maps
+          navigationUrl = `maps://app?daddr=${lat},${lng}`;
+
+          Linking.openURL(navigationUrl).catch(() => {
+            // Fallback to Google Maps
+            const googleUrl = `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`;
+            Linking.openURL(googleUrl).catch(() => {
+              // Final fallback to web Google Maps
+              const webUrl = `https://maps.google.com/maps?daddr=${lat},${lng}`;
+              Linking.openURL(webUrl).catch(() => {
+                Alert.alert('Navigation Error', 'Unable to open maps application');
+              });
+            });
+          });
+        } else {
+          // Android - try Google Maps first
+          navigationUrl = `google.navigation:q=${lat},${lng}`;
+
+          Linking.openURL(navigationUrl).catch(() => {
+            // Fallback to Google Maps app
+            const googleUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+            Linking.openURL(googleUrl).catch(() => {
+              // Final fallback to web Google Maps
+              const webUrl = `https://maps.google.com/maps?daddr=${lat},${lng}`;
+              Linking.openURL(webUrl).catch(() => {
+                Alert.alert('Navigation Error', 'Unable to open maps application');
+              });
+            });
+          });
+        }
+      } else {
+        // Fallback to address-based navigation
+        console.log('🗺️ No coordinates available, using address:', address);
+        const encodedAddress = encodeURIComponent(fallbackAddress || 'Unknown Location');
+
+        if (Platform.OS === 'ios') {
+          navigationUrl = `maps://app?daddr=${encodedAddress}`;
+        } else {
+          navigationUrl = `geo:0,0?q=${encodedAddress}`;
+        }
+
+        Linking.openURL(navigationUrl).catch(() => {
+          Alert.alert('Navigation Error', 'Unable to open maps. Please check the address manually.');
+        });
+      }
+
+      // Show helpful info to courier
+      const locationInfo = lat && lng
+        ? `📍 Navigating to precise location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+        : `📍 Navigating to: ${fallbackAddress}`;
+
+      Alert.alert(
+        'Navigation Opened',
+        locationInfo,
+        [{ text: 'OK' }]
+      );
+
+    } catch (error) {
+      console.error('Navigation error:', error);
+      Alert.alert('Error', 'Failed to open navigation');
+    }
+  };
+
   const renderAvailableDelivery = ({ item }) => {
     const timeRemaining = acceptTimers[item.id] || 0;
 
@@ -340,26 +429,30 @@ export default function CourierDeliveriesScreen() {
       </View>
 
       {item.status === 'courier_assigned' && (
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handlePickupComplete(item)}
-        >
-          <Icon name="qr-code" size={20} color="#ffffff" />
-          <Text style={styles.actionButtonText}>Enter Pickup PIN</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.navigationButton]}
+            onPress={() => openNavigation(item, 'pickup')}
+          >
+            <Icon name="navigate" size={20} color="#ffffff" />
+            <Text style={styles.actionButtonText}>Navigate to Pickup</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handlePickupComplete(item)}
+          >
+            <Icon name="qr-code" size={20} color="#ffffff" />
+            <Text style={styles.actionButtonText}>Enter Pickup PIN</Text>
+          </TouchableOpacity>
+        </>
       )}
 
       {item.status === 'picked' && (
         <>
           <TouchableOpacity
             style={[styles.actionButton, styles.navigationButton]}
-            onPress={() => {
-              // Open navigation app with destination
-              const url = `maps://app?daddr=${encodeURIComponent(item.delivery_address)}`;
-              Linking.openURL(url).catch(() => {
-                Alert.alert('Error', 'Unable to open maps');
-              });
-            }}
+            onPress={() => openNavigation(item, 'delivery')}
           >
             <Icon name="navigate" size={20} color="#ffffff" />
             <Text style={styles.actionButtonText}>Navigate to Customer</Text>
