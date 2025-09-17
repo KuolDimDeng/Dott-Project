@@ -50,6 +50,7 @@ jwcrypto==1.5.6
 # Payment processing - CRITICAL for business_views.py
 stripe>=5.0.0
 posthog==6.0.0
+plaid-python==24.0.0
 
 # Email services
 resend==2.5.1
