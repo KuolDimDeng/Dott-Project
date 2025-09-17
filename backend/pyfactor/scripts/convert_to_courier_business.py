@@ -48,7 +48,6 @@ with transaction.atomic():
         business.marketplace_category = 'Transport'
         business.name = "Steve's Courier Service"
         business.delivery_scope = 'local'
-        business.primary_interaction_type = 'mobile'  # Required field
         business.save()
         
         print(f"✅ Updated business to courier type")
@@ -67,7 +66,6 @@ with transaction.atomic():
             delivery_scope='local',
             country='SS',
             city='Juba',
-            primary_interaction_type='mobile',  # Required field for courier businesses
             tenant_id=user.tenant_id if user.tenant else None
         )
         print(f"✅ Created courier business: {business.name}")
