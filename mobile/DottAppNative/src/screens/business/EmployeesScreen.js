@@ -222,7 +222,14 @@ export default function EmployeesScreen() {
       
       if (response.data && response.data.success !== false) {
         const employeeData = response.data.data || response.data.results || response.data;
-        setEmployees(Array.isArray(employeeData) ? employeeData : []);
+        
+        // Add full_name field if not present
+        const processedData = Array.isArray(employeeData) ? employeeData.map(emp => ({
+          ...emp,
+          full_name: emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Unknown'
+        })) : [];
+        
+        setEmployees(processedData);
       } else {
         // Fallback to sample data
         setEmployees(getSampleEmployees());

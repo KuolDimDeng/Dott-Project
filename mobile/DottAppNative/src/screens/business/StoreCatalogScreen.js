@@ -61,7 +61,17 @@ export default function StoreCatalogScreen({ route }) {
       // Increased limit to show all catalog items (up to 10,000 items max)
       const response = await inventoryApi.getStoreItems({ limit: 10000 });
       console.log('📦 Store items loaded:', response.results?.length || 0);
-      setStoreItems(response.results || []);
+      
+      // Debug: Check first few items for image URLs
+      const items = response.results || [];
+      console.log('🖼️ [StoreCatalog] First 5 items image URLs:');
+      items.slice(0, 5).forEach((item, index) => {
+        console.log(`  ${index + 1}. ${item.name}:`);
+        console.log(`     - image_url: ${item.image_url || 'NONE'}`);
+        console.log(`     - thumbnail_url: ${item.thumbnail_url || 'NONE'}`);
+      });
+      
+      setStoreItems(items);
     } catch (error) {
       console.error('Error fetching store items:', error);
       if (refreshing) {
@@ -164,21 +174,43 @@ export default function StoreCatalogScreen({ route }) {
     );
   });
 
-  const renderStoreItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.itemCard}
-      onPress={() => handleImportItem(item)}
-    >
-      {item.thumbnail_url || item.image_url ? (
-        <Image
-          source={{ uri: item.thumbnail_url || item.image_url }}
-          style={styles.itemImage}
-        />
-      ) : (
-        <View style={styles.itemImagePlaceholder}>
-          <Icon name="image-outline" size={30} color="#999" />
-        </View>
-      )}
+  const [failedImages, setFailedImages] = React.useState(new Set());
+  
+  const renderStoreItem = ({ item }) => {
+    const imageUrl = item.thumbnail_url || item.image_url;
+    const imageHasFailed = failedImages.has(item.id || item.barcode);
+    
+    // Show placeholder for items with no URL or failed images
+    const shouldShowPlaceholder = !imageUrl || imageHasFailed;
+    
+    return (
+      <TouchableOpacity
+        style={styles.itemCard}
+        onPress={() => handleImportItem(item)}
+      >
+        {shouldShowPlaceholder ? (
+          <View style={styles.itemImagePlaceholder}>
+            <Icon name="image-outline" size={30} color="#999" />
+          </View>
+        ) : (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.itemImage}
+            onError={(error) => {
+              console.log(`❌ Image 404 for ${item.name}, showing placeholder`);
+              // Add to failed images set to show placeholder
+              setFailedImages(prev => new Set([...prev, item.id || item.barcode]));
+            }}
+            onLoad={() => {
+              // Remove from failed images if it loads successfully
+              setFailedImages(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(item.id || item.barcode);
+                return newSet;
+              });
+            }}
+          />
+        )}
 
       <View style={styles.itemContent}>
         <Text style={styles.itemName} numberOfLines={2}>
@@ -210,6 +242,7 @@ export default function StoreCatalogScreen({ route }) {
       </TouchableOpacity>
     </TouchableOpacity>
   );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

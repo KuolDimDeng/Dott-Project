@@ -183,13 +183,22 @@ export default function FeatureSelectionScreen() {
   };
 
   const toggleFeature = (featureId) => {
-    setSelectedFeatures(prev => {
-      if (prev.includes(featureId)) {
-        return prev.filter(id => id !== featureId);
-      } else {
-        return [...prev, featureId];
-      }
-    });
+    // Phase 2 - Show Coming Soon message
+    const feature = AVAILABLE_FEATURES.find(f => f.id === featureId);
+    Alert.alert(
+      'Coming Soon',
+      `${feature?.title || 'This feature'} will be available in Phase 2 of the app.`,
+      [{ text: 'OK', style: 'default' }]
+    );
+    
+    // Original selection logic commented out for Phase 2
+    // setSelectedFeatures(prev => {
+    //   if (prev.includes(featureId)) {
+    //     return prev.filter(id => id !== featureId);
+    //   } else {
+    //     return [...prev, featureId];
+    //   }
+    // });
   };
 
   const getTotalPrice = () => {
@@ -206,58 +215,66 @@ export default function FeatureSelectionScreen() {
   };
 
   const handlePurchase = async () => {
-    if (selectedFeatures.length === 0) {
-      Alert.alert('No Features Selected', 'Please select at least one feature to continue.');
-      return;
-    }
-
-    const total = getTotalPrice();
-    const featuresText = getSelectedFeaturesDetails()
-      .map(f => `• ${f.title} - $${f.price}/month`)
-      .join('\n');
-
+    // Phase 2 - Show Coming Soon message
     Alert.alert(
-      'Confirm Purchase',
-      `You are about to add these features:\n\n${featuresText}\n\nTotal: $${total.toFixed(2)}/month\n\nProceed with payment?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add Features',
-          onPress: async () => {
-            setLoading(true);
-            
-            try {
-              // Save selected features locally
-              await AsyncStorage.setItem(
-                `selectedFeatures_${user?.id}`, 
-                JSON.stringify(selectedFeatures)
-              );
-
-              // Show success message
-              Alert.alert(
-                'Features Added Successfully!',
-                `${selectedFeatures.length} feature(s) have been added to your dashboard.\n\nTotal cost: $${total.toFixed(2)}/month`,
-                [
-                  {
-                    text: 'View Dashboard',
-                    onPress: () => {
-                      // Trigger menu refresh and go back
-                      refreshMenuItems?.();
-                      navigation.goBack();
-                    }
-                  }
-                ]
-              );
-            } catch (error) {
-              console.error('Failed to save features:', error);
-              Alert.alert('Error', 'Failed to save your selection. Please try again.');
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
-      ]
+      'Coming Soon',
+      'Feature purchasing will be available in Phase 2 of the app.',
+      [{ text: 'OK', style: 'default' }]
     );
+    
+    // Original purchase logic commented out for Phase 2
+    // if (selectedFeatures.length === 0) {
+    //   Alert.alert('No Features Selected', 'Please select at least one feature to continue.');
+    //   return;
+    // }
+
+    // const total = getTotalPrice();
+    // const featuresText = getSelectedFeaturesDetails()
+    //   .map(f => `• ${f.title} - $${f.price}/month`)
+    //   .join('\n');
+
+    // Alert.alert(
+    //   'Confirm Purchase',
+    //   `You are about to add these features:\n\n${featuresText}\n\nTotal: $${total.toFixed(2)}/month\n\nProceed with payment?`,
+    //   [
+    //     { text: 'Cancel', style: 'cancel' },
+    //     {
+    //       text: 'Add Features',
+    //       onPress: async () => {
+    //         setLoading(true);
+    //         
+    //         try {
+    //           // Save selected features locally
+    //           await AsyncStorage.setItem(
+    //             `selectedFeatures_${user?.id}`, 
+    //             JSON.stringify(selectedFeatures)
+    //           );
+
+    //           // Show success message
+    //           Alert.alert(
+    //             'Features Added Successfully!',
+    //             `${selectedFeatures.length} feature(s) have been added to your dashboard.\n\nTotal cost: $${total.toFixed(2)}/month`,
+    //             [
+    //               {
+    //                 text: 'View Dashboard',
+    //                 onPress: () => {
+    //                   // Trigger menu refresh and go back
+    //                   refreshMenuItems?.();
+    //                   navigation.goBack();
+    //                 }
+    //               }
+    //             ]
+    //           );
+    //         } catch (error) {
+    //           console.error('Failed to save features:', error);
+    //           Alert.alert('Error', 'Failed to save your selection. Please try again.');
+    //         } finally {
+    //           setLoading(false);
+    //         }
+    //       }
+    //     }
+    //   ]
+    // );
   };
 
   const total = getTotalPrice();

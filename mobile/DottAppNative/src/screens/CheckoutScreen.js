@@ -19,6 +19,9 @@ import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import orderVerificationApi from '../services/orderVerificationApi';
+import StripePaymentModal from '../components/StripePaymentModal';
+import MTNPaymentModal from '../components/MTNPaymentModal';
+import paymentService from '../services/paymentService';
 
 export default function CheckoutScreen() {
   const navigation = useNavigation();
@@ -63,6 +66,11 @@ export default function CheckoutScreen() {
   // Special instructions
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  // Payment modals
+  const [showStripeModal, setShowStripeModal] = useState(false);
+  const [showMTNModal, setShowMTNModal] = useState(false);
+  const [pendingOrderData, setPendingOrderData] = useState(null);
 
   useEffect(() => {
     initializeCheckout();
@@ -285,37 +293,59 @@ export default function CheckoutScreen() {
       return;
     }
 
+    // Store order data for use after payment
+    const orderData = {
+      items: cartItems.map(item => ({
+        product_id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        business_id: item.businessId,
+      })),
+      delivery_type: deliveryMethod,
+      delivery_address: deliveryMethod === 'delivery' ? {
+        street: selectedAddress.street,
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+        postal_code: selectedAddress.postalCode,
+        country: selectedAddress.country,
+      } : null,
+      payment_method: paymentMethod,
+      subtotal: subtotal,
+      tax_rate: taxRate,
+      tax_amount: taxAmount,
+      delivery_fee: deliveryFee,
+      service_fee: serviceFee,
+      total: total,
+      special_instructions: specialInstructions,
+    };
+
+    // Store order data for payment processing
+    setPendingOrderData(orderData);
+
+    // Show appropriate payment modal
+    if (paymentMethod === 'card') {
+      setShowStripeModal(true);
+    } else if (paymentMethod === 'mtn') {
+      setShowMTNModal(true);
+    }
+  };
+
+  // Handle successful payment from either modal
+  const handlePaymentSuccess = async (paymentDetails) => {
+    setShowStripeModal(false);
+    setShowMTNModal(false);
     setPlacingOrder(true);
+
     try {
-      // Prepare order data
-      const orderData = {
-        items: cartItems.map(item => ({
-          product_id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          business_id: item.businessId,
-        })),
-        delivery_type: deliveryMethod,
-        delivery_address: deliveryMethod === 'delivery' ? {
-          street: selectedAddress.street,
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          postal_code: selectedAddress.postalCode,
-          country: selectedAddress.country,
-        } : null,
-        payment_method: paymentMethod,
-        subtotal: subtotal,
-        tax_rate: taxRate,
-        tax_amount: taxAmount,
-        delivery_fee: deliveryFee,
-        service_fee: serviceFee,
-        total: total,
-        special_instructions: specialInstructions,
+      // Add payment details to order data
+      const finalOrderData = {
+        ...pendingOrderData,
+        payment_details: paymentDetails,
       };
 
       // Create order using correct marketplace consumer endpoint
-      const orderResponse = await api.post('/marketplace/consumer/orders/', orderData);
+      const orderResponse = await api.post('/marketplace/consumer/orders/', finalOrderData);
       const orderId = orderResponse.data.order_id;
 
       // The backend now generates both pickup and delivery PINs
@@ -622,14 +652,11 @@ export default function CheckoutScreen() {
   };
 
   const renderPaymentMethod = () => {
-    // Determine available payment methods based on user location
-    const userCountry = user?.country || businessDetails?.country || 'US';
-
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Payment Method</Text>
         <View style={styles.paymentOptions}>
-          {/* Credit/Debit Card - Available everywhere */}
+          {/* Credit/Debit Card */}
           <TouchableOpacity
             style={[
               styles.paymentOption,
@@ -642,68 +669,40 @@ export default function CheckoutScreen() {
               size={24}
               color={paymentMethod === 'card' ? '#2563eb' : '#6b7280'}
             />
-            <Text style={[
-              styles.optionText,
-              paymentMethod === 'card' && styles.selectedOptionText
-            ]}>
-              Credit/Debit Card
-            </Text>
-            <Text style={styles.paymentSubtext}>Visa, Mastercard, Amex</Text>
+            <View style={styles.paymentTextContainer}>
+              <Text style={[
+                styles.optionText,
+                paymentMethod === 'card' && styles.selectedOptionText
+              ]}>
+                Credit/Debit Card
+              </Text>
+              <Text style={styles.paymentSubtext}>Visa, Mastercard, Amex</Text>
+            </View>
           </TouchableOpacity>
 
-          {/* MTN Mobile Money - Available in multiple African countries */}
-          {['UG', 'GH', 'ZA', 'NG', 'CM', 'CI', 'ZM', 'RW', 'SS'].includes(userCountry) && (
-            <TouchableOpacity
-              style={[
-                styles.paymentOption,
-                paymentMethod === 'mtn' && styles.selectedOption
-              ]}
-              onPress={() => setPaymentMethod('mtn')}
-            >
-              <View style={[styles.mtnIcon, paymentMethod === 'mtn' && styles.mtnIconSelected]}>
-                <Text style={[styles.mtnIconText, paymentMethod === 'mtn' && styles.mtnIconTextSelected]}>
-                  MTN
-                </Text>
-              </View>
-              <View style={styles.paymentTextContainer}>
-                <Text style={[
-                  styles.optionText,
-                  paymentMethod === 'mtn' && styles.selectedOptionText
-                ]}>
-                  MTN Mobile Money
-                </Text>
-                <Text style={styles.paymentSubtext}>Pay with MoMo</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {/* M-Pesa - Available in Kenya and other East African countries */}
-          {['KE', 'TZ', 'UG', 'RW', 'ET', 'CD', 'MZ', 'EG', 'LS', 'GH'].includes(userCountry) && (
-            <TouchableOpacity
-              style={[
-                styles.paymentOption,
-                paymentMethod === 'mpesa' && styles.selectedOption
-              ]}
-              onPress={() => setPaymentMethod('mpesa')}
-            >
-              <View style={[styles.mpesaIcon, paymentMethod === 'mpesa' && styles.mpesaIconSelected]}>
-                <Text style={[styles.mpesaIconText, paymentMethod === 'mpesa' && styles.mpesaIconTextSelected]}>
-                  M
-                </Text>
-              </View>
-              <View style={styles.paymentTextContainer}>
-                <Text style={[
-                  styles.optionText,
-                  paymentMethod === 'mpesa' && styles.selectedOptionText
-                ]}>
-                  M-Pesa
-                </Text>
-                <Text style={styles.paymentSubtext}>Safaricom Mobile Money</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {/* Note: Cash on Delivery removed to prevent fraud */}
+          {/* MTN Mobile Money */}
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              paymentMethod === 'mtn' && styles.selectedOption
+            ]}
+            onPress={() => setPaymentMethod('mtn')}
+          >
+            <View style={[styles.mtnIcon, paymentMethod === 'mtn' && styles.mtnIconSelected]}>
+              <Text style={[styles.mtnIconText, paymentMethod === 'mtn' && styles.mtnIconTextSelected]}>
+                MTN
+              </Text>
+            </View>
+            <View style={styles.paymentTextContainer}>
+              <Text style={[
+                styles.optionText,
+                paymentMethod === 'mtn' && styles.selectedOptionText
+              ]}>
+                MTN Mobile Money
+              </Text>
+              <Text style={styles.paymentSubtext}>Pay with MoMo</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Payment security note */}
@@ -880,6 +879,31 @@ export default function CheckoutScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Payment Modals */}
+      <StripePaymentModal
+        visible={showStripeModal}
+        onClose={() => setShowStripeModal(false)}
+        amount={total}
+        currency="USD"
+        onPaymentSuccess={handlePaymentSuccess}
+        metadata={{
+          orderId: pendingOrderData?.orderId,
+          description: `Order from ${businessDetails?.name || 'Business'}`
+        }}
+      />
+
+      <MTNPaymentModal
+        visible={showMTNModal}
+        onClose={() => setShowMTNModal(false)}
+        amount={total}
+        currency="SSP"
+        onPaymentSuccess={handlePaymentSuccess}
+        metadata={{
+          orderId: pendingOrderData?.orderId,
+          description: `Order from ${businessDetails?.name || 'Business'}`
+        }}
+      />
     </SafeAreaView>
   );
 }

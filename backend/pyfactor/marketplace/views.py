@@ -210,6 +210,15 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
 
             business_ids = business_listings.values_list('business_id', flat=True)
 
+            # Get tenant UUIDs for these business IDs
+            from custom_auth.models import User
+            tenant_uuids = User.objects.filter(
+                id__in=business_ids
+            ).values_list('tenant_id', flat=True)
+            tenant_uuids = [uuid for uuid in tenant_uuids if uuid is not None]
+
+            logger.info(f"Business IDs: {list(business_ids)[:5]}, Tenant UUIDs: {list(tenant_uuids)[:5]}")
+
             featured_items = {
                 'products': [],
                 'menu_items': []
@@ -224,7 +233,7 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     logger.info(f"Fetching featured products for businesses: {list(business_ids)[:5]}...")
 
                     products = Product.objects.filter(
-                        tenant_id__in=business_ids,
+                        tenant_id__in=tenant_uuids,
                         is_featured=True,
                         is_active=True,
                         quantity__gt=0  # Only show items in stock
@@ -268,10 +277,10 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     from datetime import datetime
                     now = timezone.now()
 
-                    logger.info(f"Fetching featured menu items for businesses: {list(business_ids)[:5]}...")
+                    logger.info(f"Fetching featured menu items for tenant UUIDs: {list(tenant_uuids)[:5]}...")
 
                     menu_items = MenuItem.objects.filter(
-                        tenant_id__in=business_ids,
+                        tenant_id__in=tenant_uuids,
                         is_featured=True,
                         is_available=True
                     ).filter(

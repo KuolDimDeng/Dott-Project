@@ -8,6 +8,11 @@ from .payment_views import (
     refund_order,
     get_payment_methods
 )
+from .stripe_payment_views import (
+    create_marketplace_payment_intent,
+    initiate_mtn_payment,
+    check_mtn_payment_status
+)
 from .placeholder_views import (
     get_marketplace_businesses,
     get_business_categories,
@@ -46,4 +51,9 @@ urlpatterns = [
     path('payments/confirm/', confirm_payment, name='confirm-payment'),
     path('payments/refund/', refund_order, name='refund-order'),
     path('payments/methods/', get_payment_methods, name='get-payment-methods'),
+
+    # Direct payment endpoints (no order required)
+    path('payments/stripe/create-intent/', create_marketplace_payment_intent, name='stripe-create-intent'),
+    path('payments/mtn/initiate/', initiate_mtn_payment, name='mtn-initiate'),
+    path('payments/mtn/status/<str:transaction_id>/', check_mtn_payment_status, name='mtn-check-status'),
 ]

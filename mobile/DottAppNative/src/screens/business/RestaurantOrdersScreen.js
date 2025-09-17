@@ -161,9 +161,21 @@ export default function RestaurantOrdersScreen() {
       setTimers(newTimers);
     } catch (error) {
       console.error('Failed to load orders:', error);
-      Alert.alert('Error', 'Failed to load orders');
+      
+      // Handle 404 - no orders yet for this restaurant
+      if (error.response && error.response.status === 404) {
+        console.log('No orders found - setting empty arrays');
+        setPendingOrders([]);
+        setActiveOrders([]);
+        setCompletedOrders([]);
+        setTimers({});
+      } else {
+        // Only show alert for non-404 errors
+        Alert.alert('Error', 'Failed to load orders. Please try again.');
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -528,7 +540,10 @@ export default function RestaurantOrdersScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={loadOrders}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await loadOrders();
+            }}
             colors={['#2563eb']}
           />
         }

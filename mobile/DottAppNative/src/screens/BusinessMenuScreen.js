@@ -234,7 +234,7 @@ export default function BusinessMenuScreen() {
     // Row 1 - Core Operations (Always show POS)
     { icon: 'card-outline', title: 'POS Terminal', color: '#10b981', screen: 'POS' },
     { icon: 'cube-outline', title: 'Inventory', color: '#ec4899', screen: 'Inventory' },
-    { icon: 'cash-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' },
+    // { icon: 'cash-outline', title: 'Expenses', color: '#ef4444', screen: 'Expenses' }, // Hidden for Phase 1
     
     // Row 2 - Business Management
     { icon: 'construct-outline', title: 'Jobs', color: '#f59e0b', screen: 'Jobs' },
@@ -279,19 +279,19 @@ export default function BusinessMenuScreen() {
       highlighted: ['POS Terminal', 'RestaurantOrders']
     },
     'RETAIL': {
-      enabled: ['POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Expenses', 'Reports'],
+      enabled: ['POS Terminal', 'Inventory', 'Customers', 'Discover', 'Advertise', 'Dashboard', 'Reports'],
       highlighted: ['Inventory', 'POS Terminal']
     },
     'SERVICE': {
-      enabled: ['Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Expenses', 'Banking', 'Reports', 'Advertise'],
+      enabled: ['Jobs', 'Services', 'Customers', 'Invoices', 'Dashboard', 'Banking', 'Reports', 'Advertise'],
       highlighted: ['Jobs', 'Services']
     },
     'TRANSPORT': {
-      enabled: ['Transport', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'HR', 'Reports', 'Advertise'],
+      enabled: ['Transport', 'Jobs', 'Customers', 'Dashboard', 'HR', 'Reports', 'Advertise'],
       highlighted: ['Transport']
     },
     'OTHER': {
-      enabled: ['POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Expenses', 'Invoices', 'Banking', 'Reports', 'Advertise'],
+      enabled: ['POS Terminal', 'Inventory', 'Jobs', 'Customers', 'Dashboard', 'Invoices', 'Banking', 'Reports', 'Advertise'],
       highlighted: []
     }
   };
@@ -484,7 +484,7 @@ export default function BusinessMenuScreen() {
 
         if (isRestaurant) {
           // Exclude these items for restaurants
-          const restaurantExcludedItems = ['Tables', 'Timesheet', 'Timesheets', 'Invoices', 'Reports', 'Banking'];
+          const restaurantExcludedItems = ['Tables', 'Timesheet', 'Timesheets', 'Expenses', 'Invoices', 'Reports', 'Banking'];
           return !restaurantExcludedItems.includes(item.title) && !restaurantExcludedItems.includes(item.label);
         }
         return true;
