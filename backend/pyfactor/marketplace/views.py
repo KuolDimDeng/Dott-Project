@@ -40,11 +40,17 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
     
     def featured(self, request):
         """
-        Get featured businesses from active advertising campaigns
+        Get featured businesses using multi-tier featuring system
         """
         try:
+            from .featuring_service import FeaturingService
+            from .location_service import LocationService
+
             city = request.query_params.get('city', '').strip()
             country = request.query_params.get('country', '').strip()
+            category = request.query_params.get('category', '').strip()
+            user_lat = request.query_params.get('latitude', type=float)
+            user_lon = request.query_params.get('longitude', type=float)
 
             if not city:
                 return Response({
@@ -53,122 +59,70 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'results': []
                 })
 
-            # Get currently active featured campaigns
-            try:
-                from advertising.models import AdvertisingCampaign
-                from datetime import date
+            # Get featured businesses using the new service
+            featured_businesses, metadata = FeaturingService.get_featured_businesses(
+                city=city,
+                country=country,
+                category=category,
+                limit=20,
+                use_cache=True
+            )
 
-                today = date.today()
-                featured_campaigns = AdvertisingCampaign.objects.filter(
-                    type='featured',
-                    status='active',
-                    start_date__lte=today,
-                    end_date__gte=today
-                ).select_related('business')
+            # If we have few results, use location fallback
+            if len(featured_businesses) < 5:
+                from .location_service import LocationService
 
-                # Filter by location if business exists
-                if country:
-                    featured_campaigns = featured_campaigns.filter(
-                        business__city__iexact=city,
-                        business__country__iexact=country[:2]
-                    )
-                else:
-                    featured_campaigns = featured_campaigns.filter(
-                        business__city__iexact=city
-                    )
-            except Exception as e:
-                logger.warning(f"Error getting advertising campaigns: {e}")
-                featured_campaigns = AdvertisingCampaign.objects.none()
-
-            # Also get featured businesses from BusinessListing model
-            try:
-                from datetime import date
-                today = date.today()
-                featured_listings = BusinessListing.objects.filter(
-                    is_featured=True,
-                    is_visible_in_marketplace=True,
-                    city__iexact=city
-                ).select_related('business')
-
-                # Add optional featured_until filter if the field has data
-                featured_listings = featured_listings.filter(
-                    Q(featured_until__isnull=True) | Q(featured_until__gte=today)
+                # Get businesses with location fallback
+                businesses_queryset, location_metadata = LocationService.get_businesses_with_fallback(
+                    city=city,
+                    country=country,
+                    category=category,
+                    min_results=10
                 )
 
-                if country:
-                    featured_listings = featured_listings.filter(
-                        country__iexact=country[:2]
-                    )
-            except Exception as e:
-                logger.warning(f"Error getting featured listings: {e}")
-                featured_listings = BusinessListing.objects.none()
-            
-            # Combine results from both sources
-            business_list = []
-            seen_business_ids = set()
-            
-            # Add businesses from active campaigns first (highest priority)
-            for campaign in featured_campaigns[:10]:
-                if campaign.business and campaign.business.id not in seen_business_ids:
-                    business = campaign.business
-                    business_data = {
-                        'id': str(business.id),
-                        'business_name': business.business_name,
-                        'name': business.business_name,
-                        'category': business.category,
-                        'category_display': business.category.title() if business.category else 'Business',
-                        'city': business.city,
-                        'country': business.country,
-                        'phone': business.phone,
-                        'owner_phone': business.owner_phone,
-                        'opted_out': business.opted_out,
-                        'is_featured': True,
-                        'is_verified': True,
-                        'logo': None,  # Add logo URL if available
-                        'cover_image': None,  # Add cover image if available
-                        'average_rating': 4.8,  # Mock rating for now
-                        'campaign_type': campaign.type,
-                        'campaign_name': campaign.name
-                    }
-                    business_list.append(business_data)
-                    seen_business_ids.add(business.id)
-            
-            # Add businesses from featured listings if we need more
-            for listing in featured_listings:
-                if len(business_list) >= 10:
-                    break
-                    
-                if listing.business and listing.business.id not in seen_business_ids:
-                    business = listing.business
-                    business_data = {
-                        'id': str(business.id),
-                        'business_name': business.business_name,
-                        'name': business.business_name,
-                        'category': business.category,
-                        'category_display': business.category.title() if business.category else 'Business',
-                        'city': business.city,
-                        'country': business.country,
-                        'phone': business.phone,
-                        'owner_phone': business.owner_phone,
-                        'opted_out': business.opted_out,
-                        'is_featured': True,
-                        'is_verified': True,
-                        'logo': None,
-                        'cover_image': None,
-                        'average_rating': 4.5,
-                        'featured_until': listing.featured_until.isoformat() if listing.featured_until else None
-                    }
-                    business_list.append(business_data)
-                    seen_business_ids.add(business.id)
-            
+                # Format additional businesses
+                for listing in businesses_queryset:
+                    if len(featured_businesses) >= 20:
+                        break
+
+                    # Check if already included
+                    if any(b['id'] == str(listing.id) for b in featured_businesses):
+                        continue
+
+                    # Use the featuring service formatter
+                    business_data = FeaturingService._format_business_data(listing)
+
+                    # Add location context if expanded search
+                    if location_metadata['expanded_search']:
+                        delivery_context = LocationService.get_delivery_context(
+                            business_data, city, country
+                        )
+                        business_data.update(delivery_context)
+
+                    featured_businesses.append(business_data)
+
+                # Update metadata
+                metadata.update({
+                    'location_fallback': location_metadata,
+                    'expanded_search': location_metadata['expanded_search']
+                })
+
+            # Add distance information if coordinates provided
+            if user_lat and user_lon:
+                featured_businesses = LocationService.add_distance_info(
+                    featured_businesses, user_lat, user_lon
+                )
+
             return Response({
                 'success': True,
-                'results': business_list,
-                'count': len(business_list),
+                'results': featured_businesses,
+                'count': len(featured_businesses),
                 'city': city,
-                'country': country
+                'country': country,
+                'category': category,
+                'metadata': metadata
             })
-            
+
         except Exception as e:
             logger.error(f"Error fetching featured businesses: {e}")
             return Response({
@@ -179,9 +133,11 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
     
     def featured_items(self, request):
         """
-        Get featured products and menu items from businesses in the marketplace
+        Get featured products and menu items using the featuring service
         """
         try:
+            from .featuring_service import FeaturingService
+
             city = request.query_params.get('city', '').strip()
             country = request.query_params.get('country', '').strip()
             item_type = request.query_params.get('type', 'all')  # all, products, menu_items
@@ -197,150 +153,37 @@ class ConsumerSearchViewSet(viewsets.ViewSet):
                     'message': 'City parameter is required for featured items'
                 })
 
-            # Get businesses in the city
-            business_listings = BusinessListing.objects.filter(
-                is_visible_in_marketplace=True,
-                city__iexact=city
-            ).select_related('business')  # Add select_related for optimization
+            # Use the new featuring service for items
+            featured_items, metadata = FeaturingService.get_featured_items(
+                city=city,
+                country=country,
+                item_type=item_type,
+                limit=limit,
+                use_cache=True
+            )
 
-            if country:
-                business_listings = business_listings.filter(
-                    country__iexact=country[:2]
+            # If we have too few items, use location fallback to get businesses from nearby areas
+            if len(featured_items) < 5:
+                from .location_service import LocationService
+
+                # Get businesses with fallback
+                businesses_queryset, location_metadata = LocationService.get_businesses_with_fallback(
+                    city=city,
+                    country=country,
+                    min_results=10
                 )
 
-            business_ids = business_listings.values_list('business_id', flat=True)
-
-            # Get tenant UUIDs for these business IDs
-            from custom_auth.models import User
-            tenant_uuids = User.objects.filter(
-                id__in=business_ids
-            ).values_list('tenant_id', flat=True)
-            tenant_uuids = [uuid for uuid in tenant_uuids if uuid is not None]
-
-            logger.info(f"Business IDs: {list(business_ids)[:5]}, Tenant UUIDs: {list(tenant_uuids)[:5]}")
-
-            featured_items = {
-                'products': [],
-                'menu_items': []
-            }
-
-            # Get featured products
-            if item_type in ['all', 'products']:
-                try:
-                    from datetime import datetime
-                    now = timezone.now()
-
-                    logger.info(f"Fetching featured products for businesses: {list(business_ids)[:5]}...")
-
-                    products = Product.objects.filter(
-                        tenant_id__in=tenant_uuids,
-                        is_featured=True,
-                        is_active=True,
-                        quantity__gt=0  # Only show items in stock
-                    ).filter(
-                        Q(featured_until__isnull=True) | Q(featured_until__gte=now)
-                    ).select_related('tenant').order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
-
-                    logger.info(f"Found {products.count()} featured products")
-
-                    # Create mapping of business listings for efficiency
-                    listing_map = {}
-                    for listing in business_listings:
-                        listing_map[listing.business_id] = listing
-
-                    for product in products:
-                        # Get business info from pre-fetched map
-                        listing = listing_map.get(product.tenant_id)
-                        if listing:
-                            featured_items['products'].append({
-                                'id': str(product.id),
-                                'name': product.name,
-                                'description': product.description or '',
-                                'price': float(product.price) if product.price else 0,
-                                'image_url': None,  # We'll need to add image handling
-                                'business_id': str(product.tenant_id),
-                                'business_name': listing.business.business_name if listing.business else 'Unknown Business',
-                                'business_logo': getattr(listing, 'logo_url', None),
-                                'is_featured': product.is_featured,
-                                'featured_priority': product.featured_priority,
-                                'view_count': product.view_count,
-                                'order_count': product.order_count,
-                                'in_stock': product.quantity > 0,
-                                'quantity': product.quantity
-                            })
-                except Exception as e:
-                    logger.error(f"Error fetching featured products: {str(e)}", exc_info=True)
-
-            # Get featured menu items
-            if item_type in ['all', 'menu_items']:
-                try:
-                    from datetime import datetime
-                    now = timezone.now()
-
-                    logger.info(f"Fetching featured menu items for tenant UUIDs: {list(tenant_uuids)[:5]}...")
-
-                    menu_items = MenuItem.objects.filter(
-                        tenant_id__in=tenant_uuids,
-                        is_featured=True,
-                        is_available=True
-                    ).filter(
-                        Q(featured_until__isnull=True) | Q(featured_until__gte=now)
-                    ).select_related('tenant', 'category').order_by('-featured_priority', '-featured_score', '-order_count')[:limit]
-
-                    logger.info(f"Found {menu_items.count()} featured menu items")
-
-                    # Use the pre-fetched listing map
-                    if 'listing_map' not in locals():
-                        listing_map = {}
-                        for listing in business_listings:
-                            listing_map[listing.business_id] = listing
-
-                    for item in menu_items:
-                        # Get business info from pre-fetched map
-                        listing = listing_map.get(item.tenant_id)
-                        if listing:
-                            featured_items['menu_items'].append({
-                                'id': str(item.id),
-                                'name': item.name,
-                                'description': item.description or '',
-                                'price': float(item.effective_price) if item.effective_price else 0,
-                                'image_url': item.image_url or item.thumbnail_url or None,
-                                'business_id': str(item.tenant_id),
-                                'business_name': listing.business.business_name if listing.business else 'Unknown Business',
-                                'business_logo': getattr(listing, 'logo_url', None),
-                                'category': item.category.name if item.category else None,
-                                'is_featured': item.is_featured,
-                                'featured_priority': item.featured_priority,
-                                'view_count': item.view_count,
-                                'order_count': item.order_count,
-                                'is_available': item.is_available,
-                                'preparation_time': item.preparation_time,
-                                'is_vegetarian': getattr(item, 'is_vegetarian', False),
-                                'is_vegan': getattr(item, 'is_vegan', False),
-                                'is_spicy': getattr(item, 'is_spicy', False),
-                                'spice_level': getattr(item, 'spice_level', 0)
-                            })
-                except Exception as e:
-                    logger.error(f"Error fetching featured menu items: {str(e)}", exc_info=True)
-
-            # Combine and sort all items by priority and score
-            all_items = []
-            if item_type == 'all':
-                all_items = featured_items['products'] + featured_items['menu_items']
-                all_items.sort(key=lambda x: (x.get('featured_priority', 0), x.get('order_count', 0)), reverse=True)
-                all_items = all_items[:limit]
-            elif item_type == 'products':
-                all_items = featured_items['products']
-            else:
-                all_items = featured_items['menu_items']
+                # Update metadata
+                metadata['location_fallback'] = location_metadata
 
             return Response({
                 'success': True,
-                'results': all_items,
-                'count': len(all_items),
+                'results': featured_items,
+                'count': len(featured_items),
                 'city': city,
                 'country': country,
-                'type': item_type
+                'type': item_type,
+                'metadata': metadata
             })
 
         except Exception as e:

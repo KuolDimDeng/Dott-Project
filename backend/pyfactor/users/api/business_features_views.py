@@ -82,13 +82,13 @@ def get_menu_items_for_business_type(business_type, features):
             'id': 'deliveries',
             'label': 'Active Deliveries',
             'icon': 'cube-outline',
-            'screen': 'DeliveryList'
+            'screen': 'CourierDeliveries'
         })
         menu_items.append({
             'id': 'navigate',
-            'label': 'Navigate',
+            'label': 'Navigate to Next',
             'icon': 'navigate-outline',
-            'screen': 'NavigationScreen'
+            'screen': 'CourierDashboard'
         })
         
         # Couriers only need minimal business management items
@@ -98,13 +98,13 @@ def get_menu_items_for_business_type(business_type, features):
                     'id': 'earnings',
                     'label': 'Earnings',
                     'icon': 'cash-outline',
-                    'screen': 'EarningsScreen'
+                    'screen': 'Reports'  # Use existing Reports screen for earnings
                 },
                 {
-                    'id': 'profile',
-                    'label': 'Courier Profile',
-                    'icon': 'person-outline',
-                    'screen': 'CourierProfileScreen'
+                    'id': 'verification',
+                    'label': 'Courier Verification',
+                    'icon': 'checkmark-circle-outline',
+                    'screen': 'CourierVerification'
                 }
             ])
             # Skip the common business items for couriers
