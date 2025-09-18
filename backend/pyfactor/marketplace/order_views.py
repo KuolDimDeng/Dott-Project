@@ -24,6 +24,11 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
     
     def create(self, request):
         """Create a new order"""
+        logger.info(f"[OrderCreate] Starting order creation for user: {request.user}")
+        logger.info(f"[OrderCreate] User authenticated: {request.user.is_authenticated}")
+        logger.info(f"[OrderCreate] User email: {getattr(request.user, 'email', 'N/A')}")
+        logger.info(f"[OrderCreate] Request data: {request.data}")
+
         try:
             items = request.data.get('items', [])
             delivery_address = request.data.get('delivery_address')
@@ -39,7 +44,14 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             business_id = items[0].get('business_id')
-            business_listing = BusinessListing.objects.get(id=business_id)
+            logger.info(f"[OrderCreate] Looking for business listing: {business_id}")
+
+            try:
+                business_listing = BusinessListing.objects.get(id=business_id)
+                logger.info(f"[OrderCreate] Found business listing for business: {business_listing.business.email}")
+            except BusinessListing.DoesNotExist:
+                logger.error(f"[OrderCreate] Business listing not found: {business_id}")
+                raise
 
             # Use mobile app's calculated totals instead of recalculating
             subtotal = float(request.data.get('subtotal', 0))
@@ -57,6 +69,14 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 delivery_address_str = str(delivery_address)
             
             # Create order
+            logger.info(f"[OrderCreate] Creating order with data:")
+            logger.info(f"  - Consumer: {request.user.email}")
+            logger.info(f"  - Business: {business_listing.business.email}")
+            logger.info(f"  - Items count: {len(items)}")
+            logger.info(f"  - Total amount: {total_amount}")
+            logger.info(f"  - Payment method: {payment_method}")
+            logger.info(f"  - Tip amount: {tip_amount}")
+
             order = ConsumerOrder.objects.create(
                 consumer=request.user,
                 business=business_listing.business,
@@ -72,6 +92,8 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 created_from_chat=request.data.get('created_from_chat', False),
                 chat_conversation_id=request.data.get('conversation_id', None)
             )
+
+            logger.info(f"[OrderCreate] Order created successfully: {order.order_number}")
             
             # Update consumer profile
             consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
@@ -129,10 +151,14 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 'error': 'Business not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error creating order: {str(e)}")
+            logger.error(f"[OrderCreate] Error creating order: {str(e)}")
+            logger.error(f"[OrderCreate] Error type: {type(e).__name__}")
+            import traceback
+            logger.error(f"[OrderCreate] Stack trace: {traceback.format_exc()}")
+
             return Response({
                 'success': False,
-                'error': 'Failed to create order'
+                'error': f'Failed to create order: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def retrieve(self, request, pk=None):

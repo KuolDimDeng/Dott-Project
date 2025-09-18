@@ -28,17 +28,17 @@ try:
         try:
             # Try to import channels for WebSocket support
             from channels.routing import ProtocolTypeRouter, URLRouter
-            from channels.auth import AuthMiddlewareStack
             from channels.security.websocket import AllowedHostsOriginValidator
-            
-            # Import WebSocket routing
+
+            # Import WebSocket routing and custom middleware
             from chat.routing import websocket_urlpatterns
-            
+            from chat.middleware import SessionTokenAuthMiddlewareStack
+
             # Configure the ASGI application with WebSocket support
             application = ProtocolTypeRouter({
                 "http": django_asgi_app,
                 "websocket": AllowedHostsOriginValidator(
-                    AuthMiddlewareStack(
+                    SessionTokenAuthMiddlewareStack(
                         URLRouter(
                             websocket_urlpatterns
                         )
