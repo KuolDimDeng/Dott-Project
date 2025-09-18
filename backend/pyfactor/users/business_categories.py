@@ -61,6 +61,7 @@ BUSINESS_CATEGORIES = {
             'AGRICULTURE',
             'NON_PROFIT',
             'TRANSPORT_SERVICE',  # Taxi, Bus, Matatu, Airlines
+            'courier',  # Courier delivery services
             'MINING_ENERGY',  # Mining, Oil & Gas, Solar
             'TOURISM_TRAVEL',  # Tour Operators, Travel Agencies
             'IMPORT_EXPORT',  # Import/Export, Trading

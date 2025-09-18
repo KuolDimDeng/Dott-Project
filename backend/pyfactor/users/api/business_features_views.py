@@ -52,7 +52,7 @@ def get_menu_items_for_business_type(business_type, features):
             'screen': 'NavigationScreen'
         })
     
-    # Restaurant/Food business items
+    # Restaurant/Food business items (including courier for food delivery)
     if business_type in ['RESTAURANT_CAFE', 'GROCERY_MARKET', 'HOTEL_HOSPITALITY']:
         menu_items.append({
             'id': 'orders',
@@ -77,7 +77,7 @@ def get_menu_items_for_business_type(business_type, features):
             })
     
     # Transport/Delivery business items
-    if business_type in ['TRANSPORT_SERVICE', 'LOGISTICS_FREIGHT']:
+    if business_type in ['TRANSPORT_SERVICE', 'LOGISTICS_FREIGHT', 'courier']:
         menu_items.append({
             'id': 'deliveries',
             'label': 'Active Deliveries',
@@ -235,12 +235,15 @@ class BusinessFeaturesView(APIView):
                     'is_legacy_user': True
                 })
             
-            # For new users, check simplified business type
+            # For new users, check business type (from business directly or from details)
             simplified_type = None
-            if profile.business and hasattr(profile.business, 'details'):
-                business_details = profile.business.details
-                if business_details:
-                    simplified_type = business_details.simplified_business_type
+            if profile.business:
+                # First check direct business_type field (for courier and other special types)
+                if profile.business.business_type:
+                    simplified_type = profile.business.business_type
+                # If not set, check simplified type from details
+                elif hasattr(profile.business, 'details') and profile.business.details:
+                    simplified_type = profile.business.details.simplified_business_type
             
             # Get features based on business type
             features = get_features_for_business_type(simplified_type)
