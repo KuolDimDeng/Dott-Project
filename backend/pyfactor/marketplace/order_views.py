@@ -39,7 +39,7 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             business_id = items[0].get('business_id')
-            business_listing = BusinessListing.objects.get(business_id=business_id)
+            business_listing = BusinessListing.objects.get(id=business_id)
 
             # Use mobile app's calculated totals instead of recalculating
             subtotal = float(request.data.get('subtotal', 0))
