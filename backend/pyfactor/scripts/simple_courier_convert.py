@@ -94,6 +94,9 @@ with transaction.atomic():
             import uuid
             business_id = str(uuid.uuid4())
             
+            # Convert user.id to UUID format (00000000-0000-0000-0000-0000000000XX)
+            owner_uuid = f"00000000-0000-0000-0000-{user.id:012x}"
+            
             if has_interaction_field:
                 cursor.execute("""
                     INSERT INTO users_business (
@@ -101,10 +104,10 @@ with transaction.atomic():
                         marketplace_category, delivery_scope, country, city,
                         primary_interaction_type, tenant_id, created_at, updated_at
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
+                        %s, %s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
                     )
                 """, [
-                    business_id, user.id, "Steve's Courier Service", 'courier', 'SERVICE',
+                    business_id, owner_uuid, "Steve's Courier Service", 'courier', 'SERVICE',
                     'Transport', 'local', 'SS', 'Juba', 'order',
                     str(user.tenant_id) if user.tenant else None
                 ])
@@ -115,10 +118,10 @@ with transaction.atomic():
                         marketplace_category, delivery_scope, country, city,
                         tenant_id, created_at, updated_at
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
+                        %s, %s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
                     )
                 """, [
-                    business_id, user.id, "Steve's Courier Service", 'courier', 'SERVICE',
+                    business_id, owner_uuid, "Steve's Courier Service", 'courier', 'SERVICE',
                     'Transport', 'local', 'SS', 'Juba',
                     str(user.tenant_id) if user.tenant else None
                 ])
