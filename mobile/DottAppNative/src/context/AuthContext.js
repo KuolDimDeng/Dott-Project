@@ -7,6 +7,7 @@ import { phoneAuthService } from '../services/phoneAuthApi';
 import walletService from '../services/walletService';
 import ENV, { getSessionBaseUrl } from '../config/environment';
 import SecureStorage from '../services/secureStorage';
+import orderWebSocketService from '../services/orderWebSocketService';
 
 const AuthContext = createContext({});
 
@@ -159,6 +160,20 @@ export const AuthProvider = ({ children }) => {
           } else {
             setUser(parsedUser);
             setUserMode(mode || 'consumer');
+
+            // Connect WebSocket for existing session
+            try {
+              let wsUserType = 'consumer';
+              if (parsedUser.has_business) {
+                wsUserType = 'business';
+              } else if (parsedUser.is_courier) {
+                wsUserType = 'courier';
+              }
+              console.log('🔌 Reconnecting WebSocket as:', wsUserType);
+              orderWebSocketService.connect(wsUserType);
+            } catch (wsError) {
+              console.error('⚠️ Failed to reconnect WebSocket:', wsError);
+            }
 
             // Try to refresh user profile if session exists (but don't block)
             fetchUserProfile().catch(error => {
@@ -329,7 +344,7 @@ export const AuthProvider = ({ children }) => {
         if (completeUserData) {
           // Use complete profile data
           const mode = completeUserData.has_business ? 'business' : 'consumer';
-          
+
           // Initialize wallet after successful login
           try {
             await walletService.initializeWallet();
@@ -337,7 +352,24 @@ export const AuthProvider = ({ children }) => {
           } catch (walletError) {
             console.error('⚠️ Failed to initialize wallet after login:', walletError);
           }
-          
+
+          // Connect WebSocket for order notifications
+          try {
+            // Determine user type for WebSocket
+            let wsUserType = 'consumer';
+            if (completeUserData.has_business) {
+              wsUserType = 'business';
+            } else if (completeUserData.is_courier) {
+              wsUserType = 'courier';
+            }
+
+            console.log('🔌 Connecting WebSocket as:', wsUserType);
+            await orderWebSocketService.connect(wsUserType);
+          } catch (wsError) {
+            console.error('⚠️ Failed to connect WebSocket:', wsError);
+            // Don't fail login if WebSocket fails
+          }
+
           return { success: true, mode };
         } else {
           // Fallback to session response data
@@ -396,6 +428,10 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       console.log('🚪 Starting logout process...');
+
+      // Disconnect WebSocket
+      orderWebSocketService.disconnect();
+      console.log('🔌 WebSocket disconnected');
 
       // Clear AsyncStorage
       await AsyncStorage.multiRemove(['userToken', 'userData', 'userMode', 'sessionId', 'sessionToken']);

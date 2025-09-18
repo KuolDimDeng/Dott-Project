@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
 import Sound from 'react-native-sound';
+import orderWebSocketService from '../../services/orderWebSocketService';
 
 export default function RestaurantOrdersScreen() {
   const navigation = useNavigation();
@@ -47,15 +48,80 @@ export default function RestaurantOrdersScreen() {
       // Continue without sound functionality
     }
 
-    // Connect to WebSocket for real-time orders
-    connectWebSocket();
-
     // Load initial orders
     loadOrders();
 
+    // Setup WebSocket listeners for real-time orders
+    const wsUnsubscribes = [];
+
+    // Listen for new orders
+    wsUnsubscribes.push(
+      orderWebSocketService.on('new_order', (data) => {
+        console.log('🛎️ NEW ORDER RECEIVED!', data);
+
+        // Add to pending orders
+        const newOrder = {
+          id: data.order_id,
+          order_number: data.order_number,
+          consumer_name: data.consumer_name || 'Customer',
+          total: data.total_amount,
+          items_count: data.items_count,
+          created_at: data.created_at,
+          delivery_type: data.delivery_type,
+          items: data.items || []
+        };
+
+        setPendingOrders(prev => [newOrder, ...prev]);
+
+        // Set 5-minute timer
+        setTimers(prev => ({ ...prev, [data.order_id]: 300 }));
+
+        // Play notification sound safely
+        try {
+          if (notificationSound.current && notificationSound.current.play) {
+            notificationSound.current.play();
+          }
+        } catch (error) {
+          console.log('Could not play notification sound:', error);
+        }
+
+        // Show alert
+        Alert.alert(
+          '🔔 New Order!',
+          data.message || `Order #${data.order_number} - $${data.total_amount}`,
+          [
+            { text: 'View', onPress: () => {
+              setSelectedOrder(newOrder);
+              loadOrders(); // Refresh to get full order details
+            }}
+          ]
+        );
+      })
+    );
+
+    // Listen for order updates
+    wsUnsubscribes.push(
+      orderWebSocketService.on('order_update', (data) => {
+        console.log('📝 Order update:', data);
+        // Refresh orders list
+        loadOrders();
+      })
+    );
+
+    // Listen for status updates
+    wsUnsubscribes.push(
+      orderWebSocketService.on('status_update', (data) => {
+        console.log('📊 Status update:', data);
+        // Refresh orders list
+        loadOrders();
+      })
+    );
+
     // Cleanup
     return () => {
-      if (wsRef.current) wsRef.current.close();
+      // Unsubscribe from WebSocket events
+      wsUnsubscribes.forEach(unsub => unsub());
+
       if (notificationSound.current && notificationSound.current.release) {
         notificationSound.current.release();
       }
@@ -83,58 +149,6 @@ export default function RestaurantOrdersScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  const connectWebSocket = () => {
-    try {
-      wsRef.current = new WebSocket('wss://api.dottapps.com/ws/restaurant-orders/');
-
-      wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
-      };
-
-      wsRef.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'new_order') {
-          // Add to pending orders
-          setPendingOrders(prev => [data.order, ...prev]);
-
-          // Set 5-minute timer
-          setTimers(prev => ({ ...prev, [data.order.id]: 300 }));
-
-          // Play notification sound safely
-          try {
-            if (notificationSound.current && notificationSound.current.play) {
-              notificationSound.current.play();
-            }
-          } catch (error) {
-            console.log('Could not play notification sound:', error);
-          }
-
-          // Show alert
-          Alert.alert(
-            '🔔 New Order!',
-            `Order #${data.order.order_number} - $${data.order.total}`,
-            [{ text: 'View', onPress: () => setSelectedOrder(data.order) }]
-          );
-        } else if (data.type === 'order_update') {
-          // Update order status
-          updateOrderInList(data.order);
-        }
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log('WebSocket disconnected');
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => connectWebSocket(), 5000);
-      };
-    } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
-    }
-  };
 
   const loadOrders = async () => {
     try {

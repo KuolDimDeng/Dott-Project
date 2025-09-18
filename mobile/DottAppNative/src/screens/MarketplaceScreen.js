@@ -9,6 +9,7 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   Dimensions,
@@ -32,6 +33,7 @@ import {
 } from '../components/ErrorStates';
 import NetInfo from '@react-native-community/netinfo';
 import { NetworkHelper } from '../utils/apiErrorHandler';
+import orderWebSocketService from '../services/orderWebSocketService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -88,7 +90,55 @@ export default function MarketplaceScreen() {
       }
     });
 
-    return () => unsubscribe();
+    // Listen for order status updates
+    const wsUnsubscribes = [];
+
+    // Listen for order acceptance
+    wsUnsubscribes.push(
+      orderWebSocketService.on('order_update', (data) => {
+        console.log('📦 Order update received:', data);
+
+        // Show notification for important updates
+        if (data.status === 'business_accepted') {
+          Alert.alert(
+            '✅ Order Accepted!',
+            `Your order #${data.order_number} has been accepted and is being prepared.`,
+            [{ text: 'OK' }]
+          );
+        } else if (data.status === 'courier_assigned') {
+          Alert.alert(
+            '🚚 Courier Assigned!',
+            `A courier has been assigned to deliver your order #${data.order_number}.`,
+            [{ text: 'OK' }]
+          );
+        } else if (data.status === 'picked_up') {
+          Alert.alert(
+            '🎉 On The Way!',
+            `Your order #${data.order_number} is on its way to you!`,
+            [{ text: 'OK' }]
+          );
+        } else if (data.status === 'delivered') {
+          Alert.alert(
+            '✅ Delivered!',
+            `Your order #${data.order_number} has been delivered. Enjoy!`,
+            [{ text: 'OK' }]
+          );
+        }
+      })
+    );
+
+    // Listen for status updates
+    wsUnsubscribes.push(
+      orderWebSocketService.on('status_update', (data) => {
+        console.log('📊 Status update:', data);
+      })
+    );
+
+    return () => {
+      unsubscribe();
+      // Cleanup WebSocket listeners
+      wsUnsubscribes.forEach(unsub => unsub());
+    };
   }, []);
 
   useEffect(() => {

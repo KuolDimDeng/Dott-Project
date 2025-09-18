@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import courierApi from '../../services/courierApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import orderWebSocketService from '../../services/orderWebSocketService';
 
 const TABS = ['Available', 'Active', 'Completed'];
 
@@ -32,34 +33,82 @@ export default function CourierDeliveriesScreen() {
   const [isOpen, setIsOpen] = useState(false);
   const [courierProfile, setCourierProfile] = useState(null);
   const [acceptTimers, setAcceptTimers] = useState({});
-  const ws = useRef(null);
   const timerRefs = useRef({});
 
   useEffect(() => {
     loadCourierProfile();
     loadDeliveries();
-    return () => {
-      if (ws.current) {
-        ws.current.close();
+
+    // Listen for new delivery notifications via WebSocket
+    const unsubscribeNewDelivery = orderWebSocketService.on('new_delivery', (data) => {
+      console.log('🚚 NEW DELIVERY via WebSocket!', data);
+
+      // Add new delivery to available list
+      setDeliveries(prev => {
+        const updated = prev.filter(d => d.id !== data.order_id);
+        const newDelivery = {
+          id: data.order_id,
+          order_id: data.order_id,
+          pickup_address: data.pickup_location?.address || data.pickup_address,
+          delivery_address: data.delivery_location?.address || data.delivery_address,
+          business_name: data.pickup_location?.business_name || data.business_name,
+          customer_name: data.delivery_location?.customer_name || data.customer_name,
+          courier_earnings: data.earnings || data.courier_earnings,
+          total_distance: data.distance || data.total_distance,
+          status: 'available',
+          created_at: new Date().toISOString(),
+        };
+        return [newDelivery, ...updated];
+      });
+
+      // Start 60-second timer for this delivery
+      startAcceptTimer(data.order_id);
+
+      // Show notification
+      Alert.alert(
+        '🚚 New Delivery Assignment!',
+        `Pickup from ${data.pickup_location?.business_name || 'Business'}\nEarnings: $${(data.earnings || 0).toFixed(2)}`,
+        [
+          { text: 'View Details', onPress: () => setSelectedTab('Available') }
+        ]
+      );
+    });
+
+    // Listen for order status updates
+    const unsubscribeStatusUpdate = orderWebSocketService.on('status_update', (data) => {
+      console.log('📊 Courier order status update:', data);
+
+      // Update delivery status in the list
+      setDeliveries(prev => prev.map(delivery =>
+        delivery.order_id === data.order_id
+          ? { ...delivery, status: data.new_status }
+          : delivery
+      ));
+
+      // If order is cancelled or completed by someone else, remove from available
+      if (data.new_status === 'cancelled' ||
+          (data.new_status === 'courier_assigned' && data.courier_id !== user?.id)) {
+        setDeliveries(prev => prev.filter(d => d.order_id !== data.order_id));
+
+        // Clear timer if exists
+        if (timerRefs.current[data.order_id]) {
+          clearInterval(timerRefs.current[data.order_id]);
+          delete timerRefs.current[data.order_id];
+        }
       }
+    });
+
+    return () => {
+      unsubscribeNewDelivery();
+      unsubscribeStatusUpdate();
       // Clear all timers
       Object.values(timerRefs.current).forEach(timer => clearInterval(timer));
     };
-  }, []);
+  }, [user]);
   
   useEffect(() => {
     loadDeliveries();
   }, [selectedTab]);
-
-  useEffect(() => {
-    if (isOpen) {
-      connectWebSocket();
-    } else {
-      if (ws.current) {
-        ws.current.close();
-      }
-    }
-  }, [isOpen]);
 
   const loadCourierProfile = async () => {
     try {
@@ -84,47 +133,6 @@ export default function CourierDeliveriesScreen() {
         );
       }
     }
-  };
-
-  const connectWebSocket = () => {
-    if (!user?.id) return;
-
-    const wsUrl = `wss://api.dottapps.com/ws/courier/${user.id}/`;
-    ws.current = new WebSocket(wsUrl);
-
-    ws.current.onopen = () => {
-      console.log('WebSocket connected for courier');
-    };
-
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'new_delivery') {
-        // Add new delivery to available list
-        setDeliveries(prev => {
-          const updated = prev.filter(d => d.id !== data.delivery.id);
-          return [data.delivery, ...updated];
-        });
-        // Start 60-second timer for this delivery
-        startAcceptTimer(data.delivery.id);
-        Alert.alert('New Delivery!', `${data.delivery.pickup_address} → ${data.delivery.delivery_address}`);
-      }
-    };
-
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    ws.current.onclose = () => {
-      console.log('WebSocket disconnected');
-      // Reconnect after 3 seconds if still open
-      if (isOpen) {
-        setTimeout(() => {
-          if (isOpen) {
-            connectWebSocket();
-          }
-        }, 3000);
-      }
-    };
   };
 
   const startAcceptTimer = (deliveryId, initialTime = 60) => {
