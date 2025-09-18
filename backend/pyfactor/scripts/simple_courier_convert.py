@@ -82,16 +82,6 @@ with transaction.atomic():
     else:
         print(f"\n⚠️ No business found, creating courier business...")
         
-        # Check if primary_interaction_type exists
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name='users_business' 
-                AND column_name='primary_interaction_type'
-            """)
-            has_interaction_field = cursor.fetchone() is not None
-        
         # Create with raw SQL to handle field differences
         with connection.cursor() as cursor:
             import uuid
@@ -100,16 +90,25 @@ with transaction.atomic():
             # Convert user.id to UUID format (00000000-0000-0000-0000-0000000000XX)
             owner_uuid = f"00000000-0000-0000-0000-{user.id:012x}"
             
-            # First check which columns exist
+            # First check ALL columns and their nullability
             cursor.execute("""
-                SELECT column_name 
+                SELECT column_name, is_nullable 
                 FROM information_schema.columns 
-                WHERE table_name='users_business' 
-                AND column_name IN ('primary_interaction_type', 'stripe_onboarding_complete')
+                WHERE table_name='users_business'
             """)
-            existing_cols = [row[0] for row in cursor.fetchall()]
-            has_interaction = 'primary_interaction_type' in existing_cols
-            has_stripe = 'stripe_onboarding_complete' in existing_cols
+            all_columns = {row[0]: row[1] == 'YES' for row in cursor.fetchall()}  # True if nullable
+            
+            print(f"  Found {len(all_columns)} columns in users_business table")
+            
+            # Check specifically for our fields
+            stripe_fields = ['stripe_onboarding_complete', 'stripe_charges_enabled', 
+                           'stripe_payouts_enabled', 'stripe_details_submitted']
+            
+            print(f"  Checking for Stripe fields...")
+            for field in stripe_fields:
+                if field in all_columns:
+                    nullable = all_columns[field]
+                    print(f"    ✓ {field}: {'nullable' if nullable else 'NOT NULL'}")
             
             # Build column list dynamically
             base_cols = ['id', 'owner_id', 'name', 'business_type', 'simplified_business_type',
@@ -117,13 +116,18 @@ with transaction.atomic():
             base_vals = [business_id, owner_uuid, "Steve's Courier Service", 'courier', 'SERVICE',
                         'Transport', 'local', 'SS', 'Juba', str(user.tenant_id) if user.tenant else None]
             
-            if has_interaction:
+            # Add primary_interaction_type if it exists
+            if 'primary_interaction_type' in all_columns:
                 base_cols.append('primary_interaction_type')
                 base_vals.append('order')
+                print(f"    ✓ primary_interaction_type: added")
             
-            if has_stripe:
-                base_cols.append('stripe_onboarding_complete')
-                base_vals.append(False)
+            # Add ALL Stripe fields that exist, regardless of nullability
+            for field in stripe_fields:
+                if field in all_columns:
+                    base_cols.append(field)
+                    base_vals.append(False)
+                    print(f"    ✓ {field}: added with value False")
             
             base_cols.extend(['created_at', 'updated_at'])
             
