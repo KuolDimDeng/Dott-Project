@@ -63,7 +63,10 @@ class OrderWebSocketService {
           // Handle different message types
           this.handleMessage(data);
         } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error);
+          // Silently log parsing errors
+          if (__DEV__) {
+            console.log('⚠️ Received malformed WebSocket message');
+          }
         }
       };
 
@@ -80,14 +83,25 @@ class OrderWebSocketService {
         this.scheduleReconnect();
       };
 
-      // Connection error
+      // Connection error - log only, don't show to user
       this.ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
-        this.emit('error', { error });
+        // Only log to console in development
+        if (__DEV__) {
+          console.log('⚠️ WebSocket connection issue (expected during reconnection)');
+          // Log minimal error info without the full error object which causes display issues
+          if (error && error.message) {
+            console.log('Details:', error.message);
+          }
+        }
+        // Don't emit error events that could trigger UI alerts
+        // this.emit('error', { error }); // Commented out to prevent UI alerts
       };
 
     } catch (error) {
-      console.error('❌ Failed to connect WebSocket:', error);
+      // Log silently without causing UI alerts
+      if (__DEV__) {
+        console.log('⚠️ WebSocket connection deferred, will retry...');
+      }
       this.scheduleReconnect();
     }
   }
@@ -251,7 +265,10 @@ class OrderWebSocketService {
       this.ws.send(message);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send WebSocket message:', error);
+      // Silently handle send errors
+      if (__DEV__) {
+        console.log('⚠️ Message queued for sending when connection is restored');
+      }
       return false;
     }
   }

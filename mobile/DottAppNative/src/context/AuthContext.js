@@ -172,7 +172,10 @@ export const AuthProvider = ({ children }) => {
               console.log('🔌 Reconnecting WebSocket as:', wsUserType);
               orderWebSocketService.connect(wsUserType);
             } catch (wsError) {
-              console.error('⚠️ Failed to reconnect WebSocket:', wsError);
+              // Silently handle WebSocket reconnection errors
+              if (__DEV__) {
+                console.log('⚠️ WebSocket reconnection deferred');
+              }
             }
 
             // Try to refresh user profile if session exists (but don't block)
@@ -366,7 +369,10 @@ export const AuthProvider = ({ children }) => {
             console.log('🔌 Connecting WebSocket as:', wsUserType);
             await orderWebSocketService.connect(wsUserType);
           } catch (wsError) {
-            console.error('⚠️ Failed to connect WebSocket:', wsError);
+            // Silently handle WebSocket connection errors
+            if (__DEV__) {
+              console.log('⚠️ WebSocket connection deferred');
+            }
             // Don't fail login if WebSocket fails
           }
 

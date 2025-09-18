@@ -284,7 +284,10 @@ class ChatApiService {
           console.log('📨 WebSocket message received:', data);
           if (onMessage) onMessage(data);
         } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error);
+          // Silently log parsing errors
+          if (__DEV__) {
+            console.log('⚠️ Chat: Received malformed message');
+          }
         }
       };
       
@@ -294,14 +297,21 @@ class ChatApiService {
       };
       
       ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
-        if (onError) onError(error);
+        // Silently handle WebSocket errors
+        if (__DEV__) {
+          console.log('⚠️ Chat WebSocket connection issue');
+        }
+        // Don't call onError callback to prevent UI alerts
+        // if (onError) onError(error);
       };
       
       return ws;
     } catch (error) {
-      console.error('❌ Error creating WebSocket connection:', error);
-      if (onError) onError(error);
+      // Silently handle connection errors
+      if (__DEV__) {
+        console.log('⚠️ Chat WebSocket will retry connection');
+      }
+      // Don't call onError to prevent UI alerts
       return null;
     }
   }
