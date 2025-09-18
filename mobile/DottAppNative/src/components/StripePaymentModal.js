@@ -31,8 +31,20 @@ export default function StripePaymentModal({
   const [clientSecret, setClientSecret] = useState(null);
   const { confirmPayment } = useStripe();
 
+  // Check if Stripe key is configured
   useEffect(() => {
-    if (visible && amount > 0) {
+    if (visible && (!ENV.stripePublishableKey || ENV.stripePublishableKey === 'pk_live_YOUR_PRODUCTION_KEY_HERE')) {
+      console.error('Stripe publishable key not configured in environment.js');
+      Alert.alert(
+        'Configuration Error',
+        'Payment service is not properly configured. Please contact support.',
+        [{ text: 'OK', onPress: onClose }]
+      );
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (visible && amount > 0 && ENV.stripePublishableKey && ENV.stripePublishableKey !== 'pk_live_YOUR_PRODUCTION_KEY_HERE') {
       initializePayment();
     }
   }, [visible, amount]);
