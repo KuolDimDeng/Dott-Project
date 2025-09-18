@@ -178,7 +178,50 @@ export default function BusinessMenuScreen() {
   const [showNewOrderBanner, setShowNewOrderBanner] = useState(false);
   const [latestNewOrder, setLatestNewOrder] = useState(null);
   const [contextMenuItems, setContextMenuItems] = useState([]);
-  const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
+  
+  // Helper function to check if business name is generic
+  const isGenericBusinessName = (name) => {
+    if (!name) return true;
+    // Check if name matches pattern "User XXX" where XXX is a number
+    return /^User\s+\d+$/i.test(name);
+  };
+  
+  // Helper function to determine if business type is informal (individual service providers)
+  const isInformalBusinessType = (type) => {
+    const informalTypes = ['courier', 'TRANSPORT_SERVICE', 'LOGISTICS_FREIGHT'];
+    return type && informalTypes.includes(type);
+  };
+  
+  // Get appropriate display name for the business
+  const getBusinessDisplayName = () => {
+    const rawBusinessName = businessData?.businessName || user?.business_name;
+    const businessType = businessData?.businessType;
+    
+    // For courier and other informal businesses, or when name is generic like "User 302"
+    if (isInformalBusinessType(businessType) || isGenericBusinessName(rawBusinessName)) {
+      // Use the owner's actual name if available
+      if (user?.first_name || user?.last_name) {
+        const firstName = user?.first_name || '';
+        const lastName = user?.last_name || '';
+        const fullName = `${firstName} ${lastName}`.trim();
+        
+        // Only use full name if it's not empty
+        if (fullName) {
+          return fullName;
+        }
+      }
+      
+      // Fall back to full_name if available
+      if (user?.full_name && user.full_name !== rawBusinessName) {
+        return user.full_name;
+      }
+    }
+    
+    // Return the business name if it's not generic
+    return rawBusinessName || user?.full_name || 'Business';
+  };
+  
+  const businessName = getBusinessDisplayName();
   const activeOrdersCount = businessData?.activeOrders?.length || 0;
   
   // Load context menu items on mount and when dynamicMenuItems change

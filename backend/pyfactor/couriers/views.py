@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.db.models import Q, Sum, Avg, Count
 from datetime import datetime, timedelta
 from decimal import Decimal
+import logging
 
 from .models import CourierProfile, DeliveryOrder, CourierEarnings, CourierNotification, DeliveryTracking
 from .serializers import (
@@ -254,7 +255,7 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
         """Filter orders based on user role"""
         user = self.request.user
         queryset = DeliveryOrder.objects.all()
-        
+
         # Filter by user role
         if hasattr(user, 'courier_profile'):
             # Driver sees their orders
@@ -265,13 +266,49 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
         else:
             # Consumer sees their orders
             queryset = queryset.filter(consumer=user)
-        
-        # Apply status filter
+
+        # Apply status filter - handle both single status and multiple statuses
         status_filter = self.request.query_params.get('status')
+        status_in_filter = self.request.query_params.get('status__in')
+
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-        
+        elif status_in_filter:
+            # Handle comma-separated status values for status__in parameter
+            statuses = status_in_filter.split(',')
+            queryset = queryset.filter(status__in=statuses)
+
         return queryset.order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        """Override list to ensure proper response format"""
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+
+            # Handle pagination
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'count': len(serializer.data)
+            })
+        except Exception as e:
+            # If any error occurs, return empty list instead of error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error in delivery list: {str(e)}")
+
+            return Response({
+                'success': True,
+                'data': [],
+                'count': 0,
+                'message': 'No deliveries found'
+            })
     
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):

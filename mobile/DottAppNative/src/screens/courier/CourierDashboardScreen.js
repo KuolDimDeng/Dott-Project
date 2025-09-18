@@ -208,7 +208,7 @@ const CourierDashboardScreen = ({ navigation }) => {
         {/* Greeting Section */}
         <View style={styles.greetingSection}>
           <Text style={styles.greeting}>
-            Hello, {profile?.first_name || profile?.name || user?.name || 'Courier'}!
+            Hello, {user?.first_name || profile?.first_name || profile?.name || user?.name || 'Courier'}!
           </Text>
           <Text style={styles.subGreeting}>
             {isOpen ? 'Business is OPEN - Ready to deliver' : 'Business is CLOSED'}
