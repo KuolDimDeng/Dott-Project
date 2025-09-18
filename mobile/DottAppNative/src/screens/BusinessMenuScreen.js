@@ -243,6 +243,30 @@ export default function BusinessMenuScreen() {
       fetchBusinessFeatures();
     }
   }, [user?.id]);
+
+  // Fetch and set current business open/closed status
+  useEffect(() => {
+    const fetchBusinessStatus = async () => {
+      try {
+        console.log('📱 Fetching current business status...');
+        const response = await marketplaceApi.getBusinessListing();
+        if (response && response.data) {
+          const currentStatus = response.data.is_open_now || false;
+          const hasManualOverride = response.data.manual_override || false;
+          console.log('📱 Current business status:', currentStatus ? 'OPEN' : 'CLOSED', 'Manual override:', hasManualOverride);
+          setIsOpen(currentStatus);
+          setManualOverride(hasManualOverride);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching business status:', error);
+        // Default to closed if we can't fetch status
+        setIsOpen(false);
+        setManualOverride(false);
+      }
+    };
+
+    fetchBusinessStatus();
+  }, []);
   
   // Get business type display name
   const getBusinessTypeDisplay = () => {
@@ -594,11 +618,45 @@ export default function BusinessMenuScreen() {
     }
   };
 
-  const handleToggleOpen = () => {
+  const handleToggleOpen = async () => {
     const newStatus = !isOpen;
     setIsOpen(newStatus);
     setManualOverride(true); // Mark as manually overridden
-    
+
+    // Update backend immediately
+    try {
+      const result = await marketplaceApi.updateBusinessStatus({
+        is_open: newStatus,
+        manual_override: true
+      });
+
+      if (result && result.success) {
+        console.log('✅ Business status updated on backend:', newStatus ? 'OPEN' : 'CLOSED');
+      } else {
+        console.error('❌ Failed to update business status on backend');
+        // Revert the local state if backend update fails
+        setIsOpen(!newStatus);
+        setManualOverride(false);
+        Alert.alert(
+          'Update Failed',
+          'Could not update business status. Please try again.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Error updating business status:', error);
+      // Revert the local state if backend update fails
+      setIsOpen(!newStatus);
+      setManualOverride(false);
+      Alert.alert(
+        'Update Failed',
+        'Could not update business status. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Status Updated',
       `Your business is now ${newStatus ? 'OPEN and accepting orders' : 'CLOSED'}`,
