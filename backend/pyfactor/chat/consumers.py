@@ -18,22 +18,48 @@ class ChatConsumer(AsyncWebsocketConsumer):
         Accept WebSocket connection
         """
         self.user = self.scope["user"]
-        
+
         if not self.user.is_authenticated:
             await self.close()
             return
-        
+
         # Create a unique channel name for this user
         self.user_channel = f"user_{self.user.id}"
-        
+
         # Join user's personal channel
         await self.channel_layer.group_add(
             self.user_channel,
             self.channel_name
         )
-        
+
+        # Join role-specific channels for order notifications
+        if hasattr(self.user, 'is_business') and self.user.is_business:
+            # Business owner channel
+            self.business_channel = f"business_{self.user.id}"
+            await self.channel_layer.group_add(
+                self.business_channel,
+                self.channel_name
+            )
+
+        if hasattr(self.user, 'is_consumer'):
+            # Consumer channel
+            self.consumer_channel = f"consumer_{self.user.id}"
+            await self.channel_layer.group_add(
+                self.consumer_channel,
+                self.channel_name
+            )
+
+        # Check if user is a courier
+        courier_profile = await self.get_courier_profile()
+        if courier_profile:
+            self.courier_channel = f"courier_{self.user.id}"
+            await self.channel_layer.group_add(
+                self.courier_channel,
+                self.channel_name
+            )
+
         await self.accept()
-        
+
         # Send connection confirmation
         await self.send(text_data=json.dumps({
             'type': 'connection_established',
@@ -248,8 +274,47 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'read_by': event['read_by'],
             'read_at': event['read_at']
         }))
+
+    # Order notification handlers
+    async def order_notification(self, event):
+        """
+        Send order notification to WebSocket
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'order_notification',
+            'data': event['data']
+        }))
+
+    async def delivery_notification(self, event):
+        """
+        Send delivery notification to courier
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'delivery_notification',
+            'data': event['data']
+        }))
+
+    async def order_update(self, event):
+        """
+        Send order update to all parties
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'order_update',
+            'data': event['data']
+        }))
     
     # Database operations
+    @database_sync_to_async
+    def get_courier_profile(self):
+        """
+        Check if user is a courier
+        """
+        try:
+            from couriers.models import CourierProfile
+            return CourierProfile.objects.filter(user=self.user).first()
+        except:
+            return None
+
     @database_sync_to_async
     def save_message(self, conversation_id, text_content, message_type, order_data):
         """

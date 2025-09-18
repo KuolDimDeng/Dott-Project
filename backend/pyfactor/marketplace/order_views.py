@@ -85,8 +85,10 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             # Generate PINs for verification
             pins = order.generate_pins()
 
-            # Send notification to business (implement notification system)
-            # notify_business_new_order(order)
+            # Send notification to business
+            from .notification_service import OrderNotificationService
+            OrderNotificationService.notify_business_new_order(order)
+            OrderNotificationService.broadcast_order_update(order, 'created')
 
             # Automatically assign courier for delivery orders
             if request.data.get('delivery_type') == 'delivery':

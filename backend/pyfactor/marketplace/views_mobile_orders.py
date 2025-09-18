@@ -157,7 +157,10 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 order.save()
                 
                 # Send notification to customer (implement your notification service)
-                self._send_order_notification(order, 'accepted')
+                # Send notifications
+                from .notification_service import OrderNotificationService
+                OrderNotificationService.notify_consumer_order_accepted(order, preparation_time)
+                OrderNotificationService.broadcast_order_update(order, 'accepted')
             
             return Response({
                 'success': True,

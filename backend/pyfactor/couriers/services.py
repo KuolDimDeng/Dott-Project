@@ -237,7 +237,12 @@ class CourierAssignmentService:
                     
                     # Assign courier to order
                     order.assign_courier(courier, earnings)
-                    
+
+                    # Send notification to courier
+                    from marketplace.notification_service import OrderNotificationService
+                    OrderNotificationService.notify_courier_new_assignment(order, courier)
+                    OrderNotificationService.broadcast_order_update(order, 'courier_assigned')
+
                     # Update courier status
                     courier.availability_status = 'busy'
                     courier.save()

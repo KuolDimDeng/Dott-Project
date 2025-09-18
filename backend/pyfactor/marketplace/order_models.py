@@ -134,6 +134,19 @@ class ConsumerOrder(models.Model):
         return f"Order {self.order_number} - {self.consumer.email} -> {self.business.business_name}"
     
     def save(self, *args, **kwargs):
+        # Track if status changed for notifications
+        send_notification = False
+        old_status = None
+
+        if self.pk:  # If updating existing order
+            try:
+                old_order = ConsumerOrder.objects.get(pk=self.pk)
+                if old_order.order_status != self.order_status:
+                    old_status = old_order.order_status
+                    send_notification = True
+            except ConsumerOrder.DoesNotExist:
+                pass
+
         if not self.order_number:
             # Generate order number
             import random
@@ -141,8 +154,19 @@ class ConsumerOrder(models.Model):
             prefix = 'ORD'
             suffix = ''.join(random.choices(string.digits, k=8))
             self.order_number = f"{prefix}{suffix}"
-        
+
         super().save(*args, **kwargs)
+
+        # Send notifications if status changed
+        if send_notification and old_status:
+            try:
+                from .notification_service import OrderNotificationService
+                OrderNotificationService.notify_order_status_update(self, old_status)
+                OrderNotificationService.broadcast_order_update(self, 'status_change')
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send status update notification: {e}")
     
     def confirm_order(self):
         """Confirm the order"""
@@ -244,7 +268,7 @@ class ConsumerOrder(models.Model):
         self.courier_assigned_at = timezone.now()
         self.courier_earnings = earnings
         self.order_status = 'courier_assigned'
-        self.save()
+        self.save(update_fields=['courier', 'courier_assigned_at', 'courier_earnings', 'order_status'])
     
     def courier_accept(self):
         """Courier accepts the delivery"""
