@@ -7,6 +7,11 @@ from django.utils import timezone
 from banking.models import PaymentSettlement, BankAccount
 from couriers.models import CourierProfile, CourierEarnings
 from payments.models import Transaction
+from .fee_config import (
+    PLATFORM_COMMISSION_RATE, COURIER_EARNINGS_RATE, PLATFORM_DELIVERY_RATE,
+    STRIPE_PERCENTAGE_FEE, STRIPE_FIXED_FEE,
+    PLATFORM_STRIPE_PERCENTAGE, PLATFORM_STRIPE_FIXED
+)
 import stripe
 import logging
 
@@ -17,28 +22,41 @@ class MarketplacePaymentService:
     """Service for handling marketplace payment operations."""
 
     @staticmethod
-    def calculate_platform_fees(amount):
+    def calculate_platform_fees(amount, subtotal=None):
         """
         Calculate platform fees for a transaction.
+
+        Args:
+            amount: Total transaction amount (including tax and delivery)
+            subtotal: Food/items subtotal (for commission calculation)
 
         Returns:
             dict: Contains stripe_fee, platform_fee, and net_amount
         """
         amount = Decimal(str(amount))
 
-        # Stripe fee: 2.9% + $0.30
-        stripe_fee = (amount * Decimal('0.029')) + Decimal('0.30')
+        # Use subtotal for platform fee if provided, otherwise use total amount
+        fee_base = Decimal(str(subtotal)) if subtotal else amount
 
-        # Platform fee: 2.5% for marketplace transactions
-        platform_fee = amount * Decimal('0.025')
+        # Stripe fee: 2.9% + $0.30 (on total amount)
+        stripe_fee = (amount * STRIPE_PERCENTAGE_FEE) + STRIPE_FIXED_FEE
 
-        # Net amount after fees
-        net_amount = amount - stripe_fee - platform_fee
+        # Platform commission: 10% of food subtotal only (not tax/delivery)
+        platform_fee = fee_base * PLATFORM_COMMISSION_RATE
+
+        # Platform's Stripe revenue: 0.1% + $0.30 (additional platform revenue)
+        stripe_platform_revenue = (amount * PLATFORM_STRIPE_PERCENTAGE) + PLATFORM_STRIPE_FIXED
+
+        # Restaurant receives: subtotal minus platform commission
+        restaurant_payout = fee_base - platform_fee
 
         return {
             'stripe_fee': stripe_fee,
             'platform_fee': platform_fee,
-            'net_amount': net_amount,
+            'stripe_platform_revenue': stripe_platform_revenue,
+            'restaurant_payout': restaurant_payout,
+            'total_platform_revenue': platform_fee + stripe_platform_revenue,
+            'net_amount': amount - stripe_fee - platform_fee,
             'total_fees': stripe_fee + platform_fee
         }
 
@@ -56,8 +74,11 @@ class MarketplacePaymentService:
             PaymentSettlement instance
         """
         try:
-            # Calculate fees
-            fees = MarketplacePaymentService.calculate_platform_fees(order.total)
+            # Calculate fees (pass subtotal for commission calculation)
+            fees = MarketplacePaymentService.calculate_platform_fees(
+                order.total_amount if hasattr(order, 'total_amount') else order.total,
+                order.subtotal if hasattr(order, 'subtotal') else None
+            )
 
             # Get business's default bank account for payouts
             bank_account = BankAccount.objects.filter(

@@ -573,7 +573,7 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
                 delivery_order.save()
 
                 # Get courier earnings amount for response
-                earnings_amount = marketplace_order.courier_earnings or marketplace_order.delivery_fee * Decimal('0.75')
+                earnings_amount = marketplace_order.courier_earnings or marketplace_order.delivery_fee * Decimal('0.70')
 
                 return Response({
                     'success': True,

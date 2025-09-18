@@ -519,8 +519,8 @@ class DeliveryOrder(models.Model):
         # Calculate fees
         if self.delivery_fee and not self.final_delivery_fee:
             self.final_delivery_fee = self.delivery_fee * self.surge_multiplier
-            self.platform_fee = self.final_delivery_fee * Decimal('0.25')  # 25% platform fee
-            self.courier_earnings = self.final_delivery_fee * Decimal('0.75')  # 75% to courier
+            self.platform_fee = self.final_delivery_fee * Decimal('0.30')  # 30% platform fee
+            self.courier_earnings = self.final_delivery_fee * Decimal('0.70')  # 70% to courier
         
         super().save(*args, **kwargs)
     
