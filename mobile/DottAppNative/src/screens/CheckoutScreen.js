@@ -60,6 +60,10 @@ export default function CheckoutScreen() {
   const [taxAmount, setTaxAmount] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [serviceFee, setServiceFee] = useState(0);
+  const [tipAmount, setTipAmount] = useState(0);
+  const [selectedTipOption, setSelectedTipOption] = useState('none');
+  const [customTip, setCustomTip] = useState('');
+  const [showCustomTipInput, setShowCustomTipInput] = useState(false);
   const [total, setTotal] = useState(0);
   const [taxJurisdiction, setTaxJurisdiction] = useState('');
 
@@ -78,7 +82,7 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     calculateOrderTotal();
-  }, [subtotal, taxAmount, deliveryFee, serviceFee]);
+  }, [subtotal, taxAmount, deliveryFee, serviceFee, tipAmount]);
 
   useEffect(() => {
     // Recalculate tax when address changes
@@ -227,8 +231,32 @@ export default function CheckoutScreen() {
   };
 
   const calculateOrderTotal = () => {
-    const newTotal = subtotal + taxAmount + deliveryFee + serviceFee;
+    const newTotal = subtotal + taxAmount + deliveryFee + serviceFee + tipAmount;
     setTotal(newTotal);
+  };
+
+  const handleTipSelection = (option, percentage = 0) => {
+    setSelectedTipOption(option);
+    setShowCustomTipInput(false);
+
+    if (option === 'none') {
+      setTipAmount(0);
+      setCustomTip('');
+    } else if (option === 'custom') {
+      setShowCustomTipInput(true);
+      // Don't set tip amount until user enters custom amount
+    } else {
+      // Calculate tip based on subtotal (pre-tax)
+      const tip = subtotal * percentage;
+      setTipAmount(tip);
+      setCustomTip('');
+    }
+  };
+
+  const handleCustomTipChange = (value) => {
+    setCustomTip(value);
+    const tip = parseFloat(value) || 0;
+    setTipAmount(tip);
   };
 
   const handleAddAddress = async () => {
@@ -316,6 +344,7 @@ export default function CheckoutScreen() {
       tax_amount: taxAmount,
       delivery_fee: deliveryFee,
       service_fee: serviceFee,
+      tip_amount: tipAmount,
       total: total,
       special_instructions: specialInstructions,
     };
@@ -769,6 +798,125 @@ export default function CheckoutScreen() {
           <Text style={styles.summaryLabel}>Service Fee</Text>
           <Text style={styles.summaryValue}>${serviceFee.toFixed(2)}</Text>
         </View>
+
+        {/* Courier Tip Section - Only show for delivery */}
+        {deliveryMethod === 'delivery' && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.tipSection}>
+              <View style={styles.tipHeader}>
+                <Icon name="heart-outline" size={20} color="#2563eb" />
+                <Text style={styles.tipTitle}>Add Tip for Courier (Optional)</Text>
+              </View>
+              <Text style={styles.tipSubtext}>
+                100% of your tip goes directly to your delivery courier
+              </Text>
+
+              {/* Tip Options */}
+              <View style={styles.tipOptions}>
+                <TouchableOpacity
+                  style={[
+                    styles.tipOption,
+                    selectedTipOption === 'none' && styles.selectedTipOption
+                  ]}
+                  onPress={() => handleTipSelection('none')}
+                >
+                  <Text style={[
+                    styles.tipOptionText,
+                    selectedTipOption === 'none' && styles.selectedTipText
+                  ]}>No tip</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.tipOption,
+                    selectedTipOption === '10%' && styles.selectedTipOption
+                  ]}
+                  onPress={() => handleTipSelection('10%', 0.10)}
+                >
+                  <Text style={[
+                    styles.tipOptionText,
+                    selectedTipOption === '10%' && styles.selectedTipText
+                  ]}>10%</Text>
+                  <Text style={[
+                    styles.tipOptionAmount,
+                    selectedTipOption === '10%' && styles.selectedTipText
+                  ]}>${(subtotal * 0.10).toFixed(2)}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.tipOption,
+                    selectedTipOption === '15%' && styles.selectedTipOption
+                  ]}
+                  onPress={() => handleTipSelection('15%', 0.15)}
+                >
+                  <Text style={[
+                    styles.tipOptionText,
+                    selectedTipOption === '15%' && styles.selectedTipText
+                  ]}>15%</Text>
+                  <Text style={[
+                    styles.tipOptionAmount,
+                    selectedTipOption === '15%' && styles.selectedTipText
+                  ]}>${(subtotal * 0.15).toFixed(2)}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.tipOption,
+                    selectedTipOption === '20%' && styles.selectedTipOption
+                  ]}
+                  onPress={() => handleTipSelection('20%', 0.20)}
+                >
+                  <Text style={[
+                    styles.tipOptionText,
+                    selectedTipOption === '20%' && styles.selectedTipText
+                  ]}>20%</Text>
+                  <Text style={[
+                    styles.tipOptionAmount,
+                    selectedTipOption === '20%' && styles.selectedTipText
+                  ]}>${(subtotal * 0.20).toFixed(2)}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.tipOption,
+                    selectedTipOption === 'custom' && styles.selectedTipOption
+                  ]}
+                  onPress={() => handleTipSelection('custom')}
+                >
+                  <Text style={[
+                    styles.tipOptionText,
+                    selectedTipOption === 'custom' && styles.selectedTipText
+                  ]}>Custom</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Custom Tip Input */}
+              {showCustomTipInput && (
+                <View style={styles.customTipContainer}>
+                  <Text style={styles.customTipLabel}>Enter custom tip amount:</Text>
+                  <TextInput
+                    style={styles.customTipInput}
+                    placeholder="0.00"
+                    value={customTip}
+                    onChangeText={handleCustomTipChange}
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                  />
+                </View>
+              )}
+
+              {/* Show selected tip amount */}
+              {tipAmount > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Courier Tip</Text>
+                  <Text style={styles.tipAmountValue}>+${tipAmount.toFixed(2)}</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
 
         <View style={styles.divider} />
 
@@ -1331,6 +1479,83 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2563eb',
+  },
+  tipSection: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  tipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginLeft: 8,
+  },
+  tipSubtext: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  tipOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 8,
+  },
+  tipOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  selectedTipOption: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  tipOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  selectedTipText: {
+    color: '#ffffff',
+  },
+  tipOptionAmount: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  customTipContainer: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  customTipLabel: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 8,
+  },
+  customTipInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+  },
+  tipAmountValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#059669',
   },
   instructionsInput: {
     backgroundColor: '#f9fafb',

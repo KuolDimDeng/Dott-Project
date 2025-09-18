@@ -572,8 +572,10 @@ class DeliveryOrderViewSet(viewsets.ModelViewSet):
                 delivery_order.delivered_at = timezone.now()
                 delivery_order.save()
 
-                # Get courier earnings amount for response
-                earnings_amount = marketplace_order.courier_earnings or marketplace_order.delivery_fee * Decimal('0.70')
+                # Get courier earnings amount for response (70% of delivery fee + 100% of tip)
+                delivery_earnings = marketplace_order.delivery_fee * Decimal('0.70')
+                tip_earnings = marketplace_order.tip_amount if hasattr(marketplace_order, 'tip_amount') else Decimal('0')
+                earnings_amount = marketplace_order.courier_earnings or (delivery_earnings + tip_earnings)
 
                 return Response({
                     'success': True,

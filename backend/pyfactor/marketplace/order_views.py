@@ -46,6 +46,7 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             tax_amount = float(request.data.get('tax_amount', 0))
             delivery_fee = float(request.data.get('delivery_fee', 0))
             service_fee = float(request.data.get('service_fee', 0))
+            tip_amount = float(request.data.get('tip_amount', 0))
             total_amount = float(request.data.get('total', 0))
 
             # Format delivery address as string if it's an object
@@ -63,6 +64,7 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 subtotal=subtotal,
                 tax_amount=tax_amount,
                 delivery_fee=delivery_fee,
+                tip_amount=tip_amount,
                 total_amount=total_amount,
                 payment_method=payment_method,
                 delivery_address=delivery_address_str,

@@ -144,7 +144,7 @@ class CourierAssignmentService:
     """
     
     @staticmethod
-    def calculate_courier_earnings(order_total, distance_km, delivery_category='food'):
+    def calculate_courier_earnings(order_total, distance_km, delivery_category='food', tip_amount=0):
         """
         Calculate courier earnings for a delivery
         """
@@ -177,7 +177,10 @@ class CourierAssignmentService:
         # Apply minimum and maximum limits
         earnings = max(earnings, Decimal('3.00'))  # Minimum $3
         earnings = min(earnings, Decimal('50.00'))  # Maximum $50
-        
+
+        # Add tip amount (100% goes to courier)
+        earnings += Decimal(str(tip_amount))
+
         return earnings
     
     @staticmethod
@@ -228,11 +231,13 @@ class CourierAssignmentService:
                         order.delivery_longitude if hasattr(order, 'delivery_longitude') else None
                     ) or 5  # Default 5km if no delivery location
                     
-                    # Calculate courier earnings
+                    # Calculate courier earnings (including tip)
+                    tip_amount = order.tip_amount if hasattr(order, 'tip_amount') else 0
                     earnings = CourierAssignmentService.calculate_courier_earnings(
                         order.total_amount,
                         delivery_distance,
-                        delivery_category
+                        delivery_category,
+                        tip_amount
                     )
                     
                     # Assign courier to order
