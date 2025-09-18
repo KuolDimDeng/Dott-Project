@@ -60,6 +60,8 @@ class BusinessListing(models.Model):
     # Business hours
     business_hours = models.JSONField(default=dict, blank=True)
     is_open_now = models.BooleanField(default=True)
+    manual_override = models.BooleanField(default=False, help_text='Whether open/closed status is manually overridden')
+    manual_override_expires = models.DateTimeField(null=True, blank=True, help_text='When the manual override expires')
 
     # Payment and delivery options
     payment_methods = ArrayField(

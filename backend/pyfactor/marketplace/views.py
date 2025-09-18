@@ -1837,7 +1837,19 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             # Also check for root-level description (mobile app compatibility)
             if 'description' in request.data and 'description' not in update_data:
                 update_data['description'] = request.data['description']
-            
+
+            # Handle open/closed status updates (for mobile app compatibility)
+            if 'is_open_now' in request.data:
+                logger.info(f"[BusinessListing] Updating is_open_now to {request.data['is_open_now']}")
+                update_data['is_open_now'] = request.data['is_open_now']
+                # If explicitly setting status, mark as manual override
+                if 'manual_override' in request.data:
+                    update_data['manual_override'] = request.data['manual_override']
+                    if request.data['manual_override']:
+                        # Set expiry for 24 hours when manually overridden
+                        from datetime import timedelta
+                        update_data['manual_override_expires'] = timezone.now() + timedelta(hours=24)
+
             # Contact information
             if 'contact' in profile_data:
                 contact = profile_data['contact']

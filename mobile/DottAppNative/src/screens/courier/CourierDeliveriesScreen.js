@@ -221,7 +221,7 @@ export default function CourierDeliveriesScreen() {
       
       if (newStatus) {
         Alert.alert(
-          'You are Online',
+          'Business is OPEN',
           'You can now receive delivery requests.',
           [{ text: 'OK' }]
         );
@@ -231,7 +231,7 @@ export default function CourierDeliveriesScreen() {
         }
       } else {
         Alert.alert(
-          'You are Offline',
+          'Business is CLOSED',
           'You will not receive new delivery requests.',
           [{ text: 'OK' }]
         );
@@ -239,7 +239,7 @@ export default function CourierDeliveriesScreen() {
     } catch (error) {
       console.error('Error updating status:', error);
       // Revert on error
-      setIsOnline(previousStatus);
+      setIsOpen(previousStatus);
       Alert.alert(
         'Connection Error',
         'Failed to update online status. Please check your internet connection.',
@@ -639,7 +639,7 @@ export default function CourierDeliveriesScreen() {
       </Text>
       <Text style={styles.emptyText}>
         {selectedTab === 'Available' ?
-          (isOnline ? 'New deliveries will appear here' : 'Go online to see deliveries') :
+          (isOpen ? 'New deliveries will appear here' : 'Open your business to see deliveries') :
          selectedTab === 'Active' ? 'Your active deliveries will appear here' :
          'Your delivery history will appear here'}
       </Text>
@@ -662,11 +662,11 @@ export default function CourierDeliveriesScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Deliveries</Text>
         <View style={styles.onlineToggle}>
-          <Text style={[styles.onlineText, !isOnline && styles.offlineText]}>
-            {isOnline ? 'Online' : 'Offline'}
+          <Text style={[styles.onlineText, !isOpen && styles.offlineText]}>
+            {isOpen ? 'Open' : 'Closed'}
           </Text>
           <Switch
-            value={isOnline}
+            value={isOpen}
             onValueChange={toggleOnlineStatus}
             trackColor={{ false: '#6b7280', true: '#10b981' }}
             thumbColor="#ffffff"
@@ -674,7 +674,7 @@ export default function CourierDeliveriesScreen() {
         </View>
       </View>
 
-      {isOnline && (
+      {isOpen && (
         <View style={styles.earningsBar}>
           <Icon name="cash-outline" size={20} color="#10b981" />
           <Text style={styles.earningsBarText}>Today's Earnings: ${todayEarnings.toFixed(2)}</Text>
