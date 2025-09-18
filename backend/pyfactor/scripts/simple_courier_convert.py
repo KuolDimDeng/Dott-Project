@@ -44,36 +44,39 @@ with transaction.atomic():
         
         # Update using raw SQL to avoid field issues
         with connection.cursor() as cursor:
-            # Check if primary_interaction_type column exists
+            # Check which columns exist
             cursor.execute("""
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name='users_business' 
-                AND column_name='primary_interaction_type'
+                AND column_name IN ('primary_interaction_type', 'stripe_onboarding_complete')
             """)
-            has_interaction_field = cursor.fetchone() is not None
+            existing_cols = [row[0] for row in cursor.fetchall()]
+            has_interaction = 'primary_interaction_type' in existing_cols
+            has_stripe = 'stripe_onboarding_complete' in existing_cols
             
-            if has_interaction_field:
-                cursor.execute("""
-                    UPDATE users_business 
-                    SET business_type = 'courier',
-                        simplified_business_type = 'SERVICE',
-                        marketplace_category = 'Transport',
-                        name = 'Steve''s Courier Service',
-                        delivery_scope = 'local',
-                        primary_interaction_type = 'order'
-                    WHERE id = %s
-                """, [str(business.id)])
-            else:
-                cursor.execute("""
-                    UPDATE users_business 
-                    SET business_type = 'courier',
-                        simplified_business_type = 'SERVICE',
-                        marketplace_category = 'Transport',
-                        name = 'Steve''s Courier Service',
-                        delivery_scope = 'local'
-                    WHERE id = %s
-                """, [str(business.id)])
+            # Build update query
+            update_parts = [
+                "business_type = 'courier'",
+                "simplified_business_type = 'SERVICE'",
+                "marketplace_category = 'Transport'",
+                "name = 'Steve''s Courier Service'",
+                "delivery_scope = 'local'"
+            ]
+            
+            if has_interaction:
+                update_parts.append("primary_interaction_type = 'order'")
+            
+            if has_stripe:
+                update_parts.append("stripe_onboarding_complete = false")
+            
+            update_query = f"""
+                UPDATE users_business 
+                SET {', '.join(update_parts)}
+                WHERE id = %s
+            """
+            
+            cursor.execute(update_query, [str(business.id)])
         
         print(f"✅ Updated business to courier type using SQL")
     else:
@@ -97,34 +100,41 @@ with transaction.atomic():
             # Convert user.id to UUID format (00000000-0000-0000-0000-0000000000XX)
             owner_uuid = f"00000000-0000-0000-0000-{user.id:012x}"
             
-            if has_interaction_field:
-                cursor.execute("""
-                    INSERT INTO users_business (
-                        id, owner_id, name, business_type, simplified_business_type,
-                        marketplace_category, delivery_scope, country, city,
-                        primary_interaction_type, tenant_id, created_at, updated_at
-                    ) VALUES (
-                        %s, %s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
-                    )
-                """, [
-                    business_id, owner_uuid, "Steve's Courier Service", 'courier', 'SERVICE',
-                    'Transport', 'local', 'SS', 'Juba', 'order',
-                    str(user.tenant_id) if user.tenant else None
-                ])
-            else:
-                cursor.execute("""
-                    INSERT INTO users_business (
-                        id, owner_id, name, business_type, simplified_business_type,
-                        marketplace_category, delivery_scope, country, city,
-                        tenant_id, created_at, updated_at
-                    ) VALUES (
-                        %s, %s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
-                    )
-                """, [
-                    business_id, owner_uuid, "Steve's Courier Service", 'courier', 'SERVICE',
-                    'Transport', 'local', 'SS', 'Juba',
-                    str(user.tenant_id) if user.tenant else None
-                ])
+            # First check which columns exist
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='users_business' 
+                AND column_name IN ('primary_interaction_type', 'stripe_onboarding_complete')
+            """)
+            existing_cols = [row[0] for row in cursor.fetchall()]
+            has_interaction = 'primary_interaction_type' in existing_cols
+            has_stripe = 'stripe_onboarding_complete' in existing_cols
+            
+            # Build column list dynamically
+            base_cols = ['id', 'owner_id', 'name', 'business_type', 'simplified_business_type',
+                        'marketplace_category', 'delivery_scope', 'country', 'city', 'tenant_id']
+            base_vals = [business_id, owner_uuid, "Steve's Courier Service", 'courier', 'SERVICE',
+                        'Transport', 'local', 'SS', 'Juba', str(user.tenant_id) if user.tenant else None]
+            
+            if has_interaction:
+                base_cols.append('primary_interaction_type')
+                base_vals.append('order')
+            
+            if has_stripe:
+                base_cols.append('stripe_onboarding_complete')
+                base_vals.append(False)
+            
+            base_cols.extend(['created_at', 'updated_at'])
+            
+            # Build query
+            cols_str = ', '.join(base_cols)
+            placeholders = ', '.join(['%s' if c != 'owner_id' else '%s::uuid' for c in base_cols[:-2]] + ['NOW()', 'NOW()'])
+            
+            cursor.execute(f"""
+                INSERT INTO users_business ({cols_str})
+                VALUES ({placeholders})
+            """, base_vals)
         
         print(f"✅ Created courier business with ID: {business_id}")
         
