@@ -76,7 +76,7 @@ def get_menu_items_for_business_type(business_type, features):
                 'screen': 'TableManagement'
             })
     
-    # Transport/Delivery business items
+    # Transport/Delivery business items (courier-specific)
     if business_type in ['TRANSPORT_SERVICE', 'LOGISTICS_FREIGHT', 'courier']:
         menu_items.append({
             'id': 'deliveries',
@@ -90,8 +90,27 @@ def get_menu_items_for_business_type(business_type, features):
             'icon': 'navigate-outline',
             'screen': 'NavigationScreen'
         })
+        
+        # Couriers only need minimal business management items
+        if business_type == 'courier':
+            menu_items.extend([
+                {
+                    'id': 'earnings',
+                    'label': 'Earnings',
+                    'icon': 'cash-outline',
+                    'screen': 'EarningsScreen'
+                },
+                {
+                    'id': 'profile',
+                    'label': 'Courier Profile',
+                    'icon': 'person-outline',
+                    'screen': 'CourierProfileScreen'
+                }
+            ])
+            # Skip the common business items for couriers
+            return menu_items
     
-    # Common business management items
+    # Common business management items (not for couriers)
     menu_items.extend([
         {
             'id': 'inventory',
