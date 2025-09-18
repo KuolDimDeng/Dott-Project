@@ -59,11 +59,29 @@ export default function CourierDeliveriesScreen() {
 
   const loadCourierProfile = async () => {
     try {
+      if (!courierApi || !courierApi.getProfile) {
+        console.log('Courier API not available, using mock data');
+        setCourierProfile({
+          name: 'Steve Majak',
+          vehicle_type: 'motorcycle',
+          availability_status: 'available',
+          trust_level: 'new'
+        });
+        setIsOnline(false);
+        return;
+      }
       const response = await courierApi.getProfile();
       setCourierProfile(response.data);
       setIsOnline(response.data.availability_status === 'available');
     } catch (error) {
       console.error('Error loading courier profile:', error);
+      // Set default profile on error
+      setCourierProfile({
+        name: 'Steve Majak',
+        vehicle_type: 'motorcycle',
+        availability_status: 'offline',
+        trust_level: 'new'
+      });
     }
   };
 
@@ -133,6 +151,14 @@ export default function CourierDeliveriesScreen() {
   const loadDeliveries = async () => {
     setLoading(true);
     try {
+      // Check if courierApi is available
+      if (!courierApi || !courierApi.get) {
+        console.log('Courier API not available, showing empty state');
+        setDeliveries([]);
+        setLoading(false);
+        return;
+      }
+      
       let endpoint = '';
       switch (selectedTab) {
         case 'Available':
