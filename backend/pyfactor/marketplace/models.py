@@ -169,6 +169,50 @@ class BusinessListing(models.Model):
     def __str__(self):
         return f"{self.business.business_name} - {self.get_business_type_display()}"
     
+    def calculate_is_open(self):
+        """Calculate if business is open based on hours and override"""
+        from django.utils import timezone
+
+        # If there's a manual override, check if it's still valid
+        if self.manual_override:
+            # Check if override hasn't expired
+            if self.manual_override_expires and timezone.now() > self.manual_override_expires:
+                # Override expired, reset it
+                self.manual_override = False
+                self.manual_override_expires = None
+                self.save(update_fields=['manual_override', 'manual_override_expires'])
+            else:
+                # Override is still valid, return the manual status
+                return self.is_open_now
+
+        # Calculate based on business hours
+        if not self.business_hours:
+            # No hours set, default to open during business hours (9-5)
+            now = timezone.now()
+            current_hour = now.hour
+            return 9 <= current_hour < 17
+
+        now = timezone.now()
+        day_name = now.strftime('%A').lower()  # e.g., 'monday'
+        current_time = now.strftime('%H:%M')  # e.g., '14:30'
+
+        # Get hours for today
+        day_hours = self.business_hours.get(day_name, {})
+
+        # Check if closed today
+        if day_hours.get('isClosed', False):
+            return False
+
+        # Get open and close times
+        open_time = day_hours.get('open', '')
+        close_time = day_hours.get('close', '')
+
+        if open_time and close_time:
+            # Simple time comparison (works for times that don't cross midnight)
+            return open_time <= current_time <= close_time
+
+        return False
+
     @property
     def subcategories(self):
         """Combined subcategories (manual overrides auto)"""

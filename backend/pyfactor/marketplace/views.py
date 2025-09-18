@@ -2137,6 +2137,59 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
             'subcategories': listing.secondary_categories
         })
     
+    @action(detail=False, methods=['patch'])
+    def update_status(self, request):
+        """
+        Update business open/closed status
+        Endpoint: PATCH /api/marketplace/business/update-status/
+        """
+        if not hasattr(request.user, 'tenant_id'):
+            return Response(
+                {'success': False, 'error': 'Only businesses can update status'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            listing = BusinessListing.objects.get(business=request.user)
+        except BusinessListing.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Business listing not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        is_open = request.data.get('is_open')
+        manual_override = request.data.get('manual_override', False)
+
+        if is_open is None:
+            return Response({
+                'success': False,
+                'error': 'is_open field is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the status
+        listing.is_open_now = is_open
+        listing.manual_override = manual_override
+
+        if manual_override:
+            # Set expiry for 24 hours when manually overridden
+            from datetime import timedelta
+            listing.manual_override_expires = timezone.now() + timedelta(hours=24)
+            logger.info(f"[BusinessListing] Manual override set for {request.user.id}, expires at {listing.manual_override_expires}")
+        else:
+            listing.manual_override_expires = None
+
+        listing.save(update_fields=['is_open_now', 'manual_override', 'manual_override_expires', 'updated_at'])
+
+        logger.info(f"[BusinessListing] Updated status for {request.user.id}: is_open={is_open}, manual_override={manual_override}")
+
+        return Response({
+            'success': True,
+            'message': f'Business is now {"OPEN" if is_open else "CLOSED"}',
+            'is_open_now': listing.is_open_now,
+            'manual_override': listing.manual_override,
+            'manual_override_expires': listing.manual_override_expires.isoformat() if listing.manual_override_expires else None
+        })
+
     @action(detail=False, methods=['post'])
     def sync_products(self, request):
         """

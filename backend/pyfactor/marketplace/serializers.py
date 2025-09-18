@@ -76,10 +76,10 @@ class BusinessListingSerializer(serializers.ModelSerializer):
         ).count()
     
     def get_is_open_now(self, obj):
-        """Return business open/closed status from model field (linked to business menu status)"""
-        # Use the is_open_now field from the model which is controlled by the business owner
-        # This links to the business's actual status from their business menu screen
-        return obj.is_open_now
+        """Return calculated or manual open status"""
+        # Use the model's calculate_is_open method which handles both
+        # manual overrides and automatic calculation based on business hours
+        return obj.calculate_is_open()
     
     def get_business_type_display(self, obj):
         """Get clean business type display name"""

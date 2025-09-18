@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ENV from '../config/environment';
+import { handleApiError, retryWithBackoff, CacheHelper, NetworkHelper } from '../utils/apiErrorHandler';
 
 const API_BASE_URL = ENV.apiUrl;
 
@@ -33,7 +34,6 @@ api.interceptors.request.use(
 
     if (isPublicEndpoint) {
       // Don't add any auth headers for public marketplace endpoints
-      console.log('🌐 Public marketplace endpoint - no auth required:', config.url);
       delete config.headers.Authorization; // Remove any existing auth header
     } else {
       // Try to get the session token (used by your backend)
@@ -98,7 +98,16 @@ export const marketplaceApi = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching businesses:', error);
+      // Use centralized error handler
+      const result = await handleApiError(error, {
+        operation: 'fetch_businesses',
+        fallbackData: await CacheHelper.get(`businesses_${params.city}`),
+        showToast: true
+      });
+
+      if (result.data) {
+        return result.data; // Return cached data if available
+      }
       throw error;
     }
   },
@@ -109,9 +118,20 @@ export const marketplaceApi = {
       const response = await api.get('/marketplace/consumer/categories/', {
         params: { city },
       });
+
+      // Cache categories for offline support
+      await CacheHelper.set(`categories_${city}`, response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      const result = await handleApiError(error, {
+        operation: 'fetch_categories',
+        fallbackData: await CacheHelper.get(`categories_${city}`),
+        showToast: false // Don't show toast for categories
+      });
+
+      if (result.data) {
+        return result.data;
+      }
       throw error;
     }
   },
@@ -122,9 +142,20 @@ export const marketplaceApi = {
       const response = await api.get('/marketplace/consumer/category_hierarchy/', {
         params: { city },
       });
+
+      // Cache hierarchy for offline support
+      await CacheHelper.set(`category_hierarchy_${city}`, response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching category hierarchy:', error);
+      const result = await handleApiError(error, {
+        operation: 'fetch_category_hierarchy',
+        fallbackData: await CacheHelper.get(`category_hierarchy_${city}`),
+        showToast: false
+      });
+
+      if (result.data) {
+        return result.data;
+      }
       throw error;
     }
   },
@@ -160,9 +191,22 @@ export const marketplaceApi = {
           limit: params.limit || 20,
         },
       });
+
+      // Cache featured items
+      const cacheKey = `featured_items_${params.city}_${params.country || 'all'}`;
+      await CacheHelper.set(cacheKey, response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching featured items:', error);
+      const cacheKey = `featured_items_${params.city}_${params.country || 'all'}`;
+      const result = await handleApiError(error, {
+        operation: 'fetch_featured_items',
+        fallbackData: await CacheHelper.get(cacheKey),
+        showToast: false
+      });
+
+      if (result.data) {
+        return result.data;
+      }
       throw error;
     }
   },
@@ -179,8 +223,10 @@ export const marketplaceApi = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error tracking item view:', error);
-      // Don't throw - tracking shouldn't break the app
+      // Silent fail for tracking - don't interrupt user experience
+      if (__DEV__) {
+        console.warn('Tracking failed (non-critical):', error.message);
+      }
       return null;
     }
   },
@@ -280,12 +326,13 @@ export const marketplaceApi = {
         return null;
       }
 
-      // Use the listing endpoint to update status fields
-      const response = await api.patch('/marketplace/business/listing/', {
-        is_published: statusData.is_open,
-        is_active: statusData.is_open,
-        is_open_now: statusData.is_open
+      // Use the dedicated update-status endpoint
+      const response = await api.patch('/marketplace/business/update-status/', {
+        is_open: statusData.is_open,
+        manual_override: statusData.manual_override || false
       });
+
+      console.log('✅ Business status updated:', response.data);
       return response.data;
     } catch (error) {
       // Log error details for debugging

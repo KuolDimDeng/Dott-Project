@@ -9,7 +9,6 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   Dimensions,
@@ -23,6 +22,16 @@ import ImageCarousel from '../components/ImageCarousel';
 import SubcategoryModal from '../components/SubcategoryModal';
 import locationService from '../services/locationService';
 import CountrySelector from '../components/common/CountrySelector';
+import {
+  NetworkErrorState,
+  EmptyState,
+  SkeletonLoader,
+  OfflineBanner,
+  StaleDataIndicator,
+  RefreshableScrollView,
+} from '../components/ErrorStates';
+import NetInfo from '@react-native-community/netinfo';
+import { NetworkHelper } from '../utils/apiErrorHandler';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -62,10 +71,24 @@ export default function MarketplaceScreen() {
   const [showSubcategoryModal, setShowSubcategoryModal] = useState(false);
   const [modalCategory, setModalCategory] = useState(null);
   const [modalSubcategories, setModalSubcategories] = useState([]);
+  const [isOnline, setIsOnline] = useState(true);
+  const [dataIsStale, setDataIsStale] = useState(false);
+  const [loadingError, setLoadingError] = useState(null);
 
   useEffect(() => {
     detectLocation();
     loadInitialData();
+
+    // Monitor network status
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(state.isConnected && state.isInternetReachable);
+      if (state.isConnected && !isOnline) {
+        // Network restored - refresh data
+        handleRefresh();
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -157,7 +180,7 @@ export default function MarketplaceScreen() {
           const userBusiness = businessList[userBusinessIndex];
           businessList.splice(userBusinessIndex, 1);
           businessList.unshift(userBusiness);
-          console.log('✅ Moved user\'s business to the front:', userBusiness.name);
+          // User's business moved to front
         } else if (userBusinessIndex === -1) {
           // User's business not in list, try to fetch it separately
           try {
@@ -168,15 +191,15 @@ export default function MarketplaceScreen() {
                 isOwnerBusiness: true,
                 featured: true,
               });
-              console.log('✅ Added user\'s business to the front:', userBusinessResponse.name);
+              // User's business added to front
             }
           } catch (error) {
             // Handle 404 gracefully - business might not exist yet
-            if (error.response?.status === 404) {
-              console.log('User business not found in marketplace (might not be published yet)');
-              // Don't show error to user - this is normal for new businesses
-            } else {
-              console.log('Could not fetch user\'s business:', error);
+            if (error.response?.status !== 404) {
+              // Only log non-404 errors in dev
+              if (__DEV__) {
+                console.warn('Could not fetch user business:', error.message);
+              }
             }
           }
         }
@@ -191,19 +214,20 @@ export default function MarketplaceScreen() {
       setHasMore(!!response.next);
       setPage(pageNum);
     } catch (error) {
-      console.error('Error loading businesses:', error);
+      // Set error state for UI to handle
+      setLoadingError(error);
 
-      // Handle different error types appropriately
-      if (error.response?.status === 404) {
-        // No businesses found - this is okay, show empty state
-        setBusinesses(pageNum === 1 ? [] : businesses);
-      } else if (!error.response) {
-        // Network error - show offline message
-        Alert.alert(
-          'Connection Error',
-          'Please check your internet connection and try again',
-          [{ text: 'OK', onPress: () => {} }]
-        );
+      // Check if we have cached data to show
+      if (pageNum === 1 && businesses.length === 0) {
+        setDataIsStale(true);
+      }
+
+      // Only show error if no cached data available
+      if (businesses.length === 0 && !dataIsStale) {
+        // Error will be handled by UI components
+        if (__DEV__) {
+          console.warn('Failed to load businesses:', error.message);
+        }
       } else {
         // Other errors
         Alert.alert('Error', 'Failed to load businesses. Please try again.');
@@ -701,8 +725,42 @@ export default function MarketplaceScreen() {
     </>
   );
 
+  // Show network error if offline and no cached data
+  if (!isOnline && businesses.length === 0 && !loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <NetworkErrorState
+          onRetry={handleRefresh}
+          message="Connect to the internet to discover businesses near you"
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // Show loading error if there was an error and no data
+  if (loadingError && businesses.length === 0 && !loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <NetworkErrorState
+          onRetry={handleRefresh}
+          message="Something went wrong. Please try again."
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Offline Banner */}
+      <OfflineBanner isVisible={!isOnline} />
+
+      {/* Stale Data Indicator */}
+      {dataIsStale && (
+        <StaleDataIndicator
+          onRefresh={handleRefresh}
+        />
+      )}
+
       {/* Subcategory Modal */}
       <SubcategoryModal
         visible={showSubcategoryModal}
@@ -810,20 +868,26 @@ export default function MarketplaceScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           loading && businesses.length > 0 ? (
-            <ActivityIndicator size="large" color="#10b981" style={{ padding: 20 }} />
+            <View style={{ padding: 20 }}>
+              <ActivityIndicator size="small" color="#2563eb" />
+            </View>
           ) : null
         }
         ListEmptyComponent={
-          !loading && (
-            <View style={styles.emptyState}>
-              <Icon name="business-outline" size={64} color="#9ca3af" />
-              <Text style={styles.emptyTitle}>No businesses found</Text>
-              <Text style={styles.emptyText}>
-                {searchQuery 
-                  ? `No results for "${searchQuery}"`
-                  : 'No businesses available in your area'}
-              </Text>
-            </View>
+          loading ? (
+            <SkeletonLoader count={3} type="card" />
+          ) : (
+            <EmptyState
+              title={searchQuery ? "No Results Found" : "No Businesses Yet"}
+              message={
+                searchQuery
+                  ? `We couldn't find businesses matching "${searchQuery}"`
+                  : `Be the first to add your business in ${currentLocation}`
+              }
+              icon="business-outline"
+              actionLabel="Change Location"
+              onAction={() => setShowLocationPicker(true)}
+            />
           )
         }
       />
