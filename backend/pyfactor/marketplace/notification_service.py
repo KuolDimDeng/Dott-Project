@@ -282,6 +282,38 @@ class OrderNotificationService:
             logger.error(f"Failed to send WebSocket to business: {e}")
 
     @staticmethod
+    def notify_business_status_change(listing, is_open):
+        """
+        Notify all clients when a business changes its open/closed status
+        """
+        try:
+            # Prepare notification data
+            notification_data = {
+                'type': 'business_status_update',
+                'business_id': str(listing.id),
+                'business_name': listing.business.business_name,
+                'is_open': is_open,
+                'status_text': 'OPEN' if is_open else 'CLOSED',
+                'timestamp': timezone.now().isoformat()
+            }
+
+            # Broadcast to marketplace channel for all consumers
+            channel_name = "marketplace_updates"
+
+            async_to_sync(channel_layer.group_send)(
+                channel_name,
+                {
+                    'type': 'business.status_update',
+                    'data': notification_data
+                }
+            )
+
+            logger.info(f"Business status change notification sent for {listing.business.business_name}: {'OPEN' if is_open else 'CLOSED'}")
+
+        except Exception as e:
+            logger.error(f"Failed to send business status change notification: {e}")
+
+    @staticmethod
     def _send_websocket_to_consumer(consumer_id, data):
         """
         Send WebSocket message to consumer app

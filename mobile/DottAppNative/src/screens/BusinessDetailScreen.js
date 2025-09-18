@@ -20,6 +20,7 @@ import { useCart } from '../context/CartContext';
 import marketplaceApi from '../services/marketplaceApi';
 import businessDataApi from '../services/businessDataApi';
 import chatApi from '../services/chatApi';
+import orderWebSocketService from '../services/orderWebSocketService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -68,6 +69,29 @@ export default function BusinessDetailScreen() {
       }
     }
   }, [businessId, previewMode]);
+
+  useEffect(() => {
+    // Listen for business status updates via WebSocket
+    const unsubscribe = orderWebSocketService.on('business_status_update', (data) => {
+      console.log('🏪 Business status update received:', data);
+
+      // Check if this update is for the current business
+      if (business && business.id === data.business_id) {
+        console.log('Updating current business status to:', data.is_open ? 'OPEN' : 'CLOSED');
+
+        // Update the business status
+        setBusiness(prevBusiness => ({
+          ...prevBusiness,
+          is_open_now: data.is_open,
+          status_text: data.status_text
+        }));
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [business]);
 
   const loadPreviewData = () => {
     // Convert preview data from profile template to business detail format

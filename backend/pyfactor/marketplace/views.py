@@ -2182,6 +2182,13 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
 
         logger.info(f"[BusinessListing] Updated status for {request.user.id}: is_open={is_open}, manual_override={manual_override}")
 
+        # Send WebSocket notification about business status change
+        try:
+            from .notification_service import OrderNotificationService
+            OrderNotificationService.notify_business_status_change(listing, is_open)
+        except Exception as e:
+            logger.error(f"Error sending business status notification: {e}")
+
         return Response({
             'success': True,
             'message': f'Business is now {"OPEN" if is_open else "CLOSED"}',

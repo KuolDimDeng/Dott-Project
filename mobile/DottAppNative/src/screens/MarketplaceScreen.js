@@ -134,6 +134,34 @@ export default function MarketplaceScreen() {
       })
     );
 
+    // Listen for business status updates (open/closed changes)
+    wsUnsubscribes.push(
+      orderWebSocketService.on('business_status_update', (data) => {
+        console.log('🏪 Business status changed:', data);
+
+        // Update the business in our local state
+        setBusinesses(prevBusinesses =>
+          prevBusinesses.map(business =>
+            business.id === data.business_id
+              ? { ...business, is_open_now: data.is_open, status_text: data.status_text }
+              : business
+          )
+        );
+
+        // Also update featured businesses if affected
+        setFeaturedBusinesses(prevFeatured =>
+          prevFeatured.map(business =>
+            business.id === data.business_id
+              ? { ...business, is_open_now: data.is_open, status_text: data.status_text }
+              : business
+          )
+        );
+
+        // Refresh featured businesses to ensure consistency
+        loadFeaturedBusinesses();
+      })
+    );
+
     return () => {
       unsubscribe();
       // Cleanup WebSocket listeners

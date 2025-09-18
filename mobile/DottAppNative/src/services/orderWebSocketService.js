@@ -119,6 +119,10 @@ class OrderWebSocketService {
         this.handleStatusUpdate(messageData);
         break;
 
+      case 'business_status_update':
+        this.handleBusinessStatusUpdate(messageData);
+        break;
+
       default:
         console.log('📩 Unknown message type:', type);
         this.emit('message', data);
@@ -194,6 +198,19 @@ class OrderWebSocketService {
         data
       });
     }
+  }
+
+  /**
+   * Handle business status change (open/closed)
+   */
+  handleBusinessStatusUpdate(data) {
+    console.log('🏪 Business status update:', data);
+
+    // Emit to listeners so marketplace can refresh
+    this.emit('business_status_update', data);
+
+    // Don't show notification for every business status change
+    // The marketplace will handle refreshing the list
   }
 
   /**
