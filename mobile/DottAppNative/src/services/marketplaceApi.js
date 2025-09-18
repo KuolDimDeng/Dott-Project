@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SecureStorage from './secureStorage';
 import ENV from '../config/environment';
 import { handleApiError, retryWithBackoff, CacheHelper, NetworkHelper } from '../utils/apiErrorHandler';
 
@@ -36,10 +37,10 @@ api.interceptors.request.use(
       // Don't add any auth headers for public marketplace endpoints
       delete config.headers.Authorization; // Remove any existing auth header
     } else {
-      // Try to get the session token (used by your backend)
-      const sessionId = await AsyncStorage.getItem('sessionId');
-      const sessionToken = await AsyncStorage.getItem('sessionToken');
-      const authToken = await AsyncStorage.getItem('authToken');
+      // Try to get the session token from SecureStorage (industry standard for sensitive data)
+      const sessionId = await SecureStorage.getSecureItem('sessionId');
+      const sessionToken = await SecureStorage.getSecureItem('sessionToken');
+      const authToken = await SecureStorage.getSecureItem('authToken');
 
       if (sessionId) {
         // Use session ID for backend API calls (as Authorization: Session header)
@@ -72,8 +73,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - clear token and redirect to login
-      await AsyncStorage.removeItem('authToken');
+      // Handle unauthorized - clear token from secure storage
+      await SecureStorage.removeSecureItem('authToken');
+      await SecureStorage.removeSecureItem('sessionId');
+      await SecureStorage.removeSecureItem('sessionToken');
       // You might want to trigger a navigation to login here
     }
     return Promise.reject(error);
@@ -319,8 +322,8 @@ export const marketplaceApi = {
   // Update business status (Open/Closed)
   updateBusinessStatus: async (statusData) => {
     try {
-      // Get session for auth
-      const sessionId = await AsyncStorage.getItem('sessionId');
+      // Get session for auth from secure storage
+      const sessionId = await SecureStorage.getSecureItem('sessionId');
       if (!sessionId) {
         console.log('No session available for business status update');
         return null;
