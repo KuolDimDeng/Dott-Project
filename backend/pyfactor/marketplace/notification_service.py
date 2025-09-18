@@ -30,7 +30,7 @@ class OrderNotificationService:
                 'type': 'new_order',
                 'order_id': str(order.id),
                 'order_number': order.order_number,
-                'consumer_name': order.consumer.get_full_name() if order.consumer else 'Guest',
+                'consumer_name': getattr(order.consumer, 'name', order.consumer.email if order.consumer else 'Guest'),
                 'total_amount': float(order.total_amount),
                 'items_count': len(order.items) if order.items else 0,
                 'delivery_type': 'delivery' if order.delivery_address else 'pickup',
