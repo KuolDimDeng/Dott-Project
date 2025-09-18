@@ -194,13 +194,12 @@ class FeaturingService:
                 query = query.filter(business_type=category)
 
             # Get businesses with high performance metrics
-            high_performers = query.annotate(
-                performance_score=F('weekly_order_count') * 2 + F('monthly_order_count')
-            ).filter(
+            # For now, use average_rating as the main performance indicator
+            # since weekly_order_count and trust_score fields don't exist yet
+            high_performers = query.filter(
                 Q(average_rating__gte=4.0) |
-                Q(weekly_order_count__gte=10) |
-                Q(trust_score__gte=70)
-            ).order_by('-performance_score')[:10]
+                Q(is_verified=True)
+            ).order_by('-average_rating', '-total_ratings')[:10]
 
             return [cls._format_business_data(b) for b in high_performers]
 
@@ -386,9 +385,10 @@ class FeaturingService:
         tenant_uuids = []
         listing_map = {}
         for listing in businesses:
-            if listing.tenant_uuid:
-                tenant_uuids.append(listing.tenant_uuid)
-                listing_map[listing.tenant_uuid] = listing
+            # Use business.tenant_id since tenant_uuid field doesn't exist yet
+            if listing.business and listing.business.tenant_id:
+                tenant_uuids.append(listing.business.tenant_id)
+                listing_map[listing.business.tenant_id] = listing
 
         # Get featured products
         if item_type in ['all', 'products']:

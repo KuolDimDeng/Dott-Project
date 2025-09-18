@@ -312,3 +312,5 @@ export const courierApi = {
     }
   },
 };
+
+export default courierApi;

@@ -22,7 +22,7 @@ const CourierDashboardScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [activeOrders, setActiveOrders] = useState([]);
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -50,14 +50,14 @@ const CourierDashboardScreen = ({ navigation }) => {
           rating: 5.0
         });
         setActiveOrders([]);
-        setIsOnline(false);
+        setIsOpen(false);
         return;
       }
       
       // Load courier profile
       const profileData = await courierApi.getProfile();
       setProfile(profileData);
-      setIsOnline(profileData.is_online);
+      setIsOpen(profileData.is_online);
       
       // Load statistics
       const statsData = await courierApi.getStats();
@@ -90,31 +90,31 @@ const CourierDashboardScreen = ({ navigation }) => {
     }
   };
 
-  const toggleOnlineStatus = async () => {
+  const toggleOpenStatus = async () => {
     try {
-      const newStatus = !isOnline;
+      const newStatus = !isOpen;
       
       // Check if API is available
       if (!courierApi || !courierApi.updateOnlineStatus) {
         // Just update locally for testing
-        setIsOnline(newStatus);
+        setIsOpen(newStatus);
         Alert.alert(
           'Status Updated',
-          newStatus ? 'You are now online and can receive orders' : 'You are now offline'
+          newStatus ? 'Your business is now OPEN for deliveries' : 'Your business is now CLOSED'
         );
         return;
       }
       
       await courierApi.updateOnlineStatus(newStatus);
-      setIsOnline(newStatus);
+      setIsOpen(newStatus);
       Alert.alert(
         'Status Updated',
-        newStatus ? 'You are now online and can receive orders' : 'You are now offline'
+        newStatus ? 'Your business is now OPEN for deliveries' : 'Your business is now CLOSED'
       );
     } catch (error) {
       console.error('Error updating status:', error);
       // Still update locally on error
-      setIsOnline(!isOnline);
+      setIsOpen(!isOpen);
       Alert.alert('Note', 'Status updated locally (API not available)');
     }
   };
@@ -178,31 +178,41 @@ const CourierDashboardScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Top Header with Back Button */}
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-back" size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Courier Dashboard</Text>
+        <View style={styles.onlineToggle}>
+          <Text style={[styles.onlineLabel, !isOpen && styles.offlineLabel]}>
+            {isOpen ? 'Open' : 'Closed'}
+          </Text>
+          <Switch
+            value={isOpen}
+            onValueChange={toggleOpenStatus}
+            trackColor={{ false: '#ef4444', true: '#10b981' }}
+            thumbColor={isOpen ? '#fff' : '#f4f3f4'}
+          />
+        </View>
+      </View>
+      
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={loadDashboard} />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              Hello, {profile?.first_name || session?.user?.name || 'Courier'}!
-            </Text>
-            <Text style={styles.subGreeting}>
-              {isOnline ? 'Ready to deliver' : 'Currently offline'}
-            </Text>
-          </View>
-          
-          <View style={styles.onlineToggle}>
-            <Text style={styles.onlineLabel}>{isOnline ? 'Online' : 'Offline'}</Text>
-            <Switch
-              value={isOnline}
-              onValueChange={toggleOnlineStatus}
-              trackColor={{ false: '#ccc', true: '#4CAF50' }}
-              thumbColor={isOnline ? '#fff' : '#f4f3f4'}
-            />
-          </View>
+        {/* Greeting Section */}
+        <View style={styles.greetingSection}>
+          <Text style={styles.greeting}>
+            Hello, {profile?.first_name || profile?.name || user?.name || 'Courier'}!
+          </Text>
+          <Text style={styles.subGreeting}>
+            {isOpen ? 'Business is OPEN - Ready to deliver' : 'Business is CLOSED'}
+          </Text>
         </View>
 
         {/* Statistics */}
@@ -299,10 +309,23 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#666',
   },
-  header: {
+  topHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#14532d',
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    flex: 1,
+  },
+  greetingSection: {
     padding: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -319,12 +342,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   onlineToggle: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   onlineLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  offlineLabel: {
+    color: '#ef4444',
   },
   statsContainer: {
     padding: 20,

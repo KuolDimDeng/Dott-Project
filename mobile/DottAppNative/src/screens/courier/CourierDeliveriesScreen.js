@@ -29,7 +29,7 @@ export default function CourierDeliveriesScreen() {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [courierProfile, setCourierProfile] = useState(null);
   const [acceptTimers, setAcceptTimers] = useState({});
   const ws = useRef(null);
@@ -46,42 +46,43 @@ export default function CourierDeliveriesScreen() {
       Object.values(timerRefs.current).forEach(timer => clearInterval(timer));
     };
   }, []);
+  
+  useEffect(() => {
+    loadDeliveries();
+  }, [selectedTab]);
 
   useEffect(() => {
-    if (isOnline) {
+    if (isOpen) {
       connectWebSocket();
     } else {
       if (ws.current) {
         ws.current.close();
       }
     }
-  }, [isOnline]);
+  }, [isOpen]);
 
   const loadCourierProfile = async () => {
     try {
-      if (!courierApi || !courierApi.getProfile) {
-        console.log('Courier API not available, using mock data');
-        setCourierProfile({
-          name: 'Steve Majak',
-          vehicle_type: 'motorcycle',
-          availability_status: 'available',
-          trust_level: 'new'
-        });
-        setIsOnline(false);
-        return;
-      }
       const response = await courierApi.getProfile();
-      setCourierProfile(response.data);
-      setIsOnline(response.data.availability_status === 'available');
+      console.log('Courier profile loaded:', response);
+      setCourierProfile(response);
+      setIsOpen(response.is_online || false);
     } catch (error) {
       console.error('Error loading courier profile:', error);
-      // Set default profile on error
-      setCourierProfile({
-        name: 'Steve Majak',
-        vehicle_type: 'motorcycle',
-        availability_status: 'offline',
-        trust_level: 'new'
-      });
+      // Handle 404 or unauthorized errors
+      if (error.response?.status === 404) {
+        Alert.alert(
+          'Profile Not Found',
+          'Please complete your courier registration first.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else if (error.response?.status === 401) {
+        Alert.alert(
+          'Session Expired',
+          'Please log in again.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
@@ -115,10 +116,10 @@ export default function CourierDeliveriesScreen() {
 
     ws.current.onclose = () => {
       console.log('WebSocket disconnected');
-      // Reconnect after 3 seconds if still online
-      if (isOnline) {
+      // Reconnect after 3 seconds if still open
+      if (isOpen) {
         setTimeout(() => {
-          if (isOnline) {
+          if (isOpen) {
             connectWebSocket();
           }
         }, 3000);
@@ -126,14 +127,19 @@ export default function CourierDeliveriesScreen() {
     };
   };
 
-  const startAcceptTimer = (deliveryId) => {
+  const startAcceptTimer = (deliveryId, initialTime = 60) => {
+    // Clear existing timer if any
+    if (timerRefs.current[deliveryId]) {
+      clearInterval(timerRefs.current[deliveryId]);
+    }
+    
     // Set initial timer value
-    setAcceptTimers(prev => ({ ...prev, [deliveryId]: 60 }));
+    setAcceptTimers(prev => ({ ...prev, [deliveryId]: initialTime }));
 
     // Start countdown
     timerRefs.current[deliveryId] = setInterval(() => {
       setAcceptTimers(prev => {
-        const newTime = (prev[deliveryId] || 60) - 1;
+        const newTime = (prev[deliveryId] || initialTime) - 1;
         if (newTime <= 0) {
           clearInterval(timerRefs.current[deliveryId]);
           delete timerRefs.current[deliveryId];
@@ -151,41 +157,47 @@ export default function CourierDeliveriesScreen() {
   const loadDeliveries = async () => {
     setLoading(true);
     try {
-      // Check if courierApi is available
-      if (!courierApi || !courierApi.get) {
-        console.log('Courier API not available, showing empty state');
-        setDeliveries([]);
-        setLoading(false);
-        return;
-      }
+      let response;
       
-      let endpoint = '';
       switch (selectedTab) {
         case 'Available':
-          endpoint = '/deliveries/available/';
+          response = await courierApi.getAvailableDeliveries();
           break;
         case 'Active':
-          endpoint = '/deliveries/active/';
+          response = await courierApi.getActiveOrders();
           break;
         case 'Completed':
-          endpoint = '/deliveries/completed/';
+          response = await courierApi.getDeliveryHistory();
           break;
       }
 
-      const response = await courierApi.get(endpoint);
-      setDeliveries(response.data.results || []);
+      console.log(`Loaded ${selectedTab} deliveries:`, response);
+      const deliveryList = response.results || response.data || [];
+      setDeliveries(deliveryList);
 
       // Start timers for available deliveries
       if (selectedTab === 'Available') {
-        response.data.results?.forEach(delivery => {
-          if (delivery.time_remaining) {
-            startAcceptTimer(delivery.id);
+        deliveryList.forEach(delivery => {
+          if (delivery.expires_at) {
+            const expiresAt = new Date(delivery.expires_at);
+            const now = new Date();
+            const timeRemaining = Math.floor((expiresAt - now) / 1000);
+            if (timeRemaining > 0) {
+              startAcceptTimer(delivery.id, timeRemaining);
+            }
           }
         });
       }
     } catch (error) {
       console.error('Error loading deliveries:', error);
-      Alert.alert('Error', 'Failed to load deliveries');
+      setDeliveries([]);
+      
+      if (error.response?.status !== 404) {
+        Alert.alert(
+          'Error',
+          error.response?.data?.detail || 'Failed to load deliveries. Please try again.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -198,30 +210,51 @@ export default function CourierDeliveriesScreen() {
   };
 
   const toggleOnlineStatus = async () => {
-    const newStatus = !isOnline;
-    setIsOnline(newStatus);
+    const newStatus = !isOpen;
+    const previousStatus = isOpen;
+    
+    // Optimistic update
+    setIsOpen(newStatus);
 
     try {
-      await courierApi.updateAvailability(newStatus ? 'available' : 'offline');
-
-      if (!newStatus) {
+      await courierApi.updateOnlineStatus(newStatus);
+      
+      if (newStatus) {
         Alert.alert(
-          'Going Offline',
-          'You will not receive new delivery requests while offline.',
+          'You are Online',
+          'You can now receive delivery requests.',
+          [{ text: 'OK' }]
+        );
+        // Refresh available deliveries when going online
+        if (selectedTab === 'Available') {
+          loadDeliveries();
+        }
+      } else {
+        Alert.alert(
+          'You are Offline',
+          'You will not receive new delivery requests.',
           [{ text: 'OK' }]
         );
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      setIsOnline(!newStatus); // Revert on error
-      Alert.alert('Error', 'Failed to update online status');
+      // Revert on error
+      setIsOnline(previousStatus);
+      Alert.alert(
+        'Connection Error',
+        'Failed to update online status. Please check your internet connection.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
   const handleAcceptDelivery = async (delivery) => {
+    const earnings = delivery.courier_earnings || delivery.estimated_earnings || 0;
+    const distance = delivery.total_distance || delivery.estimated_distance || 0;
+    
     Alert.alert(
       'Accept Delivery',
-      `Accept delivery from ${delivery.pickup_address} to ${delivery.delivery_address}?\n\nEstimated earnings: $${delivery.courier_earnings?.toFixed(2) || '0.00'}`,
+      `From: ${delivery.pickup_address || 'Restaurant'}\nTo: ${delivery.delivery_address || 'Customer'}\n\nDistance: ${distance} km\nEstimated earnings: $${earnings.toFixed(2)}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -229,18 +262,40 @@ export default function CourierDeliveriesScreen() {
           onPress: async () => {
             try {
               await courierApi.acceptDelivery(delivery.id);
+              
               // Clear timer
               if (timerRefs.current[delivery.id]) {
                 clearInterval(timerRefs.current[delivery.id]);
                 delete timerRefs.current[delivery.id];
               }
-              // Move to active tab
-              setSelectedTab('Active');
-              loadDeliveries();
-              Alert.alert('Success', 'Delivery accepted successfully');
+              
+              // Show success and switch to active tab
+              Alert.alert(
+                'Delivery Accepted',
+                'Navigate to the pickup location to collect the order.',
+                [{ 
+                  text: 'OK',
+                  onPress: () => {
+                    setSelectedTab('Active');
+                    loadDeliveries();
+                  }
+                }]
+              );
             } catch (error) {
               console.error('Error accepting delivery:', error);
-              Alert.alert('Error', 'Failed to accept delivery');
+              
+              if (error.response?.status === 409) {
+                Alert.alert(
+                  'Already Taken',
+                  'This delivery has already been accepted by another courier.'
+                );
+                loadDeliveries(); // Refresh the list
+              } else {
+                Alert.alert(
+                  'Error',
+                  error.response?.data?.detail || 'Failed to accept delivery. Please try again.'
+                );
+              }
             }
           },
         },
