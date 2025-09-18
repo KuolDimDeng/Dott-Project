@@ -78,12 +78,26 @@ class SessionTokenAuthentication(BaseAuthentication):
         
         try:
             logger.info(f"[SessionTokenAuth] Validating session token: {token[:8]}...")
-            
+            logger.info(f"[SessionTokenAuth] Full token for debugging: {token}")
+
             # Use session service to validate the session token
             session = session_service.get_session(token)
-            
+
             if not session:
                 logger.warning(f"[SessionTokenAuth] Session {token[:8]}... not found or expired")
+                logger.warning(f"[SessionTokenAuth] Full token that failed: {token}")
+                # Check if session exists at all
+                from session_manager.models import UserSession
+                exists = UserSession.objects.filter(session_id=token).exists()
+                if exists:
+                    raw_session = UserSession.objects.get(session_id=token)
+                    logger.warning(f"[SessionTokenAuth] Session exists but filtered out:")
+                    logger.warning(f"  - is_active: {raw_session.is_active}")
+                    logger.warning(f"  - expires_at: {raw_session.expires_at}")
+                    logger.warning(f"  - current time: {timezone.now()}")
+                    logger.warning(f"  - expired: {raw_session.expires_at <= timezone.now()}")
+                else:
+                    logger.warning(f"[SessionTokenAuth] Session does not exist in DB at all")
                 raise AuthenticationFailed('Invalid or expired session')
             
             logger.debug(f"[SessionTokenAuth] Session found: {session.session_id}")

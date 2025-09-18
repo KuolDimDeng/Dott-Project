@@ -1746,24 +1746,35 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         logger.info(f"[BusinessListing] User: {request.user.id}, Email: {getattr(request.user, 'email', 'N/A')}")
         logger.info(f"[BusinessListing] Has tenant_id attr: {hasattr(request.user, 'tenant_id')}")
         logger.info(f"[BusinessListing] Tenant ID value: {getattr(request.user, 'tenant_id', 'NONE')}")
-        
-        if not hasattr(request.user, 'tenant_id') or not request.user.tenant_id:
-            logger.warning(f"[BusinessListing] User {request.user.id} does not have tenant_id - checking alternatives")
-            
-            # Try to get tenant from related business or tenant relationship
-            tenant_id = None
-            if hasattr(request.user, 'tenant') and request.user.tenant:
-                tenant_id = request.user.tenant.id
-                logger.info(f"[BusinessListing] Found tenant via user.tenant: {tenant_id}")
-            elif hasattr(request.user, 'business_id') and request.user.business_id:
-                tenant_id = request.user.business_id
-                logger.info(f"[BusinessListing] Found tenant via user.business_id: {tenant_id}")
-            
-            if not tenant_id:
-                return Response(
-                    {'success': False, 'error': 'Only businesses can manage listings'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+
+        # More flexible tenant checking
+        tenant_id = None
+        if hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            tenant_id = request.user.tenant_id
+        elif hasattr(request.user, 'business_id') and request.user.business_id:
+            tenant_id = request.user.business_id
+        elif hasattr(request.user, 'tenant') and request.user.tenant:
+            tenant_id = request.user.tenant.id
+
+        if not tenant_id:
+            # Try to get from UserProfile
+            try:
+                from users.models import UserProfile
+                profile = UserProfile.objects.get(user=request.user)
+                if profile.business_id:
+                    tenant_id = profile.business_id
+                    logger.info(f"[BusinessListing] Found tenant_id from UserProfile: {tenant_id}")
+            except Exception as e:
+                logger.warning(f"[BusinessListing] Could not get UserProfile: {e}")
+
+        if not tenant_id:
+            logger.warning(f"[BusinessListing] No tenant_id found for user {request.user}")
+            return Response(
+                {'success': False, 'error': 'Only businesses can manage listings'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        logger.info(f"[BusinessListing] Using tenant_id: {tenant_id}")
         
         # 🛠️ [LISTING_DEBUG] Get or create the business listing
         logger.info(f"[BusinessListing] Attempting to find listing for user {request.user.id}")
@@ -2143,14 +2154,44 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         Update business open/closed status
         Endpoint: PATCH /api/marketplace/business/update-status/
         """
-        if not hasattr(request.user, 'tenant_id'):
+        logger.info(f"[BusinessListing] update_status called by user: {request.user}")
+        logger.info(f"[BusinessListing] User authenticated: {request.user.is_authenticated}")
+        logger.info(f"[BusinessListing] User email: {getattr(request.user, 'email', 'N/A')}")
+        logger.info(f"[BusinessListing] Has tenant_id: {hasattr(request.user, 'tenant_id')}")
+        logger.info(f"[BusinessListing] Tenant_id value: {getattr(request.user, 'tenant_id', 'N/A')}")
+
+        # More flexible tenant checking
+        tenant_id = None
+        if hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            tenant_id = request.user.tenant_id
+        elif hasattr(request.user, 'business_id') and request.user.business_id:
+            tenant_id = request.user.business_id
+        elif hasattr(request.user, 'tenant') and request.user.tenant:
+            tenant_id = request.user.tenant.id
+
+        if not tenant_id:
+            # Try to get from UserProfile
+            try:
+                from users.models import UserProfile
+                profile = UserProfile.objects.get(user=request.user)
+                if profile.business_id:
+                    tenant_id = profile.business_id
+                    logger.info(f"[BusinessListing] Found tenant_id from UserProfile: {tenant_id}")
+            except Exception as e:
+                logger.warning(f"[BusinessListing] Could not get UserProfile: {e}")
+
+        if not tenant_id:
+            logger.warning(f"[BusinessListing] No tenant_id found for user {request.user}")
             return Response(
                 {'success': False, 'error': 'Only businesses can update status'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        logger.info(f"[BusinessListing] Using tenant_id: {tenant_id}")
+
         try:
-            listing = BusinessListing.objects.get(business=request.user)
+            # Try to get listing by tenant_id first
+            listing = BusinessListing.objects.get(tenant_id=tenant_id)
         except BusinessListing.DoesNotExist:
             return Response({
                 'success': False,
