@@ -33,7 +33,7 @@ def reverse_tenant_uuids(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketplace', '0004_add_featuring_fields'),  # Adjust to your last migration
+        ('marketplace', '0009_merge_20250916_2109'),
     ]
 
     operations = [
@@ -120,14 +120,14 @@ class Migration(migrations.Migration):
         # Add composite index for better query performance
         migrations.AddIndex(
             model_name='businesslisting',
-            index=models.Index(fields=['tenant_uuid', 'is_visible_in_marketplace']),
+            index=models.Index(fields=['tenant_uuid', 'is_visible_in_marketplace'], name='idx_tenant_visible'),
         ),
         migrations.AddIndex(
             model_name='businesslisting',
-            index=models.Index(fields=['city', 'is_featured', 'featuring_score']),
+            index=models.Index(fields=['city', 'is_featured', 'featuring_score'], name='idx_city_featured'),
         ),
         migrations.AddIndex(
             model_name='businesslisting',
-            index=models.Index(fields=['trust_score', 'average_rating']),
+            index=models.Index(fields=['trust_score', 'average_rating'], name='idx_trust_rating'),
         ),
     ]
