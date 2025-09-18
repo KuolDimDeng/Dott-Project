@@ -168,6 +168,7 @@ export default function BusinessMenuScreen() {
     dynamicMenuItems,
     isOnline,
     toggleOnlineStatus,
+    fetchBusinessFeatures,
   } = useBusinessContext();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
@@ -176,8 +177,29 @@ export default function BusinessMenuScreen() {
   const [unreadOrderCount, setUnreadOrderCount] = useState(0);
   const [showNewOrderBanner, setShowNewOrderBanner] = useState(false);
   const [latestNewOrder, setLatestNewOrder] = useState(null);
+  const [contextMenuItems, setContextMenuItems] = useState([]);
   const businessName = businessData?.businessName || user?.business_name || user?.full_name || 'Business';
   const activeOrdersCount = businessData?.activeOrders?.length || 0;
+  
+  // Load context menu items on mount and when dynamicMenuItems change
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      console.log('📱 BusinessMenuScreen - Loading menu items');
+      const items = await getContextMenuItems();
+      console.log('📱 BusinessMenuScreen - Loaded menu items:', items?.length || 0);
+      setContextMenuItems(items || []);
+    };
+    
+    loadMenuItems();
+  }, [dynamicMenuItems, businessData?.businessType]);
+  
+  // Fetch business features when screen mounts or user changes
+  useEffect(() => {
+    if (user?.id) {
+      console.log('📱 BusinessMenuScreen - Fetching business features for user:', user.id);
+      fetchBusinessFeatures();
+    }
+  }, [user?.id]);
   
   // Get business type display name
   const getBusinessTypeDisplay = () => {
@@ -299,24 +321,30 @@ export default function BusinessMenuScreen() {
   // Get appropriate menu items based on business type
   const getMenuItems = () => {
     console.log('📱 BusinessMenuScreen getMenuItems called');
+    console.log('📱 contextMenuItems state:', contextMenuItems?.length || 0);
+    
+    // Check if it's a courier business
+    const businessName = businessData?.businessName?.toLowerCase() || '';
+    const businessType = businessData?.businessType?.toLowerCase() || '';
+    const isCourier = businessType === 'courier' || 
+                      businessType === 'transport_service' ||
+                      businessType === 'logistics_freight';
     
     // Check if it's a restaurant business
-    const businessName = businessData?.businessName?.toLowerCase() || '';
-    const businessType = businessData?.businessType;
-    const isRestaurant = businessType === 'RESTAURANT_CAFE' || 
+    const isRestaurant = businessType === 'restaurant_cafe' || 
                         businessName.includes('restaurant') ||
                         businessName.includes('cafe') ||
                         businessName.includes('diner') ||
                         businessName.includes('bistro');
     
-    console.log('📱 Is Restaurant:', isRestaurant, 'Type:', businessType, 'Name:', businessData?.businessName);
+    console.log('📱 Business Type:', businessData?.businessType, 'Name:', businessData?.businessName);
+    console.log('📱 Is Courier:', isCourier, 'Is Restaurant:', isRestaurant);
     
     // Items to exclude for restaurant businesses (check both title and label)
     const restaurantExcludedItems = ['Tables', 'Timesheet', 'Timesheets', 'Expenses', 'Invoices', 'Reports', 'Banking'];
     
-    // First try to get menu items from BusinessContext (includes forced restaurant logic)
-    const contextMenuItems = getContextMenuItems();
-    console.log('📱 Context menu items:', contextMenuItems);
+    // First try to use already loaded context menu items
+    console.log('📱 Using context menu items:', contextMenuItems);
     
     if (contextMenuItems && contextMenuItems.length > 0) {
       // Map BusinessContext format to BusinessMenuScreen format
@@ -343,6 +371,12 @@ export default function BusinessMenuScreen() {
           mappedScreen = 'RestaurantOrders';
         } else if (contextItem.screen === 'MenuManagement') {
           mappedScreen = 'MenuManagement';
+        } else if (contextItem.screen === 'CourierDeliveries') {
+          mappedScreen = 'CourierDeliveries';
+        } else if (contextItem.screen === 'CourierDashboard') {
+          mappedScreen = 'CourierDashboard';
+        } else if (contextItem.screen === 'CourierVerification') {
+          mappedScreen = 'CourierVerification';
         }
         
         // Find matching item in ALL_MENU_ITEMS or create a default mapping
@@ -359,7 +393,15 @@ export default function BusinessMenuScreen() {
           // Special case: Orders mapping for restaurants
           (contextItem.id === 'orders' && staticItem.title === 'Orders') ||
           (contextItem.label === 'Orders' && staticItem.screen === 'RestaurantOrders') ||
-          (contextItem.screen === 'OrderQueue' && staticItem.screen === 'RestaurantOrders')
+          (contextItem.screen === 'OrderQueue' && staticItem.screen === 'RestaurantOrders') ||
+          // Special case: Courier/Deliveries mapping
+          (contextItem.id === 'deliveries' && staticItem.screen === 'CourierDeliveries') ||
+          (contextItem.label === 'Active Deliveries' && staticItem.screen === 'CourierDeliveries') ||
+          (contextItem.label === 'Deliveries' && staticItem.screen === 'CourierDeliveries') ||
+          // Special case: Navigate mapping for courier
+          (contextItem.id === 'navigate' && contextItem.label === 'Navigate to Next' && staticItem.screen === 'CourierDashboard') ||
+          // Special case: Earnings/Reports mapping
+          (contextItem.id === 'earnings' && staticItem.screen === 'Reports')
         );
 
         if (matchingItem) {
@@ -496,8 +538,17 @@ export default function BusinessMenuScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // TODO: Refresh business data from API
-    setTimeout(() => setRefreshing(false), 1000);
+    try {
+      console.log('📱 BusinessMenuScreen - Refreshing business features');
+      await fetchBusinessFeatures();
+      // Reload menu items after fetching
+      const items = await getContextMenuItems();
+      setContextMenuItems(items || []);
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleToggleOpen = () => {

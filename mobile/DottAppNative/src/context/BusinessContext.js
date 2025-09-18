@@ -52,8 +52,19 @@ export const BusinessProvider = ({ children }) => {
   // Load business data from storage on mount
   useEffect(() => {
     loadBusinessData();
-    fetchBusinessFeatures();
+    // Only fetch business features if user is authenticated
+    if (user?.id) {
+      fetchBusinessFeatures();
+    }
   }, []);
+
+  // Refetch business features when user logs in or changes
+  useEffect(() => {
+    if (user?.id) {
+      console.log('🔄 User authenticated, fetching business features...');
+      fetchBusinessFeatures();
+    }
+  }, [user?.id]);
 
   // Sync business name when user data changes
   useEffect(() => {
