@@ -13,6 +13,7 @@ import BusinessMenuScreen from '../screens/BusinessMenuScreen';
 import BusinessDetailScreen from '../screens/BusinessDetailScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ChatConversationScreen from '../screens/ChatConversationScreen';
+import ConversationScreen from '../screens/ConversationScreen';
 import NewChatScreen from '../screens/NewChatScreen';
 import GroupCreationScreen from '../screens/GroupCreationScreen';
 import AccountScreen from '../screens/AccountScreen';
@@ -189,6 +190,7 @@ export default function MainNavigator() {
       <Stack.Screen name="BusinessDetail" component={BusinessDetailScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
+      <Stack.Screen name="Conversation" component={ConversationScreen} />
       <Stack.Screen name="NewChat" component={NewChatScreen} />
       <Stack.Screen name="GroupCreation" component={GroupCreationScreen} />
       <Stack.Screen name="BusinessRegistration" component={BusinessRegistrationScreen} />

@@ -101,23 +101,19 @@ export default function ChatScreen() {
   };
 
   const handleChatPress = (item) => {
-    if (item.isGroup) {
-      navigation.navigate('ChatConversation', {
-        conversationId: item.conversationId,
-        recipientName: item.groupName,
-        isGroup: true,
+    navigation.navigate('Conversation', {
+      conversationId: item.conversationId,
+      contact: {
+        id: item.id,
+        name: item.isGroup ? item.groupName : item.name,
+        businessName: item.businessName,
+        phoneNumber: item.phoneNumber,
+        isGroup: item.isGroup,
         members: item.members,
         memberCount: item.memberCount,
-      });
-    } else {
-      navigation.navigate('ChatConversation', {
-        conversationId: item.conversationId,
-        recipientName: item.name,
-        businessName: item.businessName,
-        isGroup: false,
-        phoneNumber: item.phoneNumber,
-      });
-    }
+        isOnline: item.isOnline,
+      },
+    });
   };
 
   const handleNewChat = () => {
