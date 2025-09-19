@@ -2219,8 +2219,15 @@ class BusinessListingViewSet(viewsets.ModelViewSet):
         else:
             listing.manual_override_expires = None
 
+        # Log before saving
+        logger.info(f"[BusinessListing] BEFORE SAVE - Business {listing.id}: is_open_now={listing.is_open_now}, manual_override={listing.manual_override}")
+
         listing.save(update_fields=['is_open_now', 'manual_override', 'manual_override_expires', 'updated_at'])
 
+        # Refresh from database to ensure we have the latest values
+        listing.refresh_from_db()
+
+        logger.info(f"[BusinessListing] AFTER SAVE - Business {listing.id}: is_open_now={listing.is_open_now}, manual_override={listing.manual_override}")
         logger.info(f"[BusinessListing] Updated status for {request.user.id}: is_open={is_open}, manual_override={manual_override}")
 
         # Send WebSocket notification about business status change

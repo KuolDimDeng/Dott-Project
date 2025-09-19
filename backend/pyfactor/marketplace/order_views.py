@@ -68,10 +68,15 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             elif delivery_address:
                 delivery_address_str = str(delivery_address)
             
+            # Check if consumer is trying to order from their own business
+            if request.user == business_listing.business:
+                logger.warning(f"[OrderCreate] User {request.user.email} trying to order from their own business")
+                # This is allowed for testing, but log it
+
             # Create order
             logger.info(f"[OrderCreate] Creating order with data:")
-            logger.info(f"  - Consumer: {request.user.email}")
-            logger.info(f"  - Business: {business_listing.business.email}")
+            logger.info(f"  - Consumer: {request.user.email} (ID: {request.user.id})")
+            logger.info(f"  - Business: {business_listing.business.email} (ID: {business_listing.business.id})")
             logger.info(f"  - Items count: {len(items)}")
             logger.info(f"  - Total amount: {total_amount}")
             logger.info(f"  - Payment method: {payment_method}")

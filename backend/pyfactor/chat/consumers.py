@@ -58,6 +58,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
 
+        # Join marketplace updates channel for all users (to receive business status updates)
+        self.marketplace_channel = "marketplace_updates"
+        await self.channel_layer.group_add(
+            self.marketplace_channel,
+            self.channel_name
+        )
+
         await self.accept()
 
         # Send connection confirmation
@@ -74,6 +81,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Leave user's personal channel
             await self.channel_layer.group_discard(
                 self.user_channel,
+                self.channel_name
+            )
+
+        if hasattr(self, 'marketplace_channel'):
+            # Leave marketplace updates channel
+            await self.channel_layer.group_discard(
+                self.marketplace_channel,
                 self.channel_name
             )
     
@@ -264,6 +278,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'is_typing': event['is_typing']
         }))
     
+    async def business_status_update(self, event):
+        """
+        Send business status update to WebSocket
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'business_status_update',
+            'data': event['data']
+        }))
+
     async def read_receipt(self, event):
         """
         Send read receipt to WebSocket

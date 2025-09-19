@@ -172,17 +172,24 @@ class BusinessListing(models.Model):
     def calculate_is_open(self):
         """Calculate if business is open based on hours and override"""
         from django.utils import timezone
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Log the current state
+        logger.info(f"🔍 [calculate_is_open] Business {self.id}: manual_override={self.manual_override}, is_open_now={self.is_open_now}")
 
         # If there's a manual override, check if it's still valid
         if self.manual_override:
             # Check if override hasn't expired
             if self.manual_override_expires and timezone.now() > self.manual_override_expires:
                 # Override expired, reset it
+                logger.info(f"🔍 [calculate_is_open] Manual override expired for {self.id}")
                 self.manual_override = False
                 self.manual_override_expires = None
                 self.save(update_fields=['manual_override', 'manual_override_expires'])
             else:
                 # Override is still valid, return the manual status
+                logger.info(f"🔍 [calculate_is_open] Using manual override for {self.id}: returning {self.is_open_now}")
                 return self.is_open_now
 
         # Calculate based on business hours

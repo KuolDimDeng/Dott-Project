@@ -3,6 +3,7 @@
  * Automatically connects and handles order notifications
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SecureStorage from './secureStorage';
 import ENV from '../config/environment';
 
 class OrderWebSocketService {
@@ -25,8 +26,8 @@ class OrderWebSocketService {
 
       this.userMode = userMode;
 
-      // Get session ID for authentication
-      const sessionId = await AsyncStorage.getItem('sessionId');
+      // Get session ID for authentication from SecureStorage
+      const sessionId = await SecureStorage.getSecureItem('sessionId');
       if (!sessionId) {
         console.warn('⚠️ No session ID found, skipping WebSocket connection');
         return;

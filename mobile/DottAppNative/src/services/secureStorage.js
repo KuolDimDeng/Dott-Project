@@ -41,8 +41,20 @@ class SecureStorageService {
     }
 
     try {
-      // For Keychain, store strings directly, objects as JSON
-      const storeValue = typeof value === 'string' ? value : JSON.stringify(value);
+      // For session tokens and IDs, we need to wrap in an object to avoid JSON parsing issues
+      // React Native Keychain expects the password field to be JSON-parseable
+      let storeValue;
+      if (key === 'sessionId' || key === 'sessionToken' || key === 'authToken') {
+        // Wrap plain string tokens in an object for Keychain storage
+        storeValue = JSON.stringify({ value: value });
+      } else if (typeof value === 'string') {
+        // For other strings, wrap them too
+        storeValue = JSON.stringify({ value: value });
+      } else {
+        // For objects, stringify directly
+        storeValue = JSON.stringify(value);
+      }
+
       await Keychain.setInternetCredentials(
         key,
         key,
@@ -68,24 +80,40 @@ class SecureStorageService {
       // Fallback to AsyncStorage
       const value = await AsyncStorage.getItem(key);
       if (!value) return null;
-      // Return the raw string value - don't try to parse JSON for tokens/IDs
-      return value;
+      // Try to parse JSON for objects, return raw for strings
+      try {
+        const parsed = JSON.parse(value);
+        return parsed;
+      } catch {
+        return value;
+      }
     }
 
     try {
       const credentials = await Keychain.getInternetCredentials(key);
       if (credentials && credentials.password) {
-        // For session tokens and IDs, return the raw string
-        // Only parse JSON for complex objects like userData
-        if (key === 'userData' || key.includes('profile') || key.includes('config')) {
-          try {
-            return JSON.parse(credentials.password);
-          } catch {
+        // Try to parse as JSON first
+        try {
+          const parsed = JSON.parse(credentials.password);
+          // If it's a wrapped string token, extract the value
+          if (parsed && typeof parsed === 'object' && 'value' in parsed) {
+            return parsed.value;
+          }
+          // If it parsed but isn't wrapped, return parsed value
+          return parsed;
+        } catch (error) {
+          // If JSON parsing fails, it's likely a raw string (legacy format)
+          // For session tokens, just return the raw string without warning
+          if (key === 'sessionId' || key === 'sessionToken' || key === 'authToken') {
+            // This is expected for legacy tokens - no warning needed
             return credentials.password;
           }
+          // For other keys that should be JSON, warn
+          if (__DEV__ && !key.includes('session') && !key.includes('token')) {
+            console.warn(`Failed to parse stored value for ${key}, returning raw:`, error.message);
+          }
+          return credentials.password;
         }
-        // For sessionId, sessionToken, authToken etc, return as plain string
-        return credentials.password;
       }
       return null;
     } catch (error) {

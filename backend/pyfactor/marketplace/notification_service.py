@@ -303,7 +303,7 @@ class OrderNotificationService:
             async_to_sync(channel_layer.group_send)(
                 channel_name,
                 {
-                    'type': 'business.status_update',
+                    'type': 'business_status_update',
                     'data': notification_data
                 }
             )
