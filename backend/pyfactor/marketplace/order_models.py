@@ -150,7 +150,7 @@ class ConsumerOrder(models.Model):
             except ConsumerOrder.DoesNotExist:
                 pass
 
-        if not self.order_number:
+        if not self.order_number or self.order_number.strip() == '':
             # Generate order number
             import random
             import string

@@ -73,10 +73,6 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 logger.warning(f"[OrderCreate] User {request.user.email} trying to order from their own business")
                 # This is allowed for testing, but log it
 
-            # Generate order number manually
-            import time
-            order_number = f"ORD-{int(time.time())}"
-
             # Create order
             logger.info(f"[OrderCreate] Creating order with data:")
             logger.info(f"  - Consumer: {request.user.email} (ID: {request.user.id})")
@@ -85,10 +81,9 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             logger.info(f"  - Total amount: {total_amount}")
             logger.info(f"  - Payment method: {payment_method}")
             logger.info(f"  - Tip amount: {tip_amount}")
-            logger.info(f"  - Order number: {order_number}")
+            logger.info(f"  - Order will be auto-generated")
 
             order = ConsumerOrder.objects.create(
-                order_number=order_number,
                 consumer=request.user,
                 business=business_listing.business,
                 items=items,
