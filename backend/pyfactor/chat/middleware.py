@@ -64,11 +64,23 @@ class SessionTokenAuthMiddleware(BaseMiddleware):
         Get user from session token
         """
         try:
+            logger.info(f"[WebSocket Auth] Looking up session: {session_token[:8]}...")
             session = session_service.get_session(session_token)
-            if session and session.is_active and not session.is_expired():
-                return session.user
+            logger.info(f"[WebSocket Auth] Session found: {session is not None}")
+
+            if session:
+                logger.info(f"[WebSocket Auth] Session active: {session.is_active}")
+                logger.info(f"[WebSocket Auth] Session expired: {session.is_expired()}")
+                logger.info(f"[WebSocket Auth] Session user: {session.user.email if session.user else 'None'}")
+
+                if session.is_active and not session.is_expired():
+                    return session.user
+
+            return None
         except Exception as e:
             logger.error(f"[WebSocket Auth] Error validating session: {e}")
+            import traceback
+            logger.error(f"[WebSocket Auth] Traceback: {traceback.format_exc()}")
         return None
 
 
