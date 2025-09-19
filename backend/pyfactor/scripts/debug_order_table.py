@@ -63,7 +63,7 @@ def debug_order_table():
 
         cursor.execute("""
             SELECT COUNT(*) FROM marketplace_consumer_orders
-            WHERE items = '[]' OR items = '' OR items IS NULL
+            WHERE items = '[]'::jsonb OR items IS NULL OR jsonb_array_length(items) = 0
         """)
         problematic_items = cursor.fetchone()[0]
         print(f"  - Records with problematic items field: {problematic_items}")
