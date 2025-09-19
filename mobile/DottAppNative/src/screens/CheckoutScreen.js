@@ -85,6 +85,21 @@ export default function CheckoutScreen() {
   }, [subtotal, taxAmount, deliveryFee, serviceFee, tipAmount]);
 
   useEffect(() => {
+    // Calculate service fee when subtotal changes
+    if (subtotal > 0) {
+      // Calculate 10% service fee
+      const platformFeeRate = 0.10; // 10% platform fee
+      const calculatedFee = subtotal * platformFeeRate;
+      setServiceFee(calculatedFee);
+
+      // Also calculate tax if we have address or business location
+      if (selectedAddress || deliveryMethod === 'pickup') {
+        calculateTax(selectedAddress, deliveryMethod === 'pickup');
+      }
+    }
+  }, [subtotal, selectedAddress, deliveryMethod]);
+
+  useEffect(() => {
     // Recalculate tax when address changes
     if (selectedAddress && deliveryMethod === 'delivery') {
       calculateTax(selectedAddress);
@@ -226,7 +241,7 @@ export default function CheckoutScreen() {
     }
 
     // Calculate service fee (platform fee)
-    const platformFeeRate = 0.025; // 2.5% platform fee
+    const platformFeeRate = 0.10; // 10% platform fee
     setServiceFee(subtotal * platformFeeRate);
   };
 

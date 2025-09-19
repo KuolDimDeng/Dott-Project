@@ -174,11 +174,22 @@ class UserProfileMeView(APIView):
             user_country = str(profile.country) if profile.country else 'US'
             logger.info(f"[UserProfileMeView] Profile country: {profile.country}, Returning: {user_country}")
             
+            # Extract first and last name from User model or name field
+            first_name = request.user.first_name
+            last_name = request.user.last_name
+
+            # If first_name and last_name are empty, try to parse from 'name' field
+            if not first_name and not last_name and request.user.name:
+                name_parts = request.user.name.strip().split(' ', 1)
+                first_name = name_parts[0] if name_parts else ''
+                last_name = name_parts[1] if len(name_parts) > 1 else ''
+
             response_data = {
                 'id': request.user.id,
                 'email': request.user.email,
-                'first_name': request.user.first_name,
-                'last_name': request.user.last_name,
+                'first_name': first_name,
+                'last_name': last_name,
+                'name': request.user.name or '',  # Include the full name field too
                 'role': user_role,
                 'has_business': has_business,  # Add has_business field for mobile app compatibility
                 'page_permissions': page_permissions,

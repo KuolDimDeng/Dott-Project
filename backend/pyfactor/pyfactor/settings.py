@@ -971,6 +971,8 @@ TENANT_AUTH_ONLY_PATHS = [
     '/api/onboarding/ensure-complete/',  # Ensure complete onboarding (frontend fallback)
     '/api/onboarding/force-complete/',  # Force complete onboarding
     '/api/currency/preferences/',  # Currency preferences (needed during onboarding)
+    '/api/taxes/pos/global-rate/',  # Allow consumers to get tax rates for their location
+    '/api/taxes/pos/default-rate/',  # Allow tax calculation without tenant for consumers
 ]
 
 # Session configuration

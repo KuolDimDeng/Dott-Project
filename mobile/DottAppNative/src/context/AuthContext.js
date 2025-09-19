@@ -68,6 +68,14 @@ export const AuthProvider = ({ children }) => {
           console.log('⚠️ No phone number in user data');
         }
         
+        // Parse name field if first_name/last_name are missing
+        if (!userData.first_name && !userData.last_name && userData.name) {
+          const nameParts = userData.name.trim().split(' ');
+          userData.first_name = nameParts[0] || '';
+          userData.last_name = nameParts.slice(1).join(' ') || '';
+          console.log('👤 Parsed name:', userData.name, '→', userData.first_name, userData.last_name);
+        }
+
         // Ensure full_name is set for display purposes
         if (!userData.full_name && (userData.first_name || userData.last_name)) {
           userData.full_name = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();

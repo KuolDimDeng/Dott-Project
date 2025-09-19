@@ -30,6 +30,10 @@ export default function AccountScreen({ navigation }) {
   const [developerMode, setDeveloperMode] = useState(false);
   
   console.log('👤 AccountScreen - User data:', user);
+  console.log('👤 AccountScreen - User first_name:', user?.first_name);
+  console.log('👤 AccountScreen - User last_name:', user?.last_name);
+  console.log('👤 AccountScreen - User name:', user?.name);
+  console.log('👤 AccountScreen - User full_name:', user?.full_name);
   console.log('👤 AccountScreen - User role:', user?.role);
   console.log('👤 AccountScreen - Has business:', hasBusiness);
 
@@ -276,7 +280,11 @@ export default function AccountScreen({ navigation }) {
               </View>
             )}
           </TouchableOpacity>
-          <Text style={styles.userName}>{user?.full_name || user?.name || 'User'}</Text>
+          <Text style={styles.userName}>
+            {user?.first_name && user?.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : user?.full_name || user?.name || 'User'}
+          </Text>
           <Text style={styles.userEmail}>{user?.email || ''}</Text>
           
           {/* Phone Number Display */}
@@ -304,13 +312,6 @@ export default function AccountScreen({ navigation }) {
             )}
           </TouchableOpacity>
           
-          {/* Role Badge */}
-          {user?.role && (
-            <View style={[styles.roleBadge, styles[`role${user.role}`]]}>
-              <Icon name="shield-checkmark" size={14} color="#ffffff" />
-              <Text style={styles.roleText}>{user.role}</Text>
-            </View>
-          )}
           
           {/* Business Status Badge */}
           {hasBusiness && (
