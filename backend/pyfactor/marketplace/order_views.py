@@ -85,38 +85,92 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
 
             # Handle UUID field - convert empty string to None
             conversation_id = request.data.get('conversation_id')
-            if conversation_id == '' or conversation_id == 'null' or conversation_id == 'undefined':
+            if conversation_id in ['', 'null', 'undefined', None]:
                 conversation_id = None
 
-            # Generate order number first
+            # Clean all text fields - convert empty strings to None or empty string as appropriate
+            def clean_text_field(value, allow_empty=True):
+                """Clean text field values to prevent JSON parsing errors"""
+                if value in [None, 'null', 'undefined']:
+                    return '' if allow_empty else None
+                if isinstance(value, str):
+                    value = value.strip()
+                    return value if value else ('') if allow_empty else None
+                return str(value) if value else ('') if allow_empty else None
+
+            # Clean the delivery notes field
+            special_instructions = clean_text_field(request.data.get('special_instructions', ''), allow_empty=True)
+
+            # Clean cancellation_reason if present
+            cancellation_reason = clean_text_field(request.data.get('cancellation_reason', ''), allow_empty=True)
+
+            # Generate order number with validation
             import random
             import string
-            prefix = 'ORD'
-            suffix = ''.join(random.choices(string.digits, k=8))
-            order_number = f"{prefix}{suffix}"
 
-            # Create order instance without saving
-            order = ConsumerOrder(
-                consumer=request.user,
-                business=business_listing.business,
-                order_number=order_number,  # Set order number explicitly
-                items=items,
-                subtotal=subtotal,
-                tax_amount=tax_amount,
-                delivery_fee=delivery_fee,
-                service_fee=service_fee,
-                tip_amount=tip_amount,
-                total_amount=total_amount,
-                payment_method=payment_method,
-                delivery_address=delivery_address_str,
-                delivery_notes=special_instructions,
-                created_from_chat=request.data.get('created_from_chat', False),
-                chat_conversation_id=conversation_id,
-                # Explicitly set PIN fields to None to avoid JSON parsing errors
-                delivery_pin=None,
-                pickup_pin=None,
-                consumer_delivery_pin=None
-            )
+            # Keep generating until we get a unique order number
+            max_attempts = 10
+            order_number = None
+            for _ in range(max_attempts):
+                prefix = 'ORD'
+                suffix = ''.join(random.choices(string.digits, k=8))
+                potential_order_number = f"{prefix}{suffix}"
+
+                # Check if this order number already exists
+                if not ConsumerOrder.objects.filter(order_number=potential_order_number).exists():
+                    order_number = potential_order_number
+                    break
+
+            if not order_number:
+                # Fallback with timestamp if we can't generate unique number
+                import time
+                order_number = f"ORD{int(time.time())}"
+
+            # Ensure all optional fields are properly handled
+            order_data = {
+                'consumer': request.user,
+                'business': business_listing.business,
+                'order_number': order_number,
+                'items': items,
+                'subtotal': subtotal,
+                'tax_amount': tax_amount,
+                'delivery_fee': delivery_fee,
+                'service_fee': service_fee,
+                'tip_amount': tip_amount,
+                'total_amount': total_amount,
+                'payment_method': payment_method,
+                'delivery_address': delivery_address_str if delivery_address_str else '',
+                'delivery_notes': special_instructions if special_instructions else '',
+                'created_from_chat': request.data.get('created_from_chat', False),
+                'chat_conversation_id': conversation_id,
+                # Explicitly set ALL nullable fields to avoid database defaults
+                'delivery_pin': None,
+                'pickup_pin': None,
+                'consumer_delivery_pin': None,
+                'cancellation_reason': '',  # TextField should be empty string not None
+                'payment_intent_id': None,
+                'payment_transaction_id': None,
+                'courier': None,
+                'courier_assigned_at': None,
+                'courier_accepted_at': None,
+                'courier_earnings': None,
+                'pin_generated_at': None,
+                'pin_verified_at': None,
+                'estimated_delivery_time': None,
+                'actual_delivery_time': None,
+                'pickup_verified_at': None,
+                'delivery_verified_at': None,
+                'paid_at': None,
+                'refunded_at': None,
+                'refund_amount': None,
+                'confirmed_at': None,
+                'prepared_at': None,
+                'delivered_at': None,
+                'cancelled_at': None
+            }
+
+            # Create order instance
+            order = ConsumerOrder(**order_data)
 
             # Save to trigger order_number generation
             order.save()

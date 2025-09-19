@@ -137,6 +137,25 @@ class ConsumerOrder(models.Model):
         return f"Order {self.order_number} - {self.consumer.email} -> {self.business.business_name}"
     
     def save(self, *args, **kwargs):
+        # Clean all fields to prevent JSON parsing errors
+        # Handle CharField fields that should be NULL when empty
+        nullable_char_fields = [
+            'pickup_pin', 'consumer_delivery_pin', 'delivery_pin',
+            'payment_intent_id', 'payment_transaction_id'
+        ]
+
+        for field in nullable_char_fields:
+            value = getattr(self, field, None)
+            if value == '':
+                setattr(self, field, None)
+
+        # Ensure TextField fields are empty strings, not None
+        text_fields = ['delivery_address', 'delivery_notes', 'cancellation_reason']
+        for field in text_fields:
+            value = getattr(self, field, None)
+            if value is None:
+                setattr(self, field, '')
+
         # Track if status changed for notifications
         send_notification = False
         old_status = None
