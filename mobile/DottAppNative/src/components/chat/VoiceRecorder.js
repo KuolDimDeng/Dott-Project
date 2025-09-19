@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
 
 const { width } = Dimensions.get('window');
 
@@ -143,9 +142,8 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
       const uri = recording.getURI();
       setRecordingUri(uri);
 
-      // Get recording info
-      const info = await FileSystem.getInfoAsync(uri);
-      console.log('Recording saved:', info);
+      // Recording saved successfully
+      console.log('Recording saved to:', uri);
 
       setRecording(null);
     } catch (error) {
