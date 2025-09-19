@@ -83,7 +83,8 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             logger.info(f"  - Tip amount: {tip_amount}")
             logger.info(f"  - Order will be auto-generated")
 
-            order = ConsumerOrder.objects.create(
+            # Create order instance without saving
+            order = ConsumerOrder(
                 consumer=request.user,
                 business=business_listing.business,
                 items=items,
@@ -99,6 +100,9 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 created_from_chat=request.data.get('created_from_chat', False),
                 chat_conversation_id=request.data.get('conversation_id', None)
             )
+
+            # Save to trigger order_number generation
+            order.save()
 
             logger.info(f"[OrderCreate] Order created successfully: {order.order_number}")
             logger.info(f"[OrderCreate] Order ID: {order.id}, Total: {order.total_amount}")
