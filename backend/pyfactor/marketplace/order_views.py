@@ -83,6 +83,11 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             logger.info(f"  - Tip amount: {tip_amount}")
             logger.info(f"  - Order will be auto-generated")
 
+            # Handle UUID field - convert empty string to None
+            conversation_id = request.data.get('conversation_id')
+            if conversation_id == '' or conversation_id == 'null' or conversation_id == 'undefined':
+                conversation_id = None
+
             # Create order instance without saving
             order = ConsumerOrder(
                 consumer=request.user,
@@ -98,7 +103,7 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 delivery_address=delivery_address_str,
                 delivery_notes=special_instructions,
                 created_from_chat=request.data.get('created_from_chat', False),
-                chat_conversation_id=request.data.get('conversation_id', None)
+                chat_conversation_id=conversation_id
             )
 
             # Save to trigger order_number generation
