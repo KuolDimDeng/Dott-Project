@@ -88,10 +88,18 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             if conversation_id == '' or conversation_id == 'null' or conversation_id == 'undefined':
                 conversation_id = None
 
+            # Generate order number first
+            import random
+            import string
+            prefix = 'ORD'
+            suffix = ''.join(random.choices(string.digits, k=8))
+            order_number = f"{prefix}{suffix}"
+
             # Create order instance without saving
             order = ConsumerOrder(
                 consumer=request.user,
                 business=business_listing.business,
+                order_number=order_number,  # Set order number explicitly
                 items=items,
                 subtotal=subtotal,
                 tax_amount=tax_amount,
