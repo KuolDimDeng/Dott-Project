@@ -51,6 +51,7 @@ class ChatMessage(models.Model):
         ('text', 'Text Message'),
         ('image', 'Image'),
         ('voice', 'Voice Note'),
+        ('location', 'Location Share'),
         ('voice_call', 'Voice Call'),
         ('video_call', 'Video Call'),
         ('order_request', 'Order Request'),
@@ -79,6 +80,24 @@ class ChatMessage(models.Model):
     # Media attachments
     image_url = models.URLField(blank=True, null=True)
     voice_url = models.URLField(blank=True, null=True)
+    voice_duration = models.IntegerField(null=True, blank=True, help_text="Voice note duration in seconds")
+    
+    # Location sharing
+    location_latitude = models.FloatField(null=True, blank=True)
+    location_longitude = models.FloatField(null=True, blank=True)
+    location_address = models.TextField(blank=True, help_text="Human-readable address")
+    location_name = models.CharField(max_length=255, blank=True, help_text="Place name or landmark")
+    location_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('current', 'Current Location'),
+            ('live', 'Live Location'),
+            ('pin', 'Custom Pin')
+        ],
+        null=True,
+        blank=True
+    )
+    location_expires_at = models.DateTimeField(null=True, blank=True, help_text="For live location sharing")
     
     # Order creation from chat
     order_data = models.JSONField(null=True, blank=True)  # Stores parsed order info
