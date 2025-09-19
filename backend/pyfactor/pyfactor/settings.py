@@ -957,6 +957,7 @@ TENANT_EXEMPT_PATHS = [
     '/api/marketplace/consumer/',  # Public marketplace consumer endpoints
     '/marketplace/consumer/',  # Alternative marketplace consumer path
     '/api/marketplace/business/',  # Public business detail endpoints
+    '/ws/chat/',  # WebSocket chat connections (custom auth middleware handles authentication)
 ]
 
 # Paths that require authentication but not tenant context (used during onboarding)
