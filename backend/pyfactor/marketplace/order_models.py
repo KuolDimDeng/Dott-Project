@@ -84,6 +84,7 @@ class ConsumerOrder(models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tip_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0,
                                     help_text="Tip amount for courier (100% goes to courier)")
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)

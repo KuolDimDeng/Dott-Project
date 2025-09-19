@@ -89,6 +89,7 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 subtotal=subtotal,
                 tax_amount=tax_amount,
                 delivery_fee=delivery_fee,
+                service_fee=service_fee,
                 tip_amount=tip_amount,
                 total_amount=total_amount,
                 payment_method=payment_method,
