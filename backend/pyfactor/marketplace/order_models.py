@@ -55,11 +55,11 @@ class ConsumerOrder(models.Model):
     courier_earnings = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # PIN verification system
-    pickup_pin = models.CharField(max_length=4, blank=True,
+    pickup_pin = models.CharField(max_length=4, blank=True, null=True, default=None,
                                  help_text='4-digit PIN restaurant gives to courier at pickup')
-    consumer_delivery_pin = models.CharField(max_length=4, blank=True,
+    consumer_delivery_pin = models.CharField(max_length=4, blank=True, null=True, default=None,
                                             help_text='4-digit PIN consumer gives to courier at delivery')
-    delivery_pin = models.CharField(max_length=4, blank=True,
+    delivery_pin = models.CharField(max_length=4, blank=True, null=True, default=None,
                                    help_text='4-digit PIN for delivery verification (restaurant to courier)')
     pin_generated_at = models.DateTimeField(null=True, blank=True)
     pin_verified = models.BooleanField(default=False)
