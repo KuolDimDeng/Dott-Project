@@ -280,7 +280,34 @@ class PhoneVerifyView(APIView):
                             subscription_plan='free'
                         )
                         
+                        # Create UserProfile and ensure phone number is saved there too
+                        from users.models import UserProfile
+                        profile, _ = UserProfile.objects.get_or_create(
+                            user=user,
+                            defaults={
+                                'phone_number': phone_number,
+                                'tenant_id': tenant.id
+                            }
+                        )
+                        if not profile.phone_number:
+                            profile.phone_number = phone_number
+                            profile.save()
+                        
                         logger.info(f"✅ Created new user: {user.email} with phone {phone_number}")
+                
+                # Ensure UserProfile has the phone number (for existing users too)
+                from users.models import UserProfile
+                profile, _ = UserProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'phone_number': phone_number,
+                        'tenant_id': user.tenant.id if user.tenant else None
+                    }
+                )
+                if not profile.phone_number or profile.phone_number != phone_number:
+                    profile.phone_number = phone_number
+                    profile.save()
+                    logger.info(f"📱 Updated UserProfile phone for {user.email}")
                 
                 # Create session for user
                 session_data = session_service.create_session(user)

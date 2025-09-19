@@ -136,6 +136,32 @@ export default function AccountScreen({ navigation }) {
     navigation.navigate('BusinessRegistration');
   };
 
+  // Function to get phone number from various sources
+  const getPhoneNumber = () => {
+    // First check user object directly
+    if (user?.phone_number) {
+      return user.phone_number;
+    }
+    
+    // Check if phone is stored as username (for phone-based signups)
+    if (user?.username && /^\+\d+$/.test(user.username)) {
+      return user.username;
+    }
+    
+    // Check if email contains phone pattern (temp emails)
+    if (user?.email && user.email.includes('@phone.temp')) {
+      const phoneFromEmail = user.email.split('@')[0];
+      if (phoneFromEmail) {
+        // Add + if missing
+        return phoneFromEmail.startsWith('+') ? phoneFromEmail : `+${phoneFromEmail}`;
+      }
+    }
+    
+    return null;
+  };
+
+  const displayPhoneNumber = getPhoneNumber();
+
   const handleVersionTap = () => {
     const newCount = devTapCount + 1;
     setDevTapCount(newCount);
@@ -290,7 +316,7 @@ export default function AccountScreen({ navigation }) {
           {/* Phone Number Display */}
           <TouchableOpacity 
             onPress={() => {
-              if (!user?.phone_number) {
+              if (!displayPhoneNumber) {
                 navigation.navigate('PersonalInfo');
               }
             }}
@@ -299,15 +325,15 @@ export default function AccountScreen({ navigation }) {
             <Icon 
               name="call-outline" 
               size={14} 
-              color={user?.phone_number ? "#6b7280" : "#ef4444"} 
+              color={displayPhoneNumber ? "#6b7280" : "#ef4444"} 
             />
             <Text style={[
               styles.userPhone, 
-              !user?.phone_number && styles.phoneNumberMissing
+              !displayPhoneNumber && styles.phoneNumberMissing
             ]}>
-              {user?.phone_number || 'Phone number missing'}
+              {displayPhoneNumber || 'Phone number missing'}
             </Text>
-            {!user?.phone_number && (
+            {!displayPhoneNumber && (
               <Icon name="chevron-forward" size={14} color="#ef4444" />
             )}
           </TouchableOpacity>

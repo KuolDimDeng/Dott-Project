@@ -211,11 +211,6 @@ export default function BusinessMenuScreen() {
       } else if (user?.full_name && user.full_name !== rawBusinessName) {
         return user.full_name;
       }
-      // If we still don't have a name, check if it's Steve Majak specifically
-      // This is a fallback for the test user
-      if (user?.email === 'stevemajak001@gmail.com' || user?.phone === '+211925550100') {
-        return 'Steve Majak';
-      }
     }
     
     // Also check business type for informal businesses

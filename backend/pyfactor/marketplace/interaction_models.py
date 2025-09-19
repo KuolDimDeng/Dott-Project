@@ -339,15 +339,13 @@ class BusinessInteraction(models.Model):
     
     def calculate_platform_fee(self) -> Decimal:
         """Calculate platform fee based on type and amount"""
-        # Base platform fee: 0.1% + $0.30
-        percentage_fee = self.total_amount * Decimal('0.001')  # 0.1%
-        fixed_fee = Decimal('0.30')
-        
-        # Special rates for certain types
-        if self.interaction_type == InteractionType.SUBSCRIPTION.value:
-            percentage_fee = self.total_amount * Decimal('0.025')  # 2.5%
-        
-        self.platform_fee = percentage_fee + fixed_fee
+        # Platform fee: 10% for all marketplace transactions
+        percentage_fee = self.total_amount * Decimal('0.10')  # 10%
+
+        # No additional fixed fee for marketplace orders
+        # The 10% covers the platform's service
+
+        self.platform_fee = percentage_fee
         return self.platform_fee
     
     @property

@@ -37,27 +37,27 @@ export default function AddressMapPickerScreen({ navigation, route }) {
   const reverseGeocode = async (latitude, longitude) => {
     try {
       setLoading(true);
-      
-      // TODO: Implement with Google Maps Geocoding API
-      // For now, generate a simple address format
-      const simpleAddress = `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-      
-      // Mock address based on Juba coordinates
-      let mockAddress = '';
-      if (latitude > 4.85 && latitude < 4.87 && longitude > 31.57 && longitude < 31.58) {
-        mockAddress = 'Juba Teaching Hospital Road, Juba, South Sudan';
-      } else if (latitude > 4.83 && latitude < 4.85 && longitude > 31.58 && longitude < 31.59) {
-        mockAddress = 'University of Juba, Juba, South Sudan';
-      } else if (latitude > 4.86 && latitude < 4.88 && longitude > 31.59 && longitude < 31.61) {
-        mockAddress = 'Konyokonyo Market, Juba, South Sudan';
-      } else {
-        mockAddress = `${simpleAddress}, Juba, South Sudan`;
+
+      // Generate address from coordinates
+      // Allow users to select ANY location, not just predefined ones
+      const locationAddress = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}, Juba, South Sudan`;
+
+      // You can still suggest nearby landmarks if very close
+      let nearbyLandmark = '';
+      const tolerance = 0.001; // About 100 meters
+
+      if (Math.abs(latitude - 4.8594) < tolerance && Math.abs(longitude - 31.5713) < tolerance) {
+        nearbyLandmark = ' (near Juba Teaching Hospital)';
+      } else if (Math.abs(latitude - 4.8400) < tolerance && Math.abs(longitude - 31.5825) < tolerance) {
+        nearbyLandmark = ' (near University of Juba)';
+      } else if (Math.abs(latitude - 4.8700) < tolerance && Math.abs(longitude - 31.6000) < tolerance) {
+        nearbyLandmark = ' (near Konyokonyo Market)';
       }
-      
-      setAddress(mockAddress);
+
+      setAddress(locationAddress + nearbyLandmark);
     } catch (error) {
       console.error('Reverse geocoding error:', error);
-      setAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+      setAddress(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
     } finally {
       setLoading(false);
     }

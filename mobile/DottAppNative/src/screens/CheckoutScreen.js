@@ -320,6 +320,8 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
+    console.log('🛒 === PLACE ORDER START ===');
+
     // Validation
     if (!acceptTerms) {
       Alert.alert('Terms Required', 'Please accept the terms and conditions');
@@ -335,6 +337,16 @@ export default function CheckoutScreen() {
       Alert.alert('Payment Required', 'Please select a payment method');
       return;
     }
+
+    console.log('📦 Order validation passed:', {
+      deliveryMethod,
+      paymentMethod,
+      itemCount: cartItems.length,
+      subtotal,
+      taxAmount,
+      serviceFee,
+      total,
+    })
 
     // Store order data for use after payment
     const orderData = {
@@ -364,19 +376,26 @@ export default function CheckoutScreen() {
       special_instructions: specialInstructions,
     };
 
+    console.log('📝 Full order data:', JSON.stringify(orderData, null, 2));
+
     // Store order data for payment processing
     setPendingOrderData(orderData);
 
     // Show appropriate payment modal
     if (paymentMethod === 'card') {
+      console.log('💳 Showing Stripe payment modal');
       setShowStripeModal(true);
     } else if (paymentMethod === 'mtn') {
+      console.log('📱 Showing MTN payment modal');
       setShowMTNModal(true);
     }
   };
 
   // Handle successful payment from either modal
   const handlePaymentSuccess = async (paymentDetails) => {
+    console.log('💰 === PAYMENT SUCCESS ===');
+    console.log('Payment details:', paymentDetails);
+
     setShowStripeModal(false);
     setShowMTNModal(false);
     setPlacingOrder(true);
@@ -388,8 +407,11 @@ export default function CheckoutScreen() {
         payment_details: paymentDetails,
       };
 
+      console.log('📮 Sending order to backend:', JSON.stringify(finalOrderData, null, 2));
+
       // Create order using correct marketplace consumer endpoint
       const orderResponse = await api.post('/marketplace/consumer/orders/', finalOrderData);
+      console.log('✅ Order created successfully:', orderResponse.data);
       const orderId = orderResponse.data.order_id;
 
       // The backend now generates both pickup and delivery PINs
@@ -420,10 +442,14 @@ export default function CheckoutScreen() {
       });
 
     } catch (error) {
-      console.error('Order placement error:', error);
+      console.error('❌ Order placement error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+
       Alert.alert(
         'Order Failed',
-        error.response?.data?.message || 'Unable to place your order. Please try again.',
+        error.response?.data?.message || error.response?.data?.detail || 'Unable to place your order. Please try again.',
         [{ text: 'OK' }]
       );
     } finally {
