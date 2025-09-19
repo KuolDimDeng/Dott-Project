@@ -99,6 +99,7 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
             )
 
             logger.info(f"[OrderCreate] Order created successfully: {order.order_number}")
+            logger.info(f"[OrderCreate] Order ID: {order.id}, Total: {order.total_amount}")
             
             # Update consumer profile
             consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
