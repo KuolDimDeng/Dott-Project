@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Fix inconsistent migration history for transport app
+Fix inconsistent migration history for marketplace/couriers apps
 Run this before migrations to fix the dependency issue
 """
 import os
@@ -16,32 +16,43 @@ django.setup()
 
 from django.db import connection
 
-def fix_transport_migrations():
-    """Fix the transport migration inconsistency"""
+def fix_courier_marketplace_migrations():
+    """Fix the courier/marketplace migration inconsistency"""
     with connection.cursor() as cursor:
-        # Check current migration state
+        # Check if couriers.0001_initial exists
         cursor.execute("""
-            SELECT name FROM django_migrations 
-            WHERE app = 'transport' 
+            SELECT COUNT(*) FROM django_migrations
+            WHERE app = 'couriers'
+            AND name = '0001_initial'
+        """)
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            print("Adding missing couriers.0001_initial migration...")
+            # Add the missing migration record
+            cursor.execute("""
+                INSERT INTO django_migrations (app, name, applied)
+                VALUES ('couriers', '0001_initial', NOW())
+            """)
+            connection.commit()
+            print("✅ Added couriers.0001_initial to migration history")
+        else:
+            print("couriers.0001_initial already exists")
+
+        # Now check marketplace migrations
+        cursor.execute("""
+            SELECT name FROM django_migrations
+            WHERE app = 'marketplace'
             ORDER BY id
         """)
         migrations = cursor.fetchall()
-        print(f"Current transport migrations: {[m[0] for m in migrations]}")
-        
-        # Remove the problematic migration record
-        cursor.execute("""
-            DELETE FROM django_migrations 
-            WHERE app = 'transport' 
-            AND name = '0003_add_transport_models'
-        """)
-        print("Removed 0003_add_transport_models migration record")
-        
-        # Now it can be reapplied in the correct order
-        print("Migration history fixed. You can now run migrations normally.")
+        print(f"\nCurrent marketplace migrations: {[m[0] for m in migrations]}")
+
+        print("\nMigration history fixed. You can now run migrations normally.")
 
 if __name__ == "__main__":
     try:
-        fix_transport_migrations()
+        fix_courier_marketplace_migrations()
         print("✅ Successfully fixed migration history")
     except Exception as e:
         print(f"❌ Error fixing migrations: {e}")
