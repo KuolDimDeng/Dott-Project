@@ -55,19 +55,23 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => 
-        item.id === product.id && item.businessId === product.businessId
-      );
+      // Use productId if available, otherwise use id
+      const uniqueId = product.productId || product.id;
+      const existingItem = prevItems.find(item => {
+        const itemId = item.productId || item.id;
+        return itemId === uniqueId && item.businessId === product.businessId && item.name === product.name;
+      });
 
       if (existingItem) {
-        return prevItems.map(item =>
-          item.id === product.id && item.businessId === product.businessId
+        return prevItems.map(item => {
+          const itemId = item.productId || item.id;
+          return itemId === uniqueId && item.businessId === product.businessId && item.name === product.name
             ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+            : item;
+        });
       } else {
-        return [...prevItems, { 
-          ...product, 
+        return [...prevItems, {
+          ...product,
           quantity: 1,
           addedAt: new Date().toISOString()
         }];
@@ -75,22 +79,26 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  const removeFromCart = (productId, businessId) => {
-    setCartItems(prevItems => 
-      prevItems.filter(item => !(item.id === productId && item.businessId === businessId))
+  const removeFromCart = (productId, businessId, itemName) => {
+    setCartItems(prevItems =>
+      prevItems.filter(item => {
+        const itemId = item.productId || item.id;
+        return !(itemId === productId && item.businessId === businessId && (!itemName || item.name === itemName));
+      })
     );
   };
 
-  const updateQuantity = (productId, businessId, newQuantity) => {
+  const updateQuantity = (productId, businessId, newQuantity, itemName) => {
     if (newQuantity <= 0) {
-      removeFromCart(productId, businessId);
+      removeFromCart(productId, businessId, itemName);
     } else {
       setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === productId && item.businessId === businessId
+        prevItems.map(item => {
+          const itemId = item.productId || item.id;
+          return itemId === productId && item.businessId === businessId && (!itemName || item.name === itemName)
             ? { ...item, quantity: newQuantity }
-            : item
-        )
+            : item;
+        })
       );
     }
   };

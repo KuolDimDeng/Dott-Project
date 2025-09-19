@@ -351,8 +351,8 @@ export default function CheckoutScreen() {
     // Store order data for use after payment
     const orderData = {
       items: cartItems.map(item => ({
-        product_id: item.id,
-        name: item.name,
+        product_id: item.productId || item.id,
+        name: item.name || item.productName,
         quantity: item.quantity,
         price: item.price,
         business_id: item.businessId,
@@ -792,10 +792,10 @@ export default function CheckoutScreen() {
       <View style={styles.summaryCard}>
         {/* Items list */}
         {cartItems.map((item, index) => (
-          <View key={`${item.businessId}-${item.id}`} style={styles.summaryItem}>
+          <View key={`${item.businessId}-${item.productId || item.id}-${index}`} style={styles.summaryItem}>
             <View style={styles.itemDetails}>
               <Text style={styles.itemQuantity}>{item.quantity}x</Text>
-              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.itemName}>{item.name || item.productName || 'Item'}</Text>
             </View>
             <Text style={styles.itemPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
           </View>

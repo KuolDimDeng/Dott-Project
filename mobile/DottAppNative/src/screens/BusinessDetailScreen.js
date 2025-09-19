@@ -371,10 +371,11 @@ export default function BusinessDetailScreen() {
       businessId: business.id,
       businessName: business.business_name,
       productId: item.id,
-      productName: item.name,
+      name: item.name,  // Changed from productName to name
       price: item.price,
       currency: item.currency || 'SSP',
       type: type,
+      description: item.description || '',  // Added description for better display
     });
     Alert.alert('Success', `${item.name} added to cart`);
   };

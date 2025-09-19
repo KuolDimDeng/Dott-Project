@@ -80,7 +80,7 @@ class ConsumerOrder(models.Model):
                                                      ('completed', 'Completed'), ('failed', 'Failed')])
     
     # Order details
-    items = models.JSONField(default=dict)  # Array of {product_id, name, quantity, price}
+    items = models.JSONField(default=list)  # Array of {product_id, name, quantity, price}
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)

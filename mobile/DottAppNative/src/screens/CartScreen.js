@@ -55,31 +55,31 @@ export default function CartScreen() {
   const renderCartItem = ({ item }) => (
     <View style={styles.cartItem}>
       <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemName}>{item.name || item.productName || 'Item'}</Text>
         <Text style={styles.itemBusiness}>{item.businessName}</Text>
-        <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+        <Text style={styles.itemPrice}>${(item.price || 0).toFixed(2)}</Text>
       </View>
       
       <View style={styles.quantityContainer}>
         <TouchableOpacity
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.id, item.businessId, item.quantity - 1)}
+          onPress={() => updateQuantity(item.productId || item.id, item.businessId, item.quantity - 1, item.name)}
         >
           <Icon name="remove-circle-outline" size={24} color="#2563eb" />
         </TouchableOpacity>
-        
+
         <Text style={styles.quantity}>{item.quantity}</Text>
-        
+
         <TouchableOpacity
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.id, item.businessId, item.quantity + 1)}
+          onPress={() => updateQuantity(item.productId || item.id, item.businessId, item.quantity + 1, item.name)}
         >
           <Icon name="add-circle-outline" size={24} color="#2563eb" />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => removeFromCart(item.id, item.businessId)}
+          onPress={() => removeFromCart(item.productId || item.id, item.businessId, item.name)}
         >
           <Icon name="trash-outline" size={20} color="#ef4444" />
         </TouchableOpacity>
