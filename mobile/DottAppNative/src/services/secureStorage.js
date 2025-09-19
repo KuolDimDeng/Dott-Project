@@ -68,24 +68,24 @@ class SecureStorageService {
       // Fallback to AsyncStorage
       const value = await AsyncStorage.getItem(key);
       if (!value) return null;
-
-      // Try to parse as JSON, if it fails return as string
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value; // Return as string if not valid JSON
-      }
+      // Return the raw string value - don't try to parse JSON for tokens/IDs
+      return value;
     }
 
     try {
       const credentials = await Keychain.getInternetCredentials(key);
       if (credentials && credentials.password) {
-        // Try to parse as JSON, if it fails return as string
-        try {
-          return JSON.parse(credentials.password);
-        } catch {
-          return credentials.password; // Return as string if not valid JSON
+        // For session tokens and IDs, return the raw string
+        // Only parse JSON for complex objects like userData
+        if (key === 'userData' || key.includes('profile') || key.includes('config')) {
+          try {
+            return JSON.parse(credentials.password);
+          } catch {
+            return credentials.password;
+          }
         }
+        // For sessionId, sessionToken, authToken etc, return as plain string
+        return credentials.password;
       }
       return null;
     } catch (error) {
