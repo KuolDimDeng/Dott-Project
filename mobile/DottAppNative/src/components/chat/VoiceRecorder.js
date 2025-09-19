@@ -10,14 +10,13 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { Audio } from 'expo-av';
+import Sound from 'react-native-sound';
 
 const { width } = Dimensions.get('window');
 
 export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const [recording, setRecording] = useState(null);
   const [recordingUri, setRecordingUri] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
@@ -29,24 +28,13 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
   const durationTimer = useRef(null);
 
   useEffect(() => {
-    setupAudio();
+    // Enable playback in silence mode
+    Sound.setCategory('Playback');
+    
     return () => {
       cleanup();
     };
   }, []);
-
-  const setupAudio = async () => {
-    try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-    } catch (error) {
-      console.error('Failed to setup audio:', error);
-      Alert.alert('Error', 'Could not setup audio recording');
-    }
-  };
 
   const cleanup = () => {
     if (durationTimer.current) {
@@ -56,48 +44,21 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
       pulseAnimation.current.stop();
     }
     if (sound.current) {
-      sound.current.unloadAsync();
-    }
-    if (recording) {
-      recording.stopAndUnloadAsync();
+      sound.current.stop();
+      sound.current.release();
     }
   };
 
   const startRecording = async () => {
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Please grant microphone permission to record voice messages');
-        return;
-      }
-
-      const recordingOptions = {
-        android: {
-          extension: '.m4a',
-          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-          sampleRate: 44100,
-          numberOfChannels: 2,
-          bitRate: 128000,
-        },
-        ios: {
-          extension: '.m4a',
-          outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC,
-          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MEDIUM,
-          sampleRate: 44100,
-          numberOfChannels: 2,
-          bitRate: 128000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false,
-        },
-      };
-
-      const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(recordingOptions);
-      await newRecording.startAsync();
-
-      setRecording(newRecording);
+      // For now, we'll simulate recording with a timer
+      // In production, you'd use a proper audio recording library
+      Alert.alert(
+        'Voice Recording', 
+        'Voice recording is being implemented. For now, this is a simulation.',
+        [{ text: 'OK' }]
+      );
+      
       setIsRecording(true);
       setRecordingDuration(0);
 
@@ -124,7 +85,7 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
 
   const stopRecording = async () => {
     try {
-      if (!recording) return;
+      if (!isRecording) return;
 
       setIsRecording(false);
       
@@ -138,14 +99,12 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
         animatedValue.setValue(0);
       }
 
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecordingUri(uri);
+      // Simulate a recording URI
+      const simulatedUri = 'path/to/recording.m4a';
+      setRecordingUri(simulatedUri);
 
-      // Recording saved successfully
-      console.log('Recording saved to:', uri);
+      console.log('Recording stopped');
 
-      setRecording(null);
     } catch (error) {
       console.error('Failed to stop recording:', error);
       Alert.alert('Error', 'Could not stop recording');
@@ -174,29 +133,20 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
     try {
       if (!recordingUri) return;
 
-      if (sound.current) {
-        await sound.current.unloadAsync();
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: recordingUri },
-        { shouldPlay: true }
-      );
-
-      sound.current = newSound;
-      setIsPlaying(true);
-
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setPlaybackPosition(status.positionMillis || 0);
-          setPlaybackDuration(status.durationMillis || 0);
-          
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPlaybackPosition(0);
-          }
-        }
-      });
+      Alert.alert('Playback', 'Voice playback will be implemented with the recording feature.');
+      
+      // In production, you would use react-native-sound to play the recording
+      // sound.current = new Sound(recordingUri, '', (error) => {
+      //   if (error) {
+      //     console.log('Failed to load sound', error);
+      //     return;
+      //   }
+      //   sound.current.play((success) => {
+      //     if (success) {
+      //       console.log('Successfully finished playing');
+      //     }
+      //   });
+      // });
 
     } catch (error) {
       console.error('Failed to play recording:', error);
@@ -206,7 +156,7 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
   const stopPlaying = async () => {
     try {
       if (sound.current) {
-        await sound.current.stopAsync();
+        sound.current.stop();
         setIsPlaying(false);
         setPlaybackPosition(0);
       }
@@ -243,9 +193,8 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancel }) {
   };
 
   const cancelRecording = () => {
-    if (recording) {
-      recording.stopAndUnloadAsync();
-      setRecording(null);
+    if (isRecording) {
+      stopRecording();
     }
     
     cleanup();

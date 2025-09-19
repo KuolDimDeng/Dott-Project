@@ -9,10 +9,12 @@ import {
   Dimensions,
   ActivityIndicator,
   TextInput,
+  Platform,
+  PermissionsAndroid,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import * as Location from 'expo-location';
-import { Linking } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,13 +31,55 @@ export default function LocationPicker({ onSendLocation, onCancel, visible }) {
     }
   }, [visible]);
 
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      // iOS permissions are handled through Info.plist
+      return true;
+    } else {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'App needs access to your location to share it.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+  };
+
+  const reverseGeocode = async (latitude, longitude) => {
+    try {
+      // Using a free reverse geocoding service
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+      );
+      const data = await response.json();
+      
+      if (data && data.display_name) {
+        return data.display_name;
+      }
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    } catch (error) {
+      console.log('Reverse geocoding failed:', error);
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    }
+  };
+
   const getCurrentLocation = async () => {
     try {
       setIsLoading(true);
       
       // Request location permissions
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) {
         Alert.alert(
           'Permission required',
           'Please grant location permission to share your location',
@@ -44,44 +88,42 @@ export default function LocationPicker({ onSendLocation, onCancel, visible }) {
             { text: 'Settings', onPress: () => Linking.openSettings() },
           ]
         );
+        setIsLoading(false);
         return;
       }
 
       // Get current location
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      // Reverse geocode to get address
-      const reverseGeocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      const address = reverseGeocode[0];
-      let formattedAddress = 'Unknown location';
-      
-      if (address) {
-        const parts = [
-          address.street,
-          address.city || address.subregion,
-          address.region,
-          address.country,
-        ].filter(Boolean);
-        formattedAddress = parts.join(', ');
-      }
-
-      setCurrentLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        address: formattedAddress,
-        accuracy: location.coords.accuracy,
-      });
+      Geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          
+          // Get address
+          const address = await reverseGeocode(latitude, longitude);
+          
+          setCurrentLocation({
+            latitude,
+            longitude,
+            address,
+            accuracy,
+          });
+          
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          Alert.alert('Error', 'Could not get your current location. Please try again.');
+          setIsLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000,
+        }
+      );
 
     } catch (error) {
       console.error('Error getting location:', error);
       Alert.alert('Error', 'Could not get your current location. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
