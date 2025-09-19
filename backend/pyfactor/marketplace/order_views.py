@@ -24,10 +24,20 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
     
     def create(self, request):
         """Create a new order"""
+        logger.info("="*80)
         logger.info(f"[OrderCreate] Starting order creation for user: {request.user}")
         logger.info(f"[OrderCreate] User authenticated: {request.user.is_authenticated}")
         logger.info(f"[OrderCreate] User email: {getattr(request.user, 'email', 'N/A')}")
-        logger.info(f"[OrderCreate] Request data: {request.data}")
+        logger.info(f"[OrderCreate] User ID: {request.user.id}")
+        logger.info(f"[OrderCreate] Request method: {request.method}")
+        logger.info(f"[OrderCreate] Content-Type: {request.content_type}")
+        logger.info(f"[OrderCreate] Request data type: {type(request.data)}")
+        logger.info(f"[OrderCreate] Request data keys: {list(request.data.keys()) if hasattr(request.data, 'keys') else 'N/A'}")
+        logger.info(f"[OrderCreate] Full request data: {request.data}")
+
+        # Debug each field
+        for key, value in request.data.items():
+            logger.info(f"[OrderCreate] Field '{key}': type={type(value)}, value={value}")
 
         try:
             items = request.data.get('items', [])
@@ -85,8 +95,10 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
 
             # Handle UUID field - convert empty string to None
             conversation_id = request.data.get('conversation_id')
+            logger.info(f"[OrderCreate] Raw conversation_id: type={type(conversation_id)}, value={repr(conversation_id)}")
             if conversation_id in ['', 'null', 'undefined', None]:
                 conversation_id = None
+            logger.info(f"[OrderCreate] Processed conversation_id: {conversation_id}")
 
             # Clean all text fields - convert empty strings to None or empty string as appropriate
             def clean_text_field(value, allow_empty=True):
@@ -126,12 +138,19 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 import time
                 order_number = f"ORD{int(time.time())}"
 
+            # Debug items field before creating order
+            logger.info(f"[OrderCreate] Items before order creation:")
+            logger.info(f"  - Type: {type(items)}")
+            logger.info(f"  - Value: {items}")
+            logger.info(f"  - Is list: {isinstance(items, list)}")
+            logger.info(f"  - Length: {len(items) if isinstance(items, list) else 'N/A'}")
+
             # Ensure all optional fields are properly handled
             order_data = {
                 'consumer': request.user,
                 'business': business_listing.business,
                 'order_number': order_number,
-                'items': items,
+                'items': items if items else [],  # Ensure it's never None
                 'subtotal': subtotal,
                 'tax_amount': tax_amount,
                 'delivery_fee': delivery_fee,
@@ -169,11 +188,48 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 'cancelled_at': None
             }
 
+            # Debug order_data before creation
+            logger.info(f"[OrderCreate] Order data before creation:")
+            for key, value in order_data.items():
+                if key in ['consumer', 'business']:
+                    logger.info(f"  - {key}: {value.email if hasattr(value, 'email') else value.id}")
+                elif key == 'items':
+                    logger.info(f"  - {key}: type={type(value)}, length={len(value) if isinstance(value, list) else 'N/A'}, value={value}")
+                else:
+                    logger.info(f"  - {key}: type={type(value)}, value={repr(value)}")
+
             # Create order instance
-            order = ConsumerOrder(**order_data)
+            try:
+                order = ConsumerOrder(**order_data)
+                logger.info(f"[OrderCreate] Order instance created successfully (not saved yet)")
+            except Exception as e:
+                logger.error(f"[OrderCreate] Error creating order instance: {str(e)}")
+                logger.error(f"[OrderCreate] Error type: {type(e).__name__}")
+                raise
 
             # Save to trigger order_number generation
-            order.save()
+            try:
+                # Debug the order object before saving
+                logger.info(f"[OrderCreate] Order fields before save:")
+                logger.info(f"  - order_number: {repr(order.order_number)}")
+                logger.info(f"  - items: type={type(order.items)}, value={order.items}")
+                logger.info(f"  - delivery_pin: {repr(order.delivery_pin)}")
+                logger.info(f"  - pickup_pin: {repr(order.pickup_pin)}")
+                logger.info(f"  - consumer_delivery_pin: {repr(order.consumer_delivery_pin)}")
+                logger.info(f"  - cancellation_reason: {repr(order.cancellation_reason)}")
+                logger.info(f"  - delivery_address: {repr(order.delivery_address)}")
+                logger.info(f"  - delivery_notes: {repr(order.delivery_notes)}")
+
+                order.save()
+                logger.info(f"[OrderCreate] Order saved successfully with ID: {order.id}")
+                logger.info(f"[OrderCreate] Order number after save: {order.order_number}")
+            except Exception as e:
+                logger.error(f"[OrderCreate] Error saving order: {str(e)}")
+                logger.error(f"[OrderCreate] Error type: {type(e).__name__}")
+                logger.error(f"[OrderCreate] Full error details: {repr(e)}")
+                import traceback
+                logger.error(f"[OrderCreate] Traceback: {traceback.format_exc()}")
+                raise
 
             logger.info(f"[OrderCreate] Order created successfully: {order.order_number}")
             logger.info(f"[OrderCreate] Order ID: {order.id}, Total: {order.total_amount}")

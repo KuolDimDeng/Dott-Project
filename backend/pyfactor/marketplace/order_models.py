@@ -137,6 +137,35 @@ class ConsumerOrder(models.Model):
         return f"Order {self.order_number} - {self.consumer.email} -> {self.business.business_name}"
     
     def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"[OrderModel.save] Starting save for order")
+        logger.info(f"[OrderModel.save] Is new order: {not self.pk}")
+
+        # Debug the items field specifically
+        logger.info(f"[OrderModel.save] Items field before cleaning:")
+        logger.info(f"  - Type: {type(self.items)}")
+        logger.info(f"  - Value: {repr(self.items)}")
+        logger.info(f"  - Is None: {self.items is None}")
+        logger.info(f"  - Is empty string: {self.items == ''}")
+
+        # Ensure items is always a list
+        if self.items is None or self.items == '':
+            logger.warning(f"[OrderModel.save] Items field is None or empty string, converting to empty list")
+            self.items = []
+        elif not isinstance(self.items, list):
+            logger.warning(f"[OrderModel.save] Items field is not a list, attempting to convert")
+            try:
+                import json
+                if isinstance(self.items, str):
+                    self.items = json.loads(self.items) if self.items else []
+            except:
+                logger.error(f"[OrderModel.save] Failed to convert items to list, using empty list")
+                self.items = []
+
+        logger.info(f"[OrderModel.save] Items field after cleaning: {self.items}")
+
         # Clean all fields to prevent JSON parsing errors
         # Handle CharField fields that should be NULL when empty
         nullable_char_fields = [
@@ -147,6 +176,7 @@ class ConsumerOrder(models.Model):
         for field in nullable_char_fields:
             value = getattr(self, field, None)
             if value == '':
+                logger.info(f"[OrderModel.save] Converting empty string to None for field: {field}")
                 setattr(self, field, None)
 
         # Ensure TextField fields are empty strings, not None
@@ -154,6 +184,7 @@ class ConsumerOrder(models.Model):
         for field in text_fields:
             value = getattr(self, field, None)
             if value is None:
+                logger.info(f"[OrderModel.save] Converting None to empty string for field: {field}")
                 setattr(self, field, '')
 
         # Track if status changed for notifications
