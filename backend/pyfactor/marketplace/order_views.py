@@ -103,7 +103,11 @@ class ConsumerOrderViewSet(viewsets.ModelViewSet):
                 delivery_address=delivery_address_str,
                 delivery_notes=special_instructions,
                 created_from_chat=request.data.get('created_from_chat', False),
-                chat_conversation_id=conversation_id
+                chat_conversation_id=conversation_id,
+                # Explicitly set PIN fields to None to avoid JSON parsing errors
+                delivery_pin=None,
+                pickup_pin=None,
+                consumer_delivery_pin=None
             )
 
             # Save to trigger order_number generation
