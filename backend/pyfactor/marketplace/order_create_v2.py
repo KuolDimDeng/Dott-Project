@@ -147,12 +147,27 @@ def create_order_v2(request):
                 'error': 'No items in order'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Log the actual business_id being sent
         business_id = items[0].get('business_id')
+        logger.info(f"[OrderV2] ===== BUSINESS ID FROM MOBILE APP =====")
+        logger.info(f"[OrderV2] Business ID received: {business_id}")
+        logger.info(f"[OrderV2] Type: {type(business_id)}")
+        logger.info(f"[OrderV2] Full item[0]: {items[0]}")
+        logger.info(f"[OrderV2] ==========================================")
+
         if not business_id:
             return Response({
                 'success': False,
                 'error': 'Business ID not provided in items'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+        # First, log all existing BusinessListings to help debug
+        all_listings = BusinessListing.objects.all()
+        logger.info(f"[OrderV2] ===== ALL BUSINESS LISTINGS IN DATABASE =====")
+        for listing in all_listings:
+            logger.info(f"[OrderV2] ID: {listing.id}, Business: {listing.business_id} ({listing.business.email if listing.business else 'None'})")
+        logger.info(f"[OrderV2] Total listings: {all_listings.count()}")
+        logger.info(f"[OrderV2] ==============================================")
 
         try:
             # Use select_related to ensure we get the business user
