@@ -1,20 +1,80 @@
 """
-Clean, simplified order creation endpoint v3
+Production-ready order creation endpoint v3 with notifications and courier assignment
 """
 
 import logging
+import random
+import string
+from decimal import Decimal
 from django.db import transaction
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from .models import BusinessListing
 from .order_models import ConsumerOrder
 import uuid
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+channel_layer = get_channel_layer()
+
+
+def generate_passcode(length=6):
+    """Generate a random numeric passcode"""
+    return ''.join(random.choices(string.digits, k=length))
+
+
+def format_items_for_email(items):
+    """Format order items for email display"""
+    formatted = []
+    for item in items:
+        formatted.append(f"- {item.get('name', 'Unknown')} x{item.get('quantity', 1)} - ${item.get('price', 0)}")
+    return '\n'.join(formatted)
+
+
+def send_payment_receipt(user, order, payment_intent_id):
+    """Send payment receipt to customer"""
+    try:
+        receipt_message = f'''
+        Payment Receipt
+
+        Order Number: {order.order_number}
+        Date: {order.created_at.strftime('%Y-%m-%d %H:%M')}
+        Payment ID: {payment_intent_id}
+
+        Items:
+        {format_items_for_email(order.items)}
+
+        Subtotal: ${order.subtotal}
+        Tax: ${order.tax_amount}
+        Delivery Fee: ${order.delivery_fee}
+        Service Fee: ${order.service_fee}
+        Tip: ${order.tip_amount}
+        Discount: -${order.discount_amount}
+
+        Total Paid: ${order.total_amount}
+
+        Payment Method: {order.payment_method}
+        Status: Paid
+
+        Thank you for your order!
+        '''
+
+        send_mail(
+            subject=f'Payment Receipt - Order #{order.order_number}',
+            message=receipt_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True
+        )
+    except Exception as e:
+        logger.error(f"Failed to send payment receipt: {e}")
 
 
 @api_view(['POST'])
@@ -101,9 +161,17 @@ def create_order_v3(request):
 
         logger.info(f"[OrderV3] Final business user: {business_user} (ID: {business_user.id})")
 
-        # Generate order number
+        # Generate order number and passcodes
         order_number = f"ORD{uuid.uuid4().hex[:8].upper()}"
+        pickup_pin = generate_passcode(6)
+        delivery_pin = generate_passcode(6)
+        consumer_delivery_pin = generate_passcode(4)
+
         logger.info(f"[OrderV3] Generated order number: {order_number}")
+        logger.info(f"[OrderV3] Generated passcodes - Pickup: {pickup_pin}, Delivery: {delivery_pin}, Consumer: {consumer_delivery_pin}")
+
+        # Determine order type
+        delivery_type = data.get('delivery_type', 'delivery')
 
         # Create order data
         order_data = {
@@ -122,7 +190,11 @@ def create_order_v3(request):
             'delivery_notes': data.get('special_instructions', ''),
             'payment_method': data.get('payment_method', 'cash'),
             'order_status': 'pending',
-            'payment_status': 'pending'
+            'payment_status': 'pending',
+            'pickup_pin': pickup_pin,
+            'delivery_pin': delivery_pin,
+            'consumer_delivery_pin': consumer_delivery_pin,
+            'delivery_type': delivery_type
         }
 
         # Log the order data before creation
@@ -148,14 +220,105 @@ def create_order_v3(request):
                     order.save()
                     logger.info(f"[OrderV3] Payment recorded: {payment_intent_id}")
 
-            # Return success response
+            # Send notifications to business (restaurant) via WebSocket
+            try:
+                logger.info(f"[OrderV3] Sending WebSocket notification to business: {business_user.id}")
+                async_to_sync(channel_layer.group_send)(
+                    f"business_{business_user.id}",
+                    {
+                        "type": "new_order",
+                        "order_id": str(order.id),
+                        "order_number": order.order_number,
+                        "total_amount": float(order.total_amount),
+                        "items": order.items,
+                        "consumer": request.user.email,
+                        "pickup_pin": pickup_pin,
+                        "delivery_type": delivery_type,
+                        "message": f"New order #{order.order_number} received!"
+                    }
+                )
+                logger.info(f"[OrderV3] ✅ WebSocket notification sent to business")
+            except Exception as e:
+                logger.error(f"[OrderV3] Failed to send WebSocket notification: {e}")
+
+            # Send email notification to business
+            try:
+                if hasattr(business_user, 'email') and business_user.email:
+                    send_mail(
+                        subject=f'New Order #{order.order_number}',
+                        message=f'''
+                        You have received a new order!
+
+                        Order Number: {order.order_number}
+                        Customer: {request.user.email}
+                        Total Amount: ${order.total_amount}
+                        Payment Method: {order.payment_method}
+                        Pickup PIN: {pickup_pin}
+
+                        Items:
+                        {format_items_for_email(order.items)}
+
+                        Please prepare this order promptly.
+                        ''',
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[business_user.email],
+                        fail_silently=True
+                    )
+                    logger.info(f"[OrderV3] ✅ Email notification sent to business: {business_user.email}")
+            except Exception as e:
+                logger.error(f"[OrderV3] Failed to send email notification: {e}")
+
+            # Send payment receipt to consumer
+            try:
+                if payment_details and payment_intent_id:
+                    send_payment_receipt(request.user, order, payment_intent_id)
+                    logger.info(f"[OrderV3] ✅ Payment receipt sent to consumer")
+            except Exception as e:
+                logger.error(f"[OrderV3] Failed to send payment receipt: {e}")
+
+            # Assign courier for delivery orders
+            courier_assigned = None
+            if delivery_type == 'delivery':
+                try:
+                    from couriers.services import CourierAssignmentService
+
+                    # First set order status to business_accepted for courier assignment
+                    order.order_status = 'business_accepted'
+                    order.save()
+
+                    # Assign courier
+                    courier = CourierAssignmentService.assign_courier_to_order(order.id, auto_assign=True)
+                    if courier:
+                        courier_assigned = {
+                            'id': str(courier.id),
+                            'name': f"{courier.user.first_name} {courier.user.last_name}".strip() or courier.user.email,
+                            'phone': courier.phone_number,
+                            'vehicle_type': courier.vehicle_type,
+                            'estimated_time': '30-45 minutes'
+                        }
+                        logger.info(f"[OrderV3] ✅ Courier assigned: {courier.user.email}")
+                    else:
+                        logger.warning(f"[OrderV3] No available courier found, order remains in searching status")
+                except ImportError as e:
+                    logger.warning(f"[OrderV3] Courier service not available: {e}")
+                except Exception as e:
+                    logger.error(f"[OrderV3] Failed to assign courier: {e}")
+
+            # Return success response with passcodes
             return Response({
                 'success': True,
                 'message': 'Order created successfully',
                 'order_id': str(order.id),
                 'order_number': order.order_number,
                 'status': order.order_status,
-                'payment_status': order.payment_status
+                'payment_status': order.payment_status,
+                'passcodes': {
+                    'pickupCode': pickup_pin,
+                    'deliveryCode': delivery_pin,
+                    'consumerPin': consumer_delivery_pin
+                },
+                'courier': courier_assigned,
+                'estimated_time': '20-30 minutes' if delivery_type == 'pickup' else '45-60 minutes'
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:

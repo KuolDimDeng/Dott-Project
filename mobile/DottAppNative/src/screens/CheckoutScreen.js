@@ -415,22 +415,25 @@ export default function CheckoutScreen() {
       console.log('✅ Order created successfully:', orderResponse.data);
       const orderId = orderResponse.data.order_id;
 
-      // The backend now generates both pickup and delivery PINs
-      // Consumer receives delivery PIN to give to courier
-      const passcodes = {
-        pickupCode: orderResponse.data.passcodes.pickupCode,
-        deliveryCode: orderResponse.data.passcodes.deliveryCode,
-        consumerPin: orderResponse.data.passcodes.consumerPin, // PIN consumer gives to courier
-        expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-      };
+      // Check if passcodes are provided (v2 endpoint) or not (v3 endpoint)
+      let passcodes = null;
+      if (orderResponse.data.passcodes) {
+        // V2 endpoint response with passcodes
+        passcodes = {
+          pickupCode: orderResponse.data.passcodes.pickupCode,
+          deliveryCode: orderResponse.data.passcodes.deliveryCode,
+          consumerPin: orderResponse.data.passcodes.consumerPin,
+          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+        };
 
-      // Store passcodes locally
-      await orderVerificationApi.storePasscodesLocally(
-        orderId,
-        passcodes.pickupCode,
-        passcodes.deliveryCode,
-        passcodes.expiresAt
-      );
+        // Store passcodes locally
+        await orderVerificationApi.storePasscodesLocally(
+          orderId,
+          passcodes.pickupCode,
+          passcodes.deliveryCode,
+          passcodes.expiresAt
+        );
+      }
 
       // Clear cart
       clearCart();
@@ -439,7 +442,7 @@ export default function CheckoutScreen() {
       navigation.replace('OrderConfirmation', {
         orderId: orderId,
         orderData: orderResponse.data,
-        passcodes: passcodes,
+        passcodes: passcodes, // Will be null for v3 endpoint
       });
 
     } catch (error) {
