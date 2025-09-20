@@ -204,11 +204,18 @@ export default function OrderConfirmationScreen() {
             <Text style={styles.detailValue}>${orderData.service_fee?.toFixed(2)}</Text>
           </View>
 
+          {orderData.tip_amount > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Tip</Text>
+              <Text style={styles.detailValue}>${orderData.tip_amount?.toFixed(2)}</Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Paid</Text>
-            <Text style={styles.totalValue}>${orderData.total?.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>${(orderData.total_amount || orderData.total)?.toFixed(2)}</Text>
           </View>
         </View>
 

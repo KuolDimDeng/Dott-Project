@@ -304,7 +304,7 @@ def create_order_v3(request):
                 except Exception as e:
                     logger.error(f"[OrderV3] Failed to assign courier: {e}")
 
-            # Return success response with ONLY relevant passcodes based on order type
+            # Return success response with order details and relevant passcodes
             response_data = {
                 'success': True,
                 'message': 'Order created successfully',
@@ -312,7 +312,18 @@ def create_order_v3(request):
                 'order_number': order.order_number,
                 'status': order.order_status,
                 'payment_status': order.payment_status,
-                'estimated_time': '20-30 minutes' if delivery_type == 'pickup' else '45-60 minutes'
+                'estimated_time': '20-30 minutes' if delivery_type == 'pickup' else '45-60 minutes',
+                # Include all order amounts for display
+                'subtotal': float(order.subtotal),
+                'tax_amount': float(order.tax_amount),
+                'delivery_fee': float(order.delivery_fee),
+                'service_fee': float(order.service_fee),
+                'tip_amount': float(order.tip_amount),
+                'discount_amount': float(order.discount_amount),
+                'total_amount': float(order.total_amount),
+                'delivery_type': delivery_type,
+                'delivery_address': order.delivery_address,
+                'payment_method': order.payment_method
             }
 
             # Only include relevant passcodes based on order type
