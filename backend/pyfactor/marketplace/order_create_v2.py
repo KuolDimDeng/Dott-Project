@@ -238,20 +238,33 @@ def create_order_v2(request):
                 logger.info(f"  - business_listing.business_id: {business_listing.business_id}")
                 logger.info(f"  - business_listing.business is None: {business_listing.business is None}")
 
-                # Get the business user object
+                # Get the business user object - try multiple approaches
                 from django.contrib.auth import get_user_model
                 User = get_user_model()
 
                 business_user = None
+
+                # First try: Use the relationship
                 if business_listing.business:
                     business_user = business_listing.business
                     logger.info(f"  - Got business user from relationship: {business_user}")
-                elif business_listing.business_id:
+
+                # Second try: Use business_id field if available
+                if not business_user and hasattr(business_listing, 'business_id') and business_listing.business_id:
                     try:
                         business_user = User.objects.get(id=business_listing.business_id)
                         logger.info(f"  - Got business user by ID: {business_user} (ID: {business_listing.business_id})")
                     except User.DoesNotExist:
                         logger.error(f"  - Business user with ID {business_listing.business_id} does not exist!")
+
+                # Third try: Find business by matching the business listing
+                if not business_user:
+                    try:
+                        # Try to find the user that owns this business listing
+                        business_user = User.objects.get(marketplace_listing=business_listing)
+                        logger.info(f"  - Got business user via reverse lookup: {business_user}")
+                    except User.DoesNotExist:
+                        logger.error(f"  - Could not find business user via reverse lookup!")
 
                 logger.info(f"  - order_number: {order_number}")
                 logger.info(f"  - items type: {type(cleaned_data['items'])}")
@@ -260,10 +273,29 @@ def create_order_v2(request):
                 # Ensure we have valid business user
                 if not business_user:
                     logger.error(f"[OrderV2] Could not determine business user!")
-                    return Response({
-                        'success': False,
-                        'error': 'Business configuration invalid - no business user'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    logger.error(f"[OrderV2] BusinessListing details:")
+                    logger.error(f"  - ID: {business_listing.id}")
+                    logger.error(f"  - business field: {business_listing.business}")
+                    logger.error(f"  - business_id field: {business_listing.business_id}")
+
+                    # Last resort: Try to find ANY user associated with this business listing ID
+                    # This is a temporary workaround to identify the issue
+                    try:
+                        # Check if there's a user with business_id matching this listing
+                        potential_users = User.objects.filter(business_id=business_listing.id)
+                        if potential_users.exists():
+                            business_user = potential_users.first()
+                            logger.warning(f"[OrderV2] FALLBACK: Found user with business_id={business_listing.id}: {business_user.email}")
+                        else:
+                            logger.error(f"[OrderV2] No users found with business_id={business_listing.id}")
+                    except Exception as e:
+                        logger.error(f"[OrderV2] Error in fallback user search: {e}")
+
+                    if not business_user:
+                        return Response({
+                            'success': False,
+                            'error': 'Business configuration invalid - no business user found'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Final validation before creating order
                 logger.info(f"[OrderV2] === FINAL VALIDATION BEFORE ORDER CREATION ===")
