@@ -156,7 +156,19 @@ def create_order_v2(request):
 
         try:
             business_listing = BusinessListing.objects.get(id=business_id)
-            logger.info(f"[OrderV2] Found business: {business_listing.business.email}")
+            logger.info(f"[OrderV2] Found business listing: {business_listing.id}")
+            logger.info(f"[OrderV2] Business user: {business_listing.business}")
+            logger.info(f"[OrderV2] Business user ID: {business_listing.business.id}")
+            logger.info(f"[OrderV2] Business user email: {business_listing.business.email}")
+
+            # Ensure business user exists and is valid
+            if not business_listing.business or not business_listing.business.id:
+                logger.error(f"[OrderV2] Business listing has invalid business user")
+                return Response({
+                    'success': False,
+                    'error': 'Business configuration error'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         except BusinessListing.DoesNotExist:
             logger.error(f"[OrderV2] Business not found: {business_id}")
             return Response({
@@ -189,6 +201,14 @@ def create_order_v2(request):
 
         with transaction.atomic():
             try:
+                # Log all values before creating order
+                logger.info("[OrderV2] Creating order with values:")
+                logger.info(f"  - consumer: {request.user} (ID: {request.user.id})")
+                logger.info(f"  - business: {business_listing.business} (ID: {business_listing.business.id})")
+                logger.info(f"  - order_number: {order_number}")
+                logger.info(f"  - items type: {type(cleaned_data['items'])}")
+                logger.info(f"  - items value: {cleaned_data['items']}")
+
                 # Create the order
                 order = ConsumerOrder(
                     consumer=request.user,

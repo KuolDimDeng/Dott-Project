@@ -404,6 +404,7 @@ export default function CheckoutScreen() {
       // Add payment details to order data
       const finalOrderData = {
         ...pendingOrderData,
+        total_amount: pendingOrderData.total,  // Backend expects total_amount, not total
         payment_details: paymentDetails,
       };
 

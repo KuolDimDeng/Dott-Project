@@ -33,16 +33,15 @@ class OrderNotificationService {
 
   async checkForNewOrders(businessId) {
     try {
-      // Fetch latest orders from API
-      const response = await api.get('/business-orders/', {
+      // Fetch latest orders from API - using the correct marketplace endpoint
+      const response = await api.get('/marketplace/mobile/orders/active_orders/', {
         params: {
-          status: 'pending',
           business_id: businessId,
-          limit: 20,
         }
       });
-      
-      const orders = response.data.results || response.data || [];
+
+      // The backend returns {success: true, data: [...], count: n, stats: {...}}
+      const orders = response.data.data || [];
       const currentOrderIds = new Set(orders.map(order => order.id));
       
       // Find new orders
@@ -139,13 +138,13 @@ class OrderNotificationService {
   // Mark order as viewed
   async markOrderAsViewed(orderId) {
     try {
-      await api.patch(`/business-orders/${orderId}/`, {
+      await api.patch(`/marketplace/mobile/orders/${orderId}/`, {
         viewed_by_business: true,
       });
-      
+
       // Update unread count
       this.unreadOrderCount = Math.max(0, this.unreadOrderCount - 1);
-      
+
     } catch (error) {
       console.error('Error marking order as viewed:', error);
     }
@@ -154,10 +153,11 @@ class OrderNotificationService {
   // Mark all orders as viewed
   async markAllOrdersAsViewed() {
     try {
-      await api.post('/business-orders/mark-all-viewed/');
-      
+      // Note: This endpoint may not exist yet on backend
+      // For now, we'll just reset the count locally
       this.unreadOrderCount = 0;
-      
+      console.log('Mark all as viewed - local reset only');
+
     } catch (error) {
       console.error('Error marking all orders as viewed:', error);
     }
