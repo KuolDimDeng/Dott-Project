@@ -155,7 +155,8 @@ def create_order_v2(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            business_listing = BusinessListing.objects.get(id=business_id)
+            # Use select_related to ensure we get the business user
+            business_listing = BusinessListing.objects.select_related('business').get(id=business_id)
             logger.info(f"[OrderV2] Found business listing: {business_listing.id}")
 
             # Debug the business field in detail
@@ -173,12 +174,28 @@ def create_order_v2(request):
                 logger.error(f"[OrderV2] Business user is None!")
 
             # Ensure business user exists and is valid
-            if not business_listing.business or not business_listing.business.id:
-                logger.error(f"[OrderV2] Business listing has invalid business user")
-                return Response({
-                    'success': False,
-                    'error': 'Business configuration error'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            if not business_listing.business:
+                logger.error(f"[OrderV2] Business listing has no business user!")
+                logger.error(f"[OrderV2] Business listing ID: {business_listing.id}")
+                logger.error(f"[OrderV2] Business_id field value: {business_listing.business_id}")
+
+                # Try to get the business user directly if the relationship is broken
+                if business_listing.business_id:
+                    try:
+                        fallback_business = User.objects.get(id=business_listing.business_id)
+                        logger.info(f"[OrderV2] Found business user via fallback: {fallback_business.email}")
+                        business_listing.business = fallback_business
+                    except User.DoesNotExist:
+                        logger.error(f"[OrderV2] Business user with ID {business_listing.business_id} does not exist!")
+                        return Response({
+                            'success': False,
+                            'error': 'Business user not found'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    return Response({
+                        'success': False,
+                        'error': 'Business configuration invalid'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except BusinessListing.DoesNotExist:
             logger.error(f"[OrderV2] Business not found: {business_id}")
