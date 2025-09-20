@@ -38,7 +38,8 @@ def check_business_listing():
             print(f"\n📋 Business User Details:")
             print(f"  - User ID: {listing.business.id}")
             print(f"  - Email: {listing.business.email}")
-            print(f"  - Business Name: {listing.business.business_name}")
+            print(f"  - Username: {getattr(listing.business, 'username', 'N/A')}")
+            print(f"  - Full Name: {getattr(listing.business, 'full_name', 'N/A')}")
             print(f"  - Is Active: {listing.business.is_active}")
         else:
             print("\n❌ business field is None!")
@@ -97,6 +98,64 @@ def check_business_listing():
                     print(f"    → User exists: {user.email}")
                 except User.DoesNotExist:
                     print(f"    → User does NOT exist!")
+
+    # Test order creation
+    print("\n" + "=" * 80)
+    print("TESTING ORDER CREATION")
+    print("=" * 80)
+
+    try:
+        from marketplace.order_models import ConsumerOrder
+
+        # Use the listing we just checked
+        listing = BusinessListing.objects.select_related('business').get(id=listing_id)
+        business_user = listing.business
+
+        # Get a test consumer (user 303 from the error logs)
+        try:
+            consumer = User.objects.get(id=303)
+            print(f"\n✅ Found consumer: {consumer.email} (ID: 303)")
+        except User.DoesNotExist:
+            print("\n❌ Consumer with ID 303 not found, using any consumer")
+            consumer = User.objects.filter(role='CONSUMER').first()
+            if not consumer:
+                print("  ❌ No consumer users available")
+                return
+
+        print(f"\n🧪 Creating test order...")
+        print(f"  - Consumer: {consumer.email} (ID: {consumer.id})")
+        print(f"  - Business: {business_user.email} (ID: {business_user.id})")
+        print(f"  - Business Type: {type(business_user)}")
+
+        # Create a minimal test order
+        test_order = ConsumerOrder(
+            consumer=consumer,
+            business=business_user,
+            order_number='TEST999999',
+            items=[],  # Empty list instead of empty string
+            subtotal=10.00,
+            total_amount=10.00,
+            delivery_address='Test Address'
+        )
+
+        print(f"\n📝 Order instance created:")
+        print(f"  - order.business: {test_order.business}")
+        print(f"  - order.business_id: {test_order.business_id}")
+        print(f"  - order.items: {test_order.items}")
+
+        # Try to save
+        test_order.save()
+        print(f"\n✅ Test order saved successfully!")
+        print(f"  - Order ID: {test_order.id}")
+
+        # Clean up
+        test_order.delete()
+        print("  - Test order deleted")
+
+    except Exception as e:
+        print(f"\n❌ Error during test order creation: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
     check_business_listing()
