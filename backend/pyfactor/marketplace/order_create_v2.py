@@ -157,9 +157,20 @@ def create_order_v2(request):
         try:
             business_listing = BusinessListing.objects.get(id=business_id)
             logger.info(f"[OrderV2] Found business listing: {business_listing.id}")
-            logger.info(f"[OrderV2] Business user: {business_listing.business}")
-            logger.info(f"[OrderV2] Business user ID: {business_listing.business.id}")
-            logger.info(f"[OrderV2] Business user email: {business_listing.business.email}")
+
+            # Debug the business field in detail
+            logger.info(f"[OrderV2] Business field type: {type(business_listing.business)}")
+            logger.info(f"[OrderV2] Business field value: {repr(business_listing.business)}")
+            logger.info(f"[OrderV2] Business is None: {business_listing.business is None}")
+            logger.info(f"[OrderV2] Business_id field: {business_listing.business_id}")
+
+            if business_listing.business:
+                logger.info(f"[OrderV2] Business user exists")
+                logger.info(f"[OrderV2] Business user ID: {business_listing.business.id}")
+                logger.info(f"[OrderV2] Business user email: {business_listing.business.email}")
+                logger.info(f"[OrderV2] Business user type: {type(business_listing.business)}")
+            else:
+                logger.error(f"[OrderV2] Business user is None!")
 
             # Ensure business user exists and is valid
             if not business_listing.business or not business_listing.business.id:
@@ -204,15 +215,36 @@ def create_order_v2(request):
                 # Log all values before creating order
                 logger.info("[OrderV2] Creating order with values:")
                 logger.info(f"  - consumer: {request.user} (ID: {request.user.id})")
-                logger.info(f"  - business: {business_listing.business} (ID: {business_listing.business.id})")
+                logger.info(f"  - consumer type: {type(request.user)}")
+                logger.info(f"  - business_listing.business: {business_listing.business}")
+                logger.info(f"  - business_listing.business type: {type(business_listing.business)}")
+                logger.info(f"  - business_listing.business_id: {business_listing.business_id}")
+                logger.info(f"  - business_listing.business is None: {business_listing.business is None}")
+
+                # Try to get the business user ID
+                try:
+                    business_user_id = business_listing.business.id if business_listing.business else business_listing.business_id
+                    logger.info(f"  - Using business_user_id: {business_user_id}")
+                except Exception as e:
+                    logger.error(f"  - Error getting business user ID: {e}")
+                    business_user_id = None
+
                 logger.info(f"  - order_number: {order_number}")
                 logger.info(f"  - items type: {type(cleaned_data['items'])}")
                 logger.info(f"  - items value: {cleaned_data['items']}")
 
-                # Create the order
+                # Ensure we have valid business user
+                if not business_user_id:
+                    logger.error(f"[OrderV2] Could not determine business user ID!")
+                    return Response({
+                        'success': False,
+                        'error': 'Business configuration invalid - no business user'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                # Create the order - use business_id directly
                 order = ConsumerOrder(
                     consumer=request.user,
-                    business=business_listing.business,
+                    business_id=business_user_id,  # Use the determined ID
                     order_number=order_number,
                     items=cleaned_data['items'],  # This is already a clean list
                     subtotal=cleaned_data['subtotal'],
