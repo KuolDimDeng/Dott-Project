@@ -410,8 +410,8 @@ export default function CheckoutScreen() {
 
       console.log('📮 Sending order to backend:', JSON.stringify(finalOrderData, null, 2));
 
-      // Create order using V2 endpoint with better validation and error handling
-      const orderResponse = await api.post('/marketplace/consumer/orders/v2/', finalOrderData);
+      // Create order using V3 endpoint - clean rewrite to fix business field issue
+      const orderResponse = await api.post('/marketplace/consumer/orders/v3/', finalOrderData);
       console.log('✅ Order created successfully:', orderResponse.data);
       const orderId = orderResponse.data.order_id;
 

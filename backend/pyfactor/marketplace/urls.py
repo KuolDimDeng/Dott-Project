@@ -11,6 +11,7 @@ from .placeholder_inquiry_views import (
 )
 from .views_mobile_orders import MobileBusinessOrdersViewSet
 from .order_create_v2 import create_order_v2
+from .order_create_v3 import create_order_v3
 
 # Business-side marketplace routes
 router = DefaultRouter()
@@ -31,6 +32,8 @@ urlpatterns = [
         path('category_hierarchy/', ConsumerSearchViewSet.as_view({'get': 'category_hierarchy'}), name='consumer-category-hierarchy'),
         # Alternative order creation endpoint with better validation
         path('orders/v2/', create_order_v2, name='consumer-order-v2'),
+        # Clean new version 3 endpoint
+        path('orders/v3/', create_order_v3, name='consumer-order-v3'),
     ])),
     
     # Business marketplace endpoints
