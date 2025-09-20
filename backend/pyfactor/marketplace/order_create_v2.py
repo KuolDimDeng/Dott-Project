@@ -221,30 +221,37 @@ def create_order_v2(request):
                 logger.info(f"  - business_listing.business_id: {business_listing.business_id}")
                 logger.info(f"  - business_listing.business is None: {business_listing.business is None}")
 
-                # Try to get the business user ID
-                try:
-                    business_user_id = business_listing.business.id if business_listing.business else business_listing.business_id
-                    logger.info(f"  - Using business_user_id: {business_user_id}")
-                except Exception as e:
-                    logger.error(f"  - Error getting business user ID: {e}")
-                    business_user_id = None
+                # Get the business user object
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+
+                business_user = None
+                if business_listing.business:
+                    business_user = business_listing.business
+                    logger.info(f"  - Got business user from relationship: {business_user}")
+                elif business_listing.business_id:
+                    try:
+                        business_user = User.objects.get(id=business_listing.business_id)
+                        logger.info(f"  - Got business user by ID: {business_user} (ID: {business_listing.business_id})")
+                    except User.DoesNotExist:
+                        logger.error(f"  - Business user with ID {business_listing.business_id} does not exist!")
 
                 logger.info(f"  - order_number: {order_number}")
                 logger.info(f"  - items type: {type(cleaned_data['items'])}")
                 logger.info(f"  - items value: {cleaned_data['items']}")
 
                 # Ensure we have valid business user
-                if not business_user_id:
-                    logger.error(f"[OrderV2] Could not determine business user ID!")
+                if not business_user:
+                    logger.error(f"[OrderV2] Could not determine business user!")
                     return Response({
                         'success': False,
                         'error': 'Business configuration invalid - no business user'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                # Create the order - use business_id directly
+                # Create the order - use the User object directly
                 order = ConsumerOrder(
                     consumer=request.user,
-                    business_id=business_user_id,  # Use the determined ID
+                    business=business_user,  # Use the User object directly
                     order_number=order_number,
                     items=cleaned_data['items'],  # This is already a clean list
                     subtotal=cleaned_data['subtotal'],

@@ -34,17 +34,15 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
         
         # Get business listing
         business_listing = BusinessListing.objects.filter(
-            business_id=user.business_id,
-            tenant=user.tenant
+            business_id=user.business_id
         ).first()
-        
+
         if not business_listing:
             return ConsumerOrder.objects.none()
-        
-        # Return orders for this business
+
+        # Return orders for this business - business field expects a User, not BusinessListing
         return ConsumerOrder.objects.filter(
-            business=business_listing,
-            tenant=user.tenant
+            business=business_listing.business
         ).select_related(
             'consumer',
             'business'
