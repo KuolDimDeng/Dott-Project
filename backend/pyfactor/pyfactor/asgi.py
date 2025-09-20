@@ -26,26 +26,9 @@ try:
         django.setup()
         
         try:
-            # Try to import channels for WebSocket support
-            from channels.routing import ProtocolTypeRouter, URLRouter
-            from channels.security.websocket import AllowedHostsOriginValidator
-
-            # Import WebSocket routing and custom middleware
-            from chat.routing import websocket_urlpatterns
-            from chat.middleware import SessionTokenAuthMiddlewareStack
-
-            # Configure the ASGI application with WebSocket support
-            application = ProtocolTypeRouter({
-                "http": django_asgi_app,
-                "websocket": AllowedHostsOriginValidator(
-                    SessionTokenAuthMiddlewareStack(
-                        URLRouter(
-                            websocket_urlpatterns
-                        )
-                    )
-                ),
-            })
-            
+            # Import the routing configuration
+            from pyfactor.routing import application as channels_app
+            application = channels_app
             logger.info("Django ASGI application with WebSocket support initialized successfully")
         except ImportError as e:
             # If channels not available, use basic ASGI app

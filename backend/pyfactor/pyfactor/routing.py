@@ -3,9 +3,8 @@
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
-from onboarding.middleware import WebSocketAuthMiddleware
-from onboarding.routing import websocket_urlpatterns
 from channels.middleware import BaseMiddleware
+from django.urls import path
 from django.conf import settings
 from pyfactor.logging_config import get_logger
 import logging
@@ -59,6 +58,41 @@ class ErrorHandlingMiddleware(BaseMiddleware):
         # This should be implemented with your preferred connection tracking method
         # For example, using Redis or a shared counter
         return 0  # Placeholder implementation
+
+
+# WebSocket Authentication Middleware
+class WebSocketAuthMiddleware(BaseMiddleware):
+    """
+    Custom WebSocket authentication middleware
+    """
+    async def __call__(self, scope, receive, send):
+        # Get session from query string or headers
+        from django.contrib.auth.models import AnonymousUser
+
+        # For now, allow connections but mark as anonymous if no auth
+        # In production, implement proper session-based auth
+        scope['user'] = AnonymousUser()
+
+        return await super().__call__(scope, receive, send)
+
+
+# Combine WebSocket URL patterns from different apps
+websocket_urlpatterns = []
+
+# Import chat WebSocket patterns
+try:
+    from chat.routing import websocket_urlpatterns as chat_patterns
+    websocket_urlpatterns.extend(chat_patterns)
+except ImportError:
+    logger.warning("Chat WebSocket patterns not found")
+
+# Import marketplace WebSocket patterns
+try:
+    from marketplace.routing import websocket_urlpatterns as marketplace_patterns
+    websocket_urlpatterns.extend(marketplace_patterns)
+except ImportError:
+    logger.warning("Marketplace WebSocket patterns not found")
+
 
 # Initialize ASGI application with middleware stack
 application = ProtocolTypeRouter({
