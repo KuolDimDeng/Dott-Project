@@ -170,10 +170,11 @@ def create_order_v3(request):
         logger.info(f"[OrderV3] Generated order number: {order_number}")
         logger.info(f"[OrderV3] Generated passcodes - Pickup: {pickup_pin}, Delivery: {delivery_pin}, Consumer: {consumer_delivery_pin}")
 
-        # Determine order type
+        # Determine order type from delivery address presence
         delivery_type = data.get('delivery_type', 'delivery')
+        delivery_address = data.get('delivery_address', {})
 
-        # Create order data
+        # Create order data (without delivery_type field which doesn't exist in model)
         order_data = {
             'order_number': order_number,
             'consumer': request.user,  # The consumer is the authenticated user
@@ -186,15 +187,14 @@ def create_order_v3(request):
             'tip_amount': data.get('tip_amount', 0),
             'discount_amount': data.get('discount_amount', 0),
             'total_amount': data.get('total_amount', 0),
-            'delivery_address': data.get('delivery_address', {}).get('street', ''),
+            'delivery_address': delivery_address.get('street', ''),
             'delivery_notes': data.get('special_instructions', ''),
             'payment_method': data.get('payment_method', 'cash'),
             'order_status': 'pending',
             'payment_status': 'pending',
             'pickup_pin': pickup_pin,
             'delivery_pin': delivery_pin,
-            'consumer_delivery_pin': consumer_delivery_pin,
-            'delivery_type': delivery_type
+            'consumer_delivery_pin': consumer_delivery_pin
         }
 
         # Log the order data before creation
