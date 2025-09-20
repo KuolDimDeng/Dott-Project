@@ -304,22 +304,35 @@ def create_order_v3(request):
                 except Exception as e:
                     logger.error(f"[OrderV3] Failed to assign courier: {e}")
 
-            # Return success response with passcodes
-            return Response({
+            # Return success response with ONLY relevant passcodes based on order type
+            response_data = {
                 'success': True,
                 'message': 'Order created successfully',
                 'order_id': str(order.id),
                 'order_number': order.order_number,
                 'status': order.order_status,
                 'payment_status': order.payment_status,
-                'passcodes': {
-                    'pickupCode': pickup_pin,
-                    'deliveryCode': delivery_pin,
-                    'consumerPin': consumer_delivery_pin
-                },
-                'courier': courier_assigned,
                 'estimated_time': '20-30 minutes' if delivery_type == 'pickup' else '45-60 minutes'
-            }, status=status.HTTP_201_CREATED)
+            }
+
+            # Only include relevant passcodes based on order type
+            if delivery_type == 'pickup':
+                # For pickup: consumer shows this code to restaurant
+                response_data['passcodes'] = {
+                    'pickupCode': pickup_pin,  # Consumer → Restaurant verification
+                    'type': 'pickup'
+                }
+            else:
+                # For delivery: consumer gives this code to courier for verification
+                response_data['passcodes'] = {
+                    'consumerPin': consumer_delivery_pin,  # Consumer → Courier verification
+                    'type': 'delivery'
+                }
+                # Include courier info if assigned
+                if courier_assigned:
+                    response_data['courier'] = courier_assigned
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"[OrderV3] Failed to create order: {e}")

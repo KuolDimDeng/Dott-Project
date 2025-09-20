@@ -58,11 +58,21 @@ export default function OrderConfirmationScreen() {
 
   const handleSharePasscodes = async () => {
     try {
-      const message = `Order #${orderId}\n\nPickup Code: ${passcodes.pickupCode}\nDelivery Code: ${passcodes.deliveryCode}\n\nThese codes expire in 2 hours.`;
+      let message = `Order #${orderId}\n\n`;
+
+      if (passcodes?.type === 'pickup' && passcodes?.pickupCode) {
+        message += `Pickup Code: ${passcodes.pickupCode}\n\n`;
+        message += `Show this code to the restaurant when picking up your order.\n\n`;
+      } else if (passcodes?.type === 'delivery' && passcodes?.consumerPin) {
+        message += `Delivery PIN: ${passcodes.consumerPin}\n\n`;
+        message += `Give this PIN to the courier when they deliver your order.\n\n`;
+      }
+
+      message += `This code expires in 2 hours.`;
 
       await Share.share({
         message: message,
-        title: 'Order Passcodes',
+        title: 'Order Verification Code',
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -89,44 +99,39 @@ export default function OrderConfirmationScreen() {
           <Text style={styles.orderId}>Order #{orderId}</Text>
         </View>
 
-        {/* Passcode Cards */}
+        {/* Passcode Cards - Show ONLY relevant passcode based on order type */}
         <View style={styles.passcodesContainer}>
-          <Text style={styles.sectionTitle}>Your Order Verification Codes</Text>
+          <Text style={styles.sectionTitle}>Your Verification Code</Text>
           <Text style={styles.passcodesDescription}>
-            Save these codes - you'll need them for pickup and delivery verification
+            {passcodes?.type === 'pickup'
+              ? 'Save this code - you\'ll need it when picking up your order'
+              : 'Save this code - you\'ll need it when the courier delivers your order'}
           </Text>
 
-          <View style={styles.passcodeCard}>
-            <View style={styles.passcodeHeader}>
-              <Icon name="storefront" size={24} color="#2563eb" />
-              <Text style={styles.passcodeType}>PICKUP CODE</Text>
+          {/* For PICKUP orders - show pickup code only */}
+          {passcodes?.type === 'pickup' && passcodes?.pickupCode && (
+            <View style={styles.passcodeCard}>
+              <View style={styles.passcodeHeader}>
+                <Icon name="storefront" size={24} color="#2563eb" />
+                <Text style={styles.passcodeType}>PICKUP CODE</Text>
+              </View>
+              <Text style={styles.passcodeValue}>{passcodes.pickupCode}</Text>
+              <Text style={styles.passcodeHint}>
+                Show this code to the restaurant when picking up your order
+              </Text>
             </View>
-            <Text style={styles.passcodeValue}>{passcodes.pickupCode}</Text>
-            <Text style={styles.passcodeHint}>
-              Show this code to the business when picking up your order
-            </Text>
-          </View>
+          )}
 
-          <View style={[styles.passcodeCard, styles.deliveryCard]}>
-            <View style={styles.passcodeHeader}>
-              <Icon name="bicycle" size={24} color="#10b981" />
-              <Text style={[styles.passcodeType, styles.deliveryType]}>RESTAURANT TO COURIER</Text>
-            </View>
-            <Text style={styles.passcodeValue}>{passcodes.deliveryCode}</Text>
-            <Text style={styles.passcodeHint}>
-              Restaurant provides this code to courier at pickup
-            </Text>
-          </View>
-
-          {orderData.delivery_type === 'delivery' && (
+          {/* For DELIVERY orders - show consumer PIN only */}
+          {passcodes?.type === 'delivery' && passcodes?.consumerPin && (
             <View style={[styles.passcodeCard, styles.consumerCard]}>
               <View style={styles.passcodeHeader}>
-                <Icon name="person" size={24} color="#8b5cf6" />
+                <Icon name="lock-closed" size={24} color="#8b5cf6" />
                 <Text style={[styles.passcodeType, styles.consumerType]}>YOUR DELIVERY PIN</Text>
               </View>
-              <Text style={styles.passcodeValue}>{consumerDeliveryPin}</Text>
+              <Text style={styles.passcodeValue}>{passcodes.consumerPin}</Text>
               <Text style={styles.passcodeHint}>
-                Provide this PIN to the courier when receiving your order
+                Give this PIN to the courier when they deliver your order
               </Text>
             </View>
           )}

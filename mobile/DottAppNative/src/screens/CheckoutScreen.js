@@ -415,24 +415,42 @@ export default function CheckoutScreen() {
       console.log('✅ Order created successfully:', orderResponse.data);
       const orderId = orderResponse.data.order_id;
 
-      // Check if passcodes are provided (v2 endpoint) or not (v3 endpoint)
+      // Handle passcodes based on order type (v3 endpoint)
       let passcodes = null;
       if (orderResponse.data.passcodes) {
-        // V2 endpoint response with passcodes
-        passcodes = {
-          pickupCode: orderResponse.data.passcodes.pickupCode,
-          deliveryCode: orderResponse.data.passcodes.deliveryCode,
-          consumerPin: orderResponse.data.passcodes.consumerPin,
-          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-        };
+        const passcodeType = orderResponse.data.passcodes.type;
 
-        // Store passcodes locally
-        await orderVerificationApi.storePasscodesLocally(
-          orderId,
-          passcodes.pickupCode,
-          passcodes.deliveryCode,
-          passcodes.expiresAt
-        );
+        if (passcodeType === 'pickup') {
+          // For pickup orders: consumer shows this code to restaurant
+          passcodes = {
+            pickupCode: orderResponse.data.passcodes.pickupCode,
+            type: 'pickup',
+            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+          };
+
+          // Store pickup code locally
+          await orderVerificationApi.storePasscodesLocally(
+            orderId,
+            passcodes.pickupCode,
+            null, // No delivery code for pickup orders
+            passcodes.expiresAt
+          );
+        } else if (passcodeType === 'delivery') {
+          // For delivery orders: consumer gives this code to courier
+          passcodes = {
+            consumerPin: orderResponse.data.passcodes.consumerPin,
+            type: 'delivery',
+            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+          };
+
+          // Store consumer PIN locally
+          await orderVerificationApi.storePasscodesLocally(
+            orderId,
+            null, // No pickup code for delivery orders
+            passcodes.consumerPin,
+            passcodes.expiresAt
+          );
+        }
       }
 
       // Clear cart
