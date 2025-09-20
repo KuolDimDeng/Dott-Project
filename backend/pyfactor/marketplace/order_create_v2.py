@@ -248,6 +248,21 @@ def create_order_v2(request):
                         'error': 'Business configuration invalid - no business user'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+                # Final validation before creating order
+                logger.info(f"[OrderV2] === FINAL VALIDATION BEFORE ORDER CREATION ===")
+                logger.info(f"[OrderV2] business_user type: {type(business_user)}")
+                logger.info(f"[OrderV2] business_user value: {business_user}")
+                logger.info(f"[OrderV2] business_user.id: {business_user.id if business_user else 'N/A'}")
+                logger.info(f"[OrderV2] business_user is User instance: {isinstance(business_user, User)}")
+
+                # Additional check - ensure business_user is valid
+                if not business_user or not hasattr(business_user, 'id'):
+                    logger.error(f"[OrderV2] CRITICAL: business_user is invalid!")
+                    return Response({
+                        'success': False,
+                        'error': 'Business user validation failed'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
                 # Create the order - use the User object directly
                 order = ConsumerOrder(
                     consumer=request.user,

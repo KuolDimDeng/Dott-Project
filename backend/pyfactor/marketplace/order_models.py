@@ -133,9 +133,39 @@ class ConsumerOrder(models.Model):
             models.Index(fields=['order_number']),
         ]
     
+    def __init__(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Log the business field being passed
+        if 'business' in kwargs:
+            business_value = kwargs['business']
+            logger.info(f"[OrderModel.__init__] Business field passed:")
+            logger.info(f"  - Type: {type(business_value)}")
+            logger.info(f"  - Value: {repr(business_value)}")
+            logger.info(f"  - Is None: {business_value is None}")
+            logger.info(f"  - Is string: {isinstance(business_value, str)}")
+
+            # Get User model
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            logger.info(f"  - Is User instance: {isinstance(business_value, User)}")
+
+            if business_value and hasattr(business_value, 'id'):
+                logger.info(f"  - Business ID: {business_value.id}")
+
+        super().__init__(*args, **kwargs)
+
+        # Log after initialization
+        logger.info(f"[OrderModel.__init__] After super().__init__:")
+        logger.info(f"  - self.business type: {type(self.business)}")
+        logger.info(f"  - self.business value: {repr(self.business)}")
+        if self.business and hasattr(self.business, 'id'):
+            logger.info(f"  - self.business.id: {self.business.id}")
+
     def __str__(self):
         return f"Order {self.order_number} - {self.consumer.email} -> {self.business.business_name}"
-    
+
     def save(self, *args, **kwargs):
         import logging
         logger = logging.getLogger(__name__)
