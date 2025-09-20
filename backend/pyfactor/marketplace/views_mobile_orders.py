@@ -57,7 +57,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
         """
         try:
             active_statuses = ['pending', 'confirmed', 'preparing', 'ready']
-            orders = self.get_queryset().filter(status__in=active_statuses)
+            orders = self.get_queryset().filter(order_status__in=active_statuses)
             
             orders_data = []
             for order in orders:
@@ -66,7 +66,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                     'order_number': order.order_number,
                     'consumer_name': order.consumer.user.full_name if order.consumer else 'Guest',
                     'consumer_phone': order.consumer.phone if order.consumer else order.guest_phone,
-                    'status': order.status,
+                    'status': order.order_status,
                     'order_type': order.order_type,
                     'total_amount': str(order.total_amount),
                     'payment_method': order.payment_method,
@@ -94,10 +94,10 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 'data': orders_data,
                 'count': len(orders_data),
                 'stats': {
-                    'pending': orders.filter(status='pending').count(),
-                    'confirmed': orders.filter(status='confirmed').count(),
-                    'preparing': orders.filter(status='preparing').count(),
-                    'ready': orders.filter(status='ready').count()
+                    'pending': orders.filter(order_status='pending').count(),
+                    'confirmed': orders.filter(order_status='confirmed').count(),
+                    'preparing': orders.filter(order_status='preparing').count(),
+                    'ready': orders.filter(order_status='ready').count()
                 }
             })
             
@@ -115,7 +115,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
         """
         try:
             completed_statuses = ['delivered', 'completed', 'cancelled', 'refunded']
-            orders = self.get_queryset().filter(status__in=completed_statuses)[:50]
+            orders = self.get_queryset().filter(order_status__in=completed_statuses)[:50]
             
             serializer = self.get_serializer(orders, many=True)
             
@@ -140,16 +140,16 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
         try:
             order = self.get_object()
             
-            if order.status != 'pending':
+            if order.order_status != 'pending':
                 return Response(
-                    {'error': f'Cannot accept order in {order.status} status'},
+                    {'error': f'Cannot accept order in {order.order_status} status'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
             preparation_time = request.data.get('preparation_time', 30)  # minutes
             
             with transaction.atomic():
-                order.status = 'confirmed'
+                order.order_status = 'confirmed'
                 order.confirmed_at = timezone.now()
                 order.estimated_delivery_time = timezone.now() + timedelta(minutes=preparation_time)
                 order.save()
@@ -165,7 +165,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 'message': 'Order accepted successfully',
                 'data': {
                     'order_id': order.id,
-                    'status': order.status,
+                    'status': order.order_status,
                     'estimated_time': order.estimated_delivery_time
                 }
             })
@@ -185,16 +185,16 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
         try:
             order = self.get_object()
             
-            if order.status != 'pending':
+            if order.order_status != 'pending':
                 return Response(
-                    {'error': f'Cannot reject order in {order.status} status'},
+                    {'error': f'Cannot reject order in {order.order_status} status'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
             reason = request.data.get('reason', 'Business unable to fulfill order')
             
             with transaction.atomic():
-                order.status = 'cancelled'
+                order.order_status = 'cancelled'
                 order.cancellation_reason = reason
                 order.cancelled_at = timezone.now()
                 order.cancelled_by = 'business'
@@ -214,7 +214,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 'message': 'Order rejected',
                 'data': {
                     'order_id': order.id,
-                    'status': order.status,
+                    'status': order.order_status,
                     'reason': reason
                 }
             })
@@ -243,7 +243,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 'out_for_delivery': ['delivered'],
             }
             
-            current_status = order.status
+            current_status = order.order_status
             if current_status not in valid_transitions:
                 return Response(
                     {'error': f'Cannot update order in {current_status} status'},
@@ -257,7 +257,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 )
             
             with transaction.atomic():
-                order.status = new_status
+                order.order_status = new_status
                 
                 # Set appropriate timestamps
                 if new_status == 'preparing':
@@ -280,7 +280,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
                 'message': f'Order status updated to {new_status}',
                 'data': {
                     'order_id': order.id,
-                    'status': order.status
+                    'status': order.order_status
                 }
             })
             
@@ -349,19 +349,19 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
             stats = {
                 'today': {
                     'total_orders': today_orders.count(),
-                    'pending': today_orders.filter(status='pending').count(),
-                    'completed': today_orders.filter(status__in=['delivered', 'completed']).count(),
-                    'cancelled': today_orders.filter(status='cancelled').count(),
+                    'pending': today_orders.filter(order_status='pending').count(),
+                    'completed': today_orders.filter(order_status__in=['delivered', 'completed']).count(),
+                    'cancelled': today_orders.filter(order_status='cancelled').count(),
                     'revenue': today_orders.filter(
-                        status__in=['delivered', 'completed'],
+                        order_status__in=['delivered', 'completed'],
                         payment_status='paid'
                     ).aggregate(total=Sum('total_amount'))['total'] or 0
                 },
                 'all_time': {
                     'total_orders': orders.count(),
-                    'completed': orders.filter(status__in=['delivered', 'completed']).count(),
+                    'completed': orders.filter(order_status__in=['delivered', 'completed']).count(),
                     'average_order_value': orders.filter(
-                        status__in=['delivered', 'completed']
+                        order_status__in=['delivered', 'completed']
                     ).aggregate(avg=Sum('total_amount') / Count('id'))['avg'] or 0
                 },
                 'order_types': {
@@ -385,7 +385,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
     
     def _is_order_urgent(self, order):
         """Check if order needs urgent attention"""
-        if order.status == 'pending':
+        if order.order_status == 'pending':
             # Order pending for more than 5 minutes
             time_diff = timezone.now() - order.created_at
             return time_diff.total_seconds() > 300
@@ -400,7 +400,7 @@ class MobileBusinessOrdersViewSet(viewsets.ModelViewSet):
         messages = {
             'accepted': f"Your order #{order.order_number} has been accepted!",
             'rejected': f"Your order #{order.order_number} was cancelled. {extra_message or ''}",
-            'status_update': f"Your order #{order.order_number} is now {order.status}",
+            'status_update': f"Your order #{order.order_number} is now {order.order_status}",
         }
         
         message = messages.get(notification_type, f"Order #{order.order_number} update")
