@@ -161,10 +161,10 @@ def create_order_v3(request):
 
         logger.info(f"[OrderV3] Final business user: {business_user} (ID: {business_user.id})")
 
-        # Generate order number and passcodes
+        # Generate order number and passcodes (all 4 digits as per database schema)
         order_number = f"ORD{uuid.uuid4().hex[:8].upper()}"
-        pickup_pin = generate_passcode(6)
-        delivery_pin = generate_passcode(6)
+        pickup_pin = generate_passcode(4)
+        delivery_pin = generate_passcode(4)
         consumer_delivery_pin = generate_passcode(4)
 
         logger.info(f"[OrderV3] Generated order number: {order_number}")
